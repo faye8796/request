@@ -1,6 +1,7 @@
 // 학생 기능 관리 모듈
 const StudentManager = {
     currentEditingItem: null,
+    currentReceiptItem: null,
 
     // 초기화
     init() {
@@ -61,8 +62,221 @@ const StudentManager = {
             this.handleShippingSubmit();
         });
 
+        // 영수증 등록 모달 이벤트
+        Utils.on('#receiptCancelBtn', 'click', () => this.hideReceiptModal());
+        Utils.on('#receiptModal', 'click', (e) => {
+            if (e.target.id === 'receiptModal') {
+                this.hideReceiptModal();
+            }
+        });
+        Utils.on('#receiptForm', 'submit', (e) => {
+            e.preventDefault();
+            this.handleReceiptSubmit();
+        });
+
+        // 구매 방식 선택 이벤트
+        Utils.on('input[name="purchaseMethod"]', 'change', (e) => {
+            this.handlePurchaseMethodChange(e.target.value);
+        });
+
+        // 영수증 파일 업로드 이벤트
+        Utils.on('#receiptFile', 'change', (e) => this.handleReceiptFileChange(e));
+        Utils.on('#removeReceiptBtn', 'click', () => this.removeReceiptFile());
+
+        // 드래그 앤 드롭 이벤트
+        this.setupDragAndDrop();
+
         // 모달 내 Enter 키 이벤트
         this.setupModalKeyEvents();
+    },
+
+    // 구매 방식 변경 처리
+    handlePurchaseMethodChange(method) {
+        const linkGroup = Utils.$('#itemLinkGroup');
+        const linkLabel = Utils.$('#itemLinkLabel');
+        const linkInput = Utils.$('#itemLink');
+
+        if (method === 'offline') {
+            linkLabel.textContent = '구매 예정 링크 (선택)';
+            linkInput.placeholder = '구매할 예정인 상품의 링크를 입력하세요 (참고용)';
+        } else {
+            linkLabel.textContent = '구매 링크 (선택)';
+            linkInput.placeholder = '구매 가능한 링크를 입력하세요';
+        }
+    },
+
+    // 영수증 등록 모달 표시
+    showReceiptModal(item) {
+        this.currentReceiptItem = item;
+        const modal = Utils.$('#receiptModal');
+        
+        // 교구 정보 표시
+        Utils.$('#receiptItemName').textContent = item.name;
+        Utils.$('#receiptItemPrice').textContent = `가격: ${Utils.formatPrice(item.price)}`;
+        
+        // 현재 시간으로 구매일시 설정
+        const now = new Date();
+        const datetimeString = now.toISOString().slice(0, 16);
+        Utils.$('#purchaseDateTime').value = datetimeString;
+        
+        // 폼 초기화
+        Utils.resetForm('#receiptForm');
+        this.removeReceiptFile();
+        
+        modal.classList.add('active');
+        
+        setTimeout(() => {
+            Utils.$('#receiptFile').focus();
+        }, 100);
+    },
+
+    // 영수증 등록 모달 숨김
+    hideReceiptModal() {
+        const modal = Utils.$('#receiptModal');
+        modal.classList.remove('active');
+        this.currentReceiptItem = null;
+        Utils.resetForm('#receiptForm');
+        this.removeReceiptFile();
+    },
+
+    // 영수증 파일 변경 처리
+    handleReceiptFileChange(event) {
+        const file = event.target.files[0];
+        if (file) {
+            this.validateAndPreviewReceipt(file);
+        }
+    },
+
+    // 영수증 파일 검증 및 미리보기
+    validateAndPreviewReceipt(file) {
+        // 파일 크기 검증 (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            Utils.showAlert('파일 크기가 너무 큽니다. 5MB 이하의 파일을 선택해주세요.');
+            return;
+        }
+
+        // 파일 타입 검증
+        if (!file.type.startsWith('image/')) {
+            Utils.showAlert('이미지 파일만 업로드 가능합니다.');
+            return;
+        }
+
+        // 미리보기 생성
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const preview = Utils.$('#receiptPreview');
+            const previewImage = Utils.$('#receiptPreviewImage');
+            const uploadContent = Utils.$$('.file-upload-content')[0];
+            
+            previewImage.src = e.target.result;
+            preview.style.display = 'block';
+            uploadContent.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    },
+
+    // 영수증 파일 제거
+    removeReceiptFile() {
+        const fileInput = Utils.$('#receiptFile');
+        const preview = Utils.$('#receiptPreview');
+        const uploadContent = Utils.$$('.file-upload-content')[0];
+        
+        fileInput.value = '';
+        preview.style.display = 'none';
+        uploadContent.style.display = 'block';
+    },
+
+    // 드래그 앤 드롭 설정
+    setupDragAndDrop() {
+        const uploadArea = Utils.$$('.file-upload-area')[0];
+        if (!uploadArea) return;
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.add('drag-over');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.classList.remove('drag-over');
+            });
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const fileInput = Utils.$('#receiptFile');
+                fileInput.files = files;
+                this.validateAndPreviewReceipt(files[0]);
+            }
+        });
+    },
+
+    // 영수증 제출 처리
+    handleReceiptSubmit() {
+        const fileInput = Utils.$('#receiptFile');
+        const purchaseDateTime = Utils.$('#purchaseDateTime').value;
+        const purchaseStore = Utils.$('#purchaseStore').value.trim();
+        const receiptNote = Utils.$('#receiptNote').value.trim();
+
+        // 파일 검증
+        if (!fileInput.files[0]) {
+            Utils.showAlert('영수증 이미지를 선택해주세요.');
+            return;
+        }
+
+        if (!purchaseDateTime) {
+            Utils.showAlert('구매일시를 입력해주세요.');
+            return;
+        }
+
+        const submitBtn = Utils.$('#receiptForm button[type="submit"]');
+        Utils.showLoading(submitBtn);
+
+        // 파일을 Base64로 변환
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = () => {
+            setTimeout(() => {
+                try {
+                    const receiptData = {
+                        image: reader.result,
+                        purchaseDateTime: purchaseDateTime,
+                        purchaseStore: purchaseStore,
+                        note: receiptNote,
+                        fileName: file.name,
+                        fileSize: file.size
+                    };
+
+                    const studentId = DataManager.currentUser.id;
+                    
+                    if (DataManager.submitReceipt(studentId, this.currentReceiptItem.id, receiptData)) {
+                        Utils.showAlert('영수증이 성공적으로 제출되었습니다.');
+                        Utils.hideLoading(submitBtn);
+                        this.hideReceiptModal();
+                        this.loadApplications();
+                    } else {
+                        throw new Error('영수증 제출 실패');
+                    }
+                    
+                } catch (error) {
+                    Utils.hideLoading(submitBtn);
+                    Utils.showAlert('영수증 제출 중 오류가 발생했습니다.');
+                    console.error('Receipt submission error:', error);
+                }
+            }, 1000);
+        };
+
+        reader.readAsDataURL(file);
     },
 
     // 수업계획 페이지로 이동
@@ -291,12 +505,41 @@ const StudentManager = {
         const typeIcon = application.type === 'bundle' ? 'shopping-cart' : 'package';
         const typeText = application.type === 'bundle' ? '묶음신청' : '단일신청';
         
+        // 구매 방식 뱃지 생성
+        const purchaseMethodClass = DataManager.getPurchaseMethodClass(application.purchaseMethod);
+        const purchaseMethodText = DataManager.getPurchaseMethodText(application.purchaseMethod);
+        
+        // 영수증 등록 버튼 (오프라인 구매이고 승인된 경우)
+        let receiptButton = '';
+        if (application.purchaseMethod === 'offline' && application.status === 'approved' && !application.receiptImage) {
+            receiptButton = `
+                <button class="btn small primary receipt-btn" data-item-id="${application.id}">
+                    ${Utils.createIcon('receipt')} 영수증 등록
+                </button>
+            `;
+        }
+        
+        // 영수증 제출 상태 표시
+        let receiptStatus = '';
+        if (application.purchaseMethod === 'offline' && application.receiptImage) {
+            receiptStatus = `
+                <div class="receipt-status">
+                    <i data-lucide="check-circle"></i>
+                    영수증 제출완료
+                    <small>${new Date(application.receiptSubmittedAt).toLocaleString('ko-KR')}</small>
+                </div>
+            `;
+        }
+        
         card.innerHTML = `
             <div class="application-card-header">
                 <div>
                     <div class="card-title-row">
                         <h3>${this.escapeHtml(application.name)}</h3>
                         <div class="card-badges">
+                            <span class="purchase-method-badge ${purchaseMethodClass}">
+                                ${Utils.createIcon(application.purchaseMethod === 'offline' ? 'store' : 'shopping-cart')} ${purchaseMethodText}
+                            </span>
                             <span class="type-badge ${application.type}">
                                 ${Utils.createIcon(typeIcon)} ${typeText}
                             </span>
@@ -314,7 +557,7 @@ const StudentManager = {
                 </div>
                 ${application.link ? `
                     <div class="detail-item">
-                        <span class="detail-label">구매 링크</span>
+                        <span class="detail-label">${application.purchaseMethod === 'offline' ? '참고 링크' : '구매 링크'}</span>
                         <span class="detail-value">
                             <a href="${this.escapeHtml(application.link)}" target="_blank" rel="noopener noreferrer">
                                 링크 보기 ${Utils.createIcon('external-link', 'inline-icon')}
@@ -323,6 +566,8 @@ const StudentManager = {
                     </div>
                 ` : ''}
             </div>
+            
+            ${receiptStatus}
             
             ${application.status === 'pending' ? `
                 <div class="card-actions">
@@ -333,7 +578,11 @@ const StudentManager = {
                         ${Utils.createIcon('trash-2')} 삭제
                     </button>
                 </div>
-            ` : ''}
+            ` : `
+                <div class="card-actions">
+                    ${receiptButton}
+                </div>
+            `}
             
             ${application.rejectionReason ? `
                 <div class="rejection-reason">
@@ -363,6 +612,28 @@ const StudentManager = {
                 this.deleteApplication(itemId);
             });
         });
+
+        // 영수증 등록 버튼
+        Utils.$$('.receipt-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const itemId = parseInt(e.target.closest('.receipt-btn').dataset.itemId);
+                this.openReceiptModal(itemId);
+            });
+        });
+    },
+
+    // 영수증 등록 모달 열기
+    openReceiptModal(itemId) {
+        const studentId = DataManager.currentUser.id;
+        const applications = DataManager.getStudentApplications(studentId);
+        const item = applications.find(app => app.id === itemId);
+        
+        if (!item || item.purchaseMethod !== 'offline' || item.status !== 'approved') {
+            Utils.showAlert('영수증 등록이 불가능한 상태입니다.');
+            return;
+        }
+
+        this.showReceiptModal(item);
     },
 
     // 신청 수정
@@ -414,10 +685,24 @@ const StudentManager = {
             Utils.$('#itemPurpose').value = editData.purpose;
             Utils.$('#itemPrice').value = editData.price;
             Utils.$('#itemLink').value = editData.link || '';
+            
+            // 구매 방식 설정
+            const purchaseMethodRadio = Utils.$(`input[name="purchaseMethod"][value="${editData.purchaseMethod || 'online'}"]`);
+            if (purchaseMethodRadio) {
+                purchaseMethodRadio.checked = true;
+                this.handlePurchaseMethodChange(editData.purchaseMethod || 'online');
+            }
         } else {
             title.textContent = '새 교구 신청';
             submitBtn.textContent = '신청하기';
             Utils.resetForm('#applicationForm');
+            
+            // 기본값 설정
+            const onlineRadio = Utils.$('input[name="purchaseMethod"][value="online"]');
+            if (onlineRadio) {
+                onlineRadio.checked = true;
+                this.handlePurchaseMethodChange('online');
+            }
         }
         
         modal.classList.add('active');
@@ -559,6 +844,7 @@ const StudentManager = {
                     price: formData.price,
                     link: formData.link,
                     type: 'bundle',
+                    purchaseMethod: 'online', // 묶음 신청은 항상 온라인
                     bundleCredentials: {
                         userId: formData.userId,
                         password: '***encrypted***' // 실제로는 암호화 처리
@@ -621,12 +907,16 @@ const StudentManager = {
 
     // 폼 데이터 수집
     getFormData() {
+        const purchaseMethodElement = Utils.$('input[name="purchaseMethod"]:checked');
+        const purchaseMethod = purchaseMethodElement ? purchaseMethodElement.value : 'online';
+        
         return {
             name: Utils.$('#itemName').value.trim(),
             purpose: Utils.$('#itemPurpose').value.trim(),
             price: parseInt(Utils.$('#itemPrice').value.trim()),
             link: Utils.$('#itemLink').value.trim(),
-            type: 'single'
+            type: 'single',
+            purchaseMethod: purchaseMethod
         };
     },
 
