@@ -198,6 +198,38 @@ const DataManager = {
         }
     ],
 
+    // 수업계획 데이터
+    lessonPlans: [
+        {
+            id: 1,
+            studentId: 1,
+            studentName: '김민수',
+            startDate: '2024-07-01',
+            endDate: '2024-12-20',
+            totalLessons: 24,
+            lessonsPerWeek: 3,
+            overallGoals: '베트남 현지 학생들의 한국어 실력 향상과 한국 문화에 대한 이해도 증진',
+            specialNotes: '베트남어 번역이 필요한 문화적 개념들을 미리 준비할 예정',
+            lessons: [
+                { week: 1, lesson: 1, date: '2024-07-01', topic: '한국어 인사법과 기본 표현', content: '안녕하세요, 감사합니다 등 기본 인사말 학습' },
+                { week: 1, lesson: 2, date: '2024-07-03', topic: '한국의 가족 문화', content: '한국 가족 호칭과 가족 관계 설명' },
+                { week: 1, lesson: 3, date: '2024-07-05', topic: '한국 음식 소개', content: '김치, 불고기 등 대표 음식 소개 및 시식' }
+                // 더 많은 수업 데이터...
+            ],
+            status: 'completed',
+            submittedAt: '2024-06-08T10:00:00',
+            lastModified: '2024-06-08T10:00:00'
+        }
+    ],
+
+    // 수업계획 설정 (관리자가 관리)
+    lessonPlanSettings: {
+        editDeadline: '2024-06-30', // 수정 마감일
+        editTime: '23:59', // 수정 마감 시간
+        noticeMessage: '수업계획은 6월 30일 23:59까지 수정 가능합니다. 마감일 이후에는 수정이 불가능하니 미리 완료해주세요.',
+        isEditingAllowed: true // 현재 수정 가능 여부
+    },
+
     // 현재 로그인한 사용자 정보
     currentUser: null,
     currentUserType: null,
@@ -409,6 +441,121 @@ const DataManager = {
             case 'purchased': return 'purchased';
             default: return 'pending';
         }
+    },
+
+    // === 수업계획 관련 메소드들 ===
+
+    // 학생의 수업계획 조회
+    getStudentLessonPlan(studentId) {
+        return this.lessonPlans.find(plan => plan.studentId === studentId);
+    },
+
+    // 수업계획 저장/업데이트
+    saveLessonPlan(studentId, planData) {
+        const existingPlan = this.lessonPlans.find(plan => plan.studentId === studentId);
+        const student = this.students.find(s => s.id === studentId);
+        
+        if (existingPlan) {
+            // 기존 계획 업데이트
+            Object.assign(existingPlan, planData);
+            existingPlan.lastModified = new Date().toISOString();
+            return existingPlan;
+        } else {
+            // 새 계획 생성
+            const newPlan = {
+                id: Date.now(),
+                studentId: studentId,
+                studentName: student.name,
+                ...planData,
+                status: planData.status || 'draft',
+                submittedAt: new Date().toISOString(),
+                lastModified: new Date().toISOString()
+            };
+            this.lessonPlans.push(newPlan);
+            return newPlan;
+        }
+    },
+
+    // 수업계획 수정 가능 여부 확인
+    canEditLessonPlan() {
+        if (!this.lessonPlanSettings.isEditingAllowed) {
+            return false;
+        }
+        
+        const now = new Date();
+        const deadline = new Date(`${this.lessonPlanSettings.editDeadline} ${this.lessonPlanSettings.editTime}`);
+        
+        return now <= deadline;
+    },
+
+    // 수업계획 설정 업데이트 (관리자용)
+    updateLessonPlanSettings(settings) {
+        Object.assign(this.lessonPlanSettings, settings);
+        
+        // 마감일이 지났는지 자동 체크
+        const now = new Date();
+        const deadline = new Date(`${this.lessonPlanSettings.editDeadline} ${this.lessonPlanSettings.editTime}`);
+        this.lessonPlanSettings.isEditingAllowed = now <= deadline;
+        
+        return this.lessonPlanSettings;
+    },
+
+    // 수업계획 완료 상태로 변경
+    completeLessonPlan(studentId) {
+        const plan = this.lessonPlans.find(plan => plan.studentId === studentId);
+        if (plan) {
+            plan.status = 'completed';
+            plan.lastModified = new Date().toISOString();
+            return true;
+        }
+        return false;
+    },
+
+    // 수업계획 임시저장
+    saveLessonPlanDraft(studentId, planData) {
+        planData.status = 'draft';
+        return this.saveLessonPlan(studentId, planData);
+    },
+
+    // 모든 수업계획 조회 (관리자용)
+    getAllLessonPlans() {
+        return this.lessonPlans;
+    },
+
+    // 수업 주차 계산
+    calculateWeeks(startDate, endDate, totalLessons, lessonsPerWeek) {
+        const weeks = Math.ceil(totalLessons / lessonsPerWeek);
+        const lessons = [];
+        
+        const start = new Date(startDate);
+        let currentDate = new Date(start);
+        
+        for (let week = 1; week <= weeks; week++) {
+            for (let lessonInWeek = 1; lessonInWeek <= lessonsPerWeek; lessonInWeek++) {
+                const lessonNumber = (week - 1) * lessonsPerWeek + lessonInWeek;
+                if (lessonNumber <= totalLessons) {
+                    lessons.push({
+                        week: week,
+                        lesson: lessonInWeek,
+                        lessonNumber: lessonNumber,
+                        date: currentDate.toISOString().split('T')[0],
+                        topic: '',
+                        content: ''
+                    });
+                    
+                    // 다음 수업일 계산 (주 3회 기준으로 월, 수, 금)
+                    if (lessonInWeek === 1) {
+                        currentDate.setDate(currentDate.getDate() + 2); // 월->수
+                    } else if (lessonInWeek === 2) {
+                        currentDate.setDate(currentDate.getDate() + 2); // 수->금
+                    } else {
+                        currentDate.setDate(currentDate.getDate() + 3); // 금->다음주 월
+                    }
+                }
+            }
+        }
+        
+        return lessons;
     }
 };
 
