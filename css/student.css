@@ -163,6 +163,7 @@
     gap: 0.5rem;
     align-items: center;
     flex-shrink: 0;
+    flex-wrap: wrap;
 }
 
 .type-badge {
@@ -186,6 +187,32 @@
 }
 
 .type-badge svg {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+/* Purchase Method Badge */
+.purchase-method-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.purchase-method-badge.online-purchase {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.purchase-method-badge.offline-purchase {
+    background: #f3e8ff;
+    color: #7c3aed;
+}
+
+.purchase-method-badge svg {
     width: 0.875rem;
     height: 0.875rem;
 }
@@ -237,6 +264,66 @@
     color: #1f2937;
 }
 
+/* Receipt Status */
+.receipt-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-top: 0.75rem;
+    border: 1px solid;
+}
+
+.receipt-status.submitted {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #34d399;
+}
+
+.receipt-status.pending {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fbbf24;
+}
+
+.receipt-status svg {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+
+.receipt-status small {
+    display: block;
+    opacity: 0.8;
+    font-size: 0.7rem;
+    margin-top: 0.125rem;
+}
+
+/* Receipt Button Styling */
+.receipt-btn {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.receipt-btn:hover {
+    background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+    transform: translateY(-1px);
+}
+
+.receipt-btn:active {
+    background: linear-gradient(135deg, #5b21b6 0%, #4c1d95 100%);
+    transform: translateY(0);
+}
+
 /* Card Actions */
 .card-actions {
     display: flex;
@@ -244,6 +331,10 @@
     padding-top: 1rem;
     border-top: 1px solid #f3f4f6;
     margin-top: 1rem;
+}
+
+.card-actions:empty {
+    display: none;
 }
 
 /* Status Badge Specific to Student */
@@ -311,6 +402,68 @@
     color: #059669;
 }
 
+/* Receipt Modal Specific Styles */
+#receiptModal .modal-content {
+    max-width: 600px;
+}
+
+.receipt-info {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.receipt-item-info h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.receipt-item-info p {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* File Upload Enhancement for Receipt */
+.file-upload-area.receipt-upload {
+    border-color: #7c3aed;
+    background: #faf5ff;
+}
+
+.file-upload-area.receipt-upload:hover {
+    border-color: #6d28d9;
+    background: #f3e8ff;
+}
+
+.file-upload-area.receipt-upload .file-upload-content i {
+    color: #7c3aed;
+}
+
+.file-upload-area.receipt-upload .file-upload-content p {
+    color: #5b21b6;
+}
+
+/* Receipt Preview Enhancement */
+.receipt-preview {
+    border: 2px solid #7c3aed;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
+}
+
+.receipt-preview img {
+    width: 100%;
+    height: auto;
+    max-height: 400px;
+    object-fit: contain;
+    display: block;
+}
+
 /* Shipping Modal Styles */
 #shippingModal .modal-content {
     max-width: 500px;
@@ -324,7 +477,8 @@
 
 #applicationModal .form-group textarea,
 #bundleModal .form-group textarea,
-#shippingModal .form-group textarea {
+#shippingModal .form-group textarea,
+#receiptModal .form-group textarea {
     min-height: 100px;
 }
 
@@ -523,6 +677,32 @@
     transform: translateY(-1px);
 }
 
+.btn.small.primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+    color: white;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.btn.small.primary:hover {
+    background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+    transform: translateY(-1px);
+}
+
+/* Purchase Method Selection Enhancement */
+.purchase-method-options .radio-option {
+    transition: all 0.2s ease;
+}
+
+.purchase-method-options .radio-option:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.purchase-method-options .radio-option:has(input[type="radio"]:checked) {
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+}
+
 /* Modal Enhancements */
 .modal-content h3 {
     color: #1f2937;
@@ -530,6 +710,14 @@
     padding-bottom: 0.75rem;
     margin-bottom: 1.5rem;
     font-weight: 700;
+}
+
+/* Form Help Text Enhancement */
+.form-help {
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+    line-height: 1.4;
 }
 
 /* Responsive Design */
@@ -547,6 +735,7 @@
     
     .applications-grid {
         grid-template-columns: 1fr;
+        gap: 1rem;
     }
     
     .card-title-row {
@@ -556,6 +745,7 @@
     
     .card-badges {
         justify-content: flex-start;
+        flex-wrap: wrap;
     }
     
     .application-details {
@@ -596,6 +786,26 @@
     #lessonPlanBtn {
         font-size: 0.875rem;
         padding: 0.75rem 1.25rem;
+    }
+
+    /* 모바일에서 영수증 관련 요소 */
+    .receipt-info {
+        padding: 0.75rem;
+    }
+
+    .receipt-status {
+        font-size: 0.75rem;
+        padding: 0.375rem 0.5rem;
+    }
+
+    .receipt-status small {
+        font-size: 0.65rem;
+    }
+
+    /* 모바일에서 구매방식 뱃지 */
+    .purchase-method-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
     }
 }
 
@@ -656,6 +866,33 @@
         width: 100%;
         justify-content: center;
     }
+
+    .card-badges {
+        gap: 0.25rem;
+    }
+
+    .purchase-method-badge,
+    .type-badge {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.3rem;
+    }
+
+    .receipt-btn {
+        font-size: 0.8rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .receipt-status {
+        flex-direction: column;
+        gap: 0.25rem;
+        text-align: center;
+        padding: 0.5rem;
+    }
+
+    .receipt-status svg {
+        width: 0.875rem;
+        height: 0.875rem;
+    }
 }
 
 /* 접근성 개선 */
@@ -665,6 +902,14 @@
     }
     
     .btn:hover {
+        transform: none;
+    }
+
+    .application-card {
+        transition: none;
+    }
+
+    .application-card:hover {
         transform: none;
     }
 }
@@ -686,5 +931,14 @@
     .btn:focus {
         outline: 3px solid #4f46e5;
         outline-offset: 2px;
+    }
+
+    .purchase-method-badge,
+    .type-badge {
+        border: 1px solid;
+    }
+
+    .receipt-status {
+        border-width: 2px;
     }
 }
