@@ -2,11 +2,70 @@
 const DataManager = {
     // 모의 학생 데이터
     students: [
-        { id: 1, name: '김민수', birthDate: '1998-03-15', country: '베트남', program: '한국어교육' },
-        { id: 2, name: '이지영', birthDate: '1999-07-22', country: '태국', program: '한국문화체험' },
-        { id: 3, name: '박준호', birthDate: '1997-11-08', country: '인도네시아', program: 'K-Culture' },
-        { id: 4, name: '최서연', birthDate: '1998-12-03', country: '말레이시아', program: '한국어교육' },
-        { id: 5, name: '정현우', birthDate: '1999-05-17', country: '필리핀', program: '한국문화체험' }
+        { 
+            id: 1, 
+            name: '김민수', 
+            birthDate: '1998-03-15', 
+            instituteName: '하노이 세종학당', 
+            specialization: '한국어교육', 
+            budgetLimit: 300000 
+        },
+        { 
+            id: 2, 
+            name: '이지영', 
+            birthDate: '1999-07-22', 
+            instituteName: '방콕 세종학당', 
+            specialization: '전통문화예술', 
+            budgetLimit: 250000 
+        },
+        { 
+            id: 3, 
+            name: '박준호', 
+            birthDate: '1997-11-08', 
+            instituteName: '자카르타 세종학당', 
+            specialization: 'K-Pop 문화', 
+            budgetLimit: 350000 
+        },
+        { 
+            id: 4, 
+            name: '최서연', 
+            birthDate: '1998-12-03', 
+            instituteName: '쿠알라룸푸르 세종학당', 
+            specialization: '한국어교육', 
+            budgetLimit: 280000 
+        },
+        { 
+            id: 5, 
+            name: '정현우', 
+            birthDate: '1999-05-17', 
+            instituteName: '마닐라 세종학당', 
+            specialization: '한국현대문화', 
+            budgetLimit: 320000 
+        },
+        { 
+            id: 6, 
+            name: '송미영', 
+            birthDate: '1998-08-24', 
+            instituteName: '뉴욕 세종학당', 
+            specialization: '전통음악', 
+            budgetLimit: 400000 
+        },
+        { 
+            id: 7, 
+            name: '유진호', 
+            birthDate: '1997-01-19', 
+            instituteName: '런던 세종학당', 
+            specialization: '한국미술', 
+            budgetLimit: 380000 
+        },
+        { 
+            id: 8, 
+            name: '강예린', 
+            birthDate: '1999-11-07', 
+            instituteName: '파리 세종학당', 
+            specialization: '한국요리문화', 
+            budgetLimit: 290000 
+        }
     ],
 
     // 모의 신청 데이터
@@ -18,19 +77,27 @@ const DataManager = {
             items: [
                 { 
                     id: 1, 
-                    name: '한복 체험복', 
-                    purpose: '전통문화 수업을 위한 한복 체험 활동에 사용할 예정입니다. 학생들이 직접 한복을 입어보고 한국 전통문화를 체험할 수 있도록 하겠습니다.', 
-                    price: 50000, 
-                    link: 'https://example.com/hanbok', 
+                    name: '베트남 전통 아오자이', 
+                    purpose: '한국-베트남 문화 교류 수업에서 두 나라의 전통 의상을 비교 체험할 수 있도록 활용하겠습니다. 학생들이 한복과 아오자이를 동시에 체험하며 문화적 차이점과 공통점을 학습할 예정입니다.', 
+                    price: 85000, 
+                    link: 'https://example.com/aodai', 
                     status: 'pending' 
                 },
                 { 
                     id: 2, 
-                    name: '태극기', 
-                    purpose: '국가상징 교육 및 광복절 행사에 활용할 예정입니다.', 
-                    price: 15000, 
-                    link: 'https://example.com/flag', 
+                    name: '한국 전통 차 세트 (다기)', 
+                    purpose: '한국의 차 문화 소개 및 다도 체험 수업용입니다. 베트남 학생들에게 한국의 전통 차 문화를 체험시키고 베트남 차 문화와 비교하는 활동에 사용하겠습니다.', 
+                    price: 120000, 
+                    link: 'https://example.com/tea-set', 
                     status: 'approved' 
+                },
+                { 
+                    id: 3, 
+                    name: '한글 캘리그래피 도구 세트', 
+                    purpose: '한글의 아름다움을 알리는 캘리그래피 수업용 도구입니다. 붓, 먹, 한지 등을 포함한 전체 세트로 학생들이 직접 한글 작품을 만들어볼 수 있습니다.', 
+                    price: 95000, 
+                    link: 'https://example.com/calligraphy', 
+                    status: 'purchased' 
                 }
             ],
             submittedAt: '2024-06-10T09:30:00'
@@ -41,24 +108,64 @@ const DataManager = {
             studentName: '이지영',
             items: [
                 { 
-                    id: 3, 
-                    name: '전통 악기 세트', 
-                    purpose: '한국 전통음악 수업에서 학생들이 직접 악기를 연주해볼 수 있도록 하는 체험 활동용입니다.', 
-                    price: 120000, 
+                    id: 4, 
+                    name: '한국 전통 악기 세트 (장구, 소고)', 
+                    purpose: '태국 학생들을 대상으로 한 한국 전통음악 수업에서 사용할 예정입니다. 직접 악기를 연주해보며 한국 음악의 리듬감을 체험하고, 태국 전통 악기와의 차이점을 학습하겠습니다.', 
+                    price: 180000, 
                     link: 'https://example.com/instruments', 
                     status: 'pending' 
                 },
                 { 
-                    id: 4, 
-                    name: '한국 전통 차 세트', 
-                    purpose: '한국의 차 문화 소개 및 다도 체험 수업용입니다.', 
-                    price: 35000, 
-                    link: 'https://example.com/tea-set', 
+                    id: 5, 
+                    name: '한국 전통 놀이 도구 (윷놀이, 제기차기)', 
+                    purpose: '한국 전통 놀이 체험 수업용입니다. 태국 현지 학생들과 함께 한국의 전통 놀이를 즐기며 자연스럽게 한국 문화를 체험할 수 있도록 하겠습니다.', 
+                    price: 45000, 
+                    link: 'https://example.com/traditional-games', 
                     status: 'rejected',
-                    rejectionReason: '예산 초과로 인한 반려입니다. 더 저렴한 대안을 찾아주세요.'
+                    rejectionReason: '예산 대비 효과가 낮다고 판단됩니다. 더 교육적 가치가 높은 교구로 재신청해주세요.'
                 }
             ],
             submittedAt: '2024-06-11T14:20:00'
+        },
+        {
+            id: 3,
+            studentId: 3,
+            studentName: '박준호',
+            items: [
+                { 
+                    id: 6, 
+                    name: 'K-Pop 댄스 의상 및 소품', 
+                    purpose: '인도네시아 현지에서 K-Pop 문화 확산을 위한 댄스 수업용 의상입니다. 현지 학생들이 한국 아이돌 의상을 입고 댄스를 배우며 한국 현대 문화에 대한 관심을 높이겠습니다.', 
+                    price: 220000, 
+                    link: 'https://example.com/kpop-costume', 
+                    status: 'approved' 
+                },
+                { 
+                    id: 7, 
+                    name: 'K-Pop 안무 교육용 스피커 시스템', 
+                    purpose: 'K-Pop 댄스 수업을 위한 고품질 스피커 시스템입니다. 선명한 음질로 안무 교육의 효과를 극대화하고, 현지 학생들의 학습 만족도를 높이겠습니다.', 
+                    price: 130000, 
+                    link: 'https://example.com/speaker-system', 
+                    status: 'purchased' 
+                }
+            ],
+            submittedAt: '2024-06-09T16:45:00'
+        },
+        {
+            id: 4,
+            studentId: 6,
+            studentName: '송미영',
+            items: [
+                { 
+                    id: 8, 
+                    name: '가야금 (25현)', 
+                    purpose: '뉴욕 지역 한국 전통음악 보급을 위한 가야금 수업용입니다. 현지 음악 학습자들에게 한국 전통 현악기의 아름다운 선율을 직접 체험하게 하여 한국 음악에 대한 이해를 높이겠습니다.', 
+                    price: 350000, 
+                    link: 'https://example.com/gayageum', 
+                    status: 'pending' 
+                }
+            ],
+            submittedAt: '2024-06-12T11:15:00'
         }
     ],
 
@@ -195,8 +302,9 @@ const DataManager = {
             app.items.forEach(item => {
                 exportData.push({
                     '학생명': app.studentName,
-                    '파견국가': student ? student.country : '',
-                    '프로그램': student ? student.program : '',
+                    '파견학당': student ? student.instituteName : '',
+                    '전공분야': student ? student.specialization : '',
+                    '예산한도': student ? student.budgetLimit : '',
                     '교구명': item.name,
                     '사용목적': item.purpose,
                     '예상가격': item.price,
