@@ -62,87 +62,192 @@ body {
     padding: 2rem;
 }
 
-/* Buttons */
+/* Enhanced Button Base Styles */
 .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
+    padding: 0.625rem 1rem;
     border: none;
-    border-radius: 0.375rem;
+    border-radius: 0.5rem;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
+    letter-spacing: 0.025em;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     text-decoration: none;
+    text-align: center;
+    vertical-align: middle;
+    user-select: none;
+    line-height: 1.5;
+    outline: none;
+    position: relative;
+    min-height: 38px;
+    white-space: nowrap;
 }
 
 .btn:hover {
     transform: translateY(-1px);
 }
 
+.btn:focus {
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn svg {
+    flex-shrink: 0;
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Primary Button - 파란색 계열 */
 .btn.primary {
-    background: #4f46e5;
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
     color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
 }
 
 .btn.primary:hover {
-    background: #4338ca;
+    background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
 }
 
+.btn.primary:active {
+    background: linear-gradient(135deg, #3730a3 0%, #312e81 100%);
+    transform: translateY(0);
+}
+
+/* Secondary Button - 회색 계열 */
 .btn.secondary {
-    background: white;
+    background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
     color: #374151;
     border: 1px solid #d1d5db;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .btn.secondary:hover {
-    background: #f9fafb;
+    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    color: #1f2937;
+    border-color: #9ca3af;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
+.btn.secondary:active {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    transform: translateY(0);
+}
+
+/* Success Button - 녹색 계열 */
 .btn.success {
-    background: #059669;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
 }
 
 .btn.success:hover {
-    background: #047857;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
 }
 
+.btn.success:active {
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    transform: translateY(0);
+}
+
+/* Danger Button - 빨간색 계열 */
 .btn.danger {
-    background: #dc2626;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
 }
 
 .btn.danger:hover {
-    background: #b91c1c;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
 }
 
+.btn.danger:active {
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+    transform: translateY(0);
+}
+
+/* Warning Button - 주황색 계열 */
 .btn.warning {
-    background: #f59e0b;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
 }
 
 .btn.warning:hover {
-    background: #d97706;
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
 }
 
+.btn.warning:active {
+    background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+    transform: translateY(0);
+}
+
+/* Small Button Size */
 .btn.small {
-    padding: 0.25rem 0.75rem;
-    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+    min-height: 32px;
 }
 
+.btn.small svg {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+/* Large Button Size */
+.btn.large {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+    min-height: 48px;
+}
+
+.btn.large svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* Logout Button 특별 스타일 */
 .logout-btn {
-    padding: 0.5rem 1rem;
-    background: none;
-    border: none;
+    padding: 0.625rem 1rem;
+    background: white;
+    border: 1px solid #e5e7eb;
     color: #6b7280;
     cursor: pointer;
     font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    min-height: 38px;
 }
 
 .logout-btn:hover {
-    color: #374151;
+    color: #dc2626;
+    border-color: #fecaca;
+    background: #fef2f2;
+    transform: translateY(-1px);
+}
+
+.logout-btn:active {
+    background: #fee2e2;
+    transform: translateY(0);
 }
 
 /* Form Elements */
@@ -673,6 +778,114 @@ body {
 .justify-between { justify-content: space-between; }
 .gap-2 { gap: 0.5rem; }
 .gap-4 { gap: 1rem; }
+
+/* Responsive Button Adjustments */
+@media (max-width: 768px) {
+    .btn {
+        font-size: 0.875rem;
+        padding: 0.75rem 1.25rem;
+        min-height: 44px;
+    }
+    
+    .btn.small {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+        min-height: 40px;
+    }
+    
+    .btn.large {
+        padding: 1rem 1.75rem;
+        font-size: 1rem;
+        min-height: 52px;
+    }
+}
+
+@media (max-width: 480px) {
+    .btn {
+        padding: 0.875rem 1.5rem;
+        min-height: 48px;
+    }
+    
+    .btn.small {
+        padding: 0.625rem 1.25rem;
+        min-height: 44px;
+    }
+}
+
+/* 접근성 개선 */
+@media (prefers-reduced-motion: reduce) {
+    .btn {
+        transition: none;
+    }
+    
+    .btn:hover {
+        transform: none;
+    }
+}
+
+/* 고대비 모드 지원 */
+@media (prefers-contrast: high) {
+    .btn {
+        border: 2px solid;
+    }
+    
+    .btn.primary {
+        border-color: #1e1b4b;
+        background: #4338ca;
+    }
+    
+    .btn.secondary {
+        border-color: #374151;
+        background: #f9fafb;
+    }
+    
+    .btn.success {
+        border-color: #064e3b;
+        background: #059669;
+    }
+    
+    .btn.danger {
+        border-color: #7f1d1d;
+        background: #dc2626;
+    }
+    
+    .btn.warning {
+        border-color: #78350f;
+        background: #d97706;
+    }
+    
+    .btn:focus {
+        outline: 3px solid #4f46e5;
+        outline-offset: 2px;
+    }
+}
+
+/* 다크모드 대응 */
+@media (prefers-color-scheme: dark) {
+    .btn.secondary {
+        background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+        color: #f9fafb;
+        border-color: #6b7280;
+    }
+    
+    .btn.secondary:hover {
+        background: linear-gradient(135deg, #4b5563 0%, #6b7280 100%);
+        color: white;
+        border-color: #9ca3af;
+    }
+    
+    .logout-btn {
+        background: #374151;
+        color: #d1d5db;
+        border-color: #6b7280;
+    }
+    
+    .logout-btn:hover {
+        background: #4b5563;
+        color: #f9fafb;
+        border-color: #9ca3af;
+    }
+}
 
 /* Responsive */
 @media (max-width: 768px) {
