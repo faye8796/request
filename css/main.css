@@ -331,43 +331,7 @@ body {
     margin-bottom: 1.5rem;
 }
 
-/* Lesson Table */
-.table-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    gap: 1rem;
-}
-
-.bulk-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.bulk-actions input {
-    min-width: 250px;
-}
-
-.table-options {
-    display: flex;
-    gap: 1rem;
-}
-
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    cursor: pointer;
-}
-
-.checkbox-label input[type="checkbox"] {
-    width: auto;
-    margin: 0;
-}
-
+/* Lesson Table - 수정된 부분 */
 .lesson-table-container {
     overflow-x: auto;
     border: 1px solid #e5e7eb;
@@ -376,18 +340,14 @@ body {
 
 .lesson-table {
     width: 100%;
-    min-width: 800px;
+    min-width: 700px;
 }
 
 .table-header {
     display: grid;
-    grid-template-columns: 80px 100px 1fr 2fr;
+    grid-template-columns: 120px 1fr 2fr; /* 수업 회차 | 수업 주제 | 수업 내용 */
     background: #f9fafb;
     border-bottom: 1px solid #e5e7eb;
-}
-
-.lesson-table.show-weeks .table-header {
-    grid-template-columns: 80px 80px 100px 1fr 2fr;
 }
 
 .header-cell {
@@ -404,12 +364,8 @@ body {
 
 .table-row {
     display: grid;
-    grid-template-columns: 80px 100px 1fr 2fr;
+    grid-template-columns: 120px 1fr 2fr; /* 수업 회차 | 수업 주제 | 수업 내용 */
     border-bottom: 1px solid #e5e7eb;
-}
-
-.lesson-table.show-weeks .table-row {
-    grid-template-columns: 80px 80px 100px 1fr 2fr;
 }
 
 .table-row:last-child {
@@ -427,13 +383,12 @@ body {
     border-right: none;
 }
 
-.lesson-number,
-.week-number {
+.lesson-number {
     font-weight: 500;
     color: #6b7280;
+    justify-content: center;
 }
 
-.date-input,
 .topic-input,
 .content-textarea {
     width: 100%;
@@ -448,7 +403,6 @@ body {
     min-height: 60px;
 }
 
-.date-input:focus,
 .topic-input:focus,
 .content-textarea:focus {
     outline: none;
@@ -470,7 +424,9 @@ body {
 .deadline-notice,
 .time-remaining-notice,
 .edit-deadline-notice,
-.success-message {
+.success-message,
+.test-mode-notice,
+.override-notice {
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -501,6 +457,30 @@ body {
     background: #d1fae5;
     border: 1px solid #10b981;
     color: #065f46;
+}
+
+.test-mode-notice {
+    background: #e0e7ff;
+    border: 1px solid #6366f1;
+    color: #4338ca;
+}
+
+.test-mode-notice.success {
+    background: #dcfce7;
+    border: 1px solid #22c55e;
+    color: #15803d;
+}
+
+.override-notice {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #92400e;
+}
+
+.override-notice.success {
+    background: #dcfce7;
+    border: 1px solid #22c55e;
+    color: #15803d;
 }
 
 .lesson-plan-required-notice,
@@ -725,32 +705,17 @@ body {
         grid-template-columns: 1fr;
     }
     
-    .table-controls {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 1rem;
-    }
-    
-    .bulk-actions {
-        flex-direction: column;
-    }
-    
-    .bulk-actions input {
-        min-width: 0;
-    }
-    
     .form-actions {
         flex-direction: column;
     }
     
     .table-header,
     .table-row {
-        grid-template-columns: 60px 1fr 1.5fr;
+        grid-template-columns: 100px 1fr 1.5fr;
         font-size: 0.75rem;
     }
     
-    .lesson-table.show-weeks .table-header,
-    .lesson-table.show-weeks .table-row {
-        grid-template-columns: 50px 60px 1fr 1.5fr;
+    .lesson-table {
+        min-width: 600px;
     }
 }
