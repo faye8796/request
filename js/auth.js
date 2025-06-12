@@ -96,7 +96,7 @@ const AuthManager = {
                 this.loginSuccess('student');
             } else {
                 Utils.hideLoading(loginBtn);
-                Utils.showAlert('학생 정보를 찾을 수 없습니다.\n이름과 생년월일을 다시 확인해주세요.');
+                Utils.showAlert('학생 정보를 찾을 수 없습니다.\\n이름과 생년월일을 다시 확인해주세요.');
             }
         }, 500); // 실제 인증 과정을 시뮬레이션
     },
@@ -128,18 +128,97 @@ const AuthManager = {
         // 입력 필드 초기화
         this.clearLoginForms();
 
+        // 성공 메시지 표시
+        const userName = DataManager.currentUser.name;
+        Utils.showAlert(`환영합니다, ${userName}님!`);
+
         // 해당 페이지로 이동
         if (userType === 'student') {
-            App.showPage('studentPage');
-            StudentManager.init();
+            // 학생의 경우 수업계획 완료 여부 체크
+            this.checkAndRedirectStudent();
         } else if (userType === 'admin') {
             App.showPage('adminPage');
             AdminManager.init();
         }
+    },
 
-        // 성공 메시지 표시
-        const userName = DataManager.currentUser.name;
-        Utils.showAlert(`환영합니다, ${userName}님!`);
+    // 학생 로그인 후 수업계획 체크 및 리다이렉션
+    checkAndRedirectStudent() {
+        const studentId = DataManager.currentUser.id;
+        const hasCompletedPlan = LessonPlanManager.hasCompletedLessonPlan(studentId);
+        
+        if (!hasCompletedPlan) {
+            // 수업계획이 완료되지 않은 경우
+            const needsPlan = LessonPlanManager.needsLessonPlan(studentId);
+            
+            if (needsPlan) {
+                // 수업계획 작성 필요
+                this.showLessonPlanRequiredNotice();
+                setTimeout(() => {
+                    App.showPage('lessonPlanPage');
+                    LessonPlanManager.showLessonPlanPage();
+                }, 2000);
+            } else {
+                // 임시저장된 수업계획이 있는 경우
+                this.showLessonPlanDraftNotice();
+                setTimeout(() => {
+                    App.showPage('lessonPlanPage');
+                    LessonPlanManager.showLessonPlanPage();
+                }, 2000);
+            }
+        } else {
+            // 수업계획이 완료된 경우 바로 학생 대시보드로
+            App.showPage('studentPage');
+            StudentManager.init();
+        }
+    },
+
+    // 수업계획 작성 필요 안내
+    showLessonPlanRequiredNotice() {
+        const notice = document.createElement('div');
+        notice.className = 'lesson-plan-required-notice';
+        notice.innerHTML = `
+            <div class="notice-content">
+                <i data-lucide="calendar-check"></i>
+                <h3>수업 계획 작성이 필요합니다</h3>
+                <p>파견 기간 동안의 수업 계획을 먼저 작성해주세요.</p>
+                <p>잠시 후 수업 계획 작성 페이지로 이동합니다...</p>
+            </div>
+        `;
+        
+        document.body.appendChild(notice);
+        lucide.createIcons();
+        
+        // 3초 후 제거
+        setTimeout(() => {
+            if (notice.parentNode) {
+                notice.parentNode.removeChild(notice);
+            }
+        }, 3000);
+    },
+
+    // 수업계획 임시저장 안내
+    showLessonPlanDraftNotice() {
+        const notice = document.createElement('div');
+        notice.className = 'lesson-plan-draft-notice';
+        notice.innerHTML = `
+            <div class="notice-content">
+                <i data-lucide="edit"></i>
+                <h3>수업 계획을 완료해주세요</h3>
+                <p>임시저장된 수업 계획이 있습니다.</p>
+                <p>수업 계획을 완료한 후 교구 신청이 가능합니다.</p>
+            </div>
+        `;
+        
+        document.body.appendChild(notice);
+        lucide.createIcons();
+        
+        // 3초 후 제거
+        setTimeout(() => {
+            if (notice.parentNode) {
+                notice.parentNode.removeChild(notice);
+            }
+        }, 3000);
     },
 
     // 로그아웃 처리
