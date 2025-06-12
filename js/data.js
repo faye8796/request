@@ -76,7 +76,7 @@ const DataManager = {
         }
     ],
 
-    // 모의 신청 데이터
+    // 모의 신청 데이터 - 오프라인 구매 샘플 추가
     applications: [
         {
             id: 1,
@@ -90,7 +90,8 @@ const DataManager = {
                     price: 85000, 
                     link: 'https://example.com/aodai', 
                     status: 'pending',
-                    type: 'single' 
+                    type: 'single',
+                    purchaseMethod: 'online' // 온라인 구매
                 },
                 { 
                     id: 2, 
@@ -99,7 +100,8 @@ const DataManager = {
                     price: 120000, 
                     link: 'https://example.com/tea-set', 
                     status: 'approved',
-                    type: 'single'
+                    type: 'single',
+                    purchaseMethod: 'online'
                 },
                 { 
                     id: 3, 
@@ -108,7 +110,19 @@ const DataManager = {
                     price: 95000, 
                     link: 'https://example.com/calligraphy', 
                     status: 'purchased',
-                    type: 'single'
+                    type: 'single',
+                    purchaseMethod: 'online'
+                },
+                {
+                    id: 10,
+                    name: '베트남 현지 한국 서적',
+                    purpose: '현지 서점에서만 구할 수 있는 한국어 학습 교재와 한국 문화 관련 도서입니다. 현지 학생들에게 더 접근하기 쉬운 한국어 교육 자료로 활용하겠습니다.',
+                    price: 50000,
+                    status: 'approved',
+                    type: 'single',
+                    purchaseMethod: 'offline', // 오프라인 구매
+                    receiptImage: null,
+                    receiptSubmittedAt: null
                 }
             ],
             submittedAt: '2024-06-10T09:30:00'
@@ -125,7 +139,8 @@ const DataManager = {
                     price: 180000, 
                     link: 'https://example.com/instruments', 
                     status: 'pending',
-                    type: 'single'
+                    type: 'single',
+                    purchaseMethod: 'online'
                 },
                 { 
                     id: 5, 
@@ -135,7 +150,19 @@ const DataManager = {
                     link: 'https://example.com/traditional-games', 
                     status: 'rejected',
                     rejectionReason: '예산 대비 효과가 낮다고 판단됩니다. 더 교육적 가치가 높은 교구로 재신청해주세요.',
-                    type: 'single'
+                    type: 'single',
+                    purchaseMethod: 'online'
+                },
+                {
+                    id: 11,
+                    name: '태국 현지 한국 문화 체험 재료',
+                    purpose: '태국 현지에서만 구할 수 있는 특별한 재료들로 한국 음식을 만들어보는 체험 활동용입니다.',
+                    price: 35000,
+                    status: 'purchased',
+                    type: 'single',
+                    purchaseMethod: 'offline',
+                    receiptImage: 'receipt_2_11.jpg',
+                    receiptSubmittedAt: '2024-06-13T14:30:00'
                 }
             ],
             submittedAt: '2024-06-11T14:20:00'
@@ -152,7 +179,8 @@ const DataManager = {
                     price: 220000, 
                     link: 'https://example.com/kpop-costume', 
                     status: 'approved',
-                    type: 'single'
+                    type: 'single',
+                    purchaseMethod: 'online'
                 },
                 { 
                     id: 7, 
@@ -161,7 +189,8 @@ const DataManager = {
                     price: 130000, 
                     link: 'https://example.com/speaker-system', 
                     status: 'purchased',
-                    type: 'single'
+                    type: 'single',
+                    purchaseMethod: 'online'
                 }
             ],
             submittedAt: '2024-06-09T16:45:00'
@@ -178,7 +207,8 @@ const DataManager = {
                     price: 350000, 
                     link: 'https://example.com/gayageum', 
                     status: 'pending',
-                    type: 'single'
+                    type: 'single',
+                    purchaseMethod: 'online'
                 },
                 { 
                     id: 9, 
@@ -188,6 +218,7 @@ const DataManager = {
                     link: 'https://coupang.com/bundle-korean-culture', 
                     status: 'pending',
                     type: 'bundle',
+                    purchaseMethod: 'online',
                     bundleCredentials: {
                         userId: 'songmiyoung@email.com',
                         password: '***encrypted***'
@@ -276,15 +307,22 @@ const DataManager = {
         return this.applications;
     },
 
-    // 새 교구 신청 추가
+    // 새 교구 신청 추가 - 구매 방식 지원
     addApplication(studentId, itemData) {
         const newItemId = Date.now();
         const newItem = {
             id: newItemId,
             ...itemData,
             status: 'pending',
-            type: itemData.type || 'single'
+            type: itemData.type || 'single',
+            purchaseMethod: itemData.purchaseMethod || 'online'
         };
+
+        // 오프라인 구매인 경우 영수증 관련 필드 추가
+        if (newItem.purchaseMethod === 'offline') {
+            newItem.receiptImage = null;
+            newItem.receiptSubmittedAt = null;
+        }
 
         // 기존 신청이 있는지 확인
         const existingApp = this.applications.find(app => app.studentId === studentId);
@@ -318,6 +356,21 @@ const DataManager = {
                 if (rejectionReason) {
                     item.rejectionReason = rejectionReason;
                 }
+                return true;
+            }
+        }
+        return false;
+    },
+
+    // 영수증 제출 (오프라인 구매용)
+    submitReceipt(studentId, itemId, receiptImageData) {
+        const application = this.applications.find(app => app.studentId === studentId);
+        if (application) {
+            const item = application.items.find(item => item.id === itemId);
+            if (item && item.purchaseMethod === 'offline' && item.status === 'approved') {
+                item.receiptImage = receiptImageData;
+                item.receiptSubmittedAt = new Date().toISOString();
+                item.status = 'purchased'; // 영수증 제출 시 바로 구매완료로 변경
                 return true;
             }
         }
@@ -397,7 +450,7 @@ const DataManager = {
         );
     },
 
-    // Excel 내보내기 데이터 준비
+    // Excel 내보내기 데이터 준비 - 구매 방식 정보 추가
     prepareExportData() {
         const exportData = [];
         
@@ -405,18 +458,23 @@ const DataManager = {
             const student = this.students.find(s => s.id === app.studentId);
             
             app.items.forEach(item => {
+                const purchaseMethodText = item.purchaseMethod === 'offline' ? '오프라인 구매' : '온라인 구매';
+                const typeText = item.type === 'bundle' ? '묶음신청' : '단일신청';
+                
                 exportData.push({
                     '학생명': app.studentName,
                     '파견학당': student ? student.instituteName : '',
                     '전공분야': student ? student.specialization : '',
                     '예산한도': student ? student.budgetLimit : '',
-                    '신청유형': item.type === 'bundle' ? '묶음신청' : '단일신청',
+                    '구매방식': purchaseMethodText,
+                    '신청유형': typeText,
                     '교구명': item.name,
                     '사용목적': item.purpose,
                     '가격': item.price,
                     '구매링크': item.link || '',
                     '상태': this.getStatusText(item.status),
                     '반려사유': item.rejectionReason || '',
+                    '영수증제출일': item.receiptSubmittedAt ? new Date(item.receiptSubmittedAt).toLocaleString('ko-KR') : '',
                     '신청일시': new Date(app.submittedAt).toLocaleString('ko-KR')
                 });
             });
@@ -443,6 +501,16 @@ const DataManager = {
             case 'purchased': return 'purchased';
             default: return 'pending';
         }
+    },
+
+    // 구매 방식 텍스트 변환
+    getPurchaseMethodText(method) {
+        return method === 'offline' ? '오프라인 구매' : '온라인 구매';
+    },
+
+    // 구매 방식별 CSS 클래스
+    getPurchaseMethodClass(method) {
+        return method === 'offline' ? 'offline-purchase' : 'online-purchase';
     },
 
     // === 수업계획 관련 메소드들 ===
