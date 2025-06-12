@@ -8,7 +8,8 @@ const DataManager = {
             birthDate: '1998-03-15', 
             instituteName: '하노이 세종학당', 
             specialization: '한국어교육', 
-            budgetLimit: 300000 
+            budgetLimit: 300000,
+            shippingAddress: null
         },
         { 
             id: 2, 
@@ -16,7 +17,8 @@ const DataManager = {
             birthDate: '1999-07-22', 
             instituteName: '방콕 세종학당', 
             specialization: '전통문화예술', 
-            budgetLimit: 250000 
+            budgetLimit: 250000,
+            shippingAddress: null
         },
         { 
             id: 3, 
@@ -24,7 +26,8 @@ const DataManager = {
             birthDate: '1997-11-08', 
             instituteName: '자카르타 세종학당', 
             specialization: 'K-Pop 문화', 
-            budgetLimit: 350000 
+            budgetLimit: 350000,
+            shippingAddress: null
         },
         { 
             id: 4, 
@@ -32,7 +35,8 @@ const DataManager = {
             birthDate: '1998-12-03', 
             instituteName: '쿠알라룸푸르 세종학당', 
             specialization: '한국어교육', 
-            budgetLimit: 280000 
+            budgetLimit: 280000,
+            shippingAddress: null
         },
         { 
             id: 5, 
@@ -40,7 +44,8 @@ const DataManager = {
             birthDate: '1999-05-17', 
             instituteName: '마닐라 세종학당', 
             specialization: '한국현대문화', 
-            budgetLimit: 320000 
+            budgetLimit: 320000,
+            shippingAddress: null
         },
         { 
             id: 6, 
@@ -48,7 +53,8 @@ const DataManager = {
             birthDate: '1998-08-24', 
             instituteName: '뉴욕 세종학당', 
             specialization: '전통음악', 
-            budgetLimit: 400000 
+            budgetLimit: 400000,
+            shippingAddress: null
         },
         { 
             id: 7, 
@@ -56,7 +62,8 @@ const DataManager = {
             birthDate: '1997-01-19', 
             instituteName: '런던 세종학당', 
             specialization: '한국미술', 
-            budgetLimit: 380000 
+            budgetLimit: 380000,
+            shippingAddress: null
         },
         { 
             id: 8, 
@@ -64,7 +71,8 @@ const DataManager = {
             birthDate: '1999-11-07', 
             instituteName: '파리 세종학당', 
             specialization: '한국요리문화', 
-            budgetLimit: 290000 
+            budgetLimit: 290000,
+            shippingAddress: null
         }
     ],
 
@@ -81,7 +89,8 @@ const DataManager = {
                     purpose: '한국-베트남 문화 교류 수업에서 두 나라의 전통 의상을 비교 체험할 수 있도록 활용하겠습니다. 학생들이 한복과 아오자이를 동시에 체험하며 문화적 차이점과 공통점을 학습할 예정입니다.', 
                     price: 85000, 
                     link: 'https://example.com/aodai', 
-                    status: 'pending' 
+                    status: 'pending',
+                    type: 'single' 
                 },
                 { 
                     id: 2, 
@@ -89,7 +98,8 @@ const DataManager = {
                     purpose: '한국의 차 문화 소개 및 다도 체험 수업용입니다. 베트남 학생들에게 한국의 전통 차 문화를 체험시키고 베트남 차 문화와 비교하는 활동에 사용하겠습니다.', 
                     price: 120000, 
                     link: 'https://example.com/tea-set', 
-                    status: 'approved' 
+                    status: 'approved',
+                    type: 'single'
                 },
                 { 
                     id: 3, 
@@ -97,7 +107,8 @@ const DataManager = {
                     purpose: '한글의 아름다움을 알리는 캘리그래피 수업용 도구입니다. 붓, 먹, 한지 등을 포함한 전체 세트로 학생들이 직접 한글 작품을 만들어볼 수 있습니다.', 
                     price: 95000, 
                     link: 'https://example.com/calligraphy', 
-                    status: 'purchased' 
+                    status: 'purchased',
+                    type: 'single'
                 }
             ],
             submittedAt: '2024-06-10T09:30:00'
@@ -113,7 +124,8 @@ const DataManager = {
                     purpose: '태국 학생들을 대상으로 한 한국 전통음악 수업에서 사용할 예정입니다. 직접 악기를 연주해보며 한국 음악의 리듬감을 체험하고, 태국 전통 악기와의 차이점을 학습하겠습니다.', 
                     price: 180000, 
                     link: 'https://example.com/instruments', 
-                    status: 'pending' 
+                    status: 'pending',
+                    type: 'single'
                 },
                 { 
                     id: 5, 
@@ -122,7 +134,8 @@ const DataManager = {
                     price: 45000, 
                     link: 'https://example.com/traditional-games', 
                     status: 'rejected',
-                    rejectionReason: '예산 대비 효과가 낮다고 판단됩니다. 더 교육적 가치가 높은 교구로 재신청해주세요.'
+                    rejectionReason: '예산 대비 효과가 낮다고 판단됩니다. 더 교육적 가치가 높은 교구로 재신청해주세요.',
+                    type: 'single'
                 }
             ],
             submittedAt: '2024-06-11T14:20:00'
@@ -138,7 +151,8 @@ const DataManager = {
                     purpose: '인도네시아 현지에서 K-Pop 문화 확산을 위한 댄스 수업용 의상입니다. 현지 학생들이 한국 아이돌 의상을 입고 댄스를 배우며 한국 현대 문화에 대한 관심을 높이겠습니다.', 
                     price: 220000, 
                     link: 'https://example.com/kpop-costume', 
-                    status: 'approved' 
+                    status: 'approved',
+                    type: 'single'
                 },
                 { 
                     id: 7, 
@@ -146,7 +160,8 @@ const DataManager = {
                     purpose: 'K-Pop 댄스 수업을 위한 고품질 스피커 시스템입니다. 선명한 음질로 안무 교육의 효과를 극대화하고, 현지 학생들의 학습 만족도를 높이겠습니다.', 
                     price: 130000, 
                     link: 'https://example.com/speaker-system', 
-                    status: 'purchased' 
+                    status: 'purchased',
+                    type: 'single'
                 }
             ],
             submittedAt: '2024-06-09T16:45:00'
@@ -162,7 +177,21 @@ const DataManager = {
                     purpose: '뉴욕 지역 한국 전통음악 보급을 위한 가야금 수업용입니다. 현지 음악 학습자들에게 한국 전통 현악기의 아름다운 선율을 직접 체험하게 하여 한국 음악에 대한 이해를 높이겠습니다.', 
                     price: 350000, 
                     link: 'https://example.com/gayageum', 
-                    status: 'pending' 
+                    status: 'pending',
+                    type: 'single'
+                },
+                { 
+                    id: 9, 
+                    name: '한국 문화 체험 키트 (묶음)', 
+                    purpose: '한국 문화 종합 체험을 위한 다양한 소품들의 묶음 구매입니다. 한복 소품, 전통 놀이, 한국 음식 만들기 재료 등이 포함되어 있습니다.', 
+                    price: 75000, 
+                    link: 'https://coupang.com/bundle-korean-culture', 
+                    status: 'pending',
+                    type: 'bundle',
+                    bundleCredentials: {
+                        userId: 'songmiyoung@email.com',
+                        password: '***encrypted***'
+                    }
                 }
             ],
             submittedAt: '2024-06-12T11:15:00'
@@ -219,7 +248,8 @@ const DataManager = {
         const newItem = {
             id: newItemId,
             ...itemData,
-            status: 'pending'
+            status: 'pending',
+            type: itemData.type || 'single'
         };
 
         // 기존 신청이 있는지 확인
@@ -256,6 +286,47 @@ const DataManager = {
                 }
                 return true;
             }
+        }
+        return false;
+    },
+
+    // 신청 아이템 수정
+    updateApplicationItem(studentId, itemId, itemData) {
+        const application = this.applications.find(app => app.studentId === studentId);
+        if (application) {
+            const item = application.items.find(item => item.id === itemId);
+            if (item && item.status === 'pending') {
+                Object.assign(item, itemData);
+                return true;
+            }
+        }
+        return false;
+    },
+
+    // 신청 아이템 삭제
+    deleteApplicationItem(studentId, itemId) {
+        const application = this.applications.find(app => app.studentId === studentId);
+        if (application) {
+            const itemIndex = application.items.findIndex(item => item.id === itemId);
+            if (itemIndex !== -1 && application.items[itemIndex].status === 'pending') {
+                application.items.splice(itemIndex, 1);
+                // 신청 내역이 비어있으면 신청 자체를 삭제
+                if (application.items.length === 0) {
+                    const appIndex = this.applications.findIndex(app => app.id === application.id);
+                    this.applications.splice(appIndex, 1);
+                }
+                return true;
+            }
+        }
+        return false;
+    },
+
+    // 배송지 정보 업데이트
+    updateShippingAddress(studentId, shippingData) {
+        const student = this.students.find(s => s.id === studentId);
+        if (student) {
+            student.shippingAddress = shippingData;
+            return true;
         }
         return false;
     },
@@ -305,9 +376,10 @@ const DataManager = {
                     '파견학당': student ? student.instituteName : '',
                     '전공분야': student ? student.specialization : '',
                     '예산한도': student ? student.budgetLimit : '',
+                    '신청유형': item.type === 'bundle' ? '묶음신청' : '단일신청',
                     '교구명': item.name,
                     '사용목적': item.purpose,
-                    '예상가격': item.price,
+                    '가격': item.price,
                     '구매링크': item.link || '',
                     '상태': this.getStatusText(item.status),
                     '반려사유': item.rejectionReason || '',
