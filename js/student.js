@@ -8,6 +8,7 @@ const StudentManager = {
         this.updateUserDisplay();
         this.loadApplications();
         this.updateBudgetStatus();
+        this.checkLessonPlanStatus(); // 수업계획 상태 확인 추가
     },
 
     // 이벤트 리스너 설정
@@ -20,6 +21,9 @@ const StudentManager = {
         
         // 배송지 설정 버튼
         Utils.on('#shippingAddressBtn', 'click', () => this.showShippingModal());
+
+        // 수업계획 버튼
+        Utils.on('#lessonPlanBtn', 'click', () => this.goToLessonPlan());
 
         // 일반 신청 모달 이벤트
         Utils.on('#cancelBtn', 'click', () => this.hideApplicationModal());
@@ -59,6 +63,130 @@ const StudentManager = {
 
         // 모달 내 Enter 키 이벤트
         this.setupModalKeyEvents();
+    },
+
+    // 수업계획 페이지로 이동
+    goToLessonPlan() {
+        App.showPage('lessonPlanPage');
+        LessonPlanManager.showLessonPlanPage();
+    },
+
+    // 수업계획 상태 확인 및 UI 업데이트
+    checkLessonPlanStatus() {
+        const studentId = DataManager.currentUser.id;
+        const hasCompletedPlan = LessonPlanManager.hasCompletedLessonPlan(studentId);
+        const lessonPlanBtn = Utils.$('#lessonPlanBtn');
+        
+        if (lessonPlanBtn) {
+            if (hasCompletedPlan) {
+                // 완료된 경우 - 수정/보기 모드
+                lessonPlanBtn.innerHTML = `
+                    <i data-lucide="calendar-check"></i>
+                    수업계획 보기
+                `;
+                lessonPlanBtn.classList.remove('btn-warning');
+                lessonPlanBtn.classList.add('btn-success');
+            } else {
+                // 미완료된 경우 - 작성 필요
+                const needsPlan = LessonPlanManager.needsLessonPlan(studentId);
+                if (needsPlan) {
+                    lessonPlanBtn.innerHTML = `
+                        <i data-lucide="calendar-plus"></i>
+                        수업계획 작성
+                    `;
+                } else {
+                    lessonPlanBtn.innerHTML = `
+                        <i data-lucide="calendar-edit"></i>
+                        수업계획 완료
+                    `;
+                }
+                lessonPlanBtn.classList.remove('btn-success');
+                lessonPlanBtn.classList.add('btn-warning');
+            }
+            
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // 수업계획이 완료되지 않은 경우 알림 표시
+        if (!hasCompletedPlan) {
+            this.showLessonPlanIncompleteNotice();
+        }
+    },
+
+    // 수업계획 미완료 알림 표시
+    showLessonPlanIncompleteNotice() {
+        const existingNotice = Utils.$('#lessonPlanNotice');
+        if (existingNotice) {
+            return; // 이미 표시 중
+        }
+
+        const studentId = DataManager.currentUser.id;
+        const needsPlan = LessonPlanManager.needsLessonPlan(studentId);
+        const canEdit = DataManager.canEditLessonPlan();
+        
+        let noticeContent;
+        if (!canEdit) {
+            noticeContent = `
+                <div class="notice-content warning">
+                    <i data-lucide="alert-triangle"></i>
+                    <div>
+                        <h4>수업계획 수정 기간이 종료되었습니다</h4>
+                        <p>수업계획 작성/수정 가능 기간이 지났습니다. 관리자에게 문의하세요.</p>
+                    </div>
+                </div>
+            `;
+        } else if (needsPlan) {
+            noticeContent = `
+                <div class="notice-content info">
+                    <i data-lucide="calendar-plus"></i>
+                    <div>
+                        <h4>수업계획 작성이 필요합니다</h4>
+                        <p>교구 신청 전에 먼저 수업계획을 작성해주세요.</p>
+                        <button class="btn primary small" onclick="StudentManager.goToLessonPlan()">
+                            지금 작성하기
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            noticeContent = `
+                <div class="notice-content warning">
+                    <i data-lucide="calendar-edit"></i>
+                    <div>
+                        <h4>수업계획을 완료해주세요</h4>
+                        <p>임시저장된 수업계획이 있습니다. 완료 후 교구 신청이 가능합니다.</p>
+                        <button class="btn warning small" onclick="StudentManager.goToLessonPlan()">
+                            완료하기
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        const notice = Utils.createElement('div', 'dashboard-notice');
+        notice.id = 'lessonPlanNotice';
+        notice.innerHTML = noticeContent;
+        
+        // 대시보드 헤더 아래에 삽입
+        const dashboardHeader = Utils.$('.dashboard-header');
+        if (dashboardHeader) {
+            dashboardHeader.parentNode.insertBefore(notice, dashboardHeader.nextSibling);
+            
+            // 아이콘 생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+    },
+
+    // 대시보드 로드 (외부에서 호출용)
+    loadDashboard() {
+        this.loadApplications();
+        this.updateBudgetStatus();
+        this.checkLessonPlanStatus();
     },
 
     // 모달 내 키보드 이벤트 설정
@@ -547,9 +675,9 @@ const StudentManager = {
         
         if (newTotalAmount > budgetLimit) {
             const remainingBudget = budgetLimit - adjustedTotalAmount;
-            Utils.showAlert(`예산 한도를 초과합니다.\n` +
-                          `현재 사용: ${Utils.formatPrice(adjustedTotalAmount)}\n` +
-                          `예산 한도: ${Utils.formatPrice(budgetLimit)}\n` +
+            Utils.showAlert(`예산 한도를 초과합니다.\\n` +
+                          `현재 사용: ${Utils.formatPrice(adjustedTotalAmount)}\\n` +
+                          `예산 한도: ${Utils.formatPrice(budgetLimit)}\\n` +
                           `신청 가능 금액: ${Utils.formatPrice(remainingBudget)}`);
             return false;
         }
