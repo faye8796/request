@@ -6,6 +6,7 @@ const AdminManager = {
     init() {
         this.setupEventListeners();
         this.loadStatistics();
+        this.loadBudgetOverview(); // 새로 추가
         this.loadApplications();
         this.loadLessonPlanManagement();
         this.loadBudgetSettings();
@@ -209,6 +210,8 @@ const AdminManager = {
         
         if (updatedCount > 0) {
             Utils.showAlert(`${updatedCount}명의 학생 예산이 재계산되었습니다.`);
+            // 예산 현황도 다시 로드
+            this.loadBudgetOverview();
         }
     },
 
@@ -468,6 +471,7 @@ const AdminManager = {
                 
                 if (result.success) {
                     this.loadLessonPlansForManagement();
+                    this.loadBudgetOverview(); // 예산 현황 새로고침
                     
                     let message = '수업계획이 승인되었습니다.';
                     if (result.budgetInfo) {
@@ -494,6 +498,7 @@ const AdminManager = {
                 
                 if (result.success) {
                     this.loadLessonPlansForManagement();
+                    this.loadBudgetOverview(); // 예산 현황 새로고침
                     Utils.showAlert('수업계획이 반려되었습니다.');
                 } else {
                     Utils.hideLoading(buttonElement);
@@ -726,14 +731,25 @@ const AdminManager = {
         });
     },
 
-    // 통계 로드
+    // 업데이트된 통계 로드 - 새로운 요구사항 반영
     loadStatistics() {
         const stats = DataManager.getStats();
         
-        Utils.$('#totalCount').textContent = stats.total;
-        Utils.$('#approvedCount').textContent = stats.approved;
-        Utils.$('#rejectedCount').textContent = stats.rejected;
-        Utils.$('#purchasedCount').textContent = stats.purchased;
+        // 기존 4개 통계를 새로운 3개 통계로 변경
+        Utils.$('#applicantCount').textContent = stats.applicantCount;    // 구매 요청 신청자수
+        Utils.$('#pendingCount').textContent = stats.pendingCount;        // 미승인 아이템
+        Utils.$('#approvedCount').textContent = stats.approvedCount;      // 승인됨 (구매대기)
+    },
+
+    // 새로 추가: 예산 현황 로드
+    loadBudgetOverview() {
+        const budgetStats = DataManager.getBudgetOverviewStats();
+        
+        // 예산 현황 업데이트
+        Utils.$('#totalApprovedBudget').textContent = Utils.formatPrice(budgetStats.totalApprovedBudget);
+        Utils.$('#approvedItemsTotal').textContent = Utils.formatPrice(budgetStats.approvedItemsTotal);
+        Utils.$('#purchasedTotal').textContent = Utils.formatPrice(budgetStats.purchasedTotal);
+        Utils.$('#averagePerPerson').textContent = Utils.formatPrice(budgetStats.averagePerPerson);
     },
 
     // 수업계획 관리 정보 로드
@@ -1160,9 +1176,10 @@ const AdminManager = {
         `;
     },
 
-    // 데이터 새로고침
+    // 데이터 새로고침 - 예산 현황도 포함
     refreshData() {
         this.loadStatistics();
+        this.loadBudgetOverview(); // 새로 추가
         this.loadApplications();
         this.loadLessonPlanManagement();
     },
@@ -1183,18 +1200,13 @@ const AdminManager = {
         return `${year}${month}${day}`;
     },
 
-    // 상세 통계 보기
+    // 상세 통계 보기 - 업데이트됨
     showDetailedStats() {
         const stats = DataManager.getStats();
+        const budgetStats = DataManager.getBudgetOverviewStats();
         const applications = DataManager.getAllApplications();
         const offlineStats = DataManager.getOfflinePurchaseStats();
         const budgetSettings = DataManager.getAllFieldBudgetSettings();
-        
-        let totalAmount = 0;
-        let approvedAmount = 0;
-        let purchasedAmount = 0;
-        let onlineCount = 0;
-        let offlineCount = 0;
         
         // 분야별 통계
         const fieldStats = {};
@@ -1206,21 +1218,6 @@ const AdminManager = {
             const student = DataManager.students.find(s => s.id === app.studentId);
             
             app.items.forEach(item => {
-                totalAmount += item.price;
-                if (item.status === 'approved' || item.status === 'purchased') {
-                    approvedAmount += item.price;
-                }
-                if (item.status === 'purchased') {
-                    purchasedAmount += item.price;
-                }
-                
-                // 구매 방식별 통계
-                if (item.purchaseMethod === 'offline') {
-                    offlineCount++;
-                } else {
-                    onlineCount++;
-                }
-                
                 // 분야별 통계
                 if (student && fieldStats[student.specialization]) {
                     fieldStats[student.specialization].count++;
@@ -1237,20 +1234,21 @@ const AdminManager = {
         });
         
         const message = `상세 통계\\n\\n` +
-                       `전체 신청: ${stats.total}건\\n` +
-                       `- 온라인 구매: ${onlineCount}건\\n` +
-                       `- 오프라인 구매: ${offlineCount}건\\n\\n` +
-                       `승인: ${stats.approved}건\\n` +
-                       `반려: ${stats.rejected}건\\n` +
-                       `구매완료: ${stats.purchased}건\\n\\n` +
+                       `신청자 수: ${stats.applicantCount}명\\n` +
+                       `미승인 아이템: ${stats.pendingCount}건\\n` +
+                       `승인된 아이템: ${stats.approvedCount}건\\n` +
+                       `구매완료 아이템: ${stats.purchasedCount}건\\n` +
+                       `반려된 아이템: ${stats.rejectedCount}건\\n\\n` +
+                       `예산 현황:\\n` +
+                       `- 배정된 총 예산: ${Utils.formatPrice(budgetStats.totalApprovedBudget)}\\n` +
+                       `- 승인된 아이템 총액: ${Utils.formatPrice(budgetStats.approvedItemsTotal)}\\n` +
+                       `- 구매 완료 총액: ${Utils.formatPrice(budgetStats.purchasedTotal)}\\n` +
+                       `- 1인당 평균 지원금: ${Utils.formatPrice(budgetStats.averagePerPerson)}\\n\\n` +
                        `오프라인 구매 현황:\\n` +
                        `- 승인된 오프라인 구매: ${offlineStats.approvedOffline}건\\n` +
                        `- 영수증 제출 완료: ${offlineStats.withReceipt}건\\n` +
                        `- 영수증 제출 대기: ${offlineStats.pendingReceipt}건\\n\\n` +
-                       `분야별 통계:\\n${fieldStatsText}\\n` +
-                       `전체 예산: ${Utils.formatPrice(totalAmount)}\\n` +
-                       `승인 예산: ${Utils.formatPrice(approvedAmount)}\\n` +
-                       `구매 완료: ${Utils.formatPrice(purchasedAmount)}`;
+                       `분야별 통계:\\n${fieldStatsText}`;
         
         alert(message);
     }
