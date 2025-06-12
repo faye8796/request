@@ -22,6 +22,26 @@ const Utils = {
         });
     },
 
+    // 간단한 날짜 포맷팅 (YYYY-MM-DD)
+    formatDateSimple(dateString) {
+        const date = new Date(dateString);
+        return date.toISOString().split('T')[0];
+    },
+
+    // 날짜 차이 계산 (일 단위)
+    calculateDaysBetween(startDate, endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const diffTime = Math.abs(end - start);
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    },
+
+    // 주차 계산
+    calculateWeeksBetween(startDate, endDate) {
+        const days = this.calculateDaysBetween(startDate, endDate);
+        return Math.ceil(days / 7);
+    },
+
     // 가격 포맷팅
     formatPrice(price) {
         return parseInt(price).toLocaleString('ko-KR') + '원';
@@ -142,6 +162,55 @@ const Utils = {
         }
     },
 
+    // 날짜 검증
+    validateDateRange(startDate, endDate, fieldName = '날짜') {
+        if (!startDate || !endDate) {
+            this.showAlert(`${fieldName} 범위를 올바르게 입력해주세요.`);
+            return false;
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        if (start >= end) {
+            this.showAlert('종료일은 시작일보다 늦어야 합니다.');
+            return false;
+        }
+
+        return true;
+    },
+
+    // 숫자 범위 검증
+    validateNumberRange(value, min, max, fieldName = '값') {
+        const num = parseInt(value);
+        if (isNaN(num)) {
+            this.showAlert(`${fieldName}에 올바른 숫자를 입력해주세요.`);
+            return false;
+        }
+
+        if (num < min || num > max) {
+            this.showAlert(`${fieldName}은(는) ${min}~${max} 사이의 값이어야 합니다.`);
+            return false;
+        }
+
+        return true;
+    },
+
+    // 문자열 길이 검증
+    validateLength(value, minLength, maxLength, fieldName = '내용') {
+        if (value.length < minLength) {
+            this.showAlert(`${fieldName}은(는) 최소 ${minLength}자 이상이어야 합니다.`);
+            return false;
+        }
+
+        if (value.length > maxLength) {
+            this.showAlert(`${fieldName}은(는) 최대 ${maxLength}자까지 입력 가능합니다.`);
+            return false;
+        }
+
+        return true;
+    },
+
     // 문자열 자르기
     truncateText(text, maxLength = 100) {
         if (text.length <= maxLength) return text;
@@ -242,6 +311,127 @@ const Utils = {
         return `<i data-lucide="${iconName}" class="${className}"></i>`;
     },
 
+    // 진행률 바 HTML 생성
+    createProgressBar(percentage, className = '') {
+        const safePercentage = Math.min(100, Math.max(0, percentage));
+        return `
+            <div class="progress-bar ${className}">
+                <div class="progress-fill" style="width: ${safePercentage}%"></div>
+                <span class="progress-text">${safePercentage}%</span>
+            </div>
+        `;
+    },
+
+    // 수업계획 관련 유틸리티 함수들
+    lessonPlan: {
+        // 수업 일정 자동 생성
+        generateLessonSchedule(startDate, totalLessons, lessonsPerWeek = 3) {
+            const lessons = [];
+            const start = new Date(startDate);
+            let currentDate = new Date(start);
+            
+            // 시작일이 월요일이 되도록 조정
+            const dayOfWeek = currentDate.getDay();
+            if (dayOfWeek !== 1) { // 월요일(1)이 아닌 경우
+                const daysToAdd = dayOfWeek === 0 ? 1 : (8 - dayOfWeek); // 일요일(0)인 경우 1일, 그 외는 다음 월요일까지
+                currentDate.setDate(currentDate.getDate() + daysToAdd);
+            }
+            
+            const weeks = Math.ceil(totalLessons / lessonsPerWeek);
+            
+            for (let week = 1; week <= weeks; week++) {
+                for (let lessonInWeek = 1; lessonInWeek <= lessonsPerWeek; lessonInWeek++) {
+                    const lessonNumber = (week - 1) * lessonsPerWeek + lessonInWeek;
+                    if (lessonNumber <= totalLessons) {
+                        lessons.push({
+                            week: week,
+                            lesson: lessonInWeek,
+                            lessonNumber: lessonNumber,
+                            date: new Date(currentDate).toISOString().split('T')[0],
+                            topic: '',
+                            content: ''
+                        });
+                        
+                        // 다음 수업일 계산 (월, 수, 금)
+                        if (lessonInWeek === 1) {
+                            currentDate.setDate(currentDate.getDate() + 2); // 월->수
+                        } else if (lessonInWeek === 2) {
+                            currentDate.setDate(currentDate.getDate() + 2); // 수->금
+                        } else {
+                            currentDate.setDate(currentDate.getDate() + 3); // 금->다음주 월
+                        }
+                    }
+                }
+            }
+            
+            return lessons;
+        },
+
+        // 수업계획 완성도 계산
+        calculateCompletionRate(lessons) {
+            if (!lessons || lessons.length === 0) return 0;
+            
+            const completedLessons = lessons.filter(lesson => 
+                lesson.topic && lesson.topic.trim() && 
+                lesson.content && lesson.content.trim()
+            ).length;
+            
+            return Math.round((completedLessons / lessons.length) * 100);
+        },
+
+        // 수업계획 유효성 검증
+        validateLessonPlan(planData) {
+            const errors = [];
+            
+            if (!planData.startDate) {
+                errors.push('파견 시작일을 입력해주세요.');
+            }
+            
+            if (!planData.endDate) {
+                errors.push('파견 종료일을 입력해주세요.');
+            }
+            
+            if (planData.startDate && planData.endDate) {
+                if (new Date(planData.startDate) >= new Date(planData.endDate)) {
+                    errors.push('파견 종료일은 시작일보다 늦어야 합니다.');
+                }
+            }
+            
+            if (!planData.totalLessons || planData.totalLessons < 1) {
+                errors.push('총 수업 횟수를 올바르게 입력해주세요.');
+            }
+            
+            if (planData.totalLessons > 100) {
+                errors.push('총 수업 횟수는 100회를 초과할 수 없습니다.');
+            }
+            
+            // 수업 내용 검증
+            if (planData.lessons && planData.lessons.length > 0) {
+                const completionRate = this.calculateCompletionRate(planData.lessons);
+                if (completionRate < 50) {
+                    errors.push('최소 전체 수업의 50% 이상은 계획을 작성해주세요.');
+                }
+            }
+            
+            return errors;
+        },
+
+        // 수업계획 요약 생성
+        generateSummary(planData) {
+            if (!planData) return '';
+            
+            const duration = Utils.calculateDaysBetween(planData.startDate, planData.endDate);
+            const weeks = Math.ceil(duration / 7);
+            const avgLessonsPerWeek = planData.lessonsPerWeek || Math.ceil(planData.totalLessons / weeks);
+            
+            return `
+                파견 기간: ${Utils.formatDate(planData.startDate)} ~ ${Utils.formatDate(planData.endDate)} (${weeks}주)
+                총 수업 횟수: ${planData.totalLessons}회
+                주당 평균: ${avgLessonsPerWeek}회
+            `.trim();
+        }
+    },
+
     // 반응형 이미지 로딩
     lazyLoadImages() {
         const images = document.querySelectorAll('img[data-src]');
@@ -289,6 +479,31 @@ const Utils = {
             if (activeModal) {
                 activeModal.classList.remove('active');
             }
+        }
+    },
+
+    // 브라우저 지원 확인
+    browserSupport: {
+        // LocalStorage 지원 확인
+        hasLocalStorage() {
+            try {
+                const test = 'test';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        },
+
+        // Intersection Observer 지원 확인
+        hasIntersectionObserver() {
+            return 'IntersectionObserver' in window;
+        },
+
+        // Service Worker 지원 확인
+        hasServiceWorker() {
+            return 'serviceWorker' in navigator;
         }
     }
 };
