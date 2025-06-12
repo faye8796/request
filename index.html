@@ -191,6 +191,14 @@
                 <div class="header-content">
                     <h1>관리자 대시보드</h1>
                     <div class="header-actions">
+                        <button id="budgetSettingsBtn" class="btn secondary">
+                            <i data-lucide="dollar-sign"></i>
+                            예산 설정
+                        </button>
+                        <button id="lessonPlanManagementBtn" class="btn secondary">
+                            <i data-lucide="clipboard-check"></i>
+                            수업계획 관리
+                        </button>
                         <button id="lessonPlanSettingsBtn" class="btn secondary">
                             <i data-lucide="settings"></i>
                             수업계획 설정
@@ -540,6 +548,67 @@
                     </p>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 예산 설정 모달 (관리자용) - 새로 추가 -->
+    <div id="budgetSettingsModal" class="modal">
+        <div class="modal-content large">
+            <h3>분야별 예산 설정</h3>
+            <form id="budgetSettingsForm">
+                <div class="budget-settings-info">
+                    <p>각 분야별로 회당 지원금과 최대 상한을 설정하세요. 학생의 수업계획이 승인되면 이 설정에 따라 자동으로 예산이 배정됩니다.</p>
+                </div>
+                
+                <div class="table-container">
+                    <table id="budgetSettingsTable" class="budget-settings-table">
+                        <thead>
+                            <tr>
+                                <th>분야</th>
+                                <th>회당 지원금 (원)</th>
+                                <th>최대 상한 (원)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 동적으로 생성됨 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" id="budgetSettingsCancelBtn" class="btn secondary">취소</button>
+                    <button type="submit" class="btn primary">설정 저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 수업계획 관리 모달 (관리자용) - 새로 추가 -->
+    <div id="lessonPlanManagementModal" class="modal">
+        <div class="modal-content large">
+            <h3>수업계획 승인 관리</h3>
+            <div class="lesson-plan-management-container">
+                <div class="management-header">
+                    <div class="management-stats">
+                        <span id="pendingPlansCount" class="stat-badge pending">대기 중: 0</span>
+                        <span id="approvedPlansCount" class="stat-badge approved">승인됨: 0</span>
+                        <span id="rejectedPlansCount" class="stat-badge rejected">반려됨: 0</span>
+                    </div>
+                    <div class="management-actions">
+                        <button id="refreshPlansBtn" class="btn small secondary">
+                            <i data-lucide="refresh-cw"></i> 새로고침
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="lessonPlansList" class="lesson-plans-list">
+                    <!-- 동적으로 생성됨 -->
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" id="lessonPlanManagementCloseBtn" class="btn secondary">닫기</button>
+            </div>
         </div>
     </div>
 
