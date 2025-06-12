@@ -545,40 +545,116 @@ const DataManager = {
         return this.lessonPlans;
     },
 
-    // 수업 주차 계산
+    // 수업 주차 계산 (수정됨 - 오류 수정)
     calculateWeeks(startDate, endDate, totalLessons, lessonsPerWeek) {
-        const weeks = Math.ceil(totalLessons / lessonsPerWeek);
-        const lessons = [];
-        
-        const start = new Date(startDate);
-        let currentDate = new Date(start);
-        
-        for (let week = 1; week <= weeks; week++) {
-            for (let lessonInWeek = 1; lessonInWeek <= lessonsPerWeek; lessonInWeek++) {
-                const lessonNumber = (week - 1) * lessonsPerWeek + lessonInWeek;
-                if (lessonNumber <= totalLessons) {
-                    lessons.push({
-                        week: week,
-                        lesson: lessonInWeek,
-                        lessonNumber: lessonNumber,
-                        date: currentDate.toISOString().split('T')[0],
-                        topic: '',
-                        content: ''
-                    });
-                    
-                    // 다음 수업일 계산 (주 3회 기준으로 월, 수, 금)
-                    if (lessonInWeek === 1) {
-                        currentDate.setDate(currentDate.getDate() + 2); // 월->수
-                    } else if (lessonInWeek === 2) {
-                        currentDate.setDate(currentDate.getDate() + 2); // 수->금
-                    } else {
-                        currentDate.setDate(currentDate.getDate() + 3); // 금->다음주 월
-                    }
-                }
+        try {
+            // 입력값 유효성 검사
+            if (!startDate || !endDate || !totalLessons || !lessonsPerWeek) {
+                throw new Error('필수 입력값이 누락되었습니다.');
             }
+
+            // 숫자 유효성 검사
+            const numLessons = parseInt(totalLessons);
+            const numLessonsPerWeek = parseInt(lessonsPerWeek);
+            
+            if (isNaN(numLessons) || isNaN(numLessonsPerWeek) || numLessons <= 0 || numLessonsPerWeek <= 0) {
+                throw new Error('총 수업 횟수와 주당 수업 횟수는 양수여야 합니다.');
+            }
+
+            // 날짜 유효성 검사
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                throw new Error('유효하지 않은 날짜입니다.');
+            }
+            
+            if (start >= end) {
+                throw new Error('시작일은 종료일보다 이전이어야 합니다.');
+            }
+
+            const lessons = [];
+            let currentDate = new Date(start);
+            
+            // 요일 패턴 정의 (월=1, 수=3, 금=5)
+            const weekDays = [1, 3, 5]; // 월, 수, 금
+            
+            for (let lessonNumber = 1; lessonNumber <= numLessons; lessonNumber++) {
+                const week = Math.ceil(lessonNumber / numLessonsPerWeek);
+                const lessonInWeek = ((lessonNumber - 1) % numLessonsPerWeek) + 1;
+                
+                // 주당 수업 횟수에 따라 날짜 배치
+                let dayOffset = 0;
+                if (numLessonsPerWeek <= 3) {
+                    // 주 3회 이하인 경우 월, 수, 금 패턴 사용
+                    const dayIndex = (lessonInWeek - 1) % weekDays.length;
+                    const targetDay = weekDays[dayIndex];
+                    const currentWeekStart = new Date(start);
+                    currentWeekStart.setDate(start.getDate() + ((week - 1) * 7));
+                    
+                    // 해당 주의 월요일로 이동
+                    const dayOfWeek = currentWeekStart.getDay();
+                    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                    currentWeekStart.setDate(currentWeekStart.getDate() + mondayOffset);
+                    
+                    // 목표 요일로 이동
+                    currentDate = new Date(currentWeekStart);
+                    currentDate.setDate(currentDate.getDate() + (targetDay - 1));
+                } else {
+                    // 주 4회 이상인 경우 균등 분배
+                    const daysInWeek = 7;
+                    const interval = Math.floor(daysInWeek / numLessonsPerWeek);
+                    const weekStart = new Date(start);
+                    weekStart.setDate(start.getDate() + ((week - 1) * 7));
+                    
+                    currentDate = new Date(weekStart);
+                    currentDate.setDate(currentDate.getDate() + ((lessonInWeek - 1) * interval));
+                }
+                
+                // 종료일 초과 체크
+                if (currentDate > end) {
+                    console.warn(`수업 ${lessonNumber}의 날짜(${currentDate.toISOString().split('T')[0]})가 종료일(${endDate})을 초과합니다.`);
+                    // 종료일을 기준으로 역산하여 조정
+                    const remainingLessons = numLessons - lessonNumber + 1;
+                    const daysToDistribute = Math.floor((end - currentDate) / (1000 * 60 * 60 * 24));
+                    currentDate = new Date(end);
+                    currentDate.setDate(currentDate.getDate() - remainingLessons + lessonNumber);
+                }
+                
+                lessons.push({
+                    week: week,
+                    lesson: lessonInWeek,
+                    lessonNumber: lessonNumber,
+                    date: currentDate.toISOString().split('T')[0],
+                    topic: '',
+                    content: ''
+                });
+            }
+            
+            return lessons;
+            
+        } catch (error) {
+            console.error('수업 주차 계산 오류:', error);
+            // 기본값 반환
+            const fallbackLessons = [];
+            const start = new Date(startDate || new Date());
+            
+            for (let i = 1; i <= (totalLessons || 1); i++) {
+                const lessonDate = new Date(start);
+                lessonDate.setDate(start.getDate() + ((i - 1) * 2)); // 이틀 간격
+                
+                fallbackLessons.push({
+                    week: Math.ceil(i / (lessonsPerWeek || 1)),
+                    lesson: ((i - 1) % (lessonsPerWeek || 1)) + 1,
+                    lessonNumber: i,
+                    date: lessonDate.toISOString().split('T')[0],
+                    topic: '',
+                    content: ''
+                });
+            }
+            
+            return fallbackLessons;
         }
-        
-        return lessons;
     }
 };
 
