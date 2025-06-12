@@ -287,6 +287,362 @@ body {
     min-height: 80px;
 }
 
+.readonly-input {
+    background-color: #f9fafb !important;
+    color: #6b7280 !important;
+    cursor: not-allowed !important;
+}
+
+/* Purchase Method Options */
+.purchase-method-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.radio-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.radio-option:hover {
+    border-color: #c7d2fe;
+    background: #f8fafc;
+}
+
+.radio-option input[type="radio"] {
+    display: none;
+}
+
+.radio-option input[type="radio"]:checked + .radio-custom + .radio-content {
+    color: #4f46e5;
+}
+
+.radio-option input[type="radio"]:checked ~ .radio-content strong {
+    color: #4f46e5;
+}
+
+.radio-option:has(input[type="radio"]:checked) {
+    border-color: #4f46e5;
+    background: #f8fafc;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.radio-custom {
+    position: relative;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid #d1d5db;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.radio-custom::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 0.5rem;
+    height: 0.5rem;
+    background: #4f46e5;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+}
+
+.radio-option input[type="radio"]:checked + .radio-custom {
+    border-color: #4f46e5;
+}
+
+.radio-option input[type="radio"]:checked + .radio-custom::after {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.radio-content {
+    flex: 1;
+}
+
+.radio-content strong {
+    display: block;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.radio-content p {
+    color: #6b7280;
+    font-size: 0.8rem;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* File Upload Area */
+.file-upload-area {
+    position: relative;
+    border: 2px dashed #d1d5db;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    background: #fafafa;
+    cursor: pointer;
+}
+
+.file-upload-area:hover {
+    border-color: #9ca3af;
+    background: #f5f5f5;
+}
+
+.file-upload-area.drag-over {
+    border-color: #4f46e5;
+    background: #f8fafc;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.file-upload-area input[type="file"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-upload-content {
+    pointer-events: none;
+}
+
+.file-upload-content i {
+    width: 3rem;
+    height: 3rem;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+}
+
+.file-upload-content p {
+    color: #374151;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.file-upload-content small {
+    color: #6b7280;
+    font-size: 0.8rem;
+}
+
+/* Receipt Preview */
+.receipt-preview {
+    position: relative;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: white;
+}
+
+.receipt-preview img {
+    width: 100%;
+    height: auto;
+    max-height: 300px;
+    object-fit: contain;
+    display: block;
+}
+
+.receipt-preview .btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 10;
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    border: none;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    min-height: auto;
+}
+
+.receipt-preview .btn:hover {
+    background: rgba(220, 38, 38, 0.9);
+    transform: none;
+}
+
+/* Receipt Info Section */
+.receipt-info {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.receipt-item-info h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.receipt-item-info p {
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+/* Receipt Status */
+.receipt-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.receipt-status.submitted {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.receipt-status.pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.receipt-status i {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+/* Receipt Viewer (Admin) */
+.receipt-viewer {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.receipt-details {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: #6b7280;
+    min-width: 100px;
+    font-size: 0.875rem;
+}
+
+.detail-row span:last-child {
+    color: #1f2937;
+    font-weight: 500;
+    text-align: right;
+    flex: 1;
+    margin-left: 1rem;
+    font-size: 0.875rem;
+}
+
+.receipt-image-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+}
+
+.receipt-image-container img {
+    max-width: 100%;
+    max-height: 500px;
+    height: auto;
+    object-fit: contain;
+}
+
+/* Modal Enhancements */
+.modal-content.large {
+    max-width: 800px;
+    max-height: 90vh;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+    color: #374151;
+}
+
+/* Purchase Method Badge */
+.purchase-method-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.purchase-method-badge.online-purchase {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.purchase-method-badge.offline-purchase {
+    background: #f3e8ff;
+    color: #7c3aed;
+}
+
+.purchase-method-badge i {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+/* Form Help Text */
+.form-help {
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
 /* Modal */
 .modal {
     display: none;
@@ -798,6 +1154,35 @@ body {
         font-size: 1rem;
         min-height: 52px;
     }
+
+    .purchase-method-options {
+        gap: 0.5rem;
+    }
+
+    .radio-option {
+        padding: 0.75rem;
+    }
+
+    .radio-content strong {
+        font-size: 0.8rem;
+    }
+
+    .radio-content p {
+        font-size: 0.75rem;
+    }
+
+    .file-upload-area {
+        padding: 1.5rem;
+    }
+
+    .receipt-viewer {
+        gap: 1rem;
+    }
+
+    .modal-content.large {
+        max-width: 95%;
+        padding: 1rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -810,6 +1195,29 @@ body {
         padding: 0.625rem 1.25rem;
         min-height: 44px;
     }
+
+    .purchase-method-options {
+        gap: 0.75rem;
+    }
+
+    .radio-option {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+
+    .radio-custom {
+        align-self: center;
+    }
+
+    .file-upload-area {
+        padding: 1rem;
+    }
+
+    .file-upload-content i {
+        width: 2rem;
+        height: 2rem;
+    }
 }
 
 /* 접근성 개선 */
@@ -820,6 +1228,14 @@ body {
     
     .btn:hover {
         transform: none;
+    }
+
+    .radio-option {
+        transition: none;
+    }
+
+    .file-upload-area {
+        transition: none;
     }
 }
 
@@ -858,6 +1274,14 @@ body {
         outline: 3px solid #4f46e5;
         outline-offset: 2px;
     }
+
+    .radio-option {
+        border-width: 3px;
+    }
+
+    .purchase-method-badge {
+        border: 1px solid;
+    }
 }
 
 /* 다크모드 대응 */
@@ -884,6 +1308,23 @@ body {
         background: #4b5563;
         color: #f9fafb;
         border-color: #9ca3af;
+    }
+
+    .radio-option {
+        background: #374151;
+        border-color: #6b7280;
+        color: #f9fafb;
+    }
+
+    .radio-option:hover {
+        background: #4b5563;
+        border-color: #9ca3af;
+    }
+
+    .file-upload-area {
+        background: #374151;
+        border-color: #6b7280;
+        color: #f9fafb;
     }
 }
 
