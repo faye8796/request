@@ -68,18 +68,32 @@
                     <div class="user-info">
                         <h1 id="studentWelcome">안녕하세요, 님!</h1>
                         <p id="studentDetails"></p>
+                        <!-- 예산 현황 표시 영역 -->
+                        <div id="budgetStatus" class="budget-status-container"></div>
                     </div>
-                    <button id="studentLogout" class="logout-btn">로그아웃</button>
+                    <div class="header-actions">
+                        <button id="shippingAddressBtn" class="btn secondary">
+                            <i data-lucide="map-pin"></i>
+                            배송지 설정
+                        </button>
+                        <button id="studentLogout" class="logout-btn">로그아웃</button>
+                    </div>
                 </div>
             </header>
 
             <main class="main-content">
                 <div class="dashboard-header">
                     <h2>교구 신청 현황</h2>
-                    <button id="newApplicationBtn" class="btn primary">
-                        <i data-lucide="plus"></i>
-                        새 교구 신청
-                    </button>
+                    <div class="dashboard-actions">
+                        <button id="bundleApplicationBtn" class="btn secondary">
+                            <i data-lucide="shopping-cart"></i>
+                            묶음 신청
+                        </button>
+                        <button id="newApplicationBtn" class="btn primary">
+                            <i data-lucide="plus"></i>
+                            새 교구 신청
+                        </button>
+                    </div>
                 </div>
 
                 <div id="studentApplications" class="applications-grid">
@@ -160,7 +174,7 @@
     <!-- 교구 신청 모달 -->
     <div id="applicationModal" class="modal">
         <div class="modal-content">
-            <h3>새 교구 신청</h3>
+            <h3 id="applicationModalTitle">새 교구 신청</h3>
             <form id="applicationForm">
                 <div class="form-group">
                     <label>교구명 *</label>
@@ -171,8 +185,8 @@
                     <textarea id="itemPurpose" required rows="3" placeholder="교구 사용 목적을 설명하세요"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>예상 가격 (원) *</label>
-                    <input type="number" id="itemPrice" required placeholder="예상 가격을 입력하세요">
+                    <label>가격 (원) *</label>
+                    <input type="number" id="itemPrice" required placeholder="가격을 입력하세요">
                 </div>
                 <div class="form-group">
                     <label>구매 링크 (선택)</label>
@@ -180,7 +194,84 @@
                 </div>
                 <div class="modal-actions">
                     <button type="button" id="cancelBtn" class="btn secondary">취소</button>
-                    <button type="submit" class="btn primary">신청하기</button>
+                    <button type="submit" class="btn primary" id="submitBtn">신청하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 묶음 신청 모달 -->
+    <div id="bundleModal" class="modal">
+        <div class="modal-content">
+            <h3>묶음 교구 신청</h3>
+            <form id="bundleForm">
+                <div class="form-group">
+                    <label>묶음 교구명 *</label>
+                    <input type="text" id="bundleName" required placeholder="묶음 교구를 대표하는 이름을 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label>사용 목적 *</label>
+                    <textarea id="bundlePurpose" required rows="3" placeholder="묶음 교구의 사용 목적을 설명하세요"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>총 가격 (원) *</label>
+                    <input type="number" id="bundlePrice" required placeholder="묶음 구매 총 가격을 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label>구매 링크 *</label>
+                    <input type="url" id="bundleLink" required placeholder="쿠팡 등 온라인 쇼핑몰 링크를 입력하세요">
+                </div>
+                <div class="bundle-credentials">
+                    <h4>온라인 쇼핑몰 계정 정보</h4>
+                    <div class="form-group">
+                        <label>사용자 ID *</label>
+                        <input type="text" id="bundleUserId" required placeholder="쿠팡/아마존 등 계정 ID를 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label>비밀번호 *</label>
+                        <input type="password" id="bundlePassword" required placeholder="계정 비밀번호를 입력하세요">
+                    </div>
+                    <p class="security-notice">
+                        <i data-lucide="shield"></i>
+                        계정 정보는 구매 완료 후 즉시 삭제됩니다.
+                    </p>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="bundleCancelBtn" class="btn secondary">취소</button>
+                    <button type="submit" class="btn primary">묶음 신청하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 배송지 설정 모달 -->
+    <div id="shippingModal" class="modal">
+        <div class="modal-content">
+            <h3>배송지 설정</h3>
+            <form id="shippingForm">
+                <div class="form-group">
+                    <label>받는 분 *</label>
+                    <input type="text" id="shippingName" required placeholder="받는 분 성명을 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label>연락처 *</label>
+                    <input type="tel" id="shippingPhone" required placeholder="연락처를 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label>주소 *</label>
+                    <textarea id="shippingAddress" required rows="3" placeholder="상세 주소를 입력하세요&#10;예: 123 Main Street, Apt 4B, Hanoi, Vietnam"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>우편번호</label>
+                    <input type="text" id="shippingPostcode" placeholder="우편번호 (선택)">
+                </div>
+                <div class="form-group">
+                    <label>배송 요청사항</label>
+                    <textarea id="shippingNote" rows="2" placeholder="배송 시 요청사항이 있으면 입력하세요"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="shippingCancelBtn" class="btn secondary">취소</button>
+                    <button type="submit" class="btn primary">저장하기</button>
                 </div>
             </form>
         </div>
