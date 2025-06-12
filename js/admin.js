@@ -7,6 +7,8 @@ const AdminManager = {
         this.setupEventListeners();
         this.loadStatistics();
         this.loadApplications();
+        this.loadLessonPlanManagement();
+        this.loadBudgetSettings();
     },
 
     // 이벤트 리스너 설정
@@ -21,6 +23,12 @@ const AdminManager = {
 
         // 수업계획 설정 버튼
         Utils.on('#lessonPlanSettingsBtn', 'click', () => this.showLessonPlanSettingsModal());
+
+        // 예산 설정 버튼 (새로 추가)
+        Utils.on('#budgetSettingsBtn', 'click', () => this.showBudgetSettingsModal());
+
+        // 수업계획 관리 버튼 (새로 추가)
+        Utils.on('#lessonPlanManagementBtn', 'click', () => this.showLessonPlanManagementModal());
 
         // 수업계획 설정 모달 이벤트
         Utils.on('#planSettingsCancelBtn', 'click', () => this.hideLessonPlanSettingsModal());
@@ -45,6 +53,454 @@ const AdminManager = {
 
         // 키보드 단축키
         this.setupKeyboardShortcuts();
+    },
+
+    // 예산 설정 모달 표시
+    showBudgetSettingsModal() {
+        // 모달이 없으면 생성
+        if (!Utils.$('#budgetSettingsModal')) {
+            this.createBudgetSettingsModal();
+        }
+
+        const modal = Utils.$('#budgetSettingsModal');
+        const settings = DataManager.getAllFieldBudgetSettings();
+        
+        // 현재 설정값으로 폼 채우기
+        const tbody = modal.querySelector('#budgetSettingsTable tbody');
+        tbody.innerHTML = '';
+        
+        Object.entries(settings).forEach(([field, setting]) => {
+            const row = Utils.createElement('tr');
+            row.innerHTML = `
+                <td>${field}</td>
+                <td>
+                    <input type="number" 
+                           data-field="${field}" 
+                           data-type="perLessonAmount" 
+                           value="${setting.perLessonAmount}" 
+                           min="0" step="1000" class="amount-input">
+                </td>
+                <td>
+                    <input type="number" 
+                           data-field="${field}" 
+                           data-type="maxBudget" 
+                           value="${setting.maxBudget}" 
+                           min="0" step="10000" class="amount-input">
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+        
+        modal.classList.add('active');
+    },
+
+    // 예산 설정 모달 생성
+    createBudgetSettingsModal() {
+        const modalHTML = `
+            <div id="budgetSettingsModal" class="modal">
+                <div class="modal-content large">
+                    <h3>분야별 예산 설정</h3>
+                    <form id="budgetSettingsForm">
+                        <div class="budget-settings-info">
+                            <p>각 분야별로 회당 지원금과 최대 상한을 설정하세요. 학생의 수업계획이 승인되면 이 설정에 따라 자동으로 예산이 배정됩니다.</p>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table id="budgetSettingsTable" class="budget-settings-table">
+                                <thead>
+                                    <tr>
+                                        <th>분야</th>
+                                        <th>회당 지원금 (원)</th>
+                                        <th>최대 상한 (원)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- 동적으로 생성됨 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button type="button" id="budgetSettingsCancelBtn" class="btn secondary">취소</button>
+                            <button type="submit" class="btn primary">설정 저장</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // 이벤트 리스너 추가
+        Utils.on('#budgetSettingsCancelBtn', 'click', () => this.hideBudgetSettingsModal());
+        Utils.on('#budgetSettingsModal', 'click', (e) => {
+            if (e.target.id === 'budgetSettingsModal') {
+                this.hideBudgetSettingsModal();
+            }
+        });
+        Utils.on('#budgetSettingsForm', 'submit', (e) => {
+            e.preventDefault();
+            this.handleBudgetSettingsSubmit();
+        });
+    },
+
+    // 예산 설정 모달 숨김
+    hideBudgetSettingsModal() {
+        const modal = Utils.$('#budgetSettingsModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    },
+
+    // 예산 설정 저장
+    handleBudgetSettingsSubmit() {
+        const form = Utils.$('#budgetSettingsForm');
+        const inputs = form.querySelectorAll('.amount-input');
+        const updates = {};
+        
+        inputs.forEach(input => {
+            const field = input.dataset.field;
+            const type = input.dataset.type;
+            const value = parseInt(input.value) || 0;
+            
+            if (!updates[field]) {
+                updates[field] = {};
+            }
+            updates[field][type] = value;
+        });
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        Utils.showLoading(submitBtn);
+        
+        setTimeout(() => {
+            try {
+                Object.entries(updates).forEach(([field, settings]) => {
+                    DataManager.updateFieldBudgetSettings(field, settings);
+                });
+                
+                Utils.hideLoading(submitBtn);
+                this.hideBudgetSettingsModal();
+                Utils.showAlert('예산 설정이 저장되었습니다.');
+                
+                // 기존 예산 배정된 학생들의 예산 재계산
+                this.recalculateAllBudgets();
+                
+            } catch (error) {
+                Utils.hideLoading(submitBtn);
+                Utils.showAlert('예산 설정 저장 중 오류가 발생했습니다.');
+                console.error('Budget settings error:', error);
+            }
+        }, 500);
+    },
+
+    // 모든 학생의 예산 재계산
+    recalculateAllBudgets() {
+        const lessonPlans = DataManager.getAllLessonPlans();
+        let updatedCount = 0;
+        
+        lessonPlans.forEach(plan => {
+            if (plan.approvalStatus === 'approved') {
+                const result = DataManager.allocateBudgetToStudent(plan.studentId);
+                if (result) {
+                    updatedCount++;
+                }
+            }
+        });
+        
+        if (updatedCount > 0) {
+            Utils.showAlert(`${updatedCount}명의 학생 예산이 재계산되었습니다.`);
+        }
+    },
+
+    // 수업계획 관리 모달 표시
+    showLessonPlanManagementModal() {
+        // 모달이 없으면 생성
+        if (!Utils.$('#lessonPlanManagementModal')) {
+            this.createLessonPlanManagementModal();
+        }
+
+        const modal = Utils.$('#lessonPlanManagementModal');
+        this.loadLessonPlansForManagement();
+        modal.classList.add('active');
+    },
+
+    // 수업계획 관리 모달 생성
+    createLessonPlanManagementModal() {
+        const modalHTML = `
+            <div id="lessonPlanManagementModal" class="modal">
+                <div class="modal-content large">
+                    <h3>수업계획 승인 관리</h3>
+                    <div class="lesson-plan-management-container">
+                        <div class="management-header">
+                            <div class="management-stats">
+                                <span id="pendingPlansCount" class="stat-badge pending">대기 중: 0</span>
+                                <span id="approvedPlansCount" class="stat-badge approved">승인됨: 0</span>
+                                <span id="rejectedPlansCount" class="stat-badge rejected">반려됨: 0</span>
+                            </div>
+                            <div class="management-actions">
+                                <button id="refreshPlansBtn" class="btn small secondary">
+                                    <i data-lucide="refresh-cw"></i> 새로고침
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="lessonPlansList" class="lesson-plans-list">
+                            <!-- 동적으로 생성됨 -->
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="button" id="lessonPlanManagementCloseBtn" class="btn secondary">닫기</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // 이벤트 리스너 추가
+        Utils.on('#lessonPlanManagementCloseBtn', 'click', () => this.hideLessonPlanManagementModal());
+        Utils.on('#lessonPlanManagementModal', 'click', (e) => {
+            if (e.target.id === 'lessonPlanManagementModal') {
+                this.hideLessonPlanManagementModal();
+            }
+        });
+        Utils.on('#refreshPlansBtn', 'click', () => this.loadLessonPlansForManagement());
+    },
+
+    // 수업계획 관리 모달 숨김
+    hideLessonPlanManagementModal() {
+        const modal = Utils.$('#lessonPlanManagementModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    },
+
+    // 수업계획 목록 로드 (관리용)
+    loadLessonPlansForManagement() {
+        const allPlans = DataManager.getAllLessonPlans();
+        const students = DataManager.students;
+        
+        // 통계 계산
+        const pendingCount = allPlans.filter(p => p.status === 'completed' && (!p.approvalStatus || p.approvalStatus === 'pending')).length;
+        const approvedCount = allPlans.filter(p => p.approvalStatus === 'approved').length;
+        const rejectedCount = allPlans.filter(p => p.approvalStatus === 'rejected').length;
+        
+        // 통계 업데이트
+        Utils.$('#pendingPlansCount').textContent = `대기 중: ${pendingCount}`;
+        Utils.$('#approvedPlansCount').textContent = `승인됨: ${approvedCount}`;
+        Utils.$('#rejectedPlansCount').textContent = `반려됨: ${rejectedCount}`;
+        
+        // 수업계획 목록 생성
+        const container = Utils.$('#lessonPlansList');
+        container.innerHTML = '';
+        
+        if (allPlans.length === 0) {
+            container.innerHTML = '<div class="no-plans">제출된 수업계획이 없습니다.</div>';
+            return;
+        }
+        
+        allPlans.forEach(plan => {
+            const student = students.find(s => s.id === plan.studentId);
+            const planCard = this.createLessonPlanCard(plan, student);
+            container.appendChild(planCard);
+        });
+        
+        // 아이콘 재생성
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        // 이벤트 리스너 재설정
+        this.setupLessonPlanActionListeners();
+    },
+
+    // 수업계획 카드 생성
+    createLessonPlanCard(plan, student) {
+        const card = Utils.createElement('div', 'lesson-plan-card');
+        
+        const statusText = plan.status === 'completed' ? '제출완료' : '임시저장';
+        const statusClass = plan.status === 'completed' ? 'completed' : 'draft';
+        
+        let approvalStatusText = '대기 중';
+        let approvalStatusClass = 'pending';
+        
+        if (plan.approvalStatus === 'approved') {
+            approvalStatusText = '승인됨';
+            approvalStatusClass = 'approved';
+        } else if (plan.approvalStatus === 'rejected') {
+            approvalStatusText = '반려됨';
+            approvalStatusClass = 'rejected';
+        }
+        
+        // 예산 정보 계산
+        const budgetInfo = DataManager.calculateBudgetFromLessonPlan(plan.studentId);
+        
+        card.innerHTML = `
+            <div class="plan-card-header">
+                <div class="plan-student-info">
+                    <h4>${plan.studentName}</h4>
+                    <p>${student?.instituteName || ''} • ${student?.specialization || ''}</p>
+                    <div class="plan-meta">
+                        <span>수업 횟수: ${plan.totalLessons}회</span>
+                        <span>기간: ${plan.startDate} ~ ${plan.endDate}</span>
+                    </div>
+                </div>
+                <div class="plan-status-info">
+                    <span class="plan-status ${statusClass}">${statusText}</span>
+                    <span class="approval-status ${approvalStatusClass}">${approvalStatusText}</span>
+                </div>
+            </div>
+            
+            ${budgetInfo.allocated > 0 ? `
+                <div class="plan-budget-info">
+                    <div class="budget-item">
+                        <span class="budget-label">배정 예산:</span>
+                        <span class="budget-value">${Utils.formatPrice(budgetInfo.allocated)}</span>
+                    </div>
+                    <div class="budget-calculation">
+                        ${plan.totalLessons}회 × ${Utils.formatPrice(budgetInfo.perLessonAmount)} = ${Utils.formatPrice(budgetInfo.calculated)}
+                        ${budgetInfo.isCapReached ? ` (상한 ${Utils.formatPrice(budgetInfo.maxBudget)} 적용)` : ''}
+                    </div>
+                </div>
+            ` : ''}
+            
+            <div class="plan-card-content">
+                <div class="plan-goals">
+                    <strong>수업 목표:</strong>
+                    <p>${plan.overallGoals || '목표가 설정되지 않았습니다.'}</p>
+                </div>
+                ${plan.specialNotes ? `
+                    <div class="plan-notes">
+                        <strong>특별 고려사항:</strong>
+                        <p>${plan.specialNotes}</p>
+                    </div>
+                ` : ''}
+            </div>
+            
+            ${plan.rejectionReason ? `
+                <div class="plan-rejection-reason">
+                    <strong>반려 사유:</strong>
+                    <p>${plan.rejectionReason}</p>
+                </div>
+            ` : ''}
+            
+            <div class="plan-card-actions">
+                ${this.createLessonPlanActionButtons(plan)}
+            </div>
+        `;
+        
+        return card;
+    },
+
+    // 수업계획 액션 버튼 생성
+    createLessonPlanActionButtons(plan) {
+        if (plan.status !== 'completed') {
+            return '<span class="plan-action-note">수업계획이 제출되지 않았습니다.</span>';
+        }
+        
+        if (plan.approvalStatus === 'approved') {
+            return `
+                <span class="plan-approved-info">
+                    승인일: ${plan.approvedAt ? new Date(plan.approvedAt).toLocaleDateString('ko-KR') : '-'}
+                    (승인자: ${plan.approvedBy || '관리자'})
+                </span>
+            `;
+        }
+        
+        if (plan.approvalStatus === 'rejected') {
+            return `
+                <div class="plan-rejected-actions">
+                    <span class="plan-rejected-info">
+                        반려일: ${plan.rejectedAt ? new Date(plan.rejectedAt).toLocaleDateString('ko-KR') : '-'}
+                    </span>
+                    <button class="btn small approve" data-action="approve" data-student-id="${plan.studentId}">
+                        재승인
+                    </button>
+                </div>
+            `;
+        }
+        
+        // 대기 중인 경우
+        return `
+            <button class="btn small approve" data-action="approve" data-student-id="${plan.studentId}">
+                <i data-lucide="check"></i> 승인
+            </button>
+            <button class="btn small reject" data-action="reject" data-student-id="${plan.studentId}">
+                <i data-lucide="x"></i> 반려
+            </button>
+        `;
+    },
+
+    // 수업계획 액션 이벤트 리스너 설정
+    setupLessonPlanActionListeners() {
+        const actionButtons = Utils.$$('#lessonPlansList button[data-action]');
+        
+        actionButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const action = e.target.closest('button').dataset.action;
+                const studentId = parseInt(e.target.closest('button').dataset.studentId);
+                
+                this.handleLessonPlanAction(action, studentId, e.target);
+            });
+        });
+    },
+
+    // 수업계획 액션 처리
+    handleLessonPlanAction(action, studentId, buttonElement) {
+        switch(action) {
+            case 'approve':
+                this.approveLessonPlan(studentId, buttonElement);
+                break;
+            case 'reject':
+                this.rejectLessonPlan(studentId, buttonElement);
+                break;
+        }
+    },
+
+    // 수업계획 승인
+    approveLessonPlan(studentId, buttonElement) {
+        if (Utils.showConfirm('이 수업계획을 승인하시겠습니까? 승인 시 자동으로 예산이 배정됩니다.')) {
+            Utils.showLoading(buttonElement);
+            
+            setTimeout(() => {
+                const result = DataManager.approveLessonPlan(studentId);
+                
+                if (result.success) {
+                    this.loadLessonPlansForManagement();
+                    
+                    let message = '수업계획이 승인되었습니다.';
+                    if (result.budgetInfo) {
+                        message += `\\n배정된 예산: ${Utils.formatPrice(result.budgetInfo.allocated)}`;
+                    }
+                    Utils.showAlert(message);
+                } else {
+                    Utils.hideLoading(buttonElement);
+                    Utils.showAlert(result.message || '승인 처리 중 오류가 발생했습니다.');
+                }
+            }, 500);
+        }
+    },
+
+    // 수업계획 반려
+    rejectLessonPlan(studentId, buttonElement) {
+        const reason = Utils.showPrompt('반려 사유를 입력하세요:', '');
+        
+        if (reason && reason.trim()) {
+            Utils.showLoading(buttonElement);
+            
+            setTimeout(() => {
+                const result = DataManager.rejectLessonPlan(studentId, reason.trim());
+                
+                if (result.success) {
+                    this.loadLessonPlansForManagement();
+                    Utils.showAlert('수업계획이 반려되었습니다.');
+                } else {
+                    Utils.hideLoading(buttonElement);
+                    Utils.showAlert(result.message || '반려 처리 중 오류가 발생했습니다.');
+                }
+            }, 500);
+        }
     },
 
     // 영수증 보기 모달 표시
@@ -227,50 +683,6 @@ const AdminManager = {
         return newMode;
     },
 
-    // 수업계획 현황 조회
-    showLessonPlanStatus() {
-        const lessonPlans = DataManager.getAllLessonPlans();
-        const students = DataManager.students;
-        const settings = DataManager.lessonPlanSettings;
-        
-        let completedCount = 0;
-        let draftCount = 0;
-        let notStartedCount = 0;
-        
-        const studentPlanMap = new Map();
-        lessonPlans.forEach(plan => {
-            studentPlanMap.set(plan.studentId, plan);
-            if (plan.status === 'completed') {
-                completedCount++;
-            } else {
-                draftCount++;
-            }
-        });
-        
-        notStartedCount = students.length - lessonPlans.length;
-        
-        let editStatus = '수정 불가능';
-        if (settings.testMode) {
-            editStatus = '테스트 모드 (항상 수정 가능)';
-        } else if (settings.allowOverrideDeadline) {
-            editStatus = '마감일 무시 모드 (항상 수정 가능)';
-        } else if (settings.isEditingAllowed) {
-            editStatus = '수정 가능';
-        }
-        
-        const deadlineText = `${settings.editDeadline} ${settings.editTime}`;
-        
-        const message = `수업계획 현황\\n\\n` +
-                       `전체 학생: ${students.length}명\\n` +
-                       `완료: ${completedCount}명\\n` +
-                       `임시저장: ${draftCount}명\\n` +
-                       `미작성: ${notStartedCount}명\\n\\n` +
-                       `수정 마감일: ${deadlineText}\\n` +
-                       `현재 상태: ${editStatus}`;
-        
-        alert(message);
-    },
-
     // 키보드 단축키 설정
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (event) => {
@@ -299,6 +711,18 @@ const AdminManager = {
                 event.preventDefault();
                 this.quickToggleTestMode();
             }
+
+            // Ctrl/Cmd + B: 예산 설정 모달
+            if ((event.ctrlKey || event.metaKey) && event.key === 'b') {
+                event.preventDefault();
+                this.showBudgetSettingsModal();
+            }
+
+            // Ctrl/Cmd + L: 수업계획 관리 모달
+            if ((event.ctrlKey || event.metaKey) && event.key === 'l') {
+                event.preventDefault();
+                this.showLessonPlanManagementModal();
+            }
         });
     },
 
@@ -310,6 +734,71 @@ const AdminManager = {
         Utils.$('#approvedCount').textContent = stats.approved;
         Utils.$('#rejectedCount').textContent = stats.rejected;
         Utils.$('#purchasedCount').textContent = stats.purchased;
+    },
+
+    // 수업계획 관리 정보 로드
+    loadLessonPlanManagement() {
+        const pendingPlans = DataManager.getPendingLessonPlans();
+        
+        // 수업계획 관리 버튼에 대기 중인 수업계획 개수 표시
+        const btn = Utils.$('#lessonPlanManagementBtn');
+        if (btn && pendingPlans.length > 0) {
+            btn.innerHTML = `
+                <i data-lucide="clipboard-check"></i>
+                수업계획 관리 <span class="notification-badge">${pendingPlans.length}</span>
+            `;
+        }
+    },
+
+    // 예산 설정 로드
+    loadBudgetSettings() {
+        // 예산 설정 버튼이 없으면 생성
+        const header = Utils.$('.header-content .header-actions');
+        if (header && !Utils.$('#budgetSettingsBtn')) {
+            const budgetBtn = Utils.createElement('button', 'btn secondary');
+            budgetBtn.id = 'budgetSettingsBtn';
+            budgetBtn.innerHTML = `
+                <i data-lucide="dollar-sign"></i>
+                예산 설정
+            `;
+            
+            // 수업계획 설정 버튼 다음에 삽입
+            const lessonPlanBtn = Utils.$('#lessonPlanSettingsBtn');
+            if (lessonPlanBtn) {
+                lessonPlanBtn.insertAdjacentElement('afterend', budgetBtn);
+            } else {
+                header.insertBefore(budgetBtn, header.firstChild);
+            }
+            
+            // 이벤트 리스너 추가
+            budgetBtn.addEventListener('click', () => this.showBudgetSettingsModal());
+        }
+
+        // 수업계획 관리 버튼도 없으면 생성
+        if (header && !Utils.$('#lessonPlanManagementBtn')) {
+            const managementBtn = Utils.createElement('button', 'btn secondary');
+            managementBtn.id = 'lessonPlanManagementBtn';
+            managementBtn.innerHTML = `
+                <i data-lucide="clipboard-check"></i>
+                수업계획 관리
+            `;
+            
+            // 예산 설정 버튼 다음에 삽입
+            const budgetBtn = Utils.$('#budgetSettingsBtn');
+            if (budgetBtn) {
+                budgetBtn.insertAdjacentElement('afterend', managementBtn);
+            } else {
+                header.insertBefore(managementBtn, header.firstChild);
+            }
+            
+            // 이벤트 리스너 추가
+            managementBtn.addEventListener('click', () => this.showLessonPlanManagementModal());
+        }
+
+        // 아이콘 재생성
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     },
 
     // 신청 내역 로드
@@ -350,15 +839,33 @@ const AdminManager = {
         const submittedDate = Utils.formatDate(application.submittedAt);
         const student = DataManager.students.find(s => s.id === application.studentId);
         const lessonPlan = DataManager.getStudentLessonPlan(application.studentId);
+        const budgetStatus = DataManager.getStudentBudgetStatus(application.studentId);
         
         // 수업계획 상태 표시
         let lessonPlanStatus = '';
         if (lessonPlan) {
-            const statusText = lessonPlan.status === 'completed' ? '완료' : '임시저장';
-            const statusClass = lessonPlan.status === 'completed' ? 'completed' : 'draft';
-            lessonPlanStatus = `<span class="lesson-plan-status ${statusClass}">수업계획: ${statusText}</span>`;
+            if (lessonPlan.approvalStatus === 'approved') {
+                lessonPlanStatus = `<span class="lesson-plan-status approved">수업계획: 승인됨</span>`;
+            } else if (lessonPlan.approvalStatus === 'rejected') {
+                lessonPlanStatus = `<span class="lesson-plan-status rejected">수업계획: 반려됨</span>`;
+            } else {
+                const statusText = lessonPlan.status === 'completed' ? '승인대기' : '임시저장';
+                const statusClass = lessonPlan.status === 'completed' ? 'pending' : 'draft';
+                lessonPlanStatus = `<span class="lesson-plan-status ${statusClass}">수업계획: ${statusText}</span>`;
+            }
         } else {
             lessonPlanStatus = `<span class="lesson-plan-status not-started">수업계획: 미작성</span>`;
+        }
+
+        // 예산 정보 표시
+        let budgetInfo = '';
+        if (budgetStatus && budgetStatus.allocated > 0) {
+            budgetInfo = `
+                <div class="budget-info-summary">
+                    <span>예산: ${Utils.formatPrice(budgetStatus.used)} / ${Utils.formatPrice(budgetStatus.allocated)}</span>
+                    <span>잔여: ${Utils.formatPrice(budgetStatus.remaining)}</span>
+                </div>
+            `;
         }
         
         card.innerHTML = `
@@ -369,6 +876,7 @@ const AdminManager = {
                         <p class="submission-date">신청일: ${submittedDate}</p>
                         ${student ? `<p class="institute-info">${student.instituteName} • ${student.specialization}</p>` : ''}
                         ${lessonPlanStatus}
+                        ${budgetInfo}
                     </div>
                     <span class="item-count">총 ${application.items.length}개 항목</span>
                 </div>
@@ -542,6 +1050,21 @@ const AdminManager = {
 
     // 아이템 승인
     approveItem(studentId, itemId, buttonElement) {
+        // 예산 확인
+        const budgetStatus = DataManager.getStudentBudgetStatus(studentId);
+        if (!budgetStatus.canApplyForEquipment) {
+            Utils.showAlert('수업계획이 승인되지 않아 교구 신청을 승인할 수 없습니다.');
+            return;
+        }
+
+        const application = DataManager.applications.find(app => app.studentId === studentId);
+        const item = application?.items.find(i => i.id === itemId);
+        
+        if (item && budgetStatus.remaining < item.price) {
+            Utils.showAlert(`예산이 부족합니다. 남은 예산: ${Utils.formatPrice(budgetStatus.remaining)}`);
+            return;
+        }
+
         if (Utils.showConfirm('이 교구 신청을 승인하시겠습니까?')) {
             Utils.showLoading(buttonElement);
             
@@ -641,6 +1164,7 @@ const AdminManager = {
     refreshData() {
         this.loadStatistics();
         this.loadApplications();
+        this.loadLessonPlanManagement();
     },
 
     // HTML 이스케이프
@@ -664,6 +1188,7 @@ const AdminManager = {
         const stats = DataManager.getStats();
         const applications = DataManager.getAllApplications();
         const offlineStats = DataManager.getOfflinePurchaseStats();
+        const budgetSettings = DataManager.getAllFieldBudgetSettings();
         
         let totalAmount = 0;
         let approvedAmount = 0;
@@ -671,7 +1196,15 @@ const AdminManager = {
         let onlineCount = 0;
         let offlineCount = 0;
         
+        // 분야별 통계
+        const fieldStats = {};
+        Object.keys(budgetSettings).forEach(field => {
+            fieldStats[field] = { count: 0, amount: 0 };
+        });
+        
         applications.forEach(app => {
+            const student = DataManager.students.find(s => s.id === app.studentId);
+            
             app.items.forEach(item => {
                 totalAmount += item.price;
                 if (item.status === 'approved' || item.status === 'purchased') {
@@ -687,7 +1220,20 @@ const AdminManager = {
                 } else {
                     onlineCount++;
                 }
+                
+                // 분야별 통계
+                if (student && fieldStats[student.specialization]) {
+                    fieldStats[student.specialization].count++;
+                    fieldStats[student.specialization].amount += item.price;
+                }
             });
+        });
+        
+        let fieldStatsText = '';
+        Object.entries(fieldStats).forEach(([field, stat]) => {
+            if (stat.count > 0) {
+                fieldStatsText += `- ${field}: ${stat.count}건, ${Utils.formatPrice(stat.amount)}\\n`;
+            }
         });
         
         const message = `상세 통계\\n\\n` +
@@ -701,57 +1247,11 @@ const AdminManager = {
                        `- 승인된 오프라인 구매: ${offlineStats.approvedOffline}건\\n` +
                        `- 영수증 제출 완료: ${offlineStats.withReceipt}건\\n` +
                        `- 영수증 제출 대기: ${offlineStats.pendingReceipt}건\\n\\n` +
+                       `분야별 통계:\\n${fieldStatsText}\\n` +
                        `전체 예산: ${Utils.formatPrice(totalAmount)}\\n` +
                        `승인 예산: ${Utils.formatPrice(approvedAmount)}\\n` +
                        `구매 완료: ${Utils.formatPrice(purchasedAmount)}`;
         
         alert(message);
-    },
-
-    // 일괄 승인 기능
-    bulkApprove() {
-        const pendingItems = this.getPendingItems();
-        
-        if (pendingItems.length === 0) {
-            Utils.showAlert('승인할 대기 중인 항목이 없습니다.');
-            return;
-        }
-        
-        if (Utils.showConfirm(`${pendingItems.length}개의 대기 중인 항목을 모두 승인하시겠습니까?`)) {
-            pendingItems.forEach(({studentId, itemId}) => {
-                DataManager.updateItemStatus(studentId, itemId, 'approved');
-            });
-            
-            this.refreshData();
-            Utils.showAlert(`${pendingItems.length}개 항목이 승인되었습니다.`);
-        }
-    },
-
-    // 대기 중인 항목 조회
-    getPendingItems() {
-        const items = [];
-        DataManager.getAllApplications().forEach(app => {
-            app.items.forEach(item => {
-                if (item.status === 'pending') {
-                    items.push({
-                        studentId: app.studentId,
-                        itemId: item.id
-                    });
-                }
-            });
-        });
-        return items;
-    },
-
-    // 필터링 기능
-    filterByStatus(status) {
-        // 향후 구현 예정
-        console.log('Filter by status:', status);
-    },
-
-    // 정렬 기능
-    sortBy(criteria) {
-        // 향후 구현 예정
-        console.log('Sort by:', criteria);
     }
 };
