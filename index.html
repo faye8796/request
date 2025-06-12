@@ -67,6 +67,17 @@
                 <div class="lesson-plan-header">
                     <h1>수업 계획 작성</h1>
                     <p>파견 기간 동안의 수업 계획을 작성해주세요</p>
+                    <!-- 예산 배정 안내 추가 -->
+                    <div id="budgetAllocationNotice" class="budget-allocation-notice" style="display: none;">
+                        <div class="notice-content">
+                            <i data-lucide="info"></i>
+                            <div class="notice-text">
+                                <h4>예산 배정 안내</h4>
+                                <p>수업계획을 제출하시면 관리자 승인 후 파견분야별 회당 지원금에 따라 자동으로 예산이 배정됩니다.</p>
+                                <div id="budgetEstimate" class="budget-estimate"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="lesson-plan-content">
@@ -174,6 +185,11 @@
                     </div>
                 </div>
 
+                <!-- 수업계획 승인 상태 알림 추가 -->
+                <div id="lessonPlanApprovalStatus" class="approval-status-container" style="display: none;">
+                    <!-- 동적으로 생성될 승인 상태 표시 -->
+                </div>
+
                 <div id="studentApplications" class="applications-grid">
                     <!-- 동적으로 생성될 신청 내역 -->
                 </div>
@@ -191,6 +207,18 @@
                 <div class="header-content">
                     <h1>관리자 대시보드</h1>
                     <div class="header-actions">
+                        <button id="budgetConfigBtn" class="btn secondary">
+                            <i data-lucide="settings"></i>
+                            예산 설정
+                        </button>
+                        <button id="lessonPlanManagementBtn" class="btn secondary">
+                            <i data-lucide="clipboard-check"></i>
+                            수업계획 관리
+                        </button>
+                        <button id="budgetStatusBtn" class="btn secondary">
+                            <i data-lucide="bar-chart-3"></i>
+                            예산 현황
+                        </button>
                         <button id="lessonPlanSettingsBtn" class="btn secondary">
                             <i data-lucide="settings"></i>
                             수업계획 설정
@@ -482,6 +510,308 @@
                 <button type="button" id="downloadReceiptBtn" class="btn primary">
                     <i data-lucide="download"></i>
                     이미지 다운로드
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 분야별 예산 설정 모달 (관리자용) -->
+    <div id="budgetConfigModal" class="modal">
+        <div class="modal-content large">
+            <h3>분야별 예산 설정</h3>
+            <div class="budget-config-tabs">
+                <button class="tab-btn active" data-tab="support-rates">회당 지원금 설정</button>
+                <button class="tab-btn" data-tab="max-budgets">최대 상한 설정</button>
+            </div>
+            
+            <!-- 회당 지원금 설정 탭 -->
+            <div id="supportRatesTab" class="tab-content active">
+                <div class="tab-description">
+                    <p>각 분야별로 수업 1회당 지원되는 금액을 설정합니다. 소모품이 많이 드는 분야는 높게, 적게 드는 분야는 낮게 설정할 수 있습니다.</p>
+                </div>
+                <form id="supportRatesForm">
+                    <div class="field-settings-grid">
+                        <div class="field-setting">
+                            <label>한국어교육</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="한국어교육" min="0" step="1000" placeholder="15000">
+                                <span class="unit">원/회</span>
+                            </div>
+                        </div>
+                        <div class="field-setting">
+                            <label>전통문화예술</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="전통문화예술" min="0" step="1000" placeholder="25000">
+                                <span class="unit">원/회</span>
+                            </div>
+                        </div>
+                        <div class="field-setting">
+                            <label>K-Pop 문화</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="K-Pop 문화" min="0" step="1000" placeholder="10000">
+                                <span class="unit">원/회</span>
+                            </div>
+                        </div>
+                        <div class="field-setting">
+                            <label>한국현대문화</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="한국현대문화" min="0" step="1000" placeholder="18000">
+                                <span class="unit">원/회</span>
+                            </div>
+                        </div>
+                        <div class="field-setting">
+                            <label>전통음악</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="전통음악" min="0" step="1000" placeholder="30000">
+                                <span class="unit">원/회</span>
+                            </div>
+                        </div>
+                        <div class="field-setting">
+                            <label>한국미술</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="한국미술" min="0" step="1000" placeholder="22000">
+                                <span class="unit">원/회</span>
+                            </div>
+                        </div>
+                        <div class="field-setting">
+                            <label>한국요리문화</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="한국요리문화" min="0" step="1000" placeholder="35000">
+                                <span class="unit">원/회</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="supportRatesCancelBtn" class="btn secondary">취소</button>
+                        <button type="submit" class="btn primary">회당 지원금 저장</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- 최대 상한 설정 탭 -->
+            <div id="maxBudgetsTab" class="tab-content">
+                <div class="tab-description">
+                    <p>각 분야별로 배정할 수 있는 최대 예산 상한을 설정합니다. 수업이 많아도 이 금액을 초과해서 배정되지 않습니다.</p>
+                </div>
+                <form id="maxBudgetsForm">
+                    <div class="field-settings-grid">
+                        <div class="field-setting">
+                            <label>한국어교육</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="한국어교육" min="0" step="10000" placeholder="500000">
+                                <span class="unit">원</span>
+                            </div>
+                        </div>
+                        <div class="field-setting">
+                            <label>전통문화예술</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="전통문화예술" min="0" step="10000" placeholder="600000">
+                                <span class="unit">원</span>
+                            </div>
+                        </div>
+                        <div class="field-setting">
+                            <label>K-Pop 문화</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="K-Pop 문화" min="0" step="10000" placeholder="400000">
+                                <span class="unit">원</span>
+                            </div>
+                        </div>
+                        <div class="field-setting">
+                            <label>한국현대문화</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="한국현대문화" min="0" step="10000" placeholder="450000">
+                                <span class="unit">원</span>
+                            </div>
+                        </div>
+                        <div class="field-setting">
+                            <label>전통음악</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="전통음악" min="0" step="10000" placeholder="700000">
+                                <span class="unit">원</span>
+                            </div>
+                        </div>
+                        <div class="field-setting">
+                            <label>한국미술</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="한국미술" min="0" step="10000" placeholder="550000">
+                                <span class="unit">원</span>
+                            </div>
+                        </div>
+                        <div class="field-setting">
+                            <label>한국요리문화</label>
+                            <div class="input-with-unit">
+                                <input type="number" name="한국요리문화" min="0" step="10000" placeholder="800000">
+                                <span class="unit">원</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="maxBudgetsCancelBtn" class="btn secondary">취소</button>
+                        <button type="submit" class="btn primary">최대 상한 저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 수업계획 관리 모달 (관리자용) -->
+    <div id="lessonPlanManagementModal" class="modal">
+        <div class="modal-content large">
+            <h3>수업계획 관리 및 승인</h3>
+            <div class="lesson-plan-management-content">
+                <div class="management-header">
+                    <div class="management-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">승인 대기</span>
+                            <span id="pendingPlansCount" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">승인 완료</span>
+                            <span id="approvedPlansCount" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">반려됨</span>
+                            <span id="rejectedPlansCount" class="stat-value">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="lessonPlansList" class="lesson-plans-list">
+                    <!-- 동적으로 생성될 수업계획 목록 -->
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" id="lessonPlanManagementCloseBtn" class="btn secondary">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 수업계획 상세 모달 (관리자용) -->
+    <div id="lessonPlanDetailModal" class="modal">
+        <div class="modal-content large">
+            <h3 id="lessonPlanDetailTitle">수업계획 상세</h3>
+            <div class="lesson-plan-detail-content">
+                <div class="student-info-section">
+                    <h4>학생 정보</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">학생명:</span>
+                            <span id="detailStudentName">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">파견학당:</span>
+                            <span id="detailInstitute">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">전공분야:</span>
+                            <span id="detailSpecialization">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">회당 지원금:</span>
+                            <span id="detailSupportRate">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="plan-info-section">
+                    <h4>수업 계획 정보</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">파견 기간:</span>
+                            <span id="detailPeriod">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">총 수업 횟수:</span>
+                            <span id="detailTotalLessons">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">예상 배정 예산:</span>
+                            <span id="detailEstimatedBudget">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">최대 상한:</span>
+                            <span id="detailMaxBudget">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="goals-section">
+                    <h4>수업 목표</h4>
+                    <p id="detailGoals">-</p>
+                </div>
+                
+                <div class="notes-section">
+                    <h4>특별 고려사항</h4>
+                    <p id="detailNotes">-</p>
+                </div>
+                
+                <div class="approval-section">
+                    <h4>승인 처리</h4>
+                    <div class="approval-actions">
+                        <button id="approvePlanBtn" class="btn success">
+                            <i data-lucide="check"></i>
+                            수업계획 승인
+                        </button>
+                        <button id="rejectPlanBtn" class="btn danger">
+                            <i data-lucide="x"></i>
+                            수업계획 반려
+                        </button>
+                    </div>
+                    
+                    <div id="rejectionReasonSection" class="rejection-reason-section" style="display: none;">
+                        <label>반려 사유</label>
+                        <textarea id="rejectionReasonText" rows="3" placeholder="반려 사유를 입력하세요"></textarea>
+                        <div class="rejection-actions">
+                            <button id="cancelRejectionBtn" class="btn secondary">취소</button>
+                            <button id="confirmRejectionBtn" class="btn danger">반려 확정</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" id="lessonPlanDetailCloseBtn" class="btn secondary">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 예산 현황 모달 (관리자용) -->
+    <div id="budgetStatusModal" class="modal">
+        <div class="modal-content large">
+            <h3>예산 배정 현황</h3>
+            <div class="budget-status-content">
+                <div class="budget-summary">
+                    <div class="summary-card">
+                        <h4>전체 배정 예산</h4>
+                        <p id="totalAllocatedBudget" class="budget-amount">0원</p>
+                    </div>
+                    <div class="summary-card">
+                        <h4>승인된 학생 수</h4>
+                        <p id="approvedStudentsCount" class="student-count">0명</p>
+                    </div>
+                </div>
+                
+                <div class="field-budget-breakdown">
+                    <h4>분야별 예산 현황</h4>
+                    <div id="fieldBudgetChart" class="field-budget-chart">
+                        <!-- 동적으로 생성될 분야별 차트 -->
+                    </div>
+                </div>
+                
+                <div class="student-budget-list">
+                    <h4>학생별 예산 현황</h4>
+                    <div id="studentBudgetTable" class="student-budget-table">
+                        <!-- 동적으로 생성될 학생별 테이블 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" id="budgetStatusCloseBtn" class="btn secondary">닫기</button>
+                <button type="button" id="exportBudgetStatusBtn" class="btn primary">
+                    <i data-lucide="download"></i>
+                    현황 내보내기
                 </button>
             </div>
         </div>
