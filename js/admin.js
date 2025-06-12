@@ -19,8 +19,129 @@ const AdminManager = {
         // Excel 내보내기
         Utils.on('#exportBtn', 'click', () => this.handleExport());
 
+        // 수업계획 설정 버튼
+        Utils.on('#lessonPlanSettingsBtn', 'click', () => this.showLessonPlanSettingsModal());
+
+        // 수업계획 설정 모달 이벤트
+        Utils.on('#planSettingsCancelBtn', 'click', () => this.hideLessonPlanSettingsModal());
+        Utils.on('#lessonPlanSettingsModal', 'click', (e) => {
+            if (e.target.id === 'lessonPlanSettingsModal') {
+                this.hideLessonPlanSettingsModal();
+            }
+        });
+        Utils.on('#lessonPlanSettingsForm', 'submit', (e) => {
+            e.preventDefault();
+            this.handleLessonPlanSettingsSubmit();
+        });
+
         // 키보드 단축키
         this.setupKeyboardShortcuts();
+    },
+
+    // 수업계획 설정 모달 표시
+    showLessonPlanSettingsModal() {
+        const modal = Utils.$('#lessonPlanSettingsModal');
+        const settings = DataManager.lessonPlanSettings;
+        
+        // 현재 설정값으로 폼 채우기
+        Utils.$('#planEditDeadline').value = settings.editDeadline;
+        Utils.$('#planEditTime').value = settings.editTime;
+        Utils.$('#planEditNotice').value = settings.noticeMessage;
+        
+        modal.classList.add('active');
+        
+        setTimeout(() => {
+            Utils.$('#planEditDeadline').focus();
+        }, 100);
+    },
+
+    // 수업계획 설정 모달 숨김
+    hideLessonPlanSettingsModal() {
+        const modal = Utils.$('#lessonPlanSettingsModal');
+        modal.classList.remove('active');
+        Utils.resetForm('#lessonPlanSettingsForm');
+    },
+
+    // 수업계획 설정 저장
+    handleLessonPlanSettingsSubmit() {
+        const deadline = Utils.$('#planEditDeadline').value;
+        const time = Utils.$('#planEditTime').value;
+        const notice = Utils.$('#planEditNotice').value.trim();
+
+        // 입력 검증
+        if (!Utils.validateRequired(deadline, '수업계획 수정 마감일')) return;
+
+        // 마감일이 과거인지 확인
+        const deadlineDate = new Date(`${deadline} ${time}`);
+        const now = new Date();
+        
+        if (deadlineDate < now) {
+            if (!Utils.showConfirm('마감일이 현재 시간보다 과거입니다. 이 경우 학생들이 수업계획을 수정할 수 없게 됩니다. 계속하시겠습니까?')) {
+                return;
+            }
+        }
+
+        const submitBtn = Utils.$('#lessonPlanSettingsForm button[type="submit"]');
+        Utils.showLoading(submitBtn);
+
+        setTimeout(() => {
+            try {
+                const newSettings = {
+                    editDeadline: deadline,
+                    editTime: time,
+                    noticeMessage: notice || `수업계획은 ${deadline} ${time}까지 수정 가능합니다. 마감일 이후에는 수정이 불가능하니 미리 완료해주세요.`
+                };
+
+                const updatedSettings = DataManager.updateLessonPlanSettings(newSettings);
+                
+                Utils.hideLoading(submitBtn);
+                this.hideLessonPlanSettingsModal();
+                
+                const statusText = updatedSettings.isEditingAllowed ? '수정 가능' : '수정 불가능';
+                Utils.showAlert(`수업계획 설정이 저장되었습니다.\\n현재 상태: ${statusText}`);
+                
+            } catch (error) {
+                Utils.hideLoading(submitBtn);
+                Utils.showAlert('설정 저장 중 오류가 발생했습니다.');
+                console.error('Lesson plan settings error:', error);
+            }
+        }, 500);
+    },
+
+    // 수업계획 현황 조회
+    showLessonPlanStatus() {
+        const lessonPlans = DataManager.getAllLessonPlans();
+        const students = DataManager.students;
+        const settings = DataManager.lessonPlanSettings;
+        
+        let completedCount = 0;
+        let draftCount = 0;
+        let notStartedCount = 0;
+        
+        const studentPlanMap = new Map();
+        lessonPlans.forEach(plan => {
+            studentPlanMap.set(plan.studentId, plan);
+            if (plan.status === 'completed') {
+                completedCount++;
+            } else {
+                draftCount++;
+            }
+        });
+        
+        notStartedCount = students.length - lessonPlans.length;
+        
+        const editStatus = settings.isEditingAllowed ? '수정 가능' : '수정 불가능';
+        const deadlineText = `${settings.editDeadline} ${settings.editTime}`;
+        
+        const message = `수업계획 현황\\n\\n` +
+                       `전체 학생: ${students.length}명\\n` +
+                       `완료: ${completedCount}명\\n` +
+                       `임시저장: ${draftCount}명\\n` +
+                       `미작성: ${notStartedCount}명\\n\\n` +
+                       `수정 마감일: ${deadlineText}\\n` +
+                       `현재 상태: ${editStatus}`;
+        
+        alert(message);
     },
 
     // 키보드 단축키 설정
@@ -94,6 +215,18 @@ const AdminManager = {
         const card = Utils.createElement('div', 'admin-application-card');
         
         const submittedDate = Utils.formatDate(application.submittedAt);
+        const student = DataManager.students.find(s => s.id === application.studentId);
+        const lessonPlan = DataManager.getStudentLessonPlan(application.studentId);
+        
+        // 수업계획 상태 표시
+        let lessonPlanStatus = '';
+        if (lessonPlan) {
+            const statusText = lessonPlan.status === 'completed' ? '완료' : '임시저장';
+            const statusClass = lessonPlan.status === 'completed' ? 'completed' : 'draft';
+            lessonPlanStatus = `<span class="lesson-plan-status ${statusClass}">수업계획: ${statusText}</span>`;
+        } else {
+            lessonPlanStatus = `<span class="lesson-plan-status not-started">수업계획: 미작성</span>`;
+        }
         
         card.innerHTML = `
             <div class="admin-application-header">
@@ -101,6 +234,8 @@ const AdminManager = {
                     <div>
                         <h3>${this.escapeHtml(application.studentName)}</h3>
                         <p class="submission-date">신청일: ${submittedDate}</p>
+                        ${student ? `<p class="institute-info">${student.instituteName} • ${student.specialization}</p>` : ''}
+                        ${lessonPlanStatus}
                     </div>
                     <span class="item-count">총 ${application.items.length}개 항목</span>
                 </div>
@@ -127,6 +262,7 @@ const AdminManager = {
                         <p class="purpose">${this.escapeHtml(item.purpose)}</p>
                         <div class="admin-item-details">
                             <span><strong>가격:</strong> ${Utils.formatPrice(item.price)}</span>
+                            ${item.type ? `<span><strong>유형:</strong> ${item.type === 'bundle' ? '묶음신청' : '단일신청'}</span>` : ''}
                             ${item.link ? `
                                 <span>
                                     <strong>링크:</strong> 
@@ -348,13 +484,13 @@ const AdminManager = {
             });
         });
         
-        const message = `상세 통계\n\n` +
-                       `전체 신청: ${stats.total}건\n` +
-                       `승인: ${stats.approved}건\n` +
-                       `반려: ${stats.rejected}건\n` +
-                       `구매완료: ${stats.purchased}건\n\n` +
-                       `전체 예산: ${Utils.formatPrice(totalAmount)}\n` +
-                       `승인 예산: ${Utils.formatPrice(approvedAmount)}\n` +
+        const message = `상세 통계\\n\\n` +
+                       `전체 신청: ${stats.total}건\\n` +
+                       `승인: ${stats.approved}건\\n` +
+                       `반려: ${stats.rejected}건\\n` +
+                       `구매완료: ${stats.purchased}건\\n\\n` +
+                       `전체 예산: ${Utils.formatPrice(totalAmount)}\\n` +
+                       `승인 예산: ${Utils.formatPrice(approvedAmount)}\\n` +
                        `구매 완료: ${Utils.formatPrice(purchasedAmount)}`;
         
         alert(message);
