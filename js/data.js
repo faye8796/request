@@ -76,7 +76,7 @@ const DataManager = {
         }
     ],
 
-    // 모의 신청 데이터 - 오프라인 구매 샘플 추가
+    // 모의 신청 데이터 - 오프라인 구매 샘플 포함
     applications: [
         {
             id: 1,
@@ -161,7 +161,14 @@ const DataManager = {
                     status: 'purchased',
                     type: 'single',
                     purchaseMethod: 'offline',
-                    receiptImage: 'receipt_2_11.jpg',
+                    receiptImage: {
+                        image: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAAAAAAD...', // Base64 이미지 데이터 (샘플)
+                        purchaseDateTime: '2024-06-13T10:30:00',
+                        purchaseStore: '태국 현지 마트',
+                        note: '한국 음식 만들기 재료 구매',
+                        fileName: 'receipt_thai_ingredients.jpg',
+                        fileSize: 2048576
+                    },
                     receiptSubmittedAt: '2024-06-13T14:30:00'
                 }
             ],
@@ -362,19 +369,46 @@ const DataManager = {
         return false;
     },
 
-    // 영수증 제출 (오프라인 구매용)
-    submitReceipt(studentId, itemId, receiptImageData) {
+    // 영수증 제출 (오프라인 구매용) - 개선된 버전
+    submitReceipt(studentId, itemId, receiptData) {
         const application = this.applications.find(app => app.studentId === studentId);
         if (application) {
             const item = application.items.find(item => item.id === itemId);
             if (item && item.purchaseMethod === 'offline' && item.status === 'approved') {
-                item.receiptImage = receiptImageData;
+                // 영수증 데이터 구조화
+                item.receiptImage = {
+                    image: receiptData.image, // Base64 이미지 데이터
+                    purchaseDateTime: receiptData.purchaseDateTime,
+                    purchaseStore: receiptData.purchaseStore,
+                    note: receiptData.note,
+                    fileName: receiptData.fileName,
+                    fileSize: receiptData.fileSize
+                };
                 item.receiptSubmittedAt = new Date().toISOString();
                 item.status = 'purchased'; // 영수증 제출 시 바로 구매완료로 변경
+                
+                console.log(`영수증 제출 완료: 학생 ${studentId}, 아이템 ${itemId}`);
                 return true;
             }
         }
         return false;
+    },
+
+    // 영수증 정보 조회 (관리자용)
+    getReceiptInfo(studentId, itemId) {
+        const application = this.applications.find(app => app.studentId === studentId);
+        if (application) {
+            const item = application.items.find(item => item.id === itemId);
+            if (item && item.receiptImage) {
+                return {
+                    item: item,
+                    receipt: item.receiptImage,
+                    submittedAt: item.receiptSubmittedAt,
+                    studentName: application.studentName
+                };
+            }
+        }
+        return null;
     },
 
     // 신청 아이템 수정
@@ -383,7 +417,18 @@ const DataManager = {
         if (application) {
             const item = application.items.find(item => item.id === itemId);
             if (item && item.status === 'pending') {
-                Object.assign(item, itemData);
+                // 기존 특수 데이터 보존
+                const preservedData = {};
+                if (item.bundleCredentials) {
+                    preservedData.bundleCredentials = item.bundleCredentials;
+                }
+                if (item.receiptImage) {
+                    preservedData.receiptImage = item.receiptImage;
+                    preservedData.receiptSubmittedAt = item.receiptSubmittedAt;
+                }
+                
+                // 데이터 업데이트
+                Object.assign(item, itemData, preservedData);
                 return true;
             }
         }
@@ -461,6 +506,13 @@ const DataManager = {
                 const purchaseMethodText = item.purchaseMethod === 'offline' ? '오프라인 구매' : '온라인 구매';
                 const typeText = item.type === 'bundle' ? '묶음신청' : '단일신청';
                 
+                // 영수증 정보
+                let receiptInfo = '';
+                if (item.purchaseMethod === 'offline' && item.receiptImage) {
+                    const receipt = item.receiptImage;
+                    receiptInfo = `구매일시: ${receipt.purchaseDateTime || ''}, 구매처: ${receipt.purchaseStore || ''}, 제출일: ${item.receiptSubmittedAt ? new Date(item.receiptSubmittedAt).toLocaleString('ko-KR') : ''}`;
+                }
+                
                 exportData.push({
                     '학생명': app.studentName,
                     '파견학당': student ? student.instituteName : '',
@@ -474,7 +526,7 @@ const DataManager = {
                     '구매링크': item.link || '',
                     '상태': this.getStatusText(item.status),
                     '반려사유': item.rejectionReason || '',
-                    '영수증제출일': item.receiptSubmittedAt ? new Date(item.receiptSubmittedAt).toLocaleString('ko-KR') : '',
+                    '영수증정보': receiptInfo,
                     '신청일시': new Date(app.submittedAt).toLocaleString('ko-KR')
                 });
             });
@@ -511,6 +563,37 @@ const DataManager = {
     // 구매 방식별 CSS 클래스
     getPurchaseMethodClass(method) {
         return method === 'offline' ? 'offline-purchase' : 'online-purchase';
+    },
+
+    // 오프라인 구매 관련 통계
+    getOfflinePurchaseStats() {
+        let totalOffline = 0;
+        let approvedOffline = 0;
+        let withReceipt = 0;
+        let pendingReceipt = 0;
+
+        this.applications.forEach(app => {
+            app.items.forEach(item => {
+                if (item.purchaseMethod === 'offline') {
+                    totalOffline++;
+                    if (item.status === 'approved') {
+                        approvedOffline++;
+                        if (item.receiptImage) {
+                            withReceipt++;
+                        } else {
+                            pendingReceipt++;
+                        }
+                    }
+                }
+            });
+        });
+
+        return {
+            totalOffline,
+            approvedOffline,
+            withReceipt,
+            pendingReceipt
+        };
     },
 
     // === 수업계획 관련 메소드들 ===
@@ -647,5 +730,11 @@ const SupabaseManager = {
     async updateStatus(itemId, status, reason = '') {
         // TODO: Supabase에서 상태 업데이트
         console.log('Updating status in Supabase:', { itemId, status, reason });
+    },
+
+    // 영수증 데이터 저장
+    async saveReceipt(studentId, itemId, receiptData) {
+        // TODO: Supabase에 영수증 데이터 저장
+        console.log('Saving receipt to Supabase:', { studentId, itemId, receiptData });
     }
 };
