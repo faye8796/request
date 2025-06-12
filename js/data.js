@@ -222,12 +222,14 @@ const DataManager = {
         }
     ],
 
-    // 수업계획 설정 (관리자가 관리) - 테스트를 위해 미래 날짜로 설정
+    // 수업계획 설정 (관리자가 관리) - 기능 테스트를 위해 업데이트
     lessonPlanSettings: {
-        editDeadline: '2025-12-31', // 테스트를 위해 2025년 말로 설정
+        editDeadline: '2026-12-31', // 기능 테스트를 위해 충분히 먼 미래로 설정
         editTime: '23:59',
-        noticeMessage: '수업계획은 2025년 12월 31일 23:59까지 수정 가능합니다. 마감일 이후에는 수정이 불가능하니 미리 완료해주세요.',
-        isEditingAllowed: true // 현재 수정 가능 여부
+        noticeMessage: '수업계획은 2026년 12월 31일 23:59까지 수정 가능합니다. 마감일 이후에는 수정이 불가능하니 미리 완료해주세요.',
+        isEditingAllowed: true, // 현재 수정 가능 여부
+        testMode: true, // 테스트 모드 - 항상 편집 허용
+        allowOverrideDeadline: true // 관리자가 마감일을 무시하고 편집을 허용할 수 있는 옵션
     },
 
     // 현재 로그인한 사용자 정보
@@ -476,28 +478,49 @@ const DataManager = {
         }
     },
 
-    // 수업계획 수정 가능 여부 확인
+    // 수업계획 수정 가능 여부 확인 (업데이트됨)
     canEditLessonPlan() {
+        // 테스트 모드가 활성화된 경우 항상 편집 허용
+        if (this.lessonPlanSettings.testMode) {
+            return true;
+        }
+        
+        // 관리자가 마감일 무시 옵션을 설정한 경우
+        if (this.lessonPlanSettings.allowOverrideDeadline) {
+            return true;
+        }
+        
+        // 수동으로 편집이 비활성화된 경우
         if (!this.lessonPlanSettings.isEditingAllowed) {
             return false;
         }
         
+        // 마감일 확인
         const now = new Date();
         const deadline = new Date(`${this.lessonPlanSettings.editDeadline} ${this.lessonPlanSettings.editTime}`);
         
         return now <= deadline;
     },
 
-    // 수업계획 설정 업데이트 (관리자용)
+    // 수업계획 설정 업데이트 (관리자용) - 업데이트됨
     updateLessonPlanSettings(settings) {
         Object.assign(this.lessonPlanSettings, settings);
         
-        // 마감일이 지났는지 자동 체크
-        const now = new Date();
-        const deadline = new Date(`${this.lessonPlanSettings.editDeadline} ${this.lessonPlanSettings.editTime}`);
-        this.lessonPlanSettings.isEditingAllowed = now <= deadline;
+        // 테스트 모드가 아닌 경우에만 마감일 체크
+        if (!this.lessonPlanSettings.testMode && !this.lessonPlanSettings.allowOverrideDeadline) {
+            const now = new Date();
+            const deadline = new Date(`${this.lessonPlanSettings.editDeadline} ${this.lessonPlanSettings.editTime}`);
+            this.lessonPlanSettings.isEditingAllowed = now <= deadline;
+        }
         
         return this.lessonPlanSettings;
+    },
+
+    // 테스트 모드 토글 (개발/테스트용)
+    toggleTestMode() {
+        this.lessonPlanSettings.testMode = !this.lessonPlanSettings.testMode;
+        console.log(`테스트 모드: ${this.lessonPlanSettings.testMode ? '활성화' : '비활성화'}`);
+        return this.lessonPlanSettings.testMode;
     },
 
     // 수업계획 완료 상태로 변경
