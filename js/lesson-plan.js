@@ -7,6 +7,7 @@ const LessonPlanManager = {
     init() {
         this.bindEvents();
         this.checkEditPermission();
+        this.showBudgetAllocationNotice(); // 예산 배정 안내 추가
     },
 
     // 이벤트 바인딩
@@ -37,12 +38,152 @@ const LessonPlanManager = {
             endDate.addEventListener('change', () => this.calculateDuration());
         }
 
-        // 총 수업 횟수 변경 시 주당 평균 수업 횟수 자동 계산
+        // 총 수업 횟수 변경 시 주당 평균 수업 횟수 자동 계산 및 예산 업데이트
         const totalLessons = document.getElementById('totalLessons');
         if (totalLessons) {
-            totalLessons.addEventListener('change', () => this.calculateLessonsPerWeek());
+            totalLessons.addEventListener('change', () => {
+                this.calculateLessonsPerWeek();
+                this.updateBudgetEstimate(); // 예산 예상치 업데이트
+            });
+            // 입력하는 동안에도 실시간 업데이트
+            totalLessons.addEventListener('input', () => this.updateBudgetEstimate());
         }
     },
+
+    // === 새로운 예산 배정 안내 기능들 ===
+
+    // 예산 배정 안내 표시
+    showBudgetAllocationNotice() {
+        const user = DataManager.currentUser;
+        if (!user) return;
+
+        const noticeContainer = document.getElementById('budgetAllocationNotice');
+        if (!noticeContainer) return;
+
+        const supportRate = DataManager.fieldSupportRates[user.specialization] || 0;
+        const maxBudget = DataManager.fieldMaxBudgets[user.specialization] || 0;
+
+        if (supportRate > 0) {
+            noticeContainer.style.display = 'block';
+            noticeContainer.innerHTML = `
+                <div class="notice-content">
+                    <i data-lucide="info"></i>
+                    <div class="notice-text">
+                        <h4>예산 배정 안내</h4>
+                        <p>수업계획을 제출하시면 관리자 승인 후 파견분야별 회당 지원금에 따라 자동으로 예산이 배정됩니다.</p>
+                        <div class="budget-info-details">
+                            <div class="field-info">
+                                <span class="field-label">파견분야:</span>
+                                <span class="field-value">${user.specialization}</span>
+                            </div>
+                            <div class="rate-info">
+                                <span class="rate-label">회당 지원금:</span>
+                                <span class="rate-value">${this.formatPrice(supportRate)}</span>
+                            </div>
+                            <div class="max-budget-info">
+                                <span class="max-label">최대 상한:</span>
+                                <span class="max-value">${this.formatPrice(maxBudget)}</span>
+                            </div>
+                        </div>
+                        <div id="budgetEstimate" class="budget-estimate"></div>
+                    </div>
+                </div>
+            `;
+
+            // 아이콘 생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            // 초기 예산 예상치 계산
+            this.updateBudgetEstimate();
+        }
+    },
+
+    // 예산 예상치 업데이트
+    updateBudgetEstimate() {
+        const user = DataManager.currentUser;
+        if (!user) return;
+
+        const totalLessonsInput = document.getElementById('totalLessons');
+        const budgetEstimateDiv = document.getElementById('budgetEstimate');
+        
+        if (!totalLessonsInput || !budgetEstimateDiv) return;
+
+        const totalLessons = parseInt(totalLessonsInput.value) || 0;
+        
+        if (totalLessons > 0) {
+            const supportRate = DataManager.fieldSupportRates[user.specialization] || 0;
+            const maxBudget = DataManager.fieldMaxBudgets[user.specialization] || 0;
+            
+            const calculatedBudget = supportRate * totalLessons;
+            const finalBudget = Math.min(calculatedBudget, maxBudget);
+            
+            let estimateHTML = '';
+            
+            if (supportRate > 0) {
+                estimateHTML = `
+                    <div class="budget-calculation">
+                        <h5>예상 배정 예산</h5>
+                        <div class="calculation-detail">
+                            <span class="calculation-formula">
+                                ${this.formatPrice(supportRate)} × ${totalLessons}회 = ${this.formatPrice(calculatedBudget)}
+                            </span>
+                        </div>
+                `;
+                
+                if (calculatedBudget > maxBudget) {
+                    estimateHTML += `
+                        <div class="max-budget-applied">
+                            <span class="max-budget-note">
+                                ※ 최대 상한 적용: ${this.formatPrice(maxBudget)}
+                            </span>
+                        </div>
+                    `;
+                }
+                
+                estimateHTML += `
+                        <div class="final-budget">
+                            <span class="final-budget-label">최종 예상 예산:</span>
+                            <span class="final-budget-amount">${this.formatPrice(finalBudget)}</span>
+                        </div>
+                `;
+                
+                // 예산 효율성 안내
+                if (calculatedBudget > maxBudget) {
+                    const optimalLessons = Math.floor(maxBudget / supportRate);
+                    estimateHTML += `
+                        <div class="efficiency-tip">
+                            <small>💡 예산 효율성을 위해서는 ${optimalLessons}회 이하로 계획하시는 것이 좋습니다.</small>
+                        </div>
+                    `;
+                }
+                
+                estimateHTML += `</div>`;
+            } else {
+                estimateHTML = `
+                    <div class="budget-calculation error">
+                        <p>⚠️ 해당 분야의 회당 지원금이 설정되지 않았습니다. 관리자에게 문의하세요.</p>
+                    </div>
+                `;
+            }
+            
+            budgetEstimateDiv.innerHTML = estimateHTML;
+        } else {
+            budgetEstimateDiv.innerHTML = `
+                <div class="budget-calculation placeholder">
+                    <p>총 수업 횟수를 입력하시면 예상 배정 예산을 확인할 수 있습니다.</p>
+                </div>
+            `;
+        }
+    },
+
+    // 가격 포맷팅 헬퍼
+    formatPrice(price) {
+        return new Intl.NumberFormat('ko-KR').format(price) + '원';
+    },
+
+    // === 기존 메소드들 ===
 
     // 수정 권한 확인 (업데이트됨)
     checkEditPermission() {
@@ -383,6 +524,9 @@ const LessonPlanManager = {
             document.getElementById('overallGoals').value = existingPlan.overallGoals || '';
             document.getElementById('specialNotes').value = existingPlan.specialNotes || '';
 
+            // 예산 예상치 업데이트
+            this.updateBudgetEstimate();
+
             // 수업별 데이터 채우기
             if (existingPlan.lessons) {
                 existingPlan.lessons.forEach(lesson => {
@@ -415,7 +559,7 @@ const LessonPlanManager = {
             const contentInput = document.getElementById(`lessonContent_${lessonNumber}`);
             
             const content = contentInput ? contentInput.value.trim() : '';
-            
+
             lessons.push({
                 lessonNumber: parseInt(lessonNumber),
                 topic: topic,
@@ -434,7 +578,7 @@ const LessonPlanManager = {
         };
     },
 
-    // 폼 유효성 검사
+    // 폼 유효성 검사 (예산 관련 검증 추가)
     validateForm(data) {
         const errors = [];
 
@@ -455,6 +599,23 @@ const LessonPlanManager = {
         
         if (totalLessonsEntered < data.totalLessons * 0.3) {
             errors.push('최소 전체 수업의 30% 이상은 계획을 작성해주세요.');
+        }
+
+        // 예산 관련 안내 (경고성 메시지)
+        const user = DataManager.currentUser;
+        if (user && data.totalLessons) {
+            const supportRate = DataManager.fieldSupportRates[user.specialization] || 0;
+            const maxBudget = DataManager.fieldMaxBudgets[user.specialization] || 0;
+            
+            if (supportRate === 0) {
+                errors.push(`⚠️ 분야(${user.specialization})의 회당 지원금이 설정되지 않았습니다. 관리자에게 문의하세요.`);
+            } else {
+                const calculatedBudget = supportRate * data.totalLessons;
+                if (calculatedBudget > maxBudget) {
+                    const optimalLessons = Math.floor(maxBudget / supportRate);
+                    errors.push(`💡 예산 효율성 안내: 최대 상한(${this.formatPrice(maxBudget)}) 적용으로 ${optimalLessons}회 이하로 계획하시는 것이 효율적입니다.`);
+                }
+            }
         }
 
         return errors;
@@ -510,8 +671,20 @@ const LessonPlanManager = {
             return;
         }
 
-        // 완료 확인
-        if (!confirm('수업계획을 완료하시겠습니까? 완료 후에는 수정이 제한될 수 있습니다.')) {
+        // 예산 배정 안내와 함께 완료 확인
+        const user = DataManager.currentUser;
+        const supportRate = DataManager.fieldSupportRates[user.specialization] || 0;
+        const maxBudget = DataManager.fieldMaxBudgets[user.specialization] || 0;
+        const calculatedBudget = supportRate * data.totalLessons;
+        const finalBudget = Math.min(calculatedBudget, maxBudget);
+
+        let confirmMessage = '수업계획을 완료하시겠습니까?\\n\\n';
+        confirmMessage += `📋 총 수업 횟수: ${data.totalLessons}회\\n`;
+        confirmMessage += `💰 예상 배정 예산: ${this.formatPrice(finalBudget)}\\n\\n`;
+        confirmMessage += '✅ 관리자 승인 후 예산이 자동으로 배정됩니다.\\n';
+        confirmMessage += '⚠️ 완료 후에는 수정이 제한될 수 있습니다.';
+
+        if (!confirm(confirmMessage)) {
             return;
         }
 
@@ -521,7 +694,7 @@ const LessonPlanManager = {
             const result = DataManager.saveLessonPlan(DataManager.currentUser.id, data);
             
             if (result) {
-                this.showSuccessMessage('수업계획이 완료되었습니다!');
+                this.showSuccessMessage('🎉 수업계획이 완료되었습니다! 관리자 승인을 기다리세요.');
                 
                 // 3초 후 학생 대시보드로 이동
                 setTimeout(() => {
@@ -592,6 +765,9 @@ const LessonPlanManager = {
             
             // 수정 권한 재확인
             this.checkEditPermission();
+            
+            // 예산 배정 안내 재표시
+            this.showBudgetAllocationNotice();
         }
     },
 
