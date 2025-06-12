@@ -475,13 +475,49 @@ body {
     transform: none;
 }
 
-/* Receipt Info Section */
+/* Receipt Info Section - 개선됨 */
 .receipt-info {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 0.375rem;
     padding: 0.75rem;
     margin-top: 0.5rem;
+}
+
+.receipt-info.submitted {
+    background: #dcfce7;
+    border-color: #bbf7d0;
+}
+
+.receipt-info.pending {
+    background: #fef3c7;
+    border-color: #fde68a;
+}
+
+.receipt-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.receipt-details-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.receipt-details-summary small {
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+.receipt-help-text {
+    color: #92400e;
+    font-size: 0.75rem;
+    font-style: italic;
+    margin-top: 0.25rem;
+    display: block;
 }
 
 .receipt-item-info h4 {
@@ -522,10 +558,31 @@ body {
     height: 0.875rem;
 }
 
-/* Receipt Viewer (Admin) */
+.receipt-pending {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #92400e;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.receipt-pending i {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+/* Receipt Viewer (Admin) - 개선됨 */
 .receipt-viewer {
     display: grid;
     gap: 1.5rem;
+}
+
+.receipt-view-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
 }
 
 .receipt-details {
@@ -583,6 +640,7 @@ body {
 .modal-content.large {
     max-width: 800px;
     max-height: 90vh;
+    overflow-y: auto;
 }
 
 .modal-header {
@@ -1179,6 +1237,11 @@ body {
         gap: 1rem;
     }
 
+    .receipt-view-content {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
     .modal-content.large {
         max-width: 95%;
         padding: 1rem;
@@ -1217,6 +1280,12 @@ body {
     .file-upload-content i {
         width: 2rem;
         height: 2rem;
+    }
+
+    .receipt-info-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: flex-start;
     }
 }
 
@@ -1282,6 +1351,10 @@ body {
     .purchase-method-badge {
         border: 1px solid;
     }
+
+    .receipt-status {
+        border: 1px solid;
+    }
 }
 
 /* 다크모드 대응 */
@@ -1325,6 +1398,22 @@ body {
         background: #374151;
         border-color: #6b7280;
         color: #f9fafb;
+    }
+
+    .receipt-info {
+        background: #374151;
+        border-color: #6b7280;
+        color: #f9fafb;
+    }
+
+    .receipt-info.submitted {
+        background: #064e3b;
+        border-color: #047857;
+    }
+
+    .receipt-info.pending {
+        background: #78350f;
+        border-color: #92400e;
     }
 }
 
