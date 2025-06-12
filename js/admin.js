@@ -48,6 +48,18 @@ const AdminManager = {
         Utils.$('#planEditTime').value = settings.editTime;
         Utils.$('#planEditNotice').value = settings.noticeMessage;
         
+        // 테스트 모드 체크박스 설정
+        const testModeCheckbox = Utils.$('#testModeEnabled');
+        if (testModeCheckbox) {
+            testModeCheckbox.checked = settings.testMode;
+        }
+        
+        // 마감일 무시 체크박스 설정
+        const overrideCheckbox = Utils.$('#allowOverrideDeadline');
+        if (overrideCheckbox) {
+            overrideCheckbox.checked = settings.allowOverrideDeadline;
+        }
+        
         modal.classList.add('active');
         
         setTimeout(() => {
@@ -67,17 +79,21 @@ const AdminManager = {
         const deadline = Utils.$('#planEditDeadline').value;
         const time = Utils.$('#planEditTime').value;
         const notice = Utils.$('#planEditNotice').value.trim();
+        const testMode = Utils.$('#testModeEnabled') ? Utils.$('#testModeEnabled').checked : false;
+        const allowOverrideDeadline = Utils.$('#allowOverrideDeadline') ? Utils.$('#allowOverrideDeadline').checked : false;
 
-        // 입력 검증
-        if (!Utils.validateRequired(deadline, '수업계획 수정 마감일')) return;
+        // 입력 검증 (테스트 모드가 아닌 경우)
+        if (!testMode && !allowOverrideDeadline && !Utils.validateRequired(deadline, '수업계획 수정 마감일')) return;
 
-        // 마감일이 과거인지 확인
-        const deadlineDate = new Date(`${deadline} ${time}`);
-        const now = new Date();
-        
-        if (deadlineDate < now) {
-            if (!Utils.showConfirm('마감일이 현재 시간보다 과거입니다. 이 경우 학생들이 수업계획을 수정할 수 없게 됩니다. 계속하시겠습니까?')) {
-                return;
+        // 마감일이 과거인지 확인 (테스트 모드가 아닌 경우)
+        if (!testMode && !allowOverrideDeadline && deadline) {
+            const deadlineDate = new Date(`${deadline} ${time}`);
+            const now = new Date();
+            
+            if (deadlineDate < now) {
+                if (!Utils.showConfirm('마감일이 현재 시간보다 과거입니다. 이 경우 학생들이 수업계획을 수정할 수 없게 됩니다. 계속하시겠습니까?')) {
+                    return;
+                }
             }
         }
 
@@ -87,9 +103,11 @@ const AdminManager = {
         setTimeout(() => {
             try {
                 const newSettings = {
-                    editDeadline: deadline,
-                    editTime: time,
-                    noticeMessage: notice || `수업계획은 ${deadline} ${time}까지 수정 가능합니다. 마감일 이후에는 수정이 불가능하니 미리 완료해주세요.`
+                    editDeadline: deadline || '2026-12-31', // 기본값 설정
+                    editTime: time || '23:59',
+                    noticeMessage: notice || `수업계획은 언제든지 수정 가능합니다. (테스트 모드)`,
+                    testMode: testMode,
+                    allowOverrideDeadline: allowOverrideDeadline
                 };
 
                 const updatedSettings = DataManager.updateLessonPlanSettings(newSettings);
@@ -97,7 +115,15 @@ const AdminManager = {
                 Utils.hideLoading(submitBtn);
                 this.hideLessonPlanSettingsModal();
                 
-                const statusText = updatedSettings.isEditingAllowed ? '수정 가능' : '수정 불가능';
+                let statusText = '수정 불가능';
+                if (testMode) {
+                    statusText = '테스트 모드 (항상 수정 가능)';
+                } else if (allowOverrideDeadline) {
+                    statusText = '마감일 무시 모드 (항상 수정 가능)';
+                } else if (updatedSettings.isEditingAllowed) {
+                    statusText = '수정 가능';
+                }
+                
                 Utils.showAlert(`수업계획 설정이 저장되었습니다.\\n현재 상태: ${statusText}`);
                 
             } catch (error) {
@@ -106,6 +132,14 @@ const AdminManager = {
                 console.error('Lesson plan settings error:', error);
             }
         }, 500);
+    },
+
+    // 테스트 모드 빠른 토글 (개발자용)
+    quickToggleTestMode() {
+        const newMode = DataManager.toggleTestMode();
+        const statusText = newMode ? '테스트 모드 활성화 (항상 편집 가능)' : '테스트 모드 비활성화';
+        Utils.showAlert(statusText);
+        return newMode;
     },
 
     // 수업계획 현황 조회
@@ -130,7 +164,15 @@ const AdminManager = {
         
         notStartedCount = students.length - lessonPlans.length;
         
-        const editStatus = settings.isEditingAllowed ? '수정 가능' : '수정 불가능';
+        let editStatus = '수정 불가능';
+        if (settings.testMode) {
+            editStatus = '테스트 모드 (항상 수정 가능)';
+        } else if (settings.allowOverrideDeadline) {
+            editStatus = '마감일 무시 모드 (항상 수정 가능)';
+        } else if (settings.isEditingAllowed) {
+            editStatus = '수정 가능';
+        }
+        
         const deadlineText = `${settings.editDeadline} ${settings.editTime}`;
         
         const message = `수업계획 현황\\n\\n` +
@@ -165,6 +207,12 @@ const AdminManager = {
             if ((event.ctrlKey || event.metaKey) && event.key === 'e') {
                 event.preventDefault();
                 this.handleExport();
+            }
+
+            // Ctrl/Cmd + T: 테스트 모드 토글 (숨겨진 기능)
+            if ((event.ctrlKey || event.metaKey) && event.key === 't') {
+                event.preventDefault();
+                this.quickToggleTestMode();
             }
         });
     },
