@@ -121,6 +121,7 @@ const DataManager = {
                     status: 'approved',
                     type: 'single',
                     purchaseMethod: 'offline', // 오프라인 구매
+                    receiptNumber: 'RCP-001-010', // 영수증 번호 추가
                     receiptImage: null,
                     receiptSubmittedAt: null
                 }
@@ -161,6 +162,7 @@ const DataManager = {
                     status: 'purchased',
                     type: 'single',
                     purchaseMethod: 'offline',
+                    receiptNumber: 'RCP-002-011', // 영수증 번호 추가
                     receiptImage: {
                         image: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAAAAAAAD...', // Base64 이미지 데이터 (샘플)
                         purchaseDateTime: '2024-06-13T10:30:00',
@@ -274,6 +276,39 @@ const DataManager = {
     currentUser: null,
     currentUserType: null,
 
+    // === 영수증 관련 유틸리티 메소드 ===
+
+    // 영수증 번호 생성
+    generateReceiptNumber(studentId, itemId) {
+        const paddedStudentId = String(studentId).padStart(3, '0');
+        const paddedItemId = String(itemId).padStart(3, '0');
+        return `RCP-${paddedStudentId}-${paddedItemId}`;
+    },
+
+    // 영수증 번호로 파일명 생성 (확장자 포함)
+    generateReceiptFileName(receiptNumber, fileExtension = 'jpg') {
+        return `${receiptNumber}.${fileExtension}`;
+    },
+
+    // 영수증 번호에서 학생ID와 아이템ID 추출
+    parseReceiptNumber(receiptNumber) {
+        const match = receiptNumber.match(/^RCP-(\d{3})-(\d{3})$/);
+        if (match) {
+            return {
+                studentId: parseInt(match[1]),
+                itemId: parseInt(match[2])
+            };
+        }
+        return null;
+    },
+
+    // 영수증 번호 유효성 검증
+    validateReceiptNumber(receiptNumber) {
+        return /^RCP-\d{3}-\d{3}$/.test(receiptNumber);
+    },
+
+    // === 기존 메소드들 ===
+
     // 학생 인증
     authenticateStudent(name, birthDate) {
         const student = this.students.find(s => 
@@ -314,7 +349,7 @@ const DataManager = {
         return this.applications;
     },
 
-    // 새 교구 신청 추가 - 구매 방식 지원
+    // 새 교구 신청 추가 - 구매 방식 지원 및 영수증 번호 생성
     addApplication(studentId, itemData) {
         const newItemId = Date.now();
         const newItem = {
@@ -327,6 +362,7 @@ const DataManager = {
 
         // 오프라인 구매인 경우 영수증 관련 필드 추가
         if (newItem.purchaseMethod === 'offline') {
+            newItem.receiptNumber = this.generateReceiptNumber(studentId, newItemId);
             newItem.receiptImage = null;
             newItem.receiptSubmittedAt = null;
         }
@@ -387,7 +423,7 @@ const DataManager = {
                 item.receiptSubmittedAt = new Date().toISOString();
                 item.status = 'purchased'; // 영수증 제출 시 바로 구매완료로 변경
                 
-                console.log(`영수증 제출 완료: 학생 ${studentId}, 아이템 ${itemId}`);
+                console.log(`영수증 제출 완료: 학생 ${studentId}, 아이템 ${itemId}, 영수증 번호: ${item.receiptNumber}`);
                 return true;
             }
         }
@@ -404,7 +440,8 @@ const DataManager = {
                     item: item,
                     receipt: item.receiptImage,
                     submittedAt: item.receiptSubmittedAt,
-                    studentName: application.studentName
+                    studentName: application.studentName,
+                    receiptNumber: item.receiptNumber
                 };
             }
         }
@@ -425,6 +462,23 @@ const DataManager = {
                 if (item.receiptImage) {
                     preservedData.receiptImage = item.receiptImage;
                     preservedData.receiptSubmittedAt = item.receiptSubmittedAt;
+                }
+                if (item.receiptNumber) {
+                    preservedData.receiptNumber = item.receiptNumber;
+                }
+                
+                // 구매 방식이 변경되면 영수증 번호 재생성
+                if (itemData.purchaseMethod !== item.purchaseMethod) {
+                    if (itemData.purchaseMethod === 'offline') {
+                        preservedData.receiptNumber = this.generateReceiptNumber(studentId, itemId);
+                        preservedData.receiptImage = null;
+                        preservedData.receiptSubmittedAt = null;
+                    } else {
+                        // 온라인으로 변경 시 영수증 관련 데이터 제거
+                        delete preservedData.receiptNumber;
+                        delete preservedData.receiptImage;
+                        delete preservedData.receiptSubmittedAt;
+                    }
                 }
                 
                 // 데이터 업데이트
@@ -495,7 +549,7 @@ const DataManager = {
         );
     },
 
-    // Excel 내보내기 데이터 준비 - 구매 방식 정보 추가
+    // Excel 내보내기 데이터 준비 - 구매 방식 정보 및 영수증 번호 추가
     prepareExportData() {
         const exportData = [];
         
@@ -526,6 +580,7 @@ const DataManager = {
                     '구매링크': item.link || '',
                     '상태': this.getStatusText(item.status),
                     '반려사유': item.rejectionReason || '',
+                    '영수증번호': item.receiptNumber || '',
                     '영수증정보': receiptInfo,
                     '신청일시': new Date(app.submittedAt).toLocaleString('ko-KR')
                 });
@@ -732,9 +787,23 @@ const SupabaseManager = {
         console.log('Updating status in Supabase:', { itemId, status, reason });
     },
 
-    // 영수증 데이터 저장
+    // 영수증 데이터 저장 (Supabase Storage 연동 예정)
     async saveReceipt(studentId, itemId, receiptData) {
-        // TODO: Supabase에 영수증 데이터 저장
-        console.log('Saving receipt to Supabase:', { studentId, itemId, receiptData });
+        // TODO: Supabase Storage에 영수증 이미지 저장
+        const receiptNumber = DataManager.generateReceiptNumber(studentId, itemId);
+        const fileName = DataManager.generateReceiptFileName(receiptNumber, 'jpg');
+        
+        console.log('Saving receipt to Supabase Storage:', { 
+            studentId, 
+            itemId, 
+            receiptNumber,
+            fileName,
+            receiptData 
+        });
+        
+        // 향후 구현:
+        // 1. Supabase Storage에 이미지 업로드 (fileName으로)
+        // 2. 업로드된 파일의 URL 반환
+        // 3. 데이터베이스에 영수증 정보 저장 (URL 포함)
     }
 };
