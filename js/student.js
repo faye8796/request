@@ -285,23 +285,44 @@ const StudentManager = {
         LessonPlanManager.showLessonPlanPage();
     },
 
+    // === 새로운 예산 배정 시스템 관련 메소드들 ===
+
     // 수업계획 상태 확인 및 UI 업데이트
     checkLessonPlanStatus() {
         const studentId = DataManager.currentUser.id;
+        const lessonPlan = DataManager.getStudentLessonPlan(studentId);
         const hasCompletedPlan = LessonPlanManager.hasCompletedLessonPlan(studentId);
         const lessonPlanBtn = Utils.$('#lessonPlanBtn');
         
+        // 수업계획 버튼 상태 업데이트
         if (lessonPlanBtn) {
             if (hasCompletedPlan) {
-                // 완료된 경우 - 수정/보기 모드
+                let approvalText = '';
+                if (lessonPlan && lessonPlan.approvalStatus) {
+                    switch(lessonPlan.approvalStatus) {
+                        case 'approved':
+                            approvalText = ' (승인됨)';
+                            lessonPlanBtn.classList.remove('btn-warning');
+                            lessonPlanBtn.classList.add('btn-success');
+                            break;
+                        case 'rejected':
+                            approvalText = ' (반려됨)';
+                            lessonPlanBtn.classList.remove('btn-success');
+                            lessonPlanBtn.classList.add('btn-danger');
+                            break;
+                        default:
+                            approvalText = ' (승인 대기)';
+                            lessonPlanBtn.classList.remove('btn-success', 'btn-danger');
+                            lessonPlanBtn.classList.add('btn-warning');
+                            break;
+                    }
+                }
+                
                 lessonPlanBtn.innerHTML = `
                     <i data-lucide="calendar-check"></i>
-                    수업계획 보기
+                    수업계획 보기${approvalText}
                 `;
-                lessonPlanBtn.classList.remove('btn-warning');
-                lessonPlanBtn.classList.add('btn-success');
             } else {
-                // 미완료된 경우 - 작성 필요
                 const needsPlan = LessonPlanManager.needsLessonPlan(studentId);
                 if (needsPlan) {
                     lessonPlanBtn.innerHTML = `
@@ -314,7 +335,7 @@ const StudentManager = {
                         수업계획 완료
                     `;
                 }
-                lessonPlanBtn.classList.remove('btn-success');
+                lessonPlanBtn.classList.remove('btn-success', 'btn-danger');
                 lessonPlanBtn.classList.add('btn-warning');
             }
             
@@ -324,76 +345,206 @@ const StudentManager = {
             }
         }
 
-        // 수업계획이 완료되지 않은 경우 알림 표시
+        // 수업계획 승인 상태에 따른 안내 표시
+        this.showLessonPlanApprovalStatus();
+    },
+
+    // 수업계획 승인 상태 안내 표시
+    showLessonPlanApprovalStatus() {
+        const studentId = DataManager.currentUser.id;
+        const lessonPlan = DataManager.getStudentLessonPlan(studentId);
+        const hasCompletedPlan = LessonPlanManager.hasCompletedLessonPlan(studentId);
+        const canEdit = DataManager.canEditLessonPlan();
+        
+        // 기존 알림 제거
+        const existingNotice = Utils.$('#lessonPlanApprovalStatus');
+        if (existingNotice) {
+            existingNotice.remove();
+        }
+
+        let statusContent = '';
+
         if (!hasCompletedPlan) {
-            this.showLessonPlanIncompleteNotice();
+            // 수업계획 미완료
+            if (!canEdit) {
+                statusContent = `
+                    <div class="approval-status-card warning">
+                        <i data-lucide="alert-triangle"></i>
+                        <div class="status-content">
+                            <h4>수업계획 수정 기간이 종료되었습니다</h4>
+                            <p>수업계획 작성/수정 가능 기간이 지났습니다. 관리자에게 문의하세요.</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const needsPlan = LessonPlanManager.needsLessonPlan(studentId);
+                if (needsPlan) {
+                    statusContent = `
+                        <div class="approval-status-card info">
+                            <i data-lucide="calendar-plus"></i>
+                            <div class="status-content">
+                                <h4>수업계획 작성이 필요합니다</h4>
+                                <p>교구 신청을 위해서는 먼저 수업계획을 작성하고 관리자의 승인을 받아야 합니다.</p>
+                                <button class="btn primary small" onclick="StudentManager.goToLessonPlan()">
+                                    지금 작성하기
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    statusContent = `
+                        <div class="approval-status-card warning">
+                            <i data-lucide="calendar-edit"></i>
+                            <div class="status-content">
+                                <h4>수업계획을 완료해주세요</h4>
+                                <p>임시저장된 수업계획이 있습니다. 완료 후 관리자의 승인을 받아야 교구 신청이 가능합니다.</p>
+                                <button class="btn warning small" onclick="StudentManager.goToLessonPlan()">
+                                    완료하기
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        } else if (lessonPlan && lessonPlan.approvalStatus) {
+            // 수업계획 완료된 경우
+            switch(lessonPlan.approvalStatus) {
+                case 'approved':
+                    const allocatedBudget = DataManager.currentUser.allocatedBudget || 0;
+                    const usedBudget = DataManager.getUsedBudget(studentId);
+                    const student = DataManager.currentUser;
+                    const supportRate = DataManager.fieldSupportRates[student.specialization] || 0;
+                    
+                    statusContent = `
+                        <div class="approval-status-card success">
+                            <i data-lucide="check-circle"></i>
+                            <div class="status-content">
+                                <h4>수업계획이 승인되었습니다! 🎉</h4>
+                                <p>예산이 자동으로 배정되었습니다. 이제 교구를 신청할 수 있습니다.</p>
+                                <div class="budget-allocation-info">
+                                    <div class="allocation-detail">
+                                        <span>파견분야: <strong>${student.specialization}</strong></span>
+                                        <span>회당 지원금: <strong>${Utils.formatPrice(supportRate)}</strong></span>
+                                        <span>총 수업횟수: <strong>${lessonPlan.totalLessons}회</strong></span>
+                                    </div>
+                                    <div class="allocated-budget">
+                                        <span>배정 예산: <strong class="budget-amount">${Utils.formatPrice(allocatedBudget)}</strong></span>
+                                        <span>사용 예산: ${Utils.formatPrice(usedBudget)}</span>
+                                        <span>잔여 예산: ${Utils.formatPrice(allocatedBudget - usedBudget)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'rejected':
+                    statusContent = `
+                        <div class="approval-status-card danger">
+                            <i data-lucide="x-circle"></i>
+                            <div class="status-content">
+                                <h4>수업계획이 반려되었습니다</h4>
+                                <p>관리자의 피드백을 확인하고 수업계획을 수정해주세요.</p>
+                                ${lessonPlan.rejectionReason ? `
+                                    <div class="rejection-reason">
+                                        <strong>반려 사유:</strong> ${lessonPlan.rejectionReason}
+                                    </div>
+                                ` : ''}
+                                ${canEdit ? `
+                                    <button class="btn danger small" onclick="StudentManager.goToLessonPlan()">
+                                        수정하기
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    break;
+                default:
+                    statusContent = `
+                        <div class="approval-status-card warning">
+                            <i data-lucide="clock"></i>
+                            <div class="status-content">
+                                <h4>수업계획 승인 대기 중입니다</h4>
+                                <p>관리자가 수업계획을 검토 중입니다. 승인 후 예산이 자동으로 배정됩니다.</p>
+                                <div class="estimated-budget">
+                                    <p>예상 배정 예산: <strong>${Utils.formatPrice(this.calculateEstimatedBudget())}</strong></p>
+                                    <small>※ 실제 배정 예산은 관리자 승인 시 확정됩니다.</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
+        }
+
+        if (statusContent) {
+            const statusContainer = Utils.createElement('div', 'approval-status-container');
+            statusContainer.id = 'lessonPlanApprovalStatus';
+            statusContainer.innerHTML = statusContent;
+            
+            // 대시보드 헤더 아래에 삽입
+            const dashboardHeader = Utils.$('.dashboard-header');
+            if (dashboardHeader) {
+                dashboardHeader.parentNode.insertBefore(statusContainer, dashboardHeader.nextSibling);
+                
+                // 아이콘 생성
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
         }
     },
 
-    // 수업계획 미완료 알림 표시
-    showLessonPlanIncompleteNotice() {
-        const existingNotice = Utils.$('#lessonPlanNotice');
-        if (existingNotice) {
-            return; // 이미 표시 중
-        }
-
+    // 예상 배정 예산 계산
+    calculateEstimatedBudget() {
         const studentId = DataManager.currentUser.id;
-        const needsPlan = LessonPlanManager.needsLessonPlan(studentId);
-        const canEdit = DataManager.canEditLessonPlan();
+        const lessonPlan = DataManager.getStudentLessonPlan(studentId);
+        const student = DataManager.currentUser;
         
-        let noticeContent;
-        if (!canEdit) {
-            noticeContent = `
-                <div class="notice-content warning">
-                    <i data-lucide="alert-triangle"></i>
-                    <div>
-                        <h4>수업계획 수정 기간이 종료되었습니다</h4>
-                        <p>수업계획 작성/수정 가능 기간이 지났습니다. 관리자에게 문의하세요.</p>
-                    </div>
-                </div>
-            `;
-        } else if (needsPlan) {
-            noticeContent = `
-                <div class="notice-content info">
-                    <i data-lucide="calendar-plus"></i>
-                    <div>
-                        <h4>수업계획 작성이 필요합니다</h4>
-                        <p>교구 신청 전에 먼저 수업계획을 작성해주세요.</p>
-                        <button class="btn primary small" onclick="StudentManager.goToLessonPlan()">
-                            지금 작성하기
-                        </button>
-                    </div>
-                </div>
-            `;
-        } else {
-            noticeContent = `
-                <div class="notice-content warning">
-                    <i data-lucide="calendar-edit"></i>
-                    <div>
-                        <h4>수업계획을 완료해주세요</h4>
-                        <p>임시저장된 수업계획이 있습니다. 완료 후 교구 신청이 가능합니다.</p>
-                        <button class="btn warning small" onclick="StudentManager.goToLessonPlan()">
-                            완료하기
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
+        if (!lessonPlan || !student) return 0;
+        
+        const supportRate = DataManager.fieldSupportRates[student.specialization] || 0;
+        const maxBudget = DataManager.fieldMaxBudgets[student.specialization] || 0;
+        const totalLessons = lessonPlan.totalLessons || 0;
+        
+        const calculatedBudget = supportRate * totalLessons;
+        return Math.min(calculatedBudget, maxBudget);
+    },
 
-        const notice = Utils.createElement('div', 'dashboard-notice');
-        notice.id = 'lessonPlanNotice';
-        notice.innerHTML = noticeContent;
+    // 교구 신청 가능 여부 확인
+    canMakeApplication() {
+        const studentId = DataManager.currentUser.id;
+        const lessonPlan = DataManager.getStudentLessonPlan(studentId);
         
-        // 대시보드 헤더 아래에 삽입
-        const dashboardHeader = Utils.$('.dashboard-header');
-        if (dashboardHeader) {
-            dashboardHeader.parentNode.insertBefore(notice, dashboardHeader.nextSibling);
-            
-            // 아이콘 생성
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
+        // 수업계획이 승인되지 않으면 신청 불가
+        if (!lessonPlan || lessonPlan.approvalStatus !== 'approved') {
+            return {
+                canApply: false,
+                reason: '수업계획이 승인되지 않았습니다. 먼저 수업계획을 작성하고 관리자의 승인을 받아주세요.'
+            };
         }
+        
+        // 배정된 예산이 없으면 신청 불가
+        const allocatedBudget = DataManager.currentUser.allocatedBudget || 0;
+        if (allocatedBudget <= 0) {
+            return {
+                canApply: false,
+                reason: '배정된 예산이 없습니다. 관리자에게 문의하세요.'
+            };
+        }
+        
+        // 사용 가능한 예산이 없으면 신청 불가
+        const availableBudget = DataManager.getAvailableBudget(studentId);
+        if (availableBudget <= 0) {
+            return {
+                canApply: false,
+                reason: `배정된 예산을 모두 사용했습니다.\n배정 예산: ${Utils.formatPrice(allocatedBudget)}\n잔여 예산: ${Utils.formatPrice(availableBudget)}`
+            };
+        }
+        
+        return {
+            canApply: true,
+            availableBudget: availableBudget
+        };
     },
 
     // 대시보드 로드 (외부에서 호출용)
@@ -423,11 +574,13 @@ const StudentManager = {
         AuthManager.updateUserDisplay();
     },
 
-    // 예산 현황 업데이트
+    // 예산 현황 업데이트 (새로운 시스템 반영)
     updateBudgetStatus() {
-        const stats = this.getApplicationStats();
-        const budgetLimit = DataManager.currentUser.budgetLimit;
-        const usagePercentage = Math.round((stats.totalAmount / budgetLimit) * 100);
+        const studentId = DataManager.currentUser.id;
+        const lessonPlan = DataManager.getStudentLessonPlan(studentId);
+        const allocatedBudget = DataManager.currentUser.allocatedBudget || 0;
+        const usedBudget = DataManager.getUsedBudget(studentId);
+        const availableBudget = allocatedBudget - usedBudget;
         
         let budgetDisplay = Utils.$('#budgetStatus');
         if (!budgetDisplay) {
@@ -435,7 +588,34 @@ const StudentManager = {
             budgetDisplay.id = 'budgetStatus';
         }
         
-        const remainingBudget = budgetLimit - stats.totalAmount;
+        // 예산이 배정되지 않은 경우
+        if (allocatedBudget <= 0) {
+            if (lessonPlan && lessonPlan.approvalStatus === 'approved') {
+                // 승인되었는데 예산이 없는 경우 (시스템 오류)
+                budgetDisplay.innerHTML = `
+                    <div class="budget-info error">
+                        <div class="budget-error">
+                            <i data-lucide="alert-triangle"></i>
+                            <p>예산 배정 오류가 발생했습니다. 관리자에게 문의하세요.</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // 수업계획 미승인 상태
+                budgetDisplay.innerHTML = `
+                    <div class="budget-info pending">
+                        <div class="budget-pending">
+                            <i data-lucide="clock"></i>
+                            <p>수업계획 승인 후 예산이 배정됩니다.</p>
+                        </div>
+                    </div>
+                `;
+            }
+            return;
+        }
+        
+        // 정상적으로 예산이 배정된 경우
+        const usagePercentage = Math.round((usedBudget / allocatedBudget) * 100);
         const statusClass = usagePercentage >= 90 ? 'danger' : usagePercentage >= 70 ? 'warning' : 'safe';
         
         budgetDisplay.innerHTML = `
@@ -445,13 +625,13 @@ const StudentManager = {
                         <div class="budget-progress ${statusClass}" style="width: ${Math.min(usagePercentage, 100)}%"></div>
                     </div>
                     <div class="budget-text">
-                        <span class="budget-used">사용: ${Utils.formatPrice(stats.totalAmount)}</span>
-                        <span class="budget-limit">/ ${Utils.formatPrice(budgetLimit)}</span>
+                        <span class="budget-used">사용: ${Utils.formatPrice(usedBudget)}</span>
+                        <span class="budget-allocated">/ ${Utils.formatPrice(allocatedBudget)}</span>
                         <span class="budget-percentage">(${usagePercentage}%)</span>
                     </div>
                 </div>
                 <div class="budget-remaining">
-                    잔여 예산: <strong>${Utils.formatPrice(remainingBudget)}</strong>
+                    잔여 예산: <strong class="${availableBudget <= 0 ? 'exhausted' : ''}">${Utils.formatPrice(availableBudget)}</strong>
                 </div>
             </div>
         `;
@@ -672,6 +852,15 @@ const StudentManager = {
 
     // 일반 신청 모달 표시
     showApplicationModal(editData = null) {
+        // 신청 가능 여부 확인 (새 신청인 경우만)
+        if (!editData) {
+            const applicationCheck = this.canMakeApplication();
+            if (!applicationCheck.canApply) {
+                Utils.showAlert(applicationCheck.reason);
+                return;
+            }
+        }
+
         const modal = Utils.$('#applicationModal');
         const title = Utils.$('#applicationModalTitle');
         const submitBtn = Utils.$('#submitBtn');
@@ -722,6 +911,15 @@ const StudentManager = {
 
     // 묶음 신청 모달 표시
     showBundleModal(editData = null) {
+        // 신청 가능 여부 확인 (새 신청인 경우만)
+        if (!editData) {
+            const applicationCheck = this.canMakeApplication();
+            if (!applicationCheck.canApply) {
+                Utils.showAlert(applicationCheck.reason);
+                return;
+            }
+        }
+
         const modal = Utils.$('#bundleModal');
         
         if (editData) {
@@ -806,9 +1004,13 @@ const StudentManager = {
                         throw new Error('수정 실패');
                     }
                 } else {
-                    // 새 신청 모드
-                    DataManager.addApplication(studentId, formData);
-                    Utils.showAlert('교구 신청이 완료되었습니다.');
+                    // 새 신청 모드 - 예산 확인 후 진행
+                    const result = DataManager.addApplication(studentId, formData);
+                    if (result) {
+                        Utils.showAlert('교구 신청이 완료되었습니다.');
+                    } else {
+                        throw new Error('예산 부족 또는 신청 실패');
+                    }
                 }
                 
                 Utils.hideLoading(submitBtn);
@@ -858,8 +1060,12 @@ const StudentManager = {
                         throw new Error('수정 실패');
                     }
                 } else {
-                    DataManager.addApplication(studentId, bundleData);
-                    Utils.showAlert('묶음 신청이 완료되었습니다.');
+                    const result = DataManager.addApplication(studentId, bundleData);
+                    if (result) {
+                        Utils.showAlert('묶음 신청이 완료되었습니다.');
+                    } else {
+                        throw new Error('예산 부족 또는 신청 실패');
+                    }
                 }
                 
                 Utils.hideLoading(submitBtn);
@@ -943,7 +1149,7 @@ const StudentManager = {
         };
     },
 
-    // 폼 데이터 검증
+    // 폼 데이터 검증 (새로운 예산 시스템 반영)
     validateFormData(data) {
         if (!Utils.validateRequired(data.name, '교구명')) return false;
         if (!Utils.validateRequired(data.purpose, '사용 목적')) return false;
@@ -952,23 +1158,25 @@ const StudentManager = {
             return false;
         }
 
-        // 예산 한도 검증 (수정 시 기존 금액 제외)
-        const currentStats = this.getApplicationStats();
-        let adjustedTotalAmount = currentStats.totalAmount;
+        // 예산 확인 (새로운 시스템)
+        const studentId = DataManager.currentUser.id;
+        const availableBudget = DataManager.getAvailableBudget(studentId);
+        let adjustedAvailableBudget = availableBudget;
         
         if (this.currentEditingItem) {
-            adjustedTotalAmount -= this.currentEditingItem.price;
+            // 수정인 경우 기존 금액을 사용 가능 예산에 더함
+            adjustedAvailableBudget += this.currentEditingItem.price;
         }
         
-        const newTotalAmount = adjustedTotalAmount + data.price;
-        const budgetLimit = DataManager.currentUser.budgetLimit;
-        
-        if (newTotalAmount > budgetLimit) {
-            const remainingBudget = budgetLimit - adjustedTotalAmount;
-            Utils.showAlert(`예산 한도를 초과합니다.\\n` +
-                          `현재 사용: ${Utils.formatPrice(adjustedTotalAmount)}\\n` +
-                          `예산 한도: ${Utils.formatPrice(budgetLimit)}\\n` +
-                          `신청 가능 금액: ${Utils.formatPrice(remainingBudget)}`);
+        if (data.price > adjustedAvailableBudget) {
+            const allocatedBudget = DataManager.currentUser.allocatedBudget || 0;
+            const usedBudget = DataManager.getUsedBudget(studentId);
+            
+            Utils.showAlert(`예산이 부족합니다.\n` +
+                          `배정 예산: ${Utils.formatPrice(allocatedBudget)}\n` +
+                          `사용 예산: ${Utils.formatPrice(usedBudget)}\n` +
+                          `사용 가능 예산: ${Utils.formatPrice(adjustedAvailableBudget)}\n` +
+                          `신청 금액: ${Utils.formatPrice(data.price)}`);
             return false;
         }
 
@@ -1021,7 +1229,7 @@ const StudentManager = {
         return true;
     },
 
-    // 신청 통계 생성
+    // 신청 통계 생성 (레거시 호환용)
     getApplicationStats() {
         const studentId = DataManager.currentUser.id;
         const applications = DataManager.getStudentApplications(studentId);
