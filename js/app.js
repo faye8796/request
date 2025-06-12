@@ -1,0 +1,471 @@
+// 메인 애플리케이션 관리 모듈
+const App = {
+    // 초기화
+    init() {
+        console.log('세종학당 문화교구 신청 플랫폼 시작');
+        
+        this.setupGlobalEventListeners();
+        this.initializeModules();
+        this.handleInitialRoute();
+        this.setupPerformanceMonitoring();
+    },
+
+    // 전역 이벤트 리스너 설정
+    setupGlobalEventListeners() {
+        // 페이지 로드 완료 후 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            this.onDOMReady();
+        });
+
+        // 페이지 언로드 시 정리
+        window.addEventListener('beforeunload', () => {
+            this.onBeforeUnload();
+        });
+
+        // 네트워크 상태 변화 감지
+        window.addEventListener('online', () => {
+            this.onNetworkStatusChange(true);
+        });
+
+        window.addEventListener('offline', () => {
+            this.onNetworkStatusChange(false);
+        });
+
+        // 브라우저 뒤로가기/앞으로가기
+        window.addEventListener('popstate', (e) => {
+            this.handlePopState(e);
+        });
+
+        // 전역 에러 핸들링
+        window.addEventListener('error', (e) => {
+            this.handleGlobalError(e);
+        });
+    },
+
+    // DOM 준비 완료 처리
+    onDOMReady() {
+        // Lucide 아이콘 초기화
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // 모든 모듈 초기화
+        AuthManager.init();
+        
+        // 세션 복원 시도
+        if (AuthManager.restoreSession()) {
+            this.handleSessionRestore();
+        } else {
+            this.showPage('loginPage');
+        }
+
+        // 전역 키보드 단축키 활성화
+        this.setupGlobalKeyboardShortcuts();
+        
+        // 성능 최적화
+        this.optimizePerformance();
+        
+        console.log('앱 초기화 완료');
+    },
+
+    // 모듈 초기화
+    initializeModules() {
+        // 데이터 매니저는 이미 로드됨
+        // 다른 모듈들은 필요시 지연 로딩
+    },
+
+    // 초기 라우트 처리
+    handleInitialRoute() {
+        const hash = window.location.hash;
+        if (hash) {
+            this.navigateByHash(hash);
+        }
+    },
+
+    // 세션 복원 처리
+    handleSessionRestore() {
+        const userType = AuthManager.getUserType();
+        
+        if (userType === 'student') {
+            this.showPage('studentPage');
+            StudentManager.init();
+        } else if (userType === 'admin') {
+            this.showPage('adminPage');
+            AdminManager.init();
+        } else {
+            this.showPage('loginPage');
+        }
+    },
+
+    // 페이지 표시
+    showPage(pageId) {
+        // 모든 페이지 숨김
+        const pages = Utils.$$('.page');
+        pages.forEach(page => {
+            page.classList.remove('active');
+        });
+
+        // 지정된 페이지 표시
+        const targetPage = Utils.$(`#${pageId}`);
+        if (targetPage) {
+            targetPage.classList.add('active');
+            
+            // URL 해시 업데이트
+            this.updateUrlHash(pageId);
+            
+            // 페이지별 후처리
+            this.onPageShown(pageId);
+        } else {
+            console.error(`페이지를 찾을 수 없습니다: ${pageId}`);
+        }
+    },
+
+    // 페이지 표시 후 처리
+    onPageShown(pageId) {
+        // 스크롤 위치 복원
+        Utils.restoreScrollPosition();
+        
+        // 페이지별 특별 처리
+        switch(pageId) {
+            case 'loginPage':
+                // 로그인 폼에 포커스
+                setTimeout(() => {
+                    const nameInput = Utils.$('#studentName');
+                    if (nameInput) nameInput.focus();
+                }, 100);
+                break;
+                
+            case 'studentPage':
+                // 학생 페이지 새로고침
+                if (window.StudentManager) {
+                    StudentManager.refreshApplications();
+                }
+                break;
+                
+            case 'adminPage':
+                // 관리자 페이지 새로고침
+                if (window.AdminManager) {
+                    AdminManager.refreshData();
+                }
+                break;
+        }
+    },
+
+    // URL 해시 업데이트
+    updateUrlHash(pageId) {
+        const hashMap = {
+            'loginPage': '',
+            'studentPage': '#student',
+            'adminPage': '#admin'
+        };
+        
+        const hash = hashMap[pageId] || '';
+        if (window.location.hash !== hash) {
+            history.pushState({pageId}, '', hash);
+        }
+    },
+
+    // 해시로 네비게이션
+    navigateByHash(hash) {
+        const pageMap = {
+            '': 'loginPage',
+            '#student': 'studentPage',
+            '#admin': 'adminPage'
+        };
+        
+        const pageId = pageMap[hash];
+        if (pageId) {
+            this.showPage(pageId);
+        }
+    },
+
+    // 브라우저 뒤로가기/앞으로가기 처리
+    handlePopState(event) {
+        if (event.state && event.state.pageId) {
+            this.showPage(event.state.pageId);
+        } else {
+            this.navigateByHash(window.location.hash);
+        }
+    },
+
+    // 전역 키보드 단축키
+    setupGlobalKeyboardShortcuts() {
+        document.addEventListener('keydown', (event) => {
+            // Alt + 1: 로그인 페이지
+            if (event.altKey && event.key === '1') {
+                event.preventDefault();
+                this.showPage('loginPage');
+            }
+            
+            // Alt + 2: 학생 페이지 (로그인된 경우)
+            if (event.altKey && event.key === '2') {
+                event.preventDefault();
+                if (AuthManager.hasPermission('student')) {
+                    this.showPage('studentPage');
+                }
+            }
+            
+            // Alt + 3: 관리자 페이지 (로그인된 경우)
+            if (event.altKey && event.key === '3') {
+                event.preventDefault();
+                if (AuthManager.hasPermission('admin')) {
+                    this.showPage('adminPage');
+                }
+            }
+            
+            // Ctrl/Cmd + /: 도움말
+            if ((event.ctrlKey || event.metaKey) && event.key === '/') {
+                event.preventDefault();
+                this.showHelp();
+            }
+        });
+    },
+
+    // 네트워크 상태 변화 처리
+    onNetworkStatusChange(isOnline) {
+        const statusMessage = isOnline ? 
+            '네트워크 연결이 복원되었습니다.' : 
+            '네트워크 연결이 끊어졌습니다. 일부 기능이 제한될 수 있습니다.';
+            
+        // 향후 토스트 알림으로 교체 가능
+        console.log(statusMessage);
+        
+        // 오프라인 모드 처리
+        if (!isOnline) {
+            this.enableOfflineMode();
+        } else {
+            this.disableOfflineMode();
+        }
+    },
+
+    // 오프라인 모드 활성화
+    enableOfflineMode() {
+        document.body.classList.add('offline-mode');
+        // 오프라인에서 사용할 수 없는 기능 비활성화
+        const onlineOnlyButtons = Utils.$$('[data-online-only]');
+        onlineOnlyButtons.forEach(btn => {
+            btn.disabled = true;
+        });
+    },
+
+    // 오프라인 모드 비활성화
+    disableOfflineMode() {
+        document.body.classList.remove('offline-mode');
+        // 온라인 기능 재활성화
+        const onlineOnlyButtons = Utils.$$('[data-online-only]');
+        onlineOnlyButtons.forEach(btn => {
+            btn.disabled = false;
+        });
+    },
+
+    // 전역 에러 처리
+    handleGlobalError(error) {
+        console.error('전역 에러 발생:', error);
+        
+        // 에러 로깅 (향후 서버로 전송 가능)
+        this.logError(error);
+        
+        // 사용자에게 친화적인 에러 메시지 표시
+        const userMessage = this.getUserFriendlyErrorMessage(error);
+        Utils.showAlert(userMessage);
+    },
+
+    // 에러 로깅
+    logError(error) {
+        const errorInfo = {
+            message: error.message,
+            filename: error.filename,
+            lineno: error.lineno,
+            colno: error.colno,
+            stack: error.error ? error.error.stack : '',
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href
+        };
+        
+        // 로컬 스토리지에 에러 로그 저장
+        try {
+            const errorLog = JSON.parse(localStorage.getItem('errorLog') || '[]');
+            errorLog.push(errorInfo);
+            
+            // 최대 50개 에러만 보관
+            if (errorLog.length > 50) {
+                errorLog.shift();
+            }
+            
+            localStorage.setItem('errorLog', JSON.stringify(errorLog));
+        } catch (e) {
+            console.error('에러 로깅 실패:', e);
+        }
+    },
+
+    // 사용자 친화적 에러 메시지 생성
+    getUserFriendlyErrorMessage(error) {
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+            return '네트워크 연결을 확인해주세요.';
+        }
+        
+        if (error.message.includes('permission')) {
+            return '권한이 없습니다. 다시 로그인해주세요.';
+        }
+        
+        return '예상치 못한 오류가 발생했습니다. 페이지를 새로고침하거나 관리자에게 문의해주세요.';
+    },
+
+    // 성능 최적화
+    optimizePerformance() {
+        // 이미지 지연 로딩
+        Utils.lazyLoadImages();
+        
+        // 사용하지 않는 DOM 요소 정리
+        this.cleanupUnusedElements();
+        
+        // 메모리 사용량 모니터링
+        this.monitorMemoryUsage();
+    },
+
+    // 사용하지 않는 DOM 요소 정리
+    cleanupUnusedElements() {
+        // 빈 텍스트 노드 제거
+        const walker = document.createTreeWalker(
+            document.body,
+            NodeFilter.SHOW_TEXT,
+            node => node.nodeValue.trim() === '' ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
+        );
+        
+        const emptyTextNodes = [];
+        let node;
+        while (node = walker.nextNode()) {
+            emptyTextNodes.push(node);
+        }
+        
+        emptyTextNodes.forEach(node => {
+            if (node.parentNode) {
+                node.parentNode.removeChild(node);
+            }
+        });
+    },
+
+    // 메모리 사용량 모니터링
+    monitorMemoryUsage() {
+        if ('memory' in performance) {
+            const memoryInfo = performance.memory;
+            const usedMB = Math.round(memoryInfo.usedJSHeapSize / 1048576);
+            const limitMB = Math.round(memoryInfo.jsHeapSizeLimit / 1048576);
+            
+            console.log(`메모리 사용량: ${usedMB}MB / ${limitMB}MB`);
+            
+            // 메모리 사용량이 80% 이상이면 경고
+            if (usedMB / limitMB > 0.8) {
+                console.warn('메모리 사용량이 높습니다. 페이지 새로고침을 권장합니다.');
+            }
+        }
+    },
+
+    // 성능 모니터링 설정
+    setupPerformanceMonitoring() {
+        // 페이지 로드 성능 측정
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if ('performance' in window) {
+                    const navigation = performance.getEntriesByType('navigation')[0];
+                    const loadTime = navigation.loadEventEnd - navigation.loadEventStart;
+                    console.log(`페이지 로드 시간: ${loadTime}ms`);
+                }
+            }, 0);
+        });
+    },
+
+    // 페이지 언로드 시 정리
+    onBeforeUnload() {
+        // 세션 저장
+        if (AuthManager.isAuthenticated()) {
+            AuthManager.saveSession();
+        }
+        
+        // 임시 데이터 정리
+        if (window.StudentManager) {
+            StudentManager.saveFormDraft();
+        }
+        
+        // 스크롤 위치 저장
+        Utils.saveScrollPosition();
+    },
+
+    // 도움말 표시
+    showHelp() {
+        const helpText = `
+키보드 단축키:
+• Alt + 1: 로그인 페이지
+• Alt + 2: 학생 페이지
+• Alt + 3: 관리자 페이지
+• Ctrl/Cmd + F: 검색 (관리자)
+• Ctrl/Cmd + N: 새 신청 (학생)
+• Ctrl/Cmd + E: Excel 내보내기 (관리자)
+• Ctrl/Cmd + Enter: 폼 제출
+• ESC: 모달 닫기
+• F5: 새로고침
+
+문의사항이 있으시면 관리자에게 연락해주세요.
+        `;
+        
+        alert(helpText.trim());
+    },
+
+    // 앱 정보 표시
+    showAppInfo() {
+        const info = `
+세종학당 문화교구 신청 플랫폼
+버전: 1.0.0
+개발: Claude AI Assistant
+문의: 관리자
+
+이 플랫폼은 세종학당 문화인턴들의 교구 신청을 위해 개발되었습니다.
+        `;
+        
+        alert(info.trim());
+    },
+
+    // 디버그 정보 표시
+    showDebugInfo() {
+        if (confirm('개발자 모드를 활성화하시겠습니까?')) {
+            console.log('=== 디버그 정보 ===');
+            console.log('현재 사용자:', DataManager.currentUser);
+            console.log('사용자 타입:', DataManager.currentUserType);
+            console.log('전체 학생 수:', DataManager.students.length);
+            console.log('전체 신청 수:', DataManager.applications.length);
+            console.log('통계:', DataManager.getStats());
+            
+            // 개발자 도구 열기
+            if (typeof console.table === 'function') {
+                console.table(DataManager.students);
+                console.table(DataManager.applications);
+            }
+            
+            // 전역 변수로 접근 가능하게 설정
+            window.DEBUG = {
+                DataManager,
+                AuthManager,
+                StudentManager,
+                AdminManager,
+                Utils,
+                App
+            };
+            
+            console.log('DEBUG 객체가 전역으로 설정되었습니다.');
+        }
+    }
+};
+
+// 앱 시작
+App.init();
+
+// 전역에서 접근 가능한 함수들
+window.showAppInfo = () => App.showAppInfo();
+window.showDebugInfo = () => App.showDebugInfo();
+
+// 개발 모드에서만 디버그 정보 출력
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    console.log('개발 모드에서 실행 중입니다.');
+    console.log('showDebugInfo() 함수로 디버그 정보를 확인할 수 있습니다.');
+}
