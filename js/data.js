@@ -9,6 +9,7 @@ const DataManager = {
             instituteName: '하노이 세종학당', 
             specialization: '한국어교육', 
             budgetLimit: 300000,
+            allocatedBudget: 0, // 실제 배정된 예산
             shippingAddress: null
         },
         { 
@@ -18,6 +19,7 @@ const DataManager = {
             instituteName: '방콕 세종학당', 
             specialization: '전통문화예술', 
             budgetLimit: 250000,
+            allocatedBudget: 0,
             shippingAddress: null
         },
         { 
@@ -27,6 +29,7 @@ const DataManager = {
             instituteName: '자카르타 세종학당', 
             specialization: 'K-Pop 문화', 
             budgetLimit: 350000,
+            allocatedBudget: 0,
             shippingAddress: null
         },
         { 
@@ -36,6 +39,7 @@ const DataManager = {
             instituteName: '쿠알라룸푸르 세종학당', 
             specialization: '한국어교육', 
             budgetLimit: 280000,
+            allocatedBudget: 0,
             shippingAddress: null
         },
         { 
@@ -45,6 +49,7 @@ const DataManager = {
             instituteName: '마닐라 세종학당', 
             specialization: '한국현대문화', 
             budgetLimit: 320000,
+            allocatedBudget: 0,
             shippingAddress: null
         },
         { 
@@ -54,6 +59,7 @@ const DataManager = {
             instituteName: '뉴욕 세종학당', 
             specialization: '전통음악', 
             budgetLimit: 400000,
+            allocatedBudget: 0,
             shippingAddress: null
         },
         { 
@@ -63,6 +69,7 @@ const DataManager = {
             instituteName: '런던 세종학당', 
             specialization: '한국미술', 
             budgetLimit: 380000,
+            allocatedBudget: 0,
             shippingAddress: null
         },
         { 
@@ -72,9 +79,42 @@ const DataManager = {
             instituteName: '파리 세종학당', 
             specialization: '한국요리문화', 
             budgetLimit: 290000,
+            allocatedBudget: 0,
             shippingAddress: null
         }
     ],
+
+    // 분야별 예산 설정 (관리자가 설정)
+    fieldBudgetSettings: {
+        '한국어교육': {
+            perLessonAmount: 15000,  // 회당 지원금
+            maxBudget: 400000        // 최대 상한
+        },
+        '전통문화예술': {
+            perLessonAmount: 25000,
+            maxBudget: 600000
+        },
+        'K-Pop 문화': {
+            perLessonAmount: 10000,
+            maxBudget: 300000
+        },
+        '한국현대문화': {
+            perLessonAmount: 18000,
+            maxBudget: 450000
+        },
+        '전통음악': {
+            perLessonAmount: 30000,
+            maxBudget: 750000
+        },
+        '한국미술': {
+            perLessonAmount: 22000,
+            maxBudget: 550000
+        },
+        '한국요리문화': {
+            perLessonAmount: 35000,
+            maxBudget: 800000
+        }
+    },
 
     // 모의 신청 데이터 - 오프라인 구매 샘플 포함
     applications: [
@@ -238,7 +278,7 @@ const DataManager = {
         }
     ],
 
-    // 수업계획 데이터 (테스트용 - 김민수만 완료된 상태로 설정)
+    // 수업계획 데이터 - 승인 상태 추가
     lessonPlans: [
         {
             id: 1,
@@ -256,9 +296,12 @@ const DataManager = {
                 { lessonNumber: 3, topic: '한국 음식 소개', content: '김치, 불고기 등 대표 음식 소개 및 시식' }
                 // 더 많은 수업 데이터...
             ],
-            status: 'completed',
+            status: 'approved', // completed에서 approved로 변경
+            approvalStatus: 'approved', // 수업계획 승인 상태
             submittedAt: '2025-06-08T10:00:00',
-            lastModified: '2025-06-08T10:00:00'
+            lastModified: '2025-06-08T10:00:00',
+            approvedAt: '2025-06-08T15:00:00',
+            approvedBy: '관리자'
         }
     ],
 
@@ -276,6 +319,159 @@ const DataManager = {
     currentUser: null,
     currentUserType: null,
 
+    // === 예산 관련 메소드 ===
+
+    // 학생의 수업계획 기반 예산 계산
+    calculateBudgetFromLessonPlan(studentId) {
+        const student = this.students.find(s => s.id === studentId);
+        const lessonPlan = this.lessonPlans.find(p => p.studentId === studentId);
+        
+        if (!student || !lessonPlan || lessonPlan.approvalStatus !== 'approved') {
+            return {
+                calculated: 0,
+                allocated: 0,
+                field: student?.specialization || '',
+                perLessonAmount: 0,
+                totalLessons: 0,
+                maxBudget: 0
+            };
+        }
+
+        const fieldSettings = this.fieldBudgetSettings[student.specialization];
+        if (!fieldSettings) {
+            return {
+                calculated: 0,
+                allocated: 0,
+                field: student.specialization,
+                perLessonAmount: 0,
+                totalLessons: lessonPlan.totalLessons,
+                maxBudget: 0
+            };
+        }
+
+        const calculatedBudget = lessonPlan.totalLessons * fieldSettings.perLessonAmount;
+        const finalBudget = Math.min(calculatedBudget, fieldSettings.maxBudget);
+
+        return {
+            calculated: calculatedBudget,
+            allocated: finalBudget,
+            field: student.specialization,
+            perLessonAmount: fieldSettings.perLessonAmount,
+            totalLessons: lessonPlan.totalLessons,
+            maxBudget: fieldSettings.maxBudget,
+            isCapReached: calculatedBudget > fieldSettings.maxBudget
+        };
+    },
+
+    // 학생 예산 배정 (수업계획 승인시 실행)
+    allocateBudgetToStudent(studentId) {
+        const budgetInfo = this.calculateBudgetFromLessonPlan(studentId);
+        const student = this.students.find(s => s.id === studentId);
+        
+        if (student && budgetInfo.allocated > 0) {
+            student.allocatedBudget = budgetInfo.allocated;
+            student.budgetLimit = budgetInfo.allocated; // 기존 budgetLimit도 업데이트
+            return budgetInfo;
+        }
+        return null;
+    },
+
+    // 학생의 사용 가능한 예산 조회
+    getStudentBudgetStatus(studentId) {
+        const student = this.students.find(s => s.id === studentId);
+        const lessonPlan = this.lessonPlans.find(p => p.studentId === studentId);
+        
+        if (!student) return null;
+
+        // 사용된 예산 계산
+        const usedBudget = this.getStudentUsedBudget(studentId);
+        const remainingBudget = student.allocatedBudget - usedBudget;
+
+        return {
+            allocated: student.allocatedBudget,
+            used: usedBudget,
+            remaining: remainingBudget,
+            field: student.specialization,
+            lessonPlanStatus: lessonPlan?.approvalStatus || 'pending',
+            canApplyForEquipment: lessonPlan?.approvalStatus === 'approved' && student.allocatedBudget > 0
+        };
+    },
+
+    // 학생이 사용한 예산 계산
+    getStudentUsedBudget(studentId) {
+        const applications = this.getStudentApplications(studentId);
+        return applications
+            .filter(item => item.status === 'approved' || item.status === 'purchased')
+            .reduce((total, item) => total + item.price, 0);
+    },
+
+    // 분야별 예산 설정 업데이트 (관리자용)
+    updateFieldBudgetSettings(field, settings) {
+        if (this.fieldBudgetSettings[field]) {
+            this.fieldBudgetSettings[field] = {
+                ...this.fieldBudgetSettings[field],
+                ...settings
+            };
+            return true;
+        }
+        return false;
+    },
+
+    // 모든 분야 예산 설정 조회
+    getAllFieldBudgetSettings() {
+        return this.fieldBudgetSettings;
+    },
+
+    // === 수업계획 승인/반려 메소드 ===
+
+    // 수업계획 승인
+    approveLessonPlan(studentId, approver = '관리자') {
+        const lessonPlan = this.lessonPlans.find(p => p.studentId === studentId);
+        if (lessonPlan && lessonPlan.approvalStatus !== 'approved') {
+            lessonPlan.approvalStatus = 'approved';
+            lessonPlan.approvedAt = new Date().toISOString();
+            lessonPlan.approvedBy = approver;
+            
+            // 예산 배정 실행
+            const budgetInfo = this.allocateBudgetToStudent(studentId);
+            
+            return {
+                success: true,
+                budgetInfo: budgetInfo
+            };
+        }
+        return { success: false, message: '수업계획을 찾을 수 없거나 이미 승인된 상태입니다.' };
+    },
+
+    // 수업계획 반려
+    rejectLessonPlan(studentId, reason, rejectedBy = '관리자') {
+        const lessonPlan = this.lessonPlans.find(p => p.studentId === studentId);
+        if (lessonPlan) {
+            lessonPlan.approvalStatus = 'rejected';
+            lessonPlan.rejectionReason = reason;
+            lessonPlan.rejectedAt = new Date().toISOString();
+            lessonPlan.rejectedBy = rejectedBy;
+            
+            // 예산 제거
+            const student = this.students.find(s => s.id === studentId);
+            if (student) {
+                student.allocatedBudget = 0;
+                student.budgetLimit = 0;
+            }
+            
+            return { success: true };
+        }
+        return { success: false, message: '수업계획을 찾을 수 없습니다.' };
+    },
+
+    // 수업계획 승인 대기 목록 조회
+    getPendingLessonPlans() {
+        return this.lessonPlans.filter(p => 
+            p.status === 'completed' && 
+            (!p.approvalStatus || p.approvalStatus === 'pending')
+        );
+    },
+
     // === 영수증 관련 유틸리티 메소드 ===
 
     // 영수증 번호 생성
@@ -292,7 +488,7 @@ const DataManager = {
 
     // 영수증 번호에서 학생ID와 아이템ID 추출
     parseReceiptNumber(receiptNumber) {
-        const match = receiptNumber.match(/^RCP-(\d{3})-(\d{3})$/);
+        const match = receiptNumber.match(/^RCP-(\\d{3})-(\\d{3})$/);
         if (match) {
             return {
                 studentId: parseInt(match[1]),
@@ -304,7 +500,7 @@ const DataManager = {
 
     // 영수증 번호 유효성 검증
     validateReceiptNumber(receiptNumber) {
-        return /^RCP-\d{3}-\d{3}$/.test(receiptNumber);
+        return /^RCP-\\d{3}-\\d{3}$/.test(receiptNumber);
     },
 
     // === 기존 메소드들 ===
@@ -349,8 +545,17 @@ const DataManager = {
         return this.applications;
     },
 
-    // 새 교구 신청 추가 - 구매 방식 지원 및 영수증 번호 생성
+    // 새 교구 신청 추가 - 예산 확인 추가
     addApplication(studentId, itemData) {
+        // 예산 확인
+        const budgetStatus = this.getStudentBudgetStatus(studentId);
+        if (!budgetStatus.canApplyForEquipment) {
+            throw new Error('수업계획이 승인되지 않아 교구 신청을 할 수 없습니다.');
+        }
+        if (budgetStatus.remaining < itemData.price) {
+            throw new Error(`예산이 부족합니다. 남은 예산: ${budgetStatus.remaining.toLocaleString()}원`);
+        }
+
         const newItemId = Date.now();
         const newItem = {
             id: newItemId,
@@ -454,6 +659,17 @@ const DataManager = {
         if (application) {
             const item = application.items.find(item => item.id === itemId);
             if (item && item.status === 'pending') {
+                // 예산 확인
+                const budgetStatus = this.getStudentBudgetStatus(studentId);
+                const otherItemsTotal = application.items
+                    .filter(i => i.id !== itemId && (i.status === 'approved' || i.status === 'purchased'))
+                    .reduce((total, i) => total + i.price, 0);
+                const availableBudget = budgetStatus.allocated - otherItemsTotal;
+                
+                if (itemData.price > availableBudget) {
+                    throw new Error(`예산이 부족합니다. 사용 가능한 예산: ${availableBudget.toLocaleString()}원`);
+                }
+
                 // 기존 특수 데이터 보존
                 const preservedData = {};
                 if (item.bundleCredentials) {
@@ -549,12 +765,13 @@ const DataManager = {
         );
     },
 
-    // Excel 내보내기 데이터 준비 - 구매 방식 정보 및 영수증 번호 추가
+    // Excel 내보내기 데이터 준비 - 예산 정보 추가
     prepareExportData() {
         const exportData = [];
         
         this.applications.forEach(app => {
             const student = this.students.find(s => s.id === app.studentId);
+            const budgetStatus = this.getStudentBudgetStatus(app.studentId);
             
             app.items.forEach(item => {
                 const purchaseMethodText = item.purchaseMethod === 'offline' ? '오프라인 구매' : '온라인 구매';
@@ -571,7 +788,9 @@ const DataManager = {
                     '학생명': app.studentName,
                     '파견학당': student ? student.instituteName : '',
                     '전공분야': student ? student.specialization : '',
-                    '예산한도': student ? student.budgetLimit : '',
+                    '배정예산': budgetStatus ? budgetStatus.allocated : 0,
+                    '사용예산': budgetStatus ? budgetStatus.used : 0,
+                    '잔여예산': budgetStatus ? budgetStatus.remaining : 0,
                     '구매방식': purchaseMethodText,
                     '신청유형': typeText,
                     '교구명': item.name,
@@ -667,6 +886,16 @@ const DataManager = {
             // 기존 계획 업데이트
             Object.assign(existingPlan, planData);
             existingPlan.lastModified = new Date().toISOString();
+            // 수업계획이 수정되면 승인 상태 초기화
+            if (existingPlan.approvalStatus === 'approved') {
+                existingPlan.approvalStatus = 'pending';
+                // 예산도 초기화
+                const studentData = this.students.find(s => s.id === studentId);
+                if (studentData) {
+                    studentData.allocatedBudget = 0;
+                    studentData.budgetLimit = 0;
+                }
+            }
             return existingPlan;
         } else {
             // 새 계획 생성
@@ -676,6 +905,7 @@ const DataManager = {
                 studentName: student.name,
                 ...planData,
                 status: planData.status || 'draft',
+                approvalStatus: 'pending',
                 submittedAt: new Date().toISOString(),
                 lastModified: new Date().toISOString()
             };
