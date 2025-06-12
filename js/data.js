@@ -198,35 +198,35 @@ const DataManager = {
         }
     ],
 
-    // 수업계획 데이터
+    // 수업계획 데이터 (테스트용 - 김민수만 완료된 상태로 설정)
     lessonPlans: [
         {
             id: 1,
             studentId: 1,
             studentName: '김민수',
-            startDate: '2024-07-01',
-            endDate: '2024-12-20',
+            startDate: '2025-07-01',
+            endDate: '2025-12-20',
             totalLessons: 24,
             lessonsPerWeek: 3,
             overallGoals: '베트남 현지 학생들의 한국어 실력 향상과 한국 문화에 대한 이해도 증진',
             specialNotes: '베트남어 번역이 필요한 문화적 개념들을 미리 준비할 예정',
             lessons: [
-                { week: 1, lesson: 1, date: '2024-07-01', topic: '한국어 인사법과 기본 표현', content: '안녕하세요, 감사합니다 등 기본 인사말 학습' },
-                { week: 1, lesson: 2, date: '2024-07-03', topic: '한국의 가족 문화', content: '한국 가족 호칭과 가족 관계 설명' },
-                { week: 1, lesson: 3, date: '2024-07-05', topic: '한국 음식 소개', content: '김치, 불고기 등 대표 음식 소개 및 시식' }
+                { week: 1, lesson: 1, date: '2025-07-01', topic: '한국어 인사법과 기본 표현', content: '안녕하세요, 감사합니다 등 기본 인사말 학습' },
+                { week: 1, lesson: 2, date: '2025-07-03', topic: '한국의 가족 문화', content: '한국 가족 호칭과 가족 관계 설명' },
+                { week: 1, lesson: 3, date: '2025-07-05', topic: '한국 음식 소개', content: '김치, 불고기 등 대표 음식 소개 및 시식' }
                 // 더 많은 수업 데이터...
             ],
             status: 'completed',
-            submittedAt: '2024-06-08T10:00:00',
-            lastModified: '2024-06-08T10:00:00'
+            submittedAt: '2025-06-08T10:00:00',
+            lastModified: '2025-06-08T10:00:00'
         }
     ],
 
-    // 수업계획 설정 (관리자가 관리)
+    // 수업계획 설정 (관리자가 관리) - 테스트를 위해 미래 날짜로 설정
     lessonPlanSettings: {
-        editDeadline: '2024-06-30', // 수정 마감일
-        editTime: '23:59', // 수정 마감 시간
-        noticeMessage: '수업계획은 6월 30일 23:59까지 수정 가능합니다. 마감일 이후에는 수정이 불가능하니 미리 완료해주세요.',
+        editDeadline: '2025-12-31', // 테스트를 위해 2025년 말로 설정
+        editTime: '23:59',
+        noticeMessage: '수업계획은 2025년 12월 31일 23:59까지 수정 가능합니다. 마감일 이후에는 수정이 불가능하니 미리 완료해주세요.',
         isEditingAllowed: true // 현재 수정 가능 여부
     },
 
