@@ -213,34 +213,66 @@
             </header>
 
             <main class="main-content">
-                <!-- 통계 카드 -->
+                <!-- 핵심 운영 통계 카드 (업데이트됨) -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <i data-lucide="file-text" class="stat-icon blue"></i>
+                        <i data-lucide="users" class="stat-icon blue"></i>
                         <div class="stat-info">
-                            <p class="stat-label">전체 신청</p>
-                            <p id="totalCount" class="stat-value">0</p>
+                            <p class="stat-label">구매 요청 신청자수</p>
+                            <p id="applicantCount" class="stat-value">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i data-lucide="clock" class="stat-icon orange"></i>
+                        <div class="stat-info">
+                            <p class="stat-label">미승인 아이템</p>
+                            <p id="pendingCount" class="stat-value">0</p>
                         </div>
                     </div>
                     <div class="stat-card">
                         <i data-lucide="check-circle" class="stat-icon green"></i>
                         <div class="stat-info">
-                            <p class="stat-label">승인됨</p>
+                            <p class="stat-label">승인됨 (구매대기)</p>
                             <p id="approvedCount" class="stat-value">0</p>
                         </div>
                     </div>
-                    <div class="stat-card">
-                        <i data-lucide="x-circle" class="stat-icon red"></i>
-                        <div class="stat-info">
-                            <p class="stat-label">반려됨</p>
-                            <p id="rejectedCount" class="stat-value">0</p>
+                </div>
+
+                <!-- 전체 예산 현황 섹션 (새로 추가) -->
+                <div class="budget-overview-section">
+                    <h2>전체 예산 현황</h2>
+                    <div class="budget-stats-grid">
+                        <div class="budget-stat-card">
+                            <div class="budget-stat-header">
+                                <i data-lucide="trending-up" class="budget-icon purple"></i>
+                                <h3>승인된 전체 예산</h3>
+                            </div>
+                            <p id="totalApprovedBudget" class="budget-value">0원</p>
+                            <p class="budget-description">수업계획 승인으로 배정된 총 예산</p>
                         </div>
-                    </div>
-                    <div class="stat-card">
-                        <i data-lucide="package" class="stat-icon blue"></i>
-                        <div class="stat-info">
-                            <p class="stat-label">구매완료</p>
-                            <p id="purchasedCount" class="stat-value">0</p>
+                        <div class="budget-stat-card">
+                            <div class="budget-stat-header">
+                                <i data-lucide="shopping-bag" class="budget-icon blue"></i>
+                                <h3>승인된 아이템 총액</h3>
+                            </div>
+                            <p id="approvedItemsTotal" class="budget-value">0원</p>
+                            <p class="budget-description">승인된 교구 신청의 총 가격</p>
+                        </div>
+                        <div class="budget-stat-card">
+                            <div class="budget-stat-header">
+                                <i data-lucide="check-square" class="budget-icon green"></i>
+                                <h3>구매 완료 총액</h3>
+                            </div>
+                            <p id="purchasedTotal" class="budget-value">0원</p>
+                            <p class="budget-description">실제 구매 완료된 교구의 총액</p>
+                        </div>
+                        <div class="budget-stat-card">
+                            <div class="budget-stat-header">
+                                <i data-lucide="user-check" class="budget-icon indigo"></i>
+                                <h3>1인당 평균 지원금</h3>
+                            </div>
+                            <p id="averagePerPerson" class="budget-value">0원</p>
+                            <p class="budget-description">구매완료 금액 ÷ 신청자 수</p>
                         </div>
                     </div>
                 </div>
