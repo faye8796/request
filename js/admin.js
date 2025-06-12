@@ -382,24 +382,33 @@ const AdminManager = {
         return card;
     },
 
-    // 아이템 카드 HTML 생성
+    // 아이템 카드 HTML 생성 - 영수증 관련 개선
     createItemCardHTML(studentId, item) {
         const statusClass = DataManager.getStatusClass(item.status);
         const statusText = DataManager.getStatusText(item.status);
         const purchaseMethodText = DataManager.getPurchaseMethodText(item.purchaseMethod);
         const purchaseMethodClass = DataManager.getPurchaseMethodClass(item.purchaseMethod);
         
-        // 영수증 관련 표시
+        // 영수증 관련 표시 개선
         let receiptInfo = '';
         if (item.purchaseMethod === 'offline') {
             if (item.receiptImage) {
+                const receiptData = typeof item.receiptImage === 'object' ? item.receiptImage : {};
                 receiptInfo = `
-                    <div class="receipt-info">
-                        <button class="btn small secondary view-receipt-btn" 
-                                data-student-id="${studentId}" data-item-id="${item.id}">
-                            ${Utils.createIcon('eye')} 영수증 보기
-                        </button>
-                        <small>제출일: ${new Date(item.receiptSubmittedAt).toLocaleString('ko-KR')}</small>
+                    <div class="receipt-info submitted">
+                        <div class="receipt-info-header">
+                            <span class="receipt-status submitted">
+                                ${Utils.createIcon('check-circle')} 영수증 제출완료
+                            </span>
+                            <button class="btn small secondary view-receipt-btn" 
+                                    data-student-id="${studentId}" data-item-id="${item.id}">
+                                ${Utils.createIcon('eye')} 영수증 보기
+                            </button>
+                        </div>
+                        <div class="receipt-details-summary">
+                            <small>제출일: ${new Date(item.receiptSubmittedAt).toLocaleString('ko-KR')}</small>
+                            ${receiptData.purchaseStore ? `<small>구매처: ${receiptData.purchaseStore}</small>` : ''}
+                        </div>
                     </div>
                 `;
             } else if (item.status === 'approved') {
@@ -408,6 +417,7 @@ const AdminManager = {
                         <span class="receipt-pending">
                             ${Utils.createIcon('clock')} 영수증 제출 대기 중
                         </span>
+                        <small class="receipt-help-text">학생이 영수증을 제출하면 자동으로 구매완료 처리됩니다.</small>
                     </div>
                 `;
             }
@@ -653,6 +663,7 @@ const AdminManager = {
     showDetailedStats() {
         const stats = DataManager.getStats();
         const applications = DataManager.getAllApplications();
+        const offlineStats = DataManager.getOfflinePurchaseStats();
         
         let totalAmount = 0;
         let approvedAmount = 0;
@@ -686,6 +697,10 @@ const AdminManager = {
                        `승인: ${stats.approved}건\\n` +
                        `반려: ${stats.rejected}건\\n` +
                        `구매완료: ${stats.purchased}건\\n\\n` +
+                       `오프라인 구매 현황:\\n` +
+                       `- 승인된 오프라인 구매: ${offlineStats.approvedOffline}건\\n` +
+                       `- 영수증 제출 완료: ${offlineStats.withReceipt}건\\n` +
+                       `- 영수증 제출 대기: ${offlineStats.pendingReceipt}건\\n\\n` +
                        `전체 예산: ${Utils.formatPrice(totalAmount)}\\n` +
                        `승인 예산: ${Utils.formatPrice(approvedAmount)}\\n` +
                        `구매 완료: ${Utils.formatPrice(purchasedAmount)}`;
