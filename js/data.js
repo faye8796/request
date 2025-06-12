@@ -733,25 +733,77 @@ const DataManager = {
         return false;
     },
 
-    // 통계 데이터 생성
+    // 업데이트된 통계 데이터 생성 - 새로운 요구사항 반영
     getStats() {
-        let total = 0;
-        let approved = 0;
-        let rejected = 0;
-        let purchased = 0;
+        // 신청자 수 계산 (중복 제거)
+        const applicantIds = [...new Set(this.applications.map(app => app.studentId))];
+        const applicantCount = applicantIds.length;
+
+        // 아이템별 통계
+        let pendingCount = 0;      // 미승인된 아이템 수
+        let approvedCount = 0;     // 승인됐지만 구매 완료되지 않은 아이템 수
+        let purchasedCount = 0;    // 구매 완료된 아이템 수
+        let rejectedCount = 0;     // 반려된 아이템 수 (기존 통계 유지)
 
         this.applications.forEach(app => {
             app.items.forEach(item => {
-                total++;
                 switch(item.status) {
-                    case 'approved': approved++; break;
-                    case 'rejected': rejected++; break;
-                    case 'purchased': purchased++; break;
+                    case 'pending': pendingCount++; break;
+                    case 'approved': approvedCount++; break;
+                    case 'purchased': purchasedCount++; break;
+                    case 'rejected': rejectedCount++; break;
                 }
             });
         });
 
-        return { total, approved, rejected, purchased };
+        return { 
+            applicantCount,      // 구매를 요청한 신청자수
+            pendingCount,        // 미승인된 아이템 건수
+            approvedCount,       // 승인됨 (구매대기) 아이템 건수
+            purchasedCount,      // 구매완료 아이템 건수 (기존 유지)
+            rejectedCount        // 반려 아이템 건수 (기존 유지)
+        };
+    },
+
+    // 새로운 예산 현황 통계 생성
+    getBudgetOverviewStats() {
+        // 1. 승인된 전체 예산 (수업계획 승인으로 배정된 총 예산)
+        let totalApprovedBudget = 0;
+        this.students.forEach(student => {
+            totalApprovedBudget += student.allocatedBudget || 0;
+        });
+
+        // 2. 승인된 아이템들의 총 가격
+        let approvedItemsTotal = 0;
+        this.applications.forEach(app => {
+            app.items.forEach(item => {
+                if (item.status === 'approved' || item.status === 'purchased') {
+                    approvedItemsTotal += item.price;
+                }
+            });
+        });
+
+        // 3. 구매 완료해서 나간 돈 총액
+        let purchasedTotal = 0;
+        this.applications.forEach(app => {
+            app.items.forEach(item => {
+                if (item.status === 'purchased') {
+                    purchasedTotal += item.price;
+                }
+            });
+        });
+
+        // 4. 1인당 평균 지원금 (구매완료 금액 ÷ 신청자 수)
+        const applicantIds = [...new Set(this.applications.map(app => app.studentId))];
+        const applicantCount = applicantIds.length;
+        const averagePerPerson = applicantCount > 0 ? Math.round(purchasedTotal / applicantCount) : 0;
+
+        return {
+            totalApprovedBudget,    // 승인된 전체 예산
+            approvedItemsTotal,     // 승인된 아이템들의 총 가격
+            purchasedTotal,         // 구매 완료 총액
+            averagePerPerson        // 1인당 평균 지원금
+        };
     },
 
     // 검색 필터링
