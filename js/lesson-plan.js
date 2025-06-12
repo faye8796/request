@@ -231,95 +231,154 @@ const LessonPlanManager = {
         }
     },
 
-    // 수업 계획표 생성
+    // 수업 계획표 생성 (오류 처리 강화)
     generateLessonTable() {
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-        const totalLessons = parseInt(document.getElementById('totalLessons').value);
-        const lessonsPerWeek = parseInt(document.getElementById('lessonsPerWeek').value) || 3;
+        try {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const totalLessons = parseInt(document.getElementById('totalLessons').value);
+            const lessonsPerWeek = parseInt(document.getElementById('lessonsPerWeek').value) || 3;
 
-        // 유효성 검사
-        if (!startDate || !endDate || !totalLessons) {
-            alert('파견 시작일, 종료일, 총 수업 횟수를 모두 입력해주세요.');
-            return;
+            // 유효성 검사
+            if (!startDate || !endDate || !totalLessons) {
+                alert('파견 시작일, 종료일, 총 수업 횟수를 모두 입력해주세요.');
+                return;
+            }
+
+            if (isNaN(totalLessons) || totalLessons <= 0) {
+                alert('총 수업 횟수는 1 이상의 숫자여야 합니다.');
+                return;
+            }
+
+            if (totalLessons > 100) {
+                alert('총 수업 횟수는 100회를 초과할 수 없습니다.');
+                return;
+            }
+
+            if (isNaN(lessonsPerWeek) || lessonsPerWeek <= 0) {
+                alert('주당 평균 수업 횟수는 1 이상의 숫자여야 합니다.');
+                return;
+            }
+
+            // 날짜 유효성 검사
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                alert('유효하지 않은 날짜입니다.');
+                return;
+            }
+            
+            if (start >= end) {
+                alert('파견 종료일은 시작일보다 늦어야 합니다.');
+                return;
+            }
+
+            // 수업 데이터 생성
+            console.log('수업 계획표 생성 중...', { startDate, endDate, totalLessons, lessonsPerWeek });
+            
+            const lessons = DataManager.calculateWeeks(startDate, endDate, totalLessons, lessonsPerWeek);
+            
+            if (!lessons || lessons.length === 0) {
+                alert('수업 계획표를 생성할 수 없습니다. 입력값을 확인해주세요.');
+                return;
+            }
+            
+            console.log('생성된 수업 데이터:', lessons);
+            
+            // 테이블 생성
+            this.createLessonTable(lessons);
+            
+            // 섹션 표시
+            document.getElementById('lessonTableSection').style.display = 'block';
+            document.getElementById('additionalInfoSection').style.display = 'block';
+
+            // 기존 데이터가 있으면 로드
+            this.loadExistingData();
+            
+            // 성공 메시지
+            this.showSuccessMessage(`${lessons.length}개의 수업 계획이 생성되었습니다.`);
+            
+        } catch (error) {
+            console.error('수업 계획표 생성 오류:', error);
+            alert(`수업 계획표 생성 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
         }
-
-        if (totalLessons > 100) {
-            alert('총 수업 횟수는 100회를 초과할 수 없습니다.');
-            return;
-        }
-
-        // 수업 데이터 생성
-        const lessons = DataManager.calculateWeeks(startDate, endDate, totalLessons, lessonsPerWeek);
-        
-        // 테이블 생성
-        this.createLessonTable(lessons);
-        
-        // 섹션 표시
-        document.getElementById('lessonTableSection').style.display = 'block';
-        document.getElementById('additionalInfoSection').style.display = 'block';
-
-        // 기존 데이터가 있으면 로드
-        this.loadExistingData();
     },
 
-    // 수업 계획표 HTML 생성
+    // 수업 계획표 HTML 생성 (오류 처리 강화)
     createLessonTable(lessons) {
-        const container = document.getElementById('lessonTableContainer');
-        const showWeeks = document.getElementById('showWeekNumbers').checked;
-        
-        let html = `
-            <div class="lesson-table">
-                <div class="table-header">
-                    <div class="header-cell">수업 번호</div>
-                    ${showWeeks ? '<div class="header-cell">주차</div>' : ''}
-                    <div class="header-cell">날짜</div>
-                    <div class="header-cell">수업 주제</div>
-                    <div class="header-cell">수업 내용</div>
-                </div>
-        `;
+        try {
+            const container = document.getElementById('lessonTableContainer');
+            if (!container) {
+                throw new Error('수업 계획표 컨테이너를 찾을 수 없습니다.');
+            }
 
-        lessons.forEach((lesson, index) => {
-            html += `
-                <div class="table-row" data-lesson="${lesson.lessonNumber}">
-                    <div class="cell lesson-number">${lesson.lessonNumber}</div>
-                    ${showWeeks ? `<div class="cell week-number">${lesson.week}주차</div>` : ''}
-                    <div class="cell lesson-date">
-                        <input type="date" 
-                               id="lessonDate_${lesson.lessonNumber}" 
-                               value="${lesson.date}"
-                               class="date-input">
+            const showWeeks = document.getElementById('showWeekNumbers').checked;
+            
+            let html = `
+                <div class="lesson-table">
+                    <div class="table-header">
+                        <div class="header-cell">수업 번호</div>
+                        ${showWeeks ? '<div class="header-cell">주차</div>' : ''}
+                        <div class="header-cell">날짜</div>
+                        <div class="header-cell">수업 주제</div>
+                        <div class="header-cell">수업 내용</div>
                     </div>
-                    <div class="cell lesson-topic">
-                        <input type="text" 
-                               id="lessonTopic_${lesson.lessonNumber}" 
-                               placeholder="수업 주제를 입력하세요"
-                               class="topic-input"
-                               maxlength="100">
-                    </div>
-                    <div class="cell lesson-content">
-                        <textarea id="lessonContent_${lesson.lessonNumber}" 
-                                  placeholder="수업 내용을 상세히 입력하세요"
-                                  class="content-textarea"
-                                  rows="2"
-                                  maxlength="500"></textarea>
-                    </div>
-                </div>
             `;
-        });
 
-        html += '</div>';
-        container.innerHTML = html;
+            lessons.forEach((lesson, index) => {
+                if (!lesson || typeof lesson.lessonNumber === 'undefined') {
+                    console.warn(`유효하지 않은 수업 데이터 (인덱스 ${index}):`, lesson);
+                    return;
+                }
 
-        // 아이콘 재생성
-        lucide.createIcons();
+                html += `
+                    <div class="table-row" data-lesson="${lesson.lessonNumber}">
+                        <div class="cell lesson-number">${lesson.lessonNumber}</div>
+                        ${showWeeks ? `<div class="cell week-number">${lesson.week || 1}주차</div>` : ''}
+                        <div class="cell lesson-date">
+                            <input type="date" 
+                                   id="lessonDate_${lesson.lessonNumber}" 
+                                   value="${lesson.date || ''}"
+                                   class="date-input">
+                        </div>
+                        <div class="cell lesson-topic">
+                            <input type="text" 
+                                   id="lessonTopic_${lesson.lessonNumber}" 
+                                   placeholder="수업 주제를 입력하세요"
+                                   class="topic-input"
+                                   maxlength="100">
+                        </div>
+                        <div class="cell lesson-content">
+                            <textarea id="lessonContent_${lesson.lessonNumber}" 
+                                      placeholder="수업 내용을 상세히 입력하세요"
+                                      class="content-textarea"
+                                      rows="2"
+                                      maxlength="500"></textarea>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+        } catch (error) {
+            console.error('수업 계획표 HTML 생성 오류:', error);
+            throw error;
+        }
     },
 
     // 주차 표시 토글
     toggleWeekNumbers() {
         // 테이블이 이미 생성되어 있으면 재생성
         const container = document.getElementById('lessonTableContainer');
-        if (container.children.length > 0) {
+        if (container && container.children.length > 0) {
             this.generateLessonTable();
         }
     },
@@ -333,14 +392,27 @@ const LessonPlanManager = {
         }
 
         const topicInputs = document.querySelectorAll('.topic-input');
+        if (topicInputs.length === 0) {
+            alert('먼저 수업 계획표를 생성해주세요.');
+            return;
+        }
+
+        let appliedCount = 0;
         topicInputs.forEach(input => {
             if (!input.value.trim()) { // 비어있는 칸만 적용
                 input.value = bulkTopic;
+                appliedCount++;
             }
         });
 
         // 입력창 비우기
         document.getElementById('bulkTopic').value = '';
+        
+        if (appliedCount > 0) {
+            this.showSuccessMessage(`${appliedCount}개 수업에 주제가 적용되었습니다.`);
+        } else {
+            alert('적용할 빈 수업이 없습니다. (이미 주제가 입력된 수업은 건너뜁니다)');
+        }
     },
 
     // 기존 데이터 로드
@@ -391,8 +463,11 @@ const LessonPlanManager = {
         totalLessonInputs.forEach(input => {
             const lessonNumber = input.id.split('_')[1];
             const topic = input.value.trim();
-            const content = document.getElementById(`lessonContent_${lessonNumber}`).value.trim();
-            const date = document.getElementById(`lessonDate_${lessonNumber}`).value;
+            const contentInput = document.getElementById(`lessonContent_${lessonNumber}`);
+            const dateInput = document.getElementById(`lessonDate_${lessonNumber}`);
+            
+            const content = contentInput ? contentInput.value.trim() : '';
+            const date = dateInput ? dateInput.value : '';
             
             // 주차 계산
             const week = Math.ceil(lessonNumber / lessonsPerWeek);
@@ -532,7 +607,9 @@ const LessonPlanManager = {
         const form = document.getElementById('lessonPlanForm');
         form.insertBefore(successDiv, form.firstChild);
         
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
         
         // 3초 후 메시지 제거
         setTimeout(() => {
