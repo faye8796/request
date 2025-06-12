@@ -34,8 +34,93 @@ const AdminManager = {
             this.handleLessonPlanSettingsSubmit();
         });
 
+        // 영수증 보기 모달 이벤트
+        Utils.on('#viewReceiptCloseBtn', 'click', () => this.hideViewReceiptModal());
+        Utils.on('#viewReceiptModal', 'click', (e) => {
+            if (e.target.id === 'viewReceiptModal') {
+                this.hideViewReceiptModal();
+            }
+        });
+        Utils.on('#downloadReceiptBtn', 'click', () => this.downloadReceiptImage());
+
         // 키보드 단축키
         this.setupKeyboardShortcuts();
+    },
+
+    // 영수증 보기 모달 표시
+    showViewReceiptModal(studentId, itemId) {
+        const application = DataManager.applications.find(app => app.studentId === studentId);
+        if (!application) return;
+
+        const item = application.items.find(item => item.id === itemId);
+        if (!item || !item.receiptImage) return;
+
+        const student = DataManager.students.find(s => s.id === studentId);
+        const modal = Utils.$('#viewReceiptModal');
+
+        // 영수증 정보 표시
+        Utils.$('#viewReceiptItemName').textContent = item.name;
+        Utils.$('#viewReceiptStudentName').textContent = application.studentName;
+        Utils.$('#viewReceiptItemPrice').textContent = Utils.formatPrice(item.price);
+        
+        // 영수증 데이터에서 추가 정보 표시
+        if (item.receiptImage && typeof item.receiptImage === 'object') {
+            Utils.$('#viewReceiptPurchaseDate').textContent = item.receiptImage.purchaseDateTime ? 
+                new Date(item.receiptImage.purchaseDateTime).toLocaleString('ko-KR') : '-';
+            Utils.$('#viewReceiptStore').textContent = item.receiptImage.purchaseStore || '-';
+            Utils.$('#viewReceiptNote').textContent = item.receiptImage.note || '-';
+            
+            // 이미지 표시
+            const receiptImage = Utils.$('#viewReceiptImage');
+            receiptImage.src = item.receiptImage.image || item.receiptImage;
+        } else {
+            // 기존 형식 (문자열)
+            const receiptImage = Utils.$('#viewReceiptImage');
+            receiptImage.src = item.receiptImage;
+            Utils.$('#viewReceiptPurchaseDate').textContent = '-';
+            Utils.$('#viewReceiptStore').textContent = '-';
+            Utils.$('#viewReceiptNote').textContent = '-';
+        }
+        
+        Utils.$('#viewReceiptSubmittedDate').textContent = item.receiptSubmittedAt ? 
+            new Date(item.receiptSubmittedAt).toLocaleString('ko-KR') : '-';
+
+        // 현재 보고 있는 영수증 정보 저장 (다운로드용)
+        this.currentViewingReceipt = {
+            studentName: application.studentName,
+            itemName: item.name,
+            image: typeof item.receiptImage === 'object' ? item.receiptImage.image : item.receiptImage,
+            fileName: typeof item.receiptImage === 'object' && item.receiptImage.fileName ? 
+                item.receiptImage.fileName : `receipt_${studentId}_${itemId}.jpg`
+        };
+
+        modal.classList.add('active');
+    },
+
+    // 영수증 보기 모달 숨김
+    hideViewReceiptModal() {
+        const modal = Utils.$('#viewReceiptModal');
+        modal.classList.remove('active');
+        this.currentViewingReceipt = null;
+    },
+
+    // 영수증 이미지 다운로드
+    downloadReceiptImage() {
+        if (!this.currentViewingReceipt) return;
+
+        try {
+            const link = document.createElement('a');
+            link.href = this.currentViewingReceipt.image;
+            link.download = this.currentViewingReceipt.fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            Utils.showAlert('영수증 이미지가 다운로드되었습니다.');
+        } catch (error) {
+            Utils.showAlert('이미지 다운로드 중 오류가 발생했습니다.');
+            console.error('Download error:', error);
+        }
     },
 
     // 수업계획 설정 모달 표시
@@ -301,29 +386,63 @@ const AdminManager = {
     createItemCardHTML(studentId, item) {
         const statusClass = DataManager.getStatusClass(item.status);
         const statusText = DataManager.getStatusText(item.status);
+        const purchaseMethodText = DataManager.getPurchaseMethodText(item.purchaseMethod);
+        const purchaseMethodClass = DataManager.getPurchaseMethodClass(item.purchaseMethod);
+        
+        // 영수증 관련 표시
+        let receiptInfo = '';
+        if (item.purchaseMethod === 'offline') {
+            if (item.receiptImage) {
+                receiptInfo = `
+                    <div class="receipt-info">
+                        <button class="btn small secondary view-receipt-btn" 
+                                data-student-id="${studentId}" data-item-id="${item.id}">
+                            ${Utils.createIcon('eye')} 영수증 보기
+                        </button>
+                        <small>제출일: ${new Date(item.receiptSubmittedAt).toLocaleString('ko-KR')}</small>
+                    </div>
+                `;
+            } else if (item.status === 'approved') {
+                receiptInfo = `
+                    <div class="receipt-info pending">
+                        <span class="receipt-pending">
+                            ${Utils.createIcon('clock')} 영수증 제출 대기 중
+                        </span>
+                    </div>
+                `;
+            }
+        }
         
         return `
             <div class="admin-item-card" data-student-id="${studentId}" data-item-id="${item.id}">
                 <div class="admin-item-header">
                     <div class="admin-item-info">
-                        <h4>${this.escapeHtml(item.name)}</h4>
+                        <div class="item-title-row">
+                            <h4>${this.escapeHtml(item.name)}</h4>
+                            <div class="item-badges">
+                                <span class="purchase-method-badge ${purchaseMethodClass}">
+                                    ${Utils.createIcon(item.purchaseMethod === 'offline' ? 'store' : 'shopping-cart')} ${purchaseMethodText}
+                                </span>
+                                ${item.type ? `<span class="type-badge ${item.type}">${item.type === 'bundle' ? '묶음' : '단일'}</span>` : ''}
+                            </div>
+                        </div>
                         <p class="purpose">${this.escapeHtml(item.purpose)}</p>
                         <div class="admin-item-details">
                             <span><strong>가격:</strong> ${Utils.formatPrice(item.price)}</span>
-                            ${item.type ? `<span><strong>유형:</strong> ${item.type === 'bundle' ? '묶음신청' : '단일신청'}</span>` : ''}
                             ${item.link ? `
                                 <span>
-                                    <strong>링크:</strong> 
+                                    <strong>${item.purchaseMethod === 'offline' ? '참고 링크:' : '구매 링크:'}</strong> 
                                     <a href="${this.escapeHtml(item.link)}" target="_blank" rel="noopener noreferrer">
-                                        구매 링크 ${Utils.createIcon('external-link')}
+                                        링크 보기 ${Utils.createIcon('external-link')}
                                     </a>
                                 </span>
                             ` : ''}
                         </div>
+                        ${receiptInfo}
                     </div>
                     
                     <div class="admin-item-actions">
-                        ${this.createActionButtons(item.status)}
+                        ${this.createActionButtons(item.status, item.purchaseMethod)}
                         <span class="admin-status-badge status-badge ${statusClass}">${statusText}</span>
                     </div>
                 </div>
@@ -339,7 +458,7 @@ const AdminManager = {
     },
 
     // 액션 버튼 생성
-    createActionButtons(status) {
+    createActionButtons(status, purchaseMethod) {
         switch(status) {
             case 'pending':
                 return `
@@ -351,11 +470,20 @@ const AdminManager = {
                     </button>
                 `;
             case 'approved':
-                return `
-                    <button class="btn small purchase" data-action="purchase">
-                        ${Utils.createIcon('shopping-cart')} 구매완료
-                    </button>
-                `;
+                // 오프라인 구매의 경우 영수증 제출 후에만 구매완료 처리 가능
+                if (purchaseMethod === 'offline') {
+                    return `
+                        <span class="offline-notice">
+                            ${Utils.createIcon('info')} 영수증 제출 후 자동 구매완료
+                        </span>
+                    `;
+                } else {
+                    return `
+                        <button class="btn small purchase" data-action="purchase">
+                            ${Utils.createIcon('shopping-cart')} 구매완료
+                        </button>
+                    `;
+                }
             default:
                 return '';
         }
@@ -373,6 +501,16 @@ const AdminManager = {
                 const itemId = parseInt(itemCard.dataset.itemId);
                 
                 this.handleItemAction(action, studentId, itemId, e.target);
+            });
+        });
+
+        // 영수증 보기 버튼
+        const receiptButtons = Utils.$$('.view-receipt-btn');
+        receiptButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const studentId = parseInt(e.target.closest('button').dataset.studentId);
+                const itemId = parseInt(e.target.closest('button').dataset.itemId);
+                this.showViewReceiptModal(studentId, itemId);
             });
         });
     },
@@ -519,6 +657,8 @@ const AdminManager = {
         let totalAmount = 0;
         let approvedAmount = 0;
         let purchasedAmount = 0;
+        let onlineCount = 0;
+        let offlineCount = 0;
         
         applications.forEach(app => {
             app.items.forEach(item => {
@@ -529,11 +669,20 @@ const AdminManager = {
                 if (item.status === 'purchased') {
                     purchasedAmount += item.price;
                 }
+                
+                // 구매 방식별 통계
+                if (item.purchaseMethod === 'offline') {
+                    offlineCount++;
+                } else {
+                    onlineCount++;
+                }
             });
         });
         
         const message = `상세 통계\\n\\n` +
                        `전체 신청: ${stats.total}건\\n` +
+                       `- 온라인 구매: ${onlineCount}건\\n` +
+                       `- 오프라인 구매: ${offlineCount}건\\n\\n` +
                        `승인: ${stats.approved}건\\n` +
                        `반려: ${stats.rejected}건\\n` +
                        `구매완료: ${stats.purchased}건\\n\\n` +
