@@ -118,6 +118,15 @@ body {
     background: #b91c1c;
 }
 
+.btn.warning {
+    background: #f59e0b;
+    color: white;
+}
+
+.btn.warning:hover {
+    background: #d97706;
+}
+
 .btn.small {
     padding: 0.25rem 0.75rem;
     font-size: 0.75rem;
@@ -258,6 +267,352 @@ body {
     color: #1e40af;
 }
 
+/* Lesson Plan Specific Styles */
+.lesson-plan-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.lesson-plan-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.lesson-plan-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.lesson-plan-header p {
+    color: #6b7280;
+    font-size: 1rem;
+}
+
+.lesson-plan-content {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Lesson Plan Form Sections */
+.basic-info-section,
+.lesson-table-section,
+.additional-info-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.basic-info-section:last-child,
+.lesson-table-section:last-child,
+.additional-info-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.basic-info-section h2,
+.lesson-table-section h2,
+.additional-info-section h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 1rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Lesson Table */
+.table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 1rem;
+}
+
+.bulk-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.bulk-actions input {
+    min-width: 250px;
+}
+
+.table-options {
+    display: flex;
+    gap: 1rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+.lesson-table-container {
+    overflow-x: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+}
+
+.lesson-table {
+    width: 100%;
+    min-width: 800px;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 80px 100px 1fr 2fr;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.lesson-table.show-weeks .table-header {
+    grid-template-columns: 80px 80px 100px 1fr 2fr;
+}
+
+.header-cell {
+    padding: 0.75rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #374151;
+    border-right: 1px solid #e5e7eb;
+}
+
+.header-cell:last-child {
+    border-right: none;
+}
+
+.table-row {
+    display: grid;
+    grid-template-columns: 80px 100px 1fr 2fr;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.lesson-table.show-weeks .table-row {
+    grid-template-columns: 80px 80px 100px 1fr 2fr;
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+.cell {
+    padding: 0.75rem;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+}
+
+.cell:last-child {
+    border-right: none;
+}
+
+.lesson-number,
+.week-number {
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.date-input,
+.topic-input,
+.content-textarea {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    padding: 0.375rem;
+    font-size: 0.875rem;
+}
+
+.content-textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.date-input:focus,
+.topic-input:focus,
+.content-textarea:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Notice Messages */
+.deadline-notice,
+.time-remaining-notice,
+.edit-deadline-notice,
+.success-message {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1.5rem;
+}
+
+.deadline-notice {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #92400e;
+}
+
+.time-remaining-notice {
+    background: #dbeafe;
+    border: 1px solid #3b82f6;
+    color: #1e40af;
+}
+
+.edit-deadline-notice {
+    background: #fee2e2;
+    border: 1px solid #ef4444;
+    color: #991b1b;
+}
+
+.success-message {
+    background: #d1fae5;
+    border: 1px solid #10b981;
+    color: #065f46;
+}
+
+.lesson-plan-required-notice,
+.lesson-plan-draft-notice {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1001;
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    padding: 2rem;
+    max-width: 400px;
+    width: 90%;
+}
+
+.notice-content {
+    text-align: center;
+}
+
+.notice-content i {
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+    color: #4f46e5;
+}
+
+.notice-content h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.notice-content p {
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+}
+
+/* Dashboard Notice */
+.dashboard-notice {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #4f46e5;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-notice .notice-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    text-align: left;
+}
+
+.dashboard-notice .notice-content.warning {
+    border-left-color: #f59e0b;
+}
+
+.dashboard-notice .notice-content.info {
+    border-left-color: #3b82f6;
+}
+
+.dashboard-notice .notice-content i {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin: 0;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.dashboard-notice h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+.dashboard-notice p {
+    color: #6b7280;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* Lesson Plan Status in Admin */
+.lesson-plan-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: 0.5rem;
+}
+
+.lesson-plan-status.completed {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.lesson-plan-status.draft {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.lesson-plan-status.not-started {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
 /* Grid Layouts */
 .grid {
     display: grid;
@@ -355,5 +710,47 @@ body {
     .header-actions {
         width: 100%;
         justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .lesson-plan-container {
+        padding: 1rem;
+    }
+    
+    .lesson-plan-content {
+        padding: 1rem;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .table-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .bulk-actions {
+        flex-direction: column;
+    }
+    
+    .bulk-actions input {
+        min-width: 0;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .table-header,
+    .table-row {
+        grid-template-columns: 60px 1fr 1.5fr;
+        font-size: 0.75rem;
+    }
+    
+    .lesson-table.show-weeks .table-header,
+    .lesson-table.show-weeks .table-row {
+        grid-template-columns: 50px 60px 1fr 1.5fr;
     }
 }
