@@ -87,8 +87,17 @@ const App = {
         const userType = AuthManager.getUserType();
         
         if (userType === 'student') {
-            this.showPage('studentPage');
-            StudentManager.init();
+            // 학생의 경우 수업계획 상태 확인
+            const studentId = DataManager.currentUser.id;
+            const hasCompletedPlan = LessonPlanManager.hasCompletedLessonPlan(studentId);
+            
+            if (!hasCompletedPlan && LessonPlanManager.needsLessonPlan(studentId)) {
+                this.showPage('lessonPlanPage');
+                LessonPlanManager.showLessonPlanPage();
+            } else {
+                this.showPage('studentPage');
+                StudentManager.init();
+            }
         } else if (userType === 'admin') {
             this.showPage('adminPage');
             AdminManager.init();
@@ -135,6 +144,13 @@ const App = {
                 }, 100);
                 break;
                 
+            case 'lessonPlanPage':
+                // 수업계획 페이지 초기화
+                if (window.LessonPlanManager) {
+                    LessonPlanManager.init();
+                }
+                break;
+                
             case 'studentPage':
                 // 학생 페이지 새로고침
                 if (window.StudentManager) {
@@ -155,6 +171,7 @@ const App = {
     updateUrlHash(pageId) {
         const hashMap = {
             'loginPage': '',
+            'lessonPlanPage': '#lesson-plan',
             'studentPage': '#student',
             'adminPage': '#admin'
         };
@@ -169,20 +186,46 @@ const App = {
     navigateByHash(hash) {
         const pageMap = {
             '': 'loginPage',
+            '#lesson-plan': 'lessonPlanPage',
             '#student': 'studentPage',
             '#admin': 'adminPage'
         };
         
         const pageId = pageMap[hash];
         if (pageId) {
-            this.showPage(pageId);
+            // 권한 확인
+            if (this.canAccessPage(pageId)) {
+                this.showPage(pageId);
+            } else {
+                this.showPage('loginPage');
+            }
+        }
+    },
+
+    // 페이지 접근 권한 확인
+    canAccessPage(pageId) {
+        switch(pageId) {
+            case 'loginPage':
+                return true;
+            case 'lessonPlanPage':
+                return AuthManager.hasPermission('student');
+            case 'studentPage':
+                return AuthManager.hasPermission('student');
+            case 'adminPage':
+                return AuthManager.hasPermission('admin');
+            default:
+                return false;
         }
     },
 
     // 브라우저 뒤로가기/앞으로가기 처리
     handlePopState(event) {
         if (event.state && event.state.pageId) {
-            this.showPage(event.state.pageId);
+            if (this.canAccessPage(event.state.pageId)) {
+                this.showPage(event.state.pageId);
+            } else {
+                this.showPage('loginPage');
+            }
         } else {
             this.navigateByHash(window.location.hash);
         }
@@ -197,16 +240,24 @@ const App = {
                 this.showPage('loginPage');
             }
             
-            // Alt + 2: 학생 페이지 (로그인된 경우)
+            // Alt + 2: 수업계획 페이지 (학생 로그인된 경우)
             if (event.altKey && event.key === '2') {
+                event.preventDefault();
+                if (AuthManager.hasPermission('student')) {
+                    this.showPage('lessonPlanPage');
+                }
+            }
+            
+            // Alt + 3: 학생 페이지 (학생 로그인된 경우)
+            if (event.altKey && event.key === '3') {
                 event.preventDefault();
                 if (AuthManager.hasPermission('student')) {
                     this.showPage('studentPage');
                 }
             }
             
-            // Alt + 3: 관리자 페이지 (로그인된 경우)
-            if (event.altKey && event.key === '3') {
+            // Alt + 4: 관리자 페이지 (관리자 로그인된 경우)
+            if (event.altKey && event.key === '4') {
                 event.preventDefault();
                 if (AuthManager.hasPermission('admin')) {
                     this.showPage('adminPage');
@@ -218,7 +269,20 @@ const App = {
                 event.preventDefault();
                 this.showHelp();
             }
+
+            // ESC: 모달 닫기
+            if (event.key === 'Escape') {
+                this.closeActiveModal();
+            }
         });
+    },
+
+    // 활성 모달 닫기
+    closeActiveModal() {
+        const activeModal = Utils.$('.modal.active');
+        if (activeModal) {
+            activeModal.classList.remove('active');
+        }
     },
 
     // 네트워크 상태 변화 처리
@@ -388,6 +452,11 @@ const App = {
             StudentManager.saveFormDraft();
         }
         
+        // 수업계획 임시저장
+        if (window.LessonPlanManager && window.LessonPlanManager.currentLessonPlan) {
+            // 자동 임시저장 로직은 LessonPlanManager 내부에서 처리
+        }
+        
         // 스크롤 위치 저장
         Utils.saveScrollPosition();
     },
@@ -397,14 +466,21 @@ const App = {
         const helpText = `
 키보드 단축키:
 • Alt + 1: 로그인 페이지
-• Alt + 2: 학생 페이지
-• Alt + 3: 관리자 페이지
+• Alt + 2: 수업계획 페이지 (학생)
+• Alt + 3: 학생 페이지
+• Alt + 4: 관리자 페이지
 • Ctrl/Cmd + F: 검색 (관리자)
 • Ctrl/Cmd + N: 새 신청 (학생)
 • Ctrl/Cmd + E: Excel 내보내기 (관리자)
 • Ctrl/Cmd + Enter: 폼 제출
 • ESC: 모달 닫기
 • F5: 새로고침
+
+수업계획 작성:
+• 파견 기간과 총 수업 횟수 입력 후 계획표 생성
+• 각 수업별 주제와 내용 작성
+• 임시저장 및 완료 제출 가능
+• 관리자가 설정한 마감일까지 수정 가능
 
 문의사항이 있으시면 관리자에게 연락해주세요.
         `;
@@ -416,11 +492,18 @@ const App = {
     showAppInfo() {
         const info = `
 세종학당 문화교구 신청 플랫폼
-버전: 1.0.0
+버전: 1.1.0
 개발: Claude AI Assistant
 문의: 관리자
 
 이 플랫폼은 세종학당 문화인턴들의 교구 신청을 위해 개발되었습니다.
+
+주요 기능:
+• 학생별 개별 예산 관리
+• 교구 신청 및 상태 추적
+• 수업계획 작성 및 관리
+• 관리자 승인 시스템
+• Excel 데이터 내보내기
         `;
         
         alert(info.trim());
@@ -434,12 +517,15 @@ const App = {
             console.log('사용자 타입:', DataManager.currentUserType);
             console.log('전체 학생 수:', DataManager.students.length);
             console.log('전체 신청 수:', DataManager.applications.length);
+            console.log('수업계획 수:', DataManager.lessonPlans.length);
             console.log('통계:', DataManager.getStats());
+            console.log('수업계획 설정:', DataManager.lessonPlanSettings);
             
             // 개발자 도구 열기
             if (typeof console.table === 'function') {
                 console.table(DataManager.students);
                 console.table(DataManager.applications);
+                console.table(DataManager.lessonPlans);
             }
             
             // 전역 변수로 접근 가능하게 설정
@@ -448,6 +534,7 @@ const App = {
                 AuthManager,
                 StudentManager,
                 AdminManager,
+                LessonPlanManager,
                 Utils,
                 App
             };
