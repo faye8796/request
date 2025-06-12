@@ -17,18 +17,6 @@ const LessonPlanManager = {
             generateTableBtn.addEventListener('click', () => this.generateLessonTable());
         }
 
-        // 일괄 적용 버튼
-        const bulkApplyBtn = document.getElementById('bulkApplyBtn');
-        if (bulkApplyBtn) {
-            bulkApplyBtn.addEventListener('click', () => this.applyBulkTopic());
-        }
-
-        // 주차 표시 체크박스
-        const showWeekNumbers = document.getElementById('showWeekNumbers');
-        if (showWeekNumbers) {
-            showWeekNumbers.addEventListener('change', () => this.toggleWeekNumbers());
-        }
-
         // 수업계획 폼 제출
         const lessonPlanForm = document.getElementById('lessonPlanForm');
         if (lessonPlanForm) {
@@ -231,7 +219,7 @@ const LessonPlanManager = {
         }
     },
 
-    // 수업 계획표 생성 (오류 처리 강화)
+    // 수업 계획표 생성 (간소화됨)
     generateLessonTable() {
         try {
             const startDate = document.getElementById('startDate').value;
@@ -274,10 +262,10 @@ const LessonPlanManager = {
                 return;
             }
 
-            // 수업 데이터 생성
-            console.log('수업 계획표 생성 중...', { startDate, endDate, totalLessons, lessonsPerWeek });
+            // 간단한 수업 데이터 생성 (날짜 없이)
+            console.log('수업 계획표 생성 중...', { totalLessons });
             
-            const lessons = DataManager.calculateWeeks(startDate, endDate, totalLessons, lessonsPerWeek);
+            const lessons = this.createSimpleLessons(totalLessons);
             
             if (!lessons || lessons.length === 0) {
                 alert('수업 계획표를 생성할 수 없습니다. 입력값을 확인해주세요.');
@@ -305,24 +293,35 @@ const LessonPlanManager = {
         }
     },
 
-    // 수업 계획표 HTML 생성 (오류 처리 강화)
+    // 간단한 수업 데이터 생성 (날짜 없이)
+    createSimpleLessons(totalLessons) {
+        const lessons = [];
+        
+        for (let i = 1; i <= totalLessons; i++) {
+            lessons.push({
+                lessonNumber: i,
+                topic: '',
+                content: ''
+            });
+        }
+        
+        return lessons;
+    },
+
+    // 수업 계획표 HTML 생성 (간소화됨)
     createLessonTable(lessons) {
         try {
             const container = document.getElementById('lessonTableContainer');
             if (!container) {
                 throw new Error('수업 계획표 컨테이너를 찾을 수 없습니다.');
             }
-
-            const showWeeks = document.getElementById('showWeekNumbers').checked;
             
             let html = `
                 <div class="lesson-table">
                     <div class="table-header">
-                        <div class="header-cell">수업 번호</div>
-                        ${showWeeks ? '<div class="header-cell">주차</div>' : ''}
-                        <div class="header-cell">날짜</div>
-                        <div class="header-cell">수업 주제</div>
-                        <div class="header-cell">수업 내용</div>
+                        <div class="header-cell lesson-number-col">수업 회차</div>
+                        <div class="header-cell lesson-topic-col">수업 주제</div>
+                        <div class="header-cell lesson-content-col">수업 내용</div>
                     </div>
             `;
 
@@ -334,14 +333,7 @@ const LessonPlanManager = {
 
                 html += `
                     <div class="table-row" data-lesson="${lesson.lessonNumber}">
-                        <div class="cell lesson-number">${lesson.lessonNumber}</div>
-                        ${showWeeks ? `<div class="cell week-number">${lesson.week || 1}주차</div>` : ''}
-                        <div class="cell lesson-date">
-                            <input type="date" 
-                                   id="lessonDate_${lesson.lessonNumber}" 
-                                   value="${lesson.date || ''}"
-                                   class="date-input">
-                        </div>
+                        <div class="cell lesson-number">${lesson.lessonNumber}회차</div>
                         <div class="cell lesson-topic">
                             <input type="text" 
                                    id="lessonTopic_${lesson.lessonNumber}" 
@@ -374,47 +366,6 @@ const LessonPlanManager = {
         }
     },
 
-    // 주차 표시 토글
-    toggleWeekNumbers() {
-        // 테이블이 이미 생성되어 있으면 재생성
-        const container = document.getElementById('lessonTableContainer');
-        if (container && container.children.length > 0) {
-            this.generateLessonTable();
-        }
-    },
-
-    // 일괄 주제 적용
-    applyBulkTopic() {
-        const bulkTopic = document.getElementById('bulkTopic').value.trim();
-        if (!bulkTopic) {
-            alert('일괄 적용할 주제를 입력해주세요.');
-            return;
-        }
-
-        const topicInputs = document.querySelectorAll('.topic-input');
-        if (topicInputs.length === 0) {
-            alert('먼저 수업 계획표를 생성해주세요.');
-            return;
-        }
-
-        let appliedCount = 0;
-        topicInputs.forEach(input => {
-            if (!input.value.trim()) { // 비어있는 칸만 적용
-                input.value = bulkTopic;
-                appliedCount++;
-            }
-        });
-
-        // 입력창 비우기
-        document.getElementById('bulkTopic').value = '';
-        
-        if (appliedCount > 0) {
-            this.showSuccessMessage(`${appliedCount}개 수업에 주제가 적용되었습니다.`);
-        } else {
-            alert('적용할 빈 수업이 없습니다. (이미 주제가 입력된 수업은 건너뜁니다)');
-        }
-    },
-
     // 기존 데이터 로드
     loadExistingData() {
         if (!DataManager.currentUser) return;
@@ -437,17 +388,15 @@ const LessonPlanManager = {
                 existingPlan.lessons.forEach(lesson => {
                     const topicInput = document.getElementById(`lessonTopic_${lesson.lessonNumber}`);
                     const contentInput = document.getElementById(`lessonContent_${lesson.lessonNumber}`);
-                    const dateInput = document.getElementById(`lessonDate_${lesson.lessonNumber}`);
                     
                     if (topicInput) topicInput.value = lesson.topic || '';
                     if (contentInput) contentInput.value = lesson.content || '';
-                    if (dateInput) dateInput.value = lesson.date || '';
                 });
             }
         }
     },
 
-    // 현재 데이터 수집
+    // 현재 데이터 수집 (간소화됨)
     collectFormData() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
@@ -464,20 +413,11 @@ const LessonPlanManager = {
             const lessonNumber = input.id.split('_')[1];
             const topic = input.value.trim();
             const contentInput = document.getElementById(`lessonContent_${lessonNumber}`);
-            const dateInput = document.getElementById(`lessonDate_${lessonNumber}`);
             
             const content = contentInput ? contentInput.value.trim() : '';
-            const date = dateInput ? dateInput.value : '';
-            
-            // 주차 계산
-            const week = Math.ceil(lessonNumber / lessonsPerWeek);
-            const lessonInWeek = ((lessonNumber - 1) % lessonsPerWeek) + 1;
             
             lessons.push({
-                week: week,
-                lesson: lessonInWeek,
                 lessonNumber: parseInt(lessonNumber),
-                date: date,
                 topic: topic,
                 content: content
             });
@@ -511,11 +451,10 @@ const LessonPlanManager = {
         }
 
         // 수업 내용 검사
-        const emptyLessons = data.lessons.filter(lesson => !lesson.topic.trim() && !lesson.content.trim()).length;
         const totalLessonsEntered = data.lessons.length;
         
-        if (totalLessonsEntered < data.totalLessons * 0.5) {
-            errors.push('최소 전체 수업의 50% 이상은 계획을 작성해주세요.');
+        if (totalLessonsEntered < data.totalLessons * 0.3) {
+            errors.push('최소 전체 수업의 30% 이상은 계획을 작성해주세요.');
         }
 
         return errors;
