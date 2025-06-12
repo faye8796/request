@@ -56,7 +56,7 @@ const LessonPlanManager = {
         }
     },
 
-    // 수정 권한 확인
+    // 수정 권한 확인 (업데이트됨)
     checkEditPermission() {
         const canEdit = DataManager.canEditLessonPlan();
         const settings = DataManager.lessonPlanSettings;
@@ -65,7 +65,7 @@ const LessonPlanManager = {
             this.disableEditing();
             this.showEditDeadlineNotice();
         } else {
-            this.showRemainingTime();
+            this.showEditStatusNotice();
         }
     },
 
@@ -90,15 +90,32 @@ const LessonPlanManager = {
         }
     },
 
-    // 수정 마감 안내 표시
+    // 수정 마감 안내 표시 (업데이트됨)
     showEditDeadlineNotice() {
         const settings = DataManager.lessonPlanSettings;
-        if (settings.noticeMessage) {
+        
+        let message = '';
+        let noticeClass = 'deadline-notice';
+        let iconName = 'clock';
+        
+        if (settings.testMode) {
+            message = '테스트 모드가 활성화되어 있어 언제든지 수정할 수 있습니다.';
+            noticeClass = 'test-mode-notice';
+            iconName = 'test-tube';
+        } else if (settings.allowOverrideDeadline) {
+            message = '관리자가 마감일을 무시하도록 설정하여 언제든지 수정할 수 있습니다.';
+            noticeClass = 'override-notice';
+            iconName = 'unlock';
+        } else if (settings.noticeMessage) {
+            message = settings.noticeMessage;
+        }
+        
+        if (message) {
             const notice = document.createElement('div');
-            notice.className = 'deadline-notice';
+            notice.className = noticeClass;
             notice.innerHTML = `
-                <i data-lucide="clock"></i>
-                <p>${settings.noticeMessage}</p>
+                <i data-lucide="${iconName}"></i>
+                <p>${message}</p>
             `;
             
             const container = document.querySelector('.lesson-plan-content');
@@ -109,9 +126,50 @@ const LessonPlanManager = {
         }
     },
 
-    // 남은 시간 표시
+    // 편집 상태 안내 표시 (새로 추가)
+    showEditStatusNotice() {
+        const settings = DataManager.lessonPlanSettings;
+        let message = '';
+        let noticeClass = 'edit-status-notice';
+        let iconName = 'edit';
+        
+        if (settings.testMode) {
+            message = '🧪 테스트 모드: 언제든지 수정 가능합니다.';
+            noticeClass = 'test-mode-notice success';
+            iconName = 'test-tube';
+        } else if (settings.allowOverrideDeadline) {
+            message = '🔓 마감일 무시 모드: 언제든지 수정 가능합니다.';
+            noticeClass = 'override-notice success';
+            iconName = 'unlock';
+        } else {
+            // 일반 모드에서 남은 시간 표시
+            this.showRemainingTime();
+            return;
+        }
+        
+        const notice = document.createElement('div');
+        notice.className = noticeClass;
+        notice.innerHTML = `
+            <i data-lucide="${iconName}"></i>
+            <p>${message}</p>
+        `;
+        
+        const container = document.querySelector('.lesson-plan-content');
+        if (container) {
+            container.insertBefore(notice, container.firstChild);
+            lucide.createIcons();
+        }
+    },
+
+    // 남은 시간 표시 (업데이트됨)
     showRemainingTime() {
         const settings = DataManager.lessonPlanSettings;
+        
+        // 테스트 모드나 마감일 무시 모드에서는 남은 시간을 표시하지 않음
+        if (settings.testMode || settings.allowOverrideDeadline) {
+            return;
+        }
+        
         const deadline = new Date(`${settings.editDeadline} ${settings.editTime}`);
         const now = new Date();
         const remaining = deadline - now;
@@ -388,11 +446,16 @@ const LessonPlanManager = {
         return errors;
     },
 
-    // 임시저장
+    // 임시저장 (업데이트됨)
     saveDraft() {
         if (!DataManager.canEditLessonPlan()) {
-            alert('수업계획 수정 기간이 종료되었습니다.');
-            return;
+            const settings = DataManager.lessonPlanSettings;
+            if (settings.testMode) {
+                console.log('테스트 모드이므로 임시저장을 계속 진행합니다.');
+            } else {
+                alert('수업계획 수정 기간이 종료되었습니다.');
+                return;
+            }
         }
 
         const data = this.collectFormData();
@@ -411,20 +474,25 @@ const LessonPlanManager = {
         }
     },
 
-    // 폼 제출 처리
+    // 폼 제출 처리 (업데이트됨)
     handleFormSubmit(e) {
         e.preventDefault();
 
         if (!DataManager.canEditLessonPlan()) {
-            alert('수업계획 수정 기간이 종료되었습니다.');
-            return;
+            const settings = DataManager.lessonPlanSettings;
+            if (settings.testMode) {
+                console.log('테스트 모드이므로 제출을 계속 진행합니다.');
+            } else {
+                alert('수업계획 수정 기간이 종료되었습니다.');
+                return;
+            }
         }
 
         const data = this.collectFormData();
         const errors = this.validateForm(data);
 
         if (errors.length > 0) {
-            alert('다음 사항을 확인해주세요:\n\n' + errors.join('\n'));
+            alert('다음 사항을 확인해주세요:\\n\\n' + errors.join('\\n'));
             return;
         }
 
@@ -490,7 +558,7 @@ const LessonPlanManager = {
         }
     },
 
-    // 수업계획 페이지 표시
+    // 수업계획 페이지 표시 (업데이트됨)
     showLessonPlanPage() {
         const pages = document.querySelectorAll('.page');
         pages.forEach(page => page.classList.remove('active'));
@@ -498,6 +566,10 @@ const LessonPlanManager = {
         const lessonPlanPage = document.getElementById('lessonPlanPage');
         if (lessonPlanPage) {
             lessonPlanPage.classList.add('active');
+            
+            // 기존 알림 메시지 제거
+            const existingNotices = lessonPlanPage.querySelectorAll('.edit-deadline-notice, .test-mode-notice, .override-notice, .time-remaining-notice, .edit-status-notice');
+            existingNotices.forEach(notice => notice.remove());
             
             // 기존 데이터가 있으면 로드
             this.loadExistingData();
