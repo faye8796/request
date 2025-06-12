@@ -186,7 +186,7 @@ const AuthManager = {
             }
             
             if (detailsEl) {
-                detailsEl.textContent = `${user.country} • ${user.program}`;
+                detailsEl.textContent = `${user.instituteName} • ${user.specialization} • 예산한도: ${Utils.formatPrice(user.budgetLimit)}`;
             }
         }
     },
