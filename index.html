@@ -61,6 +61,92 @@
             </div>
         </div>
 
+        <!-- 수업 계획 작성 페이지 -->
+        <div id="lessonPlanPage" class="page">
+            <div class="lesson-plan-container">
+                <div class="lesson-plan-header">
+                    <h1>수업 계획 작성</h1>
+                    <p>파견 기간 동안의 수업 계획을 작성해주세요</p>
+                </div>
+
+                <div class="lesson-plan-content">
+                    <form id="lessonPlanForm">
+                        <!-- 기본 정보 입력 -->
+                        <div class="basic-info-section">
+                            <h2>기본 정보</h2>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>파견 시작일 *</label>
+                                    <input type="date" id="startDate" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>파견 종료일 *</label>
+                                    <input type="date" id="endDate" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>총 수업 횟수 *</label>
+                                    <input type="number" id="totalLessons" min="1" max="100" required placeholder="예: 24">
+                                </div>
+                                <div class="form-group">
+                                    <label>주당 평균 수업 횟수</label>
+                                    <input type="number" id="lessonsPerWeek" min="1" max="20" placeholder="예: 3">
+                                </div>
+                            </div>
+                            <button type="button" id="generateTableBtn" class="btn secondary">
+                                <i data-lucide="table"></i>
+                                수업 계획표 생성
+                            </button>
+                        </div>
+
+                        <!-- 수업 계획표 -->
+                        <div id="lessonTableSection" class="lesson-table-section" style="display: none;">
+                            <h2>수업 계획표</h2>
+                            <div class="table-controls">
+                                <div class="bulk-actions">
+                                    <input type="text" id="bulkTopic" placeholder="일괄 적용할 주제를 입력하세요">
+                                    <button type="button" id="bulkApplyBtn" class="btn small secondary">일괄 적용</button>
+                                </div>
+                                <div class="table-options">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="showWeekNumbers">
+                                        주차 표시
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="lessonTableContainer" class="lesson-table-container">
+                                <!-- 동적으로 생성될 수업 계획표 -->
+                            </div>
+                        </div>
+
+                        <!-- 추가 정보 -->
+                        <div id="additionalInfoSection" class="additional-info-section" style="display: none;">
+                            <h2>추가 정보</h2>
+                            <div class="form-group">
+                                <label>전체 수업 목표</label>
+                                <textarea id="overallGoals" rows="3" placeholder="전체 수업을 통해 달성하고자 하는 목표를 입력하세요"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>특별 고려사항</label>
+                                <textarea id="specialNotes" rows="3" placeholder="현지 상황이나 특별히 고려해야 할 사항이 있으면 입력하세요"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- 제출 버튼 -->
+                        <div class="form-actions">
+                            <button type="button" id="saveDraftBtn" class="btn secondary">
+                                <i data-lucide="save"></i>
+                                임시 저장
+                            </button>
+                            <button type="submit" class="btn primary">
+                                <i data-lucide="check"></i>
+                                수업 계획 완료
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- 학생 대시보드 -->
         <div id="studentPage" class="page">
             <header class="header">
@@ -72,6 +158,10 @@
                         <div id="budgetStatus" class="budget-status-container"></div>
                     </div>
                     <div class="header-actions">
+                        <button id="lessonPlanBtn" class="btn secondary">
+                            <i data-lucide="calendar"></i>
+                            수업 계획
+                        </button>
                         <button id="shippingAddressBtn" class="btn secondary">
                             <i data-lucide="map-pin"></i>
                             배송지 설정
@@ -113,6 +203,10 @@
                 <div class="header-content">
                     <h1>관리자 대시보드</h1>
                     <div class="header-actions">
+                        <button id="lessonPlanSettingsBtn" class="btn secondary">
+                            <i data-lucide="settings"></i>
+                            수업계획 설정
+                        </button>
                         <button id="exportBtn" class="btn success">
                             <i data-lucide="download"></i>
                             Excel 내보내기
@@ -277,10 +371,36 @@
         </div>
     </div>
 
+    <!-- 수업계획 설정 모달 (관리자용) -->
+    <div id="lessonPlanSettingsModal" class="modal">
+        <div class="modal-content">
+            <h3>수업계획 수정 설정</h3>
+            <form id="lessonPlanSettingsForm">
+                <div class="form-group">
+                    <label>수업계획 수정 마감일 *</label>
+                    <input type="date" id="planEditDeadline" required>
+                </div>
+                <div class="form-group">
+                    <label>수정 마감 시간</label>
+                    <input type="time" id="planEditTime" value="23:59">
+                </div>
+                <div class="form-group">
+                    <label>알림 메시지</label>
+                    <textarea id="planEditNotice" rows="3" placeholder="학생들에게 보여줄 안내 메시지를 입력하세요"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="planSettingsCancelBtn" class="btn secondary">취소</button>
+                    <button type="submit" class="btn primary">설정 저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- JavaScript Files -->
     <script src="js/data.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/lesson-plan.js"></script>
     <script src="js/student.js"></script>
     <script src="js/admin.js"></script>
     <script src="js/app.js"></script>
