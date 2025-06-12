@@ -1,18 +1,122 @@
-/* Student Dashboard Layout */
+/* Budget Status Display */
+.budget-status-container {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.budget-bar-container {
+    margin-bottom: 0.5rem;
+}
+
+.budget-bar {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.budget-progress {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.budget-progress.safe {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.budget-progress.warning {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.budget-progress.danger {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.budget-text {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    color: #374151;
+}
+
+.budget-used {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.budget-limit {
+    color: #6b7280;
+}
+
+.budget-percentage {
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+.budget-remaining {
+    font-size: 0.75rem;
+    color: #374151;
+    text-align: center;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.budget-remaining strong {
+    color: #059669;
+    font-weight: 600;
+}
+
+/* Dashboard Header */
 .dashboard-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 2rem;
+    gap: 1rem;
 }
 
 .dashboard-header h2 {
     font-size: 1.25rem;
     font-weight: 600;
     color: #1f2937;
+    margin-bottom: 0;
 }
 
-/* Applications Grid */
+.dashboard-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.dashboard-summary {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.summary-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Header Actions */
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+/* Student Dashboard Layout */
 .applications-grid {
     display: grid;
     gap: 1.5rem;
@@ -35,17 +139,55 @@
 }
 
 .application-card-header {
+    margin-bottom: 1rem;
+}
+
+.card-title-row {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
+    gap: 1rem;
 }
 
 .application-card h3 {
     font-size: 1.125rem;
     font-weight: 600;
     color: #1f2937;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.card-badges {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.type-badge.single {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.type-badge.bundle {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.type-badge svg {
+    width: 0.875rem;
+    height: 0.875rem;
 }
 
 .application-card .purpose {
@@ -60,6 +202,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
     font-size: 0.875rem;
+    margin-bottom: 1rem;
 }
 
 .detail-item {
@@ -80,6 +223,9 @@
 .detail-value a {
     color: #4f46e5;
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
 }
 
 .detail-value a:hover {
@@ -91,11 +237,19 @@
     color: #1f2937;
 }
 
+/* Card Actions */
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f3f4f6;
+    margin-top: 1rem;
+}
+
 /* Status Badge Specific to Student */
 .student-status {
     align-self: flex-start;
     flex-shrink: 0;
-    margin-left: 1rem;
 }
 
 /* Empty State for Student */
@@ -120,25 +274,58 @@
     margin-bottom: 1rem;
 }
 
+/* Bundle Modal Specific Styles */
+.bundle-credentials {
+    background: #fef9e7;
+    border: 1px solid #fbbf24;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.bundle-credentials h4 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #92400e;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.security-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #f9fafb;
+    border-radius: 0.375rem;
+}
+
+.security-notice svg {
+    width: 1rem;
+    height: 1rem;
+    color: #059669;
+}
+
+/* Shipping Modal Styles */
+#shippingModal .modal-content {
+    max-width: 500px;
+}
+
 /* Application Form Modal Specific Styles */
-#applicationModal .modal-content {
+#applicationModal .modal-content,
+#bundleModal .modal-content {
     max-width: 600px;
 }
 
-#applicationModal .form-group textarea {
+#applicationModal .form-group textarea,
+#bundleModal .form-group textarea,
+#shippingModal .form-group textarea {
     min-height: 100px;
-}
-
-/* New Application Button */
-#newApplicationBtn {
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-    border: none;
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-}
-
-#newApplicationBtn:hover {
-    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
-    transform: translateY(-2px);
 }
 
 /* Rejection Reason Display */
@@ -163,6 +350,75 @@
     line-height: 1.4;
 }
 
+/* Inline Icons */
+.inline-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+/* Enhanced Button Styles */
+#newApplicationBtn {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border: none;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+#newApplicationBtn:hover {
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+    transform: translateY(-2px);
+}
+
+#bundleApplicationBtn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border: none;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+#bundleApplicationBtn:hover {
+    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+    transform: translateY(-2px);
+}
+
+#shippingAddressBtn {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    border: none;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+#shippingAddressBtn:hover {
+    box-shadow: 0 6px 16px rgba(5, 150, 105, 0.4);
+    transform: translateY(-2px);
+}
+
+/* Small Button Enhancements */
+.btn.small.danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.btn.small.danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-1px);
+}
+
+.btn.small.secondary {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.btn.small.secondary:hover {
+    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+    transform: translateY(-1px);
+}
+
+/* Modal Enhancements */
+.modal-content h3 {
+    color: #1f2937;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .dashboard-header {
@@ -171,23 +427,44 @@
         align-items: stretch;
     }
     
+    .dashboard-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
     .applications-grid {
         grid-template-columns: 1fr;
     }
     
-    .application-card-header {
+    .card-title-row {
         flex-direction: column;
         gap: 0.75rem;
     }
     
-    .student-status {
-        margin-left: 0;
-        align-self: flex-start;
+    .card-badges {
+        justify-content: flex-start;
     }
     
     .application-details {
         grid-template-columns: 1fr;
         gap: 0.75rem;
+    }
+    
+    .card-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: stretch;
+    }
+    
+    .budget-text {
+        flex-direction: column;
+        gap: 0.125rem;
+        align-items: flex-start;
     }
 }
 
@@ -207,5 +484,15 @@
     .empty-state .empty-icon {
         width: 3rem;
         height: 3rem;
+    }
+    
+    .dashboard-actions .btn {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .type-badge {
+        font-size: 0.675rem;
+        padding: 0.125rem 0.375rem;
     }
 }
