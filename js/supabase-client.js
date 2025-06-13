@@ -1,5 +1,5 @@
-// Supabase 클라이언트 설정 및 API 관리
-// 설정은 config.js 파일에서 가져옵니다
+// Supabase 클라이언트 설정 및 API 관리 - 최적화 버전
+// 에러 핸들링 개선, 로깅 추가, 코드 안정성 향상
 
 // 설정 파일이 로드될 때까지 대기
 function waitForConfig() {
@@ -14,31 +14,68 @@ function waitForConfig() {
                     resolve(window.CONFIG);
                 }
             }, 100);
+            
+            // 30초 후 타임아웃
+            setTimeout(() => {
+                clearInterval(checkConfig);
+                console.error('Config 로드 타임아웃');
+                resolve(null);
+            }, 30000);
         }
     });
 }
 
 // Supabase 클라이언트 초기화
 let supabaseClient = null;
+let initializationPromise = null;
 
 // 클라이언트 초기화 함수
 async function initializeSupabaseClient() {
     if (supabaseClient) return supabaseClient;
     
-    const config = await waitForConfig();
-    const { createClient } = supabase;
+    // 이미 초기화 중이라면 기다림
+    if (initializationPromise) return initializationPromise;
     
-    supabaseClient = createClient(
-        config.SUPABASE.URL,
-        config.SUPABASE.ANON_KEY
-    );
+    initializationPromise = (async () => {
+        try {
+            const config = await waitForConfig();
+            
+            if (!config) {
+                throw new Error('Config 로드 실패');
+            }
+            
+            if (!window.supabase || !window.supabase.createClient) {
+                throw new Error('Supabase 라이브러리가 로드되지 않았습니다');
+            }
+            
+            const { createClient } = window.supabase;
+            
+            supabaseClient = createClient(
+                config.SUPABASE.URL,
+                config.SUPABASE.ANON_KEY,
+                {
+                    auth: {
+                        persistSession: false, // 세션 유지하지 않음 (브라우저 기반 인증 아님)
+                        autoRefreshToken: false
+                    }
+                }
+            );
+            
+            console.log('✅ Supabase client initialized successfully');
+            return supabaseClient;
+        } catch (error) {
+            console.error('❌ Supabase client initialization failed:', error);
+            throw error;
+        }
+    })();
     
-    console.log('Supabase client initialized successfully');
-    return supabaseClient;
+    return initializationPromise;
 }
 
 // 즉시 초기화 시작
-initializeSupabaseClient();
+initializeSupabaseClient().catch(error => {
+    console.error('초기 Supabase 클라이언트 초기화 실패:', error);
+});
 
 // Supabase API 관리자
 const SupabaseAPI = {
@@ -53,7 +90,29 @@ const SupabaseAPI = {
         if (!this.client) {
             await initializeSupabaseClient();
         }
+        if (!this.client) {
+            throw new Error('Supabase 클라이언트 초기화 실패');
+        }
         return this.client;
+    },
+
+    // 에러 로깅 헬퍼
+    logError(operation, error, context = {}) {
+        const config = window.CONFIG;
+        if (config?.DEV?.ENABLE_CONSOLE_LOGS) {
+            console.group(`❌ ${operation} 오류`);
+            console.error('Error:', error);
+            console.log('Context:', context);
+            console.groupEnd();
+        }
+    },
+
+    // 성공 로깅 헬퍼
+    logSuccess(operation, data = null) {
+        const config = window.CONFIG;
+        if (config?.DEV?.ENABLE_CONSOLE_LOGS) {
+            console.log(`✅ ${operation} 성공`, data ? data : '');
+        }
     },
 
     // ===================
@@ -73,16 +132,22 @@ const SupabaseAPI = {
                 .single();
 
             if (error || !data) {
-                console.error('Student authentication failed:', error);
-                return { success: false, message: '학생 정보를 찾을 수 없습니다.' };
+                this.logError('학생 인증', error, { name, birthDate });
+                return { 
+                    success: false, 
+                    message: error?.code === 'PGRST116' 
+                        ? '일치하는 학생 정보를 찾을 수 없습니다.' 
+                        : '학생 정보 조회 중 오류가 발생했습니다.'
+                };
             }
 
             this.currentUser = data;
             this.currentUserType = 'student';
+            this.logSuccess('학생 인증', { name: data.name, field: data.field });
             
             return { success: true, user: data };
         } catch (error) {
-            console.error('Authentication error:', error);
+            this.logError('학생 인증', error, { name, birthDate });
             return { success: false, message: '인증 중 오류가 발생했습니다.' };
         }
     },
@@ -104,7 +169,7 @@ const SupabaseAPI = {
                 .single();
 
             if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-                console.error('Admin authentication error:', error);
+                this.logError('관리자 인증', error);
                 return { success: false, message: '관리자 인증 중 오류가 발생했습니다.' };
             }
 
@@ -122,19 +187,21 @@ const SupabaseAPI = {
                     .single();
 
                 if (createError) {
-                    console.error('Admin creation error:', createError);
+                    this.logError('관리자 계정 생성', createError);
                     return { success: false, message: '관리자 계정 생성 중 오류가 발생했습니다.' };
                 }
 
                 adminUser = newAdmin;
+                this.logSuccess('관리자 계정 생성', { name: adminUser.name });
             }
 
             this.currentUser = adminUser;
             this.currentUserType = 'admin';
+            this.logSuccess('관리자 인증', { name: adminUser.name });
 
             return { success: true, user: adminUser };
         } catch (error) {
-            console.error('Admin authentication error:', error);
+            this.logError('관리자 인증', error);
             return { success: false, message: '관리자 인증 중 오류가 발생했습니다.' };
         }
     },
@@ -143,6 +210,7 @@ const SupabaseAPI = {
     logout() {
         this.currentUser = null;
         this.currentUserType = null;
+        this.logSuccess('로그아웃');
     },
 
     // ===================
@@ -160,10 +228,10 @@ const SupabaseAPI = {
                 .order('field');
 
             if (error) {
-                console.error('Error fetching budget settings:', error);
+                this.logError('예산 설정 조회', error);
                 // 기본 설정 반환
                 const config = await waitForConfig();
-                return config.APP.DEFAULT_BUDGET_SETTINGS;
+                return config?.APP?.DEFAULT_BUDGET_SETTINGS || {};
             }
 
             // 객체 형태로 변환 (기존 구조와 호환)
@@ -175,12 +243,13 @@ const SupabaseAPI = {
                 };
             });
 
+            this.logSuccess('예산 설정 조회', `${Object.keys(settings).length}개 분야`);
             return settings;
         } catch (error) {
-            console.error('Error in getAllFieldBudgetSettings:', error);
+            this.logError('예산 설정 조회', error);
             // 기본 설정 반환
             const config = await waitForConfig();
-            return config.APP.DEFAULT_BUDGET_SETTINGS;
+            return config?.APP?.DEFAULT_BUDGET_SETTINGS || {};
         }
     },
 
@@ -188,27 +257,52 @@ const SupabaseAPI = {
     async updateFieldBudgetSettings(field, settings) {
         try {
             const client = await this.ensureClient();
-            const { data, error } = await client
+            
+            // 먼저 해당 필드가 존재하는지 확인
+            const { data: existing, error: findError } = await client
                 .from('budget_settings')
-                .update({
-                    per_lesson_amount: settings.perLessonAmount,
-                    max_budget_limit: settings.maxBudget,
-                    updated_at: new Date().toISOString()
-                })
+                .select('id')
                 .eq('field', field)
-                .select();
+                .single();
 
-            if (error) {
-                console.error('Error updating budget settings:', error);
+            let result;
+            const budgetData = {
+                field: field,
+                per_lesson_amount: settings.perLessonAmount,
+                max_budget_limit: settings.maxBudget,
+                is_active: true,
+                updated_at: new Date().toISOString()
+            };
+
+            if (existing) {
+                // 업데이트
+                const { data, error } = await client
+                    .from('budget_settings')
+                    .update(budgetData)
+                    .eq('field', field)
+                    .select();
+                result = { data, error };
+            } else {
+                // 새로 생성
+                const { data, error } = await client
+                    .from('budget_settings')
+                    .insert([budgetData])
+                    .select();
+                result = { data, error };
+            }
+
+            if (result.error) {
+                this.logError('예산 설정 업데이트', result.error, { field, settings });
                 return { success: false, message: '예산 설정 업데이트 중 오류가 발생했습니다.' };
             }
 
             // 기존 승인된 학생들의 예산 재계산
             await this.recalculateAllStudentBudgets();
+            this.logSuccess('예산 설정 업데이트', { field, settings });
 
-            return { success: true, data: data[0] };
+            return { success: true, data: result.data[0] };
         } catch (error) {
-            console.error('Error in updateFieldBudgetSettings:', error);
+            this.logError('예산 설정 업데이트', error, { field, settings });
             return { success: false, message: '예산 설정 업데이트 중 오류가 발생했습니다.' };
         }
     },
@@ -224,7 +318,7 @@ const SupabaseAPI = {
                 .eq('status', 'approved');
 
             if (error) {
-                console.error('Error fetching approved lesson plans:', error);
+                this.logError('승인된 수업계획 조회', error);
                 return;
             }
 
@@ -232,8 +326,10 @@ const SupabaseAPI = {
             for (const plan of approvedPlans) {
                 await this.allocateBudgetForStudent(plan.user_id, plan.lessons);
             }
+
+            this.logSuccess('전체 학생 예산 재계산', `${approvedPlans.length}명 처리`);
         } catch (error) {
-            console.error('Error in recalculateAllStudentBudgets:', error);
+            this.logError('전체 학생 예산 재계산', error);
         }
     },
 
@@ -250,8 +346,10 @@ const SupabaseAPI = {
                 .select('setting_key, setting_value, setting_type');
 
             if (error) {
-                console.error('Error fetching system settings:', error);
-                return {};
+                this.logError('시스템 설정 조회', error);
+                // 기본 설정 반환
+                const config = await waitForConfig();
+                return config?.APP?.DEFAULT_SYSTEM_SETTINGS || {};
             }
 
             // 객체 형태로 변환
@@ -268,17 +366,20 @@ const SupabaseAPI = {
                     try {
                         value = JSON.parse(value);
                     } catch (e) {
-                        console.error('Error parsing JSON setting:', item.setting_key, e);
+                        this.logError('JSON 설정 파싱', e, { key: item.setting_key, value: item.setting_value });
                     }
                 }
 
                 settings[item.setting_key] = value;
             });
 
+            this.logSuccess('시스템 설정 조회', `${Object.keys(settings).length}개 설정`);
             return settings;
         } catch (error) {
-            console.error('Error in getSystemSettings:', error);
-            return {};
+            this.logError('시스템 설정 조회', error);
+            // 기본 설정 반환
+            const config = await waitForConfig();
+            return config?.APP?.DEFAULT_SYSTEM_SETTINGS || {};
         }
     },
 
@@ -287,31 +388,60 @@ const SupabaseAPI = {
         try {
             const client = await this.ensureClient();
             let stringValue = value;
+            let settingType = 'string';
+
             if (typeof value === 'boolean') {
                 stringValue = value.toString();
+                settingType = 'boolean';
             } else if (typeof value === 'object') {
                 stringValue = JSON.stringify(value);
+                settingType = 'json';
             } else if (typeof value === 'number') {
                 stringValue = value.toString();
+                settingType = 'number';
             }
 
-            const { data, error } = await client
+            // 먼저 기존 설정이 있는지 확인
+            const { data: existing, error: findError } = await client
                 .from('system_settings')
-                .update({
-                    setting_value: stringValue,
-                    updated_at: new Date().toISOString()
-                })
+                .select('id')
                 .eq('setting_key', key)
-                .select();
+                .single();
 
-            if (error) {
-                console.error('Error updating system setting:', error);
+            let result;
+            const settingData = {
+                setting_key: key,
+                setting_value: stringValue,
+                setting_type: settingType,
+                updated_at: new Date().toISOString()
+            };
+
+            if (existing) {
+                // 업데이트
+                const { data, error } = await client
+                    .from('system_settings')
+                    .update(settingData)
+                    .eq('setting_key', key)
+                    .select();
+                result = { data, error };
+            } else {
+                // 새로 생성
+                const { data, error } = await client
+                    .from('system_settings')
+                    .insert([settingData])
+                    .select();
+                result = { data, error };
+            }
+
+            if (result.error) {
+                this.logError('시스템 설정 업데이트', result.error, { key, value });
                 return { success: false, message: '시스템 설정 업데이트 중 오류가 발생했습니다.' };
             }
 
-            return { success: true, data: data[0] };
+            this.logSuccess('시스템 설정 업데이트', { key, value });
+            return { success: true, data: result.data[0] };
         } catch (error) {
-            console.error('Error in updateSystemSetting:', error);
+            this.logError('시스템 설정 업데이트', error, { key, value });
             return { success: false, message: '시스템 설정 업데이트 중 오류가 발생했습니다.' };
         }
     },
@@ -324,12 +454,13 @@ const SupabaseAPI = {
             
             const result = await this.updateSystemSetting('test_mode', newValue);
             if (result.success) {
+                this.logSuccess('테스트 모드 토글', `테스트 모드: ${newValue ? 'ON' : 'OFF'}`);
                 return newValue;
             }
             
             return settings.test_mode;
         } catch (error) {
-            console.error('Error toggling test mode:', error);
+            this.logError('테스트 모드 토글', error);
             return false;
         }
     },
@@ -348,7 +479,7 @@ const SupabaseAPI = {
             const now = new Date();
             return now <= deadline;
         } catch (error) {
-            console.error('Error checking lesson plan edit permission:', error);
+            this.logError('수업계획 수정 가능 여부 확인', error);
             return false;
         }
     },
@@ -368,13 +499,14 @@ const SupabaseAPI = {
                 .order('name');
 
             if (error) {
-                console.error('Error fetching students:', error);
+                this.logError('학생 목록 조회', error);
                 return [];
             }
 
+            this.logSuccess('학생 목록 조회', `${data.length}명`);
             return data;
         } catch (error) {
-            console.error('Error in getAllStudents:', error);
+            this.logError('학생 목록 조회', error);
             return [];
         }
     },
@@ -391,13 +523,15 @@ const SupabaseAPI = {
                 .single();
 
             if (error) {
-                console.error('Error fetching student:', error);
+                if (error.code !== 'PGRST116') {
+                    this.logError('학생 정보 조회', error, { studentId });
+                }
                 return null;
             }
 
             return data;
         } catch (error) {
-            console.error('Error in getStudentById:', error);
+            this.logError('학생 정보 조회', error, { studentId });
             return null;
         }
     },
@@ -446,7 +580,7 @@ const SupabaseAPI = {
                 canApplyForEquipment: canApplyForEquipment
             };
         } catch (error) {
-            console.error('Error in getStudentBudgetStatus:', error);
+            this.logError('학생 예산 상태 조회', error, { studentId });
             return null;
         }
     },
@@ -484,27 +618,28 @@ const SupabaseAPI = {
                     .from('lesson_plans')
                     .update(lessonPlanData)
                     .eq('user_id', studentId)
-                    .select();
-                
+                    .select()
+                    .single();
                 result = { data, error };
             } else {
                 // 새로 생성
                 const { data, error } = await client
                     .from('lesson_plans')
                     .insert([lessonPlanData])
-                    .select();
-                
+                    .select()
+                    .single();
                 result = { data, error };
             }
 
             if (result.error) {
-                console.error('Error saving lesson plan:', result.error);
+                this.logError('수업계획 저장', result.error, { studentId, isDraft });
                 return { success: false, message: '수업계획 저장 중 오류가 발생했습니다.' };
             }
 
-            return { success: true, data: result.data[0] };
+            this.logSuccess('수업계획 저장', { studentId, status, isDraft });
+            return { success: true, data: result.data };
         } catch (error) {
-            console.error('Error in saveLessonPlan:', error);
+            this.logError('수업계획 저장', error, { studentId, isDraft });
             return { success: false, message: '수업계획 저장 중 오류가 발생했습니다.' };
         }
     },
@@ -520,13 +655,13 @@ const SupabaseAPI = {
                 .single();
 
             if (error && error.code !== 'PGRST116') {
-                console.error('Error fetching lesson plan:', error);
+                this.logError('학생 수업계획 조회', error, { studentId });
                 return null;
             }
 
             return data || null;
         } catch (error) {
-            console.error('Error in getStudentLessonPlan:', error);
+            this.logError('학생 수업계획 조회', error, { studentId });
             return null;
         }
     },
@@ -544,13 +679,14 @@ const SupabaseAPI = {
                 .order('created_at', { ascending: false });
 
             if (error) {
-                console.error('Error fetching all lesson plans:', error);
+                this.logError('전체 수업계획 조회', error);
                 return [];
             }
 
+            this.logSuccess('전체 수업계획 조회', `${data.length}개`);
             return data;
         } catch (error) {
-            console.error('Error in getAllLessonPlans:', error);
+            this.logError('전체 수업계획 조회', error);
             return [];
         }
     },
@@ -569,13 +705,14 @@ const SupabaseAPI = {
                 .order('submitted_at');
 
             if (error) {
-                console.error('Error fetching pending lesson plans:', error);
+                this.logError('대기 중인 수업계획 조회', error);
                 return [];
             }
 
+            this.logSuccess('대기 중인 수업계획 조회', `${data.length}개`);
             return data;
         } catch (error) {
-            console.error('Error in getPendingLessonPlans:', error);
+            this.logError('대기 중인 수업계획 조회', error);
             return [];
         }
     },
@@ -597,12 +734,13 @@ const SupabaseAPI = {
                 .single();
 
             if (error) {
-                console.error('Error approving lesson plan:', error);
+                this.logError('수업계획 승인', error, { studentId });
                 return { success: false, message: '수업계획 승인 중 오류가 발생했습니다.' };
             }
 
             // 예산 배정
             const budgetInfo = await this.allocateBudgetForStudent(studentId, data.lessons);
+            this.logSuccess('수업계획 승인', { studentId, budgetInfo });
             
             return { 
                 success: true, 
@@ -610,7 +748,7 @@ const SupabaseAPI = {
                 budgetInfo: budgetInfo
             };
         } catch (error) {
-            console.error('Error in approveLessonPlan:', error);
+            this.logError('수업계획 승인', error, { studentId });
             return { success: false, message: '수업계획 승인 중 오류가 발생했습니다.' };
         }
     },
@@ -630,16 +768,17 @@ const SupabaseAPI = {
                 .select();
 
             if (error) {
-                console.error('Error rejecting lesson plan:', error);
+                this.logError('수업계획 반려', error, { studentId, reason });
                 return { success: false, message: '수업계획 반려 중 오류가 발생했습니다.' };
             }
 
             // 예산 회수
             await this.revokeBudgetForStudent(studentId);
+            this.logSuccess('수업계획 반려', { studentId, reason });
 
             return { success: true, message: '수업계획이 반려되었습니다.' };
         } catch (error) {
-            console.error('Error in rejectLessonPlan:', error);
+            this.logError('수업계획 반려', error, { studentId, reason });
             return { success: false, message: '수업계획 반려 중 오류가 발생했습니다.' };
         }
     },
@@ -658,7 +797,7 @@ const SupabaseAPI = {
             if (!fieldSettings) return null;
 
             // 총 수업 횟수 계산
-            const totalLessons = lessonData?.length || student.total_lessons || 0;
+            const totalLessons = Array.isArray(lessonData) ? lessonData.length : (student.total_lessons || 0);
             const calculatedBudget = totalLessons * fieldSettings.perLessonAmount;
             const finalBudget = Math.min(calculatedBudget, fieldSettings.maxBudget);
 
@@ -684,31 +823,36 @@ const SupabaseAPI = {
                     .from('student_budgets')
                     .update(budgetData)
                     .eq('user_id', studentId)
-                    .select();
+                    .select()
+                    .single();
                 budgetResult = { data, error };
             } else {
                 // 새로 생성
                 const { data, error } = await client
                     .from('student_budgets')
                     .insert([budgetData])
-                    .select();
+                    .select()
+                    .single();
                 budgetResult = { data, error };
             }
 
             if (budgetResult.error) {
-                console.error('Error allocating budget:', budgetResult.error);
+                this.logError('예산 배정', budgetResult.error, { studentId, finalBudget });
                 return null;
             }
 
-            return {
+            const result = {
                 allocated: finalBudget,
                 calculated: calculatedBudget,
                 perLessonAmount: fieldSettings.perLessonAmount,
                 maxBudget: fieldSettings.maxBudget,
                 isCapReached: calculatedBudget > fieldSettings.maxBudget
             };
+
+            this.logSuccess('예산 배정', { studentId, ...result });
+            return result;
         } catch (error) {
-            console.error('Error in allocateBudgetForStudent:', error);
+            this.logError('예산 배정', error, { studentId });
             return null;
         }
     },
@@ -727,13 +871,14 @@ const SupabaseAPI = {
                 .eq('user_id', studentId);
 
             if (error) {
-                console.error('Error revoking budget:', error);
+                this.logError('예산 회수', error, { studentId });
                 return false;
             }
 
+            this.logSuccess('예산 회수', { studentId });
             return true;
         } catch (error) {
-            console.error('Error in revokeBudgetForStudent:', error);
+            this.logError('예산 회수', error, { studentId });
             return false;
         }
     },
@@ -753,13 +898,13 @@ const SupabaseAPI = {
                 .order('created_at', { ascending: false });
 
             if (error) {
-                console.error('Error fetching student applications:', error);
+                this.logError('학생 신청 내역 조회', error, { studentId });
                 return [];
             }
 
             return data;
         } catch (error) {
-            console.error('Error in getStudentApplications:', error);
+            this.logError('학생 신청 내역 조회', error, { studentId });
             return [];
         }
     },
@@ -789,13 +934,14 @@ const SupabaseAPI = {
                 .single();
 
             if (error) {
-                console.error('Error adding application:', error);
+                this.logError('교구 신청 추가', error, { studentId, itemName: itemData.name });
                 return { success: false, message: '교구 신청 중 오류가 발생했습니다.' };
             }
 
+            this.logSuccess('교구 신청 추가', { studentId, itemName: itemData.name, price: itemData.price });
             return { success: true, data: data };
         } catch (error) {
-            console.error('Error in addApplication:', error);
+            this.logError('교구 신청 추가', error, { studentId, itemData });
             return { success: false, message: '교구 신청 중 오류가 발생했습니다.' };
         }
     },
@@ -833,16 +979,18 @@ const SupabaseAPI = {
                 .update(updateData)
                 .eq('id', itemId)
                 .eq('user_id', studentId)
-                .select();
+                .select()
+                .single();
 
             if (error) {
-                console.error('Error updating application:', error);
+                this.logError('신청 아이템 수정', error, { studentId, itemId });
                 return { success: false, message: '신청 수정 중 오류가 발생했습니다.' };
             }
 
-            return { success: true, data: data[0] };
+            this.logSuccess('신청 아이템 수정', { studentId, itemId, itemName: updatedData.name });
+            return { success: true, data: data };
         } catch (error) {
-            console.error('Error in updateApplicationItem:', error);
+            this.logError('신청 아이템 수정', error, { studentId, itemId });
             return { success: false, message: '신청 수정 중 오류가 발생했습니다.' };
         }
     },
@@ -854,7 +1002,7 @@ const SupabaseAPI = {
             // 먼저 해당 신청이 삭제 가능한 상태인지 확인
             const { data: existing, error: checkError } = await client
                 .from('requests')
-                .select('status')
+                .select('status, item_name')
                 .eq('id', itemId)
                 .eq('user_id', studentId)
                 .single();
@@ -870,13 +1018,14 @@ const SupabaseAPI = {
                 .eq('user_id', studentId);
 
             if (error) {
-                console.error('Error deleting application:', error);
+                this.logError('신청 아이템 삭제', error, { studentId, itemId });
                 return { success: false, message: '신청 삭제 중 오류가 발생했습니다.' };
             }
 
+            this.logSuccess('신청 아이템 삭제', { studentId, itemId, itemName: existing.item_name });
             return { success: true };
         } catch (error) {
-            console.error('Error in deleteApplicationItem:', error);
+            this.logError('신청 아이템 삭제', error, { studentId, itemId });
             return { success: false, message: '신청 삭제 중 오류가 발생했습니다.' };
         }
     },
@@ -899,16 +1048,18 @@ const SupabaseAPI = {
                 .from('requests')
                 .update(updateData)
                 .eq('id', requestId)
-                .select();
+                .select()
+                .single();
 
             if (error) {
-                console.error('Error updating item status:', error);
+                this.logError('아이템 상태 업데이트', error, { requestId, status });
                 return { success: false, message: '상태 업데이트 중 오류가 발생했습니다.' };
             }
 
-            return { success: true, data: data[0] };
+            this.logSuccess('아이템 상태 업데이트', { requestId, status, itemName: data.item_name });
+            return { success: true, data: data };
         } catch (error) {
-            console.error('Error in updateItemStatus:', error);
+            this.logError('아이템 상태 업데이트', error, { requestId, status });
             return { success: false, message: '상태 업데이트 중 오류가 발생했습니다.' };
         }
     },
@@ -926,13 +1077,14 @@ const SupabaseAPI = {
                 .order('created_at', { ascending: false });
 
             if (error) {
-                console.error('Error fetching all applications:', error);
+                this.logError('전체 신청 목록 조회', error);
                 return [];
             }
 
+            this.logSuccess('전체 신청 목록 조회', `${data.length}개`);
             return data;
         } catch (error) {
-            console.error('Error in getAllApplications:', error);
+            this.logError('전체 신청 목록 조회', error);
             return [];
         }
     },
@@ -956,13 +1108,14 @@ const SupabaseAPI = {
                 .order('created_at', { ascending: false });
 
             if (error) {
-                console.error('Error searching applications:', error);
+                this.logError('신청 검색', error, { searchTerm: term });
                 return [];
             }
 
+            this.logSuccess('신청 검색', `"${term}" 검색 결과: ${data.length}개`);
             return data;
         } catch (error) {
-            console.error('Error in searchApplications:', error);
+            this.logError('신청 검색', error, { searchTerm });
             return [];
         }
     },
@@ -994,16 +1147,17 @@ const SupabaseAPI = {
                 .single();
 
             if (error) {
-                console.error('Error submitting receipt:', error);
+                this.logError('영수증 제출', error, { requestId });
                 return { success: false, message: '영수증 제출 중 오류가 발생했습니다.' };
             }
 
             // 교구 신청 상태를 구매완료로 업데이트
             await this.updateItemStatus(requestId, 'purchased');
+            this.logSuccess('영수증 제출', { requestId, receiptNumber: data.receipt_number });
 
             return { success: true, data: data };
         } catch (error) {
-            console.error('Error in submitReceipt:', error);
+            this.logError('영수증 제출', error, { requestId });
             return { success: false, message: '영수증 제출 중 오류가 발생했습니다.' };
         }
     },
@@ -1019,13 +1173,13 @@ const SupabaseAPI = {
                 .single();
 
             if (error && error.code !== 'PGRST116') {
-                console.error('Error fetching receipt:', error);
+                this.logError('영수증 조회', error, { requestId });
                 return null;
             }
 
             return data || null;
         } catch (error) {
-            console.error('Error in getReceiptByRequestId:', error);
+            this.logError('영수증 조회', error, { requestId });
             return null;
         }
     },
@@ -1044,16 +1198,18 @@ const SupabaseAPI = {
                 .from('receipts')
                 .update(updateData)
                 .eq('id', receiptId)
-                .select();
+                .select()
+                .single();
 
             if (error) {
-                console.error('Error verifying receipt:', error);
+                this.logError('영수증 검증', error, { receiptId, verified });
                 return { success: false, message: '영수증 검증 중 오류가 발생했습니다.' };
             }
 
-            return { success: true, data: data[0] };
+            this.logSuccess('영수증 검증', { receiptId, verified });
+            return { success: true, data: data };
         } catch (error) {
-            console.error('Error in verifyReceipt:', error);
+            this.logError('영수증 검증', error, { receiptId, verified });
             return { success: false, message: '영수증 검증 중 오류가 발생했습니다.' };
         }
     },
@@ -1066,37 +1222,33 @@ const SupabaseAPI = {
     async getStats() {
         try {
             const client = await this.ensureClient();
-            // 총 학생 수
-            const { count: totalStudents } = await client
-                .from('user_profiles')
-                .select('*', { count: 'exact', head: true })
-                .eq('user_type', 'student');
-
-            // 신청 현황 통계
-            const { data: requests } = await client
-                .from('requests')
-                .select('status');
+            
+            // 병렬로 데이터 조회하여 성능 향상
+            const [
+                { count: totalStudents },
+                { data: requests },
+                { data: applicants }
+            ] = await Promise.all([
+                client.from('user_profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'student'),
+                client.from('requests').select('status'),
+                client.from('requests').select('user_id').not('user_id', 'is', null)
+            ]);
 
             const stats = {
                 totalStudents: totalStudents || 0,
-                applicantCount: 0, // 신청한 학생 수 (중복 제거)
+                applicantCount: 0,
                 pendingCount: 0,
                 approvedCount: 0,
                 rejectedCount: 0,
                 purchasedCount: 0
             };
 
-            if (requests) {
-                // 신청한 학생 수 계산
-                const { data: applicants } = await client
-                    .from('requests')
-                    .select('user_id', { count: 'exact' })
-                    .not('user_id', 'is', null);
-
-                const uniqueApplicants = new Set(applicants?.map(r => r.user_id) || []);
+            if (applicants) {
+                const uniqueApplicants = new Set(applicants.map(r => r.user_id));
                 stats.applicantCount = uniqueApplicants.size;
+            }
 
-                // 상태별 카운트
+            if (requests) {
                 requests.forEach(req => {
                     switch (req.status) {
                         case 'pending':
@@ -1116,9 +1268,10 @@ const SupabaseAPI = {
                 });
             }
 
+            this.logSuccess('통계 데이터 조회', stats);
             return stats;
         } catch (error) {
-            console.error('Error in getStats:', error);
+            this.logError('통계 데이터 조회', error);
             return {
                 totalStudents: 0,
                 applicantCount: 0,
@@ -1134,47 +1287,39 @@ const SupabaseAPI = {
     async getBudgetOverviewStats() {
         try {
             const client = await this.ensureClient();
-            // 총 배정 예산
-            const { data: budgets } = await client
-                .from('student_budgets')
-                .select('allocated_budget');
+            
+            // 병렬로 데이터 조회
+            const [
+                { data: budgets },
+                { data: approvedRequests },
+                { data: purchasedRequests },
+                { data: applicants }
+            ] = await Promise.all([
+                client.from('student_budgets').select('allocated_budget'),
+                client.from('requests').select('price').in('status', ['approved', 'purchased', 'completed']),
+                client.from('requests').select('price').in('status', ['purchased', 'completed']),
+                client.from('requests').select('user_id').not('user_id', 'is', null)
+            ]);
 
             const totalApprovedBudget = budgets?.reduce((sum, b) => sum + b.allocated_budget, 0) || 0;
-
-            // 승인된 신청의 총액
-            const { data: approvedRequests } = await client
-                .from('requests')
-                .select('price')
-                .in('status', ['approved', 'purchased', 'completed']);
-
             const approvedItemsTotal = approvedRequests?.reduce((sum, r) => sum + r.price, 0) || 0;
-
-            // 구매완료된 총액
-            const { data: purchasedRequests } = await client
-                .from('requests')
-                .select('price')
-                .in('status', ['purchased', 'completed']);
-
             const purchasedTotal = purchasedRequests?.reduce((sum, r) => sum + r.price, 0) || 0;
-
-            // 신청한 학생 수 (평균 계산용)
-            const { data: applicants } = await client
-                .from('requests')
-                .select('user_id')
-                .not('user_id', 'is', null);
 
             const uniqueApplicants = new Set(applicants?.map(r => r.user_id) || []);
             const applicantCount = uniqueApplicants.size;
             const averagePerPerson = applicantCount > 0 ? Math.round(approvedItemsTotal / applicantCount) : 0;
 
-            return {
+            const result = {
                 totalApprovedBudget,
                 approvedItemsTotal,
                 purchasedTotal,
                 averagePerPerson
             };
+
+            this.logSuccess('예산 현황 통계 조회', result);
+            return result;
         } catch (error) {
-            console.error('Error in getBudgetOverviewStats:', error);
+            this.logError('예산 현황 통계 조회', error);
             return {
                 totalApprovedBudget: 0,
                 approvedItemsTotal: 0,
@@ -1188,28 +1333,29 @@ const SupabaseAPI = {
     async getOfflinePurchaseStats() {
         try {
             const client = await this.ensureClient();
-            // 오프라인 승인된 신청 수
-            const { count: approvedOffline } = await client
-                .from('requests')
-                .select('*', { count: 'exact', head: true })
-                .eq('purchase_type', 'offline')
-                .eq('status', 'approved');
-
-            // 영수증이 있는 신청 수
-            const { data: receipts } = await client
-                .from('receipts')
-                .select('request_id');
+            
+            // 병렬로 데이터 조회
+            const [
+                { count: approvedOffline },
+                { data: receipts }
+            ] = await Promise.all([
+                client.from('requests').select('*', { count: 'exact', head: true }).eq('purchase_type', 'offline').eq('status', 'approved'),
+                client.from('receipts').select('request_id')
+            ]);
 
             const withReceipt = receipts?.length || 0;
             const pendingReceipt = Math.max(0, (approvedOffline || 0) - withReceipt);
 
-            return {
+            const result = {
                 approvedOffline: approvedOffline || 0,
                 withReceipt,
                 pendingReceipt
             };
+
+            this.logSuccess('오프라인 구매 통계 조회', result);
+            return result;
         } catch (error) {
-            console.error('Error in getOfflinePurchaseStats:', error);
+            this.logError('오프라인 구매 통계 조회', error);
             return {
                 approvedOffline: 0,
                 withReceipt: 0,
@@ -1232,7 +1378,7 @@ const SupabaseAPI = {
                 .order('created_at', { ascending: false });
 
             if (error) {
-                console.error('Error preparing export data:', error);
+                this.logError('내보내기 데이터 준비', error);
                 return [];
             }
 
@@ -1264,9 +1410,10 @@ const SupabaseAPI = {
                 });
             }
 
+            this.logSuccess('내보내기 데이터 준비', `${exportData.length}개 항목`);
             return exportData;
         } catch (error) {
-            console.error('Error in prepareExportData:', error);
+            this.logError('내보내기 데이터 준비', error);
             return [];
         }
     },
@@ -1306,17 +1453,59 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 에러 핸들링 유틸리티
+    // 연결 테스트 및 상태 확인
     // ===================
 
-    handleError(error, defaultMessage) {
-        console.error('Supabase error:', error);
-        return {
-            success: false,
-            message: error?.message || defaultMessage || '알 수 없는 오류가 발생했습니다.'
-        };
+    // API 연결 상태 테스트
+    async testConnection() {
+        try {
+            const client = await this.ensureClient();
+            const { data, error } = await client
+                .from('system_settings')
+                .select('setting_key')
+                .limit(1);
+
+            if (error) {
+                this.logError('연결 테스트', error);
+                return { success: false, message: '데이터베이스 연결 실패' };
+            }
+
+            this.logSuccess('연결 테스트', '데이터베이스 연결 성공');
+            return { success: true, message: '데이터베이스 연결 성공' };
+        } catch (error) {
+            this.logError('연결 테스트', error);
+            return { success: false, message: '연결 테스트 실패' };
+        }
+    },
+
+    // 헬스 체크
+    async healthCheck() {
+        try {
+            const connectionTest = await this.testConnection();
+            const settings = await this.getSystemSettings();
+            const budgetSettings = await this.getAllFieldBudgetSettings();
+            
+            return {
+                status: connectionTest.success ? 'healthy' : 'unhealthy',
+                connection: connectionTest.success,
+                systemSettings: Object.keys(settings).length,
+                budgetSettings: Object.keys(budgetSettings).length,
+                timestamp: new Date().toISOString()
+            };
+        } catch (error) {
+            this.logError('헬스 체크', error);
+            return {
+                status: 'error',
+                connection: false,
+                error: error.message,
+                timestamp: new Date().toISOString()
+            };
+        }
     }
 };
 
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
+
+// 초기화 완료 로그
+console.log('🚀 SupabaseAPI loaded successfully');
