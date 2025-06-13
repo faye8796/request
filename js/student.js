@@ -324,7 +324,7 @@ const StudentManager = {
                     if (needsPlan) {
                         lessonPlanBtn.innerHTML = `
                             <i data-lucide="calendar-plus"></i>
-                            수업계획 작성
+                            수업계획 작성 (필수)
                         `;
                     } else {
                         lessonPlanBtn.innerHTML = `
@@ -366,12 +366,12 @@ const StudentManager = {
                 // 교구 신청 불가능한 경우
                 if (newAppBtn) {
                     newAppBtn.disabled = true;
-                    newAppBtn.title = '수업계획 승인 후 신청 가능합니다';
+                    newAppBtn.title = '수업계획 승인 후 신청 가능합니다 (필수)';
                     newAppBtn.classList.add('disabled');
                 }
                 if (bundleAppBtn) {
                     bundleAppBtn.disabled = true;
-                    bundleAppBtn.title = '수업계획 승인 후 신청 가능합니다';
+                    bundleAppBtn.title = '수업계획 승인 후 신청 가능합니다 (필수)';
                     bundleAppBtn.classList.add('disabled');
                 }
             } else {
@@ -416,8 +416,8 @@ const StudentManager = {
                         <div class="notice-content warning">
                             <i data-lucide="alert-triangle"></i>
                             <div>
-                                <h4>수업계획 수정 기간이 종료되었습니다</h4>
-                                <p>수업계획 작성/수정 가능 기간이 지났습니다. 관리자에게 문의하세요.</p>
+                                <h4>⚠️ 수업계획 수정 기간이 종료되었습니다</h4>
+                                <p>수업계획 작성/수정 가능 기간이 지났습니다. 수업계획은 <strong>필수 제출 사항</strong>이므로 관리자에게 즉시 문의하세요.</p>
                             </div>
                         </div>
                     `;
@@ -427,10 +427,10 @@ const StudentManager = {
                         <div class="notice-content info">
                             <i data-lucide="calendar-plus"></i>
                             <div>
-                                <h4>수업계획 작성이 필요합니다</h4>
-                                <p>교구 신청 전에 먼저 수업계획을 작성하고 승인을 받아야 합니다.</p>
+                                <h4>📋 수업계획 작성이 필요합니다 (필수)</h4>
+                                <p><strong>수업계획은 필수 제출 사항입니다.</strong> 교구 신청 전에 반드시 수업계획을 작성하고 관리자의 승인을 받아야 합니다.</p>
                                 <button class="btn primary small" onclick="StudentManager.goToLessonPlan()">
-                                    지금 작성하기
+                                    ✍️ 지금 작성하기
                                 </button>
                             </div>
                         </div>
@@ -443,10 +443,10 @@ const StudentManager = {
                         <div class="notice-content warning">
                             <i data-lucide="calendar-edit"></i>
                             <div>
-                                <h4>수업계획을 완료해주세요</h4>
-                                <p>임시저장된 수업계획이 있습니다. 완료 후 승인을 받아야 교구 신청이 가능합니다.</p>
+                                <h4>📝 수업계획을 완료해주세요 (필수)</h4>
+                                <p>임시저장된 수업계획이 있습니다. <strong>수업계획 완료 제출은 필수사항</strong>이며, 관리자 승인을 받아야 교구 신청이 가능합니다.</p>
                                 <button class="btn warning small" onclick="StudentManager.goToLessonPlan()">
-                                    완료하기
+                                    ⚡ 완료하기
                                 </button>
                             </div>
                         </div>
@@ -459,10 +459,11 @@ const StudentManager = {
                         <div class="notice-content danger">
                             <i data-lucide="calendar-x"></i>
                             <div>
-                                <h4>수업계획이 반려되었습니다</h4>
+                                <h4>❌ 수업계획이 반려되었습니다 (수정 필수)</h4>
                                 <p><strong>반려 사유:</strong> ${lessonPlan.rejection_reason || '사유 없음'}</p>
+                                <p>수업계획이 승인되어야 교구 신청이 가능합니다. 반려 사유를 확인하고 즉시 수정해주세요.</p>
                                 <button class="btn danger small" onclick="StudentManager.goToLessonPlan()">
-                                    수정하기
+                                    🔧 수정하기
                                 </button>
                             </div>
                         </div>
@@ -473,9 +474,9 @@ const StudentManager = {
                         <div class="notice-content danger">
                             <i data-lucide="calendar-x"></i>
                             <div>
-                                <h4>수업계획이 반려되었습니다</h4>
+                                <h4>❌ 수업계획이 반려되었습니다</h4>
                                 <p><strong>반려 사유:</strong> ${lessonPlan.rejection_reason || '사유 없음'}</p>
-                                <p>수정 기간이 종료되어 관리자에게 문의하세요.</p>
+                                <p>수정 기간이 종료되었습니다. 수업계획은 필수 제출 사항이므로 관리자에게 즉시 문의하세요.</p>
                             </div>
                         </div>
                     `;
@@ -486,8 +487,8 @@ const StudentManager = {
                     <div class="notice-content info">
                         <i data-lucide="calendar-clock"></i>
                         <div>
-                            <h4>수업계획 승인 대기 중입니다</h4>
-                            <p>관리자의 승인을 기다리고 있습니다. 승인 후 교구 신청이 가능합니다.</p>
+                            <h4>⏳ 수업계획 승인 대기 중입니다</h4>
+                            <p>관리자의 승인을 기다리고 있습니다. 수업계획이 승인되면 교구 신청이 가능합니다.</p>
                         </div>
                     </div>
                 `;
@@ -497,7 +498,7 @@ const StudentManager = {
                     <div class="notice-content warning">
                         <i data-lucide="alert-triangle"></i>
                         <div>
-                            <h4>예산 배정 처리 중입니다</h4>
+                            <h4>⚡ 예산 배정 처리 중입니다</h4>
                             <p>수업계획이 승인되었으나 예산 배정이 완료되지 않았습니다. 잠시 후 다시 확인해주세요.</p>
                         </div>
                     </div>
@@ -593,7 +594,7 @@ const StudentManager = {
                         <div class="budget-info not-allocated">
                             <div class="budget-status-text">
                                 <i data-lucide="alert-circle"></i>
-                                <span>수업계획 승인 후 예산이 배정됩니다</span>
+                                <span><strong>수업계획 승인 후 예산이 배정됩니다 (필수)</strong></span>
                             </div>
                         </div>
                     `;
@@ -896,7 +897,7 @@ const StudentManager = {
             const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
             
             if (!budgetStatus || !budgetStatus.canApplyForEquipment) {
-                Utils.showAlert('수업계획이 승인된 후 교구 신청이 가능합니다.');
+                Utils.showAlert('교구 신청을 위해서는 수업계획을 먼저 제출하고 승인을 받아야 합니다.\n\n수업계획 작성은 필수 사항입니다.');
                 return;
             }
 
@@ -962,7 +963,7 @@ const StudentManager = {
             const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
             
             if (!budgetStatus || !budgetStatus.canApplyForEquipment) {
-                Utils.showAlert('수업계획이 승인된 후 교구 신청이 가능합니다.');
+                Utils.showAlert('교구 신청을 위해서는 수업계획을 먼저 제출하고 승인을 받아야 합니다.\n\n수업계획 작성은 필수 사항입니다.');
                 return;
             }
 
@@ -1215,7 +1216,7 @@ const StudentManager = {
             const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
             
             if (!budgetStatus || !budgetStatus.canApplyForEquipment) {
-                Utils.showAlert('수업계획이 승인된 후 교구 신청이 가능합니다.');
+                Utils.showAlert('교구 신청을 위해서는 수업계획을 먼저 제출하고 승인을 받아야 합니다.\n\n수업계획 작성은 필수 사항입니다.');
                 return false;
             }
 
@@ -1315,7 +1316,7 @@ const StudentManager = {
                     if (budgetStatus && budgetStatus.canApplyForEquipment) {
                         this.showApplicationModal();
                     } else {
-                        Utils.showAlert('수업계획이 승인된 후 교구 신청이 가능합니다.');
+                        Utils.showAlert('교구 신청을 위해서는 수업계획을 먼저 제출하고 승인을 받아야 합니다.\n\n수업계획 작성은 필수 사항입니다.');
                     }
                 }
             }
