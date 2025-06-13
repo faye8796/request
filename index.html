@@ -12,11 +12,22 @@
     <link rel="stylesheet" href="css/admin.css">
     <link rel="stylesheet" href="css/lesson-plan.css">
     
-    <!-- Lucide Icons -->
+    <!-- External Libraries -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
-    <!-- Supabase JavaScript Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <!-- 환경변수 설정 (프로덕션에서는 별도 파일로 관리) -->
+    <script>
+        // 프로덕션 환경에서는 서버에서 이 값들을 동적으로 주입
+        window.ENV = {
+            SUPABASE_URL: 'https://aazvopacnbbkvusihqva.supabase.co',
+            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTQyMjQsImV4cCI6MjA2NTM3MDIyNH0.0NXI_tohwFCOl3xY4b1jIlxQR_zGTS9tWDM2OFxTq4s',
+            ADMIN_CODE: 'admin123',
+            DEBUG: 'true',
+            REALTIME_ENABLED: 'true',
+            STORAGE_BUCKET: 'receipts'
+        };
+    </script>
 </head>
 <body>
     <!-- Main App Container -->
@@ -28,6 +39,7 @@
                     <div class="login-header">
                         <h1>세종학당 문화교구 신청</h1>
                         <p>Cultural Equipment Request Platform</p>
+                        <div class="version-info">v3.0 - 통합 최적화</div>
                     </div>
 
                     <div class="login-tabs">
@@ -39,27 +51,39 @@
                     <div id="studentLogin" class="login-form active">
                         <div class="form-group">
                             <label>이름</label>
-                            <input type="text" id="studentName" placeholder="성명을 입력하세요">
+                            <input type="text" id="studentName" placeholder="성명을 입력하세요" autocomplete="name">
                         </div>
                         <div class="form-group">
                             <label>생년월일</label>
-                            <input type="date" id="studentBirth">
+                            <input type="date" id="studentBirth" autocomplete="bday">
                         </div>
                         <button id="studentLoginBtn" class="login-btn primary">
                             <i data-lucide="user"></i>
                             학생 로그인
                         </button>
+                        
+                        <!-- 개발 모드 빠른 로그인 (디버그 모드에서만 표시) -->
+                        <div id="devQuickLogin" class="dev-tools" style="display: none;">
+                            <small>개발 모드: Ctrl+Shift+D로 빠른 로그인</small>
+                        </div>
                     </div>
 
                     <!-- 관리자 로그인 폼 -->
                     <div id="adminLogin" class="login-form">
                         <div class="form-group">
                             <label>관리자 코드</label>
-                            <input type="password" id="adminCode" placeholder="관리자 코드를 입력하세요">
+                            <input type="password" id="adminCode" placeholder="관리자 코드를 입력하세요" autocomplete="current-password">
                         </div>
                         <button id="adminLoginBtn" class="login-btn admin">
+                            <i data-lucide="shield"></i>
                             관리자 로그인
                         </button>
+                    </div>
+                    
+                    <!-- 연결 상태 표시 -->
+                    <div id="connectionStatus" class="connection-status">
+                        <i data-lucide="wifi"></i>
+                        <span>연결 확인 중...</span>
                     </div>
                 </div>
             </div>
@@ -71,6 +95,12 @@
                 <div class="lesson-plan-header">
                     <h1>수업 계획 작성</h1>
                     <p>파견 기간 동안의 상세한 수업 계획을 <strong>필수적으로</strong> 작성해주세요. 관리자가 이 내용을 검토하여 승인 여부를 결정하며, 승인 후에만 교구 신청이 가능합니다.</p>
+                    
+                    <!-- 실시간 저장 상태 표시 -->
+                    <div id="autoSaveStatus" class="auto-save-status">
+                        <i data-lucide="cloud"></i>
+                        <span>자동 저장됨</span>
+                    </div>
                 </div>
 
                 <div class="lesson-plan-content">
@@ -164,6 +194,11 @@
                             <i data-lucide="map-pin"></i>
                             배송지 설정
                         </button>
+                        <!-- 실시간 알림 버튼 -->
+                        <button id="notificationBtn" class="btn secondary notification-btn">
+                            <i data-lucide="bell"></i>
+                            <span class="notification-badge" style="display: none;">0</span>
+                        </button>
                         <button id="studentLogout" class="logout-btn">로그아웃</button>
                     </div>
                 </div>
@@ -182,6 +217,12 @@
                             새 교구 신청
                         </button>
                     </div>
+                </div>
+
+                <!-- 실시간 업데이트 표시 -->
+                <div id="realtimeStatus" class="realtime-status">
+                    <i data-lucide="activity"></i>
+                    <span>실시간 동기화 활성</span>
                 </div>
 
                 <div id="studentApplications" class="applications-grid">
@@ -213,6 +254,10 @@
                             <i data-lucide="settings"></i>
                             수업계획 설정
                         </button>
+                        <button id="systemHealthBtn" class="btn info">
+                            <i data-lucide="activity"></i>
+                            시스템 상태
+                        </button>
                         <button id="exportBtn" class="btn success">
                             <i data-lucide="download"></i>
                             Excel 내보내기
@@ -223,7 +268,30 @@
             </header>
 
             <main class="main-content">
-                <!-- 핵심 운영 통계 카드 (업데이트됨) -->
+                <!-- 시스템 상태 표시 -->
+                <div id="systemStatusPanel" class="system-status-panel" style="display: none;">
+                    <h3>시스템 상태</h3>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <label>DB 연결:</label>
+                            <span id="dbStatus">확인 중...</span>
+                        </div>
+                        <div class="status-item">
+                            <label>실시간 기능:</label>
+                            <span id="realtimeStatus">확인 중...</span>
+                        </div>
+                        <div class="status-item">
+                            <label>파일 저장소:</label>
+                            <span id="storageStatus">확인 중...</span>
+                        </div>
+                        <div class="status-item">
+                            <label>캐시 크기:</label>
+                            <span id="cacheSize">0개</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 핵심 운영 통계 카드 -->
                 <div class="stats-grid">
                     <div class="stat-card">
                         <i data-lucide="users" class="stat-icon blue"></i>
@@ -248,7 +316,7 @@
                     </div>
                 </div>
 
-                <!-- 전체 예산 현황 섹션 (심플한 리스트 형태로 변경) -->
+                <!-- 전체 예산 현황 섹션 -->
                 <div class="budget-overview-section">
                     <h2>💰 전체 예산 현황</h2>
                     <div class="budget-summary-list">
@@ -416,7 +484,7 @@
         </div>
     </div>
 
-    <!-- 영수증 등록 모달 -->
+    <!-- 영수증 등록 모달 (파일 업로드 기능 포함) -->
     <div id="receiptModal" class="modal">
         <div class="modal-content">
             <h3>영수증 등록</h3>
@@ -430,12 +498,12 @@
                 
                 <div class="form-group">
                     <label>영수증 이미지 *</label>
-                    <div class="file-upload-area">
+                    <div class="file-upload-area" id="fileUploadArea">
                         <input type="file" id="receiptFile" accept="image/*" required>
                         <div class="file-upload-content">
                             <i data-lucide="upload"></i>
                             <p>영수증 이미지를 선택하거나 여기에 드래그하세요</p>
-                            <small>JPG, PNG, GIF 파일 지원 (최대 5MB)</small>
+                            <small>JPG, PNG, GIF, WebP 지원 (최대 5MB)</small>
                         </div>
                         <div id="receiptPreview" class="receipt-preview" style="display: none;">
                             <img id="receiptPreviewImage" alt="영수증 미리보기">
@@ -443,6 +511,12 @@
                                 <i data-lucide="x"></i>
                                 제거
                             </button>
+                        </div>
+                        <div id="uploadProgress" class="upload-progress" style="display: none;">
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                            <span class="progress-text">업로드 중...</span>
                         </div>
                     </div>
                 </div>
@@ -521,7 +595,7 @@
         </div>
     </div>
 
-    <!-- 수업계획 설정 모달 (관리자용) - 업데이트됨 -->
+    <!-- 수업계획 설정 모달 (관리자용) -->
     <div id="lessonPlanSettingsModal" class="modal">
         <div class="modal-content">
             <h3>수업계획 수정 설정</h3>
@@ -577,7 +651,7 @@
         </div>
     </div>
 
-    <!-- 예산 설정 모달 (관리자용) - 새로 추가 -->
+    <!-- 예산 설정 모달 (관리자용) -->
     <div id="budgetSettingsModal" class="modal">
         <div class="modal-content large">
             <h3>분야별 예산 설정</h3>
@@ -609,7 +683,7 @@
         </div>
     </div>
 
-    <!-- 수업계획 관리 모달 (관리자용) - 새로 추가 -->
+    <!-- 수업계획 관리 모달 (관리자용) -->
     <div id="lessonPlanManagementModal" class="modal">
         <div class="modal-content large">
             <h3>수업계획 승인 관리</h3>
@@ -638,27 +712,155 @@
         </div>
     </div>
 
-    <!-- JavaScript Files -->
-    <!-- 설정 파일을 가장 먼저 로드 -->
+    <!-- 시스템 상태 모달 (관리자용) -->
+    <div id="systemHealthModal" class="modal">
+        <div class="modal-content large">
+            <h3>시스템 상태 모니터링</h3>
+            <div class="system-health-container">
+                <div class="health-overview">
+                    <div class="health-status">
+                        <i data-lucide="activity"></i>
+                        <span id="overallHealthStatus">확인 중...</span>
+                    </div>
+                    <button id="refreshHealthBtn" class="btn small secondary">
+                        <i data-lucide="refresh-cw"></i> 새로고침
+                    </button>
+                </div>
+                
+                <div class="health-details">
+                    <div class="health-section">
+                        <h4>연결 상태</h4>
+                        <div id="connectionHealth" class="health-items">
+                            <!-- 동적으로 생성됨 -->
+                        </div>
+                    </div>
+                    
+                    <div class="health-section">
+                        <h4>성능 지표</h4>
+                        <div id="performanceHealth" class="health-items">
+                            <!-- 동적으로 생성됨 -->
+                        </div>
+                    </div>
+                    
+                    <div class="health-section">
+                        <h4>보안 로그</h4>
+                        <div id="securityHealth" class="health-items">
+                            <!-- 동적으로 생성됨 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" id="systemHealthCloseBtn" class="btn secondary">닫기</button>
+                <button type="button" id="downloadHealthReportBtn" class="btn primary">
+                    <i data-lucide="download"></i>
+                    상태 보고서 다운로드
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 알림 토스트 컨테이너 -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- JavaScript Files - 통합 및 최적화된 순서 -->
+    <!-- 1. 설정 파일 (최우선 로드) -->
     <script src="js/config.js"></script>
-    <!-- Supabase 클라이언트 로드 (수정된 버전) -->
-    <script src="js/supabase-client-fixed.js"></script>
+    
+    <!-- 2. 통합 Supabase 클라이언트 -->
+    <script src="js/supabase-client.js"></script>
+    
+    <!-- 3. 유틸리티 -->
     <script src="js/utils.js"></script>
+    
+    <!-- 4. 통합 인증 시스템 -->
     <script src="js/auth.js"></script>
+    
+    <!-- 5. 기능별 모듈들 -->
     <script src="js/lesson-plan.js"></script>
     <script src="js/student.js"></script>
     <script src="js/admin.js"></script>
+    
+    <!-- 6. 메인 앱 (마지막에 로드) -->
     <script src="js/app.js"></script>
     
-    <!-- Lucide 아이콘 초기화 -->
+    <!-- 초기화 스크립트 -->
     <script>
-        // 페이지 로드 완료 후 Lucide 아이콘 초기화
+        // 페이지 로드 완료 후 초기화
         document.addEventListener('DOMContentLoaded', function() {
+            // Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
-                console.log('Lucide icons initialized successfully');
-            } else {
-                console.error('Lucide library not loaded');
+                console.log('✅ Lucide 아이콘 초기화 완료');
+            }
+            
+            // 개발 모드 UI 표시
+            if (window.CONFIG?.DEV?.DEBUG) {
+                const devElement = document.getElementById('devQuickLogin');
+                if (devElement) {
+                    devElement.style.display = 'block';
+                }
+            }
+            
+            // 연결 상태 확인 및 표시
+            setTimeout(async () => {
+                const statusEl = document.getElementById('connectionStatus');
+                if (statusEl && window.SupabaseAPI) {
+                    try {
+                        const health = await window.SupabaseAPI.healthCheck();
+                        const statusIcon = statusEl.querySelector('i');
+                        const statusText = statusEl.querySelector('span');
+                        
+                        if (health.status === 'healthy') {
+                            statusIcon.setAttribute('data-lucide', 'wifi');
+                            statusText.textContent = '연결됨';
+                            statusEl.className = 'connection-status connected';
+                        } else {
+                            statusIcon.setAttribute('data-lucide', 'wifi-off');
+                            statusText.textContent = '연결 오류';
+                            statusEl.className = 'connection-status error';
+                        }
+                        
+                        lucide.createIcons();
+                    } catch (error) {
+                        console.error('연결 상태 확인 실패:', error);
+                    }
+                }
+            }, 2000);
+            
+            console.log('✅ 앱 초기화 완료 - v3.0 통합 최적화');
+        });
+        
+        // 파일 드래그 앤 드롭 지원
+        document.addEventListener('dragover', function(e) {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('drop', function(e) {
+            e.preventDefault();
+            const uploadArea = document.getElementById('fileUploadArea');
+            if (uploadArea && uploadArea.contains(e.target)) {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const fileInput = document.getElementById('receiptFile');
+                    if (fileInput) {
+                        fileInput.files = files;
+                        // 파일 변경 이벤트 트리거
+                        const event = new Event('change', { bubbles: true });
+                        fileInput.dispatchEvent(event);
+                    }
+                }
+            }
+        });
+        
+        // 키보드 단축키 (전역)
+        document.addEventListener('keydown', function(e) {
+            // Ctrl + H : 헬스 체크 (관리자만)
+            if (e.ctrlKey && e.key === 'h' && window.AuthManager?.isAdmin()) {
+                e.preventDefault();
+                const healthBtn = document.getElementById('systemHealthBtn');
+                if (healthBtn) healthBtn.click();
             }
         });
     </script>
