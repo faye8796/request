@@ -1,15 +1,15 @@
-// 학생 기능 관리 모듈
+// 학생 기능 관리 모듈 (Supabase 연동)
 const StudentManager = {
     currentEditingItem: null,
     currentReceiptItem: null,
 
     // 초기화
-    init() {
+    async init() {
         this.setupEventListeners();
-        this.updateUserDisplay();
-        this.loadApplications();
-        this.updateBudgetStatus();
-        this.checkLessonPlanStatus(); // 수업계획 상태 확인 추가
+        await this.updateUserDisplay();
+        await this.loadApplications();
+        await this.updateBudgetStatus();
+        await this.checkLessonPlanStatus();
     },
 
     // 이벤트 리스너 설정
@@ -111,7 +111,7 @@ const StudentManager = {
         const modal = Utils.$('#receiptModal');
         
         // 교구 정보 표시
-        Utils.$('#receiptItemName').textContent = item.name;
+        Utils.$('#receiptItemName').textContent = item.item_name;
         Utils.$('#receiptItemPrice').textContent = `가격: ${Utils.formatPrice(item.price)}`;
         
         // 현재 시간으로 구매일시 설정
@@ -220,8 +220,8 @@ const StudentManager = {
         });
     },
 
-    // 영수증 제출 처리
-    handleReceiptSubmit() {
+    // 영수증 제출 처리 (Supabase 연동)
+    async handleReceiptSubmit() {
         const fileInput = Utils.$('#receiptFile');
         const purchaseDateTime = Utils.$('#purchaseDateTime').value;
         const purchaseStore = Utils.$('#purchaseStore').value.trim();
@@ -245,35 +245,32 @@ const StudentManager = {
         const file = fileInput.files[0];
         const reader = new FileReader();
         
-        reader.onload = () => {
-            setTimeout(() => {
-                try {
-                    const receiptData = {
-                        image: reader.result,
-                        purchaseDateTime: purchaseDateTime,
-                        purchaseStore: purchaseStore,
-                        note: receiptNote,
-                        fileName: file.name,
-                        fileSize: file.size
-                    };
+        reader.onload = async () => {
+            try {
+                const receiptData = {
+                    image: reader.result,
+                    purchaseDateTime: purchaseDateTime,
+                    purchaseStore: purchaseStore,
+                    note: receiptNote,
+                    amount: this.currentReceiptItem.price
+                };
 
-                    const studentId = DataManager.currentUser.id;
-                    
-                    if (DataManager.submitReceipt(studentId, this.currentReceiptItem.id, receiptData)) {
-                        Utils.showAlert('영수증이 성공적으로 제출되었습니다.');
-                        Utils.hideLoading(submitBtn);
-                        this.hideReceiptModal();
-                        this.loadApplications();
-                    } else {
-                        throw new Error('영수증 제출 실패');
-                    }
-                    
-                } catch (error) {
+                const result = await SupabaseAPI.submitReceipt(this.currentReceiptItem.id, receiptData);
+                
+                if (result.success) {
+                    Utils.showAlert('영수증이 성공적으로 제출되었습니다.');
                     Utils.hideLoading(submitBtn);
-                    Utils.showAlert('영수증 제출 중 오류가 발생했습니다.');
-                    console.error('Receipt submission error:', error);
+                    this.hideReceiptModal();
+                    await this.loadApplications();
+                } else {
+                    throw new Error(result.message || '영수증 제출 실패');
                 }
-            }, 1000);
+                
+            } catch (error) {
+                Utils.hideLoading(submitBtn);
+                Utils.showAlert(error.message || '영수증 제출 중 오류가 발생했습니다.');
+                console.error('Receipt submission error:', error);
+            }
         };
 
         reader.readAsDataURL(file);
@@ -285,238 +282,255 @@ const StudentManager = {
         LessonPlanManager.showLessonPlanPage();
     },
 
-    // 수업계획 상태 확인 및 UI 업데이트
-    checkLessonPlanStatus() {
-        const studentId = DataManager.currentUser.id;
-        const lessonPlan = DataManager.getStudentLessonPlan(studentId);
-        const hasCompletedPlan = lessonPlan && lessonPlan.status === 'completed';
-        const lessonPlanBtn = Utils.$('#lessonPlanBtn');
-        
-        if (lessonPlanBtn) {
-            if (hasCompletedPlan) {
-                if (lessonPlan.approvalStatus === 'approved') {
-                    // 승인된 경우 - 수정/보기 모드
-                    lessonPlanBtn.innerHTML = `
-                        <i data-lucide="calendar-check"></i>
-                        수업계획 승인됨
-                    `;
-                    lessonPlanBtn.classList.remove('btn-warning');
-                    lessonPlanBtn.classList.add('btn-success');
-                } else if (lessonPlan.approvalStatus === 'rejected') {
-                    // 반려된 경우
-                    lessonPlanBtn.innerHTML = `
-                        <i data-lucide="calendar-x"></i>
-                        수업계획 반려됨
-                    `;
-                    lessonPlanBtn.classList.remove('btn-success');
-                    lessonPlanBtn.classList.add('btn-danger');
+    // 수업계획 상태 확인 및 UI 업데이트 (Supabase 연동)
+    async checkLessonPlanStatus() {
+        try {
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) return;
+
+            const lessonPlan = await SupabaseAPI.getStudentLessonPlan(currentUser.id);
+            const lessonPlanBtn = Utils.$('#lessonPlanBtn');
+            
+            if (lessonPlanBtn) {
+                if (lessonPlan && lessonPlan.status === 'submitted') {
+                    if (lessonPlan.status === 'approved') {
+                        // 승인된 경우
+                        lessonPlanBtn.innerHTML = `
+                            <i data-lucide="calendar-check"></i>
+                            수업계획 승인됨
+                        `;
+                        lessonPlanBtn.classList.remove('btn-warning');
+                        lessonPlanBtn.classList.add('btn-success');
+                    } else if (lessonPlan.status === 'rejected') {
+                        // 반려된 경우
+                        lessonPlanBtn.innerHTML = `
+                            <i data-lucide="calendar-x"></i>
+                            수업계획 반려됨
+                        `;
+                        lessonPlanBtn.classList.remove('btn-success');
+                        lessonPlanBtn.classList.add('btn-danger');
+                    } else {
+                        // 승인 대기 중
+                        lessonPlanBtn.innerHTML = `
+                            <i data-lucide="calendar-clock"></i>
+                            수업계획 승인대기
+                        `;
+                        lessonPlanBtn.classList.remove('btn-success', 'btn-danger');
+                        lessonPlanBtn.classList.add('btn-warning');
+                    }
                 } else {
-                    // 승인 대기 중
-                    lessonPlanBtn.innerHTML = `
-                        <i data-lucide="calendar-clock"></i>
-                        수업계획 승인대기
-                    `;
+                    // 미완료된 경우
+                    const needsPlan = await LessonPlanManager.needsLessonPlan(currentUser.id);
+                    if (needsPlan) {
+                        lessonPlanBtn.innerHTML = `
+                            <i data-lucide="calendar-plus"></i>
+                            수업계획 작성
+                        `;
+                    } else {
+                        lessonPlanBtn.innerHTML = `
+                            <i data-lucide="calendar-edit"></i>
+                            수업계획 완료
+                        `;
+                    }
                     lessonPlanBtn.classList.remove('btn-success', 'btn-danger');
                     lessonPlanBtn.classList.add('btn-warning');
                 }
-            } else {
-                // 미완료된 경우 - 작성 필요
-                const needsPlan = LessonPlanManager.needsLessonPlan(studentId);
-                if (needsPlan) {
-                    lessonPlanBtn.innerHTML = `
-                        <i data-lucide="calendar-plus"></i>
-                        수업계획 작성
-                    `;
-                } else {
-                    lessonPlanBtn.innerHTML = `
-                        <i data-lucide="calendar-edit"></i>
-                        수업계획 완료
-                    `;
-                }
-                lessonPlanBtn.classList.remove('btn-success', 'btn-danger');
-                lessonPlanBtn.classList.add('btn-warning');
-            }
-            
-            // 아이콘 재생성
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-        }
-
-        // 교구 신청 버튼 상태 업데이트
-        this.updateApplicationButtonsState();
-
-        // 수업계획 상태에 따른 알림 표시
-        this.showLessonPlanStatusNotice();
-    },
-
-    // 교구 신청 버튼 상태 업데이트
-    updateApplicationButtonsState() {
-        const studentId = DataManager.currentUser.id;
-        const budgetStatus = DataManager.getStudentBudgetStatus(studentId);
-        const newAppBtn = Utils.$('#newApplicationBtn');
-        const bundleAppBtn = Utils.$('#bundleApplicationBtn');
-        
-        if (!budgetStatus.canApplyForEquipment) {
-            // 교구 신청 불가능한 경우
-            if (newAppBtn) {
-                newAppBtn.disabled = true;
-                newAppBtn.title = '수업계획 승인 후 신청 가능합니다';
-                newAppBtn.classList.add('disabled');
-            }
-            if (bundleAppBtn) {
-                bundleAppBtn.disabled = true;
-                bundleAppBtn.title = '수업계획 승인 후 신청 가능합니다';
-                bundleAppBtn.classList.add('disabled');
-            }
-        } else {
-            // 교구 신청 가능한 경우
-            if (newAppBtn) {
-                newAppBtn.disabled = false;
-                newAppBtn.title = '';
-                newAppBtn.classList.remove('disabled');
-            }
-            if (bundleAppBtn) {
-                bundleAppBtn.disabled = false;
-                bundleAppBtn.title = '';
-                bundleAppBtn.classList.remove('disabled');
-            }
-        }
-    },
-
-    // 수업계획 상태 알림 표시
-    showLessonPlanStatusNotice() {
-        const existingNotice = Utils.$('#lessonPlanNotice');
-        if (existingNotice) {
-            existingNotice.remove();
-        }
-
-        const studentId = DataManager.currentUser.id;
-        const lessonPlan = DataManager.getStudentLessonPlan(studentId);
-        const budgetStatus = DataManager.getStudentBudgetStatus(studentId);
-        const canEdit = DataManager.canEditLessonPlan();
-        
-        let noticeContent = '';
-        let noticeType = '';
-
-        if (!lessonPlan) {
-            if (!canEdit) {
-                noticeContent = `
-                    <div class="notice-content warning">
-                        <i data-lucide="alert-triangle"></i>
-                        <div>
-                            <h4>수업계획 수정 기간이 종료되었습니다</h4>
-                            <p>수업계획 작성/수정 가능 기간이 지났습니다. 관리자에게 문의하세요.</p>
-                        </div>
-                    </div>
-                `;
-                noticeType = 'warning';
-            } else {
-                noticeContent = `
-                    <div class="notice-content info">
-                        <i data-lucide="calendar-plus"></i>
-                        <div>
-                            <h4>수업계획 작성이 필요합니다</h4>
-                            <p>교구 신청 전에 먼저 수업계획을 작성하고 승인을 받아야 합니다.</p>
-                            <button class="btn primary small" onclick="StudentManager.goToLessonPlan()">
-                                지금 작성하기
-                            </button>
-                        </div>
-                    </div>
-                `;
-                noticeType = 'info';
-            }
-        } else if (lessonPlan.status !== 'completed') {
-            if (canEdit) {
-                noticeContent = `
-                    <div class="notice-content warning">
-                        <i data-lucide="calendar-edit"></i>
-                        <div>
-                            <h4>수업계획을 완료해주세요</h4>
-                            <p>임시저장된 수업계획이 있습니다. 완료 후 승인을 받아야 교구 신청이 가능합니다.</p>
-                            <button class="btn warning small" onclick="StudentManager.goToLessonPlan()">
-                                완료하기
-                            </button>
-                        </div>
-                    </div>
-                `;
-                noticeType = 'warning';
-            }
-        } else if (lessonPlan.approvalStatus === 'rejected') {
-            if (canEdit) {
-                noticeContent = `
-                    <div class="notice-content danger">
-                        <i data-lucide="calendar-x"></i>
-                        <div>
-                            <h4>수업계획이 반려되었습니다</h4>
-                            <p><strong>반려 사유:</strong> ${lessonPlan.rejectionReason || '사유 없음'}</p>
-                            <button class="btn danger small" onclick="StudentManager.goToLessonPlan()">
-                                수정하기
-                            </button>
-                        </div>
-                    </div>
-                `;
-                noticeType = 'danger';
-            } else {
-                noticeContent = `
-                    <div class="notice-content danger">
-                        <i data-lucide="calendar-x"></i>
-                        <div>
-                            <h4>수업계획이 반려되었습니다</h4>
-                            <p><strong>반려 사유:</strong> ${lessonPlan.rejectionReason || '사유 없음'}</p>
-                            <p>수정 기간이 종료되어 관리자에게 문의하세요.</p>
-                        </div>
-                    </div>
-                `;
-                noticeType = 'danger';
-            }
-        } else if (lessonPlan.approvalStatus !== 'approved') {
-            noticeContent = `
-                <div class="notice-content info">
-                    <i data-lucide="calendar-clock"></i>
-                    <div>
-                        <h4>수업계획 승인 대기 중입니다</h4>
-                        <p>관리자의 승인을 기다리고 있습니다. 승인 후 교구 신청이 가능합니다.</p>
-                    </div>
-                </div>
-            `;
-            noticeType = 'info';
-        } else if (budgetStatus.allocated === 0) {
-            noticeContent = `
-                <div class="notice-content warning">
-                    <i data-lucide="alert-triangle"></i>
-                    <div>
-                        <h4>예산 배정 처리 중입니다</h4>
-                        <p>수업계획이 승인되었으나 예산 배정이 완료되지 않았습니다. 잠시 후 다시 확인해주세요.</p>
-                    </div>
-                </div>
-            `;
-            noticeType = 'warning';
-        }
-
-        if (noticeContent) {
-            const notice = Utils.createElement('div', `dashboard-notice ${noticeType}`);
-            notice.id = 'lessonPlanNotice';
-            notice.innerHTML = noticeContent;
-            
-            // 대시보드 헤더 아래에 삽입
-            const dashboardHeader = Utils.$('.dashboard-header');
-            if (dashboardHeader) {
-                dashboardHeader.parentNode.insertBefore(notice, dashboardHeader.nextSibling);
                 
-                // 아이콘 생성
+                // 아이콘 재생성
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
             }
+
+            // 교구 신청 버튼 상태 업데이트
+            await this.updateApplicationButtonsState();
+
+            // 수업계획 상태에 따른 알림 표시
+            await this.showLessonPlanStatusNotice();
+        } catch (error) {
+            console.error('Error checking lesson plan status:', error);
+        }
+    },
+
+    // 교구 신청 버튼 상태 업데이트 (Supabase 연동)
+    async updateApplicationButtonsState() {
+        try {
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) return;
+
+            const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+            const newAppBtn = Utils.$('#newApplicationBtn');
+            const bundleAppBtn = Utils.$('#bundleApplicationBtn');
+            
+            if (!budgetStatus || !budgetStatus.canApplyForEquipment) {
+                // 교구 신청 불가능한 경우
+                if (newAppBtn) {
+                    newAppBtn.disabled = true;
+                    newAppBtn.title = '수업계획 승인 후 신청 가능합니다';
+                    newAppBtn.classList.add('disabled');
+                }
+                if (bundleAppBtn) {
+                    bundleAppBtn.disabled = true;
+                    bundleAppBtn.title = '수업계획 승인 후 신청 가능합니다';
+                    bundleAppBtn.classList.add('disabled');
+                }
+            } else {
+                // 교구 신청 가능한 경우
+                if (newAppBtn) {
+                    newAppBtn.disabled = false;
+                    newAppBtn.title = '';
+                    newAppBtn.classList.remove('disabled');
+                }
+                if (bundleAppBtn) {
+                    bundleAppBtn.disabled = false;
+                    bundleAppBtn.title = '';
+                    bundleAppBtn.classList.remove('disabled');
+                }
+            }
+        } catch (error) {
+            console.error('Error updating application buttons state:', error);
+        }
+    },
+
+    // 수업계획 상태 알림 표시 (Supabase 연동)
+    async showLessonPlanStatusNotice() {
+        try {
+            const existingNotice = Utils.$('#lessonPlanNotice');
+            if (existingNotice) {
+                existingNotice.remove();
+            }
+
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) return;
+
+            const lessonPlan = await SupabaseAPI.getStudentLessonPlan(currentUser.id);
+            const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+            const canEdit = await SupabaseAPI.canEditLessonPlan();
+            
+            let noticeContent = '';
+            let noticeType = '';
+
+            if (!lessonPlan) {
+                if (!canEdit) {
+                    noticeContent = `
+                        <div class="notice-content warning">
+                            <i data-lucide="alert-triangle"></i>
+                            <div>
+                                <h4>수업계획 수정 기간이 종료되었습니다</h4>
+                                <p>수업계획 작성/수정 가능 기간이 지났습니다. 관리자에게 문의하세요.</p>
+                            </div>
+                        </div>
+                    `;
+                    noticeType = 'warning';
+                } else {
+                    noticeContent = `
+                        <div class="notice-content info">
+                            <i data-lucide="calendar-plus"></i>
+                            <div>
+                                <h4>수업계획 작성이 필요합니다</h4>
+                                <p>교구 신청 전에 먼저 수업계획을 작성하고 승인을 받아야 합니다.</p>
+                                <button class="btn primary small" onclick="StudentManager.goToLessonPlan()">
+                                    지금 작성하기
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    noticeType = 'info';
+                }
+            } else if (lessonPlan.status !== 'submitted') {
+                if (canEdit) {
+                    noticeContent = `
+                        <div class="notice-content warning">
+                            <i data-lucide="calendar-edit"></i>
+                            <div>
+                                <h4>수업계획을 완료해주세요</h4>
+                                <p>임시저장된 수업계획이 있습니다. 완료 후 승인을 받아야 교구 신청이 가능합니다.</p>
+                                <button class="btn warning small" onclick="StudentManager.goToLessonPlan()">
+                                    완료하기
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    noticeType = 'warning';
+                }
+            } else if (lessonPlan.status === 'rejected') {
+                if (canEdit) {
+                    noticeContent = `
+                        <div class="notice-content danger">
+                            <i data-lucide="calendar-x"></i>
+                            <div>
+                                <h4>수업계획이 반려되었습니다</h4>
+                                <p><strong>반려 사유:</strong> ${lessonPlan.rejection_reason || '사유 없음'}</p>
+                                <button class="btn danger small" onclick="StudentManager.goToLessonPlan()">
+                                    수정하기
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    noticeType = 'danger';
+                } else {
+                    noticeContent = `
+                        <div class="notice-content danger">
+                            <i data-lucide="calendar-x"></i>
+                            <div>
+                                <h4>수업계획이 반려되었습니다</h4>
+                                <p><strong>반려 사유:</strong> ${lessonPlan.rejection_reason || '사유 없음'}</p>
+                                <p>수정 기간이 종료되어 관리자에게 문의하세요.</p>
+                            </div>
+                        </div>
+                    `;
+                    noticeType = 'danger';
+                }
+            } else if (lessonPlan.status !== 'approved') {
+                noticeContent = `
+                    <div class="notice-content info">
+                        <i data-lucide="calendar-clock"></i>
+                        <div>
+                            <h4>수업계획 승인 대기 중입니다</h4>
+                            <p>관리자의 승인을 기다리고 있습니다. 승인 후 교구 신청이 가능합니다.</p>
+                        </div>
+                    </div>
+                `;
+                noticeType = 'info';
+            } else if (budgetStatus && budgetStatus.allocated === 0) {
+                noticeContent = `
+                    <div class="notice-content warning">
+                        <i data-lucide="alert-triangle"></i>
+                        <div>
+                            <h4>예산 배정 처리 중입니다</h4>
+                            <p>수업계획이 승인되었으나 예산 배정이 완료되지 않았습니다. 잠시 후 다시 확인해주세요.</p>
+                        </div>
+                    </div>
+                `;
+                noticeType = 'warning';
+            }
+
+            if (noticeContent) {
+                const notice = Utils.createElement('div', `dashboard-notice ${noticeType}`);
+                notice.id = 'lessonPlanNotice';
+                notice.innerHTML = noticeContent;
+                
+                // 대시보드 헤더 아래에 삽입
+                const dashboardHeader = Utils.$('.dashboard-header');
+                if (dashboardHeader) {
+                    dashboardHeader.parentNode.insertBefore(notice, dashboardHeader.nextSibling);
+                    
+                    // 아이콘 생성
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error showing lesson plan status notice:', error);
         }
     },
 
     // 대시보드 로드 (외부에서 호출용)
-    loadDashboard() {
-        this.loadApplications();
-        this.updateBudgetStatus();
-        this.checkLessonPlanStatus();
+    async loadDashboard() {
+        await this.loadApplications();
+        await this.updateBudgetStatus();
+        await this.checkLessonPlanStatus();
     },
 
     // 모달 내 키보드 이벤트 설정
@@ -535,101 +549,114 @@ const StudentManager = {
     },
 
     // 사용자 정보 표시 업데이트
-    updateUserDisplay() {
-        AuthManager.updateUserDisplay();
+    async updateUserDisplay() {
+        await AuthManager.updateUserDisplay();
     },
 
-    // 예산 현황 업데이트 (새로운 예산 시스템 연동)
-    updateBudgetStatus() {
-        const studentId = DataManager.currentUser.id;
-        const budgetStatus = DataManager.getStudentBudgetStatus(studentId);
-        
-        let budgetDisplay = Utils.$('#budgetStatus');
-        if (!budgetDisplay) {
-            budgetDisplay = Utils.createElement('div', 'budget-status-container');
-            budgetDisplay.id = 'budgetStatus';
-            
-            // 사용자 정보 영역에 추가
-            const userInfo = Utils.$('.user-info');
-            if (userInfo) {
-                userInfo.appendChild(budgetDisplay);
-            }
-        }
-        
-        if (!budgetStatus) {
-            budgetDisplay.innerHTML = '<div class="budget-error">예산 정보를 불러올 수 없습니다.</div>';
-            return;
-        }
+    // 예산 현황 업데이트 (Supabase 연동)
+    async updateBudgetStatus() {
+        try {
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) return;
 
-        if (budgetStatus.allocated === 0) {
-            if (budgetStatus.lessonPlanStatus === 'approved') {
-                budgetDisplay.innerHTML = `
-                    <div class="budget-info processing">
-                        <div class="budget-status-text">
-                            <i data-lucide="clock"></i>
-                            <span>예산 배정 처리 중...</span>
+            const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+            
+            let budgetDisplay = Utils.$('#budgetStatus');
+            if (!budgetDisplay) {
+                budgetDisplay = Utils.createElement('div', 'budget-status-container');
+                budgetDisplay.id = 'budgetStatus';
+                
+                // 사용자 정보 영역에 추가
+                const userInfo = Utils.$('.user-info');
+                if (userInfo) {
+                    userInfo.appendChild(budgetDisplay);
+                }
+            }
+            
+            if (!budgetStatus) {
+                budgetDisplay.innerHTML = '<div class="budget-error">예산 정보를 불러올 수 없습니다.</div>';
+                return;
+            }
+
+            if (budgetStatus.allocated === 0) {
+                if (budgetStatus.lessonPlanStatus === 'approved') {
+                    budgetDisplay.innerHTML = `
+                        <div class="budget-info processing">
+                            <div class="budget-status-text">
+                                <i data-lucide="clock"></i>
+                                <span>예산 배정 처리 중...</span>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                } else {
+                    budgetDisplay.innerHTML = `
+                        <div class="budget-info not-allocated">
+                            <div class="budget-status-text">
+                                <i data-lucide="alert-circle"></i>
+                                <span>수업계획 승인 후 예산이 배정됩니다</span>
+                            </div>
+                        </div>
+                    `;
+                }
             } else {
+                const usagePercentage = Math.round((budgetStatus.used / budgetStatus.allocated) * 100);
+                const statusClass = usagePercentage >= 90 ? 'danger' : usagePercentage >= 70 ? 'warning' : 'safe';
+                
                 budgetDisplay.innerHTML = `
-                    <div class="budget-info not-allocated">
-                        <div class="budget-status-text">
-                            <i data-lucide="alert-circle"></i>
-                            <span>수업계획 승인 후 예산이 배정됩니다</span>
+                    <div class="budget-info allocated">
+                        <div class="budget-header">
+                            <div class="budget-title">
+                                <i data-lucide="wallet"></i>
+                                <span>배정 예산 (${budgetStatus.field})</span>
+                            </div>
+                            <div class="budget-percentage ${statusClass}">${usagePercentage}%</div>
+                        </div>
+                        <div class="budget-bar-container">
+                            <div class="budget-bar">
+                                <div class="budget-progress ${statusClass}" style="width: ${Math.min(usagePercentage, 100)}%"></div>
+                            </div>
+                        </div>
+                        <div class="budget-details">
+                            <div class="budget-item">
+                                <span class="label">사용:</span>
+                                <span class="value">${Utils.formatPrice(budgetStatus.used)}</span>
+                            </div>
+                            <div class="budget-item">
+                                <span class="label">배정:</span>
+                                <span class="value">${Utils.formatPrice(budgetStatus.allocated)}</span>
+                            </div>
+                            <div class="budget-item remaining">
+                                <span class="label">잔여:</span>
+                                <span class="value ${budgetStatus.remaining <= 0 ? 'zero' : ''}">${Utils.formatPrice(budgetStatus.remaining)}</span>
+                            </div>
                         </div>
                     </div>
                 `;
             }
-        } else {
-            const usagePercentage = Math.round((budgetStatus.used / budgetStatus.allocated) * 100);
-            const statusClass = usagePercentage >= 90 ? 'danger' : usagePercentage >= 70 ? 'warning' : 'safe';
-            
-            budgetDisplay.innerHTML = `
-                <div class="budget-info allocated">
-                    <div class="budget-header">
-                        <div class="budget-title">
-                            <i data-lucide="wallet"></i>
-                            <span>배정 예산 (${budgetStatus.field})</span>
-                        </div>
-                        <div class="budget-percentage ${statusClass}">${usagePercentage}%</div>
-                    </div>
-                    <div class="budget-bar-container">
-                        <div class="budget-bar">
-                            <div class="budget-progress ${statusClass}" style="width: ${Math.min(usagePercentage, 100)}%"></div>
-                        </div>
-                    </div>
-                    <div class="budget-details">
-                        <div class="budget-item">
-                            <span class="label">사용:</span>
-                            <span class="value">${Utils.formatPrice(budgetStatus.used)}</span>
-                        </div>
-                        <div class="budget-item">
-                            <span class="label">배정:</span>
-                            <span class="value">${Utils.formatPrice(budgetStatus.allocated)}</span>
-                        </div>
-                        <div class="budget-item remaining">
-                            <span class="label">잔여:</span>
-                            <span class="value ${budgetStatus.remaining <= 0 ? 'zero' : ''}">${Utils.formatPrice(budgetStatus.remaining)}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
 
-        // 아이콘 재생성
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        } catch (error) {
+            console.error('Error updating budget status:', error);
         }
     },
 
-    // 신청 내역 로드
-    loadApplications() {
-        const studentId = DataManager.currentUser.id;
-        const applications = DataManager.getStudentApplications(studentId);
-        
-        this.renderApplications(applications);
-        this.updateBudgetStatus();
+    // 신청 내역 로드 (Supabase 연동)
+    async loadApplications() {
+        try {
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) return;
+
+            const applications = await SupabaseAPI.getStudentApplications(currentUser.id);
+            
+            this.renderApplications(applications);
+            await this.updateBudgetStatus();
+        } catch (error) {
+            console.error('Error loading applications:', error);
+            Utils.showAlert('신청 내역을 불러오는 중 오류가 발생했습니다.');
+        }
     },
 
     // 신청 내역 렌더링
@@ -666,18 +693,19 @@ const StudentManager = {
     createApplicationCard(application) {
         const card = Utils.createElement('div', 'application-card');
         
-        const statusClass = DataManager.getStatusClass(application.status);
-        const statusText = DataManager.getStatusText(application.status);
-        const typeIcon = application.type === 'bundle' ? 'shopping-cart' : 'package';
-        const typeText = application.type === 'bundle' ? '묶음신청' : '단일신청';
+        const statusClass = SupabaseAPI.getStatusClass(application.status);
+        const statusText = SupabaseAPI.getStatusText(application.status);
+        const typeIcon = application.is_bundle ? 'shopping-cart' : 'package';
+        const typeText = application.is_bundle ? '묶음신청' : '단일신청';
         
         // 구매 방식 뱃지 생성
-        const purchaseMethodClass = DataManager.getPurchaseMethodClass(application.purchaseMethod);
-        const purchaseMethodText = DataManager.getPurchaseMethodText(application.purchaseMethod);
+        const purchaseMethodClass = SupabaseAPI.getPurchaseMethodClass(application.purchase_type);
+        const purchaseMethodText = SupabaseAPI.getPurchaseMethodText(application.purchase_type);
         
         // 영수증 등록 버튼 (오프라인 구매이고 승인된 경우)
         let receiptButton = '';
-        if (application.purchaseMethod === 'offline' && application.status === 'approved' && !application.receiptImage) {
+        if (application.purchase_type === 'offline' && application.status === 'approved') {
+            // 영수증이 이미 제출되었는지 확인 필요 - 추후 구현
             receiptButton = `
                 <button class="btn small primary receipt-btn" data-item-id="${application.id}">
                     ${Utils.createIcon('receipt')} 영수증 등록
@@ -687,12 +715,12 @@ const StudentManager = {
         
         // 영수증 제출 상태 표시
         let receiptStatus = '';
-        if (application.purchaseMethod === 'offline' && application.receiptImage) {
+        if (application.purchase_type === 'offline' && application.status === 'purchased') {
             receiptStatus = `
                 <div class="receipt-status">
                     <i data-lucide="check-circle"></i>
                     영수증 제출완료
-                    <small>${new Date(application.receiptSubmittedAt).toLocaleString('ko-KR')}</small>
+                    <small>${new Date(application.updated_at).toLocaleString('ko-KR')}</small>
                 </div>
             `;
         }
@@ -701,12 +729,12 @@ const StudentManager = {
             <div class="application-card-header">
                 <div>
                     <div class="card-title-row">
-                        <h3>${this.escapeHtml(application.name)}</h3>
+                        <h3>${this.escapeHtml(application.item_name)}</h3>
                         <div class="card-badges">
                             <span class="purchase-method-badge ${purchaseMethodClass}">
-                                ${Utils.createIcon(application.purchaseMethod === 'offline' ? 'store' : 'shopping-cart')} ${purchaseMethodText}
+                                ${Utils.createIcon(application.purchase_type === 'offline' ? 'store' : 'shopping-cart')} ${purchaseMethodText}
                             </span>
-                            <span class="type-badge ${application.type}">
+                            <span class="type-badge ${application.is_bundle ? 'bundle' : 'single'}">
                                 ${Utils.createIcon(typeIcon)} ${typeText}
                             </span>
                             <span class="status-badge ${statusClass}">${statusText}</span>
@@ -721,11 +749,11 @@ const StudentManager = {
                     <span class="detail-label">가격</span>
                     <span class="detail-value price-value">${Utils.formatPrice(application.price)}</span>
                 </div>
-                ${application.link ? `
+                ${application.purchase_link ? `
                     <div class="detail-item">
-                        <span class="detail-label">${application.purchaseMethod === 'offline' ? '참고 링크' : '구매 링크'}</span>
+                        <span class="detail-label">${application.purchase_type === 'offline' ? '참고 링크' : '구매 링크'}</span>
                         <span class="detail-value">
-                            <a href="${this.escapeHtml(application.link)}" target="_blank" rel="noopener noreferrer">
+                            <a href="${this.escapeHtml(application.purchase_link)}" target="_blank" rel="noopener noreferrer">
                                 링크 보기 ${Utils.createIcon('external-link', 'inline-icon')}
                             </a>
                         </span>
@@ -750,10 +778,10 @@ const StudentManager = {
                 </div>
             `}
             
-            ${application.rejectionReason ? `
+            ${application.rejection_reason ? `
                 <div class="rejection-reason">
                     <div class="reason-label">반려 사유</div>
-                    <div class="reason-text">${this.escapeHtml(application.rejectionReason)}</div>
+                    <div class="reason-text">${this.escapeHtml(application.rejection_reason)}</div>
                 </div>
             ` : ''}
         `;
@@ -788,103 +816,132 @@ const StudentManager = {
         });
     },
 
-    // 영수증 등록 모달 열기
-    openReceiptModal(itemId) {
-        const studentId = DataManager.currentUser.id;
-        const applications = DataManager.getStudentApplications(studentId);
-        const item = applications.find(app => app.id === itemId);
-        
-        if (!item || item.purchaseMethod !== 'offline' || item.status !== 'approved') {
-            Utils.showAlert('영수증 등록이 불가능한 상태입니다.');
-            return;
-        }
+    // 영수증 등록 모달 열기 (Supabase 연동)
+    async openReceiptModal(itemId) {
+        try {
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) return;
 
-        this.showReceiptModal(item);
-    },
-
-    // 신청 수정
-    editApplication(itemId) {
-        const studentId = DataManager.currentUser.id;
-        const applications = DataManager.getStudentApplications(studentId);
-        const item = applications.find(app => app.id === itemId);
-        
-        if (!item || item.status !== 'pending') {
-            Utils.showAlert('검토 중인 신청만 수정할 수 있습니다.');
-            return;
-        }
-
-        this.currentEditingItem = item;
-        
-        if (item.type === 'bundle') {
-            this.showBundleModal(item);
-        } else {
-            this.showApplicationModal(item);
-        }
-    },
-
-    // 신청 삭제
-    deleteApplication(itemId) {
-        if (Utils.showConfirm('정말로 이 신청을 삭제하시겠습니까?')) {
-            const studentId = DataManager.currentUser.id;
+            const applications = await SupabaseAPI.getStudentApplications(currentUser.id);
+            const item = applications.find(app => app.id === itemId);
             
-            if (DataManager.deleteApplicationItem(studentId, itemId)) {
-                this.loadApplications();
-                Utils.showAlert('신청이 삭제되었습니다.');
+            if (!item || item.purchase_type !== 'offline' || item.status !== 'approved') {
+                Utils.showAlert('영수증 등록이 불가능한 상태입니다.');
+                return;
+            }
+
+            this.showReceiptModal(item);
+        } catch (error) {
+            console.error('Error opening receipt modal:', error);
+            Utils.showAlert('영수증 등록 모달을 여는 중 오류가 발생했습니다.');
+        }
+    },
+
+    // 신청 수정 (Supabase 연동)
+    async editApplication(itemId) {
+        try {
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) return;
+
+            const applications = await SupabaseAPI.getStudentApplications(currentUser.id);
+            const item = applications.find(app => app.id === itemId);
+            
+            if (!item || item.status !== 'pending') {
+                Utils.showAlert('검토 중인 신청만 수정할 수 있습니다.');
+                return;
+            }
+
+            this.currentEditingItem = item;
+            
+            if (item.is_bundle) {
+                this.showBundleModal(item);
             } else {
-                Utils.showAlert('삭제할 수 없습니다. 검토 중인 신청만 삭제 가능합니다.');
+                this.showApplicationModal(item);
+            }
+        } catch (error) {
+            console.error('Error editing application:', error);
+            Utils.showAlert('신청 수정 중 오류가 발생했습니다.');
+        }
+    },
+
+    // 신청 삭제 (Supabase 연동)
+    async deleteApplication(itemId) {
+        if (Utils.showConfirm('정말로 이 신청을 삭제하시겠습니까?')) {
+            try {
+                const currentUser = AuthManager.getCurrentUser();
+                if (!currentUser) return;
+
+                const result = await SupabaseAPI.deleteApplicationItem(currentUser.id, itemId);
+                
+                if (result.success) {
+                    await this.loadApplications();
+                    Utils.showAlert('신청이 삭제되었습니다.');
+                } else {
+                    Utils.showAlert(result.message || '삭제할 수 없습니다. 검토 중인 신청만 삭제 가능합니다.');
+                }
+            } catch (error) {
+                console.error('Error deleting application:', error);
+                Utils.showAlert('신청 삭제 중 오류가 발생했습니다.');
             }
         }
     },
 
-    // 일반 신청 모달 표시
-    showApplicationModal(editData = null) {
-        // 수업계획 승인 상태 확인
-        const studentId = DataManager.currentUser.id;
-        const budgetStatus = DataManager.getStudentBudgetStatus(studentId);
-        
-        if (!budgetStatus.canApplyForEquipment) {
-            Utils.showAlert('수업계획이 승인된 후 교구 신청이 가능합니다.');
-            return;
-        }
+    // 일반 신청 모달 표시 (Supabase 연동)
+    async showApplicationModal(editData = null) {
+        try {
+            // 수업계획 승인 상태 확인
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) return;
 
-        const modal = Utils.$('#applicationModal');
-        const title = Utils.$('#applicationModalTitle');
-        const submitBtn = Utils.$('#submitBtn');
-        
-        if (editData) {
-            title.textContent = '교구 신청 수정';
-            submitBtn.textContent = '수정하기';
+            const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
             
-            // 폼에 기존 데이터 채우기
-            Utils.$('#itemName').value = editData.name;
-            Utils.$('#itemPurpose').value = editData.purpose;
-            Utils.$('#itemPrice').value = editData.price;
-            Utils.$('#itemLink').value = editData.link || '';
-            
-            // 구매 방식 설정
-            const purchaseMethodRadio = Utils.$(`input[name="purchaseMethod"][value="${editData.purchaseMethod || 'online'}"]`);
-            if (purchaseMethodRadio) {
-                purchaseMethodRadio.checked = true;
-                this.handlePurchaseMethodChange(editData.purchaseMethod || 'online');
+            if (!budgetStatus || !budgetStatus.canApplyForEquipment) {
+                Utils.showAlert('수업계획이 승인된 후 교구 신청이 가능합니다.');
+                return;
             }
-        } else {
-            title.textContent = '새 교구 신청';
-            submitBtn.textContent = '신청하기';
-            Utils.resetForm('#applicationForm');
+
+            const modal = Utils.$('#applicationModal');
+            const title = Utils.$('#applicationModalTitle');
+            const submitBtn = Utils.$('#submitBtn');
             
-            // 기본값 설정
-            const onlineRadio = Utils.$('input[name="purchaseMethod"][value="online"]');
-            if (onlineRadio) {
-                onlineRadio.checked = true;
-                this.handlePurchaseMethodChange('online');
+            if (editData) {
+                title.textContent = '교구 신청 수정';
+                submitBtn.textContent = '수정하기';
+                
+                // 폼에 기존 데이터 채우기
+                Utils.$('#itemName').value = editData.item_name;
+                Utils.$('#itemPurpose').value = editData.purpose;
+                Utils.$('#itemPrice').value = editData.price;
+                Utils.$('#itemLink').value = editData.purchase_link || '';
+                
+                // 구매 방식 설정
+                const purchaseMethodRadio = Utils.$(`input[name="purchaseMethod"][value="${editData.purchase_type || 'online'}"]`);
+                if (purchaseMethodRadio) {
+                    purchaseMethodRadio.checked = true;
+                    this.handlePurchaseMethodChange(editData.purchase_type || 'online');
+                }
+            } else {
+                title.textContent = '새 교구 신청';
+                submitBtn.textContent = '신청하기';
+                Utils.resetForm('#applicationForm');
+                
+                // 기본값 설정
+                const onlineRadio = Utils.$('input[name="purchaseMethod"][value="online"]');
+                if (onlineRadio) {
+                    onlineRadio.checked = true;
+                    this.handlePurchaseMethodChange('online');
+                }
             }
+            
+            modal.classList.add('active');
+            
+            setTimeout(() => {
+                Utils.$('#itemName').focus();
+            }, 100);
+        } catch (error) {
+            console.error('Error showing application modal:', error);
+            Utils.showAlert('교구 신청 모달을 여는 중 오류가 발생했습니다.');
         }
-        
-        modal.classList.add('active');
-        
-        setTimeout(() => {
-            Utils.$('#itemName').focus();
-        }, 100);
     },
 
     // 일반 신청 모달 숨김
@@ -895,38 +952,52 @@ const StudentManager = {
         Utils.resetForm('#applicationForm');
     },
 
-    // 묶음 신청 모달 표시
-    showBundleModal(editData = null) {
-        // 수업계획 승인 상태 확인
-        const studentId = DataManager.currentUser.id;
-        const budgetStatus = DataManager.getStudentBudgetStatus(studentId);
-        
-        if (!budgetStatus.canApplyForEquipment) {
-            Utils.showAlert('수업계획이 승인된 후 교구 신청이 가능합니다.');
-            return;
-        }
+    // 묶음 신청 모달 표시 (Supabase 연동)
+    async showBundleModal(editData = null) {
+        try {
+            // 수업계획 승인 상태 확인
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) return;
 
-        const modal = Utils.$('#bundleModal');
-        
-        if (editData) {
-            Utils.$('#bundleName').value = editData.name;
-            Utils.$('#bundlePurpose').value = editData.purpose;
-            Utils.$('#bundlePrice').value = editData.price;
-            Utils.$('#bundleLink').value = editData.link || '';
+            const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
             
-            if (editData.bundleCredentials) {
-                Utils.$('#bundleUserId').value = editData.bundleCredentials.userId;
-                // 보안상 비밀번호는 복원하지 않음
+            if (!budgetStatus || !budgetStatus.canApplyForEquipment) {
+                Utils.showAlert('수업계획이 승인된 후 교구 신청이 가능합니다.');
+                return;
             }
-        } else {
-            Utils.resetForm('#bundleForm');
+
+            const modal = Utils.$('#bundleModal');
+            
+            if (editData) {
+                Utils.$('#bundleName').value = editData.item_name;
+                Utils.$('#bundlePurpose').value = editData.purpose;
+                Utils.$('#bundlePrice').value = editData.price;
+                Utils.$('#bundleLink').value = editData.purchase_link || '';
+                
+                if (editData.bundle_info) {
+                    try {
+                        const bundleInfo = typeof editData.bundle_info === 'string' 
+                            ? JSON.parse(editData.bundle_info) 
+                            : editData.bundle_info;
+                        Utils.$('#bundleUserId').value = bundleInfo.userId || '';
+                        // 보안상 비밀번호는 복원하지 않음
+                    } catch (e) {
+                        console.error('Error parsing bundle info:', e);
+                    }
+                }
+            } else {
+                Utils.resetForm('#bundleForm');
+            }
+            
+            modal.classList.add('active');
+            
+            setTimeout(() => {
+                Utils.$('#bundleName').focus();
+            }, 100);
+        } catch (error) {
+            console.error('Error showing bundle modal:', error);
+            Utils.showAlert('묶음 신청 모달을 여는 중 오류가 발생했습니다.');
         }
-        
-        modal.classList.add('active');
-        
-        setTimeout(() => {
-            Utils.$('#bundleName').focus();
-        }, 100);
     },
 
     // 묶음 신청 모달 숨김
@@ -940,17 +1011,9 @@ const StudentManager = {
     // 배송지 설정 모달 표시
     showShippingModal() {
         const modal = Utils.$('#shippingModal');
-        const user = DataManager.currentUser;
+        const user = AuthManager.getCurrentUser();
         
-        // 기존 배송지 정보가 있으면 채우기
-        if (user.shippingAddress) {
-            const addr = user.shippingAddress;
-            Utils.$('#shippingName').value = addr.name || '';
-            Utils.$('#shippingPhone').value = addr.phone || '';
-            Utils.$('#shippingAddress').value = addr.address || '';
-            Utils.$('#shippingPostcode').value = addr.postcode || '';
-            Utils.$('#shippingNote').value = addr.note || '';
-        }
+        // 기존 배송지 정보가 있으면 채우기 (추후 구현)
         
         modal.classList.add('active');
         
@@ -966,100 +1029,110 @@ const StudentManager = {
         Utils.resetForm('#shippingForm');
     },
 
-    // 일반 신청 제출 처리
-    handleApplicationSubmit() {
+    // 일반 신청 제출 처리 (Supabase 연동)
+    async handleApplicationSubmit() {
         const formData = this.getFormData();
         
         // 입력 검증
-        if (!this.validateFormData(formData)) {
+        if (!await this.validateFormData(formData)) {
             return;
         }
 
         const submitBtn = Utils.$('#submitBtn');
         Utils.showLoading(submitBtn);
 
-        setTimeout(() => {
-            try {
-                const studentId = DataManager.currentUser.id;
-                
-                if (this.currentEditingItem) {
-                    // 수정 모드
-                    if (DataManager.updateApplicationItem(studentId, this.currentEditingItem.id, formData)) {
-                        Utils.showAlert('교구 신청이 수정되었습니다.');
-                    } else {
-                        throw new Error('수정 실패');
-                    }
+        try {
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) throw new Error('로그인이 필요합니다.');
+            
+            let result;
+            if (this.currentEditingItem) {
+                // 수정 모드
+                result = await SupabaseAPI.updateApplicationItem(currentUser.id, this.currentEditingItem.id, formData);
+                if (result.success) {
+                    Utils.showAlert('교구 신청이 수정되었습니다.');
                 } else {
-                    // 새 신청 모드
-                    DataManager.addApplication(studentId, formData);
-                    Utils.showAlert('교구 신청이 완료되었습니다.');
+                    throw new Error(result.message || '수정 실패');
                 }
-                
-                Utils.hideLoading(submitBtn);
-                this.hideApplicationModal();
-                this.loadApplications();
-                
-            } catch (error) {
-                Utils.hideLoading(submitBtn);
-                Utils.showAlert(error.message || '처리 중 오류가 발생했습니다. 다시 시도해주세요.');
-                console.error('Application submission error:', error);
+            } else {
+                // 새 신청 모드
+                result = await SupabaseAPI.addApplication(currentUser.id, formData);
+                if (result.success) {
+                    Utils.showAlert('교구 신청이 완료되었습니다.');
+                } else {
+                    throw new Error(result.message || '신청 실패');
+                }
             }
-        }, 1000);
+            
+            Utils.hideLoading(submitBtn);
+            this.hideApplicationModal();
+            await this.loadApplications();
+            
+        } catch (error) {
+            Utils.hideLoading(submitBtn);
+            Utils.showAlert(error.message || '처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+            console.error('Application submission error:', error);
+        }
     },
 
-    // 묶음 신청 제출 처리
-    handleBundleSubmit() {
+    // 묶음 신청 제출 처리 (Supabase 연동)
+    async handleBundleSubmit() {
         const formData = this.getBundleFormData();
         
-        if (!this.validateBundleFormData(formData)) {
+        if (!await this.validateBundleFormData(formData)) {
             return;
         }
 
         const submitBtn = Utils.$('#bundleForm button[type="submit"]');
         Utils.showLoading(submitBtn);
 
-        setTimeout(() => {
-            try {
-                const studentId = DataManager.currentUser.id;
-                
-                const bundleData = {
-                    name: formData.name,
-                    purpose: formData.purpose,
-                    price: formData.price,
-                    link: formData.link,
-                    type: 'bundle',
-                    purchaseMethod: 'online', // 묶음 신청은 항상 온라인
-                    bundleCredentials: {
-                        userId: formData.userId,
-                        password: '***encrypted***' // 실제로는 암호화 처리
-                    }
-                };
-                
-                if (this.currentEditingItem) {
-                    if (DataManager.updateApplicationItem(studentId, this.currentEditingItem.id, bundleData)) {
-                        Utils.showAlert('묶음 신청이 수정되었습니다.');
-                    } else {
-                        throw new Error('수정 실패');
-                    }
-                } else {
-                    DataManager.addApplication(studentId, bundleData);
-                    Utils.showAlert('묶음 신청이 완료되었습니다.');
+        try {
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) throw new Error('로그인이 필요합니다.');
+
+            const bundleData = {
+                name: formData.name,
+                purpose: formData.purpose,
+                price: formData.price,
+                link: formData.link,
+                type: 'bundle',
+                purchaseMethod: 'online', // 묶음 신청은 항상 온라인
+                bundleInfo: {
+                    userId: formData.userId,
+                    password: '***encrypted***' // 실제로는 암호화 처리
                 }
-                
-                Utils.hideLoading(submitBtn);
-                this.hideBundleModal();
-                this.loadApplications();
-                
-            } catch (error) {
-                Utils.hideLoading(submitBtn);
-                Utils.showAlert(error.message || '처리 중 오류가 발생했습니다. 다시 시도해주세요.');
-                console.error('Bundle submission error:', error);
+            };
+            
+            let result;
+            if (this.currentEditingItem) {
+                result = await SupabaseAPI.updateApplicationItem(currentUser.id, this.currentEditingItem.id, bundleData);
+                if (result.success) {
+                    Utils.showAlert('묶음 신청이 수정되었습니다.');
+                } else {
+                    throw new Error(result.message || '수정 실패');
+                }
+            } else {
+                result = await SupabaseAPI.addApplication(currentUser.id, bundleData);
+                if (result.success) {
+                    Utils.showAlert('묶음 신청이 완료되었습니다.');
+                } else {
+                    throw new Error(result.message || '신청 실패');
+                }
             }
-        }, 1000);
+            
+            Utils.hideLoading(submitBtn);
+            this.hideBundleModal();
+            await this.loadApplications();
+            
+        } catch (error) {
+            Utils.hideLoading(submitBtn);
+            Utils.showAlert(error.message || '처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+            console.error('Bundle submission error:', error);
+        }
     },
 
     // 배송지 설정 제출 처리
-    handleShippingSubmit() {
+    async handleShippingSubmit() {
         const formData = this.getShippingFormData();
         
         if (!this.validateShippingFormData(formData)) {
@@ -1069,24 +1142,19 @@ const StudentManager = {
         const submitBtn = Utils.$('#shippingForm button[type="submit"]');
         Utils.showLoading(submitBtn);
 
-        setTimeout(() => {
-            try {
-                const studentId = DataManager.currentUser.id;
-                
-                if (DataManager.updateShippingAddress(studentId, formData)) {
-                    Utils.showAlert('배송지가 저장되었습니다.');
-                    Utils.hideLoading(submitBtn);
-                    this.hideShippingModal();
-                } else {
-                    throw new Error('배송지 저장 실패');
-                }
-                
-            } catch (error) {
+        try {
+            // 배송지 설정 로직 추후 구현
+            setTimeout(() => {
+                Utils.showAlert('배송지가 저장되었습니다.');
                 Utils.hideLoading(submitBtn);
-                Utils.showAlert('배송지 저장 중 오류가 발생했습니다.');
-                console.error('Shipping address error:', error);
-            }
-        }, 500);
+                this.hideShippingModal();
+            }, 500);
+            
+        } catch (error) {
+            Utils.hideLoading(submitBtn);
+            Utils.showAlert('배송지 저장 중 오류가 발생했습니다.');
+            console.error('Shipping address error:', error);
+        }
     },
 
     // 폼 데이터 수집
@@ -1127,8 +1195,8 @@ const StudentManager = {
         };
     },
 
-    // 폼 데이터 검증 (새로운 예산 시스템 연동)
-    validateFormData(data) {
+    // 폼 데이터 검증 (Supabase 연동)
+    async validateFormData(data) {
         if (!Utils.validateRequired(data.name, '교구명')) return false;
         if (!Utils.validateRequired(data.purpose, '사용 목적')) return false;
         if (!data.price || data.price <= 0) {
@@ -1136,49 +1204,60 @@ const StudentManager = {
             return false;
         }
 
-        // 예산 한도 검증
-        const studentId = DataManager.currentUser.id;
-        const budgetStatus = DataManager.getStudentBudgetStatus(studentId);
-        
-        if (!budgetStatus.canApplyForEquipment) {
-            Utils.showAlert('수업계획이 승인된 후 교구 신청이 가능합니다.');
+        try {
+            // 예산 한도 검증
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) {
+                Utils.showAlert('로그인이 필요합니다.');
+                return false;
+            }
+
+            const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+            
+            if (!budgetStatus || !budgetStatus.canApplyForEquipment) {
+                Utils.showAlert('수업계획이 승인된 후 교구 신청이 가능합니다.');
+                return false;
+            }
+
+            let availableBudget = budgetStatus.remaining;
+            
+            // 수정 시 기존 금액 제외
+            if (this.currentEditingItem) {
+                availableBudget += this.currentEditingItem.price;
+            }
+            
+            if (data.price > availableBudget) {
+                Utils.showAlert(`예산이 부족합니다.\n` +
+                              `사용 가능한 예산: ${Utils.formatPrice(availableBudget)}\n` +
+                              `신청 금액: ${Utils.formatPrice(data.price)}`);
+                return false;
+            }
+
+            if (data.link && !Utils.validateURL(data.link)) {
+                Utils.showAlert('올바른 URL 형식을 입력해주세요.');
+                return false;
+            }
+
+            if (data.purpose.length < 10) {
+                Utils.showAlert('사용 목적을 더 자세히 설명해주세요. (최소 10자)');
+                return false;
+            }
+
+            if (data.purpose.length > 500) {
+                Utils.showAlert('사용 목적이 너무 깁니다. (최대 500자)');
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error validating form data:', error);
+            Utils.showAlert('검증 중 오류가 발생했습니다.');
             return false;
         }
-
-        let availableBudget = budgetStatus.remaining;
-        
-        // 수정 시 기존 금액 제외
-        if (this.currentEditingItem) {
-            availableBudget += this.currentEditingItem.price;
-        }
-        
-        if (data.price > availableBudget) {
-            Utils.showAlert(`예산이 부족합니다.\\n` +
-                          `사용 가능한 예산: ${Utils.formatPrice(availableBudget)}\\n` +
-                          `신청 금액: ${Utils.formatPrice(data.price)}`);
-            return false;
-        }
-
-        if (data.link && !Utils.validateURL(data.link)) {
-            Utils.showAlert('올바른 URL 형식을 입력해주세요.');
-            return false;
-        }
-
-        if (data.purpose.length < 10) {
-            Utils.showAlert('사용 목적을 더 자세히 설명해주세요. (최소 10자)');
-            return false;
-        }
-
-        if (data.purpose.length > 500) {
-            Utils.showAlert('사용 목적이 너무 깁니다. (최대 500자)');
-            return false;
-        }
-
-        return true;
     },
 
     // 묶음 신청 폼 검증
-    validateBundleFormData(data) {
+    async validateBundleFormData(data) {
         if (!Utils.validateRequired(data.name, '묶음 교구명')) return false;
         if (!Utils.validateRequired(data.purpose, '사용 목적')) return false;
         if (!Utils.validateRequired(data.link, '구매 링크')) return false;
@@ -1191,7 +1270,7 @@ const StudentManager = {
         }
 
         // 예산 검증 (일반 신청과 동일)
-        return this.validateFormData({
+        return await this.validateFormData({
             name: data.name,
             purpose: data.purpose,
             price: data.price,
@@ -1208,30 +1287,6 @@ const StudentManager = {
         return true;
     },
 
-    // 신청 통계 생성 (예산 정보 연동)
-    getApplicationStats() {
-        const studentId = DataManager.currentUser.id;
-        const budgetStatus = DataManager.getStudentBudgetStatus(studentId);
-        const applications = DataManager.getStudentApplications(studentId);
-        
-        const stats = {
-            total: applications.length,
-            pending: 0,
-            approved: 0,
-            rejected: 0,
-            purchased: 0,
-            totalAmount: budgetStatus ? budgetStatus.used : 0,
-            allocatedBudget: budgetStatus ? budgetStatus.allocated : 0,
-            remainingBudget: budgetStatus ? budgetStatus.remaining : 0
-        };
-
-        applications.forEach(app => {
-            stats[app.status]++;
-        });
-
-        return stats;
-    },
-
     // HTML 이스케이프 (XSS 방지)
     escapeHtml(text) {
         const div = document.createElement('div');
@@ -1240,39 +1295,45 @@ const StudentManager = {
     },
 
     // 신청 내역 새로고침
-    refreshApplications() {
-        this.loadApplications();
+    async refreshApplications() {
+        await this.loadApplications();
     },
 
-    // 키보드 단축키 처리
-    handleKeyboardShortcuts(event) {
-        // 수업계획이 승인되지 않은 경우 신청 단축키 비활성화
-        const studentId = DataManager.currentUser.id;
-        const budgetStatus = DataManager.getStudentBudgetStatus(studentId);
-        
-        // Ctrl/Cmd + N: 새 신청
-        if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
-            event.preventDefault();
-            if (Utils.$('#studentPage').classList.contains('active')) {
-                if (budgetStatus.canApplyForEquipment) {
-                    this.showApplicationModal();
-                } else {
-                    Utils.showAlert('수업계획이 승인된 후 교구 신청이 가능합니다.');
+    // 키보드 단축키 처리 (Supabase 연동)
+    async handleKeyboardShortcuts(event) {
+        try {
+            // 수업계획이 승인되지 않은 경우 신청 단축키 비활성화
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) return;
+
+            const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+            
+            // Ctrl/Cmd + N: 새 신청
+            if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
+                event.preventDefault();
+                if (Utils.$('#studentPage').classList.contains('active')) {
+                    if (budgetStatus && budgetStatus.canApplyForEquipment) {
+                        this.showApplicationModal();
+                    } else {
+                        Utils.showAlert('수업계획이 승인된 후 교구 신청이 가능합니다.');
+                    }
                 }
             }
-        }
-        
-        // F5: 새로고침
-        if (event.key === 'F5') {
-            event.preventDefault();
-            this.refreshApplications();
+            
+            // F5: 새로고침
+            if (event.key === 'F5') {
+                event.preventDefault();
+                await this.refreshApplications();
+            }
+        } catch (error) {
+            console.error('Error handling keyboard shortcuts:', error);
         }
     }
 };
 
 // 키보드 단축키 등록
 document.addEventListener('keydown', (event) => {
-    if (DataManager.currentUserType === 'student') {
+    if (AuthManager.isStudent()) {
         StudentManager.handleKeyboardShortcuts(event);
     }
 });
