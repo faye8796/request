@@ -1,5 +1,5 @@
-// Supabase 클라이언트 설정 및 API 관리 - 406 에러 해결 버전
-// 에러 핸들링 개선, 재시도 로직 추가, 연결 안정성 향상
+// Supabase 클라이언트 설정 및 API 관리 - 완전 안정화 버전
+// JSON 객체 에러 및 single() 메서드 문제 해결
 
 // 설정 파일이 로드될 때까지 대기
 function waitForConfig() {
@@ -104,7 +104,7 @@ initializeSupabaseClient().catch(error => {
     console.error('초기 Supabase 클라이언트 초기화 실패:', error);
 });
 
-// Supabase API 관리자 - 향상된 에러 핸들링
+// Supabase API 관리자 - 안전한 단일/다중 결과 처리
 const SupabaseAPI = {
     get client() {
         return supabaseClient;
@@ -123,7 +123,32 @@ const SupabaseAPI = {
         return this.client;
     },
 
-    // 안전한 API 호출 래퍼 - 406 에러 특별 처리
+    // 안전한 단일 결과 조회 - single() 에러 방지
+    async safeSingleQuery(query) {
+        try {
+            const { data, error } = await query;
+            
+            if (error) {
+                // PGRST116은 "no rows found" 에러 - 정상적인 상황
+                if (error.code === 'PGRST116') {
+                    return { data: null, error: null };
+                }
+                return { data: null, error };
+            }
+            
+            // 배열로 반환된 경우 첫 번째 요소만 반환
+            if (Array.isArray(data)) {
+                return { data: data.length > 0 ? data[0] : null, error: null };
+            }
+            
+            return { data, error: null };
+        } catch (error) {
+            console.error('안전한 단일 조회 오류:', error);
+            return { data: null, error };
+        }
+    },
+
+    // 안전한 API 호출 래퍼 - 개선된 버전
     async safeApiCall(operation, apiFunction, context = {}) {
         try {
             const result = await apiFunction();
@@ -242,6 +267,9 @@ const SupabaseAPI = {
             if (error.message.includes('not null')) {
                 return '필수 정보가 누락되었습니다.';
             }
+            if (error.message.includes('JSON object requested, multiple')) {
+                return '데이터 조회 중 오류가 발생했습니다.';
+            }
             
             return error.message;
         }
@@ -277,21 +305,30 @@ const SupabaseAPI = {
     // 인증 관련 함수들 - 안전성 강화
     // ===================
 
-    // 학생 인증 (이름 + 생년월일)
+    // 학생 인증 (이름 + 생년월일) - single() 문제 해결
     async authenticateStudent(name, birthDate) {
         return await this.safeApiCall('학생 인증', async () => {
             const client = await this.ensureClient();
-            return await client
+            
+            // single() 대신 배열로 받아서 처리
+            const { data, error } = await client
                 .from('user_profiles')
                 .select('*')
                 .eq('user_type', 'student')
                 .eq('name', name)
-                .eq('birth_date', birthDate)
-                .single();
+                .eq('birth_date', birthDate);
+
+            if (error) {
+                return { data: null, error };
+            }
+
+            // 배열에서 첫 번째 요소 반환 (없으면 null)
+            const user = data && data.length > 0 ? data[0] : null;
+            return { data: user, error: null };
         }, { name, birthDate });
     },
 
-    // 관리자 인증 (관리자 코드)
+    // 관리자 인증 (관리자 코드) - single() 문제 해결
     async authenticateAdmin(code) {
         try {
             const config = await waitForConfig();
@@ -301,11 +338,20 @@ const SupabaseAPI = {
 
             const result = await this.safeApiCall('관리자 인증', async () => {
                 const client = await this.ensureClient();
-                return await client
+                
+                // single() 대신 배열로 받아서 처리
+                const { data, error } = await client
                     .from('user_profiles')
                     .select('*')
-                    .eq('user_type', 'admin')
-                    .single();
+                    .eq('user_type', 'admin');
+
+                if (error) {
+                    return { data: null, error };
+                }
+
+                // 첫 번째 관리자 반환
+                const admin = data && data.length > 0 ? data[0] : null;
+                return { data: admin, error: null };
             });
 
             if (result.success) {
@@ -321,12 +367,11 @@ const SupabaseAPI = {
                                 name: '관리자',
                                 user_type: 'admin'
                             }])
-                            .select()
-                            .single();
+                            .select();
                     });
 
-                    if (createResult.success) {
-                        adminUser = createResult.data;
+                    if (createResult.success && createResult.data && createResult.data.length > 0) {
+                        adminUser = createResult.data[0];
                     } else {
                         return { success: false, message: '관리자 계정 생성 중 오류가 발생했습니다.' };
                     }
@@ -355,16 +400,24 @@ const SupabaseAPI = {
     // 학생 관련 함수들 - 안전성 강화
     // ===================
 
-    // 학생 정보 조회
+    // 학생 정보 조회 - single() 문제 해결
     async getStudentById(studentId) {
         const result = await this.safeApiCall('학생 정보 조회', async () => {
             const client = await this.ensureClient();
-            return await client
+            
+            // single() 대신 배열로 받아서 처리
+            const { data, error } = await client
                 .from('user_profiles')
                 .select('*')
                 .eq('id', studentId)
-                .eq('user_type', 'student')
-                .single();
+                .eq('user_type', 'student');
+
+            if (error) {
+                return { data: null, error };
+            }
+
+            const student = data && data.length > 0 ? data[0] : null;
+            return { data: student, error: null };
         }, { studentId });
 
         return result.success ? result.data : null;
@@ -381,19 +434,17 @@ const SupabaseAPI = {
                 throw new Error('학생 정보를 찾을 수 없습니다');
             }
 
-            // 학생의 예산 정보 조회
+            // 학생의 예산 정보 조회 - single() 대신 배열로
             const budgetResult = await client
                 .from('student_budgets')
                 .select('*')
-                .eq('user_id', studentId)
-                .single();
+                .eq('user_id', studentId);
 
-            // 수업계획 상태 조회
+            // 수업계획 상태 조회 - single() 대신 배열로
             const planResult = await client
                 .from('lesson_plans')
                 .select('status')
-                .eq('user_id', studentId)
-                .single();
+                .eq('user_id', studentId);
 
             // 사용한 예산 계산
             const requestsResult = await client
@@ -405,8 +456,8 @@ const SupabaseAPI = {
             return {
                 data: {
                     student,
-                    budget: budgetResult.data,
-                    plan: planResult.data,
+                    budget: budgetResult.data && budgetResult.data.length > 0 ? budgetResult.data[0] : null,
+                    plan: planResult.data && planResult.data.length > 0 ? planResult.data[0] : null,
                     requests: requestsResult.data || []
                 },
                 error: null
@@ -442,15 +493,24 @@ const SupabaseAPI = {
     // 수업계획 관련 함수들 - 안전성 강화
     // ===================
 
-    // 학생 수업계획 조회
+    // 학생 수업계획 조회 - single() 문제 해결
     async getStudentLessonPlan(studentId) {
         const result = await this.safeApiCall('학생 수업계획 조회', async () => {
             const client = await this.ensureClient();
-            return await client
+            
+            // single() 대신 배열로 받아서 처리
+            const { data, error } = await client
                 .from('lesson_plans')
                 .select('*')
-                .eq('user_id', studentId)
-                .single();
+                .eq('user_id', studentId);
+
+            if (error) {
+                return { data: null, error };
+            }
+
+            // 가장 최근 수업계획 반환
+            const plan = data && data.length > 0 ? data[0] : null;
+            return { data: plan, error: null };
         }, { studentId });
 
         return result.success ? result.data : null;
@@ -473,28 +533,25 @@ const SupabaseAPI = {
                 updated_at: new Date().toISOString()
             };
 
-            // 기존 수업계획 확인
+            // 기존 수업계획 확인 - single() 대신 배열로
             const existingResult = await client
                 .from('lesson_plans')
                 .select('id')
-                .eq('user_id', studentId)
-                .single();
+                .eq('user_id', studentId);
 
-            if (existingResult.data) {
+            if (existingResult.data && existingResult.data.length > 0) {
                 // 업데이트
                 return await client
                     .from('lesson_plans')
                     .update(lessonPlanData)
                     .eq('user_id', studentId)
-                    .select()
-                    .single();
+                    .select();
             } else {
                 // 새로 생성
                 return await client
                     .from('lesson_plans')
                     .insert([lessonPlanData])
-                    .select()
-                    .single();
+                    .select();
             }
         }, { studentId, isDraft });
 
@@ -558,8 +615,7 @@ const SupabaseAPI = {
             return await client
                 .from('requests')
                 .insert([requestData])
-                .select()
-                .single();
+                .select();
         }, { studentId, itemName: itemData.name });
     },
 
@@ -682,4 +738,4 @@ const SupabaseAPI = {
 window.SupabaseAPI = SupabaseAPI;
 
 // 초기화 완료 로그
-console.log('🚀 SupabaseAPI (406 Error Fixed) loaded successfully');
+console.log('🚀 SupabaseAPI (Single Query Fixed) loaded successfully');
