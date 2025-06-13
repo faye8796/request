@@ -238,41 +238,25 @@
                     </div>
                 </div>
 
-                <!-- 전체 예산 현황 섹션 (새로 추가) -->
+                <!-- 전체 예산 현황 섹션 (심플한 리스트 형태로 변경) -->
                 <div class="budget-overview-section">
-                    <h2>전체 예산 현황</h2>
-                    <div class="budget-stats-grid">
-                        <div class="budget-stat-card">
-                            <div class="budget-stat-header">
-                                <i data-lucide="trending-up" class="budget-icon purple"></i>
-                                <h3>승인된 전체 예산</h3>
-                            </div>
-                            <p id="totalApprovedBudget" class="budget-value">0원</p>
-                            <p class="budget-description">수업계획 승인으로 배정된 총 예산</p>
+                    <h2>💰 전체 예산 현황</h2>
+                    <div class="budget-summary-list">
+                        <div class="budget-summary-item primary">
+                            <span class="budget-label">전체 배정 예산</span>
+                            <span id="totalApprovedBudget" class="budget-amount">0원</span>
                         </div>
-                        <div class="budget-stat-card">
-                            <div class="budget-stat-header">
-                                <i data-lucide="shopping-bag" class="budget-icon blue"></i>
-                                <h3>승인된 아이템 총액</h3>
-                            </div>
-                            <p id="approvedItemsTotal" class="budget-value">0원</p>
-                            <p class="budget-description">승인된 교구 신청의 총 가격</p>
+                        <div class="budget-summary-item">
+                            <span class="budget-label">승인된 교구 신청 총액</span>
+                            <span id="approvedItemsTotal" class="budget-amount">0원</span>
                         </div>
-                        <div class="budget-stat-card">
-                            <div class="budget-stat-header">
-                                <i data-lucide="check-square" class="budget-icon green"></i>
-                                <h3>구매 완료 총액</h3>
-                            </div>
-                            <p id="purchasedTotal" class="budget-value">0원</p>
-                            <p class="budget-description">실제 구매 완료된 교구의 총액</p>
+                        <div class="budget-summary-item">
+                            <span class="budget-label">구매 완료 총액</span>
+                            <span id="purchasedTotal" class="budget-amount">0원</span>
                         </div>
-                        <div class="budget-stat-card">
-                            <div class="budget-stat-header">
-                                <i data-lucide="user-check" class="budget-icon indigo"></i>
-                                <h3>1인당 평균 지원금</h3>
-                            </div>
-                            <p id="averagePerPerson" class="budget-value">0원</p>
-                            <p class="budget-description">구매완료 금액 ÷ 신청자 수</p>
+                        <div class="budget-summary-item">
+                            <span class="budget-label">1인당 평균 지원금</span>
+                            <span id="averagePerPerson" class="budget-amount">0원</span>
                         </div>
                     </div>
                 </div>
