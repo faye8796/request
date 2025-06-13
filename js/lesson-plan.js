@@ -95,7 +95,7 @@ const LessonPlanManager = {
             
             if (!canEdit) {
                 this.disableEditing();
-                this.showSingleNotice('edit-disabled', 'alert-circle', 'warning', '수업계획 수정 기간이 종료되었습니다.');
+                this.showSingleNotice('edit-disabled', 'alert-circle', 'warning', '⚠️ 수업계획 수정 기간이 종료되었습니다. 관리자에게 문의하세요.');
             } else {
                 // 편집 가능 상태에서는 별도 알림 없음
                 console.log('수업계획 편집 가능');
@@ -167,17 +167,17 @@ const LessonPlanManager = {
 
             // 유효성 검사
             if (!startDate || !endDate || !totalLessons) {
-                this.showMessage('파견 시작일, 종료일, 총 수업 횟수를 모두 입력해주세요.', 'warning');
+                this.showMessage('⚠️ 파견 시작일, 종료일, 총 수업 횟수를 모두 입력해주세요.', 'warning');
                 return;
             }
 
             if (isNaN(totalLessons) || totalLessons <= 0) {
-                this.showMessage('총 수업 횟수는 1 이상의 숫자여야 합니다.', 'warning');
+                this.showMessage('⚠️ 총 수업 횟수는 1 이상의 숫자여야 합니다.', 'warning');
                 return;
             }
 
             if (totalLessons > 100) {
-                this.showMessage('총 수업 횟수는 100회를 초과할 수 없습니다.', 'warning');
+                this.showMessage('⚠️ 총 수업 횟수는 100회를 초과할 수 없습니다.', 'warning');
                 return;
             }
 
@@ -186,12 +186,12 @@ const LessonPlanManager = {
             const end = new Date(endDate);
             
             if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-                this.showMessage('유효하지 않은 날짜입니다.', 'warning');
+                this.showMessage('⚠️ 유효하지 않은 날짜입니다.', 'warning');
                 return;
             }
             
             if (start >= end) {
-                this.showMessage('파견 종료일은 시작일보다 늦어야 합니다.', 'warning');
+                this.showMessage('⚠️ 파견 종료일은 시작일보다 늦어야 합니다.', 'warning');
                 return;
             }
 
@@ -199,7 +199,7 @@ const LessonPlanManager = {
             const lessons = this.createSimpleLessons(totalLessons);
             
             if (!lessons || lessons.length === 0) {
-                this.showMessage('수업 계획표를 생성할 수 없습니다. 입력값을 확인해주세요.', 'error');
+                this.showMessage('❌ 수업 계획표를 생성할 수 없습니다. 입력값을 확인해주세요.', 'error');
                 return;
             }
             
@@ -220,7 +220,7 @@ const LessonPlanManager = {
             }
             
             // 성공 메시지
-            this.showMessage(`✅ ${lessons.length}개의 수업 계획표가 생성되었습니다! 각 수업의 주제와 내용을 작성해주세요.`, 'success');
+            this.showMessage(`✅ ${lessons.length}개의 수업 계획표가 생성되었습니다! 각 수업의 주제와 내용을 작성해주세요.\n\n⚠️ 모든 수업계획의 작성은 필수 사항입니다.`, 'success');
             console.log('✅ 수업 계획표 생성 완료');
             
         } catch (error) {
@@ -256,8 +256,8 @@ const LessonPlanManager = {
                 <div class="lesson-table">
                     <div class="table-header">
                         <div class="header-cell lesson-number-col">수업 회차</div>
-                        <div class="header-cell lesson-topic-col">수업 주제 *</div>
-                        <div class="header-cell lesson-content-col">수업 내용 *</div>
+                        <div class="header-cell lesson-topic-col">수업 주제 * (필수)</div>
+                        <div class="header-cell lesson-content-col">수업 내용 * (필수)</div>
                     </div>
             `;
 
@@ -273,14 +273,14 @@ const LessonPlanManager = {
                         <div class="cell lesson-topic">
                             <input type="text" 
                                    id="lessonTopic_${lesson.lessonNumber}" 
-                                   placeholder="${lesson.lessonNumber}회차 수업 주제를 입력하세요"
+                                   placeholder="⚠️ ${lesson.lessonNumber}회차 수업 주제를 반드시 입력하세요 (필수)"
                                    class="topic-input"
                                    maxlength="100"
                                    required>
                         </div>
                         <div class="cell lesson-content">
                             <textarea id="lessonContent_${lesson.lessonNumber}" 
-                                      placeholder="${lesson.lessonNumber}회차 수업에서 진행할 구체적인 내용을 작성하세요"
+                                      placeholder="⚠️ ${lesson.lessonNumber}회차 수업에서 진행할 구체적인 내용을 반드시 작성하세요 (필수)"
                                       class="content-textarea"
                                       rows="3"
                                       maxlength="500"
@@ -453,17 +453,17 @@ const LessonPlanManager = {
         const errors = [];
 
         // 기본 정보 검증
-        if (!data.startDate) errors.push('파견 시작일을 입력해주세요.');
-        if (!data.endDate) errors.push('파견 종료일을 입력해주세요.');
-        if (!data.totalLessons) errors.push('총 수업 횟수를 입력해주세요.');
-        if (!data.overallGoals) errors.push('전체 수업 목표를 입력해주세요.');
+        if (!data.startDate) errors.push('❌ 파견 시작일을 입력해주세요.');
+        if (!data.endDate) errors.push('❌ 파견 종료일을 입력해주세요.');
+        if (!data.totalLessons) errors.push('❌ 총 수업 횟수를 입력해주세요.');
+        if (!data.overallGoals) errors.push('❌ 전체 수업 목표를 입력해주세요. (필수 항목)');
 
         if (data.startDate && data.endDate && new Date(data.startDate) >= new Date(data.endDate)) {
-            errors.push('파견 종료일은 시작일보다 늦어야 합니다.');
+            errors.push('❌ 파견 종료일은 시작일보다 늦어야 합니다.');
         }
 
         if (data.totalLessons && (data.totalLessons < 1 || data.totalLessons > 100)) {
-            errors.push('총 수업 횟수는 1~100회 사이여야 합니다.');
+            errors.push('❌ 총 수업 횟수는 1~100회 사이여야 합니다.');
         }
 
         // 수업 계획 내용 검증 (필수)
@@ -481,14 +481,14 @@ const LessonPlanManager = {
             });
             
             if (emptyTopicCount > 0) {
-                errors.push(`${emptyTopicCount}개 수업의 주제가 비어있습니다. 모든 수업의 주제를 입력해주세요.`);
+                errors.push(`❌ ${emptyTopicCount}개 수업의 주제가 비어있습니다. 모든 수업의 주제를 입력해주세요. (필수 항목)`);
             }
             
             if (emptyContentCount > 0) {
-                errors.push(`${emptyContentCount}개 수업의 내용이 비어있습니다. 모든 수업의 내용을 구체적으로 작성해주세요.`);
+                errors.push(`❌ ${emptyContentCount}개 수업의 내용이 비어있습니다. 모든 수업의 내용을 구체적으로 작성해주세요. (필수 항목)`);
             }
         } else {
-            errors.push('수업 계획표를 생성하고 각 수업의 주제와 내용을 작성해주세요.');
+            errors.push('❌ 수업 계획표를 생성하고 각 수업의 주제와 내용을 작성해주세요. (필수 항목)');
         }
 
         console.log('✅ 폼 검증 완료:', errors.length === 0 ? '통과' : `${errors.length}개 오류`);
@@ -522,7 +522,7 @@ const LessonPlanManager = {
             
             if (result.success) {
                 console.log('✅ 임시저장 성공:', result.data?.id);
-                this.showMessage('✅ 수업계획이 임시저장되었습니다!', 'success');
+                this.showMessage('✅ 수업계획이 임시저장되었습니다!\n\n⚠️ 완료 제출까지 해야 승인 검토가 시작됩니다.', 'success');
                 this.currentLessonPlan = result.data;
                 this.isEditMode = true;
             } else {
@@ -569,7 +569,7 @@ const LessonPlanManager = {
             }
 
             // 완료 확인 메시지
-            if (!confirm('수업계획을 완료하시겠습니까?\n모든 수업의 주제와 내용이 작성되었는지 확인해주세요.\n완료 후 관리자 승인을 받으면 교구 신청이 가능합니다.')) {
+            if (!confirm('수업계획을 완료 제출하시겠습니까?\n\n✅ 모든 수업의 주제와 내용이 작성되었는지 확인해주세요.\n✅ 완료 제출 후 관리자 승인을 받으면 교구 신청이 가능합니다.\n\n⚠️ 수업계획 제출은 필수 사항입니다.')) {
                 console.log('📋 사용자가 제출을 취소했습니다.');
                 return;
             }
@@ -580,7 +580,7 @@ const LessonPlanManager = {
             
             if (result.success) {
                 console.log('✅ 수업계획 완료 성공:', result.data?.id);
-                this.showMessage('🎉 수업계획이 완료되었습니다! 관리자 승인 후 교구 신청이 가능합니다.', 'success');
+                this.showMessage('🎉 수업계획이 완료 제출되었습니다!\n\n✅ 관리자 승인 후 교구 신청이 가능합니다.\n📋 수업계획은 필수 제출 사항이므로 승인을 기다려주세요.', 'success');
                 
                 // 2초 후 학생 대시보드로 이동
                 setTimeout(() => {
@@ -670,7 +670,7 @@ const LessonPlanManager = {
         await this.checkEditPermission();
         
         // 페이지 제목 설정
-        document.title = '수업계획 작성 - 세종학당 문화교구 신청';
+        document.title = '수업계획 작성 (필수) - 세종학당 문화교구 신청';
     },
 
     // 모든 알림 제거
