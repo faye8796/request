@@ -741,15 +741,34 @@ const AdminManager = {
         Utils.$('#approvedCount').textContent = stats.approvedCount;      // 승인됨 (구매대기)
     },
 
-    // 새로 추가: 예산 현황 로드
+    // 새로 추가: 예산 현황 로드 - 개선된 HTML 생성 (각 항목별 클래스 추가)
     loadBudgetOverview() {
         const budgetStats = DataManager.getBudgetOverviewStats();
         
-        // 예산 현황 업데이트
+        // 예산 현황 업데이트 - 각 항목별로 다른 클래스 적용
         Utils.$('#totalApprovedBudget').textContent = Utils.formatPrice(budgetStats.totalApprovedBudget);
         Utils.$('#approvedItemsTotal').textContent = Utils.formatPrice(budgetStats.approvedItemsTotal);
         Utils.$('#purchasedTotal').textContent = Utils.formatPrice(budgetStats.purchasedTotal);
         Utils.$('#averagePerPerson').textContent = Utils.formatPrice(budgetStats.averagePerPerson);
+
+        // 각 예산 항목에 적절한 클래스 추가
+        const totalBudgetItem = Utils.$('#totalApprovedBudget').closest('.budget-summary-item');
+        const approvedItemsItem = Utils.$('#approvedItemsTotal').closest('.budget-summary-item');
+        const purchasedItemsItem = Utils.$('#purchasedTotal').closest('.budget-summary-item');
+        const averagePersonItem = Utils.$('#averagePerPerson').closest('.budget-summary-item');
+
+        if (totalBudgetItem && !totalBudgetItem.classList.contains('primary')) {
+            totalBudgetItem.classList.add('primary');
+        }
+        if (approvedItemsItem && !approvedItemsItem.classList.contains('approved-items')) {
+            approvedItemsItem.classList.add('approved-items');
+        }
+        if (purchasedItemsItem && !purchasedItemsItem.classList.contains('purchased-items')) {
+            purchasedItemsItem.classList.add('purchased-items');
+        }
+        if (averagePersonItem && !averagePersonItem.classList.contains('average-person')) {
+            averagePersonItem.classList.add('average-person');
+        }
     },
 
     // 수업계획 관리 정보 로드
