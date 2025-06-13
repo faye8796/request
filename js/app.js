@@ -112,7 +112,7 @@ const App = {
         }
     },
 
-    // 페이지 표시 (개선됨)
+    // 페이지 표시 (개선됨 - 스크롤 위치 복원 조건부 적용)
     showPage(pageId) {
         console.log(`페이지 전환: ${pageId}`);
         
@@ -174,10 +174,12 @@ const App = {
         }, 300);
     },
 
-    // 페이지 표시 후 처리 (개선됨)
+    // 페이지 표시 후 처리 (수정됨 - 수업계획 페이지는 스크롤 위치 복원 제외)
     onPageShown(pageId) {
-        // 스크롤 위치 복원
-        Utils.restoreScrollPosition();
+        // 수업계획 페이지가 아닌 경우에만 스크롤 위치 복원
+        if (pageId !== 'lessonPlanPage') {
+            Utils.restoreScrollPosition();
+        }
         
         // 페이지별 특별 처리
         switch(pageId) {
@@ -190,11 +192,12 @@ const App = {
                 break;
                 
             case 'lessonPlanPage':
-                // 수업계획 페이지 초기화
+                // 수업계획 페이지 초기화 (스크롤을 맨 위로 하지 않음)
                 if (window.LessonPlanManager) {
                     LessonPlanManager.init();
                     LessonPlanManager.showLessonPlanPage();
                 }
+                // 수업계획 페이지는 자연스러운 스크롤 동작 유지
                 break;
                 
             case 'studentPage':
@@ -500,7 +503,7 @@ const App = {
         });
     },
 
-    // 페이지 언로드 시 정리
+    // 페이지 언로드 시 정리 (수정됨)
     onBeforeUnload() {
         // 세션 저장
         if (AuthManager.isAuthenticated()) {
@@ -517,9 +520,12 @@ const App = {
             // 자동 임시저장 로직은 LessonPlanManager 내부에서 처리
         }
         
-        // 스크롤 위치 저장
-        if (window.Utils && Utils.saveScrollPosition) {
-            Utils.saveScrollPosition();
+        // 수업계획 페이지가 아닌 경우에만 스크롤 위치 저장
+        const currentPage = Utils.$('.page.active');
+        if (currentPage && currentPage.id !== 'lessonPlanPage') {
+            if (window.Utils && Utils.saveScrollPosition) {
+                Utils.saveScrollPosition();
+            }
         }
     },
 
