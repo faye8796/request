@@ -1,12 +1,12 @@
-// 수업계획 관리 모듈
+// 수업계획 관리 모듈 (Supabase 연동)
 const LessonPlanManager = {
     currentLessonPlan: null,
     isEditMode: false,
 
     // 수업계획 페이지 초기화
-    init() {
+    async init() {
         this.bindEvents();
-        this.checkEditPermission();
+        await this.checkEditPermission();
     },
 
     // 이벤트 바인딩
@@ -44,16 +44,21 @@ const LessonPlanManager = {
         }
     },
 
-    // 수정 권한 확인 (업데이트됨)
-    checkEditPermission() {
-        const canEdit = DataManager.canEditLessonPlan();
-        const settings = DataManager.lessonPlanSettings;
-        
-        if (!canEdit) {
-            this.disableEditing();
-            this.showEditDeadlineNotice();
-        } else {
-            this.showEditStatusNotice();
+    // 수정 권한 확인 (Supabase 연동)
+    async checkEditPermission() {
+        try {
+            const canEdit = await SupabaseAPI.canEditLessonPlan();
+            const settings = await SupabaseAPI.getSystemSettings();
+            
+            if (!canEdit) {
+                this.disableEditing();
+                this.showEditDeadlineNotice();
+            } else {
+                await this.showEditStatusNotice();
+            }
+        } catch (error) {
+            console.error('Error checking edit permission:', error);
+            // 오류 발생 시 기본적으로 편집 허용
         }
     },
 
@@ -78,27 +83,68 @@ const LessonPlanManager = {
         }
     },
 
-    // 수정 마감 안내 표시 (업데이트됨)
-    showEditDeadlineNotice() {
-        const settings = DataManager.lessonPlanSettings;
-        
-        let message = '';
-        let noticeClass = 'deadline-notice';
-        let iconName = 'clock';
-        
-        if (settings.testMode) {
-            message = '테스트 모드가 활성화되어 있어 언제든지 수정할 수 있습니다.';
-            noticeClass = 'test-mode-notice';
-            iconName = 'test-tube';
-        } else if (settings.allowOverrideDeadline) {
-            message = '관리자가 마감일을 무시하도록 설정하여 언제든지 수정할 수 있습니다.';
-            noticeClass = 'override-notice';
-            iconName = 'unlock';
-        } else if (settings.noticeMessage) {
-            message = settings.noticeMessage;
+    // 수정 마감 안내 표시 (Supabase 연동)
+    async showEditDeadlineNotice() {
+        try {
+            const settings = await SupabaseAPI.getSystemSettings();
+            
+            let message = '';
+            let noticeClass = 'deadline-notice';
+            let iconName = 'clock';
+            
+            if (settings.test_mode) {
+                message = '테스트 모드가 활성화되어 있어 언제든지 수정할 수 있습니다.';
+                noticeClass = 'test-mode-notice';
+                iconName = 'test-tube';
+            } else if (settings.ignore_deadline) {
+                message = '관리자가 마감일을 무시하도록 설정하여 언제든지 수정할 수 있습니다.';
+                noticeClass = 'override-notice';
+                iconName = 'unlock';
+            } else {
+                message = `수업계획 수정 마감일이 ${settings.lesson_plan_deadline}입니다.`;
+            }
+            
+            if (message) {
+                const notice = document.createElement('div');
+                notice.className = noticeClass;
+                notice.innerHTML = `
+                    <i data-lucide="${iconName}"></i>
+                    <p>${message}</p>
+                `;
+                
+                const container = document.querySelector('.lesson-plan-content');
+                if (container) {
+                    container.insertBefore(notice, container.firstChild);
+                    lucide.createIcons();
+                }
+            }
+        } catch (error) {
+            console.error('Error showing deadline notice:', error);
         }
-        
-        if (message) {
+    },
+
+    // 편집 상태 안내 표시 (Supabase 연동)
+    async showEditStatusNotice() {
+        try {
+            const settings = await SupabaseAPI.getSystemSettings();
+            let message = '';
+            let noticeClass = 'edit-status-notice';
+            let iconName = 'edit';
+            
+            if (settings.test_mode) {
+                message = '🧪 테스트 모드: 언제든지 수정 가능합니다.';
+                noticeClass = 'test-mode-notice success';
+                iconName = 'test-tube';
+            } else if (settings.ignore_deadline) {
+                message = '🔓 마감일 무시 모드: 언제든지 수정 가능합니다.';
+                noticeClass = 'override-notice success';
+                iconName = 'unlock';
+            } else {
+                // 일반 모드에서 남은 시간 표시
+                await this.showRemainingTime();
+                return;
+            }
+            
             const notice = document.createElement('div');
             notice.className = noticeClass;
             notice.innerHTML = `
@@ -111,73 +157,44 @@ const LessonPlanManager = {
                 container.insertBefore(notice, container.firstChild);
                 lucide.createIcons();
             }
+        } catch (error) {
+            console.error('Error showing edit status notice:', error);
         }
     },
 
-    // 편집 상태 안내 표시 (새로 추가)
-    showEditStatusNotice() {
-        const settings = DataManager.lessonPlanSettings;
-        let message = '';
-        let noticeClass = 'edit-status-notice';
-        let iconName = 'edit';
-        
-        if (settings.testMode) {
-            message = '🧪 테스트 모드: 언제든지 수정 가능합니다.';
-            noticeClass = 'test-mode-notice success';
-            iconName = 'test-tube';
-        } else if (settings.allowOverrideDeadline) {
-            message = '🔓 마감일 무시 모드: 언제든지 수정 가능합니다.';
-            noticeClass = 'override-notice success';
-            iconName = 'unlock';
-        } else {
-            // 일반 모드에서 남은 시간 표시
-            this.showRemainingTime();
-            return;
-        }
-        
-        const notice = document.createElement('div');
-        notice.className = noticeClass;
-        notice.innerHTML = `
-            <i data-lucide="${iconName}"></i>
-            <p>${message}</p>
-        `;
-        
-        const container = document.querySelector('.lesson-plan-content');
-        if (container) {
-            container.insertBefore(notice, container.firstChild);
-            lucide.createIcons();
-        }
-    },
-
-    // 남은 시간 표시 (업데이트됨)
-    showRemainingTime() {
-        const settings = DataManager.lessonPlanSettings;
-        
-        // 테스트 모드나 마감일 무시 모드에서는 남은 시간을 표시하지 않음
-        if (settings.testMode || settings.allowOverrideDeadline) {
-            return;
-        }
-        
-        const deadline = new Date(`${settings.editDeadline} ${settings.editTime}`);
-        const now = new Date();
-        const remaining = deadline - now;
-        
-        if (remaining > 0) {
-            const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    // 남은 시간 표시 (Supabase 연동)
+    async showRemainingTime() {
+        try {
+            const settings = await SupabaseAPI.getSystemSettings();
             
-            const notice = document.createElement('div');
-            notice.className = 'time-remaining-notice';
-            notice.innerHTML = `
-                <i data-lucide="clock"></i>
-                <p>수업계획 수정 마감까지 <strong>${days}일 ${hours}시간</strong> 남았습니다.</p>
-            `;
-            
-            const container = document.querySelector('.lesson-plan-content');
-            if (container) {
-                container.insertBefore(notice, container.firstChild);
-                lucide.createIcons();
+            // 테스트 모드나 마감일 무시 모드에서는 남은 시간을 표시하지 않음
+            if (settings.test_mode || settings.ignore_deadline) {
+                return;
             }
+            
+            const deadline = new Date(`${settings.lesson_plan_deadline} 23:59:59`);
+            const now = new Date();
+            const remaining = deadline - now;
+            
+            if (remaining > 0) {
+                const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                
+                const notice = document.createElement('div');
+                notice.className = 'time-remaining-notice';
+                notice.innerHTML = `
+                    <i data-lucide="clock"></i>
+                    <p>수업계획 수정 마감까지 <strong>${days}일 ${hours}시간</strong> 남았습니다.</p>
+                `;
+                
+                const container = document.querySelector('.lesson-plan-content');
+                if (container) {
+                    container.insertBefore(notice, container.firstChild);
+                    lucide.createIcons();
+                }
+            }
+        } catch (error) {
+            console.error('Error showing remaining time:', error);
         }
     },
 
@@ -219,7 +236,7 @@ const LessonPlanManager = {
         }
     },
 
-    // 수업 계획표 생성 (개선됨)
+    // 수업 계획표 생성
     generateLessonTable() {
         try {
             const startDate = document.getElementById('startDate').value;
@@ -278,7 +295,7 @@ const LessonPlanManager = {
             document.getElementById('additionalInfoSection').style.display = 'block';
 
             // 기존 데이터가 있으면 로드
-            this.loadExistingData();
+            await this.loadExistingData();
             
             // 성공 메시지와 안내사항
             this.showMessage(`${lessons.length}개의 수업 계획표가 생성되었습니다. 수업 내용은 선택사항이므로 원하는 만큼 작성하시면 됩니다.`, 'success');
@@ -304,7 +321,7 @@ const LessonPlanManager = {
         return lessons;
     },
 
-    // 수업 계획표 HTML 생성 (개선됨)
+    // 수업 계획표 HTML 생성
     createLessonTable(lessons) {
         try {
             const container = document.getElementById('lessonTableContainer');
@@ -366,7 +383,7 @@ const LessonPlanManager = {
         }
     },
 
-    // 메시지 표시 (개선됨)
+    // 메시지 표시
     showMessage(message, type = 'info') {
         // 기존 메시지 제거
         const existingMessages = document.querySelectorAll('.lesson-plan-message');
@@ -399,37 +416,44 @@ const LessonPlanManager = {
         }
     },
 
-    // 기존 데이터 로드
-    loadExistingData() {
-        if (!DataManager.currentUser) return;
+    // 기존 데이터 로드 (Supabase 연동)
+    async loadExistingData() {
+        try {
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) return;
 
-        const existingPlan = DataManager.getStudentLessonPlan(DataManager.currentUser.id);
-        if (existingPlan) {
-            this.currentLessonPlan = existingPlan;
-            this.isEditMode = true;
+            const existingPlan = await SupabaseAPI.getStudentLessonPlan(currentUser.id);
+            if (existingPlan && existingPlan.lessons) {
+                this.currentLessonPlan = existingPlan;
+                this.isEditMode = true;
 
-            // 기본 정보 채우기
-            document.getElementById('startDate').value = existingPlan.startDate;
-            document.getElementById('endDate').value = existingPlan.endDate;
-            document.getElementById('totalLessons').value = existingPlan.totalLessons;
-            document.getElementById('lessonsPerWeek').value = existingPlan.lessonsPerWeek || 3;
-            document.getElementById('overallGoals').value = existingPlan.overallGoals || '';
-            document.getElementById('specialNotes').value = existingPlan.specialNotes || '';
+                const lessonData = existingPlan.lessons;
 
-            // 수업별 데이터 채우기
-            if (existingPlan.lessons) {
-                existingPlan.lessons.forEach(lesson => {
-                    const topicInput = document.getElementById(`lessonTopic_${lesson.lessonNumber}`);
-                    const contentInput = document.getElementById(`lessonContent_${lesson.lessonNumber}`);
-                    
-                    if (topicInput) topicInput.value = lesson.topic || '';
-                    if (contentInput) contentInput.value = lesson.content || '';
-                });
+                // 기본 정보 채우기
+                if (lessonData.startDate) document.getElementById('startDate').value = lessonData.startDate;
+                if (lessonData.endDate) document.getElementById('endDate').value = lessonData.endDate;
+                if (lessonData.totalLessons) document.getElementById('totalLessons').value = lessonData.totalLessons;
+                if (lessonData.lessonsPerWeek) document.getElementById('lessonsPerWeek').value = lessonData.lessonsPerWeek;
+                if (lessonData.overallGoals) document.getElementById('overallGoals').value = lessonData.overallGoals;
+                if (lessonData.specialNotes) document.getElementById('specialNotes').value = lessonData.specialNotes;
+
+                // 수업별 데이터 채우기
+                if (lessonData.lessons && Array.isArray(lessonData.lessons)) {
+                    lessonData.lessons.forEach(lesson => {
+                        const topicInput = document.getElementById(`lessonTopic_${lesson.lessonNumber}`);
+                        const contentInput = document.getElementById(`lessonContent_${lesson.lessonNumber}`);
+                        
+                        if (topicInput) topicInput.value = lesson.topic || '';
+                        if (contentInput) contentInput.value = lesson.content || '';
+                    });
+                }
             }
+        } catch (error) {
+            console.error('Error loading existing data:', error);
         }
     },
 
-    // 현재 데이터 수집 (간소화됨)
+    // 현재 데이터 수집
     collectFormData() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
@@ -468,7 +492,7 @@ const LessonPlanManager = {
         };
     },
 
-    // 폼 유효성 검사 (더 유연하게 수정)
+    // 폼 유효성 검사
     validateForm(data) {
         const errors = [];
 
@@ -485,33 +509,39 @@ const LessonPlanManager = {
             errors.push('총 수업 횟수는 1~100회 사이여야 합니다.');
         }
 
-        // 수업 내용 검사 제거 - 이제 선택사항이므로 검증하지 않음
-        // 사용자가 원하는 만큼 작성하면 됨
-
         return errors;
     },
 
-    // 임시저장 (수정됨 - 페이지 이동 없음)
-    saveDraft() {
-        if (!DataManager.canEditLessonPlan()) {
-            const settings = DataManager.lessonPlanSettings;
-            if (settings.testMode) {
-                console.log('테스트 모드이므로 임시저장을 계속 진행합니다.');
-            } else {
-                this.showMessage('수업계획 수정 기간이 종료되었습니다.', 'warning');
+    // 임시저장 (Supabase 연동)
+    async saveDraft() {
+        try {
+            const canEdit = await SupabaseAPI.canEditLessonPlan();
+            if (!canEdit) {
+                const settings = await SupabaseAPI.getSystemSettings();
+                if (settings.test_mode) {
+                    console.log('테스트 모드이므로 임시저장을 계속 진행합니다.');
+                } else {
+                    this.showMessage('수업계획 수정 기간이 종료되었습니다.', 'warning');
+                    return;
+                }
+            }
+
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) {
+                this.showMessage('로그인이 필요합니다.', 'warning');
                 return;
             }
-        }
 
-        const data = this.collectFormData();
-        
-        try {
-            const result = DataManager.saveLessonPlanDraft(DataManager.currentUser.id, data);
+            const data = this.collectFormData();
             
-            if (result) {
+            const result = await SupabaseAPI.saveLessonPlan(currentUser.id, data, true);
+            
+            if (result.success) {
                 this.showMessage('수업계획이 임시저장되었습니다. 언제든지 다시 수정할 수 있습니다.', 'success');
-                this.currentLessonPlan = result;
+                this.currentLessonPlan = result.data;
                 this.isEditMode = true;
+            } else {
+                this.showMessage(result.message || '임시저장 중 오류가 발생했습니다.', 'error');
             }
         } catch (error) {
             console.error('임시저장 오류:', error);
@@ -519,45 +549,53 @@ const LessonPlanManager = {
         }
     },
 
-    // 폼 제출 처리 (수정됨 - 교구 신청 화면으로 이동)
-    handleFormSubmit(e) {
+    // 폼 제출 처리 (Supabase 연동)
+    async handleFormSubmit(e) {
         e.preventDefault();
 
-        if (!DataManager.canEditLessonPlan()) {
-            const settings = DataManager.lessonPlanSettings;
-            if (settings.testMode) {
-                console.log('테스트 모드이므로 제출을 계속 진행합니다.');
-            } else {
-                this.showMessage('수업계획 수정 기간이 종료되었습니다.', 'warning');
+        try {
+            const canEdit = await SupabaseAPI.canEditLessonPlan();
+            if (!canEdit) {
+                const settings = await SupabaseAPI.getSystemSettings();
+                if (settings.test_mode) {
+                    console.log('테스트 모드이므로 제출을 계속 진행합니다.');
+                } else {
+                    this.showMessage('수업계획 수정 기간이 종료되었습니다.', 'warning');
+                    return;
+                }
+            }
+
+            const currentUser = AuthManager.getCurrentUser();
+            if (!currentUser) {
+                this.showMessage('로그인이 필요합니다.', 'warning');
                 return;
             }
-        }
 
-        const data = this.collectFormData();
-        const errors = this.validateForm(data);
+            const data = this.collectFormData();
+            const errors = this.validateForm(data);
 
-        if (errors.length > 0) {
-            this.showMessage('다음 사항을 확인해주세요:\n\n' + errors.join('\n'), 'warning');
-            return;
-        }
+            if (errors.length > 0) {
+                this.showMessage('다음 사항을 확인해주세요:\n\n' + errors.join('\n'), 'warning');
+                return;
+            }
 
-        // 완료 확인 메시지 수정
-        if (!confirm('수업계획을 완료하시겠습니까?\n완료하시면 교구 신청 페이지로 이동합니다.')) {
-            return;
-        }
+            // 완료 확인 메시지
+            if (!confirm('수업계획을 완료하시겠습니까?\n완료하시면 교구 신청 페이지로 이동합니다.')) {
+                return;
+            }
 
-        try {
             // 완료 상태로 저장
-            data.status = 'completed';
-            const result = DataManager.saveLessonPlan(DataManager.currentUser.id, data);
+            const result = await SupabaseAPI.saveLessonPlan(currentUser.id, data, false);
             
-            if (result) {
+            if (result.success) {
                 this.showMessage('수업계획이 완료되었습니다! 교구 신청 페이지로 이동합니다.', 'success');
                 
                 // 1.5초 후 학생 대시보드(교구 신청 화면)로 이동
                 setTimeout(() => {
                     this.goToStudentDashboard();
                 }, 1500);
+            } else {
+                this.showMessage(result.message || '수업계획 저장 중 오류가 발생했습니다.', 'error');
             }
         } catch (error) {
             console.error('수업계획 저장 오류:', error);
@@ -573,16 +611,16 @@ const LessonPlanManager = {
         }
     },
 
-    // 수업계획 페이지 표시 (업데이트됨)
-    showLessonPlanPage() {
+    // 수업계획 페이지 표시
+    async showLessonPlanPage() {
         // 모든 기존 알림 제거
         this.clearAllNotices();
         
         // 기존 데이터가 있으면 로드
-        this.loadExistingData();
+        await this.loadExistingData();
         
         // 수정 권한 재확인
-        this.checkEditPermission();
+        await this.checkEditPermission();
         
         // 페이지 제목 설정
         document.title = '수업계획 작성 - 세종학당 문화교구 신청';
@@ -594,16 +632,26 @@ const LessonPlanManager = {
         notices.forEach(notice => notice.remove());
     },
 
-    // 수업계획 완료 여부 확인
-    hasCompletedLessonPlan(studentId) {
-        const plan = DataManager.getStudentLessonPlan(studentId);
-        return plan && plan.status === 'completed';
+    // 수업계획 완료 여부 확인 (Supabase 연동)
+    async hasCompletedLessonPlan(studentId) {
+        try {
+            const plan = await SupabaseAPI.getStudentLessonPlan(studentId);
+            return plan && plan.status === 'submitted';
+        } catch (error) {
+            console.error('Error checking lesson plan completion:', error);
+            return false;
+        }
     },
 
-    // 수업계획 필요 여부 확인 (최초 로그인 시)
-    needsLessonPlan(studentId) {
-        const plan = DataManager.getStudentLessonPlan(studentId);
-        return !plan || plan.status === 'draft';
+    // 수업계획 필요 여부 확인 (Supabase 연동)
+    async needsLessonPlan(studentId) {
+        try {
+            const plan = await SupabaseAPI.getStudentLessonPlan(studentId);
+            return !plan || plan.status === 'draft';
+        } catch (error) {
+            console.error('Error checking lesson plan needs:', error);
+            return true;
+        }
     }
 };
 
