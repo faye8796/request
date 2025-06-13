@@ -867,7 +867,7 @@ const AdminManager = {
         this.setupItemActionListeners();
     },
 
-    // 신청 카드 생성
+    // 신청 카드 생성 - 배송지 정보 추가
     createApplicationCard(application) {
         const card = Utils.createElement('div', 'admin-application-card');
         
@@ -875,6 +875,9 @@ const AdminManager = {
         const student = DataManager.students.find(s => s.id === application.studentId);
         const lessonPlan = DataManager.getStudentLessonPlan(application.studentId);
         const budgetStatus = DataManager.getStudentBudgetStatus(application.studentId);
+        
+        // 온라인 구매 아이템이 있는지 확인
+        const hasOnlineItems = application.items.some(item => item.purchaseMethod === 'online');
         
         // 수업계획 상태 표시
         let lessonPlanStatus = '';
@@ -902,6 +905,62 @@ const AdminManager = {
                 </div>
             `;
         }
+
+        // 배송지 정보 표시 (온라인 구매 아이템이 있는 경우에만)
+        let shippingInfo = '';
+        if (hasOnlineItems) {
+            if (student && student.shippingAddress) {
+                const addr = student.shippingAddress;
+                shippingInfo = `
+                    <div class="shipping-info">
+                        <div class="shipping-header">
+                            <span class="shipping-label">
+                                <i data-lucide="map-pin"></i> 배송지 정보
+                            </span>
+                            <button class="toggle-shipping-btn" data-student-id="${application.studentId}">
+                                <i data-lucide="chevron-down"></i>
+                            </button>
+                        </div>
+                        <div class="shipping-details" style="display: none;">
+                            <div class="shipping-item">
+                                <span class="shipping-field">받는 분:</span>
+                                <span class="shipping-value">${this.escapeHtml(addr.name)}</span>
+                            </div>
+                            <div class="shipping-item">
+                                <span class="shipping-field">연락처:</span>
+                                <span class="shipping-value">${this.escapeHtml(addr.phone)}</span>
+                            </div>
+                            <div class="shipping-item">
+                                <span class="shipping-field">주소:</span>
+                                <span class="shipping-value">${this.escapeHtml(addr.address)}</span>
+                            </div>
+                            ${addr.postcode ? `
+                                <div class="shipping-item">
+                                    <span class="shipping-field">우편번호:</span>
+                                    <span class="shipping-value">${this.escapeHtml(addr.postcode)}</span>
+                                </div>
+                            ` : ''}
+                            ${addr.note ? `
+                                <div class="shipping-item">
+                                    <span class="shipping-field">요청사항:</span>
+                                    <span class="shipping-value">${this.escapeHtml(addr.note)}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            } else {
+                shippingInfo = `
+                    <div class="shipping-info warning">
+                        <div class="shipping-warning">
+                            <i data-lucide="alert-triangle"></i>
+                            <span>배송지 정보가 설정되지 않았습니다</span>
+                        </div>
+                        <small class="shipping-help">온라인 구매를 위해서는 학생에게 배송지 설정을 요청하세요.</small>
+                    </div>
+                `;
+            }
+        }
         
         card.innerHTML = `
             <div class="admin-application-header">
@@ -915,6 +974,7 @@ const AdminManager = {
                     </div>
                     <span class="item-count">총 ${application.items.length}개 항목</span>
                 </div>
+                ${shippingInfo}
             </div>
             
             <div class="admin-application-body">
@@ -1064,6 +1124,29 @@ const AdminManager = {
                 const studentId = parseInt(e.target.closest('button').dataset.studentId);
                 const itemId = parseInt(e.target.closest('button').dataset.itemId);
                 this.showViewReceiptModal(studentId, itemId);
+            });
+        });
+
+        // 배송지 정보 토글 버튼
+        const shippingToggleButtons = Utils.$$('.toggle-shipping-btn');
+        shippingToggleButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const button = e.target.closest('.toggle-shipping-btn');
+                const shippingDetails = button.closest('.shipping-info').querySelector('.shipping-details');
+                const icon = button.querySelector('i');
+                
+                if (shippingDetails.style.display === 'none') {
+                    shippingDetails.style.display = 'block';
+                    icon.setAttribute('data-lucide', 'chevron-up');
+                } else {
+                    shippingDetails.style.display = 'none';
+                    icon.setAttribute('data-lucide', 'chevron-down');
+                }
+                
+                // 아이콘 재생성
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
             });
         });
     },
