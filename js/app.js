@@ -1,4 +1,4 @@
-// 메인 애플리케이션 관리 모듈
+// 메인 애플리케이션 관리 모듈 (Supabase 연동)
 const App = {
     // 초기화
     init() {
@@ -70,7 +70,7 @@ const App = {
 
     // 모듈 초기화
     initializeModules() {
-        // 데이터 매니저는 이미 로드됨
+        // Supabase API는 이미 로드됨
         // 다른 모듈들은 필요시 지연 로딩
     },
 
@@ -83,20 +83,30 @@ const App = {
     },
 
     // 세션 복원 처리
-    handleSessionRestore() {
+    async handleSessionRestore() {
         const userType = AuthManager.getUserType();
         
         if (userType === 'student') {
             // 학생의 경우 수업계획 상태 확인
-            const studentId = DataManager.currentUser.id;
-            const hasCompletedPlan = LessonPlanManager.hasCompletedLessonPlan(studentId);
+            const studentId = AuthManager.getCurrentUserId();
             
-            if (!hasCompletedPlan && LessonPlanManager.needsLessonPlan(studentId)) {
-                this.showPage('lessonPlanPage');
-                if (window.LessonPlanManager) {
-                    LessonPlanManager.showLessonPlanPage();
+            try {
+                const hasCompletedPlan = await LessonPlanManager.hasCompletedLessonPlan(studentId);
+                const needsPlan = await LessonPlanManager.needsLessonPlan(studentId);
+                
+                if (!hasCompletedPlan && needsPlan) {
+                    this.showPage('lessonPlanPage');
+                    if (window.LessonPlanManager) {
+                        LessonPlanManager.showLessonPlanPage();
+                    }
+                } else {
+                    this.showPage('studentPage');
+                    if (window.StudentManager) {
+                        StudentManager.init();
+                    }
                 }
-            } else {
+            } catch (error) {
+                console.error('Error checking lesson plan status:', error);
                 this.showPage('studentPage');
                 if (window.StudentManager) {
                     StudentManager.init();
@@ -582,24 +592,12 @@ const App = {
     showDebugInfo() {
         if (confirm('개발자 모드를 활성화하시겠습니까?')) {
             console.log('=== 디버그 정보 ===');
-            console.log('현재 사용자:', DataManager.currentUser);
-            console.log('사용자 타입:', DataManager.currentUserType);
-            console.log('전체 학생 수:', DataManager.students.length);
-            console.log('전체 신청 수:', DataManager.applications.length);
-            console.log('수업계획 수:', DataManager.lessonPlans.length);
-            console.log('통계:', DataManager.getStats());
-            console.log('수업계획 설정:', DataManager.lessonPlanSettings);
-            
-            // 개발자 도구 열기
-            if (typeof console.table === 'function') {
-                console.table(DataManager.students);
-                console.table(DataManager.applications);
-                console.table(DataManager.lessonPlans);
-            }
+            console.log('현재 사용자:', SupabaseAPI.currentUser);
+            console.log('사용자 타입:', SupabaseAPI.currentUserType);
             
             // 전역 변수로 접근 가능하게 설정
             window.DEBUG = {
-                DataManager,
+                SupabaseAPI,
                 AuthManager,
                 StudentManager: window.StudentManager,
                 AdminManager: window.AdminManager,
