@@ -224,12 +224,10 @@ const DataManager = {
         const applications = this.getStudentApplications(studentId);
         
         let used = 0;
-        applications.forEach(app => {
-            app.items.forEach(item => {
-                if (item.status === 'approved' || item.status === 'purchased') {
-                    used += item.price;
-                }
-            });
+        applications.forEach(item => {
+            if (item.status === 'approved' || item.status === 'purchased') {
+                used += item.price;
+            }
         });
 
         // 수업계획이 승인되지 않은 경우 예산 0
@@ -391,6 +389,13 @@ const DataManager = {
         return Object.values(this.lessonPlans);
     },
 
+    // 대기 중인 수업계획 조회
+    getPendingLessonPlans() {
+        return Object.values(this.lessonPlans).filter(plan => 
+            plan.status === 'completed' && (!plan.approvalStatus || plan.approvalStatus === 'pending')
+        );
+    },
+
     // 수업계획 승인/반려 (관리자용)
     updateLessonPlanApproval(studentId, approvalStatus, rejectionReason = null) {
         const lessonPlan = this.lessonPlans[studentId];
@@ -410,22 +415,242 @@ const DataManager = {
         return true;
     },
 
+    // 수업계획 승인 (새로운 메서드)
+    approveLessonPlan(studentId) {
+        const lessonPlan = this.lessonPlans[studentId];
+        if (!lessonPlan || lessonPlan.status !== 'completed') {
+            return { success: false, message: '승인할 수 있는 수업계획이 없습니다.' };
+        }
+
+        lessonPlan.approvalStatus = 'approved';
+        lessonPlan.approvedAt = new Date().toISOString();
+        lessonPlan.approvedBy = '관리자';
+
+        // 예산 배정
+        const budgetInfo = this.allocateBudgetForStudent(studentId, lessonPlan);
+        
+        return { 
+            success: true, 
+            message: '수업계획이 승인되었습니다.',
+            budgetInfo: budgetInfo
+        };
+    },
+
+    // 수업계획 반려 (새로운 메서드)
+    rejectLessonPlan(studentId, reason) {
+        const lessonPlan = this.lessonPlans[studentId];
+        if (!lessonPlan || lessonPlan.status !== 'completed') {
+            return { success: false, message: '반려할 수 있는 수업계획이 없습니다.' };
+        }
+
+        lessonPlan.approvalStatus = 'rejected';
+        lessonPlan.rejectionReason = reason;
+        lessonPlan.rejectedAt = new Date().toISOString();
+
+        // 예산 회수
+        const student = this.students.find(s => s.id === studentId);
+        if (student) {
+            student.allocatedBudget = 0;
+        }
+
+        return { success: true, message: '수업계획이 반려되었습니다.' };
+    },
+
     // 학생 예산 배정 (수업계획 승인 시)
     allocateBudgetForStudent(studentId, lessonPlan) {
         const student = this.students.find(s => s.id === studentId);
-        if (!student || !lessonPlan) return false;
+        if (!student || !lessonPlan) return null;
 
         const fieldSettings = this.fieldBudgetSettings[student.specialization];
-        if (!fieldSettings) return false;
+        if (!fieldSettings) return null;
 
         const totalLessons = lessonPlan.totalLessons || 0;
-        const calculatedBudget = Math.min(
-            totalLessons * fieldSettings.perLessonAmount,
-            fieldSettings.maxBudget
-        );
+        const calculatedBudget = totalLessons * fieldSettings.perLessonAmount;
+        const finalBudget = Math.min(calculatedBudget, fieldSettings.maxBudget);
 
-        student.allocatedBudget = calculatedBudget;
-        return true;
+        student.allocatedBudget = finalBudget;
+
+        return {
+            allocated: finalBudget,
+            calculated: calculatedBudget,
+            perLessonAmount: fieldSettings.perLessonAmount,
+            maxBudget: fieldSettings.maxBudget,
+            isCapReached: calculatedBudget > fieldSettings.maxBudget
+        };
+    },
+
+    // 수업계획에서 예산 계산 (새로운 메서드)
+    calculateBudgetFromLessonPlan(studentId) {
+        const student = this.students.find(s => s.id === studentId);
+        const lessonPlan = this.lessonPlans[studentId];
+        
+        if (!student || !lessonPlan || lessonPlan.approvalStatus !== 'approved') {
+            return { allocated: 0, calculated: 0, perLessonAmount: 0, maxBudget: 0, isCapReached: false };
+        }
+
+        const fieldSettings = this.fieldBudgetSettings[student.specialization];
+        if (!fieldSettings) {
+            return { allocated: 0, calculated: 0, perLessonAmount: 0, maxBudget: 0, isCapReached: false };
+        }
+
+        const totalLessons = lessonPlan.totalLessons || 0;
+        const calculatedBudget = totalLessons * fieldSettings.perLessonAmount;
+        const finalBudget = Math.min(calculatedBudget, fieldSettings.maxBudget);
+
+        return {
+            allocated: finalBudget,
+            calculated: calculatedBudget,
+            perLessonAmount: fieldSettings.perLessonAmount,
+            maxBudget: fieldSettings.maxBudget,
+            isCapReached: calculatedBudget > fieldSettings.maxBudget
+        };
+    },
+
+    // 분야별 예산 설정 조회
+    getAllFieldBudgetSettings() {
+        return this.fieldBudgetSettings;
+    },
+
+    // 분야별 예산 설정 업데이트
+    updateFieldBudgetSettings(field, settings) {
+        if (this.fieldBudgetSettings[field]) {
+            Object.assign(this.fieldBudgetSettings[field], settings);
+        }
+    },
+
+    // 테스트 모드 토글
+    toggleTestMode() {
+        this.lessonPlanSettings.testMode = !this.lessonPlanSettings.testMode;
+        return this.lessonPlanSettings.testMode;
+    },
+
+    // 수업계획 설정 업데이트
+    updateLessonPlanSettings(newSettings) {
+        Object.assign(this.lessonPlanSettings, newSettings);
+        
+        // 현재 편집 가능 여부 확인
+        const isEditingAllowed = this.canEditLessonPlan();
+        
+        return {
+            ...this.lessonPlanSettings,
+            isEditingAllowed: isEditingAllowed
+        };
+    },
+
+    // 관리자용 통계 데이터
+    getStats() {
+        const allItems = [];
+        this.applications.forEach(app => {
+            app.items.forEach(item => {
+                allItems.push({...item, studentName: app.studentName});
+            });
+        });
+
+        return {
+            totalStudents: this.students.length,
+            applicantCount: this.applications.length,
+            pendingCount: allItems.filter(item => item.status === 'pending').length,
+            approvedCount: allItems.filter(item => item.status === 'approved').length,
+            rejectedCount: allItems.filter(item => item.status === 'rejected').length,
+            purchasedCount: allItems.filter(item => item.status === 'purchased').length
+        };
+    },
+
+    // 예산 현황 통계 (새로운 메서드)
+    getBudgetOverviewStats() {
+        const allItems = [];
+        this.applications.forEach(app => {
+            app.items.forEach(item => {
+                allItems.push({...item, studentName: app.studentName});
+            });
+        });
+
+        const totalApprovedBudget = this.students.reduce((sum, s) => sum + s.allocatedBudget, 0);
+        const approvedItemsTotal = allItems.filter(item => item.status === 'approved' || item.status === 'purchased')
+                                  .reduce((sum, item) => sum + item.price, 0);
+        const purchasedTotal = allItems.filter(item => item.status === 'purchased')
+                               .reduce((sum, item) => sum + item.price, 0);
+        const averagePerPerson = this.applications.length > 0 ? 
+            Math.round(approvedItemsTotal / this.applications.length) : 0;
+
+        return {
+            totalApprovedBudget,
+            approvedItemsTotal,
+            purchasedTotal,
+            averagePerPerson
+        };
+    },
+
+    // 오프라인 구매 통계 (새로운 메서드)
+    getOfflinePurchaseStats() {
+        const allItems = [];
+        this.applications.forEach(app => {
+            app.items.forEach(item => {
+                allItems.push({...item, studentName: app.studentName});
+            });
+        });
+
+        const offlineItems = allItems.filter(item => item.purchaseMethod === 'offline');
+        const approvedOffline = offlineItems.filter(item => item.status === 'approved').length;
+        const withReceipt = offlineItems.filter(item => item.receiptImage).length;
+        const pendingReceipt = approvedOffline - withReceipt;
+
+        return {
+            approvedOffline,
+            withReceipt,
+            pendingReceipt
+        };
+    },
+
+    // 신청 검색 (새로운 메서드)
+    searchApplications(searchTerm) {
+        if (!searchTerm || !searchTerm.trim()) {
+            return this.applications;
+        }
+
+        const term = searchTerm.trim().toLowerCase();
+        return this.applications.filter(app => 
+            app.studentName.toLowerCase().includes(term) ||
+            app.items.some(item => 
+                item.name.toLowerCase().includes(term) ||
+                item.purpose.toLowerCase().includes(term)
+            )
+        );
+    },
+
+    // Excel 내보내기 데이터 준비 (새로운 메서드)
+    prepareExportData() {
+        const exportData = [];
+        
+        this.applications.forEach(app => {
+            const student = this.students.find(s => s.id === app.studentId);
+            const lessonPlan = this.lessonPlans[app.studentId];
+            const budgetStatus = this.getStudentBudgetStatus(app.studentId);
+            
+            app.items.forEach(item => {
+                exportData.push({
+                    '학생명': app.studentName,
+                    '소속기관': student?.instituteName || '',
+                    '전공분야': student?.specialization || '',
+                    '교구명': item.name,
+                    '사용목적': item.purpose,
+                    '가격': item.price,
+                    '구매방식': item.purchaseMethod === 'offline' ? '오프라인' : '온라인',
+                    '신청유형': item.type === 'bundle' ? '묶음' : '단일',
+                    '상태': this.getStatusText(item.status),
+                    '신청일': new Date(item.submittedAt).toLocaleDateString('ko-KR'),
+                    '수업계획상태': lessonPlan?.approvalStatus || '미작성',
+                    '배정예산': budgetStatus?.allocated || 0,
+                    '사용예산': budgetStatus?.used || 0,
+                    '잔여예산': budgetStatus?.remaining || 0,
+                    '구매링크': item.link || '',
+                    '반려사유': item.rejectionReason || '',
+                    '영수증제출': item.receiptImage ? 'Y' : 'N'
+                });
+            });
+        });
+        
+        return exportData;
     },
 
     // 상태 관련 유틸리티 함수들
@@ -455,35 +680,6 @@ const DataManager = {
 
     getPurchaseMethodText(method) {
         return method === 'offline' ? '오프라인' : '온라인';
-    },
-
-    // 관리자용 통계 데이터
-    getAdminStats() {
-        const allItems = [];
-        this.applications.forEach(app => {
-            app.items.forEach(item => {
-                allItems.push({...item, studentName: app.studentName});
-            });
-        });
-
-        const stats = {
-            totalStudents: this.students.length,
-            applicantCount: this.applications.length,
-            pendingCount: allItems.filter(item => item.status === 'pending').length,
-            approvedCount: allItems.filter(item => item.status === 'approved').length,
-            rejectedCount: allItems.filter(item => item.status === 'rejected').length,
-            purchasedCount: allItems.filter(item => item.status === 'purchased').length,
-            totalApprovedBudget: this.students.reduce((sum, s) => sum + s.allocatedBudget, 0),
-            approvedItemsTotal: allItems.filter(item => item.status === 'approved' || item.status === 'purchased')
-                                      .reduce((sum, item) => sum + item.price, 0),
-            purchasedTotal: allItems.filter(item => item.status === 'purchased')
-                                   .reduce((sum, item) => sum + item.price, 0)
-        };
-
-        stats.averagePerPerson = stats.applicantCount > 0 ? 
-            Math.round(stats.approvedItemsTotal / stats.applicantCount) : 0;
-
-        return stats;
     },
 
     // 전체 신청 목록 조회 (관리자용)
