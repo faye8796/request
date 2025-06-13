@@ -1,4 +1,4 @@
-// 관리자 기능 관리 모듈 (Supabase 연동)
+// 관리자 기능 관리 모듈 (Supabase 연동) - 버그 수정됨
 const AdminManager = {
     currentSearchTerm: '',
 
@@ -43,6 +43,26 @@ const AdminManager = {
             this.handleLessonPlanSettingsSubmit();
         });
 
+        // 예산 설정 모달 이벤트 (수정됨)
+        Utils.on('#budgetSettingsCancelBtn', 'click', () => this.hideBudgetSettingsModal());
+        Utils.on('#budgetSettingsModal', 'click', (e) => {
+            if (e.target.id === 'budgetSettingsModal') {
+                this.hideBudgetSettingsModal();
+            }
+        });
+        Utils.on('#budgetSettingsForm', 'submit', (e) => {
+            e.preventDefault();
+            this.handleBudgetSettingsSubmit();
+        });
+
+        // 수업계획 관리 모달 이벤트 (수정됨)
+        Utils.on('#lessonPlanManagementCloseBtn', 'click', () => this.hideLessonPlanManagementModal());
+        Utils.on('#lessonPlanManagementModal', 'click', (e) => {
+            if (e.target.id === 'lessonPlanManagementModal') {
+                this.hideLessonPlanManagementModal();
+            }
+        });
+
         // 영수증 보기 모달 이벤트
         Utils.on('#viewReceiptCloseBtn', 'click', () => this.hideViewReceiptModal());
         Utils.on('#viewReceiptModal', 'click', (e) => {
@@ -56,18 +76,25 @@ const AdminManager = {
         this.setupKeyboardShortcuts();
     },
 
-    // 예산 설정 모달 표시
+    // 예산 설정 모달 표시 (수정됨)
     async showBudgetSettingsModal() {
-        // 모달이 없으면 생성
-        if (!Utils.$('#budgetSettingsModal')) {
-            this.createBudgetSettingsModal();
+        const modal = Utils.$('#budgetSettingsModal');
+        
+        // 모달이 없으면 오류 메시지 표시
+        if (!modal) {
+            Utils.showAlert('예산 설정 모달을 찾을 수 없습니다.');
+            return;
         }
 
-        const modal = Utils.$('#budgetSettingsModal');
         const settings = await SupabaseAPI.getAllFieldBudgetSettings();
         
         // 현재 설정값으로 폼 채우기
         const tbody = modal.querySelector('#budgetSettingsTable tbody');
+        if (!tbody) {
+            Utils.showAlert('예산 설정 테이블을 찾을 수 없습니다.');
+            return;
+        }
+        
         tbody.innerHTML = '';
         
         Object.entries(settings).forEach(([field, setting]) => {
@@ -95,57 +122,7 @@ const AdminManager = {
         modal.classList.add('active');
     },
 
-    // 예산 설정 모달 생성
-    createBudgetSettingsModal() {
-        const modalHTML = `
-            <div id="budgetSettingsModal" class="modal">
-                <div class="modal-content large">
-                    <h3>분야별 예산 설정</h3>
-                    <form id="budgetSettingsForm">
-                        <div class="budget-settings-info">
-                            <p>각 분야별로 회당 지원금과 최대 상한을 설정하세요. 학생의 수업계획이 승인되면 이 설정에 따라 자동으로 예산이 배정됩니다.</p>
-                        </div>
-                        
-                        <div class="table-container">
-                            <table id="budgetSettingsTable" class="budget-settings-table">
-                                <thead>
-                                    <tr>
-                                        <th>분야</th>
-                                        <th>회당 지원금 (원)</th>
-                                        <th>최대 상한 (원)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- 동적으로 생성됨 -->
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <div class="modal-actions">
-                            <button type="button" id="budgetSettingsCancelBtn" class="btn secondary">취소</button>
-                            <button type="submit" class="btn primary">설정 저장</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        
-        // 이벤트 리스너 추가
-        Utils.on('#budgetSettingsCancelBtn', 'click', () => this.hideBudgetSettingsModal());
-        Utils.on('#budgetSettingsModal', 'click', (e) => {
-            if (e.target.id === 'budgetSettingsModal') {
-                this.hideBudgetSettingsModal();
-            }
-        });
-        Utils.on('#budgetSettingsForm', 'submit', (e) => {
-            e.preventDefault();
-            this.handleBudgetSettingsSubmit();
-        });
-    },
-
-    // 예산 설정 모달 숨김
+    // 예산 설정 모달 숨김 (수정됨)
     hideBudgetSettingsModal() {
         const modal = Utils.$('#budgetSettingsModal');
         if (modal) {
@@ -199,63 +176,27 @@ const AdminManager = {
         }
     },
 
-    // 수업계획 관리 모달 표시
+    // 수업계획 관리 모달 표시 (수정됨)
     async showLessonPlanManagementModal() {
-        // 모달이 없으면 생성
-        if (!Utils.$('#lessonPlanManagementModal')) {
-            this.createLessonPlanManagementModal();
+        const modal = Utils.$('#lessonPlanManagementModal');
+        
+        // 모달이 없으면 오류 메시지 표시
+        if (!modal) {
+            Utils.showAlert('수업계획 관리 모달을 찾을 수 없습니다.');
+            return;
         }
 
-        const modal = Utils.$('#lessonPlanManagementModal');
         await this.loadLessonPlansForManagement();
         modal.classList.add('active');
+
+        // 새로고침 버튼 이벤트 리스너 설정
+        const refreshBtn = Utils.$('#refreshPlansBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.loadLessonPlansForManagement());
+        }
     },
 
-    // 수업계획 관리 모달 생성
-    createLessonPlanManagementModal() {
-        const modalHTML = `
-            <div id="lessonPlanManagementModal" class="modal">
-                <div class="modal-content large">
-                    <h3>수업계획 승인 관리</h3>
-                    <div class="lesson-plan-management-container">
-                        <div class="management-header">
-                            <div class="management-stats">
-                                <span id="pendingPlansCount" class="stat-badge pending">대기 중: 0</span>
-                                <span id="approvedPlansCount" class="stat-badge approved">승인됨: 0</span>
-                                <span id="rejectedPlansCount" class="stat-badge rejected">반려됨: 0</span>
-                            </div>
-                            <div class="management-actions">
-                                <button id="refreshPlansBtn" class="btn small secondary">
-                                    <i data-lucide="refresh-cw"></i> 새로고침
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div id="lessonPlansList" class="lesson-plans-list">
-                            <!-- 동적으로 생성됨 -->
-                        </div>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button type="button" id="lessonPlanManagementCloseBtn" class="btn secondary">닫기</button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        
-        // 이벤트 리스너 추가
-        Utils.on('#lessonPlanManagementCloseBtn', 'click', () => this.hideLessonPlanManagementModal());
-        Utils.on('#lessonPlanManagementModal', 'click', (e) => {
-            if (e.target.id === 'lessonPlanManagementModal') {
-                this.hideLessonPlanManagementModal();
-            }
-        });
-        Utils.on('#refreshPlansBtn', 'click', () => this.loadLessonPlansForManagement());
-    },
-
-    // 수업계획 관리 모달 숨김
+    // 수업계획 관리 모달 숨김 (수정됨)
     hideLessonPlanManagementModal() {
         const modal = Utils.$('#lessonPlanManagementModal');
         if (modal) {
@@ -274,12 +215,21 @@ const AdminManager = {
             const rejectedCount = allPlans.filter(p => p.approval_status === 'rejected').length;
             
             // 통계 업데이트
-            Utils.$('#pendingPlansCount').textContent = `대기 중: ${pendingCount}`;
-            Utils.$('#approvedPlansCount').textContent = `승인됨: ${approvedCount}`;
-            Utils.$('#rejectedPlansCount').textContent = `반려됨: ${rejectedCount}`;
+            const pendingElement = Utils.$('#pendingPlansCount');
+            const approvedElement = Utils.$('#approvedPlansCount');
+            const rejectedElement = Utils.$('#rejectedPlansCount');
+            
+            if (pendingElement) pendingElement.textContent = `대기 중: ${pendingCount}`;
+            if (approvedElement) approvedElement.textContent = `승인됨: ${approvedCount}`;
+            if (rejectedElement) rejectedElement.textContent = `반려됨: ${rejectedCount}`;
             
             // 수업계획 목록 생성
             const container = Utils.$('#lessonPlansList');
+            if (!container) {
+                console.error('Lesson plans list container not found');
+                return;
+            }
+            
             container.innerHTML = '';
             
             if (allPlans.length === 0) {
@@ -534,8 +484,10 @@ const AdminManager = {
     // 영수증 보기 모달 숨김
     hideViewReceiptModal() {
         const modal = Utils.$('#viewReceiptModal');
-        modal.classList.remove('active');
-        this.currentViewingReceipt = null;
+        if (modal) {
+            modal.classList.remove('active');
+            this.currentViewingReceipt = null;
+        }
     },
 
     // 영수증 이미지 다운로드
@@ -582,15 +534,20 @@ const AdminManager = {
         modal.classList.add('active');
         
         setTimeout(() => {
-            Utils.$('#planEditDeadline').focus();
+            const deadlineInput = Utils.$('#planEditDeadline');
+            if (deadlineInput) {
+                deadlineInput.focus();
+            }
         }, 100);
     },
 
     // 수업계획 설정 모달 숨김
     hideLessonPlanSettingsModal() {
         const modal = Utils.$('#lessonPlanSettingsModal');
-        modal.classList.remove('active');
-        Utils.resetForm('#lessonPlanSettingsForm');
+        if (modal) {
+            modal.classList.remove('active');
+            Utils.resetForm('#lessonPlanSettingsForm');
+        }
     },
 
     // 수업계획 설정 저장
@@ -670,7 +627,10 @@ const AdminManager = {
             // Ctrl/Cmd + F: 검색 포커스
             if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
                 event.preventDefault();
-                Utils.$('#searchInput').focus();
+                const searchInput = Utils.$('#searchInput');
+                if (searchInput) {
+                    searchInput.focus();
+                }
             }
 
             // F5: 새로고침
@@ -710,9 +670,13 @@ const AdminManager = {
         try {
             const stats = await SupabaseAPI.getStats();
             
-            Utils.$('#applicantCount').textContent = stats.applicantCount;
-            Utils.$('#pendingCount').textContent = stats.pendingCount;
-            Utils.$('#approvedCount').textContent = stats.approvedCount;
+            const applicantCountEl = Utils.$('#applicantCount');
+            const pendingCountEl = Utils.$('#pendingCount');
+            const approvedCountEl = Utils.$('#approvedCount');
+            
+            if (applicantCountEl) applicantCountEl.textContent = stats.applicantCount;
+            if (pendingCountEl) pendingCountEl.textContent = stats.pendingCount;
+            if (approvedCountEl) approvedCountEl.textContent = stats.approvedCount;
         } catch (error) {
             console.error('Error loading statistics:', error);
         }
@@ -723,10 +687,15 @@ const AdminManager = {
         try {
             const budgetStats = await SupabaseAPI.getBudgetOverviewStats();
             
-            Utils.$('#totalApprovedBudget').textContent = Utils.formatPrice(budgetStats.totalApprovedBudget);
-            Utils.$('#approvedItemsTotal').textContent = Utils.formatPrice(budgetStats.approvedItemsTotal);
-            Utils.$('#purchasedTotal').textContent = Utils.formatPrice(budgetStats.purchasedTotal);
-            Utils.$('#averagePerPerson').textContent = Utils.formatPrice(budgetStats.averagePerPerson);
+            const totalApprovedBudgetEl = Utils.$('#totalApprovedBudget');
+            const approvedItemsTotalEl = Utils.$('#approvedItemsTotal');
+            const purchasedTotalEl = Utils.$('#purchasedTotal');
+            const averagePerPersonEl = Utils.$('#averagePerPerson');
+            
+            if (totalApprovedBudgetEl) totalApprovedBudgetEl.textContent = Utils.formatPrice(budgetStats.totalApprovedBudget);
+            if (approvedItemsTotalEl) approvedItemsTotalEl.textContent = Utils.formatPrice(budgetStats.approvedItemsTotal);
+            if (purchasedTotalEl) purchasedTotalEl.textContent = Utils.formatPrice(budgetStats.purchasedTotal);
+            if (averagePerPersonEl) averagePerPersonEl.textContent = Utils.formatPrice(budgetStats.averagePerPerson);
         } catch (error) {
             console.error('Error loading budget overview:', error);
         }
@@ -1096,7 +1065,10 @@ const AdminManager = {
 
     // Excel 내보내기 처리
     async handleExport() {
-        Utils.showLoading('#exportBtn');
+        const exportBtn = Utils.$('#exportBtn');
+        if (exportBtn) {
+            Utils.showLoading(exportBtn);
+        }
         
         try {
             const exportData = await SupabaseAPI.prepareExportData();
@@ -1112,7 +1084,9 @@ const AdminManager = {
             Utils.showAlert('데이터 내보내기 중 오류가 발생했습니다.');
             console.error('Export error:', error);
         } finally {
-            Utils.hideLoading('#exportBtn');
+            if (exportBtn) {
+                Utils.hideLoading(exportBtn);
+            }
         }
     },
 
