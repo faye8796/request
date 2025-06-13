@@ -1014,13 +1014,54 @@ body {
 .edit-deadline-notice,
 .success-message,
 .test-mode-notice,
-.override-notice {
+.override-notice,
+.lesson-plan-message {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     padding: 1rem;
     border-radius: 0.375rem;
     margin-bottom: 1.5rem;
+}
+
+/* Lesson Plan Messages */
+.lesson-plan-message {
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.lesson-plan-message.info {
+    background: #dbeafe;
+    border: 1px solid #3b82f6;
+    color: #1e40af;
+}
+
+.lesson-plan-message.success {
+    background: #d1fae5;
+    border: 1px solid #10b981;
+    color: #065f46;
+}
+
+.lesson-plan-message.warning {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #92400e;
+}
+
+.lesson-plan-message.error {
+    background: #fee2e2;
+    border: 1px solid #ef4444;
+    color: #991b1b;
 }
 
 .deadline-notice {
@@ -1352,6 +1393,10 @@ body {
         animation: none;
     }
     
+    .lesson-plan-message {
+        animation: none;
+    }
+    
     .btn {
         transition: none;
     }
@@ -1369,6 +1414,10 @@ body {
     
     .guidance-content {
         border: 2px solid #4f46e5;
+    }
+    
+    .lesson-plan-message {
+        border-width: 2px;
     }
     
     .btn {
