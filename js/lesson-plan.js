@@ -11,10 +11,17 @@ const LessonPlanManager = {
 
     // 이벤트 바인딩
     bindEvents() {
-        // 수업 계획표 생성 버튼
+        // 수업 계획표 생성 버튼 - async 함수로 처리
         const generateTableBtn = document.getElementById('generateTableBtn');
         if (generateTableBtn) {
-            generateTableBtn.addEventListener('click', () => this.generateLessonTable());
+            generateTableBtn.addEventListener('click', async () => {
+                try {
+                    await this.generateLessonTable();
+                } catch (error) {
+                    console.error('계획표 생성 버튼 클릭 오류:', error);
+                    this.showMessage('수업 계획표 생성 중 오류가 발생했습니다.', 'error');
+                }
+            });
         }
 
         // 수업계획 폼 제출
@@ -79,7 +86,9 @@ const LessonPlanManager = {
                 <p>수업계획 수정 기간이 종료되었습니다.</p>
             `;
             form.insertBefore(notice, form.firstChild);
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         }
     },
 
@@ -115,7 +124,9 @@ const LessonPlanManager = {
                 const container = document.querySelector('.lesson-plan-content');
                 if (container) {
                     container.insertBefore(notice, container.firstChild);
-                    lucide.createIcons();
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
                 }
             }
         } catch (error) {
@@ -155,7 +166,9 @@ const LessonPlanManager = {
             const container = document.querySelector('.lesson-plan-content');
             if (container) {
                 container.insertBefore(notice, container.firstChild);
-                lucide.createIcons();
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
             }
         } catch (error) {
             console.error('Error showing edit status notice:', error);
@@ -190,7 +203,9 @@ const LessonPlanManager = {
                 const container = document.querySelector('.lesson-plan-content');
                 if (container) {
                     container.insertBefore(notice, container.firstChild);
-                    lucide.createIcons();
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
                 }
             }
         } catch (error) {
@@ -236,13 +251,17 @@ const LessonPlanManager = {
         }
     },
 
-    // 수업 계획표 생성
-    generateLessonTable() {
+    // 수업 계획표 생성 - async로 변경
+    async generateLessonTable() {
         try {
+            console.log('🎯 수업 계획표 생성 시작');
+            
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
             const totalLessons = parseInt(document.getElementById('totalLessons').value);
             const lessonsPerWeek = parseInt(document.getElementById('lessonsPerWeek').value) || 3;
+
+            console.log('📝 입력값 확인:', { startDate, endDate, totalLessons, lessonsPerWeek });
 
             // 유효성 검사
             if (!startDate || !endDate || !totalLessons) {
@@ -279,8 +298,11 @@ const LessonPlanManager = {
                 return;
             }
 
+            console.log('✅ 유효성 검사 통과');
+
             // 수업 데이터 생성
             const lessons = this.createSimpleLessons(totalLessons);
+            console.log('📚 수업 데이터 생성:', lessons);
             
             if (!lessons || lessons.length === 0) {
                 this.showMessage('수업 계획표를 생성할 수 없습니다. 입력값을 확인해주세요.', 'error');
@@ -288,26 +310,49 @@ const LessonPlanManager = {
             }
             
             // 테이블 생성
+            console.log('🔨 테이블 생성 중...');
             this.createLessonTable(lessons);
             
             // 섹션 표시
-            document.getElementById('lessonTableSection').style.display = 'block';
-            document.getElementById('additionalInfoSection').style.display = 'block';
+            const tableSection = document.getElementById('lessonTableSection');
+            const additionalSection = document.getElementById('additionalInfoSection');
+            
+            if (tableSection) {
+                tableSection.style.display = 'block';
+                console.log('📋 테이블 섹션 표시');
+            } else {
+                console.error('❌ lessonTableSection 요소를 찾을 수 없음');
+            }
+            
+            if (additionalSection) {
+                additionalSection.style.display = 'block';
+                console.log('📝 추가 정보 섹션 표시');
+            } else {
+                console.error('❌ additionalInfoSection 요소를 찾을 수 없음');
+            }
 
-            // 기존 데이터가 있으면 로드
-            await this.loadExistingData();
+            // 기존 데이터가 있으면 로드 - async 처리
+            console.log('🔄 기존 데이터 로드 중...');
+            try {
+                await this.loadExistingData();
+                console.log('✅ 기존 데이터 로드 완료');
+            } catch (loadError) {
+                console.warn('⚠️ 기존 데이터 로드 실패 (계속 진행):', loadError);
+            }
             
             // 성공 메시지와 안내사항
-            this.showMessage(`${lessons.length}개의 수업 계획표가 생성되었습니다. 수업 내용은 선택사항이므로 원하는 만큼 작성하시면 됩니다.`, 'success');
+            this.showMessage(`✅ ${lessons.length}개의 수업 계획표가 생성되었습니다. 수업 내용은 선택사항이므로 원하는 만큼 작성하시면 됩니다.`, 'success');
+            console.log('🎉 수업 계획표 생성 완료');
             
         } catch (error) {
-            console.error('수업 계획표 생성 오류:', error);
+            console.error('❌ 수업 계획표 생성 오류:', error);
             this.showMessage(`수업 계획표 생성 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`, 'error');
         }
     },
 
     // 간단한 수업 데이터 생성 (날짜 없이)
     createSimpleLessons(totalLessons) {
+        console.log('📋 수업 데이터 생성 중:', { totalLessons });
         const lessons = [];
         
         for (let i = 1; i <= totalLessons; i++) {
@@ -318,12 +363,14 @@ const LessonPlanManager = {
             });
         }
         
+        console.log('📚 수업 데이터 생성 완료:', lessons.length + '개');
         return lessons;
     },
 
     // 수업 계획표 HTML 생성
     createLessonTable(lessons) {
         try {
+            console.log('🔨 HTML 테이블 생성 시작');
             const container = document.getElementById('lessonTableContainer');
             if (!container) {
                 throw new Error('수업 계획표 컨테이너를 찾을 수 없습니다.');
@@ -344,7 +391,7 @@ const LessonPlanManager = {
 
             lessons.forEach((lesson, index) => {
                 if (!lesson || typeof lesson.lessonNumber === 'undefined') {
-                    console.warn(`유효하지 않은 수업 데이터 (인덱스 ${index}):`, lesson);
+                    console.warn(`❌ 유효하지 않은 수업 데이터 (인덱스 ${index}):`, lesson);
                     return;
                 }
 
@@ -375,10 +422,15 @@ const LessonPlanManager = {
             // 아이콘 재생성
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
+                console.log('🎨 아이콘 재생성 완료');
+            } else {
+                console.warn('⚠️ Lucide 라이브러리를 찾을 수 없음');
             }
             
+            console.log('✅ HTML 테이블 생성 완료');
+            
         } catch (error) {
-            console.error('수업 계획표 HTML 생성 오류:', error);
+            console.error('❌ 수업 계획표 HTML 생성 오류:', error);
             throw error;
         }
     },
@@ -405,7 +457,9 @@ const LessonPlanManager = {
         const container = document.querySelector('.lesson-plan-content');
         if (container) {
             container.insertBefore(messageDiv, container.firstChild);
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
             
             // 5초 후 메시지 제거
             setTimeout(() => {
@@ -419,10 +473,16 @@ const LessonPlanManager = {
     // 기존 데이터 로드 (Supabase 연동)
     async loadExistingData() {
         try {
+            console.log('🔄 기존 데이터 로드 시작');
             const currentUser = AuthManager.getCurrentUser();
-            if (!currentUser) return;
+            if (!currentUser) {
+                console.log('❌ 현재 사용자 없음');
+                return;
+            }
 
             const existingPlan = await SupabaseAPI.getStudentLessonPlan(currentUser.id);
+            console.log('📋 기존 수업계획:', existingPlan);
+            
             if (existingPlan && existingPlan.lessons) {
                 this.currentLessonPlan = existingPlan;
                 this.isEditMode = true;
@@ -430,12 +490,30 @@ const LessonPlanManager = {
                 const lessonData = existingPlan.lessons;
 
                 // 기본 정보 채우기
-                if (lessonData.startDate) document.getElementById('startDate').value = lessonData.startDate;
-                if (lessonData.endDate) document.getElementById('endDate').value = lessonData.endDate;
-                if (lessonData.totalLessons) document.getElementById('totalLessons').value = lessonData.totalLessons;
-                if (lessonData.lessonsPerWeek) document.getElementById('lessonsPerWeek').value = lessonData.lessonsPerWeek;
-                if (lessonData.overallGoals) document.getElementById('overallGoals').value = lessonData.overallGoals;
-                if (lessonData.specialNotes) document.getElementById('specialNotes').value = lessonData.specialNotes;
+                if (lessonData.startDate) {
+                    const startDateEl = document.getElementById('startDate');
+                    if (startDateEl) startDateEl.value = lessonData.startDate;
+                }
+                if (lessonData.endDate) {
+                    const endDateEl = document.getElementById('endDate');
+                    if (endDateEl) endDateEl.value = lessonData.endDate;
+                }
+                if (lessonData.totalLessons) {
+                    const totalLessonsEl = document.getElementById('totalLessons');
+                    if (totalLessonsEl) totalLessonsEl.value = lessonData.totalLessons;
+                }
+                if (lessonData.lessonsPerWeek) {
+                    const lessonsPerWeekEl = document.getElementById('lessonsPerWeek');
+                    if (lessonsPerWeekEl) lessonsPerWeekEl.value = lessonData.lessonsPerWeek;
+                }
+                if (lessonData.overallGoals) {
+                    const overallGoalsEl = document.getElementById('overallGoals');
+                    if (overallGoalsEl) overallGoalsEl.value = lessonData.overallGoals;
+                }
+                if (lessonData.specialNotes) {
+                    const specialNotesEl = document.getElementById('specialNotes');
+                    if (specialNotesEl) specialNotesEl.value = lessonData.specialNotes;
+                }
 
                 // 수업별 데이터 채우기
                 if (lessonData.lessons && Array.isArray(lessonData.lessons)) {
@@ -447,9 +525,14 @@ const LessonPlanManager = {
                         if (contentInput) contentInput.value = lesson.content || '';
                     });
                 }
+                
+                console.log('✅ 기존 데이터 로드 완료');
+            } else {
+                console.log('ℹ️ 기존 수업계획 없음');
             }
         } catch (error) {
-            console.error('Error loading existing data:', error);
+            console.error('❌ 기존 데이터 로드 오류:', error);
+            // 오류가 발생해도 테이블 생성은 계속 진행
         }
     },
 
@@ -575,12 +658,12 @@ const LessonPlanManager = {
             const errors = this.validateForm(data);
 
             if (errors.length > 0) {
-                this.showMessage('다음 사항을 확인해주세요:\n\n' + errors.join('\n'), 'warning');
+                this.showMessage('다음 사항을 확인해주세요:\\n\\n' + errors.join('\\n'), 'warning');
                 return;
             }
 
             // 완료 확인 메시지
-            if (!confirm('수업계획을 완료하시겠습니까?\n완료하시면 교구 신청 페이지로 이동합니다.')) {
+            if (!confirm('수업계획을 완료하시겠습니까?\\n완료하시면 교구 신청 페이지로 이동합니다.')) {
                 return;
             }
 
