@@ -475,7 +475,7 @@ const AdminManager = {
                     
                     let message = '수업계획이 승인되었습니다.';
                     if (result.budgetInfo) {
-                        message += `\\n배정된 예산: ${Utils.formatPrice(result.budgetInfo.allocated)}`;
+                        message += `\n배정된 예산: ${Utils.formatPrice(result.budgetInfo.allocated)}`;
                     }
                     Utils.showAlert(message);
                 } else {
@@ -670,7 +670,7 @@ const AdminManager = {
                     statusText = '수정 가능';
                 }
                 
-                Utils.showAlert(`수업계획 설정이 저장되었습니다.\\n현재 상태: ${statusText}`);
+                Utils.showAlert(`수업계획 설정이 저장되었습니다.\n현재 상태: ${statusText}`);
                 
             } catch (error) {
                 Utils.hideLoading(submitBtn);
@@ -867,7 +867,7 @@ const AdminManager = {
         this.setupItemActionListeners();
     },
 
-    // 신청 카드 생성 - 배송지 정보 추가
+    // 신청 카드 생성 - 배송지 정보 추가 (수정됨)
     createApplicationCard(application) {
         const card = Utils.createElement('div', 'admin-application-card');
         
@@ -906,7 +906,7 @@ const AdminManager = {
             `;
         }
 
-        // 배송지 정보 표시 (온라인 구매 아이템이 있는 경우에만)
+        // 배송지 정보 표시 (온라인 구매 아이템이 있는 경우에만) - 수정됨
         let shippingInfo = '';
         if (hasOnlineItems) {
             if (student && student.shippingAddress) {
@@ -917,11 +917,11 @@ const AdminManager = {
                             <span class="shipping-label">
                                 <i data-lucide="map-pin"></i> 배송지 정보
                             </span>
-                            <button class="toggle-shipping-btn" data-student-id="${application.studentId}">
+                            <button class="toggle-shipping-btn" type="button">
                                 <i data-lucide="chevron-down"></i>
                             </button>
                         </div>
-                        <div class="shipping-details" style="display: none;">
+                        <div class="shipping-details">
                             <div class="shipping-item">
                                 <span class="shipping-field">받는 분:</span>
                                 <span class="shipping-value">${this.escapeHtml(addr.name)}</span>
@@ -1102,7 +1102,7 @@ const AdminManager = {
         }
     },
 
-    // 아이템 액션 이벤트 리스너 설정
+    // 아이템 액션 이벤트 리스너 설정 - 배송지 토글 기능 추가
     setupItemActionListeners() {
         const actionButtons = Utils.$$('.admin-item-actions button[data-action]');
         
@@ -1127,20 +1127,19 @@ const AdminManager = {
             });
         });
 
-        // 배송지 정보 토글 버튼
-        const shippingToggleButtons = Utils.$$('.toggle-shipping-btn');
-        shippingToggleButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                const button = e.target.closest('.toggle-shipping-btn');
-                const shippingDetails = button.closest('.shipping-info').querySelector('.shipping-details');
-                const icon = button.querySelector('i');
+        // 배송지 정보 토글 버튼 - 수정됨
+        const shippingHeaders = Utils.$$('.shipping-header');
+        shippingHeaders.forEach(header => {
+            header.addEventListener('click', (e) => {
+                const shippingDetails = header.parentElement.querySelector('.shipping-details');
+                const toggleBtn = header.querySelector('.toggle-shipping-btn i');
                 
-                if (shippingDetails.style.display === 'none') {
+                if (shippingDetails.style.display === 'none' || !shippingDetails.style.display) {
                     shippingDetails.style.display = 'block';
-                    icon.setAttribute('data-lucide', 'chevron-up');
+                    toggleBtn.setAttribute('data-lucide', 'chevron-up');
                 } else {
                     shippingDetails.style.display = 'none';
-                    icon.setAttribute('data-lucide', 'chevron-down');
+                    toggleBtn.setAttribute('data-lucide', 'chevron-down');
                 }
                 
                 // 아이콘 재생성
@@ -1331,26 +1330,26 @@ const AdminManager = {
         let fieldStatsText = '';
         Object.entries(fieldStats).forEach(([field, stat]) => {
             if (stat.count > 0) {
-                fieldStatsText += `- ${field}: ${stat.count}건, ${Utils.formatPrice(stat.amount)}\\n`;
+                fieldStatsText += `- ${field}: ${stat.count}건, ${Utils.formatPrice(stat.amount)}\n`;
             }
         });
         
-        const message = `상세 통계\\n\\n` +
-                       `신청자 수: ${stats.applicantCount}명\\n` +
-                       `미승인 아이템: ${stats.pendingCount}건\\n` +
-                       `승인된 아이템: ${stats.approvedCount}건\\n` +
-                       `구매완료 아이템: ${stats.purchasedCount}건\\n` +
-                       `반려된 아이템: ${stats.rejectedCount}건\\n\\n` +
-                       `예산 현황:\\n` +
-                       `- 배정된 총 예산: ${Utils.formatPrice(budgetStats.totalApprovedBudget)}\\n` +
-                       `- 승인된 아이템 총액: ${Utils.formatPrice(budgetStats.approvedItemsTotal)}\\n` +
-                       `- 구매 완료 총액: ${Utils.formatPrice(budgetStats.purchasedTotal)}\\n` +
-                       `- 1인당 평균 지원금: ${Utils.formatPrice(budgetStats.averagePerPerson)}\\n\\n` +
-                       `오프라인 구매 현황:\\n` +
-                       `- 승인된 오프라인 구매: ${offlineStats.approvedOffline}건\\n` +
-                       `- 영수증 제출 완료: ${offlineStats.withReceipt}건\\n` +
-                       `- 영수증 제출 대기: ${offlineStats.pendingReceipt}건\\n\\n` +
-                       `분야별 통계:\\n${fieldStatsText}`;
+        const message = `상세 통계\n\n` +
+                       `신청자 수: ${stats.applicantCount}명\n` +
+                       `미승인 아이템: ${stats.pendingCount}건\n` +
+                       `승인된 아이템: ${stats.approvedCount}건\n` +
+                       `구매완료 아이템: ${stats.purchasedCount}건\n` +
+                       `반려된 아이템: ${stats.rejectedCount}건\n\n` +
+                       `예산 현황:\n` +
+                       `- 배정된 총 예산: ${Utils.formatPrice(budgetStats.totalApprovedBudget)}\n` +
+                       `- 승인된 아이템 총액: ${Utils.formatPrice(budgetStats.approvedItemsTotal)}\n` +
+                       `- 구매 완료 총액: ${Utils.formatPrice(budgetStats.purchasedTotal)}\n` +
+                       `- 1인당 평균 지원금: ${Utils.formatPrice(budgetStats.averagePerPerson)}\n\n` +
+                       `오프라인 구매 현황:\n` +
+                       `- 승인된 오프라인 구매: ${offlineStats.approvedOffline}건\n` +
+                       `- 영수증 제출 완료: ${offlineStats.withReceipt}건\n` +
+                       `- 영수증 제출 대기: ${offlineStats.pendingReceipt}건\n\n` +
+                       `분야별 통계:\n${fieldStatsText}`;
         
         alert(message);
     }
