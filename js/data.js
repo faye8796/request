@@ -4,12 +4,12 @@ const DataManager = {
     currentUser: null,
     currentUserType: null,
 
-    // 수업계획 설정 정보 (업데이트됨)
+    // 수업계획 설정 정보 (업데이트됨 - 2026년으로 변경)
     lessonPlanSettings: {
-        editDeadline: '2024-12-31',  // 수정 마감일
+        editDeadline: '2026-12-31',  // 수정 마감일 (2026년으로 연장)
         editTime: '23:59',           // 수정 마감 시간
-        noticeMessage: '',           // 알림 메시지
-        testMode: false,             // 테스트 모드 (항상 편집 허용)
+        noticeMessage: '수업계획을 2026년 말까지 자유롭게 수정할 수 있습니다.',           // 알림 메시지
+        testMode: true,              // 테스트 모드 (항상 편집 허용) - 활성화
         allowOverrideDeadline: false // 마감일 무시 모드
     },
 
