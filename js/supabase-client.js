@@ -1,4 +1,4 @@
-// Supabase 클라이언트 설정 및 API 관리 - 최적화 버전
+// Supabase 클라이언트 설정 및 API 관리 - 최적화 버전 + RLS 문제 해결
 // 에러 핸들링 개선, 로깅 추가, 코드 안정성 향상
 
 // 설정 파일이 로드될 때까지 대기
@@ -56,7 +56,16 @@ async function initializeSupabaseClient() {
                 {
                     auth: {
                         persistSession: false, // 세션 유지하지 않음 (브라우저 기반 인증 아님)
-                        autoRefreshToken: false
+                        autoRefreshToken: false,
+                        detectSessionInUrl: false
+                    },
+                    db: {
+                        schema: 'public'
+                    },
+                    global: {
+                        headers: {
+                            'X-Client-Info': 'supabase-js-web'
+                        }
                     }
                 }
             );
@@ -103,6 +112,10 @@ const SupabaseAPI = {
             console.group(`❌ ${operation} 오류`);
             console.error('Error:', error);
             console.log('Context:', context);
+            if (error?.message) console.log('Message:', error.message);
+            if (error?.details) console.log('Details:', error.details);
+            if (error?.hint) console.log('Hint:', error.hint);
+            if (error?.code) console.log('Code:', error.code);
             console.groupEnd();
         }
     },
@@ -586,12 +599,14 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 수업계획 관련 함수들
+    // 수업계획 관련 함수들 - 에러 핸들링 강화
     // ===================
 
-    // 수업계획 저장/업데이트
+    // 수업계획 저장/업데이트 - 개선된 버전
     async saveLessonPlan(studentId, planData, isDraft = false) {
         try {
+            console.log('🔄 수업계획 저장 시작:', { studentId, isDraft, dataKeys: Object.keys(planData) });
+            
             const client = await this.ensureClient();
             const status = isDraft ? 'draft' : 'submitted';
             const submitTime = isDraft ? null : new Date().toISOString();
@@ -604,6 +619,13 @@ const SupabaseAPI = {
                 updated_at: new Date().toISOString()
             };
 
+            console.log('📝 저장할 데이터:', {
+                user_id: studentId,
+                status,
+                lessonsDataType: typeof planData,
+                lessonsDataSize: JSON.stringify(planData).length
+            });
+
             // 기존 수업계획이 있는지 확인
             const { data: existing, error: findError } = await client
                 .from('lesson_plans')
@@ -611,8 +633,14 @@ const SupabaseAPI = {
                 .eq('user_id', studentId)
                 .single();
 
+            if (findError && findError.code !== 'PGRST116') {
+                console.error('기존 데이터 조회 오류:', findError);
+                this.logError('기존 수업계획 조회', findError, { studentId });
+            }
+
             let result;
             if (existing) {
+                console.log('📄 기존 수업계획 업데이트 중...', existing.id);
                 // 업데이트
                 const { data, error } = await client
                     .from('lesson_plans')
@@ -622,6 +650,7 @@ const SupabaseAPI = {
                     .single();
                 result = { data, error };
             } else {
+                console.log('📄 새 수업계획 생성 중...');
                 // 새로 생성
                 const { data, error } = await client
                     .from('lesson_plans')
@@ -632,15 +661,24 @@ const SupabaseAPI = {
             }
 
             if (result.error) {
+                console.error('💥 수업계획 저장 실패:', result.error);
                 this.logError('수업계획 저장', result.error, { studentId, isDraft });
-                return { success: false, message: '수업계획 저장 중 오류가 발생했습니다.' };
+                return { 
+                    success: false, 
+                    message: `수업계획 저장 중 오류가 발생했습니다: ${result.error.message || '알 수 없는 오류'}` 
+                };
             }
 
-            this.logSuccess('수업계획 저장', { studentId, status, isDraft });
+            console.log('✅ 수업계획 저장 성공:', result.data.id);
+            this.logSuccess('수업계획 저장', { studentId, status, isDraft, id: result.data.id });
             return { success: true, data: result.data };
         } catch (error) {
+            console.error('🚨 수업계획 저장 예외 발생:', error);
             this.logError('수업계획 저장', error, { studentId, isDraft });
-            return { success: false, message: '수업계획 저장 중 오류가 발생했습니다.' };
+            return { 
+                success: false, 
+                message: `수업계획 저장 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}` 
+            };
         }
     },
 
@@ -797,7 +835,7 @@ const SupabaseAPI = {
             if (!fieldSettings) return null;
 
             // 총 수업 횟수 계산
-            const totalLessons = Array.isArray(lessonData) ? lessonData.length : (student.total_lessons || 0);
+            const totalLessons = lessonData?.totalLessons || (Array.isArray(lessonData?.lessons) ? lessonData.lessons.length : 0);
             const calculatedBudget = totalLessons * fieldSettings.perLessonAmount;
             const finalBudget = Math.min(calculatedBudget, fieldSettings.maxBudget);
 
@@ -1508,4 +1546,4 @@ const SupabaseAPI = {
 window.SupabaseAPI = SupabaseAPI;
 
 // 초기화 완료 로그
-console.log('🚀 SupabaseAPI loaded successfully');
+console.log('🚀 SupabaseAPI loaded successfully - Enhanced version with RLS fix');
