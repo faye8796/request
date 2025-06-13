@@ -142,7 +142,7 @@ const AuthManager = {
         }
     },
 
-    // 학생 로그인 후 수업계획 체크 및 리다이렉션
+    // 학생 로그인 후 수업계획 체크 및 리다이렉션 - 수정됨
     checkAndRedirectStudent() {
         const studentId = DataManager.currentUser.id;
         const hasCompletedPlan = LessonPlanManager.hasCompletedLessonPlan(studentId);
@@ -152,19 +152,19 @@ const AuthManager = {
             const needsPlan = LessonPlanManager.needsLessonPlan(studentId);
             
             if (needsPlan) {
-                // 수업계획 작성 필요
-                this.showLessonPlanRequiredNotice();
+                // 수업계획 작성 필요 - 바로 이동
                 setTimeout(() => {
                     App.showPage('lessonPlanPage');
                     LessonPlanManager.showLessonPlanPage();
-                }, 2000);
+                    this.showLessonPlanGuidance();
+                }, 1000);
             } else {
-                // 임시저장된 수업계획이 있는 경우
-                this.showLessonPlanDraftNotice();
+                // 임시저장된 수업계획이 있는 경우 - 바로 이동
                 setTimeout(() => {
                     App.showPage('lessonPlanPage');
                     LessonPlanManager.showLessonPlanPage();
-                }, 2000);
+                    this.showLessonPlanContinueGuidance();
+                }, 1000);
             }
         } else {
             // 수업계획이 완료된 경우 바로 학생 대시보드로
@@ -173,52 +173,78 @@ const AuthManager = {
         }
     },
 
-    // 수업계획 작성 필요 안내
-    showLessonPlanRequiredNotice() {
-        const notice = document.createElement('div');
-        notice.className = 'lesson-plan-required-notice';
-        notice.innerHTML = `
-            <div class="notice-content">
-                <i data-lucide="calendar-check"></i>
-                <h3>수업 계획 작성이 필요합니다</h3>
-                <p>파견 기간 동안의 수업 계획을 먼저 작성해주세요.</p>
-                <p>잠시 후 수업 계획 작성 페이지로 이동합니다...</p>
+    // 수업계획 작성 안내 - 개선됨
+    showLessonPlanGuidance() {
+        // 기존 알림들 제거
+        this.clearAllNotices();
+        
+        const guidance = document.createElement('div');
+        guidance.className = 'lesson-plan-guidance-overlay';
+        guidance.innerHTML = `
+            <div class="guidance-content">
+                <div class="guidance-icon">
+                    <i data-lucide="calendar-check" style="width: 3rem; height: 3rem; color: #4f46e5;"></i>
+                </div>
+                <h3>수업계획 작성이 필요합니다</h3>
+                <p>파견 기간 동안의 수업계획을 먼저 작성해주세요.</p>
+                <p>수업계획 완료 후 교구 신청이 가능합니다.</p>
+                <button class="btn primary" onclick="this.parentElement.parentElement.remove()">
+                    시작하기
+                </button>
             </div>
         `;
         
-        document.body.appendChild(notice);
+        document.body.appendChild(guidance);
         lucide.createIcons();
         
-        // 3초 후 제거
+        // 5초 후 자동 제거
         setTimeout(() => {
-            if (notice.parentNode) {
-                notice.parentNode.removeChild(notice);
+            if (guidance.parentNode) {
+                guidance.parentNode.removeChild(guidance);
             }
-        }, 3000);
+        }, 5000);
     },
 
-    // 수업계획 임시저장 안내
-    showLessonPlanDraftNotice() {
-        const notice = document.createElement('div');
-        notice.className = 'lesson-plan-draft-notice';
-        notice.innerHTML = `
-            <div class="notice-content">
-                <i data-lucide="edit"></i>
-                <h3>수업 계획을 완료해주세요</h3>
-                <p>임시저장된 수업 계획이 있습니다.</p>
-                <p>수업 계획을 완료한 후 교구 신청이 가능합니다.</p>
+    // 수업계획 계속 작성 안내 - 개선됨
+    showLessonPlanContinueGuidance() {
+        // 기존 알림들 제거
+        this.clearAllNotices();
+        
+        const guidance = document.createElement('div');
+        guidance.className = 'lesson-plan-guidance-overlay';
+        guidance.innerHTML = `
+            <div class="guidance-content">
+                <div class="guidance-icon">
+                    <i data-lucide="edit" style="width: 3rem; height: 3rem; color: #f59e0b;"></i>
+                </div>
+                <h3>수업계획을 완료해주세요</h3>
+                <p>임시저장된 수업계획이 있습니다.</p>
+                <p>수업계획 완료 후 교구 신청이 가능합니다.</p>
+                <button class="btn primary" onclick="this.parentElement.parentElement.remove()">
+                    계속 작성하기
+                </button>
             </div>
         `;
         
-        document.body.appendChild(notice);
+        document.body.appendChild(guidance);
         lucide.createIcons();
         
-        // 3초 후 제거
+        // 5초 후 자동 제거
         setTimeout(() => {
+            if (guidance.parentNode) {
+                guidance.parentNode.removeChild(guidance);
+            }
+        }, 5000);
+    },
+
+    // 모든 알림 제거
+    clearAllNotices() {
+        const notices = document.querySelectorAll('.lesson-plan-required-notice, .lesson-plan-draft-notice, .lesson-plan-guidance-overlay');
+        notices.forEach(notice => {
             if (notice.parentNode) {
                 notice.parentNode.removeChild(notice);
             }
-        }, 3000);
+        });
     },
 
     // 로그아웃 처리
@@ -226,6 +252,9 @@ const AuthManager = {
         if (Utils.showConfirm('정말로 로그아웃하시겠습니까?')) {
             // 데이터 정리
             DataManager.logout();
+            
+            // 모든 알림 제거
+            this.clearAllNotices();
             
             // 폼 초기화
             this.clearLoginForms();
