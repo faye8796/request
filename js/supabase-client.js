@@ -1,16 +1,60 @@
 // Supabase 클라이언트 설정 및 API 관리
-const SUPABASE_URL = 'https://aazvopacnbbkvusihqva.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTQyMjQsImV4cCI6MjA2NTM3MDIyNH0.0NXI_tohwFCOl3xY4b1jIlxQR_zGTS9tWDM2OFxTq4s';
+// 설정은 config.js 파일에서 가져옵니다
+
+// 설정 파일이 로드될 때까지 대기
+function waitForConfig() {
+    return new Promise((resolve) => {
+        if (window.CONFIG) {
+            resolve(window.CONFIG);
+        } else {
+            // config.js가 로드될 때까지 100ms마다 확인
+            const checkConfig = setInterval(() => {
+                if (window.CONFIG) {
+                    clearInterval(checkConfig);
+                    resolve(window.CONFIG);
+                }
+            }, 100);
+        }
+    });
+}
 
 // Supabase 클라이언트 초기화
-const { createClient } = supabase;
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let supabaseClient = null;
+
+// 클라이언트 초기화 함수
+async function initializeSupabaseClient() {
+    if (supabaseClient) return supabaseClient;
+    
+    const config = await waitForConfig();
+    const { createClient } = supabase;
+    
+    supabaseClient = createClient(
+        config.SUPABASE.URL,
+        config.SUPABASE.ANON_KEY
+    );
+    
+    console.log('Supabase client initialized successfully');
+    return supabaseClient;
+}
+
+// 즉시 초기화 시작
+initializeSupabaseClient();
 
 // Supabase API 관리자
 const SupabaseAPI = {
-    client: supabaseClient,
+    get client() {
+        return supabaseClient;
+    },
     currentUser: null,
     currentUserType: null,
+
+    // 클라이언트가 초기화될 때까지 대기하는 헬퍼 함수
+    async ensureClient() {
+        if (!this.client) {
+            await initializeSupabaseClient();
+        }
+        return this.client;
+    },
 
     // ===================
     // 인증 관련 함수들
@@ -19,7 +63,8 @@ const SupabaseAPI = {
     // 학생 인증 (이름 + 생년월일)
     async authenticateStudent(name, birthDate) {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('user_profiles')
                 .select('*')
                 .eq('user_type', 'student')
@@ -42,15 +87,17 @@ const SupabaseAPI = {
         }
     },
 
-    // 관리자 인증 (admin123 코드)
+    // 관리자 인증 (관리자 코드)
     async authenticateAdmin(code) {
         try {
-            if (code !== 'admin123') {
+            const config = await waitForConfig();
+            if (code !== config.APP.ADMIN_CODE) {
                 return { success: false, message: '관리자 코드가 올바르지 않습니다.' };
             }
 
+            const client = await this.ensureClient();
             // 관리자 프로필 조회 또는 생성
-            const { data, error } = await this.client
+            const { data, error } = await client
                 .from('user_profiles')
                 .select('*')
                 .eq('user_type', 'admin')
@@ -64,7 +111,7 @@ const SupabaseAPI = {
             let adminUser = data;
             if (!adminUser) {
                 // 관리자 계정이 없으면 생성
-                const { data: newAdmin, error: createError } = await this.client
+                const { data: newAdmin, error: createError } = await client
                     .from('user_profiles')
                     .insert([{
                         email: 'admin@sejong.or.kr',
@@ -105,7 +152,8 @@ const SupabaseAPI = {
     // 모든 분야별 예산 설정 조회
     async getAllFieldBudgetSettings() {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('budget_settings')
                 .select('*')
                 .eq('is_active', true)
@@ -113,7 +161,9 @@ const SupabaseAPI = {
 
             if (error) {
                 console.error('Error fetching budget settings:', error);
-                return {};
+                // 기본 설정 반환
+                const config = await waitForConfig();
+                return config.APP.DEFAULT_BUDGET_SETTINGS;
             }
 
             // 객체 형태로 변환 (기존 구조와 호환)
@@ -128,14 +178,17 @@ const SupabaseAPI = {
             return settings;
         } catch (error) {
             console.error('Error in getAllFieldBudgetSettings:', error);
-            return {};
+            // 기본 설정 반환
+            const config = await waitForConfig();
+            return config.APP.DEFAULT_BUDGET_SETTINGS;
         }
     },
 
     // 분야별 예산 설정 업데이트
     async updateFieldBudgetSettings(field, settings) {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('budget_settings')
                 .update({
                     per_lesson_amount: settings.perLessonAmount,
@@ -163,8 +216,9 @@ const SupabaseAPI = {
     // 모든 학생 예산 재계산
     async recalculateAllStudentBudgets() {
         try {
+            const client = await this.ensureClient();
             // 승인된 수업계획이 있는 학생들 조회
-            const { data: approvedPlans, error } = await this.client
+            const { data: approvedPlans, error } = await client
                 .from('lesson_plans')
                 .select('user_id, lessons')
                 .eq('status', 'approved');
@@ -190,7 +244,8 @@ const SupabaseAPI = {
     // 시스템 설정 조회
     async getSystemSettings() {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('system_settings')
                 .select('setting_key, setting_value, setting_type');
 
@@ -230,6 +285,7 @@ const SupabaseAPI = {
     // 시스템 설정 업데이트
     async updateSystemSetting(key, value) {
         try {
+            const client = await this.ensureClient();
             let stringValue = value;
             if (typeof value === 'boolean') {
                 stringValue = value.toString();
@@ -239,7 +295,7 @@ const SupabaseAPI = {
                 stringValue = value.toString();
             }
 
-            const { data, error } = await this.client
+            const { data, error } = await client
                 .from('system_settings')
                 .update({
                     setting_value: stringValue,
@@ -304,7 +360,8 @@ const SupabaseAPI = {
     // 모든 학생 조회
     async getAllStudents() {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('user_profiles')
                 .select('*')
                 .eq('user_type', 'student')
@@ -325,7 +382,8 @@ const SupabaseAPI = {
     // 학생 정보 조회
     async getStudentById(studentId) {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('user_profiles')
                 .select('*')
                 .eq('id', studentId)
@@ -347,26 +405,27 @@ const SupabaseAPI = {
     // 학생 예산 상태 조회
     async getStudentBudgetStatus(studentId) {
         try {
+            const client = await this.ensureClient();
             // 학생 정보 조회
             const student = await this.getStudentById(studentId);
             if (!student) return null;
 
             // 학생의 예산 정보 조회
-            const { data: budgetData, error: budgetError } = await this.client
+            const { data: budgetData, error: budgetError } = await client
                 .from('student_budgets')
                 .select('*')
                 .eq('user_id', studentId)
                 .single();
 
             // 수업계획 상태 조회
-            const { data: lessonPlan, error: planError } = await this.client
+            const { data: lessonPlan, error: planError } = await client
                 .from('lesson_plans')
                 .select('status')
                 .eq('user_id', studentId)
                 .single();
 
             // 사용한 예산 계산 (승인됨 + 구매완료)
-            const { data: approvedRequests, error: requestError } = await this.client
+            const { data: approvedRequests, error: requestError } = await client
                 .from('requests')
                 .select('price')
                 .eq('user_id', studentId)
@@ -399,6 +458,7 @@ const SupabaseAPI = {
     // 수업계획 저장/업데이트
     async saveLessonPlan(studentId, planData, isDraft = false) {
         try {
+            const client = await this.ensureClient();
             const status = isDraft ? 'draft' : 'submitted';
             const submitTime = isDraft ? null : new Date().toISOString();
 
@@ -411,7 +471,7 @@ const SupabaseAPI = {
             };
 
             // 기존 수업계획이 있는지 확인
-            const { data: existing, error: findError } = await this.client
+            const { data: existing, error: findError } = await client
                 .from('lesson_plans')
                 .select('id')
                 .eq('user_id', studentId)
@@ -420,7 +480,7 @@ const SupabaseAPI = {
             let result;
             if (existing) {
                 // 업데이트
-                const { data, error } = await this.client
+                const { data, error } = await client
                     .from('lesson_plans')
                     .update(lessonPlanData)
                     .eq('user_id', studentId)
@@ -429,7 +489,7 @@ const SupabaseAPI = {
                 result = { data, error };
             } else {
                 // 새로 생성
-                const { data, error } = await this.client
+                const { data, error } = await client
                     .from('lesson_plans')
                     .insert([lessonPlanData])
                     .select();
@@ -452,7 +512,8 @@ const SupabaseAPI = {
     // 학생 수업계획 조회
     async getStudentLessonPlan(studentId) {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('lesson_plans')
                 .select('*')
                 .eq('user_id', studentId)
@@ -473,7 +534,8 @@ const SupabaseAPI = {
     // 모든 수업계획 조회 (관리자용)
     async getAllLessonPlans() {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('lesson_plans')
                 .select(`
                     *,
@@ -496,7 +558,8 @@ const SupabaseAPI = {
     // 대기 중인 수업계획 조회
     async getPendingLessonPlans() {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('lesson_plans')
                 .select(`
                     *,
@@ -520,7 +583,8 @@ const SupabaseAPI = {
     // 수업계획 승인
     async approveLessonPlan(studentId) {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('lesson_plans')
                 .update({
                     status: 'approved',
@@ -554,7 +618,8 @@ const SupabaseAPI = {
     // 수업계획 반려
     async rejectLessonPlan(studentId, reason) {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('lesson_plans')
                 .update({
                     status: 'rejected',
@@ -582,6 +647,7 @@ const SupabaseAPI = {
     // 학생 예산 배정 (수업계획 승인 시)
     async allocateBudgetForStudent(studentId, lessonData) {
         try {
+            const client = await this.ensureClient();
             // 학생 정보 조회
             const student = await this.getStudentById(studentId);
             if (!student) return null;
@@ -597,7 +663,7 @@ const SupabaseAPI = {
             const finalBudget = Math.min(calculatedBudget, fieldSettings.maxBudget);
 
             // 기존 예산 정보가 있는지 확인
-            const { data: existingBudget, error: findError } = await this.client
+            const { data: existingBudget, error: findError } = await client
                 .from('student_budgets')
                 .select('id')
                 .eq('user_id', studentId)
@@ -614,7 +680,7 @@ const SupabaseAPI = {
 
             if (existingBudget) {
                 // 업데이트
-                const { data, error } = await this.client
+                const { data, error } = await client
                     .from('student_budgets')
                     .update(budgetData)
                     .eq('user_id', studentId)
@@ -622,7 +688,7 @@ const SupabaseAPI = {
                 budgetResult = { data, error };
             } else {
                 // 새로 생성
-                const { data, error } = await this.client
+                const { data, error } = await client
                     .from('student_budgets')
                     .insert([budgetData])
                     .select();
@@ -650,7 +716,8 @@ const SupabaseAPI = {
     // 학생 예산 회수 (수업계획 반려 시)
     async revokeBudgetForStudent(studentId) {
         try {
-            const { error } = await this.client
+            const client = await this.ensureClient();
+            const { error } = await client
                 .from('student_budgets')
                 .update({
                     allocated_budget: 0,
@@ -678,7 +745,8 @@ const SupabaseAPI = {
     // 학생 신청 내역 조회
     async getStudentApplications(studentId) {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('requests')
                 .select('*')
                 .eq('user_id', studentId)
@@ -699,6 +767,7 @@ const SupabaseAPI = {
     // 교구 신청 추가
     async addApplication(studentId, itemData) {
         try {
+            const client = await this.ensureClient();
             const requestData = {
                 user_id: studentId,
                 item_name: itemData.name,
@@ -713,7 +782,7 @@ const SupabaseAPI = {
                 status: 'pending'
             };
 
-            const { data, error } = await this.client
+            const { data, error } = await client
                 .from('requests')
                 .insert([requestData])
                 .select()
@@ -734,8 +803,9 @@ const SupabaseAPI = {
     // 신청 아이템 수정
     async updateApplicationItem(studentId, itemId, updatedData) {
         try {
+            const client = await this.ensureClient();
             // 먼저 해당 신청이 수정 가능한 상태인지 확인
-            const { data: existing, error: checkError } = await this.client
+            const { data: existing, error: checkError } = await client
                 .from('requests')
                 .select('status')
                 .eq('id', itemId)
@@ -758,7 +828,7 @@ const SupabaseAPI = {
                 updated_at: new Date().toISOString()
             };
 
-            const { data, error } = await this.client
+            const { data, error } = await client
                 .from('requests')
                 .update(updateData)
                 .eq('id', itemId)
@@ -780,8 +850,9 @@ const SupabaseAPI = {
     // 신청 아이템 삭제
     async deleteApplicationItem(studentId, itemId) {
         try {
+            const client = await this.ensureClient();
             // 먼저 해당 신청이 삭제 가능한 상태인지 확인
-            const { data: existing, error: checkError } = await this.client
+            const { data: existing, error: checkError } = await client
                 .from('requests')
                 .select('status')
                 .eq('id', itemId)
@@ -792,7 +863,7 @@ const SupabaseAPI = {
                 return { success: false, message: '삭제할 수 없는 신청입니다.' };
             }
 
-            const { error } = await this.client
+            const { error } = await client
                 .from('requests')
                 .delete()
                 .eq('id', itemId)
@@ -813,6 +884,7 @@ const SupabaseAPI = {
     // 아이템 상태 업데이트 (관리자용)
     async updateItemStatus(requestId, status, rejectionReason = null) {
         try {
+            const client = await this.ensureClient();
             const updateData = {
                 status: status,
                 reviewed_at: new Date().toISOString(),
@@ -823,7 +895,7 @@ const SupabaseAPI = {
                 updateData.rejection_reason = rejectionReason;
             }
 
-            const { data, error } = await this.client
+            const { data, error } = await client
                 .from('requests')
                 .update(updateData)
                 .eq('id', requestId)
@@ -844,7 +916,8 @@ const SupabaseAPI = {
     // 전체 신청 목록 조회 (관리자용)
     async getAllApplications() {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('requests')
                 .select(`
                     *,
@@ -867,12 +940,13 @@ const SupabaseAPI = {
     // 신청 검색
     async searchApplications(searchTerm) {
         try {
+            const client = await this.ensureClient();
             if (!searchTerm || !searchTerm.trim()) {
                 return await this.getAllApplications();
             }
 
             const term = searchTerm.trim();
-            const { data, error } = await this.client
+            const { data, error } = await client
                 .from('requests')
                 .select(`
                     *,
@@ -900,6 +974,7 @@ const SupabaseAPI = {
     // 영수증 제출
     async submitReceipt(requestId, receiptData) {
         try {
+            const client = await this.ensureClient();
             const receiptRecord = {
                 request_id: requestId,
                 user_id: this.currentUser?.id,
@@ -912,7 +987,7 @@ const SupabaseAPI = {
                 verified: false
             };
 
-            const { data, error } = await this.client
+            const { data, error } = await client
                 .from('receipts')
                 .insert([receiptRecord])
                 .select()
@@ -936,7 +1011,8 @@ const SupabaseAPI = {
     // 영수증 조회 (특정 신청)
     async getReceiptByRequestId(requestId) {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('receipts')
                 .select('*')
                 .eq('request_id', requestId)
@@ -957,13 +1033,14 @@ const SupabaseAPI = {
     // 영수증 검증 (관리자용)
     async verifyReceipt(receiptId, verified = true) {
         try {
+            const client = await this.ensureClient();
             const updateData = {
                 verified: verified,
                 verified_at: new Date().toISOString(),
                 verified_by: this.currentUser?.id
             };
 
-            const { data, error } = await this.client
+            const { data, error } = await client
                 .from('receipts')
                 .update(updateData)
                 .eq('id', receiptId)
@@ -988,14 +1065,15 @@ const SupabaseAPI = {
     // 관리자용 통계 데이터
     async getStats() {
         try {
+            const client = await this.ensureClient();
             // 총 학생 수
-            const { count: totalStudents } = await this.client
+            const { count: totalStudents } = await client
                 .from('user_profiles')
                 .select('*', { count: 'exact', head: true })
                 .eq('user_type', 'student');
 
             // 신청 현황 통계
-            const { data: requests } = await this.client
+            const { data: requests } = await client
                 .from('requests')
                 .select('status');
 
@@ -1010,7 +1088,7 @@ const SupabaseAPI = {
 
             if (requests) {
                 // 신청한 학생 수 계산
-                const { data: applicants } = await this.client
+                const { data: applicants } = await client
                     .from('requests')
                     .select('user_id', { count: 'exact' })
                     .not('user_id', 'is', null);
@@ -1055,15 +1133,16 @@ const SupabaseAPI = {
     // 예산 현황 통계
     async getBudgetOverviewStats() {
         try {
+            const client = await this.ensureClient();
             // 총 배정 예산
-            const { data: budgets } = await this.client
+            const { data: budgets } = await client
                 .from('student_budgets')
                 .select('allocated_budget');
 
             const totalApprovedBudget = budgets?.reduce((sum, b) => sum + b.allocated_budget, 0) || 0;
 
             // 승인된 신청의 총액
-            const { data: approvedRequests } = await this.client
+            const { data: approvedRequests } = await client
                 .from('requests')
                 .select('price')
                 .in('status', ['approved', 'purchased', 'completed']);
@@ -1071,7 +1150,7 @@ const SupabaseAPI = {
             const approvedItemsTotal = approvedRequests?.reduce((sum, r) => sum + r.price, 0) || 0;
 
             // 구매완료된 총액
-            const { data: purchasedRequests } = await this.client
+            const { data: purchasedRequests } = await client
                 .from('requests')
                 .select('price')
                 .in('status', ['purchased', 'completed']);
@@ -1079,7 +1158,7 @@ const SupabaseAPI = {
             const purchasedTotal = purchasedRequests?.reduce((sum, r) => sum + r.price, 0) || 0;
 
             // 신청한 학생 수 (평균 계산용)
-            const { data: applicants } = await this.client
+            const { data: applicants } = await client
                 .from('requests')
                 .select('user_id')
                 .not('user_id', 'is', null);
@@ -1108,15 +1187,16 @@ const SupabaseAPI = {
     // 오프라인 구매 통계
     async getOfflinePurchaseStats() {
         try {
+            const client = await this.ensureClient();
             // 오프라인 승인된 신청 수
-            const { count: approvedOffline } = await this.client
+            const { count: approvedOffline } = await client
                 .from('requests')
                 .select('*', { count: 'exact', head: true })
                 .eq('purchase_type', 'offline')
                 .eq('status', 'approved');
 
             // 영수증이 있는 신청 수
-            const { data: receipts } = await this.client
+            const { data: receipts } = await client
                 .from('receipts')
                 .select('request_id');
 
@@ -1141,7 +1221,8 @@ const SupabaseAPI = {
     // Excel 내보내기 데이터 준비
     async prepareExportData() {
         try {
-            const { data, error } = await this.client
+            const client = await this.ensureClient();
+            const { data, error } = await client
                 .from('requests')
                 .select(`
                     *,
