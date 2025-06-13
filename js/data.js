@@ -13,7 +13,7 @@ const DataManager = {
         allowOverrideDeadline: false // 마감일 무시 모드
     },
 
-    // 모의 학생 데이터 - 예산 값 업데이트
+    // 모의 학생 데이터 - 예산 값 업데이트 및 배송지 정보 추가
     students: [
         { 
             id: 1, 
@@ -23,7 +23,13 @@ const DataManager = {
             specialization: '한국어교육', 
             budgetLimit: 300000,
             allocatedBudget: 300000, // 수업계획 승인으로 배정된 예산
-            shippingAddress: null
+            shippingAddress: {
+                name: '김민수',
+                phone: '+84-98-765-4321',
+                address: '123 Tran Hung Dao Street, Hoan Kiem District, Hanoi, Vietnam',
+                postcode: '10000',
+                note: '세종학당 근처 아파트입니다. 부재 시 관리사무소에 맡겨주세요.'
+            }
         },
         { 
             id: 2, 
@@ -33,7 +39,13 @@ const DataManager = {
             specialization: '전통문화예술', 
             budgetLimit: 400000,
             allocatedBudget: 400000, // 수업계획 승인으로 배정된 예산
-            shippingAddress: null
+            shippingAddress: {
+                name: '이지영',
+                phone: '+66-89-123-4567',
+                address: '456 Sukhumvit Road, Watthana District, Bangkok 10110, Thailand',
+                postcode: '10110',
+                note: '주말에는 집에 있습니다. 평일 오후 6시 이후 배송 선호합니다.'
+            }
         },
         { 
             id: 3, 
@@ -43,7 +55,7 @@ const DataManager = {
             specialization: 'K-Pop 문화', 
             budgetLimit: 250000,
             allocatedBudget: 250000, // 수업계획 승인으로 배정된 예산
-            shippingAddress: null
+            shippingAddress: null // 배송지 미설정
         },
         { 
             id: 4, 
@@ -53,7 +65,13 @@ const DataManager = {
             specialization: '한국어교육', 
             budgetLimit: 350000,
             allocatedBudget: 350000, // 수업계획 승인으로 배정된 예산
-            shippingAddress: null
+            shippingAddress: {
+                name: '최서연',
+                phone: '+60-12-345-6789',
+                address: 'No. 789, Jalan Bukit Bintang, Bukit Bintang, 55100 Kuala Lumpur, Malaysia',
+                postcode: '55100',
+                note: null
+            }
         },
         { 
             id: 5, 
@@ -63,7 +81,7 @@ const DataManager = {
             specialization: '한국현대문화', 
             budgetLimit: 320000,
             allocatedBudget: 320000, // 수업계획 승인으로 배정된 예산
-            shippingAddress: null
+            shippingAddress: null // 배송지 미설정
         },
         { 
             id: 6, 
@@ -73,7 +91,13 @@ const DataManager = {
             specialization: '전통음악', 
             budgetLimit: 400000,
             allocatedBudget: 400000, // 수업계획 승인으로 배정된 예산
-            shippingAddress: null
+            shippingAddress: {
+                name: 'Song Mi-young',
+                phone: '+1-212-555-0123',
+                address: '456 Broadway, Manhattan, New York, NY 10013, USA',
+                postcode: '10013',
+                note: 'Apartment 5B. Please ring the doorbell. If no answer, leave with doorman.'
+            }
         },
         { 
             id: 7, 
@@ -83,7 +107,13 @@ const DataManager = {
             specialization: '한국미술', 
             budgetLimit: 380000,
             allocatedBudget: 380000, // 수업계획 승인으로 배정된 예산
-            shippingAddress: null
+            shippingAddress: {
+                name: 'Jin-ho Yoo',
+                phone: '+44-20-7946-0958',
+                address: '123 Oxford Street, Fitzrovia, London W1W 5PF, United Kingdom',
+                postcode: 'W1W 5PF',
+                note: 'Flat 4, second floor. Delivery preferred between 2-6 PM.'
+            }
         },
         { 
             id: 8, 
@@ -93,7 +123,7 @@ const DataManager = {
             specialization: '한국요리문화', 
             budgetLimit: 300000,
             allocatedBudget: 300000, // 수업계획 승인으로 배정된 예산
-            shippingAddress: null
+            shippingAddress: null // 배송지 미설정
         }
     ],
 
@@ -979,7 +1009,8 @@ const DataManager = {
                     '잔여예산': budgetStatus?.remaining || 0,
                     '구매링크': item.link || '',
                     '반려사유': item.rejectionReason || '',
-                    '영수증제출': item.receiptImage ? 'Y' : 'N'
+                    '영수증제출': item.receiptImage ? 'Y' : 'N',
+                    '배송지설정': student?.shippingAddress ? 'Y' : 'N'
                 });
             });
         });
