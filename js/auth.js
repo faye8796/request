@@ -105,7 +105,7 @@ const AuthManager = {
                 this.loginSuccess('student', result.user);
             } else {
                 Utils.hideLoading(loginBtn);
-                Utils.showAlert(result.message || '학생 정보를 찾을 수 없습니다.\n이름과 생년월일을 다시 확인해주세요.');
+                Utils.showAlert(result.message || '학생 정보를 찾을 수 없습니다.\\n이름과 생년월일을 다시 확인해주세요.');
             }
         } catch (error) {
             console.error('Student login error:', error);
@@ -144,6 +144,8 @@ const AuthManager = {
 
     // 로그인 성공 처리
     async loginSuccess(userType, user) {
+        console.log('Login success:', { userType, user });
+        
         // 입력 필드 초기화
         this.clearLoginForms();
 
@@ -312,12 +314,17 @@ const AuthManager = {
         const user = SupabaseAPI.currentUser;
         const userType = SupabaseAPI.currentUserType;
 
-        if (userType === 'student') {
+        console.log('updateUserDisplay called:', { user, userType });
+
+        if (userType === 'student' && user) {
             const welcomeEl = Utils.$('#studentWelcome');
             const detailsEl = Utils.$('#studentDetails');
             
             if (welcomeEl) {
                 welcomeEl.textContent = `안녕하세요, ${user.name}님!`;
+                console.log('Welcome message updated:', welcomeEl.textContent);
+            } else {
+                console.error('studentWelcome element not found');
             }
             
             if (detailsEl) {
@@ -333,6 +340,16 @@ const AuthManager = {
                     console.error('Error fetching budget status:', error);
                     detailsEl.textContent = `${instituteName} • ${field}`;
                 }
+            } else {
+                console.error('studentDetails element not found');
+            }
+        } else {
+            console.log('User display update skipped - no user or not student type');
+            
+            // 현재 사용자가 없는 경우에도 기본 메시지 표시
+            const welcomeEl = Utils.$('#studentWelcome');
+            if (welcomeEl && !user) {
+                welcomeEl.textContent = '안녕하세요, 님!';
             }
         }
     },
