@@ -155,20 +155,24 @@ const AuthManager = {
 
         // 해당 페이지로 이동
         if (userType === 'student') {
-            // 학생의 경우 수업계획 완료 여부 체크
-            await this.checkAndRedirectStudent(user.id);
+            // 학생의 경우 수업계획 완료 여부 체크 - 안전한 방법으로 처리
+            this.safeRedirectStudent(user.id);
         } else if (userType === 'admin') {
             App.showPage('adminPage');
             AdminManager.init();
         }
     },
 
-    // 학생 로그인 후 수업계획 체크 및 리다이렉션 (Supabase 연동)
-    async checkAndRedirectStudent(studentId) {
+    // 안전한 학생 리다이렉션 처리 (오류 메시지 중복 방지)
+    async safeRedirectStudent(studentId) {
         try {
+            console.log('Checking lesson plan status for student:', studentId);
+            
             // 수업계획 상태 확인
             const lessonPlan = await SupabaseAPI.getStudentLessonPlan(studentId);
-            const hasCompletedPlan = lessonPlan && lessonPlan.status === 'submitted';
+            console.log('Lesson plan data:', lessonPlan);
+            
+            const hasCompletedPlan = lessonPlan && (lessonPlan.status === 'submitted' || lessonPlan.status === 'approved');
             
             if (!hasCompletedPlan) {
                 // 수업계획이 완료되지 않은 경우
@@ -177,28 +181,46 @@ const AuthManager = {
                 if (!hasDraft) {
                     // 수업계획 작성 필요 - 바로 이동
                     setTimeout(() => {
+                        console.log('Redirecting to lesson plan page - new plan');
                         App.showPage('lessonPlanPage');
-                        LessonPlanManager.showLessonPlanPage();
+                        if (window.LessonPlanManager) {
+                            LessonPlanManager.showLessonPlanPage();
+                        }
                         this.showLessonPlanGuidance();
                     }, 1000);
                 } else {
                     // 임시저장된 수업계획이 있는 경우 - 바로 이동
                     setTimeout(() => {
+                        console.log('Redirecting to lesson plan page - continue draft');
                         App.showPage('lessonPlanPage');
-                        LessonPlanManager.showLessonPlanPage();
+                        if (window.LessonPlanManager) {
+                            LessonPlanManager.showLessonPlanPage();
+                        }
                         this.showLessonPlanContinueGuidance();
                     }, 1000);
                 }
             } else {
                 // 수업계획이 완료된 경우 바로 학생 대시보드로
-                App.showPage('studentPage');
-                StudentManager.init();
+                setTimeout(() => {
+                    console.log('Redirecting to student dashboard');
+                    App.showPage('studentPage');
+                    if (window.StudentManager) {
+                        StudentManager.init();
+                    }
+                }, 1000);
             }
         } catch (error) {
-            console.error('Error checking lesson plan status:', error);
-            // 오류 발생 시 기본적으로 학생 대시보드로 이동
-            App.showPage('studentPage');
-            StudentManager.init();
+            // 오류가 발생해도 추가 알림을 표시하지 않고 조용히 처리
+            console.warn('Silent error in lesson plan check:', error);
+            
+            // 기본적으로 학생 대시보드로 이동
+            setTimeout(() => {
+                console.log('Redirecting to student dashboard (fallback)');
+                App.showPage('studentPage');
+                if (window.StudentManager) {
+                    StudentManager.init();
+                }
+            }, 1000);
         }
     },
 
@@ -224,7 +246,9 @@ const AuthManager = {
         `;
         
         document.body.appendChild(guidance);
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
         
         // 5초 후 자동 제거
         setTimeout(() => {
@@ -256,7 +280,9 @@ const AuthManager = {
         `;
         
         document.body.appendChild(guidance);
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
         
         // 5초 후 자동 제거
         setTimeout(() => {
