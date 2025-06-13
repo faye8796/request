@@ -236,8 +236,8 @@ const LessonPlanManager = {
         }
     },
 
-    // 수업 계획표 생성
-    generateLessonTable() {
+    // 수업 계획표 생성 (수정된 버전 - 안정성 향상)
+    async generateLessonTable() {
         try {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
@@ -294,8 +294,13 @@ const LessonPlanManager = {
             document.getElementById('lessonTableSection').style.display = 'block';
             document.getElementById('additionalInfoSection').style.display = 'block';
 
-            // 기존 데이터가 있으면 로드
-            await this.loadExistingData();
+            // 기존 데이터가 있으면 로드 (안전한 비동기 처리)
+            try {
+                await this.loadExistingData();
+            } catch (loadError) {
+                console.warn('기존 데이터 로드 중 오류 발생 (무시하고 계속):', loadError);
+                // 로드 오류가 발생해도 테이블 생성은 계속 진행
+            }
             
             // 성공 메시지와 안내사항
             this.showMessage(`${lessons.length}개의 수업 계획표가 생성되었습니다. 수업 내용은 선택사항이므로 원하는 만큼 작성하시면 됩니다.`, 'success');
@@ -416,11 +421,14 @@ const LessonPlanManager = {
         }
     },
 
-    // 기존 데이터 로드 (Supabase 연동)
+    // 기존 데이터 로드 (Supabase 연동) - 안전성 향상
     async loadExistingData() {
         try {
             const currentUser = AuthManager.getCurrentUser();
-            if (!currentUser) return;
+            if (!currentUser) {
+                console.log('사용자 정보가 없어 기존 데이터 로드를 건너뜁니다.');
+                return;
+            }
 
             const existingPlan = await SupabaseAPI.getStudentLessonPlan(currentUser.id);
             if (existingPlan && existingPlan.lessons) {
@@ -429,27 +437,41 @@ const LessonPlanManager = {
 
                 const lessonData = existingPlan.lessons;
 
-                // 기본 정보 채우기
-                if (lessonData.startDate) document.getElementById('startDate').value = lessonData.startDate;
-                if (lessonData.endDate) document.getElementById('endDate').value = lessonData.endDate;
-                if (lessonData.totalLessons) document.getElementById('totalLessons').value = lessonData.totalLessons;
-                if (lessonData.lessonsPerWeek) document.getElementById('lessonsPerWeek').value = lessonData.lessonsPerWeek;
-                if (lessonData.overallGoals) document.getElementById('overallGoals').value = lessonData.overallGoals;
-                if (lessonData.specialNotes) document.getElementById('specialNotes').value = lessonData.specialNotes;
+                // 기본 정보 채우기 - 안전한 방식으로
+                this.safeSetValue('startDate', lessonData.startDate);
+                this.safeSetValue('endDate', lessonData.endDate);
+                this.safeSetValue('totalLessons', lessonData.totalLessons);
+                this.safeSetValue('lessonsPerWeek', lessonData.lessonsPerWeek);
+                this.safeSetValue('overallGoals', lessonData.overallGoals);
+                this.safeSetValue('specialNotes', lessonData.specialNotes);
 
                 // 수업별 데이터 채우기
                 if (lessonData.lessons && Array.isArray(lessonData.lessons)) {
                     lessonData.lessons.forEach(lesson => {
-                        const topicInput = document.getElementById(`lessonTopic_${lesson.lessonNumber}`);
-                        const contentInput = document.getElementById(`lessonContent_${lesson.lessonNumber}`);
-                        
-                        if (topicInput) topicInput.value = lesson.topic || '';
-                        if (contentInput) contentInput.value = lesson.content || '';
+                        if (lesson && lesson.lessonNumber) {
+                            this.safeSetValue(`lessonTopic_${lesson.lessonNumber}`, lesson.topic || '');
+                            this.safeSetValue(`lessonContent_${lesson.lessonNumber}`, lesson.content || '');
+                        }
                     });
                 }
+
+                console.log('기존 데이터 로드 완료');
             }
         } catch (error) {
             console.error('Error loading existing data:', error);
+            // 에러가 발생해도 계속 진행
+        }
+    },
+
+    // 안전한 값 설정 헬퍼 함수
+    safeSetValue(elementId, value) {
+        try {
+            const element = document.getElementById(elementId);
+            if (element && value !== undefined && value !== null) {
+                element.value = value;
+            }
+        } catch (error) {
+            console.warn(`Failed to set value for ${elementId}:`, error);
         }
     },
 
@@ -575,12 +597,12 @@ const LessonPlanManager = {
             const errors = this.validateForm(data);
 
             if (errors.length > 0) {
-                this.showMessage('다음 사항을 확인해주세요:\n\n' + errors.join('\n'), 'warning');
+                this.showMessage('다음 사항을 확인해주세요:\\n\\n' + errors.join('\\n'), 'warning');
                 return;
             }
 
             // 완료 확인 메시지
-            if (!confirm('수업계획을 완료하시겠습니까?\n완료하시면 교구 신청 페이지로 이동합니다.')) {
+            if (!confirm('수업계획을 완료하시겠습니까?\\n완료하시면 교구 신청 페이지로 이동합니다.')) {
                 return;
             }
 
@@ -617,7 +639,11 @@ const LessonPlanManager = {
         this.clearAllNotices();
         
         // 기존 데이터가 있으면 로드
-        await this.loadExistingData();
+        try {
+            await this.loadExistingData();
+        } catch (error) {
+            console.warn('기존 데이터 로드 중 오류 (무시):', error);
+        }
         
         // 수정 권한 재확인
         await this.checkEditPermission();
