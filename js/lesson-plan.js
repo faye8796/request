@@ -219,7 +219,7 @@ const LessonPlanManager = {
         }
     },
 
-    // 수업 계획표 생성 (간소화됨)
+    // 수업 계획표 생성 (개선됨)
     generateLessonTable() {
         try {
             const startDate = document.getElementById('startDate').value;
@@ -229,22 +229,22 @@ const LessonPlanManager = {
 
             // 유효성 검사
             if (!startDate || !endDate || !totalLessons) {
-                alert('파견 시작일, 종료일, 총 수업 횟수를 모두 입력해주세요.');
+                this.showMessage('파견 시작일, 종료일, 총 수업 횟수를 모두 입력해주세요.', 'warning');
                 return;
             }
 
             if (isNaN(totalLessons) || totalLessons <= 0) {
-                alert('총 수업 횟수는 1 이상의 숫자여야 합니다.');
+                this.showMessage('총 수업 횟수는 1 이상의 숫자여야 합니다.', 'warning');
                 return;
             }
 
             if (totalLessons > 100) {
-                alert('총 수업 횟수는 100회를 초과할 수 없습니다.');
+                this.showMessage('총 수업 횟수는 100회를 초과할 수 없습니다.', 'warning');
                 return;
             }
 
             if (isNaN(lessonsPerWeek) || lessonsPerWeek <= 0) {
-                alert('주당 평균 수업 횟수는 1 이상의 숫자여야 합니다.');
+                this.showMessage('주당 평균 수업 횟수는 1 이상의 숫자여야 합니다.', 'warning');
                 return;
             }
 
@@ -253,26 +253,22 @@ const LessonPlanManager = {
             const end = new Date(endDate);
             
             if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-                alert('유효하지 않은 날짜입니다.');
+                this.showMessage('유효하지 않은 날짜입니다.', 'warning');
                 return;
             }
             
             if (start >= end) {
-                alert('파견 종료일은 시작일보다 늦어야 합니다.');
+                this.showMessage('파견 종료일은 시작일보다 늦어야 합니다.', 'warning');
                 return;
             }
 
-            // 간단한 수업 데이터 생성 (날짜 없이)
-            console.log('수업 계획표 생성 중...', { totalLessons });
-            
+            // 수업 데이터 생성
             const lessons = this.createSimpleLessons(totalLessons);
             
             if (!lessons || lessons.length === 0) {
-                alert('수업 계획표를 생성할 수 없습니다. 입력값을 확인해주세요.');
+                this.showMessage('수업 계획표를 생성할 수 없습니다. 입력값을 확인해주세요.', 'error');
                 return;
             }
-            
-            console.log('생성된 수업 데이터:', lessons);
             
             // 테이블 생성
             this.createLessonTable(lessons);
@@ -285,11 +281,11 @@ const LessonPlanManager = {
             this.loadExistingData();
             
             // 성공 메시지
-            this.showSuccessMessage(`${lessons.length}개의 수업 계획이 생성되었습니다.`);
+            this.showMessage(`${lessons.length}개의 수업 계획표가 생성되었습니다.`, 'success');
             
         } catch (error) {
             console.error('수업 계획표 생성 오류:', error);
-            alert(`수업 계획표 생성 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
+            this.showMessage(`수업 계획표 생성 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`, 'error');
         }
     },
 
@@ -308,7 +304,7 @@ const LessonPlanManager = {
         return lessons;
     },
 
-    // 수업 계획표 HTML 생성 (간소화됨)
+    // 수업 계획표 HTML 생성 (개선됨)
     createLessonTable(lessons) {
         try {
             const container = document.getElementById('lessonTableContainer');
@@ -363,6 +359,39 @@ const LessonPlanManager = {
         } catch (error) {
             console.error('수업 계획표 HTML 생성 오류:', error);
             throw error;
+        }
+    },
+
+    // 메시지 표시 (개선됨)
+    showMessage(message, type = 'info') {
+        // 기존 메시지 제거
+        const existingMessages = document.querySelectorAll('.lesson-plan-message');
+        existingMessages.forEach(msg => msg.remove());
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `lesson-plan-message ${type}`;
+        
+        let iconName = 'info';
+        if (type === 'success') iconName = 'check-circle';
+        else if (type === 'warning') iconName = 'alert-triangle';
+        else if (type === 'error') iconName = 'alert-circle';
+        
+        messageDiv.innerHTML = `
+            <i data-lucide="${iconName}"></i>
+            <p>${message}</p>
+        `;
+        
+        const container = document.querySelector('.lesson-plan-content');
+        if (container) {
+            container.insertBefore(messageDiv, container.firstChild);
+            lucide.createIcons();
+            
+            // 5초 후 메시지 제거
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 5000);
         }
     },
 
@@ -467,7 +496,7 @@ const LessonPlanManager = {
             if (settings.testMode) {
                 console.log('테스트 모드이므로 임시저장을 계속 진행합니다.');
             } else {
-                alert('수업계획 수정 기간이 종료되었습니다.');
+                this.showMessage('수업계획 수정 기간이 종료되었습니다.', 'warning');
                 return;
             }
         }
@@ -478,13 +507,13 @@ const LessonPlanManager = {
             const result = DataManager.saveLessonPlanDraft(DataManager.currentUser.id, data);
             
             if (result) {
-                this.showSuccessMessage('수업계획이 임시저장되었습니다.');
+                this.showMessage('수업계획이 임시저장되었습니다.', 'success');
                 this.currentLessonPlan = result;
                 this.isEditMode = true;
             }
         } catch (error) {
             console.error('임시저장 오류:', error);
-            alert('임시저장 중 오류가 발생했습니다.');
+            this.showMessage('임시저장 중 오류가 발생했습니다.', 'error');
         }
     },
 
@@ -497,7 +526,7 @@ const LessonPlanManager = {
             if (settings.testMode) {
                 console.log('테스트 모드이므로 제출을 계속 진행합니다.');
             } else {
-                alert('수업계획 수정 기간이 종료되었습니다.');
+                this.showMessage('수업계획 수정 기간이 종료되었습니다.', 'warning');
                 return;
             }
         }
@@ -506,7 +535,7 @@ const LessonPlanManager = {
         const errors = this.validateForm(data);
 
         if (errors.length > 0) {
-            alert('다음 사항을 확인해주세요:\\n\\n' + errors.join('\\n'));
+            this.showMessage('다음 사항을 확인해주세요:\\n\\n' + errors.join('\\n'), 'warning');
             return;
         }
 
@@ -521,7 +550,7 @@ const LessonPlanManager = {
             const result = DataManager.saveLessonPlan(DataManager.currentUser.id, data);
             
             if (result) {
-                this.showSuccessMessage('수업계획이 완료되었습니다!');
+                this.showMessage('수업계획이 완료되었습니다!', 'success');
                 
                 // 3초 후 학생 대시보드로 이동
                 setTimeout(() => {
@@ -530,69 +559,37 @@ const LessonPlanManager = {
             }
         } catch (error) {
             console.error('수업계획 저장 오류:', error);
-            alert('수업계획 저장 중 오류가 발생했습니다.');
+            this.showMessage('수업계획 저장 중 오류가 발생했습니다.', 'error');
         }
-    },
-
-    // 성공 메시지 표시
-    showSuccessMessage(message) {
-        const successDiv = document.createElement('div');
-        successDiv.className = 'success-message';
-        successDiv.innerHTML = `
-            <i data-lucide="check-circle"></i>
-            <p>${message}</p>
-        `;
-        
-        const form = document.getElementById('lessonPlanForm');
-        form.insertBefore(successDiv, form.firstChild);
-        
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-        
-        // 3초 후 메시지 제거
-        setTimeout(() => {
-            if (successDiv.parentNode) {
-                successDiv.parentNode.removeChild(successDiv);
-            }
-        }, 3000);
     },
 
     // 학생 대시보드로 이동
     goToStudentDashboard() {
-        const lessonPlanPage = document.getElementById('lessonPlanPage');
-        const studentPage = document.getElementById('studentPage');
-        
-        if (lessonPlanPage && studentPage) {
-            lessonPlanPage.classList.remove('active');
-            studentPage.classList.add('active');
-            
-            // 학생 대시보드 새로고침
-            if (window.StudentManager && window.StudentManager.loadDashboard) {
-                window.StudentManager.loadDashboard();
-            }
+        App.showPage('studentPage');
+        if (window.StudentManager && window.StudentManager.init) {
+            window.StudentManager.init();
         }
     },
 
     // 수업계획 페이지 표시 (업데이트됨)
     showLessonPlanPage() {
-        const pages = document.querySelectorAll('.page');
-        pages.forEach(page => page.classList.remove('active'));
+        // 모든 기존 알림 제거
+        this.clearAllNotices();
         
-        const lessonPlanPage = document.getElementById('lessonPlanPage');
-        if (lessonPlanPage) {
-            lessonPlanPage.classList.add('active');
-            
-            // 기존 알림 메시지 제거
-            const existingNotices = lessonPlanPage.querySelectorAll('.edit-deadline-notice, .test-mode-notice, .override-notice, .time-remaining-notice, .edit-status-notice');
-            existingNotices.forEach(notice => notice.remove());
-            
-            // 기존 데이터가 있으면 로드
-            this.loadExistingData();
-            
-            // 수정 권한 재확인
-            this.checkEditPermission();
-        }
+        // 기존 데이터가 있으면 로드
+        this.loadExistingData();
+        
+        // 수정 권한 재확인
+        this.checkEditPermission();
+        
+        // 페이지 제목 설정
+        document.title = '수업계획 작성 - 세종학당 문화교구 신청';
+    },
+
+    // 모든 알림 제거
+    clearAllNotices() {
+        const notices = document.querySelectorAll('.edit-deadline-notice, .test-mode-notice, .override-notice, .time-remaining-notice, .edit-status-notice, .lesson-plan-message');
+        notices.forEach(notice => notice.remove());
     },
 
     // 수업계획 완료 여부 확인
