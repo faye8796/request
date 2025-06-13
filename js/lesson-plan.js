@@ -1,12 +1,14 @@
-// 수업계획 관리 모듈 (Supabase 연동)
+// 수업계획 관리 모듈 (Supabase 연동) - 개선된 에러 핸들링 버전
 const LessonPlanManager = {
     currentLessonPlan: null,
     isEditMode: false,
 
     // 수업계획 페이지 초기화
     async init() {
+        console.log('🎓 LessonPlanManager 초기화 시작');
         this.bindEvents();
         await this.checkEditPermission();
+        console.log('✅ LessonPlanManager 초기화 완료');
     },
 
     // 이벤트 바인딩
@@ -57,7 +59,7 @@ const LessonPlanManager = {
                 await this.showEditStatusNotice();
             }
         } catch (error) {
-            console.error('Error checking edit permission:', error);
+            console.error('수정 권한 확인 오류:', error);
             // 오류 발생 시 기본적으로 편집 허용
         }
     },
@@ -119,7 +121,7 @@ const LessonPlanManager = {
                 }
             }
         } catch (error) {
-            console.error('Error showing deadline notice:', error);
+            console.error('마감일 안내 표시 오류:', error);
         }
     },
 
@@ -158,7 +160,7 @@ const LessonPlanManager = {
                 lucide.createIcons();
             }
         } catch (error) {
-            console.error('Error showing edit status notice:', error);
+            console.error('편집 상태 안내 표시 오류:', error);
         }
     },
 
@@ -194,7 +196,7 @@ const LessonPlanManager = {
                 }
             }
         } catch (error) {
-            console.error('Error showing remaining time:', error);
+            console.error('남은 시간 표시 오류:', error);
         }
     },
 
@@ -239,10 +241,14 @@ const LessonPlanManager = {
     // 수업 계획표 생성 (수정된 버전 - 안정성 향상)
     async generateLessonTable() {
         try {
+            console.log('📋 수업 계획표 생성 시작');
+            
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
             const totalLessons = parseInt(document.getElementById('totalLessons').value);
             const lessonsPerWeek = parseInt(document.getElementById('lessonsPerWeek').value) || 3;
+
+            console.log('입력값 확인:', { startDate, endDate, totalLessons, lessonsPerWeek });
 
             // 유효성 검사
             if (!startDate || !endDate || !totalLessons) {
@@ -287,6 +293,8 @@ const LessonPlanManager = {
                 return;
             }
             
+            console.log(`📚 ${lessons.length}개 수업 생성됨`);
+            
             // 테이블 생성
             this.createLessonTable(lessons);
             
@@ -304,9 +312,10 @@ const LessonPlanManager = {
             
             // 성공 메시지와 안내사항
             this.showMessage(`${lessons.length}개의 수업 계획표가 생성되었습니다. 수업 내용은 선택사항이므로 원하는 만큼 작성하시면 됩니다.`, 'success');
+            console.log('✅ 수업 계획표 생성 완료');
             
         } catch (error) {
-            console.error('수업 계획표 생성 오류:', error);
+            console.error('💥 수업 계획표 생성 오류:', error);
             this.showMessage(`수업 계획표 생성 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`, 'error');
         }
     },
@@ -424,14 +433,20 @@ const LessonPlanManager = {
     // 기존 데이터 로드 (Supabase 연동) - 안전성 향상
     async loadExistingData() {
         try {
+            console.log('📖 기존 데이터 로드 시작');
+            
             const currentUser = AuthManager.getCurrentUser();
             if (!currentUser) {
                 console.log('사용자 정보가 없어 기존 데이터 로드를 건너뜁니다.');
                 return;
             }
 
+            console.log('👤 현재 사용자:', currentUser.id);
+
             const existingPlan = await SupabaseAPI.getStudentLessonPlan(currentUser.id);
             if (existingPlan && existingPlan.lessons) {
+                console.log('📋 기존 수업계획 발견:', existingPlan.status);
+                
                 this.currentLessonPlan = existingPlan;
                 this.isEditMode = true;
 
@@ -455,10 +470,12 @@ const LessonPlanManager = {
                     });
                 }
 
-                console.log('기존 데이터 로드 완료');
+                console.log('✅ 기존 데이터 로드 완료');
+            } else {
+                console.log('📝 새로운 수업계획입니다.');
             }
         } catch (error) {
-            console.error('Error loading existing data:', error);
+            console.error('❌ 기존 데이터 로드 오류:', error);
             // 에러가 발생해도 계속 진행
         }
     },
@@ -477,6 +494,8 @@ const LessonPlanManager = {
 
     // 현재 데이터 수집
     collectFormData() {
+        console.log('📊 폼 데이터 수집 시작');
+        
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         const totalLessons = parseInt(document.getElementById('totalLessons').value);
@@ -487,6 +506,8 @@ const LessonPlanManager = {
         // 수업별 데이터 수집 (빈 수업도 포함)
         const lessons = [];
         const totalLessonInputs = document.querySelectorAll('[id^="lessonTopic_"]');
+        
+        console.log(`🔍 ${totalLessonInputs.length}개 수업 입력 필드 발견`);
         
         totalLessonInputs.forEach(input => {
             const lessonNumber = input.id.split('_')[1];
@@ -503,7 +524,7 @@ const LessonPlanManager = {
             });
         });
 
-        return {
+        const formData = {
             startDate,
             endDate,
             totalLessons,
@@ -512,6 +533,15 @@ const LessonPlanManager = {
             specialNotes,
             lessons: lessons // 모든 수업 포함
         };
+
+        console.log('📋 수집된 데이터:', {
+            기본정보: { startDate, endDate, totalLessons, lessonsPerWeek },
+            수업수: lessons.length,
+            목표길이: overallGoals.length,
+            특별사항길이: specialNotes.length
+        });
+
+        return formData;
     },
 
     // 폼 유효성 검사
@@ -531,17 +561,21 @@ const LessonPlanManager = {
             errors.push('총 수업 횟수는 1~100회 사이여야 합니다.');
         }
 
+        console.log('✅ 폼 검증 완료:', errors.length === 0 ? '통과' : `${errors.length}개 오류`);
+
         return errors;
     },
 
-    // 임시저장 (Supabase 연동)
+    // 임시저장 (Supabase 연동) - 개선된 에러 핸들링
     async saveDraft() {
         try {
+            console.log('💾 임시저장 시작');
+            
             const canEdit = await SupabaseAPI.canEditLessonPlan();
             if (!canEdit) {
                 const settings = await SupabaseAPI.getSystemSettings();
                 if (settings.test_mode) {
-                    console.log('테스트 모드이므로 임시저장을 계속 진행합니다.');
+                    console.log('🧪 테스트 모드이므로 임시저장을 계속 진행합니다.');
                 } else {
                     this.showMessage('수업계획 수정 기간이 종료되었습니다.', 'warning');
                     return;
@@ -554,33 +588,40 @@ const LessonPlanManager = {
                 return;
             }
 
+            console.log('👤 사용자 확인:', currentUser.id);
+
             const data = this.collectFormData();
             
+            console.log('🚀 Supabase에 임시저장 요청');
             const result = await SupabaseAPI.saveLessonPlan(currentUser.id, data, true);
             
             if (result.success) {
+                console.log('✅ 임시저장 성공:', result.data?.id);
                 this.showMessage('수업계획이 임시저장되었습니다. 언제든지 다시 수정할 수 있습니다.', 'success');
                 this.currentLessonPlan = result.data;
                 this.isEditMode = true;
             } else {
+                console.error('❌ 임시저장 실패:', result.message);
                 this.showMessage(result.message || '임시저장 중 오류가 발생했습니다.', 'error');
             }
         } catch (error) {
-            console.error('임시저장 오류:', error);
-            this.showMessage('임시저장 중 오류가 발생했습니다.', 'error');
+            console.error('💥 임시저장 예외:', error);
+            this.showMessage(`임시저장 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`, 'error');
         }
     },
 
-    // 폼 제출 처리 (Supabase 연동)
+    // 폼 제출 처리 (Supabase 연동) - 개선된 에러 핸들링
     async handleFormSubmit(e) {
         e.preventDefault();
-
+        
         try {
+            console.log('📝 수업계획 완료 제출 시작');
+            
             const canEdit = await SupabaseAPI.canEditLessonPlan();
             if (!canEdit) {
                 const settings = await SupabaseAPI.getSystemSettings();
                 if (settings.test_mode) {
-                    console.log('테스트 모드이므로 제출을 계속 진행합니다.');
+                    console.log('🧪 테스트 모드이므로 제출을 계속 진행합니다.');
                 } else {
                     this.showMessage('수업계획 수정 기간이 종료되었습니다.', 'warning');
                     return;
@@ -592,24 +633,31 @@ const LessonPlanManager = {
                 this.showMessage('로그인이 필요합니다.', 'warning');
                 return;
             }
+
+            console.log('👤 사용자 확인:', currentUser.id);
 
             const data = this.collectFormData();
             const errors = this.validateForm(data);
 
             if (errors.length > 0) {
+                console.warn('⚠️ 폼 검증 실패:', errors);
                 this.showMessage('다음 사항을 확인해주세요:\\n\\n' + errors.join('\\n'), 'warning');
                 return;
             }
 
             // 완료 확인 메시지
             if (!confirm('수업계획을 완료하시겠습니까?\\n완료하시면 교구 신청 페이지로 이동합니다.')) {
+                console.log('📋 사용자가 제출을 취소했습니다.');
                 return;
             }
 
+            console.log('🚀 Supabase에 완료 제출 요청');
+            
             // 완료 상태로 저장
             const result = await SupabaseAPI.saveLessonPlan(currentUser.id, data, false);
             
             if (result.success) {
+                console.log('✅ 수업계획 완료 성공:', result.data?.id);
                 this.showMessage('수업계획이 완료되었습니다! 교구 신청 페이지로 이동합니다.', 'success');
                 
                 // 1.5초 후 학생 대시보드(교구 신청 화면)로 이동
@@ -617,16 +665,18 @@ const LessonPlanManager = {
                     this.goToStudentDashboard();
                 }, 1500);
             } else {
+                console.error('❌ 수업계획 완료 실패:', result.message);
                 this.showMessage(result.message || '수업계획 저장 중 오류가 발생했습니다.', 'error');
             }
         } catch (error) {
-            console.error('수업계획 저장 오류:', error);
-            this.showMessage('수업계획 저장 중 오류가 발생했습니다.', 'error');
+            console.error('💥 수업계획 제출 예외:', error);
+            this.showMessage(`수업계획 저장 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`, 'error');
         }
     },
 
     // 학생 대시보드로 이동
     goToStudentDashboard() {
+        console.log('🔄 학생 대시보드로 이동');
         App.showPage('studentPage');
         if (window.StudentManager && window.StudentManager.init) {
             window.StudentManager.init();
@@ -635,6 +685,8 @@ const LessonPlanManager = {
 
     // 수업계획 페이지 표시
     async showLessonPlanPage() {
+        console.log('📄 수업계획 페이지 표시');
+        
         // 모든 기존 알림 제거
         this.clearAllNotices();
         
@@ -664,7 +716,7 @@ const LessonPlanManager = {
             const plan = await SupabaseAPI.getStudentLessonPlan(studentId);
             return plan && plan.status === 'submitted';
         } catch (error) {
-            console.error('Error checking lesson plan completion:', error);
+            console.error('수업계획 완료 여부 확인 오류:', error);
             return false;
         }
     },
@@ -675,7 +727,7 @@ const LessonPlanManager = {
             const plan = await SupabaseAPI.getStudentLessonPlan(studentId);
             return !plan || plan.status === 'draft';
         } catch (error) {
-            console.error('Error checking lesson plan needs:', error);
+            console.error('수업계획 필요 여부 확인 오류:', error);
             return true;
         }
     }
@@ -686,5 +738,6 @@ window.LessonPlanManager = LessonPlanManager;
 
 // DOM 로드 완료 시 초기화
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🔧 LessonPlanManager DOM 초기화');
     LessonPlanManager.init();
 });
