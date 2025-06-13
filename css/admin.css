@@ -71,7 +71,7 @@
     line-height: 1;
 }
 
-/* Budget Overview Section */
+/* Budget Overview Section - 새로운 심플한 리스트 스타일 */
 .budget-overview-section {
     background: white;
     border-radius: 0.75rem;
@@ -91,104 +91,58 @@
     gap: 0.5rem;
 }
 
-.budget-overview-section h2::before {
-    content: "💰";
-    font-size: 1.25rem;
-}
-
-.budget-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-}
-
-.budget-stat-card {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border: 1px solid #e2e8f0;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-.budget-stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
-    border-radius: 0.75rem 0.75rem 0 0;
-}
-
-.budget-stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-}
-
-.budget-stat-header {
+.budget-summary-list {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 0.75rem;
-    margin-bottom: 1rem;
 }
 
-.budget-stat-header h3 {
-    font-size: 1rem;
+.budget-summary-item {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.budget-summary-item:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.budget-summary-item.primary {
+    border-color: #374151;
+    background: #fafafa;
+}
+
+.budget-summary-item.primary:hover {
+    border-color: #1f2937;
+    background: #f5f5f5;
+}
+
+.budget-label {
+    font-size: 1.125rem;
     font-weight: 600;
     color: #374151;
-    margin: 0;
-    line-height: 1.2;
 }
 
-.budget-icon {
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.budget-icon.purple {
-    background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
-    color: #7c3aed;
-}
-
-.budget-icon.blue {
-    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-    color: #2563eb;
-}
-
-.budget-icon.green {
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-    color: #059669;
-}
-
-.budget-icon.indigo {
-    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-    color: #4f46e5;
-}
-
-.budget-value {
-    font-size: 2.5rem;
-    font-weight: 900;
+.budget-summary-item.primary .budget-label {
     color: #111827;
-    margin-bottom: 0.5rem;
-    line-height: 1;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.budget-amount {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #dc2626;
     letter-spacing: -0.025em;
 }
 
-.budget-description {
-    font-size: 0.875rem;
-    color: #6b7280;
-    line-height: 1.4;
-    font-weight: 500;
+.budget-summary-item.primary .budget-amount {
+    color: #111827;
+    font-size: 1.75rem;
 }
 
 /* Budget Info Summary in Admin Cards */
@@ -1115,30 +1069,23 @@
         margin-bottom: 1rem;
     }
 
-    .budget-stats-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+    .budget-summary-item {
+        padding: 1rem 1.25rem;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
     }
 
-    .budget-stat-card {
-        padding: 1.25rem;
+    .budget-label {
+        font-size: 1rem;
     }
 
-    .budget-stat-header h3 {
-        font-size: 0.9rem;
+    .budget-amount {
+        font-size: 1.375rem;
     }
 
-    .budget-icon {
-        width: 2rem;
-        height: 2rem;
-    }
-
-    .budget-value {
-        font-size: 2rem;
-    }
-
-    .budget-description {
-        font-size: 0.8rem;
+    .budget-summary-item.primary .budget-amount {
+        font-size: 1.5rem;
     }
     
     .admin-application-header .student-info {
@@ -1263,23 +1210,21 @@
         text-align: center;
     }
 
-    .budget-stat-card {
-        padding: 1rem;
+    .budget-summary-item {
+        padding: 0.875rem 1rem;
         text-align: center;
     }
 
-    .budget-stat-header {
-        justify-content: center;
-        margin-bottom: 0.75rem;
+    .budget-label {
+        font-size: 0.9rem;
     }
 
-    .budget-value {
-        font-size: 1.875rem;
-        margin-bottom: 0.375rem;
+    .budget-amount {
+        font-size: 1.25rem;
     }
 
-    .budget-description {
-        font-size: 0.75rem;
+    .budget-summary-item.primary .budget-amount {
+        font-size: 1.375rem;
     }
     
     .admin-application-header,
@@ -1437,8 +1382,8 @@
         border-width: 2px;
     }
 
-    .budget-stat-card {
-        border-width: 2px;
+    .budget-summary-item {
+        border-width: 3px;
     }
 
     .budget-overview-section {
@@ -1453,7 +1398,7 @@
     .view-receipt-btn,
     .close-btn,
     .lesson-plan-card,
-    .budget-stat-card {
+    .budget-summary-item {
         transition: none;
     }
     
@@ -1461,7 +1406,7 @@
     .btn:hover,
     .view-receipt-btn:hover,
     .lesson-plan-card:hover,
-    .budget-stat-card:hover {
+    .budget-summary-item:hover {
         transform: none;
     }
 }
