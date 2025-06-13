@@ -1,267 +1,232 @@
-# 세종학당 문화교구 신청 플랫폼
+# 세종학당 문화교구 신청 플랫폼 v2.0
 
-세종학당 문화인턴들을 위한 교구 신청 관리 시스템입니다. Supabase를 활용한 실시간 데이터베이스 연동으로 안정적이고 확장 가능한 플랫폼을 제공합니다.
+## 📋 프로젝트 개요
+
+세종학당 해외 파견 교사들이 문화교구를 신청하고 관리할 수 있는 웹 기반 플랫폼입니다. Supabase 백엔드와 연동하여 실시간 데이터 관리를 지원합니다.
 
 ## 🚀 주요 기능
 
-### 📚 수업계획 관리
-- **개별 수업계획 작성**: 파견 기간과 총 수업 횟수에 따른 맞춤형 계획 작성
-- **실시간 임시저장**: 작성 중인 내용을 안전하게 보관
-- **관리자 승인 시스템**: 수업계획 검토 및 승인/반려 처리
-- **편집 기간 관리**: 테스트 모드 및 마감일 설정으로 유연한 관리
+### 학생(교사) 기능
+- **인증**: 이름 + 생년월일로 간편 로그인
+- **수업계획 작성**: 파견 기간 중 수업 계획 등록 및 관리
+- **교구 신청**: 온라인/오프라인 구매 방식 선택 가능
+- **예산 관리**: 실시간 예산 현황 확인
+- **영수증 제출**: 오프라인 구매 시 영수증 업로드
+- **배송지 관리**: 교구 배송을 위한 주소 설정
 
-### 💰 예산 관리
-- **분야별 예산 설정**: 한국어교육, 전통문화예술, K-Pop 문화 등 전공별 차별화된 예산
-- **자동 예산 배정**: 수업계획 승인 시 회당 지원금 × 수업 횟수로 자동 계산
-- **실시간 예산 추적**: 사용/잔여 예산 실시간 모니터링
-- **예산 상한 관리**: 분야별 최대 예산 한도 설정
+### 관리자 기능
+- **신청 승인**: 교구 신청 검토 및 승인/반려
+- **수업계획 관리**: 교사 수업계획 승인 시스템
+- **예산 설정**: 분야별 예산 배정 및 관리
+- **통계 대시보드**: 신청 현황 및 예산 사용 통계
+- **Excel 내보내기**: 전체 데이터 내보내기 기능
+- **시스템 설정**: 마감일, 테스트 모드 등 설정 관리
 
-### 🛒 교구 신청
-- **다양한 구매 방식**: 온라인/오프라인 구매 지원
-- **묶음 신청**: 여러 교구를 한 번에 신청하는 효율적인 시스템
-- **상태별 관리**: 검토 중 → 승인됨 → 구매완료 단계별 추적
-- **영수증 관리**: 오프라인 구매 시 영수증 업로드 및 검증
+## 🏗️ 기술 스택
 
-### 🏛️ 관리자 기능
-- **통합 대시보드**: 실시간 통계 및 현황 모니터링
-- **일괄 처리**: 여러 신청 건을 효율적으로 관리
-- **Excel 내보내기**: 상세한 데이터 분석을 위한 데이터 추출
-- **시스템 설정**: 예산, 마감일, 테스트 모드 등 운영 설정
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+- **Backend**: Supabase (PostgreSQL + Real-time API)
+- **Authentication**: Custom 인증 시스템
+- **Storage**: Supabase Storage (영수증 이미지)
+- **Icons**: Lucide Icons
+- **Build**: 별도 빌드 도구 없이 바닐라 웹 기술 사용
 
-## 🔧 기술 스택
+## 📂 프로젝트 구조
 
-### Frontend
-- **HTML5/CSS3/JavaScript**: 모던 웹 표준 기반 UI
-- **Lucide Icons**: 직관적이고 일관된 아이콘 시스템
-- **반응형 디자인**: 데스크톱/태블릿/모바일 최적화
-
-### Backend & Database
-- **Supabase**: PostgreSQL 기반 실시간 데이터베이스
-- **Row Level Security (RLS)**: 사용자별 데이터 보안
-- **실시간 구독**: 데이터 변경사항 즉시 반영
-
-### 데이터베이스 구조
-```sql
--- 사용자 프로필
-user_profiles (id, email, name, user_type, field, sejong_institute, birth_date)
-
--- 수업계획
-lesson_plans (id, user_id, status, lessons, approval_status, approved_at, rejection_reason)
-
--- 예산 설정
-budget_settings (id, field, per_lesson_amount, max_budget_limit, is_active)
-
--- 학생 예산 배정
-student_budgets (id, user_id, field, allocated_budget, used_budget)
-
--- 교구 신청
-requests (id, user_id, item_name, purpose, price, purchase_type, status, created_at)
-
--- 영수증
-receipts (id, request_id, user_id, receipt_number, image_path, verified)
-
--- 시스템 설정
-system_settings (id, setting_key, setting_value, setting_type)
+```
+request/
+├── index.html              # 메인 페이지
+├── css/                    # 스타일시트
+│   ├── main.css           # 기본 스타일
+│   ├── login.css          # 로그인 페이지 스타일
+│   ├── student.css        # 학생 페이지 스타일
+│   └── admin.css          # 관리자 페이지 스타일
+├── js/                     # JavaScript 파일
+│   ├── config.js          # 설정 및 환경변수
+│   ├── supabase-client.js # Supabase API 클라이언트
+│   ├── data.js            # 데이터 관리 레이어
+│   ├── utils.js           # 유틸리티 함수
+│   ├── auth.js            # 인증 관리
+│   ├── lesson-plan.js     # 수업계획 관리
+│   ├── student.js         # 학생 기능
+│   ├── admin.js           # 관리자 기능
+│   └── app.js             # 메인 애플리케이션
+├── database/
+│   └── schema.sql         # 데이터베이스 스키마
+├── README.md              # 프로젝트 문서
+├── DEPLOYMENT.md          # 배포 가이드
+├── CONTRIBUTING.md        # 기여 가이드
+└── SECURITY.md            # 보안 가이드
 ```
 
-## 🔐 보안 기능
+## 🔧 설치 및 설정
 
-### 인증 시스템
-- **학생 인증**: 이름 + 생년월일 기반 안전한 인증
-- **관리자 인증**: 보안 코드 기반 관리자 접근
-- **세션 관리**: 자동 로그아웃 및 세션 보안
+### 1. 레포지토리 클론
+```bash
+git clone https://github.com/faye8796/request.git
+cd request
+```
 
-### 데이터 보안
-- **Row Level Security**: 사용자별 데이터 접근 제한
-- **SQL Injection 방지**: Supabase 클라이언트의 안전한 쿼리 처리
-- **XSS 방지**: 사용자 입력 데이터 이스케이프 처리
+### 2. Supabase 프로젝트 설정
+1. [Supabase](https://supabase.com)에서 새 프로젝트 생성
+2. `database/schema.sql` 파일을 실행하여 데이터베이스 구조 생성
+3. Supabase 프로젝트 URL과 API 키 확인
 
-## 🎯 사용자 시나리오
-
-### 학생 워크플로우
-1. **로그인**: 이름과 생년월일로 안전한 인증
-2. **수업계획 작성**: 파견 기간과 수업 내용 계획 수립
-3. **임시저장**: 작성 중인 내용을 안전하게 보관
-4. **계획 완료**: 관리자 검토를 위한 최종 제출
-5. **승인 대기**: 관리자의 수업계획 검토 및 승인
-6. **예산 배정**: 승인 후 자동 예산 할당
-7. **교구 신청**: 필요한 교구 및 문화용품 신청
-8. **신청 추적**: 승인/반려 상태 실시간 확인
-9. **영수증 제출**: 오프라인 구매 시 영수증 업로드
-
-### 관리자 워크플로우
-1. **대시보드 모니터링**: 전체 현황 및 통계 확인
-2. **수업계획 검토**: 제출된 계획의 적절성 평가
-3. **승인/반려**: 수업계획 승인 또는 개선사항 피드백
-4. **예산 설정**: 분야별 회당 지원금 및 상한 설정
-5. **신청 관리**: 교구 신청의 승인/반려 처리
-6. **영수증 검증**: 오프라인 구매 영수증 확인
-7. **데이터 분석**: Excel 내보내기를 통한 상세 분석
-
-## 💡 핵심 특징
-
-### 🌟 사용자 친화적 인터페이스
-- **직관적 네비게이션**: 단계별 가이드와 명확한 메뉴 구조
-- **실시간 피드백**: 작업 상태와 결과를 즉시 확인
-- **접근성 고려**: 시각적 피드백과 키보드 단축키 지원
-
-### ⚡ 성능 최적화
-- **지연 로딩**: 필요한 리소스만 동적으로 로드
-- **메모리 관리**: 효율적인 메모리 사용과 정리
-- **캐싱 전략**: 반복 요청 최소화로 빠른 응답
-
-### 🔄 실시간 동기화
-- **Supabase 실시간 구독**: 데이터 변경사항 즉시 반영
-- **오프라인 지원**: 네트워크 불안정 시 기본 기능 유지
-- **자동 재연결**: 연결 복구 시 자동 동기화
-
-## 📊 예산 시스템
-
-### 분야별 예산 설정 (예시)
-| 전공 분야 | 회당 지원금 | 최대 상한 |
-|-----------|-------------|-----------| 
-| 한국어교육 | 15,000원 | 400,000원 |
-| 전통문화예술 | 25,000원 | 600,000원 |
-| K-Pop 문화 | 10,000원 | 300,000원 |
-| 한국현대문화 | 18,000원 | 450,000원 |
-| 전통음악 | 30,000원 | 750,000원 |
-| 한국미술 | 22,000원 | 550,000원 |
-| 한국요리문화 | 35,000원 | 800,000원 |
-
-### 예산 계산 로직
+### 3. 환경 설정
+`js/config.js` 파일에서 Supabase 설정 업데이트:
 ```javascript
-// 기본 계산: 총 수업 횟수 × 회당 지원금
-const calculatedBudget = totalLessons * perLessonAmount;
-
-// 상한 적용: 계산된 예산과 최대 상한 중 작은 값
-const finalBudget = Math.min(calculatedBudget, maxBudgetLimit);
+const CONFIG = {
+    SUPABASE: {
+        URL: 'YOUR_SUPABASE_URL',
+        ANON_KEY: 'YOUR_SUPABASE_ANON_KEY'
+    },
+    APP: {
+        ADMIN_CODE: 'YOUR_ADMIN_CODE' // 관리자 인증 코드
+    }
+};
 ```
 
-## 🎨 사용자 인터페이스
+### 4. 웹 서버 실행
+정적 파일 서버로 실행 (예: VS Code Live Server, Python HTTP 서버 등)
 
-### 📱 반응형 디자인
-- **모바일 우선**: 스마트폰에서도 편리한 사용
-- **태블릿 최적화**: 중간 화면에서의 효율적 레이아웃
-- **데스크톱 확장**: 넓은 화면의 공간 활용
+```bash
+# Python 3
+python -m http.server 8000
 
-### 🎯 접근성
-- **키보드 네비게이션**: 마우스 없이도 전체 기능 이용
-- **스크린 리더 지원**: 시각 장애인을 위한 대체 텍스트
-- **고대비 모드**: 시각적 구분이 명확한 UI
+# Node.js http-server
+npx http-server
 
-## ⚙️ 관리자 도구
-
-### 📈 통계 대시보드
-- **실시간 현황**: 신청자 수, 승인률, 예산 사용률
-- **분야별 분석**: 전공별 신청 패턴 및 예산 분포
-- **시계열 데이터**: 월별/분기별 트렌드 분석
-
-### 🔧 시스템 설정
-- **테스트 모드**: 개발 및 테스트를 위한 제한 해제
-- **마감일 관리**: 수업계획 수정 가능 기간 설정
-- **알림 시스템**: 사용자에게 표시될 안내 메시지
-
-### 📤 데이터 내보내기
-```csv
-학생명,소속기관,전공분야,교구명,사용목적,가격,구매방식,상태,신청일,수업계획상태,배정예산,사용예산,잔여예산
-김민수,하노이 세종학당,한국어교육,한국 전통 차 세트,차 문화 체험 수업,120000,온라인,구매완료,2024-06-08,승인됨,300000,215000,85000
+# VS Code Live Server 확장 사용 (권장)
 ```
 
-## 🚀 설치 및 배포
+## 🗄️ 데이터베이스 구조
 
-### 환경 요구사항
-- **웹 서버**: Apache, Nginx 또는 정적 파일 호스팅
-- **Supabase 프로젝트**: PostgreSQL 데이터베이스 및 API
-- **모던 브라우저**: ES6+ 지원 (Chrome 60+, Firefox 55+, Safari 12+)
+### 주요 테이블
+- **user_profiles**: 사용자(학생/관리자) 정보
+- **lesson_plans**: 수업계획 데이터
+- **requests**: 교구 신청 내역
+- **student_budgets**: 학생별 예산 배정
+- **budget_settings**: 분야별 예산 설정
+- **receipts**: 영수증 정보
+- **system_settings**: 시스템 설정
 
-### 설정 단계
+### 데이터 관계
+```
+user_profiles (1) → (N) lesson_plans
+user_profiles (1) → (N) requests
+user_profiles (1) → (1) student_budgets
+requests (1) → (N) receipts
+```
 
-1. **Supabase 프로젝트 생성**
-   - [Supabase 대시보드](https://supabase.com/dashboard)에서 새 프로젝트 생성
-   - PostgreSQL 데이터베이스 자동 설정
+## 🔑 주요 개선사항 (v2.0)
 
-2. **데이터베이스 스키마 설정**
-   ```sql
-   -- 사용자 프로필 테이블
-   CREATE TABLE user_profiles (
-       id SERIAL PRIMARY KEY,
-       email VARCHAR(255),
-       name VARCHAR(100) NOT NULL,
-       user_type VARCHAR(20) NOT NULL CHECK (user_type IN ('student', 'admin')),
-       field VARCHAR(50),
-       sejong_institute VARCHAR(100),
-       birth_date DATE,
-       created_at TIMESTAMP DEFAULT NOW()
-   );
+### ✅ 하드코딩된 데이터 제거
+- `data.js`의 모의 데이터를 모두 제거
+- 모든 데이터를 Supabase에서 실시간으로 조회
+- 일관된 데이터 소스 사용으로 안정성 향상
 
-   -- 기타 테이블들 생성...
-   ```
+### ✅ 에러 핸들링 개선
+- 상세한 에러 로깅 시스템 구축
+- 사용자 친화적인 에러 메시지 제공
+- 네트워크 오류 및 타임아웃 처리
 
-3. **환경 변수 구성**
-   - `js/supabase-client.js`에서 URL과 API 키 설정
-   ```javascript
-   const SUPABASE_URL = 'your-project-url';
-   const SUPABASE_ANON_KEY = 'your-anon-key';
-   ```
+### ✅ 성능 최적화
+- 병렬 데이터 조회로 로딩 시간 단축
+- 불필요한 API 호출 최소화
+- 효율적인 데이터 캐싱 전략
 
-4. **RLS 정책 적용**
-   ```sql
-   -- Row Level Security 활성화
-   ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
-   
-   -- 사용자별 데이터 접근 정책 설정
-   CREATE POLICY "Users can view own profile" ON user_profiles
-       FOR SELECT USING (auth.uid() = id);
-   ```
+### ✅ 개발자 도구 추가
+- 브라우저 콘솔에서 빠른 테스트 가능
+- 개발 모드에서 상세 로깅 지원
+- API 연결 상태 실시간 모니터링
 
-5. **웹 서버에 파일 업로드**
-   - GitHub Pages, Netlify, Vercel 등 정적 호스팅 서비스 활용
-   - 또는 자체 웹서버에 배포
+## 🔧 개발 도구 사용법
 
-### 보안 고려사항
-- **API 키 보안**: 프로덕션 환경에서는 환경변수 사용 권장
-- **RLS 설정**: 모든 테이블에 적절한 Row Level Security 정책 적용
-- **HTTPS 사용**: 데이터 전송 시 SSL/TLS 암호화 필수
+브라우저 개발자 콘솔에서 다음 명령어를 사용할 수 있습니다:
 
-## 🔍 디버깅 및 모니터링
+```javascript
+// 빠른 로그인 (개발 모드)
+dev.quickLogin('student')  // 학생 로그인
+dev.quickLogin('admin')    // 관리자 로그인
 
-### 개발자 도구
-- **콘솔 로깅**: 상세한 실행 과정 추적
-- **에러 추적**: 자동 에러 로그 수집 및 저장
-- **성능 모니터링**: 메모리 사용량 및 로드 시간 측정
+// API 연결 테스트
+dev.testApiConnection()
 
-### 프로덕션 모니터링
-- **Supabase 대시보드**: 데이터베이스 성능 및 사용량
-- **실시간 로그**: API 호출 및 에러 추적
-- **사용자 행동 분석**: 페이지 방문 패턴 및 기능 사용률
+// 설정 정보 출력
+dev.printConfig()
+
+// 헬스 체크
+await SupabaseAPI.healthCheck()
+```
+
+## 🛡️ 보안 고려사항
+
+- **RLS (Row Level Security)**: Supabase에서 데이터 접근 제어
+- **환경변수**: 민감한 정보는 환경변수로 관리
+- **입력 검증**: 클라이언트 및 서버 단에서 이중 검증
+- **세션 관리**: 브라우저 기반 세션 관리 (쿠키 없음)
+
+## 📈 모니터링 및 로깅
+
+### 개발 모드 로깅
+`config.js`에서 `DEV.ENABLE_CONSOLE_LOGS: true`로 설정하면:
+- API 호출 성공/실패 로그
+- 데이터 조회 결과 통계
+- 에러 상세 정보 및 컨텍스트
+
+### 운영 환경
+- Supabase Dashboard에서 실시간 로그 확인
+- 데이터베이스 성능 모니터링
+- API 사용량 및 요청 추적
+
+## 🚀 배포
+
+### 정적 호스팅
+- **Vercel**: `vercel --prod`
+- **Netlify**: 자동 배포 설정
+- **GitHub Pages**: Actions를 통한 자동 배포
+
+### 환경 변수 설정
+배포 플랫폼에서 다음 환경 변수 설정:
+- `SUPABASE_URL`: Supabase 프로젝트 URL
+- `SUPABASE_ANON_KEY`: Supabase 익명 키
+- `DEBUG`: 디버그 모드 활성화 여부
+
+## 🤝 기여 방법
+
+1. 이 레포지토리를 포크합니다
+2. 새 기능 브랜치를 생성합니다 (`git checkout -b feature/AmazingFeature`)
+3. 변경사항을 커밋합니다 (`git commit -m 'Add some AmazingFeature'`)
+4. 브랜치에 푸시합니다 (`git push origin feature/AmazingFeature`)
+5. Pull Request를 생성합니다
+
+## 📝 라이선스
+
+이 프로젝트는 MIT 라이선스 하에 있습니다. 자세한 내용은 `LICENSE` 파일을 참고하세요.
 
 ## 📞 지원 및 문의
 
-### 기술 지원
-- **문서 업데이트**: 지속적인 가이드 개선
-- **버그 리포트**: 이슈 추적 및 신속한 수정
-- **기능 요청**: 사용자 피드백 기반 개선
+- **Issues**: GitHub Issues를 통한 버그 신고 및 기능 제안
+- **Documentation**: Wiki 페이지에서 상세 문서 확인
+- **Contact**: 프로젝트 관리자에게 직접 연락
 
-### 연락처
-- **개발팀**: 기술적 문의 및 버그 리포트
-- **운영팀**: 서비스 이용 및 정책 관련 문의
-- **관리자**: 긴급 상황 및 시스템 장애 대응
+## 🎯 로드맵
 
-## 📝 업데이트 로그
+### 단기 목표 (v2.1)
+- [ ] 실시간 알림 시스템
+- [ ] 모바일 반응형 개선
+- [ ] 다국어 지원 (영어, 베트남어)
 
-### v1.0.0 (2025-06-13)
-- 초기 플랫폼 구축 완료
-- Supabase 연동 및 실시간 데이터베이스 구현
-- 학생/관리자 인증 시스템 구축
-- 수업계획 작성 및 승인 워크플로우 구현
-- 분야별 예산 관리 시스템 완성
-- 교구 신청 및 영수증 관리 기능 구현
-- 관리자 대시보드 및 통계 기능 추가
-- Excel 데이터 내보내기 기능 구현
-- 반응형 웹 디자인 적용
+### 중기 목표 (v3.0)
+- [ ] 파일 첨부 기능 개선
+- [ ] 승인 워크플로우 고도화
+- [ ] 자동 번역 기능
+
+### 장기 목표
+- [ ] 모바일 앱 개발
+- [ ] AI 기반 교구 추천
+- [ ] 블록체인 기반 투명성 확보
 
 ---
 
-**세종학당 문화교구 신청 플랫폼**은 전 세계 세종학당에서 활동하는 문화인턴들이 보다 효과적으로 한국 문화를 전파할 수 있도록 지원하는 것을 목표로 합니다. 지속적인 개선과 사용자 피드백을 통해 더욱 발전된 플랫폼을 제공하겠습니다.
-
-*마지막 업데이트: 2025년 6월 13일*
+**Made with ❤️ for 세종학당 교사들**
