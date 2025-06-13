@@ -1,15 +1,15 @@
-// 관리자 기능 관리 모듈
+// 관리자 기능 관리 모듈 (Supabase 연동)
 const AdminManager = {
     currentSearchTerm: '',
 
     // 초기화
-    init() {
+    async init() {
         this.setupEventListeners();
-        this.loadStatistics();
-        this.loadBudgetOverview(); // 새로 추가
-        this.loadApplications();
-        this.loadLessonPlanManagement();
-        this.loadBudgetSettings();
+        await this.loadStatistics();
+        await this.loadBudgetOverview();
+        await this.loadApplications();
+        await this.loadLessonPlanManagement();
+        await this.loadBudgetSettings();
     },
 
     // 이벤트 리스너 설정
@@ -25,10 +25,10 @@ const AdminManager = {
         // 수업계획 설정 버튼
         Utils.on('#lessonPlanSettingsBtn', 'click', () => this.showLessonPlanSettingsModal());
 
-        // 예산 설정 버튼 (새로 추가)
+        // 예산 설정 버튼
         Utils.on('#budgetSettingsBtn', 'click', () => this.showBudgetSettingsModal());
 
-        // 수업계획 관리 버튼 (새로 추가)
+        // 수업계획 관리 버튼
         Utils.on('#lessonPlanManagementBtn', 'click', () => this.showLessonPlanManagementModal());
 
         // 수업계획 설정 모달 이벤트
@@ -57,14 +57,14 @@ const AdminManager = {
     },
 
     // 예산 설정 모달 표시
-    showBudgetSettingsModal() {
+    async showBudgetSettingsModal() {
         // 모달이 없으면 생성
         if (!Utils.$('#budgetSettingsModal')) {
             this.createBudgetSettingsModal();
         }
 
         const modal = Utils.$('#budgetSettingsModal');
-        const settings = DataManager.getAllFieldBudgetSettings();
+        const settings = await SupabaseAPI.getAllFieldBudgetSettings();
         
         // 현재 설정값으로 폼 채우기
         const tbody = modal.querySelector('#budgetSettingsTable tbody');
@@ -154,7 +154,7 @@ const AdminManager = {
     },
 
     // 예산 설정 저장
-    handleBudgetSettingsSubmit() {
+    async handleBudgetSettingsSubmit() {
         const form = Utils.$('#budgetSettingsForm');
         const inputs = form.querySelectorAll('.amount-input');
         const updates = {};
@@ -173,57 +173,41 @@ const AdminManager = {
         const submitBtn = form.querySelector('button[type="submit"]');
         Utils.showLoading(submitBtn);
         
-        setTimeout(() => {
-            try {
-                Object.entries(updates).forEach(([field, settings]) => {
-                    DataManager.updateFieldBudgetSettings(field, settings);
-                });
-                
-                Utils.hideLoading(submitBtn);
-                this.hideBudgetSettingsModal();
-                Utils.showAlert('예산 설정이 저장되었습니다.');
-                
-                // 기존 예산 배정된 학생들의 예산 재계산
-                this.recalculateAllBudgets();
-                
-            } catch (error) {
-                Utils.hideLoading(submitBtn);
-                Utils.showAlert('예산 설정 저장 중 오류가 발생했습니다.');
-                console.error('Budget settings error:', error);
-            }
-        }, 500);
-    },
-
-    // 모든 학생의 예산 재계산
-    recalculateAllBudgets() {
-        const lessonPlans = DataManager.getAllLessonPlans();
-        let updatedCount = 0;
-        
-        lessonPlans.forEach(plan => {
-            if (plan.approvalStatus === 'approved') {
-                const result = DataManager.allocateBudgetToStudent(plan.studentId);
-                if (result) {
-                    updatedCount++;
+        try {
+            let successCount = 0;
+            for (const [field, settings] of Object.entries(updates)) {
+                const result = await SupabaseAPI.updateFieldBudgetSettings(field, settings);
+                if (result.success) {
+                    successCount++;
                 }
             }
-        });
-        
-        if (updatedCount > 0) {
-            Utils.showAlert(`${updatedCount}명의 학생 예산이 재계산되었습니다.`);
-            // 예산 현황도 다시 로드
-            this.loadBudgetOverview();
+            
+            Utils.hideLoading(submitBtn);
+            this.hideBudgetSettingsModal();
+            
+            if (successCount > 0) {
+                Utils.showAlert(`${successCount}개 분야의 예산 설정이 저장되었습니다.`);
+                await this.loadBudgetOverview();
+            } else {
+                Utils.showAlert('예산 설정 저장 중 오류가 발생했습니다.');
+            }
+            
+        } catch (error) {
+            Utils.hideLoading(submitBtn);
+            Utils.showAlert('예산 설정 저장 중 오류가 발생했습니다.');
+            console.error('Budget settings error:', error);
         }
     },
 
     // 수업계획 관리 모달 표시
-    showLessonPlanManagementModal() {
+    async showLessonPlanManagementModal() {
         // 모달이 없으면 생성
         if (!Utils.$('#lessonPlanManagementModal')) {
             this.createLessonPlanManagementModal();
         }
 
         const modal = Utils.$('#lessonPlanManagementModal');
-        this.loadLessonPlansForManagement();
+        await this.loadLessonPlansForManagement();
         modal.classList.add('active');
     },
 
@@ -280,73 +264,79 @@ const AdminManager = {
     },
 
     // 수업계획 목록 로드 (관리용)
-    loadLessonPlansForManagement() {
-        const allPlans = DataManager.getAllLessonPlans();
-        const students = DataManager.students;
-        
-        // 통계 계산
-        const pendingCount = allPlans.filter(p => p.status === 'completed' && (!p.approvalStatus || p.approvalStatus === 'pending')).length;
-        const approvedCount = allPlans.filter(p => p.approvalStatus === 'approved').length;
-        const rejectedCount = allPlans.filter(p => p.approvalStatus === 'rejected').length;
-        
-        // 통계 업데이트
-        Utils.$('#pendingPlansCount').textContent = `대기 중: ${pendingCount}`;
-        Utils.$('#approvedPlansCount').textContent = `승인됨: ${approvedCount}`;
-        Utils.$('#rejectedPlansCount').textContent = `반려됨: ${rejectedCount}`;
-        
-        // 수업계획 목록 생성
-        const container = Utils.$('#lessonPlansList');
-        container.innerHTML = '';
-        
-        if (allPlans.length === 0) {
-            container.innerHTML = '<div class="no-plans">제출된 수업계획이 없습니다.</div>';
-            return;
+    async loadLessonPlansForManagement() {
+        try {
+            const allPlans = await SupabaseAPI.getAllLessonPlans();
+            
+            // 통계 계산
+            const pendingCount = allPlans.filter(p => p.status === 'submitted' && (!p.approval_status || p.approval_status === 'pending')).length;
+            const approvedCount = allPlans.filter(p => p.approval_status === 'approved').length;
+            const rejectedCount = allPlans.filter(p => p.approval_status === 'rejected').length;
+            
+            // 통계 업데이트
+            Utils.$('#pendingPlansCount').textContent = `대기 중: ${pendingCount}`;
+            Utils.$('#approvedPlansCount').textContent = `승인됨: ${approvedCount}`;
+            Utils.$('#rejectedPlansCount').textContent = `반려됨: ${rejectedCount}`;
+            
+            // 수업계획 목록 생성
+            const container = Utils.$('#lessonPlansList');
+            container.innerHTML = '';
+            
+            if (allPlans.length === 0) {
+                container.innerHTML = '<div class="no-plans">제출된 수업계획이 없습니다.</div>';
+                return;
+            }
+            
+            allPlans.forEach(plan => {
+                const planCard = this.createLessonPlanCard(plan);
+                container.appendChild(planCard);
+            });
+            
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+            // 이벤트 리스너 재설정
+            this.setupLessonPlanActionListeners();
+            
+        } catch (error) {
+            console.error('Error loading lesson plans for management:', error);
+            Utils.showAlert('수업계획 목록을 불러오는 중 오류가 발생했습니다.');
         }
-        
-        allPlans.forEach(plan => {
-            const student = students.find(s => s.id === plan.studentId);
-            const planCard = this.createLessonPlanCard(plan, student);
-            container.appendChild(planCard);
-        });
-        
-        // 아이콘 재생성
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-        
-        // 이벤트 리스너 재설정
-        this.setupLessonPlanActionListeners();
     },
 
     // 수업계획 카드 생성
-    createLessonPlanCard(plan, student) {
+    createLessonPlanCard(plan) {
         const card = Utils.createElement('div', 'lesson-plan-card');
         
-        const statusText = plan.status === 'completed' ? '제출완료' : '임시저장';
-        const statusClass = plan.status === 'completed' ? 'completed' : 'draft';
+        const statusText = plan.status === 'submitted' ? '제출완료' : '임시저장';
+        const statusClass = plan.status === 'submitted' ? 'completed' : 'draft';
         
         let approvalStatusText = '대기 중';
         let approvalStatusClass = 'pending';
         
-        if (plan.approvalStatus === 'approved') {
+        if (plan.approval_status === 'approved') {
             approvalStatusText = '승인됨';
             approvalStatusClass = 'approved';
-        } else if (plan.approvalStatus === 'rejected') {
+        } else if (plan.approval_status === 'rejected') {
             approvalStatusText = '반려됨';
             approvalStatusClass = 'rejected';
         }
         
-        // 예산 정보 계산
-        const budgetInfo = DataManager.calculateBudgetFromLessonPlan(plan.studentId);
+        // 수업 데이터에서 총 수업 횟수 계산
+        const totalLessons = plan.lessons?.totalLessons || 0;
+        const startDate = plan.lessons?.startDate || '';
+        const endDate = plan.lessons?.endDate || '';
         
         card.innerHTML = `
             <div class="plan-card-header">
                 <div class="plan-student-info">
-                    <h4>${plan.studentName}</h4>
-                    <p>${student?.instituteName || ''} • ${student?.specialization || ''}</p>
+                    <h4>${plan.user_profiles?.name || '알 수 없음'}</h4>
+                    <p>${plan.user_profiles?.sejong_institute || ''} • ${plan.user_profiles?.field || ''}</p>
                     <div class="plan-meta">
-                        <span>수업 횟수: ${plan.totalLessons}회</span>
-                        <span>기간: ${plan.startDate} ~ ${plan.endDate}</span>
+                        <span>수업 횟수: ${totalLessons}회</span>
+                        <span>기간: ${startDate} ~ ${endDate}</span>
                     </div>
                 </div>
                 <div class="plan-status-info">
@@ -355,36 +345,23 @@ const AdminManager = {
                 </div>
             </div>
             
-            ${budgetInfo.allocated > 0 ? `
-                <div class="plan-budget-info">
-                    <div class="budget-item">
-                        <span class="budget-label">배정 예산:</span>
-                        <span class="budget-value">${Utils.formatPrice(budgetInfo.allocated)}</span>
-                    </div>
-                    <div class="budget-calculation">
-                        ${plan.totalLessons}회 × ${Utils.formatPrice(budgetInfo.perLessonAmount)} = ${Utils.formatPrice(budgetInfo.calculated)}
-                        ${budgetInfo.isCapReached ? ` (상한 ${Utils.formatPrice(budgetInfo.maxBudget)} 적용)` : ''}
-                    </div>
-                </div>
-            ` : ''}
-            
             <div class="plan-card-content">
                 <div class="plan-goals">
                     <strong>수업 목표:</strong>
-                    <p>${plan.overallGoals || '목표가 설정되지 않았습니다.'}</p>
+                    <p>${plan.lessons?.overallGoals || '목표가 설정되지 않았습니다.'}</p>
                 </div>
-                ${plan.specialNotes ? `
+                ${plan.lessons?.specialNotes ? `
                     <div class="plan-notes">
                         <strong>특별 고려사항:</strong>
-                        <p>${plan.specialNotes}</p>
+                        <p>${plan.lessons.specialNotes}</p>
                     </div>
                 ` : ''}
             </div>
             
-            ${plan.rejectionReason ? `
+            ${plan.rejection_reason ? `
                 <div class="plan-rejection-reason">
                     <strong>반려 사유:</strong>
-                    <p>${plan.rejectionReason}</p>
+                    <p>${plan.rejection_reason}</p>
                 </div>
             ` : ''}
             
@@ -398,26 +375,25 @@ const AdminManager = {
 
     // 수업계획 액션 버튼 생성
     createLessonPlanActionButtons(plan) {
-        if (plan.status !== 'completed') {
+        if (plan.status !== 'submitted') {
             return '<span class="plan-action-note">수업계획이 제출되지 않았습니다.</span>';
         }
         
-        if (plan.approvalStatus === 'approved') {
+        if (plan.approval_status === 'approved') {
             return `
                 <span class="plan-approved-info">
-                    승인일: ${plan.approvedAt ? new Date(plan.approvedAt).toLocaleDateString('ko-KR') : '-'}
-                    (승인자: ${plan.approvedBy || '관리자'})
+                    승인일: ${plan.approved_at ? new Date(plan.approved_at).toLocaleDateString('ko-KR') : '-'}
                 </span>
             `;
         }
         
-        if (plan.approvalStatus === 'rejected') {
+        if (plan.approval_status === 'rejected') {
             return `
                 <div class="plan-rejected-actions">
                     <span class="plan-rejected-info">
-                        반려일: ${plan.rejectedAt ? new Date(plan.rejectedAt).toLocaleDateString('ko-KR') : '-'}
+                        반려일: ${plan.updated_at ? new Date(plan.updated_at).toLocaleDateString('ko-KR') : '-'}
                     </span>
-                    <button class="btn small approve" data-action="approve" data-student-id="${plan.studentId}">
+                    <button class="btn small approve" data-action="approve" data-student-id="${plan.user_id}">
                         재승인
                     </button>
                 </div>
@@ -426,10 +402,10 @@ const AdminManager = {
         
         // 대기 중인 경우
         return `
-            <button class="btn small approve" data-action="approve" data-student-id="${plan.studentId}">
+            <button class="btn small approve" data-action="approve" data-student-id="${plan.user_id}">
                 <i data-lucide="check"></i> 승인
             </button>
-            <button class="btn small reject" data-action="reject" data-student-id="${plan.studentId}">
+            <button class="btn small reject" data-action="reject" data-student-id="${plan.user_id}">
                 <i data-lucide="x"></i> 반려
             </button>
         `;
@@ -462,16 +438,16 @@ const AdminManager = {
     },
 
     // 수업계획 승인
-    approveLessonPlan(studentId, buttonElement) {
+    async approveLessonPlan(studentId, buttonElement) {
         if (Utils.showConfirm('이 수업계획을 승인하시겠습니까? 승인 시 자동으로 예산이 배정됩니다.')) {
             Utils.showLoading(buttonElement);
             
-            setTimeout(() => {
-                const result = DataManager.approveLessonPlan(studentId);
+            try {
+                const result = await SupabaseAPI.approveLessonPlan(studentId);
                 
                 if (result.success) {
-                    this.loadLessonPlansForManagement();
-                    this.loadBudgetOverview(); // 예산 현황 새로고침
+                    await this.loadLessonPlansForManagement();
+                    await this.loadBudgetOverview();
                     
                     let message = '수업계획이 승인되었습니다.';
                     if (result.budgetInfo) {
@@ -482,80 +458,77 @@ const AdminManager = {
                     Utils.hideLoading(buttonElement);
                     Utils.showAlert(result.message || '승인 처리 중 오류가 발생했습니다.');
                 }
-            }, 500);
+            } catch (error) {
+                Utils.hideLoading(buttonElement);
+                Utils.showAlert('승인 처리 중 오류가 발생했습니다.');
+                console.error('Approve lesson plan error:', error);
+            }
         }
     },
 
     // 수업계획 반려
-    rejectLessonPlan(studentId, buttonElement) {
+    async rejectLessonPlan(studentId, buttonElement) {
         const reason = Utils.showPrompt('반려 사유를 입력하세요:', '');
         
         if (reason && reason.trim()) {
             Utils.showLoading(buttonElement);
             
-            setTimeout(() => {
-                const result = DataManager.rejectLessonPlan(studentId, reason.trim());
+            try {
+                const result = await SupabaseAPI.rejectLessonPlan(studentId, reason.trim());
                 
                 if (result.success) {
-                    this.loadLessonPlansForManagement();
-                    this.loadBudgetOverview(); // 예산 현황 새로고침
+                    await this.loadLessonPlansForManagement();
+                    await this.loadBudgetOverview();
                     Utils.showAlert('수업계획이 반려되었습니다.');
                 } else {
                     Utils.hideLoading(buttonElement);
                     Utils.showAlert(result.message || '반려 처리 중 오류가 발생했습니다.');
                 }
-            }, 500);
+            } catch (error) {
+                Utils.hideLoading(buttonElement);
+                Utils.showAlert('반려 처리 중 오류가 발생했습니다.');
+                console.error('Reject lesson plan error:', error);
+            }
         }
     },
 
     // 영수증 보기 모달 표시
-    showViewReceiptModal(studentId, itemId) {
-        const application = DataManager.applications.find(app => app.studentId === studentId);
-        if (!application) return;
+    async showViewReceiptModal(requestId) {
+        try {
+            const receipt = await SupabaseAPI.getReceiptByRequestId(requestId);
+            if (!receipt) {
+                Utils.showAlert('영수증을 찾을 수 없습니다.');
+                return;
+            }
 
-        const item = application.items.find(item => item.id === itemId);
-        if (!item || !item.receiptImage) return;
+            const modal = Utils.$('#viewReceiptModal');
 
-        const student = DataManager.students.find(s => s.id === studentId);
-        const modal = Utils.$('#viewReceiptModal');
-
-        // 영수증 정보 표시
-        Utils.$('#viewReceiptItemName').textContent = item.name;
-        Utils.$('#viewReceiptStudentName').textContent = application.studentName;
-        Utils.$('#viewReceiptItemPrice').textContent = Utils.formatPrice(item.price);
-        
-        // 영수증 데이터에서 추가 정보 표시
-        if (item.receiptImage && typeof item.receiptImage === 'object') {
-            Utils.$('#viewReceiptPurchaseDate').textContent = item.receiptImage.purchaseDateTime ? 
-                new Date(item.receiptImage.purchaseDateTime).toLocaleString('ko-KR') : '-';
-            Utils.$('#viewReceiptStore').textContent = item.receiptImage.purchaseStore || '-';
-            Utils.$('#viewReceiptNote').textContent = item.receiptImage.note || '-';
+            // 영수증 정보 표시
+            Utils.$('#viewReceiptItemName').textContent = receipt.item_name || '-';
+            Utils.$('#viewReceiptStudentName').textContent = receipt.student_name || '-';
+            Utils.$('#viewReceiptItemPrice').textContent = Utils.formatPrice(receipt.total_amount || 0);
+            Utils.$('#viewReceiptPurchaseDate').textContent = receipt.purchase_date ? 
+                new Date(receipt.purchase_date).toLocaleString('ko-KR') : '-';
+            Utils.$('#viewReceiptStore').textContent = receipt.store_name || '-';
+            Utils.$('#viewReceiptNote').textContent = receipt.notes || '-';
+            Utils.$('#viewReceiptSubmittedDate').textContent = receipt.created_at ? 
+                new Date(receipt.created_at).toLocaleString('ko-KR') : '-';
             
             // 이미지 표시
             const receiptImage = Utils.$('#viewReceiptImage');
-            receiptImage.src = item.receiptImage.image || item.receiptImage;
-        } else {
-            // 기존 형식 (문자열)
-            const receiptImage = Utils.$('#viewReceiptImage');
-            receiptImage.src = item.receiptImage;
-            Utils.$('#viewReceiptPurchaseDate').textContent = '-';
-            Utils.$('#viewReceiptStore').textContent = '-';
-            Utils.$('#viewReceiptNote').textContent = '-';
+            receiptImage.src = receipt.image_path || '';
+
+            // 현재 보고 있는 영수증 정보 저장 (다운로드용)
+            this.currentViewingReceipt = {
+                image: receipt.image_path,
+                fileName: `receipt_${receipt.receipt_number}.jpg`
+            };
+
+            modal.classList.add('active');
+        } catch (error) {
+            console.error('Error showing receipt modal:', error);
+            Utils.showAlert('영수증을 불러오는 중 오류가 발생했습니다.');
         }
-        
-        Utils.$('#viewReceiptSubmittedDate').textContent = item.receiptSubmittedAt ? 
-            new Date(item.receiptSubmittedAt).toLocaleString('ko-KR') : '-';
-
-        // 현재 보고 있는 영수증 정보 저장 (다운로드용)
-        this.currentViewingReceipt = {
-            studentName: application.studentName,
-            itemName: item.name,
-            image: typeof item.receiptImage === 'object' ? item.receiptImage.image : item.receiptImage,
-            fileName: typeof item.receiptImage === 'object' && item.receiptImage.fileName ? 
-                item.receiptImage.fileName : `receipt_${studentId}_${itemId}.jpg`
-        };
-
-        modal.classList.add('active');
     },
 
     // 영수증 보기 모달 숨김
@@ -585,25 +558,25 @@ const AdminManager = {
     },
 
     // 수업계획 설정 모달 표시
-    showLessonPlanSettingsModal() {
+    async showLessonPlanSettingsModal() {
         const modal = Utils.$('#lessonPlanSettingsModal');
-        const settings = DataManager.lessonPlanSettings;
+        const settings = await SupabaseAPI.getSystemSettings();
         
         // 현재 설정값으로 폼 채우기
-        Utils.$('#planEditDeadline').value = settings.editDeadline;
-        Utils.$('#planEditTime').value = settings.editTime;
-        Utils.$('#planEditNotice').value = settings.noticeMessage;
+        Utils.$('#planEditDeadline').value = settings.lesson_plan_deadline || '2026-12-31';
+        Utils.$('#planEditTime').value = '23:59';
+        Utils.$('#planEditNotice').value = settings.notice_message || '';
         
         // 테스트 모드 체크박스 설정
         const testModeCheckbox = Utils.$('#testModeEnabled');
         if (testModeCheckbox) {
-            testModeCheckbox.checked = settings.testMode;
+            testModeCheckbox.checked = settings.test_mode || false;
         }
         
         // 마감일 무시 체크박스 설정
         const overrideCheckbox = Utils.$('#allowOverrideDeadline');
         if (overrideCheckbox) {
-            overrideCheckbox.checked = settings.allowOverrideDeadline;
+            overrideCheckbox.checked = settings.ignore_deadline || false;
         }
         
         modal.classList.add('active');
@@ -621,7 +594,7 @@ const AdminManager = {
     },
 
     // 수업계획 설정 저장
-    handleLessonPlanSettingsSubmit() {
+    async handleLessonPlanSettingsSubmit() {
         const deadline = Utils.$('#planEditDeadline').value;
         const time = Utils.$('#planEditTime').value;
         const notice = Utils.$('#planEditNotice').value.trim();
@@ -646,52 +619,53 @@ const AdminManager = {
         const submitBtn = Utils.$('#lessonPlanSettingsForm button[type="submit"]');
         Utils.showLoading(submitBtn);
 
-        setTimeout(() => {
-            try {
-                const newSettings = {
-                    editDeadline: deadline || '2026-12-31', // 기본값 설정
-                    editTime: time || '23:59',
-                    noticeMessage: notice || `수업계획은 언제든지 수정 가능합니다. (테스트 모드)`,
-                    testMode: testMode,
-                    allowOverrideDeadline: allowOverrideDeadline
-                };
+        try {
+            // 각 설정을 개별적으로 업데이트
+            await SupabaseAPI.updateSystemSetting('lesson_plan_deadline', deadline || '2026-12-31');
+            await SupabaseAPI.updateSystemSetting('test_mode', testMode);
+            await SupabaseAPI.updateSystemSetting('ignore_deadline', allowOverrideDeadline);
+            await SupabaseAPI.updateSystemSetting('notice_message', notice || '수업계획을 자유롭게 작성하세요.');
 
-                const updatedSettings = DataManager.updateLessonPlanSettings(newSettings);
-                
-                Utils.hideLoading(submitBtn);
-                this.hideLessonPlanSettingsModal();
-                
-                let statusText = '수정 불가능';
-                if (testMode) {
-                    statusText = '테스트 모드 (항상 수정 가능)';
-                } else if (allowOverrideDeadline) {
-                    statusText = '마감일 무시 모드 (항상 수정 가능)';
-                } else if (updatedSettings.isEditingAllowed) {
-                    statusText = '수정 가능';
-                }
-                
-                Utils.showAlert(`수업계획 설정이 저장되었습니다.\n현재 상태: ${statusText}`);
-                
-            } catch (error) {
-                Utils.hideLoading(submitBtn);
-                Utils.showAlert('설정 저장 중 오류가 발생했습니다.');
-                console.error('Lesson plan settings error:', error);
+            Utils.hideLoading(submitBtn);
+            this.hideLessonPlanSettingsModal();
+            
+            let statusText = '수정 불가능';
+            if (testMode) {
+                statusText = '테스트 모드 (항상 수정 가능)';
+            } else if (allowOverrideDeadline) {
+                statusText = '마감일 무시 모드 (항상 수정 가능)';
+            } else {
+                const canEdit = await SupabaseAPI.canEditLessonPlan();
+                statusText = canEdit ? '수정 가능' : '수정 불가능';
             }
-        }, 500);
+            
+            Utils.showAlert(`수업계획 설정이 저장되었습니다.\n현재 상태: ${statusText}`);
+            
+        } catch (error) {
+            Utils.hideLoading(submitBtn);
+            Utils.showAlert('설정 저장 중 오류가 발생했습니다.');
+            console.error('Lesson plan settings error:', error);
+        }
     },
 
     // 테스트 모드 빠른 토글 (개발자용)
-    quickToggleTestMode() {
-        const newMode = DataManager.toggleTestMode();
-        const statusText = newMode ? '테스트 모드 활성화 (항상 편집 가능)' : '테스트 모드 비활성화';
-        Utils.showAlert(statusText);
-        return newMode;
+    async quickToggleTestMode() {
+        try {
+            const newMode = await SupabaseAPI.toggleTestMode();
+            const statusText = newMode ? '테스트 모드 활성화 (항상 편집 가능)' : '테스트 모드 비활성화';
+            Utils.showAlert(statusText);
+            return newMode;
+        } catch (error) {
+            console.error('Error toggling test mode:', error);
+            Utils.showAlert('테스트 모드 변경 중 오류가 발생했습니다.');
+            return false;
+        }
     },
 
     // 키보드 단축키 설정
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (event) => {
-            if (DataManager.currentUserType !== 'admin') return;
+            if (SupabaseAPI.currentUserType !== 'admin') return;
 
             // Ctrl/Cmd + F: 검색 포커스
             if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
@@ -731,57 +705,48 @@ const AdminManager = {
         });
     },
 
-    // 업데이트된 통계 로드 - 새로운 요구사항 반영
-    loadStatistics() {
-        const stats = DataManager.getStats();
-        
-        // 기존 4개 통계를 새로운 3개 통계로 변경
-        Utils.$('#applicantCount').textContent = stats.applicantCount;    // 구매 요청 신청자수
-        Utils.$('#pendingCount').textContent = stats.pendingCount;        // 미승인 아이템
-        Utils.$('#approvedCount').textContent = stats.approvedCount;      // 승인됨 (구매대기)
+    // 통계 로드
+    async loadStatistics() {
+        try {
+            const stats = await SupabaseAPI.getStats();
+            
+            Utils.$('#applicantCount').textContent = stats.applicantCount;
+            Utils.$('#pendingCount').textContent = stats.pendingCount;
+            Utils.$('#approvedCount').textContent = stats.approvedCount;
+        } catch (error) {
+            console.error('Error loading statistics:', error);
+        }
     },
 
-    // 새로 추가: 예산 현황 로드 - 개선된 HTML 생성 (각 항목별 클래스 추가)
-    loadBudgetOverview() {
-        const budgetStats = DataManager.getBudgetOverviewStats();
-        
-        // 예산 현황 업데이트 - 각 항목별로 다른 클래스 적용
-        Utils.$('#totalApprovedBudget').textContent = Utils.formatPrice(budgetStats.totalApprovedBudget);
-        Utils.$('#approvedItemsTotal').textContent = Utils.formatPrice(budgetStats.approvedItemsTotal);
-        Utils.$('#purchasedTotal').textContent = Utils.formatPrice(budgetStats.purchasedTotal);
-        Utils.$('#averagePerPerson').textContent = Utils.formatPrice(budgetStats.averagePerPerson);
-
-        // 각 예산 항목에 적절한 클래스 추가
-        const totalBudgetItem = Utils.$('#totalApprovedBudget').closest('.budget-summary-item');
-        const approvedItemsItem = Utils.$('#approvedItemsTotal').closest('.budget-summary-item');
-        const purchasedItemsItem = Utils.$('#purchasedTotal').closest('.budget-summary-item');
-        const averagePersonItem = Utils.$('#averagePerPerson').closest('.budget-summary-item');
-
-        if (totalBudgetItem && !totalBudgetItem.classList.contains('primary')) {
-            totalBudgetItem.classList.add('primary');
-        }
-        if (approvedItemsItem && !approvedItemsItem.classList.contains('approved-items')) {
-            approvedItemsItem.classList.add('approved-items');
-        }
-        if (purchasedItemsItem && !purchasedItemsItem.classList.contains('purchased-items')) {
-            purchasedItemsItem.classList.add('purchased-items');
-        }
-        if (averagePersonItem && !averagePersonItem.classList.contains('average-person')) {
-            averagePersonItem.classList.add('average-person');
+    // 예산 현황 로드
+    async loadBudgetOverview() {
+        try {
+            const budgetStats = await SupabaseAPI.getBudgetOverviewStats();
+            
+            Utils.$('#totalApprovedBudget').textContent = Utils.formatPrice(budgetStats.totalApprovedBudget);
+            Utils.$('#approvedItemsTotal').textContent = Utils.formatPrice(budgetStats.approvedItemsTotal);
+            Utils.$('#purchasedTotal').textContent = Utils.formatPrice(budgetStats.purchasedTotal);
+            Utils.$('#averagePerPerson').textContent = Utils.formatPrice(budgetStats.averagePerPerson);
+        } catch (error) {
+            console.error('Error loading budget overview:', error);
         }
     },
 
     // 수업계획 관리 정보 로드
-    loadLessonPlanManagement() {
-        const pendingPlans = DataManager.getPendingLessonPlans();
-        
-        // 수업계획 관리 버튼에 대기 중인 수업계획 개수 표시
-        const btn = Utils.$('#lessonPlanManagementBtn');
-        if (btn && pendingPlans.length > 0) {
-            btn.innerHTML = `
-                <i data-lucide="clipboard-check"></i>
-                수업계획 관리 <span class="notification-badge">${pendingPlans.length}</span>
-            `;
+    async loadLessonPlanManagement() {
+        try {
+            const pendingPlans = await SupabaseAPI.getPendingLessonPlans();
+            
+            // 수업계획 관리 버튼에 대기 중인 수업계획 개수 표시
+            const btn = Utils.$('#lessonPlanManagementBtn');
+            if (btn && pendingPlans.length > 0) {
+                btn.innerHTML = `
+                    <i data-lucide="clipboard-check"></i>
+                    수업계획 관리 <span class="notification-badge">${pendingPlans.length}</span>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading lesson plan management:', error);
         }
     },
 
@@ -837,9 +802,14 @@ const AdminManager = {
     },
 
     // 신청 내역 로드
-    loadApplications() {
-        const applications = DataManager.searchApplications(this.currentSearchTerm);
-        this.renderApplications(applications);
+    async loadApplications() {
+        try {
+            const applications = await SupabaseAPI.searchApplications(this.currentSearchTerm);
+            this.renderApplications(applications);
+        } catch (error) {
+            console.error('Error loading applications:', error);
+            Utils.showAlert('신청 내역을 불러오는 중 오류가 발생했습니다.');
+        }
     },
 
     // 신청 내역 렌더링
@@ -867,136 +837,43 @@ const AdminManager = {
         this.setupItemActionListeners();
     },
 
-    // 신청 카드 생성 - 배송지 정보 추가 (수정됨)
+    // 신청 카드 생성
     createApplicationCard(application) {
         const card = Utils.createElement('div', 'admin-application-card');
         
-        const submittedDate = Utils.formatDate(application.submittedAt);
-        const student = DataManager.students.find(s => s.id === application.studentId);
-        const lessonPlan = DataManager.getStudentLessonPlan(application.studentId);
-        const budgetStatus = DataManager.getStudentBudgetStatus(application.studentId);
-        
-        // 온라인 구매 아이템이 있는지 확인
-        const hasOnlineItems = application.items.some(item => item.purchaseMethod === 'online');
-        
-        // 수업계획 상태 표시
-        let lessonPlanStatus = '';
-        if (lessonPlan) {
-            if (lessonPlan.approvalStatus === 'approved') {
-                lessonPlanStatus = `<span class="lesson-plan-status approved">수업계획: 승인됨</span>`;
-            } else if (lessonPlan.approvalStatus === 'rejected') {
-                lessonPlanStatus = `<span class="lesson-plan-status rejected">수업계획: 반려됨</span>`;
-            } else {
-                const statusText = lessonPlan.status === 'completed' ? '승인대기' : '임시저장';
-                const statusClass = lessonPlan.status === 'completed' ? 'pending' : 'draft';
-                lessonPlanStatus = `<span class="lesson-plan-status ${statusClass}">수업계획: ${statusText}</span>`;
-            }
-        } else {
-            lessonPlanStatus = `<span class="lesson-plan-status not-started">수업계획: 미작성</span>`;
-        }
-
-        // 예산 정보 표시
-        let budgetInfo = '';
-        if (budgetStatus && budgetStatus.allocated > 0) {
-            budgetInfo = `
-                <div class="budget-info-summary">
-                    <span>예산: ${Utils.formatPrice(budgetStatus.used)} / ${Utils.formatPrice(budgetStatus.allocated)}</span>
-                    <span>잔여: ${Utils.formatPrice(budgetStatus.remaining)}</span>
-                </div>
-            `;
-        }
-
-        // 배송지 정보 표시 (온라인 구매 아이템이 있는 경우에만) - 수정됨
-        let shippingInfo = '';
-        if (hasOnlineItems) {
-            if (student && student.shippingAddress) {
-                const addr = student.shippingAddress;
-                shippingInfo = `
-                    <div class="shipping-info">
-                        <div class="shipping-header">
-                            <span class="shipping-label">
-                                <i data-lucide="map-pin"></i> 배송지 정보
-                            </span>
-                            <button class="toggle-shipping-btn" type="button">
-                                <i data-lucide="chevron-down"></i>
-                            </button>
-                        </div>
-                        <div class="shipping-details">
-                            <div class="shipping-item">
-                                <span class="shipping-field">받는 분:</span>
-                                <span class="shipping-value">${this.escapeHtml(addr.name)}</span>
-                            </div>
-                            <div class="shipping-item">
-                                <span class="shipping-field">연락처:</span>
-                                <span class="shipping-value">${this.escapeHtml(addr.phone)}</span>
-                            </div>
-                            <div class="shipping-item">
-                                <span class="shipping-field">주소:</span>
-                                <span class="shipping-value">${this.escapeHtml(addr.address)}</span>
-                            </div>
-                            ${addr.postcode ? `
-                                <div class="shipping-item">
-                                    <span class="shipping-field">우편번호:</span>
-                                    <span class="shipping-value">${this.escapeHtml(addr.postcode)}</span>
-                                </div>
-                            ` : ''}
-                            ${addr.note ? `
-                                <div class="shipping-item">
-                                    <span class="shipping-field">요청사항:</span>
-                                    <span class="shipping-value">${this.escapeHtml(addr.note)}</span>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            } else {
-                shippingInfo = `
-                    <div class="shipping-info warning">
-                        <div class="shipping-warning">
-                            <i data-lucide="alert-triangle"></i>
-                            <span>배송지 정보가 설정되지 않았습니다</span>
-                        </div>
-                        <small class="shipping-help">온라인 구매를 위해서는 학생에게 배송지 설정을 요청하세요.</small>
-                    </div>
-                `;
-            }
-        }
+        const submittedDate = Utils.formatDate(application.created_at);
         
         card.innerHTML = `
             <div class="admin-application-header">
                 <div class="student-info">
                     <div>
-                        <h3>${this.escapeHtml(application.studentName)}</h3>
+                        <h3>${this.escapeHtml(application.user_profiles.name)}</h3>
                         <p class="submission-date">신청일: ${submittedDate}</p>
-                        ${student ? `<p class="institute-info">${student.instituteName} • ${student.specialization}</p>` : ''}
-                        ${lessonPlanStatus}
-                        ${budgetInfo}
+                        <p class="institute-info">${application.user_profiles.sejong_institute} • ${application.user_profiles.field}</p>
                     </div>
-                    <span class="item-count">총 ${application.items.length}개 항목</span>
+                    <span class="item-count">총 1개 항목</span>
                 </div>
-                ${shippingInfo}
             </div>
             
             <div class="admin-application-body">
-                ${application.items.map(item => this.createItemCardHTML(application.studentId, item)).join('')}
+                ${this.createItemCardHTML(application)}
             </div>
         `;
         
         return card;
     },
 
-    // 아이템 카드 HTML 생성 - 영수증 관련 개선
-    createItemCardHTML(studentId, item) {
-        const statusClass = DataManager.getStatusClass(item.status);
-        const statusText = DataManager.getStatusText(item.status);
-        const purchaseMethodText = DataManager.getPurchaseMethodText(item.purchaseMethod);
-        const purchaseMethodClass = DataManager.getPurchaseMethodClass(item.purchaseMethod);
+    // 아이템 카드 HTML 생성
+    createItemCardHTML(application) {
+        const statusClass = SupabaseAPI.getStatusClass(application.status);
+        const statusText = SupabaseAPI.getStatusText(application.status);
+        const purchaseMethodText = SupabaseAPI.getPurchaseMethodText(application.purchase_type);
+        const purchaseMethodClass = SupabaseAPI.getPurchaseMethodClass(application.purchase_type);
         
-        // 영수증 관련 표시 개선
+        // 영수증 관련 표시
         let receiptInfo = '';
-        if (item.purchaseMethod === 'offline') {
-            if (item.receiptImage) {
-                const receiptData = typeof item.receiptImage === 'object' ? item.receiptImage : {};
+        if (application.purchase_type === 'offline') {
+            if (application.status === 'purchased') {
                 receiptInfo = `
                     <div class="receipt-info submitted">
                         <div class="receipt-info-header">
@@ -1004,17 +881,16 @@ const AdminManager = {
                                 ${Utils.createIcon('check-circle')} 영수증 제출완료
                             </span>
                             <button class="btn small secondary view-receipt-btn" 
-                                    data-student-id="${studentId}" data-item-id="${item.id}">
+                                    data-request-id="${application.id}">
                                 ${Utils.createIcon('eye')} 영수증 보기
                             </button>
                         </div>
                         <div class="receipt-details-summary">
-                            <small>제출일: ${new Date(item.receiptSubmittedAt).toLocaleString('ko-KR')}</small>
-                            ${receiptData.purchaseStore ? `<small>구매처: ${receiptData.purchaseStore}</small>` : ''}
+                            <small>제출일: ${new Date(application.updated_at).toLocaleString('ko-KR')}</small>
                         </div>
                     </div>
                 `;
-            } else if (item.status === 'approved') {
+            } else if (application.status === 'approved') {
                 receiptInfo = `
                     <div class="receipt-info pending">
                         <span class="receipt-pending">
@@ -1027,25 +903,25 @@ const AdminManager = {
         }
         
         return `
-            <div class="admin-item-card" data-student-id="${studentId}" data-item-id="${item.id}">
+            <div class="admin-item-card" data-request-id="${application.id}">
                 <div class="admin-item-header">
                     <div class="admin-item-info">
                         <div class="item-title-row">
-                            <h4>${this.escapeHtml(item.name)}</h4>
+                            <h4>${this.escapeHtml(application.item_name)}</h4>
                             <div class="item-badges">
                                 <span class="purchase-method-badge ${purchaseMethodClass}">
-                                    ${Utils.createIcon(item.purchaseMethod === 'offline' ? 'store' : 'shopping-cart')} ${purchaseMethodText}
+                                    ${Utils.createIcon(application.purchase_type === 'offline' ? 'store' : 'shopping-cart')} ${purchaseMethodText}
                                 </span>
-                                ${item.type ? `<span class="type-badge ${item.type}">${item.type === 'bundle' ? '묶음' : '단일'}</span>` : ''}
+                                ${application.is_bundle ? '<span class="type-badge bundle">묶음</span>' : '<span class="type-badge single">단일</span>'}
                             </div>
                         </div>
-                        <p class="purpose">${this.escapeHtml(item.purpose)}</p>
+                        <p class="purpose">${this.escapeHtml(application.purpose)}</p>
                         <div class="admin-item-details">
-                            <span><strong>가격:</strong> ${Utils.formatPrice(item.price)}</span>
-                            ${item.link ? `
+                            <span><strong>가격:</strong> ${Utils.formatPrice(application.price)}</span>
+                            ${application.purchase_link ? `
                                 <span>
-                                    <strong>${item.purchaseMethod === 'offline' ? '참고 링크:' : '구매 링크:'}</strong> 
-                                    <a href="${this.escapeHtml(item.link)}" target="_blank" rel="noopener noreferrer">
+                                    <strong>${application.purchase_type === 'offline' ? '참고 링크:' : '구매 링크:'}</strong> 
+                                    <a href="${this.escapeHtml(application.purchase_link)}" target="_blank" rel="noopener noreferrer">
                                         링크 보기 ${Utils.createIcon('external-link')}
                                     </a>
                                 </span>
@@ -1055,15 +931,15 @@ const AdminManager = {
                     </div>
                     
                     <div class="admin-item-actions">
-                        ${this.createActionButtons(item.status, item.purchaseMethod)}
+                        ${this.createActionButtons(application.status, application.purchase_type)}
                         <span class="admin-status-badge status-badge ${statusClass}">${statusText}</span>
                     </div>
                 </div>
                 
-                ${item.rejectionReason ? `
+                ${application.rejection_reason ? `
                     <div class="admin-rejection-reason">
                         <div class="reason-label">반려 사유</div>
-                        <div class="reason-text">${this.escapeHtml(item.rejectionReason)}</div>
+                        <div class="reason-text">${this.escapeHtml(application.rejection_reason)}</div>
                     </div>
                 ` : ''}
             </div>
@@ -1102,7 +978,7 @@ const AdminManager = {
         }
     },
 
-    // 아이템 액션 이벤트 리스너 설정 - 배송지 토글 기능 추가
+    // 아이템 액션 이벤트 리스너 설정
     setupItemActionListeners() {
         const actionButtons = Utils.$$('.admin-item-actions button[data-action]');
         
@@ -1110,10 +986,9 @@ const AdminManager = {
             button.addEventListener('click', (e) => {
                 const action = e.target.closest('button').dataset.action;
                 const itemCard = e.target.closest('.admin-item-card');
-                const studentId = parseInt(itemCard.dataset.studentId);
-                const itemId = parseInt(itemCard.dataset.itemId);
+                const requestId = parseInt(itemCard.dataset.requestId);
                 
-                this.handleItemAction(action, studentId, itemId, e.target);
+                this.handleItemAction(action, requestId, e.target);
             });
         });
 
@@ -1121,115 +996,95 @@ const AdminManager = {
         const receiptButtons = Utils.$$('.view-receipt-btn');
         receiptButtons.forEach(button => {
             button.addEventListener('click', (e) => {
-                const studentId = parseInt(e.target.closest('button').dataset.studentId);
-                const itemId = parseInt(e.target.closest('button').dataset.itemId);
-                this.showViewReceiptModal(studentId, itemId);
-            });
-        });
-
-        // 배송지 정보 토글 버튼 - 수정됨
-        const shippingHeaders = Utils.$$('.shipping-header');
-        shippingHeaders.forEach(header => {
-            header.addEventListener('click', (e) => {
-                const shippingDetails = header.parentElement.querySelector('.shipping-details');
-                const toggleBtn = header.querySelector('.toggle-shipping-btn i');
-                
-                if (shippingDetails.style.display === 'none' || !shippingDetails.style.display) {
-                    shippingDetails.style.display = 'block';
-                    toggleBtn.setAttribute('data-lucide', 'chevron-up');
-                } else {
-                    shippingDetails.style.display = 'none';
-                    toggleBtn.setAttribute('data-lucide', 'chevron-down');
-                }
-                
-                // 아이콘 재생성
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
+                const requestId = parseInt(e.target.closest('button').dataset.requestId);
+                this.showViewReceiptModal(requestId);
             });
         });
     },
 
     // 아이템 액션 처리
-    handleItemAction(action, studentId, itemId, buttonElement) {
+    async handleItemAction(action, requestId, buttonElement) {
         switch(action) {
             case 'approve':
-                this.approveItem(studentId, itemId, buttonElement);
+                await this.approveItem(requestId, buttonElement);
                 break;
             case 'reject':
-                this.rejectItem(studentId, itemId, buttonElement);
+                await this.rejectItem(requestId, buttonElement);
                 break;
             case 'purchase':
-                this.markAsPurchased(studentId, itemId, buttonElement);
+                await this.markAsPurchased(requestId, buttonElement);
                 break;
         }
     },
 
     // 아이템 승인
-    approveItem(studentId, itemId, buttonElement) {
-        // 예산 확인
-        const budgetStatus = DataManager.getStudentBudgetStatus(studentId);
-        if (!budgetStatus.canApplyForEquipment) {
-            Utils.showAlert('수업계획이 승인되지 않아 교구 신청을 승인할 수 없습니다.');
-            return;
-        }
-
-        const application = DataManager.applications.find(app => app.studentId === studentId);
-        const item = application?.items.find(i => i.id === itemId);
-        
-        if (item && budgetStatus.remaining < item.price) {
-            Utils.showAlert(`예산이 부족합니다. 남은 예산: ${Utils.formatPrice(budgetStatus.remaining)}`);
-            return;
-        }
-
+    async approveItem(requestId, buttonElement) {
         if (Utils.showConfirm('이 교구 신청을 승인하시겠습니까?')) {
             Utils.showLoading(buttonElement);
             
-            setTimeout(() => {
-                if (DataManager.updateItemStatus(studentId, itemId, 'approved')) {
-                    this.refreshData();
+            try {
+                const result = await SupabaseAPI.updateItemStatus(requestId, 'approved');
+                
+                if (result.success) {
+                    await this.refreshData();
                     Utils.showAlert('승인되었습니다.');
                 } else {
                     Utils.hideLoading(buttonElement);
-                    Utils.showAlert('승인 처리 중 오류가 발생했습니다.');
+                    Utils.showAlert(result.message || '승인 처리 중 오류가 발생했습니다.');
                 }
-            }, 500);
+            } catch (error) {
+                Utils.hideLoading(buttonElement);
+                Utils.showAlert('승인 처리 중 오류가 발생했습니다.');
+                console.error('Approve item error:', error);
+            }
         }
     },
 
     // 아이템 반려
-    rejectItem(studentId, itemId, buttonElement) {
+    async rejectItem(requestId, buttonElement) {
         const reason = Utils.showPrompt('반려 사유를 입력하세요:', '');
         
         if (reason && reason.trim()) {
             Utils.showLoading(buttonElement);
             
-            setTimeout(() => {
-                if (DataManager.updateItemStatus(studentId, itemId, 'rejected', reason.trim())) {
-                    this.refreshData();
+            try {
+                const result = await SupabaseAPI.updateItemStatus(requestId, 'rejected', reason.trim());
+                
+                if (result.success) {
+                    await this.refreshData();
                     Utils.showAlert('반려 처리되었습니다.');
                 } else {
                     Utils.hideLoading(buttonElement);
-                    Utils.showAlert('반려 처리 중 오류가 발생했습니다.');
+                    Utils.showAlert(result.message || '반려 처리 중 오류가 발생했습니다.');
                 }
-            }, 500);
+            } catch (error) {
+                Utils.hideLoading(buttonElement);
+                Utils.showAlert('반려 처리 중 오류가 발생했습니다.');
+                console.error('Reject item error:', error);
+            }
         }
     },
 
     // 구매 완료 처리
-    markAsPurchased(studentId, itemId, buttonElement) {
+    async markAsPurchased(requestId, buttonElement) {
         if (Utils.showConfirm('이 교구의 구매가 완료되었습니까?')) {
             Utils.showLoading(buttonElement);
             
-            setTimeout(() => {
-                if (DataManager.updateItemStatus(studentId, itemId, 'purchased')) {
-                    this.refreshData();
+            try {
+                const result = await SupabaseAPI.updateItemStatus(requestId, 'purchased');
+                
+                if (result.success) {
+                    await this.refreshData();
                     Utils.showAlert('구매완료로 처리되었습니다.');
                 } else {
                     Utils.hideLoading(buttonElement);
-                    Utils.showAlert('구매완료 처리 중 오류가 발생했습니다.');
+                    Utils.showAlert(result.message || '구매완료 처리 중 오류가 발생했습니다.');
                 }
-            }, 500);
+            } catch (error) {
+                Utils.hideLoading(buttonElement);
+                Utils.showAlert('구매완료 처리 중 오류가 발생했습니다.');
+                console.error('Mark as purchased error:', error);
+            }
         }
     },
 
@@ -1240,27 +1095,25 @@ const AdminManager = {
     },
 
     // Excel 내보내기 처리
-    handleExport() {
+    async handleExport() {
         Utils.showLoading('#exportBtn');
         
-        setTimeout(() => {
-            try {
-                const exportData = DataManager.prepareExportData();
-                
-                if (exportData.length === 0) {
-                    Utils.showAlert('내보낼 데이터가 없습니다.');
-                } else {
-                    const filename = `sejong_applications_${this.getDateString()}.csv`;
-                    Utils.downloadCSV(exportData, filename);
-                    Utils.showAlert(`${exportData.length}건의 데이터를 내보냈습니다.`);
-                }
-            } catch (error) {
-                Utils.showAlert('데이터 내보내기 중 오류가 발생했습니다.');
-                console.error('Export error:', error);
-            } finally {
-                Utils.hideLoading('#exportBtn');
+        try {
+            const exportData = await SupabaseAPI.prepareExportData();
+            
+            if (exportData.length === 0) {
+                Utils.showAlert('내보낼 데이터가 없습니다.');
+            } else {
+                const filename = `sejong_applications_${this.getDateString()}.csv`;
+                Utils.downloadCSV(exportData, filename);
+                Utils.showAlert(`${exportData.length}건의 데이터를 내보냈습니다.`);
             }
-        }, 1000);
+        } catch (error) {
+            Utils.showAlert('데이터 내보내기 중 오류가 발생했습니다.');
+            console.error('Export error:', error);
+        } finally {
+            Utils.hideLoading('#exportBtn');
+        }
     },
 
     // 결과 없음 HTML 생성
@@ -1277,12 +1130,12 @@ const AdminManager = {
         `;
     },
 
-    // 데이터 새로고침 - 예산 현황도 포함
-    refreshData() {
-        this.loadStatistics();
-        this.loadBudgetOverview(); // 새로 추가
-        this.loadApplications();
-        this.loadLessonPlanManagement();
+    // 데이터 새로고침
+    async refreshData() {
+        await this.loadStatistics();
+        await this.loadBudgetOverview();
+        await this.loadApplications();
+        await this.loadLessonPlanManagement();
     },
 
     // HTML 이스케이프
@@ -1299,58 +1152,5 @@ const AdminManager = {
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
         return `${year}${month}${day}`;
-    },
-
-    // 상세 통계 보기 - 업데이트됨
-    showDetailedStats() {
-        const stats = DataManager.getStats();
-        const budgetStats = DataManager.getBudgetOverviewStats();
-        const applications = DataManager.getAllApplications();
-        const offlineStats = DataManager.getOfflinePurchaseStats();
-        const budgetSettings = DataManager.getAllFieldBudgetSettings();
-        
-        // 분야별 통계
-        const fieldStats = {};
-        Object.keys(budgetSettings).forEach(field => {
-            fieldStats[field] = { count: 0, amount: 0 };
-        });
-        
-        applications.forEach(app => {
-            const student = DataManager.students.find(s => s.id === app.studentId);
-            
-            app.items.forEach(item => {
-                // 분야별 통계
-                if (student && fieldStats[student.specialization]) {
-                    fieldStats[student.specialization].count++;
-                    fieldStats[student.specialization].amount += item.price;
-                }
-            });
-        });
-        
-        let fieldStatsText = '';
-        Object.entries(fieldStats).forEach(([field, stat]) => {
-            if (stat.count > 0) {
-                fieldStatsText += `- ${field}: ${stat.count}건, ${Utils.formatPrice(stat.amount)}\n`;
-            }
-        });
-        
-        const message = `상세 통계\n\n` +
-                       `신청자 수: ${stats.applicantCount}명\n` +
-                       `미승인 아이템: ${stats.pendingCount}건\n` +
-                       `승인된 아이템: ${stats.approvedCount}건\n` +
-                       `구매완료 아이템: ${stats.purchasedCount}건\n` +
-                       `반려된 아이템: ${stats.rejectedCount}건\n\n` +
-                       `예산 현황:\n` +
-                       `- 배정된 총 예산: ${Utils.formatPrice(budgetStats.totalApprovedBudget)}\n` +
-                       `- 승인된 아이템 총액: ${Utils.formatPrice(budgetStats.approvedItemsTotal)}\n` +
-                       `- 구매 완료 총액: ${Utils.formatPrice(budgetStats.purchasedTotal)}\n` +
-                       `- 1인당 평균 지원금: ${Utils.formatPrice(budgetStats.averagePerPerson)}\n\n` +
-                       `오프라인 구매 현황:\n` +
-                       `- 승인된 오프라인 구매: ${offlineStats.approvedOffline}건\n` +
-                       `- 영수증 제출 완료: ${offlineStats.withReceipt}건\n` +
-                       `- 영수증 제출 대기: ${offlineStats.pendingReceipt}건\n\n` +
-                       `분야별 통계:\n${fieldStatsText}`;
-        
-        alert(message);
     }
 };
