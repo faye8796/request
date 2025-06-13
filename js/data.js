@@ -201,7 +201,7 @@ const DataManager = {
 
     // 관리자 인증
     authenticateAdmin(code) {
-        if (code === 'admin2024') {
+        if (code === 'admin123') {
             this.currentUser = { name: '관리자', role: 'admin' };
             this.currentUserType = 'admin';
             return true;
