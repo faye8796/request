@@ -165,11 +165,14 @@ const AuthManager = {
 
     // 안전한 학생 리다이렉션 처리 (오류 메시지 중복 방지)
     async safeRedirectStudent(studentId) {
+        // 추가 알림 제거 - 환영 메시지만 표시
+        this.clearAllNotices();
+        
         try {
             console.log('Checking lesson plan status for student:', studentId);
             
-            // 수업계획 상태 확인
-            const lessonPlan = await SupabaseAPI.getStudentLessonPlan(studentId);
+            // 수업계획 상태 확인 - 조용한 방식으로
+            const lessonPlan = await this.quietlyCheckLessonPlan(studentId);
             console.log('Lesson plan data:', lessonPlan);
             
             const hasCompletedPlan = lessonPlan && (lessonPlan.status === 'submitted' || lessonPlan.status === 'approved');
@@ -221,6 +224,30 @@ const AuthManager = {
                     StudentManager.init();
                 }
             }, 1000);
+        }
+    },
+
+    // 조용한 수업계획 확인 (에러 메시지 표시 안함)
+    async quietlyCheckLessonPlan(studentId) {
+        try {
+            // Supabase API를 직접 호출하되, 오류를 조용히 처리
+            const client = await SupabaseAPI.ensureClient();
+            const { data, error } = await client
+                .from('lesson_plans')
+                .select('*')
+                .eq('user_id', studentId)
+                .single();
+
+            if (error && error.code !== 'PGRST116') {
+                // PGRST116(no rows)이 아닌 경우만 로그
+                console.warn('Quiet lesson plan check error:', error);
+                return null;
+            }
+
+            return data || null;
+        } catch (error) {
+            console.warn('Quiet lesson plan check failed:', error);
+            return null;
         }
     },
 
