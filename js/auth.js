@@ -1,4 +1,4 @@
-// 인증 관리 모듈 (Supabase 연동)
+// 인증 관리 모듈 (Supabase 연동) - 로그인 및 수업계획 상태 체크 수정 버전
 const AuthManager = {
     // 초기화
     init() {
@@ -84,7 +84,7 @@ const AuthManager = {
         }, 100);
     },
 
-    // 학생 로그인 처리 (Supabase 연동)
+    // 학생 로그인 처리 (Supabase 연동) - 안전성 강화
     async handleStudentLogin() {
         const name = Utils.$('#studentName').value.trim();
         const birthDate = Utils.$('#studentBirth').value;
@@ -98,23 +98,26 @@ const AuthManager = {
         Utils.showLoading(loginBtn);
 
         try {
+            console.log('🔄 학생 로그인 시도:', { name, birthDate });
+            
             // Supabase를 통한 인증 시도
             const result = await SupabaseAPI.authenticateStudent(name, birthDate);
+            console.log('로그인 결과:', result);
             
-            if (result.success) {
-                this.loginSuccess('student', result.user);
+            if (result.success && result.data) {
+                this.loginSuccess('student', result.data);
             } else {
                 Utils.hideLoading(loginBtn);
-                Utils.showAlert(result.message || '학생 정보를 찾을 수 없습니다.\\n이름과 생년월일을 다시 확인해주세요.');
+                Utils.showAlert(result.message || '학생 정보를 찾을 수 없습니다.\n이름과 생년월일을 다시 확인해주세요.');
             }
         } catch (error) {
-            console.error('Student login error:', error);
+            console.error('❌ 학생 로그인 오류:', error);
             Utils.hideLoading(loginBtn);
             Utils.showAlert('로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         }
     },
 
-    // 관리자 로그인 처리 (Supabase 연동)
+    // 관리자 로그인 처리 (Supabase 연동) - 안전성 강화
     async handleAdminLogin() {
         const code = Utils.$('#adminCode').value.trim();
 
@@ -126,99 +129,149 @@ const AuthManager = {
         Utils.showLoading(loginBtn);
 
         try {
+            console.log('🔄 관리자 로그인 시도');
+            
             // Supabase를 통한 인증 시도
             const result = await SupabaseAPI.authenticateAdmin(code);
+            console.log('관리자 로그인 결과:', result);
             
-            if (result.success) {
+            if (result.success && result.user) {
                 this.loginSuccess('admin', result.user);
             } else {
                 Utils.hideLoading(loginBtn);
                 Utils.showAlert(result.message || '관리자 코드가 올바르지 않습니다.');
             }
         } catch (error) {
-            console.error('Admin login error:', error);
+            console.error('❌ 관리자 로그인 오류:', error);
             Utils.hideLoading(loginBtn);
             Utils.showAlert('로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         }
     },
 
-    // 로그인 성공 처리
+    // 로그인 성공 처리 - 안전성 강화
     async loginSuccess(userType, user) {
-        console.log('Login success:', { userType, user });
-        
-        // 입력 필드 초기화
-        this.clearLoginForms();
-
-        // 성공 메시지 표시
-        const userName = user.name;
-        Utils.showAlert(`환영합니다, ${userName}님!`);
-
-        // 해당 페이지로 이동
-        if (userType === 'student') {
-            // 학생의 경우 수업계획 완료 여부 체크 - 안전한 방법으로 처리
-            this.safeRedirectStudent(user.id);
-        } else if (userType === 'admin') {
-            App.showPage('adminPage');
-            AdminManager.init();
-        }
-    },
-
-    // 안전한 학생 리다이렉션 처리 (오류 메시지 중복 방지)
-    async safeRedirectStudent(studentId) {
-        // 추가 알림 제거 - 환영 메시지만 표시
-        this.clearAllNotices();
-        
         try {
-            console.log('Checking lesson plan status for student:', studentId);
+            console.log('✅ 로그인 성공:', { userType, user });
             
-            // 수업계획 상태 확인 - 조용한 방식으로
-            const lessonPlan = await this.quietlyCheckLessonPlan(studentId);
-            console.log('Lesson plan data:', lessonPlan);
+            // user 객체 유효성 검사
+            if (!user) {
+                console.error('❌ 사용자 정보가 없습니다');
+                Utils.showAlert('로그인 처리 중 오류가 발생했습니다.');
+                return;
+            }
             
-            const hasCompletedPlan = lessonPlan && (lessonPlan.status === 'submitted' || lessonPlan.status === 'approved');
+            // 입력 필드 초기화
+            this.clearLoginForms();
+
+            // 사용자 이름 안전하게 가져오기
+            const userName = user.name || user.user_name || user.full_name || '사용자';
             
-            if (!hasCompletedPlan) {
-                // 수업계획이 완료되지 않은 경우
-                const hasDraft = lessonPlan && lessonPlan.status === 'draft';
-                
-                if (!hasDraft) {
-                    // 수업계획 작성 필요 - 바로 이동
-                    setTimeout(() => {
-                        console.log('Redirecting to lesson plan page - new plan');
-                        App.showPage('lessonPlanPage');
-                        if (window.LessonPlanManager) {
-                            LessonPlanManager.showLessonPlanPage();
-                        }
-                        this.showLessonPlanGuidance();
-                    }, 1000);
-                } else {
-                    // 임시저장된 수업계획이 있는 경우 - 바로 이동
-                    setTimeout(() => {
-                        console.log('Redirecting to lesson plan page - continue draft');
-                        App.showPage('lessonPlanPage');
-                        if (window.LessonPlanManager) {
-                            LessonPlanManager.showLessonPlanPage();
-                        }
-                        this.showLessonPlanContinueGuidance();
-                    }, 1000);
-                }
-            } else {
-                // 수업계획이 완료된 경우 바로 학생 대시보드로
+            // 성공 메시지 표시
+            Utils.showAlert(`환영합니다, ${userName}님!`);
+
+            // 해당 페이지로 이동
+            if (userType === 'student') {
+                // 학생의 경우 수업계획 완료 여부 체크
+                await this.safeRedirectStudent(user.id);
+            } else if (userType === 'admin') {
+                // 관리자는 바로 관리자 페이지로
                 setTimeout(() => {
-                    console.log('Redirecting to student dashboard');
-                    App.showPage('studentPage');
-                    if (window.StudentManager) {
-                        StudentManager.init();
+                    App.showPage('adminPage');
+                    if (window.AdminManager) {
+                        AdminManager.init();
                     }
                 }, 1000);
             }
         } catch (error) {
-            // 오류가 발생해도 추가 알림을 표시하지 않고 조용히 처리
-            console.warn('Silent error in lesson plan check:', error);
+            console.error('❌ 로그인 성공 처리 오류:', error);
+            Utils.showAlert('로그인 후 페이지 이동 중 오류가 발생했습니다.');
+        }
+    },
+
+    // 안전한 학생 리다이렉션 처리 - 수업계획 상태 로직 개선
+    async safeRedirectStudent(studentId) {
+        try {
+            console.log('📋 학생 수업계획 상태 확인 시작:', studentId);
             
-            // 기본적으로 학생 대시보드로 이동
+            // 기존 알림 정리
+            this.clearAllNotices();
+            
+            // 수업계획 상태 확인
+            const lessonPlan = await this.quietlyCheckLessonPlan(studentId);
+            console.log('수업계획 데이터:', lessonPlan);
+            
+            // 수업계획 상태 분류
+            let shouldGoToDashboard = false;
+            let shouldGoToLessonPlan = false;
+            let guidanceType = 'new';
+            
+            if (!lessonPlan) {
+                // 수업계획이 아예 없는 경우 - 새로 작성
+                console.log('📝 수업계획 없음 - 새로 작성 필요');
+                shouldGoToLessonPlan = true;
+                guidanceType = 'new';
+            } else {
+                switch (lessonPlan.status) {
+                    case 'draft':
+                        // 임시저장된 경우 - 계속 작성
+                        console.log('📝 임시저장된 수업계획 - 계속 작성');
+                        shouldGoToLessonPlan = true;
+                        guidanceType = 'continue';
+                        break;
+                        
+                    case 'submitted':
+                        // 제출된 경우 - 승인 대기 중이지만 대시보드로
+                        console.log('⏳ 수업계획 승인 대기 중 - 대시보드로');
+                        shouldGoToDashboard = true;
+                        break;
+                        
+                    case 'approved':
+                        // 승인된 경우 - 대시보드로
+                        console.log('✅ 수업계획 승인됨 - 대시보드로');
+                        shouldGoToDashboard = true;
+                        break;
+                        
+                    case 'rejected':
+                        // 반려된 경우 - 수정 필요
+                        console.log('❌ 수업계획 반려됨 - 수정 필요');
+                        shouldGoToLessonPlan = true;
+                        guidanceType = 'rejected';
+                        break;
+                        
+                    default:
+                        // 알 수 없는 상태 - 대시보드로
+                        console.log('❓ 알 수 없는 상태 - 대시보드로');
+                        shouldGoToDashboard = true;
+                        break;
+                }
+            }
+            
+            // 페이지 이동 실행
             setTimeout(() => {
-                console.log('Redirecting to student dashboard (fallback)');
+                if (shouldGoToDashboard) {
+                    console.log('🏠 학생 대시보드로 이동');
+                    App.showPage('studentPage');
+                    if (window.StudentManager) {
+                        StudentManager.init();
+                    }
+                } else if (shouldGoToLessonPlan) {
+                    console.log('📋 수업계획 페이지로 이동');
+                    App.showPage('lessonPlanPage');
+                    if (window.LessonPlanManager) {
+                        LessonPlanManager.showLessonPlanPage();
+                    }
+                    
+                    // 안내 메시지 표시
+                    this.showLessonPlanGuidance(guidanceType, lessonPlan);
+                }
+            }, 1000);
+            
+        } catch (error) {
+            console.warn('⚠️ 수업계획 상태 확인 오류:', error);
+            
+            // 오류 발생 시 기본적으로 학생 대시보드로
+            setTimeout(() => {
+                console.log('🏠 폴백: 학생 대시보드로 이동');
                 App.showPage('studentPage');
                 if (window.StudentManager) {
                     StudentManager.init();
@@ -227,183 +280,212 @@ const AuthManager = {
         }
     },
 
-    // 조용한 수업계획 확인 (에러 메시지 표시 안함)
+    // 조용한 수업계획 확인 (에러 메시지 표시 안함) - 안전성 강화
     async quietlyCheckLessonPlan(studentId) {
         try {
-            // Supabase API를 직접 호출하되, 오류를 조용히 처리
-            const client = await SupabaseAPI.ensureClient();
-            const { data, error } = await client
-                .from('lesson_plans')
-                .select('*')
-                .eq('user_id', studentId)
-                .single();
-
-            if (error && error.code !== 'PGRST116') {
-                // PGRST116(no rows)이 아닌 경우만 로그
-                console.warn('Quiet lesson plan check error:', error);
-                return null;
-            }
-
-            return data || null;
+            console.log('🔍 수업계획 조회 시도:', studentId);
+            
+            // SupabaseAPI 사용
+            const result = await SupabaseAPI.getStudentLessonPlan(studentId);
+            console.log('수업계획 조회 결과:', result);
+            
+            return result;
         } catch (error) {
-            console.warn('Quiet lesson plan check failed:', error);
+            console.warn('⚠️ 수업계획 조회 실패:', error);
             return null;
         }
     },
 
-    // 수업계획 작성 안내
-    showLessonPlanGuidance() {
-        // 기존 알림들 제거
-        this.clearAllNotices();
-        
-        const guidance = document.createElement('div');
-        guidance.className = 'lesson-plan-guidance-overlay';
-        guidance.innerHTML = `
-            <div class="guidance-content">
-                <div class="guidance-icon">
-                    <i data-lucide="calendar-check" style="width: 3rem; height: 3rem; color: #4f46e5;"></i>
-                </div>
-                <h3>수업계획 작성이 필요합니다</h3>
-                <p>파견 기간 동안의 수업계획을 먼저 작성해주세요.</p>
-                <p>수업계획 완료 후 교구 신청이 가능합니다.</p>
-                <button class="btn primary" onclick="this.parentElement.parentElement.remove()">
-                    시작하기
-                </button>
-            </div>
-        `;
-        
-        document.body.appendChild(guidance);
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-        
-        // 5초 후 자동 제거
-        setTimeout(() => {
-            if (guidance.parentNode) {
-                guidance.parentNode.removeChild(guidance);
+    // 수업계획 안내 - 타입별 메시지 개선
+    showLessonPlanGuidance(type = 'new', lessonPlan = null) {
+        try {
+            // 기존 알림들 제거
+            this.clearAllNotices();
+            
+            const guidance = document.createElement('div');
+            guidance.className = 'lesson-plan-guidance-overlay';
+            
+            let content = '';
+            
+            switch (type) {
+                case 'new':
+                    content = `
+                        <div class="guidance-content">
+                            <div class="guidance-icon">
+                                <i data-lucide="calendar-plus" style="width: 3rem; height: 3rem; color: #4f46e5;"></i>
+                            </div>
+                            <h3>수업계획 작성이 필요합니다</h3>
+                            <p>파견 기간 동안의 수업계획을 먼저 작성해주세요.</p>
+                            <p><strong>수업계획은 필수 제출 사항</strong>이며, 완료 후 교구 신청이 가능합니다.</p>
+                            <button class="btn primary" onclick="this.parentElement.parentElement.remove()">
+                                시작하기
+                            </button>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'continue':
+                    content = `
+                        <div class="guidance-content">
+                            <div class="guidance-icon">
+                                <i data-lucide="edit" style="width: 3rem; height: 3rem; color: #f59e0b;"></i>
+                            </div>
+                            <h3>수업계획을 완료해주세요</h3>
+                            <p>임시저장된 수업계획이 있습니다.</p>
+                            <p>수업계획 완료 후 교구 신청이 가능합니다.</p>
+                            <button class="btn primary" onclick="this.parentElement.parentElement.remove()">
+                                계속 작성하기
+                            </button>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'rejected':
+                    const rejectionReason = lessonPlan?.rejection_reason || '사유 없음';
+                    content = `
+                        <div class="guidance-content">
+                            <div class="guidance-icon">
+                                <i data-lucide="alert-triangle" style="width: 3rem; height: 3rem; color: #ef4444;"></i>
+                            </div>
+                            <h3>수업계획이 반려되었습니다</h3>
+                            <p><strong>반려 사유:</strong> ${rejectionReason}</p>
+                            <p>수업계획을 수정하여 다시 제출해주세요.</p>
+                            <button class="btn danger" onclick="this.parentElement.parentElement.remove()">
+                                수정하기
+                            </button>
+                        </div>
+                    `;
+                    break;
             }
-        }, 5000);
-    },
-
-    // 수업계획 계속 작성 안내
-    showLessonPlanContinueGuidance() {
-        // 기존 알림들 제거
-        this.clearAllNotices();
-        
-        const guidance = document.createElement('div');
-        guidance.className = 'lesson-plan-guidance-overlay';
-        guidance.innerHTML = `
-            <div class="guidance-content">
-                <div class="guidance-icon">
-                    <i data-lucide="edit" style="width: 3rem; height: 3rem; color: #f59e0b;"></i>
-                </div>
-                <h3>수업계획을 완료해주세요</h3>
-                <p>임시저장된 수업계획이 있습니다.</p>
-                <p>수업계획 완료 후 교구 신청이 가능합니다.</p>
-                <button class="btn primary" onclick="this.parentElement.parentElement.remove()">
-                    계속 작성하기
-                </button>
-            </div>
-        `;
-        
-        document.body.appendChild(guidance);
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-        
-        // 5초 후 자동 제거
-        setTimeout(() => {
-            if (guidance.parentNode) {
-                guidance.parentNode.removeChild(guidance);
+            
+            guidance.innerHTML = content;
+            
+            document.body.appendChild(guidance);
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
             }
-        }, 5000);
+            
+            // 7초 후 자동 제거
+            setTimeout(() => {
+                if (guidance.parentNode) {
+                    guidance.parentNode.removeChild(guidance);
+                }
+            }, 7000);
+            
+        } catch (error) {
+            console.error('안내 메시지 표시 오류:', error);
+        }
     },
 
     // 모든 알림 제거
     clearAllNotices() {
-        const notices = document.querySelectorAll('.lesson-plan-required-notice, .lesson-plan-draft-notice, .lesson-plan-guidance-overlay');
-        notices.forEach(notice => {
-            if (notice.parentNode) {
-                notice.parentNode.removeChild(notice);
-            }
-        });
+        try {
+            const notices = document.querySelectorAll('.lesson-plan-required-notice, .lesson-plan-draft-notice, .lesson-plan-guidance-overlay, .dashboard-notice');
+            notices.forEach(notice => {
+                if (notice.parentNode) {
+                    notice.parentNode.removeChild(notice);
+                }
+            });
+        } catch (error) {
+            console.error('알림 제거 오류:', error);
+        }
     },
 
     // 로그아웃 처리
     handleLogout() {
         if (Utils.showConfirm('정말로 로그아웃하시겠습니까?')) {
-            // 데이터 정리
-            SupabaseAPI.logout();
-            
-            // 모든 알림 제거
-            this.clearAllNotices();
-            
-            // 폼 초기화
-            this.clearLoginForms();
-            
-            // 로그인 페이지로 이동
-            App.showPage('loginPage');
-            
-            // 포커스 설정
-            setTimeout(() => {
-                Utils.$('#studentName').focus();
-            }, 100);
+            try {
+                // 데이터 정리
+                SupabaseAPI.logout();
+                
+                // 모든 알림 제거
+                this.clearAllNotices();
+                
+                // 폼 초기화
+                this.clearLoginForms();
+                
+                // 로그인 페이지로 이동
+                App.showPage('loginPage');
+                
+                // 포커스 설정
+                setTimeout(() => {
+                    const nameInput = Utils.$('#studentName');
+                    if (nameInput) nameInput.focus();
+                }, 100);
+                
+                console.log('✅ 로그아웃 완료');
+            } catch (error) {
+                console.error('로그아웃 처리 오류:', error);
+            }
         }
     },
 
     // 로그인 폼 초기화
     clearLoginForms() {
-        Utils.$('#studentName').value = '';
-        Utils.$('#studentBirth').value = '';
-        Utils.$('#adminCode').value = '';
-        
-        // 로딩 상태 해제
-        Utils.hideLoading('#studentLoginBtn');
-        Utils.hideLoading('#adminLoginBtn');
+        try {
+            const studentName = Utils.$('#studentName');
+            const studentBirth = Utils.$('#studentBirth');
+            const adminCode = Utils.$('#adminCode');
+            
+            if (studentName) studentName.value = '';
+            if (studentBirth) studentBirth.value = '';
+            if (adminCode) adminCode.value = '';
+            
+            // 로딩 상태 해제
+            Utils.hideLoading('#studentLoginBtn');
+            Utils.hideLoading('#adminLoginBtn');
+        } catch (error) {
+            console.error('폼 초기화 오류:', error);
+        }
     },
 
-    // 현재 사용자 정보 표시 업데이트
+    // 현재 사용자 정보 표시 업데이트 - 안전성 강화
     async updateUserDisplay() {
-        const user = SupabaseAPI.currentUser;
-        const userType = SupabaseAPI.currentUserType;
+        try {
+            const user = SupabaseAPI.currentUser;
+            const userType = SupabaseAPI.currentUserType;
 
-        console.log('updateUserDisplay called:', { user, userType });
+            console.log('👤 사용자 정보 표시 업데이트:', { user, userType });
 
-        if (userType === 'student' && user) {
-            const welcomeEl = Utils.$('#studentWelcome');
-            const detailsEl = Utils.$('#studentDetails');
-            
-            if (welcomeEl) {
-                welcomeEl.textContent = `안녕하세요, ${user.name}님!`;
-                console.log('Welcome message updated:', welcomeEl.textContent);
-            } else {
-                console.error('studentWelcome element not found');
-            }
-            
-            if (detailsEl) {
-                const instituteName = user.sejong_institute || '세종학당';
-                const field = user.field || '전문분야';
+            if (userType === 'student' && user) {
+                const welcomeEl = Utils.$('#studentWelcome');
+                const detailsEl = Utils.$('#studentDetails');
                 
-                // 예산 정보 조회
-                try {
-                    const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(user.id);
-                    const budgetLimit = budgetStatus ? budgetStatus.allocated : 0;
-                    detailsEl.textContent = `${instituteName} • ${field} • 배정예산: ${Utils.formatPrice(budgetLimit)}`;
-                } catch (error) {
-                    console.error('Error fetching budget status:', error);
-                    detailsEl.textContent = `${instituteName} • ${field}`;
+                if (welcomeEl) {
+                    const userName = user.name || user.user_name || user.full_name || '사용자';
+                    welcomeEl.textContent = `안녕하세요, ${userName}님!`;
+                    console.log('환영 메시지 업데이트:', welcomeEl.textContent);
+                } else {
+                    console.warn('studentWelcome 요소를 찾을 수 없습니다');
+                }
+                
+                if (detailsEl) {
+                    const instituteName = user.sejong_institute || '세종학당';
+                    const field = user.field || '전문분야';
+                    
+                    // 예산 정보 조회
+                    try {
+                        const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(user.id);
+                        const budgetLimit = budgetStatus ? budgetStatus.allocated : 0;
+                        detailsEl.textContent = `${instituteName} • ${field} • 배정예산: ${Utils.formatPrice(budgetLimit)}`;
+                    } catch (error) {
+                        console.error('예산 상태 조회 오류:', error);
+                        detailsEl.textContent = `${instituteName} • ${field}`;
+                    }
+                } else {
+                    console.warn('studentDetails 요소를 찾을 수 없습니다');
                 }
             } else {
-                console.error('studentDetails element not found');
+                console.log('사용자 정보 표시 건너뜀 - 사용자 없음 또는 학생 타입 아님');
+                
+                // 현재 사용자가 없는 경우에도 기본 메시지 표시
+                const welcomeEl = Utils.$('#studentWelcome');
+                if (welcomeEl && !user) {
+                    welcomeEl.textContent = '안녕하세요!';
+                }
             }
-        } else {
-            console.log('User display update skipped - no user or not student type');
-            
-            // 현재 사용자가 없는 경우에도 기본 메시지 표시
-            const welcomeEl = Utils.$('#studentWelcome');
-            if (welcomeEl && !user) {
-                welcomeEl.textContent = '안녕하세요, 님!';
-            }
+        } catch (error) {
+            console.error('사용자 정보 표시 업데이트 오류:', error);
         }
     },
 
@@ -429,13 +511,17 @@ const AuthManager = {
 
     // 세션 관리 (향후 확장)
     saveSession() {
-        if (this.isAuthenticated()) {
-            const sessionData = {
-                user: SupabaseAPI.currentUser,
-                userType: SupabaseAPI.currentUserType,
-                timestamp: Date.now()
-            };
-            sessionStorage.setItem('userSession', JSON.stringify(sessionData));
+        try {
+            if (this.isAuthenticated()) {
+                const sessionData = {
+                    user: SupabaseAPI.currentUser,
+                    userType: SupabaseAPI.currentUserType,
+                    timestamp: Date.now()
+                };
+                sessionStorage.setItem('userSession', JSON.stringify(sessionData));
+            }
+        } catch (error) {
+            console.error('세션 저장 오류:', error);
         }
     },
 
@@ -458,7 +544,7 @@ const AuthManager = {
                 }
             }
         } catch (error) {
-            console.error('Session restore failed:', error);
+            console.error('세션 복원 실패:', error);
         }
         
         // 세션 정리
@@ -468,7 +554,11 @@ const AuthManager = {
 
     // 세션 정리
     clearSession() {
-        sessionStorage.removeItem('userSession');
+        try {
+            sessionStorage.removeItem('userSession');
+        } catch (error) {
+            console.error('세션 정리 오류:', error);
+        }
     },
 
     // 자동 로그아웃 타이머 (향후 확장)
