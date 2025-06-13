@@ -1,18 +1,21 @@
-/* 수업계획 페이지 스타일 개선 - 필수 검증 버전 */
+/* 수업계획 페이지 스타일 - 밝은 테마 */
 
 .lesson-plan-container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+    background-color: #f8f9fa;
+    min-height: 100vh;
 }
 
 .lesson-plan-header {
     text-align: center;
     margin-bottom: 30px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
     padding: 40px 20px;
     border-radius: 12px;
     border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .lesson-plan-header h1 {
@@ -23,14 +26,14 @@
 }
 
 .lesson-plan-header p {
-    color: #7f8c8d;
+    color: #6c757d;
     font-size: 16px;
     line-height: 1.5;
     max-width: 600px;
     margin: 0 auto;
 }
 
-/* 상태 알림 메시지 스타일 개선 */
+/* 상태 알림 메시지 스타일 */
 .lesson-plan-message, .edit-disabled {
     display: flex;
     align-items: center;
@@ -42,30 +45,37 @@
     font-weight: 500;
     animation: slideInFromTop 0.4s ease-out;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
 }
 
-.lesson-plan-message.success, .edit-disabled.success {
+.lesson-plan-message.success {
     background-color: #d4edda;
     border-left-color: #28a745;
     color: #155724;
 }
 
-.lesson-plan-message.warning, .edit-disabled.warning {
+.lesson-plan-message.warning {
     background-color: #fff3cd;
     border-left-color: #ffc107;
     color: #856404;
 }
 
-.lesson-plan-message.error, .edit-disabled.error {
+.lesson-plan-message.error {
     background-color: #f8d7da;
     border-left-color: #dc3545;
     color: #721c24;
 }
 
-.lesson-plan-message.info, .edit-disabled.info {
+.lesson-plan-message.info {
     background-color: #d1ecf1;
     border-left-color: #17a2b8;
     color: #0c5460;
+}
+
+.edit-disabled.warning {
+    background-color: #fff3cd;
+    border-left-color: #ffc107;
+    color: #856404;
 }
 
 /* 필수 요구사항 알림 */
@@ -101,22 +111,7 @@
     line-height: 1.5;
 }
 
-/* 로딩 상태 표시 */
-.loading-spinner {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #007bff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
+/* 애니메이션 */
 @keyframes slideInFromTop {
     0% {
         opacity: 0;
@@ -128,7 +123,7 @@
     }
 }
 
-/* 버튼 상태 개선 */
+/* 버튼 스타일 */
 .btn {
     position: relative;
     overflow: hidden;
@@ -139,6 +134,24 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btn.primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+}
+
+.btn.secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+}
+
+.btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .btn:disabled {
@@ -147,25 +160,7 @@
     transform: none !important;
 }
 
-.btn.loading {
-    color: transparent;
-}
-
-.btn.loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 2px solid #ffffff;
-    border-top: 2px solid transparent;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-/* 폼 섹션 개선 */
+/* 폼 섹션 */
 .basic-info-section, .lesson-table-section, .additional-info-section {
     background: #ffffff;
     border-radius: 12px;
@@ -187,22 +182,7 @@
     border-bottom: 2px solid #f8f9fa;
 }
 
-.basic-info-section h2::before {
-    content: "📋";
-    font-size: 24px;
-}
-
-.lesson-table-section h2::before {
-    content: "📚";
-    font-size: 24px;
-}
-
-.additional-info-section h2::before {
-    content: "📝";
-    font-size: 24px;
-}
-
-/* 폼 그리드 개선 */
+/* 폼 그리드 */
 .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -230,6 +210,7 @@
     font-size: 14px;
     transition: all 0.2s ease;
     background-color: #ffffff;
+    color: #495057;
 }
 
 .form-group input:focus, .form-group textarea:focus {
@@ -249,7 +230,7 @@
     display: block;
 }
 
-/* 수업계획표 스타일 개선 */
+/* 수업계획표 스타일 */
 .lesson-table {
     border-radius: 12px;
     overflow: hidden;
@@ -281,16 +262,12 @@
     border-right: none;
 }
 
-/* 필수 표시 스타일 */
-.header-cell:contains("*") {
-    color: #007bff;
-}
-
 .table-row {
     display: grid;
     grid-template-columns: 120px 1fr 2fr;
     border-bottom: 1px solid #e9ecef;
     transition: background-color 0.2s ease;
+    background: #ffffff;
 }
 
 .table-row:hover {
@@ -320,7 +297,7 @@
     font-size: 14px;
 }
 
-/* 입력 필드 개선 */
+/* 입력 필드 스타일 */
 .topic-input, .content-textarea {
     width: 100%;
     border: 2px solid #e9ecef;
@@ -329,6 +306,7 @@
     font-size: 14px;
     transition: all 0.2s ease;
     background: #ffffff;
+    color: #495057;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -342,17 +320,13 @@
     border-left: 4px solid #007bff;
 }
 
-.topic-input:invalid, .content-textarea:invalid {
-    border-color: #dc3545;
-}
-
 .content-textarea {
     resize: vertical;
     min-height: 80px;
     line-height: 1.5;
 }
 
-/* 폼 액션 버튼 개선 */
+/* 폼 액션 버튼 */
 .form-actions {
     display: flex;
     gap: 16px;
@@ -372,26 +346,8 @@
     justify-content: center;
     gap: 8px;
     font-size: 14px;
-    text-transform: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.2s ease;
-}
-
-.form-actions .btn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.form-actions .btn.primary {
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-    border: none;
-    color: white;
-}
-
-.form-actions .btn.secondary {
-    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-    border: none;
-    color: white;
 }
 
 /* 반응형 디자인 */
@@ -432,64 +388,9 @@
     .basic-info-section, .lesson-table-section, .additional-info-section {
         padding: 20px;
     }
-    
-    .requirement-notice {
-        flex-direction: column;
-        gap: 8px;
-    }
-    
-    .requirement-notice i {
-        align-self: flex-start;
-    }
 }
 
-/* 다크모드 지원 */
-@media (prefers-color-scheme: dark) {
-    .basic-info-section, .lesson-table-section, .additional-info-section {
-        background: #2d3748;
-        border-color: #4a5568;
-        color: #e2e8f0;
-    }
-    
-    .lesson-table {
-        background: #2d3748;
-        border-color: #4a5568;
-    }
-    
-    .table-header {
-        background: linear-gradient(135deg, #4a5568 0%, #718096 100%);
-        color: #e2e8f0;
-    }
-    
-    .topic-input, .content-textarea, .form-group input, .form-group textarea {
-        background: #4a5568;
-        border-color: #718096;
-        color: #e2e8f0;
-    }
-    
-    .topic-input:focus, .content-textarea:focus, .form-group input:focus, .form-group textarea:focus {
-        border-color: #63b3ed;
-        box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.1);
-    }
-    
-    .requirement-notice {
-        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-        border-color: #63b3ed;
-        color: #e2e8f0;
-    }
-}
-
-/* 접근성 개선 */
-.lesson-plan-message:focus-within,
-.topic-input:focus,
-.content-textarea:focus,
-.form-group input:focus,
-.form-group textarea:focus {
-    outline: 2px solid #007bff;
-    outline-offset: 2px;
-}
-
-/* 새로운 유틸리티 클래스 */
+/* 유틸리티 클래스 */
 .text-muted {
     color: #6c757d !important;
     font-size: 13px;
@@ -503,23 +404,13 @@
     margin-top: 1rem;
 }
 
-/* 개선된 스페이싱 */
-.basic-info-section .btn {
-    margin-top: 16px;
-}
-
-/* 필드 유효성 표시 */
-.form-group input:valid, .form-group textarea:valid,
-.topic-input:valid, .content-textarea:valid {
-    border-left-color: #28a745;
-}
-
-.form-group input:invalid:not(:placeholder-shown), 
-.form-group textarea:invalid:not(:placeholder-shown),
-.topic-input:invalid:not(:placeholder-shown), 
-.content-textarea:invalid:not(:placeholder-shown) {
-    border-left-color: #dc3545;
-    background-color: #fff5f5;
+/* 접근성 */
+.topic-input:focus,
+.content-textarea:focus,
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
 }
 
 /* 프린트 스타일 */
@@ -534,50 +425,6 @@
     .lesson-plan-container {
         max-width: none;
         padding: 0;
+        background: white;
     }
-    
-    .basic-info-section, .lesson-table-section, .additional-info-section {
-        box-shadow: none;
-        border: 1px solid #000;
-        page-break-inside: avoid;
-    }
-    
-    .lesson-plan-header {
-        background: #f8f9fa !important;
-        color: #000 !important;
-    }
-}
-
-/* 향상된 시각적 피드백 */
-.form-completion-indicator {
-    position: sticky;
-    top: 20px;
-    background: white;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 20px;
-    font-size: 14px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    z-index: 100;
-}
-
-.completion-progress {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.progress-bar {
-    flex: 1;
-    height: 6px;
-    background: #e9ecef;
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    transition: width 0.3s ease;
 }
