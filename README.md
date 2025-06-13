@@ -119,7 +119,7 @@ system_settings (id, setting_key, setting_value, setting_type)
 
 ### 분야별 예산 설정 (예시)
 | 전공 분야 | 회당 지원금 | 최대 상한 |
-|-----------|-------------|-----------|
+|-----------|-------------|-----------| 
 | 한국어교육 | 15,000원 | 400,000원 |
 | 전통문화예술 | 25,000원 | 600,000원 |
 | K-Pop 문화 | 10,000원 | 300,000원 |
@@ -175,11 +175,53 @@ const finalBudget = Math.min(calculatedBudget, maxBudgetLimit);
 - **모던 브라우저**: ES6+ 지원 (Chrome 60+, Firefox 55+, Safari 12+)
 
 ### 설정 단계
+
 1. **Supabase 프로젝트 생성**
+   - [Supabase 대시보드](https://supabase.com/dashboard)에서 새 프로젝트 생성
+   - PostgreSQL 데이터베이스 자동 설정
+
 2. **데이터베이스 스키마 설정**
-3. **환경 변수 구성** (`supabase-client.js`의 URL과 API 키)
+   ```sql
+   -- 사용자 프로필 테이블
+   CREATE TABLE user_profiles (
+       id SERIAL PRIMARY KEY,
+       email VARCHAR(255),
+       name VARCHAR(100) NOT NULL,
+       user_type VARCHAR(20) NOT NULL CHECK (user_type IN ('student', 'admin')),
+       field VARCHAR(50),
+       sejong_institute VARCHAR(100),
+       birth_date DATE,
+       created_at TIMESTAMP DEFAULT NOW()
+   );
+
+   -- 기타 테이블들 생성...
+   ```
+
+3. **환경 변수 구성**
+   - `js/supabase-client.js`에서 URL과 API 키 설정
+   ```javascript
+   const SUPABASE_URL = 'your-project-url';
+   const SUPABASE_ANON_KEY = 'your-anon-key';
+   ```
+
 4. **RLS 정책 적용**
+   ```sql
+   -- Row Level Security 활성화
+   ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+   
+   -- 사용자별 데이터 접근 정책 설정
+   CREATE POLICY "Users can view own profile" ON user_profiles
+       FOR SELECT USING (auth.uid() = id);
+   ```
+
 5. **웹 서버에 파일 업로드**
+   - GitHub Pages, Netlify, Vercel 등 정적 호스팅 서비스 활용
+   - 또는 자체 웹서버에 배포
+
+### 보안 고려사항
+- **API 키 보안**: 프로덕션 환경에서는 환경변수 사용 권장
+- **RLS 설정**: 모든 테이블에 적절한 Row Level Security 정책 적용
+- **HTTPS 사용**: 데이터 전송 시 SSL/TLS 암호화 필수
 
 ## 🔍 디버깅 및 모니터링
 
@@ -205,8 +247,21 @@ const finalBudget = Math.min(calculatedBudget, maxBudgetLimit);
 - **운영팀**: 서비스 이용 및 정책 관련 문의
 - **관리자**: 긴급 상황 및 시스템 장애 대응
 
+## 📝 업데이트 로그
+
+### v1.0.0 (2025-06-13)
+- 초기 플랫폼 구축 완료
+- Supabase 연동 및 실시간 데이터베이스 구현
+- 학생/관리자 인증 시스템 구축
+- 수업계획 작성 및 승인 워크플로우 구현
+- 분야별 예산 관리 시스템 완성
+- 교구 신청 및 영수증 관리 기능 구현
+- 관리자 대시보드 및 통계 기능 추가
+- Excel 데이터 내보내기 기능 구현
+- 반응형 웹 디자인 적용
+
 ---
 
 **세종학당 문화교구 신청 플랫폼**은 전 세계 세종학당에서 활동하는 문화인턴들이 보다 효과적으로 한국 문화를 전파할 수 있도록 지원하는 것을 목표로 합니다. 지속적인 개선과 사용자 피드백을 통해 더욱 발전된 플랫폼을 제공하겠습니다.
 
-*마지막 업데이트: 2024년 6월 13일*
+*마지막 업데이트: 2025년 6월 13일*
