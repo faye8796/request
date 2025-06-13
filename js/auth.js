@@ -1,9 +1,16 @@
-// 인증 관리 모듈
+// 인증 관리 모듈 (Supabase 연동)
 const AuthManager = {
     // 초기화
     init() {
         this.setupEventListeners();
         this.initializeTabs();
+        this.checkExistingSession();
+    },
+
+    // 기존 세션 확인
+    async checkExistingSession() {
+        // 기존 인증 상태가 있는지 확인 (개발 중에는 생략)
+        // 추후 Supabase Auth를 사용할 때 구현
     },
 
     // 이벤트 리스너 설정
@@ -77,8 +84,8 @@ const AuthManager = {
         }, 100);
     },
 
-    // 학생 로그인 처리
-    handleStudentLogin() {
+    // 학생 로그인 처리 (Supabase 연동)
+    async handleStudentLogin() {
         const name = Utils.$('#studentName').value.trim();
         const birthDate = Utils.$('#studentBirth').value;
 
@@ -90,19 +97,25 @@ const AuthManager = {
         const loginBtn = Utils.$('#studentLoginBtn');
         Utils.showLoading(loginBtn);
 
-        // 인증 시도
-        setTimeout(() => {
-            if (DataManager.authenticateStudent(name, birthDate)) {
-                this.loginSuccess('student');
+        try {
+            // Supabase를 통한 인증 시도
+            const result = await SupabaseAPI.authenticateStudent(name, birthDate);
+            
+            if (result.success) {
+                this.loginSuccess('student', result.user);
             } else {
                 Utils.hideLoading(loginBtn);
-                Utils.showAlert('학생 정보를 찾을 수 없습니다.\\n이름과 생년월일을 다시 확인해주세요.');
+                Utils.showAlert(result.message || '학생 정보를 찾을 수 없습니다.\n이름과 생년월일을 다시 확인해주세요.');
             }
-        }, 500); // 실제 인증 과정을 시뮬레이션
+        } catch (error) {
+            console.error('Student login error:', error);
+            Utils.hideLoading(loginBtn);
+            Utils.showAlert('로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        }
     },
 
-    // 관리자 로그인 처리
-    handleAdminLogin() {
+    // 관리자 로그인 처리 (Supabase 연동)
+    async handleAdminLogin() {
         const code = Utils.$('#adminCode').value.trim();
 
         // 입력 검증
@@ -112,68 +125,82 @@ const AuthManager = {
         const loginBtn = Utils.$('#adminLoginBtn');
         Utils.showLoading(loginBtn);
 
-        // 인증 시도
-        setTimeout(() => {
-            if (DataManager.authenticateAdmin(code)) {
-                this.loginSuccess('admin');
+        try {
+            // Supabase를 통한 인증 시도
+            const result = await SupabaseAPI.authenticateAdmin(code);
+            
+            if (result.success) {
+                this.loginSuccess('admin', result.user);
             } else {
                 Utils.hideLoading(loginBtn);
-                Utils.showAlert('관리자 코드가 올바르지 않습니다.');
+                Utils.showAlert(result.message || '관리자 코드가 올바르지 않습니다.');
             }
-        }, 500);
+        } catch (error) {
+            console.error('Admin login error:', error);
+            Utils.hideLoading(loginBtn);
+            Utils.showAlert('로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        }
     },
 
     // 로그인 성공 처리
-    loginSuccess(userType) {
+    async loginSuccess(userType, user) {
         // 입력 필드 초기화
         this.clearLoginForms();
 
         // 성공 메시지 표시
-        const userName = DataManager.currentUser.name;
+        const userName = user.name;
         Utils.showAlert(`환영합니다, ${userName}님!`);
 
         // 해당 페이지로 이동
         if (userType === 'student') {
             // 학생의 경우 수업계획 완료 여부 체크
-            this.checkAndRedirectStudent();
+            await this.checkAndRedirectStudent(user.id);
         } else if (userType === 'admin') {
             App.showPage('adminPage');
             AdminManager.init();
         }
     },
 
-    // 학생 로그인 후 수업계획 체크 및 리다이렉션 - 수정됨
-    checkAndRedirectStudent() {
-        const studentId = DataManager.currentUser.id;
-        const hasCompletedPlan = LessonPlanManager.hasCompletedLessonPlan(studentId);
-        
-        if (!hasCompletedPlan) {
-            // 수업계획이 완료되지 않은 경우
-            const needsPlan = LessonPlanManager.needsLessonPlan(studentId);
+    // 학생 로그인 후 수업계획 체크 및 리다이렉션 (Supabase 연동)
+    async checkAndRedirectStudent(studentId) {
+        try {
+            // 수업계획 상태 확인
+            const lessonPlan = await SupabaseAPI.getStudentLessonPlan(studentId);
+            const hasCompletedPlan = lessonPlan && lessonPlan.status === 'submitted';
             
-            if (needsPlan) {
-                // 수업계획 작성 필요 - 바로 이동
-                setTimeout(() => {
-                    App.showPage('lessonPlanPage');
-                    LessonPlanManager.showLessonPlanPage();
-                    this.showLessonPlanGuidance();
-                }, 1000);
+            if (!hasCompletedPlan) {
+                // 수업계획이 완료되지 않은 경우
+                const hasDraft = lessonPlan && lessonPlan.status === 'draft';
+                
+                if (!hasDraft) {
+                    // 수업계획 작성 필요 - 바로 이동
+                    setTimeout(() => {
+                        App.showPage('lessonPlanPage');
+                        LessonPlanManager.showLessonPlanPage();
+                        this.showLessonPlanGuidance();
+                    }, 1000);
+                } else {
+                    // 임시저장된 수업계획이 있는 경우 - 바로 이동
+                    setTimeout(() => {
+                        App.showPage('lessonPlanPage');
+                        LessonPlanManager.showLessonPlanPage();
+                        this.showLessonPlanContinueGuidance();
+                    }, 1000);
+                }
             } else {
-                // 임시저장된 수업계획이 있는 경우 - 바로 이동
-                setTimeout(() => {
-                    App.showPage('lessonPlanPage');
-                    LessonPlanManager.showLessonPlanPage();
-                    this.showLessonPlanContinueGuidance();
-                }, 1000);
+                // 수업계획이 완료된 경우 바로 학생 대시보드로
+                App.showPage('studentPage');
+                StudentManager.init();
             }
-        } else {
-            // 수업계획이 완료된 경우 바로 학생 대시보드로
+        } catch (error) {
+            console.error('Error checking lesson plan status:', error);
+            // 오류 발생 시 기본적으로 학생 대시보드로 이동
             App.showPage('studentPage');
             StudentManager.init();
         }
     },
 
-    // 수업계획 작성 안내 - 개선됨
+    // 수업계획 작성 안내
     showLessonPlanGuidance() {
         // 기존 알림들 제거
         this.clearAllNotices();
@@ -205,7 +232,7 @@ const AuthManager = {
         }, 5000);
     },
 
-    // 수업계획 계속 작성 안내 - 개선됨
+    // 수업계획 계속 작성 안내
     showLessonPlanContinueGuidance() {
         // 기존 알림들 제거
         this.clearAllNotices();
@@ -251,7 +278,7 @@ const AuthManager = {
     handleLogout() {
         if (Utils.showConfirm('정말로 로그아웃하시겠습니까?')) {
             // 데이터 정리
-            DataManager.logout();
+            SupabaseAPI.logout();
             
             // 모든 알림 제거
             this.clearAllNotices();
@@ -281,9 +308,9 @@ const AuthManager = {
     },
 
     // 현재 사용자 정보 표시 업데이트
-    updateUserDisplay() {
-        const user = DataManager.currentUser;
-        const userType = DataManager.currentUserType;
+    async updateUserDisplay() {
+        const user = SupabaseAPI.currentUser;
+        const userType = SupabaseAPI.currentUserType;
 
         if (userType === 'student') {
             const welcomeEl = Utils.$('#studentWelcome');
@@ -294,19 +321,35 @@ const AuthManager = {
             }
             
             if (detailsEl) {
-                detailsEl.textContent = `${user.instituteName} • ${user.specialization} • 예산한도: ${Utils.formatPrice(user.budgetLimit)}`;
+                const instituteName = user.sejong_institute || '세종학당';
+                const field = user.field || '전문분야';
+                
+                // 예산 정보 조회
+                try {
+                    const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(user.id);
+                    const budgetLimit = budgetStatus ? budgetStatus.allocated : 0;
+                    detailsEl.textContent = `${instituteName} • ${field} • 배정예산: ${Utils.formatPrice(budgetLimit)}`;
+                } catch (error) {
+                    console.error('Error fetching budget status:', error);
+                    detailsEl.textContent = `${instituteName} • ${field}`;
+                }
             }
         }
     },
 
     // 인증 상태 확인
     isAuthenticated() {
-        return DataManager.currentUser !== null;
+        return SupabaseAPI.currentUser !== null;
     },
 
     // 사용자 타입 확인
     getUserType() {
-        return DataManager.currentUserType;
+        return SupabaseAPI.currentUserType;
+    },
+
+    // 현재 사용자 정보 조회
+    getCurrentUser() {
+        return SupabaseAPI.currentUser;
     },
 
     // 권한 확인
@@ -318,8 +361,8 @@ const AuthManager = {
     saveSession() {
         if (this.isAuthenticated()) {
             const sessionData = {
-                user: DataManager.currentUser,
-                userType: DataManager.currentUserType,
+                user: SupabaseAPI.currentUser,
+                userType: SupabaseAPI.currentUserType,
                 timestamp: Date.now()
             };
             sessionStorage.setItem('userSession', JSON.stringify(sessionData));
@@ -339,8 +382,8 @@ const AuthManager = {
                 const maxAge = 24 * 60 * 60 * 1000; // 24시간
                 
                 if (sessionAge < maxAge) {
-                    DataManager.currentUser = user;
-                    DataManager.currentUserType = userType;
+                    SupabaseAPI.currentUser = user;
+                    SupabaseAPI.currentUserType = userType;
                     return true;
                 }
             }
@@ -369,5 +412,20 @@ const AuthManager = {
                 this.handleLogout();
             }
         }, timeout);
+    },
+
+    // 현재 사용자 ID 조회
+    getCurrentUserId() {
+        return this.getCurrentUser()?.id || null;
+    },
+
+    // 현재 사용자가 학생인지 확인
+    isStudent() {
+        return this.getUserType() === 'student';
+    },
+
+    // 현재 사용자가 관리자인지 확인
+    isAdmin() {
+        return this.getUserType() === 'admin';
     }
 };
