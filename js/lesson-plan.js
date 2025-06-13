@@ -280,8 +280,8 @@ const LessonPlanManager = {
             // 기존 데이터가 있으면 로드
             this.loadExistingData();
             
-            // 성공 메시지
-            this.showMessage(`${lessons.length}개의 수업 계획표가 생성되었습니다.`, 'success');
+            // 성공 메시지와 안내사항
+            this.showMessage(`${lessons.length}개의 수업 계획표가 생성되었습니다. 수업 내용은 선택사항이므로 원하는 만큼 작성하시면 됩니다.`, 'success');
             
         } catch (error) {
             console.error('수업 계획표 생성 오류:', error);
@@ -314,10 +314,14 @@ const LessonPlanManager = {
             
             let html = `
                 <div class="lesson-table">
+                    <div class="lesson-table-notice">
+                        <i data-lucide="info"></i>
+                        <p>💡 <strong>안내:</strong> 수업 주제와 내용은 선택사항입니다. 원하는 만큼 작성하시고 언제든지 임시저장하거나 완료할 수 있습니다.</p>
+                    </div>
                     <div class="table-header">
                         <div class="header-cell lesson-number-col">수업 회차</div>
-                        <div class="header-cell lesson-topic-col">수업 주제</div>
-                        <div class="header-cell lesson-content-col">수업 내용</div>
+                        <div class="header-cell lesson-topic-col">수업 주제 (선택)</div>
+                        <div class="header-cell lesson-content-col">수업 내용 (선택)</div>
                     </div>
             `;
 
@@ -333,13 +337,13 @@ const LessonPlanManager = {
                         <div class="cell lesson-topic">
                             <input type="text" 
                                    id="lessonTopic_${lesson.lessonNumber}" 
-                                   placeholder="수업 주제를 입력하세요"
+                                   placeholder="수업 주제 (선택사항)"
                                    class="topic-input"
                                    maxlength="100">
                         </div>
                         <div class="cell lesson-content">
                             <textarea id="lessonContent_${lesson.lessonNumber}" 
-                                      placeholder="수업 내용을 상세히 입력하세요"
+                                      placeholder="수업 내용 (선택사항)"
                                       class="content-textarea"
                                       rows="2"
                                       maxlength="500"></textarea>
@@ -434,7 +438,7 @@ const LessonPlanManager = {
         const overallGoals = document.getElementById('overallGoals').value.trim();
         const specialNotes = document.getElementById('specialNotes').value.trim();
 
-        // 수업별 데이터 수집
+        // 수업별 데이터 수집 (빈 수업도 포함)
         const lessons = [];
         const totalLessonInputs = document.querySelectorAll('[id^="lessonTopic_"]');
         
@@ -445,6 +449,7 @@ const LessonPlanManager = {
             
             const content = contentInput ? contentInput.value.trim() : '';
             
+            // 모든 수업을 포함 (빈 수업도 포함)
             lessons.push({
                 lessonNumber: parseInt(lessonNumber),
                 topic: topic,
@@ -459,14 +464,15 @@ const LessonPlanManager = {
             lessonsPerWeek,
             overallGoals,
             specialNotes,
-            lessons: lessons.filter(lesson => lesson.topic || lesson.content) // 빈 수업 제외
+            lessons: lessons // 모든 수업 포함
         };
     },
 
-    // 폼 유효성 검사
+    // 폼 유효성 검사 (더 유연하게 수정)
     validateForm(data) {
         const errors = [];
 
+        // 필수 필드만 검증
         if (!data.startDate) errors.push('파견 시작일을 입력해주세요.');
         if (!data.endDate) errors.push('파견 종료일을 입력해주세요.');
         if (!data.totalLessons) errors.push('총 수업 횟수를 입력해주세요.');
@@ -479,17 +485,13 @@ const LessonPlanManager = {
             errors.push('총 수업 횟수는 1~100회 사이여야 합니다.');
         }
 
-        // 수업 내용 검사
-        const totalLessonsEntered = data.lessons.length;
-        
-        if (totalLessonsEntered < data.totalLessons * 0.3) {
-            errors.push('최소 전체 수업의 30% 이상은 계획을 작성해주세요.');
-        }
+        // 수업 내용 검사 제거 - 이제 선택사항이므로 검증하지 않음
+        // 사용자가 원하는 만큼 작성하면 됨
 
         return errors;
     },
 
-    // 임시저장 (업데이트됨)
+    // 임시저장 (수정됨 - 페이지 이동 없음)
     saveDraft() {
         if (!DataManager.canEditLessonPlan()) {
             const settings = DataManager.lessonPlanSettings;
@@ -507,7 +509,7 @@ const LessonPlanManager = {
             const result = DataManager.saveLessonPlanDraft(DataManager.currentUser.id, data);
             
             if (result) {
-                this.showMessage('수업계획이 임시저장되었습니다.', 'success');
+                this.showMessage('수업계획이 임시저장되었습니다. 언제든지 다시 수정할 수 있습니다.', 'success');
                 this.currentLessonPlan = result;
                 this.isEditMode = true;
             }
@@ -517,7 +519,7 @@ const LessonPlanManager = {
         }
     },
 
-    // 폼 제출 처리 (업데이트됨)
+    // 폼 제출 처리 (수정됨 - 교구 신청 화면으로 이동)
     handleFormSubmit(e) {
         e.preventDefault();
 
@@ -535,12 +537,12 @@ const LessonPlanManager = {
         const errors = this.validateForm(data);
 
         if (errors.length > 0) {
-            this.showMessage('다음 사항을 확인해주세요:\\n\\n' + errors.join('\\n'), 'warning');
+            this.showMessage('다음 사항을 확인해주세요:\n\n' + errors.join('\n'), 'warning');
             return;
         }
 
-        // 완료 확인
-        if (!confirm('수업계획을 완료하시겠습니까? 완료 후에는 수정이 제한될 수 있습니다.')) {
+        // 완료 확인 메시지 수정
+        if (!confirm('수업계획을 완료하시겠습니까?\n완료하시면 교구 신청 페이지로 이동합니다.')) {
             return;
         }
 
@@ -550,12 +552,12 @@ const LessonPlanManager = {
             const result = DataManager.saveLessonPlan(DataManager.currentUser.id, data);
             
             if (result) {
-                this.showMessage('수업계획이 완료되었습니다!', 'success');
+                this.showMessage('수업계획이 완료되었습니다! 교구 신청 페이지로 이동합니다.', 'success');
                 
-                // 3초 후 학생 대시보드로 이동
+                // 1.5초 후 학생 대시보드(교구 신청 화면)로 이동
                 setTimeout(() => {
                     this.goToStudentDashboard();
-                }, 3000);
+                }, 1500);
             }
         } catch (error) {
             console.error('수업계획 저장 오류:', error);
