@@ -299,10 +299,10 @@ const Utils = {
         document.body.removeChild(link);
     },
 
-    // 상태 뱃지 HTML 생성
+    // 상태 뱃지 HTML 생성 (Supabase API 사용)
     createStatusBadge(status) {
-        const statusClass = DataManager.getStatusClass(status);
-        const statusText = DataManager.getStatusText(status);
+        const statusClass = SupabaseAPI.getStatusClass(status);
+        const statusText = SupabaseAPI.getStatusText(status);
         return `<span class="status-badge ${statusClass}">${statusText}</span>`;
     },
 
