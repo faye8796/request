@@ -1,4 +1,4 @@
-// 메인 애플리케이션 관리 모듈 (Supabase 연동)
+// 메인 애플리케이션 관리 모듈 (Supabase 연동) - 수정된 버전
 const App = {
     // 초기화
     init() {
@@ -82,42 +82,44 @@ const App = {
         }
     },
 
-    // 세션 복원 처리
+    // 세션 복원 처리 - 안전성 강화
     async handleSessionRestore() {
-        const userType = AuthManager.getUserType();
-        
-        if (userType === 'student') {
-            // 학생의 경우 수업계획 상태 확인
-            const studentId = AuthManager.getCurrentUserId();
+        try {
+            const userType = AuthManager.getUserType();
             
-            try {
-                const hasCompletedPlan = await LessonPlanManager.hasCompletedLessonPlan(studentId);
-                const needsPlan = await LessonPlanManager.needsLessonPlan(studentId);
+            if (userType === 'student') {
+                // 학생의 경우 수업계획 상태 확인
+                const studentId = AuthManager.getCurrentUserId();
                 
-                if (!hasCompletedPlan && needsPlan) {
-                    this.showPage('lessonPlanPage');
-                    if (window.LessonPlanManager) {
-                        LessonPlanManager.showLessonPlanPage();
+                try {
+                    // LessonPlanManager 존재 확인
+                    if (typeof LessonPlanManager !== 'undefined') {
+                        const hasCompletedPlan = await LessonPlanManager.hasCompletedLessonPlan(studentId);
+                        const needsPlan = await LessonPlanManager.needsLessonPlan(studentId);
+                        
+                        if (!hasCompletedPlan && needsPlan) {
+                            this.showPage('lessonPlanPage');
+                            if (window.LessonPlanManager) {
+                                LessonPlanManager.showLessonPlanPage();
+                            }
+                        } else {
+                            this.showPage('studentPage');
+                        }
+                    } else {
+                        console.warn('LessonPlanManager를 찾을 수 없습니다. 학생 페이지로 이동합니다.');
+                        this.showPage('studentPage');
                     }
-                } else {
+                } catch (error) {
+                    console.error('수업계획 상태 확인 오류:', error);
                     this.showPage('studentPage');
-                    if (window.StudentManager) {
-                        StudentManager.init();
-                    }
                 }
-            } catch (error) {
-                console.error('Error checking lesson plan status:', error);
-                this.showPage('studentPage');
-                if (window.StudentManager) {
-                    StudentManager.init();
-                }
+            } else if (userType === 'admin') {
+                this.showPage('adminPage');
+            } else {
+                this.showPage('loginPage');
             }
-        } else if (userType === 'admin') {
-            this.showPage('adminPage');
-            if (window.AdminManager) {
-                AdminManager.init();
-            }
-        } else {
+        } catch (error) {
+            console.error('세션 복원 처리 오류:', error);
             this.showPage('loginPage');
         }
     },
@@ -155,7 +157,7 @@ const App = {
 
     // 페이지 알림 정리
     clearPageNotices() {
-        const notices = document.querySelectorAll('.lesson-plan-guidance-overlay, .lesson-plan-required-notice, .lesson-plan-draft-notice');
+        const notices = document.querySelectorAll('.lesson-plan-guidance-overlay, .lesson-plan-required-notice, .lesson-plan-draft-notice, .dashboard-notice');
         notices.forEach(notice => {
             if (notice.parentNode) {
                 notice.parentNode.removeChild(notice);
@@ -184,7 +186,7 @@ const App = {
         }, 300);
     },
 
-    // 페이지 표시 후 처리 (수정됨 - 수업계획 페이지는 스크롤 위치 복원 제외)
+    // 페이지 표시 후 처리 (수정됨 - 안전성 강화)
     onPageShown(pageId) {
         // 수업계획 페이지가 아닌 경우에만 스크롤 위치 복원
         if (pageId !== 'lessonPlanPage') {
@@ -204,8 +206,14 @@ const App = {
             case 'lessonPlanPage':
                 // 수업계획 페이지 초기화 (스크롤을 맨 위로 하지 않음)
                 if (window.LessonPlanManager) {
-                    LessonPlanManager.init();
-                    LessonPlanManager.showLessonPlanPage();
+                    try {
+                        LessonPlanManager.init();
+                        LessonPlanManager.showLessonPlanPage();
+                    } catch (error) {
+                        console.error('수업계획 페이지 초기화 오류:', error);
+                    }
+                } else {
+                    console.warn('LessonPlanManager를 찾을 수 없습니다');
                 }
                 // 수업계획 페이지는 자연스러운 스크롤 동작 유지
                 break;
@@ -213,16 +221,38 @@ const App = {
             case 'studentPage':
                 // 학생 페이지 초기화
                 if (window.StudentManager) {
-                    StudentManager.init();
-                    StudentManager.refreshApplications();
+                    try {
+                        StudentManager.init();
+                        // refreshApplications 메서드명 수정
+                        if (StudentManager.refreshDashboard) {
+                            StudentManager.refreshDashboard();
+                        } else if (StudentManager.loadApplications) {
+                            StudentManager.loadApplications();
+                        }
+                    } catch (error) {
+                        console.error('학생 페이지 초기화 오류:', error);
+                    }
+                } else {
+                    console.warn('StudentManager를 찾을 수 없습니다');
                 }
                 break;
                 
             case 'adminPage':
                 // 관리자 페이지 초기화
                 if (window.AdminManager) {
-                    AdminManager.init();
-                    AdminManager.refreshData();
+                    try {
+                        AdminManager.init();
+                        // refreshData 메서드 확인 후 호출
+                        if (AdminManager.refreshData) {
+                            AdminManager.refreshData();
+                        } else if (AdminManager.loadData) {
+                            AdminManager.loadData();
+                        }
+                    } catch (error) {
+                        console.error('관리자 페이지 초기화 오류:', error);
+                    }
+                } else {
+                    console.warn('AdminManager를 찾을 수 없습니다');
                 }
                 break;
         }
@@ -270,17 +300,22 @@ const App = {
 
     // 페이지 접근 권한 확인
     canAccessPage(pageId) {
-        switch(pageId) {
-            case 'loginPage':
-                return true;
-            case 'lessonPlanPage':
-                return AuthManager.hasPermission('student');
-            case 'studentPage':
-                return AuthManager.hasPermission('student');
-            case 'adminPage':
-                return AuthManager.hasPermission('admin');
-            default:
-                return false;
+        try {
+            switch(pageId) {
+                case 'loginPage':
+                    return true;
+                case 'lessonPlanPage':
+                    return AuthManager.hasPermission('student');
+                case 'studentPage':
+                    return AuthManager.hasPermission('student');
+                case 'adminPage':
+                    return AuthManager.hasPermission('admin');
+                default:
+                    return false;
+            }
+        } catch (error) {
+            console.error('페이지 접근 권한 확인 오류:', error);
+            return false;
         }
     },
 
@@ -391,7 +426,7 @@ const App = {
         });
     },
 
-    // 전역 에러 처리
+    // 전역 에러 처리 - 강화된 버전
     handleGlobalError(error) {
         console.error('전역 에러 발생:', error);
         
@@ -400,10 +435,73 @@ const App = {
         
         // 사용자에게 친화적인 에러 메시지 표시
         const userMessage = this.getUserFriendlyErrorMessage(error);
-        Utils.showAlert(userMessage);
+        
+        // 에러 유형에 따른 처리
+        if (this.isNetworkError(error)) {
+            this.handleNetworkError();
+        } else if (this.isAuthenticationError(error)) {
+            this.handleAuthenticationError();
+        } else {
+            Utils.showAlert(userMessage);
+        }
     },
 
-    // 에러 로깅
+    // 네트워크 에러 판별
+    isNetworkError(error) {
+        return error.message && (
+            error.message.includes('fetch') ||
+            error.message.includes('network') ||
+            error.message.includes('Failed to fetch') ||
+            error.message.includes('NetworkError')
+        );
+    },
+
+    // 인증 에러 판별
+    isAuthenticationError(error) {
+        return error.message && (
+            error.message.includes('401') ||
+            error.message.includes('403') ||
+            error.message.includes('Unauthorized') ||
+            error.message.includes('permission')
+        );
+    },
+
+    // 네트워크 에러 처리
+    handleNetworkError() {
+        console.warn('네트워크 에러 발생 - 오프라인 모드 활성화');
+        this.enableOfflineMode();
+        
+        // 자동 재연결 시도
+        setTimeout(() => {
+            this.testNetworkConnection();
+        }, 5000);
+    },
+
+    // 인증 에러 처리
+    handleAuthenticationError() {
+        console.warn('인증 에러 발생 - 로그인 페이지로 이동');
+        AuthManager.logout();
+        this.showPage('loginPage');
+        Utils.showAlert('세션이 만료되었습니다. 다시 로그인해주세요.');
+    },
+
+    // 네트워크 연결 테스트
+    async testNetworkConnection() {
+        try {
+            const result = await SupabaseAPI.testConnection();
+            if (result.success) {
+                console.log('네트워크 연결 복원됨');
+                this.disableOfflineMode();
+            }
+        } catch (error) {
+            console.log('네트워크 연결 실패 - 재시도 예정');
+            setTimeout(() => {
+                this.testNetworkConnection();
+            }, 10000);
+        }
+    },
+
+    // 에러 로깅 - 개선된 버전
     logError(error) {
         const errorInfo = {
             message: error.message,
@@ -413,7 +511,9 @@ const App = {
             stack: error.error ? error.error.stack : '',
             timestamp: new Date().toISOString(),
             userAgent: navigator.userAgent,
-            url: window.location.href
+            url: window.location.href,
+            userId: SupabaseAPI.currentUser ? SupabaseAPI.currentUser.id : null,
+            userType: SupabaseAPI.currentUserType
         };
         
         // 로컬 스토리지에 에러 로그 저장
@@ -434,12 +534,16 @@ const App = {
 
     // 사용자 친화적 에러 메시지 생성
     getUserFriendlyErrorMessage(error) {
-        if (error.message.includes('network') || error.message.includes('fetch')) {
+        if (this.isNetworkError(error)) {
             return '네트워크 연결을 확인해주세요.';
         }
         
-        if (error.message.includes('permission')) {
-            return '권한이 없습니다. 다시 로그인해주세요.';
+        if (this.isAuthenticationError(error)) {
+            return '세션이 만료되었습니다. 다시 로그인해주세요.';
+        }
+        
+        if (error.message && error.message.includes('406')) {
+            return '일시적으로 서비스에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.';
         }
         
         return '예상치 못한 오류가 발생했습니다. 페이지를 새로고침하거나 관리자에게 문의해주세요.';
@@ -461,39 +565,47 @@ const App = {
 
     // 사용하지 않는 DOM 요소 정리
     cleanupUnusedElements() {
-        // 빈 텍스트 노드 제거
-        const walker = document.createTreeWalker(
-            document.body,
-            NodeFilter.SHOW_TEXT,
-            node => node.nodeValue.trim() === '' ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
-        );
-        
-        const emptyTextNodes = [];
-        let node;
-        while (node = walker.nextNode()) {
-            emptyTextNodes.push(node);
-        }
-        
-        emptyTextNodes.forEach(node => {
-            if (node.parentNode) {
-                node.parentNode.removeChild(node);
+        try {
+            // 빈 텍스트 노드 제거
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                node => node.nodeValue.trim() === '' ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
+            );
+            
+            const emptyTextNodes = [];
+            let node;
+            while (node = walker.nextNode()) {
+                emptyTextNodes.push(node);
             }
-        });
+            
+            emptyTextNodes.forEach(node => {
+                if (node.parentNode) {
+                    node.parentNode.removeChild(node);
+                }
+            });
+        } catch (error) {
+            console.error('DOM 요소 정리 오류:', error);
+        }
     },
 
     // 메모리 사용량 모니터링
     monitorMemoryUsage() {
-        if ('memory' in performance) {
-            const memoryInfo = performance.memory;
-            const usedMB = Math.round(memoryInfo.usedJSHeapSize / 1048576);
-            const limitMB = Math.round(memoryInfo.jsHeapSizeLimit / 1048576);
-            
-            console.log(`메모리 사용량: ${usedMB}MB / ${limitMB}MB`);
-            
-            // 메모리 사용량이 80% 이상이면 경고
-            if (usedMB / limitMB > 0.8) {
-                console.warn('메모리 사용량이 높습니다. 페이지 새로고침을 권장합니다.');
+        try {
+            if ('memory' in performance) {
+                const memoryInfo = performance.memory;
+                const usedMB = Math.round(memoryInfo.usedJSHeapSize / 1048576);
+                const limitMB = Math.round(memoryInfo.jsHeapSizeLimit / 1048576);
+                
+                console.log(`메모리 사용량: ${usedMB}MB / ${limitMB}MB`);
+                
+                // 메모리 사용량이 80% 이상이면 경고
+                if (usedMB / limitMB > 0.8) {
+                    console.warn('메모리 사용량이 높습니다. 페이지 새로고침을 권장합니다.');
+                }
             }
+        } catch (error) {
+            console.error('메모리 모니터링 오류:', error);
         }
     },
 
@@ -502,12 +614,16 @@ const App = {
         // 페이지 로드 성능 측정
         window.addEventListener('load', () => {
             setTimeout(() => {
-                if ('performance' in window) {
-                    const navigation = performance.getEntriesByType('navigation')[0];
-                    if (navigation) {
-                        const loadTime = navigation.loadEventEnd - navigation.loadEventStart;
-                        console.log(`페이지 로드 시간: ${loadTime}ms`);
+                try {
+                    if ('performance' in window) {
+                        const navigation = performance.getEntriesByType('navigation')[0];
+                        if (navigation) {
+                            const loadTime = navigation.loadEventEnd - navigation.loadEventStart;
+                            console.log(`페이지 로드 시간: ${loadTime}ms`);
+                        }
                     }
+                } catch (error) {
+                    console.error('성능 측정 오류:', error);
                 }
             }, 0);
         });
@@ -515,27 +631,31 @@ const App = {
 
     // 페이지 언로드 시 정리 (수정됨)
     onBeforeUnload() {
-        // 세션 저장
-        if (AuthManager.isAuthenticated()) {
-            AuthManager.saveSession();
-        }
-        
-        // 임시 데이터 정리
-        if (window.StudentManager && StudentManager.saveFormDraft) {
-            StudentManager.saveFormDraft();
-        }
-        
-        // 수업계획 임시저장
-        if (window.LessonPlanManager && LessonPlanManager.currentLessonPlan) {
-            // 자동 임시저장 로직은 LessonPlanManager 내부에서 처리
-        }
-        
-        // 수업계획 페이지가 아닌 경우에만 스크롤 위치 저장
-        const currentPage = Utils.$('.page.active');
-        if (currentPage && currentPage.id !== 'lessonPlanPage') {
-            if (window.Utils && Utils.saveScrollPosition) {
-                Utils.saveScrollPosition();
+        try {
+            // 세션 저장
+            if (AuthManager.isAuthenticated()) {
+                AuthManager.saveSession();
             }
+            
+            // 임시 데이터 정리
+            if (window.StudentManager && StudentManager.saveFormDraft) {
+                StudentManager.saveFormDraft();
+            }
+            
+            // 수업계획 임시저장
+            if (window.LessonPlanManager && LessonPlanManager.currentLessonPlan) {
+                // 자동 임시저장 로직은 LessonPlanManager 내부에서 처리
+            }
+            
+            // 수업계획 페이지가 아닌 경우에만 스크롤 위치 저장
+            const currentPage = Utils.$('.page.active');
+            if (currentPage && currentPage.id !== 'lessonPlanPage') {
+                if (window.Utils && Utils.saveScrollPosition) {
+                    Utils.saveScrollPosition();
+                }
+            }
+        } catch (error) {
+            console.error('페이지 언로드 처리 오류:', error);
         }
     },
 
@@ -570,7 +690,7 @@ const App = {
     showAppInfo() {
         const info = `
 세종학당 문화교구 신청 플랫폼
-버전: 1.2.0
+버전: 1.2.1 (406 Error Fixed)
 개발: Claude AI Assistant
 
 이 플랫폼은 세종학당 문화인턴들의 교구 신청을 위해 개발되었습니다.
@@ -581,6 +701,7 @@ const App = {
 • 수업계획 작성 및 관리
 • 관리자 승인 시스템
 • Excel 데이터 내보내기
+• 406 에러 대응 강화
 
 문의사항이 있으시면 관리자에게 연락해주세요.
         `;
@@ -607,6 +728,28 @@ const App = {
             };
             
             console.log('DEBUG 객체가 전역으로 설정되었습니다.');
+            console.log('사용 예: DEBUG.SupabaseAPI.healthCheck()');
+        }
+    },
+
+    // 시스템 상태 확인
+    async checkSystemHealth() {
+        try {
+            console.log('🔍 시스템 상태 확인 중...');
+            
+            const healthStatus = await SupabaseAPI.healthCheck();
+            console.log('시스템 상태:', healthStatus);
+            
+            if (healthStatus.status === 'healthy') {
+                console.log('✅ 시스템이 정상 작동 중입니다.');
+            } else {
+                console.warn('⚠️ 시스템에 문제가 있을 수 있습니다:', healthStatus.error);
+            }
+            
+            return healthStatus;
+        } catch (error) {
+            console.error('❌ 시스템 상태 확인 실패:', error);
+            return { status: 'error', error: error.message };
         }
     }
 };
@@ -617,9 +760,11 @@ App.init();
 // 전역에서 접근 가능한 함수들
 window.showAppInfo = () => App.showAppInfo();
 window.showDebugInfo = () => App.showDebugInfo();
+window.checkSystemHealth = () => App.checkSystemHealth();
 
 // 개발 모드에서만 디버그 정보 출력
 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     console.log('개발 모드에서 실행 중입니다.');
     console.log('showDebugInfo() 함수로 디버그 정보를 확인할 수 있습니다.');
+    console.log('checkSystemHealth() 함수로 시스템 상태를 확인할 수 있습니다.');
 }
