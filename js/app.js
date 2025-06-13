@@ -93,21 +93,32 @@ const App = {
             
             if (!hasCompletedPlan && LessonPlanManager.needsLessonPlan(studentId)) {
                 this.showPage('lessonPlanPage');
-                LessonPlanManager.showLessonPlanPage();
+                if (window.LessonPlanManager) {
+                    LessonPlanManager.showLessonPlanPage();
+                }
             } else {
                 this.showPage('studentPage');
-                StudentManager.init();
+                if (window.StudentManager) {
+                    StudentManager.init();
+                }
             }
         } else if (userType === 'admin') {
             this.showPage('adminPage');
-            AdminManager.init();
+            if (window.AdminManager) {
+                AdminManager.init();
+            }
         } else {
             this.showPage('loginPage');
         }
     },
 
-    // 페이지 표시
+    // 페이지 표시 (개선됨)
     showPage(pageId) {
+        console.log(`페이지 전환: ${pageId}`);
+        
+        // 기존 알림들 정리
+        this.clearPageNotices();
+        
         // 모든 페이지 숨김
         const pages = Utils.$$('.page');
         pages.forEach(page => {
@@ -124,12 +135,46 @@ const App = {
             
             // 페이지별 후처리
             this.onPageShown(pageId);
+            
+            // 페이지 전환 애니메이션
+            this.animatePageTransition(targetPage);
         } else {
             console.error(`페이지를 찾을 수 없습니다: ${pageId}`);
         }
     },
 
-    // 페이지 표시 후 처리
+    // 페이지 알림 정리
+    clearPageNotices() {
+        const notices = document.querySelectorAll('.lesson-plan-guidance-overlay, .lesson-plan-required-notice, .lesson-plan-draft-notice');
+        notices.forEach(notice => {
+            if (notice.parentNode) {
+                notice.parentNode.removeChild(notice);
+            }
+        });
+    },
+
+    // 페이지 전환 애니메이션
+    animatePageTransition(page) {
+        // 부드러운 페이드인 효과
+        page.style.opacity = '0';
+        page.style.transform = 'translateY(10px)';
+        
+        // 강제 리플로우
+        page.offsetHeight;
+        
+        // 애니메이션 적용
+        page.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        page.style.opacity = '1';
+        page.style.transform = 'translateY(0)';
+        
+        // 애니메이션 완료 후 스타일 정리
+        setTimeout(() => {
+            page.style.transition = '';
+            page.style.transform = '';
+        }, 300);
+    },
+
+    // 페이지 표시 후 처리 (개선됨)
     onPageShown(pageId) {
         // 스크롤 위치 복원
         Utils.restoreScrollPosition();
@@ -148,22 +193,30 @@ const App = {
                 // 수업계획 페이지 초기화
                 if (window.LessonPlanManager) {
                     LessonPlanManager.init();
+                    LessonPlanManager.showLessonPlanPage();
                 }
                 break;
                 
             case 'studentPage':
-                // 학생 페이지 새로고침
+                // 학생 페이지 초기화
                 if (window.StudentManager) {
+                    StudentManager.init();
                     StudentManager.refreshApplications();
                 }
                 break;
                 
             case 'adminPage':
-                // 관리자 페이지 새로고침
+                // 관리자 페이지 초기화
                 if (window.AdminManager) {
+                    AdminManager.init();
                     AdminManager.refreshData();
                 }
                 break;
+        }
+        
+        // 아이콘 재생성
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
         }
     },
 
@@ -283,6 +336,12 @@ const App = {
         if (activeModal) {
             activeModal.classList.remove('active');
         }
+        
+        // 안내 오버레이도 닫기
+        const guidanceOverlay = Utils.$('.lesson-plan-guidance-overlay');
+        if (guidanceOverlay) {
+            guidanceOverlay.remove();
+        }
     },
 
     // 네트워크 상태 변화 처리
@@ -291,7 +350,6 @@ const App = {
             '네트워크 연결이 복원되었습니다.' : 
             '네트워크 연결이 끊어졌습니다. 일부 기능이 제한될 수 있습니다.';
             
-        // 향후 토스트 알림으로 교체 가능
         console.log(statusMessage);
         
         // 오프라인 모드 처리
@@ -305,7 +363,6 @@ const App = {
     // 오프라인 모드 활성화
     enableOfflineMode() {
         document.body.classList.add('offline-mode');
-        // 오프라인에서 사용할 수 없는 기능 비활성화
         const onlineOnlyButtons = Utils.$$('[data-online-only]');
         onlineOnlyButtons.forEach(btn => {
             btn.disabled = true;
@@ -315,7 +372,6 @@ const App = {
     // 오프라인 모드 비활성화
     disableOfflineMode() {
         document.body.classList.remove('offline-mode');
-        // 온라인 기능 재활성화
         const onlineOnlyButtons = Utils.$$('[data-online-only]');
         onlineOnlyButtons.forEach(btn => {
             btn.disabled = false;
@@ -326,7 +382,7 @@ const App = {
     handleGlobalError(error) {
         console.error('전역 에러 발생:', error);
         
-        // 에러 로깅 (향후 서버로 전송 가능)
+        // 에러 로깅
         this.logError(error);
         
         // 사용자에게 친화적인 에러 메시지 표시
@@ -379,7 +435,9 @@ const App = {
     // 성능 최적화
     optimizePerformance() {
         // 이미지 지연 로딩
-        Utils.lazyLoadImages();
+        if (window.Utils && Utils.lazyLoadImages) {
+            Utils.lazyLoadImages();
+        }
         
         // 사용하지 않는 DOM 요소 정리
         this.cleanupUnusedElements();
@@ -433,8 +491,10 @@ const App = {
             setTimeout(() => {
                 if ('performance' in window) {
                     const navigation = performance.getEntriesByType('navigation')[0];
-                    const loadTime = navigation.loadEventEnd - navigation.loadEventStart;
-                    console.log(`페이지 로드 시간: ${loadTime}ms`);
+                    if (navigation) {
+                        const loadTime = navigation.loadEventEnd - navigation.loadEventStart;
+                        console.log(`페이지 로드 시간: ${loadTime}ms`);
+                    }
                 }
             }, 0);
         });
@@ -448,17 +508,19 @@ const App = {
         }
         
         // 임시 데이터 정리
-        if (window.StudentManager) {
+        if (window.StudentManager && StudentManager.saveFormDraft) {
             StudentManager.saveFormDraft();
         }
         
         // 수업계획 임시저장
-        if (window.LessonPlanManager && window.LessonPlanManager.currentLessonPlan) {
+        if (window.LessonPlanManager && LessonPlanManager.currentLessonPlan) {
             // 자동 임시저장 로직은 LessonPlanManager 내부에서 처리
         }
         
         // 스크롤 위치 저장
-        Utils.saveScrollPosition();
+        if (window.Utils && Utils.saveScrollPosition) {
+            Utils.saveScrollPosition();
+        }
     },
 
     // 도움말 표시
@@ -492,9 +554,8 @@ const App = {
     showAppInfo() {
         const info = `
 세종학당 문화교구 신청 플랫폼
-버전: 1.1.0
+버전: 1.2.0
 개발: Claude AI Assistant
-문의: 관리자
 
 이 플랫폼은 세종학당 문화인턴들의 교구 신청을 위해 개발되었습니다.
 
@@ -504,6 +565,8 @@ const App = {
 • 수업계획 작성 및 관리
 • 관리자 승인 시스템
 • Excel 데이터 내보내기
+
+문의사항이 있으시면 관리자에게 연락해주세요.
         `;
         
         alert(info.trim());
@@ -532,9 +595,9 @@ const App = {
             window.DEBUG = {
                 DataManager,
                 AuthManager,
-                StudentManager,
-                AdminManager,
-                LessonPlanManager,
+                StudentManager: window.StudentManager,
+                AdminManager: window.AdminManager,
+                LessonPlanManager: window.LessonPlanManager,
                 Utils,
                 App
             };
