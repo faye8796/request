@@ -1,54 +1,104 @@
-// 수업계획 관리 모듈 (Supabase 연동) - 개선된 에러 핸들링 버전
+// 수업계획 관리 모듈 (Supabase 연동) - 중복 실행 방지 버전
 const LessonPlanManager = {
     currentLessonPlan: null,
     isEditMode: false,
+    isInitialized: false, // 중복 초기화 방지
 
     // 수업계획 페이지 초기화
     async init() {
+        if (this.isInitialized) {
+            console.log('⚠️ LessonPlanManager 이미 초기화됨 - 건너뜀');
+            return;
+        }
+
         console.log('🎓 LessonPlanManager 초기화 시작');
         this.bindEvents();
         await this.checkEditPermission();
+        this.isInitialized = true;
         console.log('✅ LessonPlanManager 초기화 완료');
     },
 
-    // 이벤트 바인딩
+    // 이벤트 바인딩 (중복 방지)
     bindEvents() {
+        // 기존 이벤트 리스너 제거
+        this.unbindEvents();
+
         // 수업 계획표 생성 버튼
         const generateTableBtn = document.getElementById('generateTableBtn');
         if (generateTableBtn) {
-            generateTableBtn.addEventListener('click', () => this.generateLessonTable());
+            generateTableBtn.addEventListener('click', this.handleGenerateTable.bind(this));
         }
 
         // 수업계획 폼 제출
         const lessonPlanForm = document.getElementById('lessonPlanForm');
         if (lessonPlanForm) {
-            lessonPlanForm.addEventListener('submit', (e) => this.handleFormSubmit(e));
+            lessonPlanForm.addEventListener('submit', this.handleFormSubmit.bind(this));
         }
 
         // 임시저장 버튼
         const saveDraftBtn = document.getElementById('saveDraftBtn');
         if (saveDraftBtn) {
-            saveDraftBtn.addEventListener('click', () => this.saveDraft());
+            saveDraftBtn.addEventListener('click', this.handleSaveDraft.bind(this));
         }
 
         // 파견 시작일/종료일 변경 시 자동 계산
         const startDate = document.getElementById('startDate');
         const endDate = document.getElementById('endDate');
         if (startDate && endDate) {
-            startDate.addEventListener('change', () => this.calculateDuration());
-            endDate.addEventListener('change', () => this.calculateDuration());
+            startDate.addEventListener('change', this.calculateDuration.bind(this));
+            endDate.addEventListener('change', this.calculateDuration.bind(this));
         }
 
         // 총 수업 횟수 변경 시 주당 평균 수업 횟수 자동 계산
         const totalLessons = document.getElementById('totalLessons');
         if (totalLessons) {
-            totalLessons.addEventListener('change', () => this.calculateLessonsPerWeek());
+            totalLessons.addEventListener('change', this.calculateLessonsPerWeek.bind(this));
         }
     },
 
-    // 수정 권한 확인 (Supabase 연동)
+    // 이벤트 리스너 제거
+    unbindEvents() {
+        const elements = [
+            'generateTableBtn',
+            'lessonPlanForm', 
+            'saveDraftBtn',
+            'startDate',
+            'endDate',
+            'totalLessons'
+        ];
+
+        elements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                // 기존 리스너들 제거
+                element.removeEventListener('click', this.handleGenerateTable);
+                element.removeEventListener('submit', this.handleFormSubmit);
+                element.removeEventListener('click', this.handleSaveDraft);
+                element.removeEventListener('change', this.calculateDuration);
+                element.removeEventListener('change', this.calculateLessonsPerWeek);
+            }
+        });
+    },
+
+    // 이벤트 핸들러들 (bind 사용)
+    handleGenerateTable() {
+        this.generateLessonTable();
+    },
+
+    handleFormSubmit(e) {
+        this.handleFormSubmit_actual(e);
+    },
+
+    handleSaveDraft() {
+        this.saveDraft();
+    },
+
+    // 수정 권한 확인 (중복 메시지 방지)
     async checkEditPermission() {
         try {
+            // 기존 알림 메시지들 모두 제거
+            this.clearAllNotices();
+
             const canEdit = await SupabaseAPI.canEditLessonPlan();
             const settings = await SupabaseAPI.getSystemSettings();
             
@@ -73,19 +123,21 @@ const LessonPlanManager = {
                 input.disabled = true;
             });
             
-            // 안내 메시지 표시
-            const notice = document.createElement('div');
-            notice.className = 'edit-deadline-notice';
-            notice.innerHTML = `
-                <i data-lucide="alert-circle"></i>
-                <p>수업계획 수정 기간이 종료되었습니다.</p>
-            `;
-            form.insertBefore(notice, form.firstChild);
-            lucide.createIcons();
+            // 안내 메시지 표시 (중복 방지)
+            if (!document.querySelector('.edit-deadline-notice')) {
+                const notice = document.createElement('div');
+                notice.className = 'edit-deadline-notice';
+                notice.innerHTML = `
+                    <i data-lucide="alert-circle"></i>
+                    <p>수업계획 수정 기간이 종료되었습니다.</p>
+                `;
+                form.insertBefore(notice, form.firstChild);
+                lucide.createIcons();
+            }
         }
     },
 
-    // 수정 마감 안내 표시 (Supabase 연동)
+    // 수정 마감 안내 표시 (중복 방지)
     async showEditDeadlineNotice() {
         try {
             const settings = await SupabaseAPI.getSystemSettings();
@@ -95,18 +147,18 @@ const LessonPlanManager = {
             let iconName = 'clock';
             
             if (settings.test_mode) {
-                message = '테스트 모드가 활성화되어 있어 언제든지 수정할 수 있습니다.';
+                message = '🧪 테스트 모드: 언제든지 수정 가능합니다.';
                 noticeClass = 'test-mode-notice';
                 iconName = 'test-tube';
             } else if (settings.ignore_deadline) {
-                message = '관리자가 마감일을 무시하도록 설정하여 언제든지 수정할 수 있습니다.';
+                message = '🔓 마감일 무시 모드: 언제든지 수정 가능합니다.';
                 noticeClass = 'override-notice';
                 iconName = 'unlock';
             } else {
-                message = `수업계획 수정 마감일이 ${settings.lesson_plan_deadline}입니다.`;
+                message = `⏰ 수업계획 수정 마감일: ${settings.lesson_plan_deadline}`;
             }
             
-            if (message) {
+            if (message && !document.querySelector(`.${noticeClass}`)) {
                 const notice = document.createElement('div');
                 notice.className = noticeClass;
                 notice.innerHTML = `
@@ -125,10 +177,18 @@ const LessonPlanManager = {
         }
     },
 
-    // 편집 상태 안내 표시 (Supabase 연동)
+    // 편집 상태 안내 표시 (중복 방지)
     async showEditStatusNotice() {
         try {
             const settings = await SupabaseAPI.getSystemSettings();
+            
+            // 이미 표시된 메시지가 있으면 건너뜀
+            if (document.querySelector('.test-mode-notice') || 
+                document.querySelector('.override-notice') ||
+                document.querySelector('.time-remaining-notice')) {
+                return;
+            }
+
             let message = '';
             let noticeClass = 'edit-status-notice';
             let iconName = 'edit';
@@ -164,13 +224,18 @@ const LessonPlanManager = {
         }
     },
 
-    // 남은 시간 표시 (Supabase 연동)
+    // 남은 시간 표시 (중복 방지)
     async showRemainingTime() {
         try {
             const settings = await SupabaseAPI.getSystemSettings();
             
             // 테스트 모드나 마감일 무시 모드에서는 남은 시간을 표시하지 않음
             if (settings.test_mode || settings.ignore_deadline) {
+                return;
+            }
+
+            // 이미 시간 알림이 있으면 건너뜀
+            if (document.querySelector('.time-remaining-notice')) {
                 return;
             }
             
@@ -186,7 +251,7 @@ const LessonPlanManager = {
                 notice.className = 'time-remaining-notice';
                 notice.innerHTML = `
                     <i data-lucide="clock"></i>
-                    <p>수업계획 수정 마감까지 <strong>${days}일 ${hours}시간</strong> 남았습니다.</p>
+                    <p>⏰ 수업계획 수정 마감까지 <strong>${days}일 ${hours}시간</strong> 남았습니다.</p>
                 `;
                 
                 const container = document.querySelector('.lesson-plan-content');
@@ -311,12 +376,12 @@ const LessonPlanManager = {
             }
             
             // 성공 메시지와 안내사항
-            this.showMessage(`${lessons.length}개의 수업 계획표가 생성되었습니다. 수업 내용은 선택사항이므로 원하는 만큼 작성하시면 됩니다.`, 'success');
+            this.showMessage(`✅ ${lessons.length}개의 수업 계획표가 생성되었습니다!`, 'success');
             console.log('✅ 수업 계획표 생성 완료');
             
         } catch (error) {
             console.error('💥 수업 계획표 생성 오류:', error);
-            this.showMessage(`수업 계획표 생성 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`, 'error');
+            this.showMessage(`❌ 수업 계획표 생성 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`, 'error');
         }
     },
 
@@ -397,7 +462,7 @@ const LessonPlanManager = {
         }
     },
 
-    // 메시지 표시
+    // 메시지 표시 (중복 방지)
     showMessage(message, type = 'info') {
         // 기존 메시지 제거
         const existingMessages = document.querySelectorAll('.lesson-plan-message');
@@ -577,14 +642,14 @@ const LessonPlanManager = {
                 if (settings.test_mode) {
                     console.log('🧪 테스트 모드이므로 임시저장을 계속 진행합니다.');
                 } else {
-                    this.showMessage('수업계획 수정 기간이 종료되었습니다.', 'warning');
+                    this.showMessage('❌ 수업계획 수정 기간이 종료되었습니다.', 'warning');
                     return;
                 }
             }
 
             const currentUser = AuthManager.getCurrentUser();
             if (!currentUser) {
-                this.showMessage('로그인이 필요합니다.', 'warning');
+                this.showMessage('❌ 로그인이 필요합니다.', 'warning');
                 return;
             }
 
@@ -597,21 +662,21 @@ const LessonPlanManager = {
             
             if (result.success) {
                 console.log('✅ 임시저장 성공:', result.data?.id);
-                this.showMessage('수업계획이 임시저장되었습니다. 언제든지 다시 수정할 수 있습니다.', 'success');
+                this.showMessage('✅ 수업계획이 임시저장되었습니다!', 'success');
                 this.currentLessonPlan = result.data;
                 this.isEditMode = true;
             } else {
                 console.error('❌ 임시저장 실패:', result.message);
-                this.showMessage(result.message || '임시저장 중 오류가 발생했습니다.', 'error');
+                this.showMessage(`❌ ${result.message || '임시저장 중 오류가 발생했습니다.'}`, 'error');
             }
         } catch (error) {
             console.error('💥 임시저장 예외:', error);
-            this.showMessage(`임시저장 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`, 'error');
+            this.showMessage(`❌ 임시저장 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`, 'error');
         }
     },
 
-    // 폼 제출 처리 (Supabase 연동) - 개선된 에러 핸들링
-    async handleFormSubmit(e) {
+    // 폼 제출 처리 (실제 함수명)
+    async handleFormSubmit_actual(e) {
         e.preventDefault();
         
         try {
@@ -623,14 +688,14 @@ const LessonPlanManager = {
                 if (settings.test_mode) {
                     console.log('🧪 테스트 모드이므로 제출을 계속 진행합니다.');
                 } else {
-                    this.showMessage('수업계획 수정 기간이 종료되었습니다.', 'warning');
+                    this.showMessage('❌ 수업계획 수정 기간이 종료되었습니다.', 'warning');
                     return;
                 }
             }
 
             const currentUser = AuthManager.getCurrentUser();
             if (!currentUser) {
-                this.showMessage('로그인이 필요합니다.', 'warning');
+                this.showMessage('❌ 로그인이 필요합니다.', 'warning');
                 return;
             }
 
@@ -641,12 +706,12 @@ const LessonPlanManager = {
 
             if (errors.length > 0) {
                 console.warn('⚠️ 폼 검증 실패:', errors);
-                this.showMessage('다음 사항을 확인해주세요:\\n\\n' + errors.join('\\n'), 'warning');
+                this.showMessage('❌ 다음 사항을 확인해주세요:\n\n' + errors.join('\n'), 'warning');
                 return;
             }
 
             // 완료 확인 메시지
-            if (!confirm('수업계획을 완료하시겠습니까?\\n완료하시면 교구 신청 페이지로 이동합니다.')) {
+            if (!confirm('수업계획을 완료하시겠습니까?\n완료하시면 교구 신청 페이지로 이동합니다.')) {
                 console.log('📋 사용자가 제출을 취소했습니다.');
                 return;
             }
@@ -658,7 +723,7 @@ const LessonPlanManager = {
             
             if (result.success) {
                 console.log('✅ 수업계획 완료 성공:', result.data?.id);
-                this.showMessage('수업계획이 완료되었습니다! 교구 신청 페이지로 이동합니다.', 'success');
+                this.showMessage('🎉 수업계획이 완료되었습니다! 교구 신청 페이지로 이동합니다.', 'success');
                 
                 // 1.5초 후 학생 대시보드(교구 신청 화면)로 이동
                 setTimeout(() => {
@@ -666,11 +731,11 @@ const LessonPlanManager = {
                 }, 1500);
             } else {
                 console.error('❌ 수업계획 완료 실패:', result.message);
-                this.showMessage(result.message || '수업계획 저장 중 오류가 발생했습니다.', 'error');
+                this.showMessage(`❌ ${result.message || '수업계획 저장 중 오류가 발생했습니다.'}`, 'error');
             }
         } catch (error) {
             console.error('💥 수업계획 제출 예외:', error);
-            this.showMessage(`수업계획 저장 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`, 'error');
+            this.showMessage(`❌ 수업계획 저장 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`, 'error');
         }
     },
 
@@ -704,9 +769,12 @@ const LessonPlanManager = {
         document.title = '수업계획 작성 - 세종학당 문화교구 신청';
     },
 
-    // 모든 알림 제거
+    // 모든 알림 제거 (중복 방지)
     clearAllNotices() {
-        const notices = document.querySelectorAll('.edit-deadline-notice, .test-mode-notice, .override-notice, .time-remaining-notice, .edit-status-notice, .lesson-plan-message');
+        const notices = document.querySelectorAll(
+            '.edit-deadline-notice, .test-mode-notice, .override-notice, ' +
+            '.time-remaining-notice, .edit-status-notice, .lesson-plan-message'
+        );
         notices.forEach(notice => notice.remove());
     },
 
@@ -736,8 +804,13 @@ const LessonPlanManager = {
 // 전역 접근을 위한 window 객체에 추가
 window.LessonPlanManager = LessonPlanManager;
 
-// DOM 로드 완료 시 초기화
+// DOM 로드 완료 시 초기화 (중복 방지)
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🔧 LessonPlanManager DOM 초기화');
-    LessonPlanManager.init();
+    // 약간의 지연을 두어 다른 스크립트들이 로드된 후 실행
+    setTimeout(() => {
+        if (!LessonPlanManager.isInitialized) {
+            LessonPlanManager.init();
+        }
+    }, 100);
 });
