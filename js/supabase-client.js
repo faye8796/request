@@ -672,6 +672,559 @@ const SupabaseAPI = {
     },
 
     // ===================
+    // 교구 신청 관련 함수들
+    // ===================
+
+    // 학생 신청 내역 조회
+    async getStudentApplications(studentId) {
+        try {
+            const { data, error } = await this.client
+                .from('requests')
+                .select('*')
+                .eq('user_id', studentId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching student applications:', error);
+                return [];
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Error in getStudentApplications:', error);
+            return [];
+        }
+    },
+
+    // 교구 신청 추가
+    async addApplication(studentId, itemData) {
+        try {
+            const requestData = {
+                user_id: studentId,
+                item_name: itemData.name,
+                purpose: itemData.purpose,
+                price: itemData.price,
+                purchase_type: itemData.purchaseMethod || 'online',
+                purchase_link: itemData.link || null,
+                is_bundle: itemData.type === 'bundle',
+                bundle_info: itemData.bundleInfo || null,
+                shipping_address: itemData.shippingAddress || null,
+                notes: itemData.notes || null,
+                status: 'pending'
+            };
+
+            const { data, error } = await this.client
+                .from('requests')
+                .insert([requestData])
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Error adding application:', error);
+                return { success: false, message: '교구 신청 중 오류가 발생했습니다.' };
+            }
+
+            return { success: true, data: data };
+        } catch (error) {
+            console.error('Error in addApplication:', error);
+            return { success: false, message: '교구 신청 중 오류가 발생했습니다.' };
+        }
+    },
+
+    // 신청 아이템 수정
+    async updateApplicationItem(studentId, itemId, updatedData) {
+        try {
+            // 먼저 해당 신청이 수정 가능한 상태인지 확인
+            const { data: existing, error: checkError } = await this.client
+                .from('requests')
+                .select('status')
+                .eq('id', itemId)
+                .eq('user_id', studentId)
+                .single();
+
+            if (checkError || !existing || existing.status !== 'pending') {
+                return { success: false, message: '수정할 수 없는 신청입니다.' };
+            }
+
+            const updateData = {
+                item_name: updatedData.name,
+                purpose: updatedData.purpose,
+                price: updatedData.price,
+                purchase_type: updatedData.purchaseMethod || 'online',
+                purchase_link: updatedData.link || null,
+                is_bundle: updatedData.type === 'bundle',
+                bundle_info: updatedData.bundleInfo || null,
+                notes: updatedData.notes || null,
+                updated_at: new Date().toISOString()
+            };
+
+            const { data, error } = await this.client
+                .from('requests')
+                .update(updateData)
+                .eq('id', itemId)
+                .eq('user_id', studentId)
+                .select();
+
+            if (error) {
+                console.error('Error updating application:', error);
+                return { success: false, message: '신청 수정 중 오류가 발생했습니다.' };
+            }
+
+            return { success: true, data: data[0] };
+        } catch (error) {
+            console.error('Error in updateApplicationItem:', error);
+            return { success: false, message: '신청 수정 중 오류가 발생했습니다.' };
+        }
+    },
+
+    // 신청 아이템 삭제
+    async deleteApplicationItem(studentId, itemId) {
+        try {
+            // 먼저 해당 신청이 삭제 가능한 상태인지 확인
+            const { data: existing, error: checkError } = await this.client
+                .from('requests')
+                .select('status')
+                .eq('id', itemId)
+                .eq('user_id', studentId)
+                .single();
+
+            if (checkError || !existing || existing.status !== 'pending') {
+                return { success: false, message: '삭제할 수 없는 신청입니다.' };
+            }
+
+            const { error } = await this.client
+                .from('requests')
+                .delete()
+                .eq('id', itemId)
+                .eq('user_id', studentId);
+
+            if (error) {
+                console.error('Error deleting application:', error);
+                return { success: false, message: '신청 삭제 중 오류가 발생했습니다.' };
+            }
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error in deleteApplicationItem:', error);
+            return { success: false, message: '신청 삭제 중 오류가 발생했습니다.' };
+        }
+    },
+
+    // 아이템 상태 업데이트 (관리자용)
+    async updateItemStatus(requestId, status, rejectionReason = null) {
+        try {
+            const updateData = {
+                status: status,
+                reviewed_at: new Date().toISOString(),
+                reviewed_by: this.currentUser?.id
+            };
+
+            if (rejectionReason) {
+                updateData.rejection_reason = rejectionReason;
+            }
+
+            const { data, error } = await this.client
+                .from('requests')
+                .update(updateData)
+                .eq('id', requestId)
+                .select();
+
+            if (error) {
+                console.error('Error updating item status:', error);
+                return { success: false, message: '상태 업데이트 중 오류가 발생했습니다.' };
+            }
+
+            return { success: true, data: data[0] };
+        } catch (error) {
+            console.error('Error in updateItemStatus:', error);
+            return { success: false, message: '상태 업데이트 중 오류가 발생했습니다.' };
+        }
+    },
+
+    // 전체 신청 목록 조회 (관리자용)
+    async getAllApplications() {
+        try {
+            const { data, error } = await this.client
+                .from('requests')
+                .select(`
+                    *,
+                    user_profiles!inner(name, field, sejong_institute)
+                `)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching all applications:', error);
+                return [];
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Error in getAllApplications:', error);
+            return [];
+        }
+    },
+
+    // 신청 검색
+    async searchApplications(searchTerm) {
+        try {
+            if (!searchTerm || !searchTerm.trim()) {
+                return await this.getAllApplications();
+            }
+
+            const term = searchTerm.trim();
+            const { data, error } = await this.client
+                .from('requests')
+                .select(`
+                    *,
+                    user_profiles!inner(name, field, sejong_institute)
+                `)
+                .or(`item_name.ilike.%${term}%,purpose.ilike.%${term}%,user_profiles.name.ilike.%${term}%`)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error searching applications:', error);
+                return [];
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Error in searchApplications:', error);
+            return [];
+        }
+    },
+
+    // ===================
+    // 영수증 관리 관련 함수들
+    // ===================
+
+    // 영수증 제출
+    async submitReceipt(requestId, receiptData) {
+        try {
+            const receiptRecord = {
+                request_id: requestId,
+                user_id: this.currentUser?.id,
+                receipt_number: `RCP-${Date.now()}`,
+                image_path: receiptData.image, // Base64 문자열
+                purchase_date: receiptData.purchaseDateTime,
+                store_name: receiptData.purchaseStore,
+                total_amount: receiptData.amount || 0,
+                notes: receiptData.note,
+                verified: false
+            };
+
+            const { data, error } = await this.client
+                .from('receipts')
+                .insert([receiptRecord])
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Error submitting receipt:', error);
+                return { success: false, message: '영수증 제출 중 오류가 발생했습니다.' };
+            }
+
+            // 교구 신청 상태를 구매완료로 업데이트
+            await this.updateItemStatus(requestId, 'purchased');
+
+            return { success: true, data: data };
+        } catch (error) {
+            console.error('Error in submitReceipt:', error);
+            return { success: false, message: '영수증 제출 중 오류가 발생했습니다.' };
+        }
+    },
+
+    // 영수증 조회 (특정 신청)
+    async getReceiptByRequestId(requestId) {
+        try {
+            const { data, error } = await this.client
+                .from('receipts')
+                .select('*')
+                .eq('request_id', requestId)
+                .single();
+
+            if (error && error.code !== 'PGRST116') {
+                console.error('Error fetching receipt:', error);
+                return null;
+            }
+
+            return data || null;
+        } catch (error) {
+            console.error('Error in getReceiptByRequestId:', error);
+            return null;
+        }
+    },
+
+    // 영수증 검증 (관리자용)
+    async verifyReceipt(receiptId, verified = true) {
+        try {
+            const updateData = {
+                verified: verified,
+                verified_at: new Date().toISOString(),
+                verified_by: this.currentUser?.id
+            };
+
+            const { data, error } = await this.client
+                .from('receipts')
+                .update(updateData)
+                .eq('id', receiptId)
+                .select();
+
+            if (error) {
+                console.error('Error verifying receipt:', error);
+                return { success: false, message: '영수증 검증 중 오류가 발생했습니다.' };
+            }
+
+            return { success: true, data: data[0] };
+        } catch (error) {
+            console.error('Error in verifyReceipt:', error);
+            return { success: false, message: '영수증 검증 중 오류가 발생했습니다.' };
+        }
+    },
+
+    // ===================
+    // 통계 및 관리 함수들
+    // ===================
+
+    // 관리자용 통계 데이터
+    async getStats() {
+        try {
+            // 총 학생 수
+            const { count: totalStudents } = await this.client
+                .from('user_profiles')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_type', 'student');
+
+            // 신청 현황 통계
+            const { data: requests } = await this.client
+                .from('requests')
+                .select('status');
+
+            const stats = {
+                totalStudents: totalStudents || 0,
+                applicantCount: 0, // 신청한 학생 수 (중복 제거)
+                pendingCount: 0,
+                approvedCount: 0,
+                rejectedCount: 0,
+                purchasedCount: 0
+            };
+
+            if (requests) {
+                // 신청한 학생 수 계산
+                const { data: applicants } = await this.client
+                    .from('requests')
+                    .select('user_id', { count: 'exact' })
+                    .not('user_id', 'is', null);
+
+                const uniqueApplicants = new Set(applicants?.map(r => r.user_id) || []);
+                stats.applicantCount = uniqueApplicants.size;
+
+                // 상태별 카운트
+                requests.forEach(req => {
+                    switch (req.status) {
+                        case 'pending':
+                            stats.pendingCount++;
+                            break;
+                        case 'approved':
+                            stats.approvedCount++;
+                            break;
+                        case 'rejected':
+                            stats.rejectedCount++;
+                            break;
+                        case 'purchased':
+                        case 'completed':
+                            stats.purchasedCount++;
+                            break;
+                    }
+                });
+            }
+
+            return stats;
+        } catch (error) {
+            console.error('Error in getStats:', error);
+            return {
+                totalStudents: 0,
+                applicantCount: 0,
+                pendingCount: 0,
+                approvedCount: 0,
+                rejectedCount: 0,
+                purchasedCount: 0
+            };
+        }
+    },
+
+    // 예산 현황 통계
+    async getBudgetOverviewStats() {
+        try {
+            // 총 배정 예산
+            const { data: budgets } = await this.client
+                .from('student_budgets')
+                .select('allocated_budget');
+
+            const totalApprovedBudget = budgets?.reduce((sum, b) => sum + b.allocated_budget, 0) || 0;
+
+            // 승인된 신청의 총액
+            const { data: approvedRequests } = await this.client
+                .from('requests')
+                .select('price')
+                .in('status', ['approved', 'purchased', 'completed']);
+
+            const approvedItemsTotal = approvedRequests?.reduce((sum, r) => sum + r.price, 0) || 0;
+
+            // 구매완료된 총액
+            const { data: purchasedRequests } = await this.client
+                .from('requests')
+                .select('price')
+                .in('status', ['purchased', 'completed']);
+
+            const purchasedTotal = purchasedRequests?.reduce((sum, r) => sum + r.price, 0) || 0;
+
+            // 신청한 학생 수 (평균 계산용)
+            const { data: applicants } = await this.client
+                .from('requests')
+                .select('user_id')
+                .not('user_id', 'is', null);
+
+            const uniqueApplicants = new Set(applicants?.map(r => r.user_id) || []);
+            const applicantCount = uniqueApplicants.size;
+            const averagePerPerson = applicantCount > 0 ? Math.round(approvedItemsTotal / applicantCount) : 0;
+
+            return {
+                totalApprovedBudget,
+                approvedItemsTotal,
+                purchasedTotal,
+                averagePerPerson
+            };
+        } catch (error) {
+            console.error('Error in getBudgetOverviewStats:', error);
+            return {
+                totalApprovedBudget: 0,
+                approvedItemsTotal: 0,
+                purchasedTotal: 0,
+                averagePerPerson: 0
+            };
+        }
+    },
+
+    // 오프라인 구매 통계
+    async getOfflinePurchaseStats() {
+        try {
+            // 오프라인 승인된 신청 수
+            const { count: approvedOffline } = await this.client
+                .from('requests')
+                .select('*', { count: 'exact', head: true })
+                .eq('purchase_type', 'offline')
+                .eq('status', 'approved');
+
+            // 영수증이 있는 신청 수
+            const { data: receipts } = await this.client
+                .from('receipts')
+                .select('request_id');
+
+            const withReceipt = receipts?.length || 0;
+            const pendingReceipt = Math.max(0, (approvedOffline || 0) - withReceipt);
+
+            return {
+                approvedOffline: approvedOffline || 0,
+                withReceipt,
+                pendingReceipt
+            };
+        } catch (error) {
+            console.error('Error in getOfflinePurchaseStats:', error);
+            return {
+                approvedOffline: 0,
+                withReceipt: 0,
+                pendingReceipt: 0
+            };
+        }
+    },
+
+    // Excel 내보내기 데이터 준비
+    async prepareExportData() {
+        try {
+            const { data, error } = await this.client
+                .from('requests')
+                .select(`
+                    *,
+                    user_profiles!inner(name, field, sejong_institute),
+                    receipts(receipt_number, verified)
+                `)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error preparing export data:', error);
+                return [];
+            }
+
+            const exportData = [];
+            
+            for (const request of data) {
+                const budgetStatus = await this.getStudentBudgetStatus(request.user_id);
+                const lessonPlan = await this.getStudentLessonPlan(request.user_id);
+                
+                exportData.push({
+                    '학생명': request.user_profiles.name,
+                    '소속기관': request.user_profiles.sejong_institute || '',
+                    '전공분야': request.user_profiles.field || '',
+                    '교구명': request.item_name,
+                    '사용목적': request.purpose,
+                    '가격': request.price,
+                    '구매방식': request.purchase_type === 'offline' ? '오프라인' : '온라인',
+                    '신청유형': request.is_bundle ? '묶음' : '단일',
+                    '상태': this.getStatusText(request.status),
+                    '신청일': new Date(request.created_at).toLocaleDateString('ko-KR'),
+                    '수업계획상태': lessonPlan?.status || '미작성',
+                    '배정예산': budgetStatus?.allocated || 0,
+                    '사용예산': budgetStatus?.used || 0,
+                    '잔여예산': budgetStatus?.remaining || 0,
+                    '구매링크': request.purchase_link || '',
+                    '반려사유': request.rejection_reason || '',
+                    '영수증제출': request.receipts?.[0] ? 'Y' : 'N',
+                    '영수증검증': request.receipts?.[0]?.verified ? 'Y' : 'N'
+                });
+            }
+
+            return exportData;
+        } catch (error) {
+            console.error('Error in prepareExportData:', error);
+            return [];
+        }
+    },
+
+    // ===================
+    // 유틸리티 함수들
+    // ===================
+
+    getStatusClass(status) {
+        const statusMap = {
+            'pending': 'warning',
+            'approved': 'success', 
+            'rejected': 'danger',
+            'purchased': 'info',
+            'completed': 'info'
+        };
+        return statusMap[status] || 'secondary';
+    },
+
+    getStatusText(status) {
+        const statusMap = {
+            'pending': '검토 중',
+            'approved': '승인됨',
+            'rejected': '반려됨',
+            'purchased': '구매완료',
+            'completed': '구매완료'
+        };
+        return statusMap[status] || status;
+    },
+
+    getPurchaseMethodClass(method) {
+        return method === 'offline' ? 'offline' : 'online';
+    },
+
+    getPurchaseMethodText(method) {
+        return method === 'offline' ? '오프라인' : '온라인';
+    },
+
+    // ===================
     // 에러 핸들링 유틸리티
     // ===================
 
