@@ -1,4 +1,4 @@
-// 수업계획 관리 모듈 (Supabase 연동) - 인증 문제 해결 버전
+// 수업계획 관리 모듈 (Supabase 연동) - 기존 데이터 로드 개선 버전
 const LessonPlanManager = {
     currentLessonPlan: null,
     isEditMode: false,
@@ -271,7 +271,7 @@ const LessonPlanManager = {
             }
             
             // 성공 메시지
-            this.showMessage(`✅ ${lessons.length}개의 수업 계획표가 생성되었습니다! 각 수업의 주제와 내용을 작성해주세요.\n\n⚠️ 모든 수업계획의 작성은 필수 사항입니다.`, 'success');
+            this.showMessage(`✅ ${lessons.length}개의 수업 계획표가 생성되었습니다! 각 수업의 주제와 내용을 작성해주세요.\\n\\n⚠️ 모든 수업계획의 작성은 필수 사항입니다.`, 'success');
             console.log('✅ 수업 계획표 생성 완료');
             
         } catch (error) {
@@ -390,7 +390,7 @@ const LessonPlanManager = {
         }
     },
 
-    // 기존 데이터 로드 (안전성 향상)
+    // 기존 데이터 로드 - 개선된 버전 (자동 테이블 생성 포함)
     async loadExistingData() {
         try {
             console.log('📖 기존 데이터 로드 시작');
@@ -419,14 +419,39 @@ const LessonPlanManager = {
                 this.safeSetValue('overallGoals', lessonData.overallGoals);
                 this.safeSetValue('specialNotes', lessonData.specialNotes);
 
-                // 수업별 데이터 채우기
-                if (lessonData.lessons && Array.isArray(lessonData.lessons)) {
+                // 기본 정보가 있고 수업 데이터가 있으면 자동으로 테이블 생성
+                if (lessonData.totalLessons && lessonData.lessons && Array.isArray(lessonData.lessons)) {
+                    console.log('🔄 기존 데이터로 수업 계획표 자동 생성');
+                    
+                    // 테이블 섹션 표시
+                    const tableSection = document.getElementById('lessonTableSection');
+                    const additionalSection = document.getElementById('additionalInfoSection');
+                    
+                    if (tableSection) tableSection.style.display = 'block';
+                    if (additionalSection) additionalSection.style.display = 'block';
+                    
+                    // 기존 수업 데이터로 테이블 생성
+                    const lessons = [];
+                    for (let i = 1; i <= lessonData.totalLessons; i++) {
+                        lessons.push({
+                            lessonNumber: i,
+                            topic: '',
+                            content: ''
+                        });
+                    }
+                    
+                    this.createLessonTable(lessons);
+                    
+                    // 수업별 데이터 채우기
                     lessonData.lessons.forEach(lesson => {
                         if (lesson && lesson.lessonNumber) {
                             this.safeSetValue(`lessonTopic_${lesson.lessonNumber}`, lesson.topic || '');
                             this.safeSetValue(`lessonContent_${lesson.lessonNumber}`, lesson.content || '');
                         }
                     });
+                    
+                    // 상태에 따른 메시지 표시
+                    this.showExistingDataMessage(existingPlan.status);
                 }
 
                 console.log('✅ 기존 데이터 로드 완료');
@@ -435,6 +460,40 @@ const LessonPlanManager = {
             }
         } catch (error) {
             console.error('❌ 기존 데이터 로드 오류:', error);
+        }
+    },
+
+    // 기존 데이터 상태 메시지 표시
+    showExistingDataMessage(status) {
+        try {
+            let message = '';
+            let type = 'info';
+            
+            switch (status) {
+                case 'draft':
+                    message = '📝 임시저장된 수업계획입니다. 수정 후 완료 제출해주세요.';
+                    type = 'warning';
+                    break;
+                case 'submitted':
+                    message = '⏳ 제출된 수업계획입니다. 관리자 승인을 기다리고 있습니다.';
+                    type = 'info';
+                    break;
+                case 'approved':
+                    message = '✅ 승인된 수업계획입니다. 교구 신청이 가능합니다.';
+                    type = 'success';
+                    break;
+                case 'rejected':
+                    message = '❌ 반려된 수업계획입니다. 반려 사유를 확인하고 수정해주세요.';
+                    type = 'danger';
+                    break;
+                default:
+                    message = '📋 기존 수업계획을 불러왔습니다.';
+                    type = 'info';
+            }
+            
+            this.showMessage(message, type);
+        } catch (error) {
+            console.error('기존 데이터 상태 메시지 표시 오류:', error);
         }
     },
 
@@ -582,7 +641,7 @@ const LessonPlanManager = {
             
             if (result.success) {
                 console.log('✅ 임시저장 성공:', result.data?.id);
-                this.showMessage('✅ 수업계획이 임시저장되었습니다!\n\n⚠️ 완료 제출까지 해야 승인 검토가 시작됩니다.', 'success');
+                this.showMessage('✅ 수업계획이 임시저장되었습니다!\\n\\n⚠️ 완료 제출까지 해야 승인 검토가 시작됩니다.', 'success');
                 this.currentLessonPlan = result.data;
                 this.isEditMode = true;
             } else {
@@ -630,7 +689,7 @@ const LessonPlanManager = {
 
             if (errors.length > 0) {
                 console.warn('⚠️ 폼 검증 실패:', errors);
-                this.showMessage('❌ 다음 사항을 확인해주세요:\n\n' + errors.join('\n'), 'warning');
+                this.showMessage('❌ 다음 사항을 확인해주세요:\\n\\n' + errors.join('\\n'), 'warning');
                 
                 // 스크롤을 첫 번째 오류 위치로 이동
                 this.scrollToFirstError(data);
@@ -638,7 +697,7 @@ const LessonPlanManager = {
             }
 
             // 완료 확인 메시지
-            if (!confirm('수업계획을 완료 제출하시겠습니까?\n\n✅ 모든 수업의 주제와 내용이 작성되었는지 확인해주세요.\n✅ 완료 제출 후 관리자 승인을 받으면 교구 신청이 가능합니다.\n\n⚠️ 수업계획 제출은 필수 사항입니다.')) {
+            if (!confirm('수업계획을 완료 제출하시겠습니까?\\n\\n✅ 모든 수업의 주제와 내용이 작성되었는지 확인해주세요.\\n✅ 완료 제출 후 관리자 승인을 받으면 교구 신청이 가능합니다.\\n\\n⚠️ 수업계획 제출은 필수 사항입니다.')) {
                 console.log('📋 사용자가 제출을 취소했습니다.');
                 return;
             }
@@ -649,7 +708,7 @@ const LessonPlanManager = {
             
             if (result.success) {
                 console.log('✅ 수업계획 완료 성공:', result.data?.id);
-                this.showMessage('🎉 수업계획이 완료 제출되었습니다!\n\n✅ 관리자 승인 후 교구 신청이 가능합니다.\n📋 수업계획은 필수 제출 사항이므로 승인을 기다려주세요.', 'success');
+                this.showMessage('🎉 수업계획이 완료 제출되었습니다!\\n\\n✅ 관리자 승인 후 교구 신청이 가능합니다.\\n📋 수업계획은 필수 제출 사항이므로 승인을 기다려주세요.', 'success');
                 
                 // 2초 후 학생 대시보드로 이동
                 setTimeout(() => {
@@ -721,18 +780,28 @@ const LessonPlanManager = {
         }
     },
 
-    // 수업계획 페이지 표시
+    // 수업계획 페이지 표시 - 개선된 버전 (자동 데이터 로드)
     async showLessonPlanPage() {
         console.log('📄 수업계획 페이지 표시');
         
         // 모든 기존 알림 제거
         this.clearAllNotices();
         
-        // 기존 데이터가 있으면 로드
+        // 기존 데이터 자동 로드 시도
         try {
+            console.log('🔄 기존 수업계획 데이터 자동 로드 시도');
             await this.loadExistingData();
+            
+            // 기존 데이터가 로드된 경우 추가 안내 메시지
+            if (this.currentLessonPlan) {
+                console.log('✅ 기존 수업계획 데이터 로드 완료');
+            } else {
+                console.log('📝 새로운 수업계획 작성 모드');
+                this.showMessage('📋 새로운 수업계획을 작성합니다. 모든 항목을 입력한 후 수업 계획표를 생성해주세요.', 'info');
+            }
         } catch (error) {
             console.warn('기존 데이터 로드 중 오류 (무시):', error);
+            this.showMessage('📋 수업계획 작성 페이지입니다. 모든 항목을 입력해주세요.', 'info');
         }
         
         // 수정 권한 재확인

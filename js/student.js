@@ -1,8 +1,9 @@
-// 학생 기능 관리 모듈 (Supabase 연동) - 수정된 버전
+// 학생 기능 관리 모듈 (Supabase 연동) - 문제 해결 버전
 const StudentManager = {
     currentEditingItem: null,
     currentReceiptItem: null,
     isInitialized: false,
+    noticeDisplayed: false, // 중복 알림 방지 플래그
 
     // 초기화 - 안전성 강화
     async init() {
@@ -92,8 +93,8 @@ const StudentManager = {
             // 배송지 설정 버튼
             this.safeAddEventListener('#shippingAddressBtn', 'click', () => this.showShippingModal());
 
-            // 수업계획 버튼
-            this.safeAddEventListener('#lessonPlanBtn', 'click', () => this.goToLessonPlan());
+            // 수업계획 버튼 - 개선된 버전
+            this.safeAddEventListener('#lessonPlanBtn', 'click', () => this.handleLessonPlanClick());
 
             // 모달 관련 이벤트들
             this.setupModalEventListeners();
@@ -101,6 +102,102 @@ const StudentManager = {
             console.log('✅ 이벤트 리스너 설정 완료');
         } catch (error) {
             console.error('❌ 이벤트 리스너 설정 오류:', error);
+        }
+    },
+
+    // 수업계획 버튼 클릭 처리 - 개선된 버전
+    async handleLessonPlanClick() {
+        try {
+            console.log('📋 수업계획 버튼 클릭 처리');
+            
+            const currentUser = AuthManager?.getCurrentUser();
+            if (!currentUser) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            // 기존 수업계획 확인
+            let existingPlan = null;
+            try {
+                existingPlan = await SupabaseAPI.getStudentLessonPlan(currentUser.id);
+            } catch (error) {
+                console.error('기존 수업계획 조회 오류:', error);
+            }
+
+            // 수업계획 페이지로 이동
+            if (typeof App !== 'undefined' && App.showPage) {
+                App.showPage('lessonPlanPage');
+            } else {
+                console.error('App.showPage 함수를 찾을 수 없습니다');
+                alert('수업계획 페이지로 이동할 수 없습니다. 페이지를 새로고침해주세요.');
+                return;
+            }
+
+            // LessonPlanManager 초기화 및 기존 데이터 로드
+            if (typeof LessonPlanManager !== 'undefined') {
+                setTimeout(async () => {
+                    try {
+                        if (LessonPlanManager.showLessonPlanPage) {
+                            await LessonPlanManager.showLessonPlanPage();
+                        }
+                        
+                        // 기존 데이터가 있고 편집 가능한 상태라면 로드
+                        if (existingPlan && existingPlan.lessons) {
+                            console.log('📝 기존 수업계획 데이터 로드:', existingPlan.status);
+                            
+                            // 수업계획 상태에 따른 메시지 표시
+                            if (existingPlan.status === 'submitted') {
+                                this.showLessonPlanEditMessage('제출된 수업계획을 확인하고 있습니다. 수정이 필요한 경우 관리자에게 문의하세요.');
+                            } else if (existingPlan.status === 'rejected') {
+                                this.showLessonPlanEditMessage('반려된 수업계획입니다. 반려 사유를 확인하고 수정해주세요.');
+                            } else if (existingPlan.status === 'approved') {
+                                this.showLessonPlanEditMessage('승인된 수업계획입니다. 교구 신청이 가능합니다.');
+                            } else {
+                                this.showLessonPlanEditMessage('임시저장된 수업계획입니다. 완료 제출해주세요.');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('수업계획 페이지 초기화 오류:', error);
+                    }
+                }, 100);
+            } else {
+                console.error('LessonPlanManager를 찾을 수 없습니다');
+            }
+        } catch (error) {
+            console.error('수업계획 버튼 클릭 처리 오류:', error);
+            alert('수업계획 페이지로 이동하는 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+        }
+    },
+
+    // 수업계획 페이지에서 편집 메시지 표시
+    showLessonPlanEditMessage(message) {
+        try {
+            setTimeout(() => {
+                const container = document.querySelector('.lesson-plan-content');
+                if (container) {
+                    // 기존 메시지 제거
+                    const existingMessage = container.querySelector('.edit-mode-notice');
+                    if (existingMessage) {
+                        existingMessage.remove();
+                    }
+
+                    // 새 메시지 추가
+                    const notice = document.createElement('div');
+                    notice.className = 'edit-mode-notice info';
+                    notice.innerHTML = `
+                        <i data-lucide="info"></i>
+                        <p>${message}</p>
+                    `;
+                    
+                    container.insertBefore(notice, container.firstChild);
+                    
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            }, 200);
+        } catch (error) {
+            console.error('수업계획 편집 메시지 표시 오류:', error);
         }
     },
 
@@ -224,34 +321,6 @@ const StudentManager = {
         }
     },
 
-    // 수업계획 페이지로 이동 - 안전성 강화
-    goToLessonPlan() {
-        try {
-            console.log('🔄 수업계획 페이지로 이동');
-            
-            // App이 존재하는지 확인
-            if (typeof App !== 'undefined' && App.showPage) {
-                App.showPage('lessonPlanPage');
-            } else {
-                console.error('App.showPage 함수를 찾을 수 없습니다');
-                alert('수업계획 페이지로 이동할 수 없습니다. 페이지를 새로고침해주세요.');
-                return;
-            }
-
-            // LessonPlanManager가 존재하는지 확인
-            if (typeof LessonPlanManager !== 'undefined' && LessonPlanManager.showLessonPlanPage) {
-                setTimeout(() => {
-                    LessonPlanManager.showLessonPlanPage();
-                }, 100);
-            } else {
-                console.error('LessonPlanManager를 찾을 수 없습니다');
-            }
-        } catch (error) {
-            console.error('수업계획 페이지 이동 오류:', error);
-            alert('수업계획 페이지로 이동하는 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
-        }
-    },
-
     // 사용자 정보 표시 업데이트 - 안전성 강화
     async updateUserDisplay() {
         try {
@@ -290,9 +359,15 @@ const StudentManager = {
         }
     },
 
-    // 수업계획 상태 확인 및 UI 업데이트 - 안전성 강화
+    // 수업계획 상태 확인 및 UI 업데이트 - 개선된 버전 (중복 방지)
     async checkLessonPlanStatus() {
         try {
+            // 중복 실행 방지
+            if (this.noticeDisplayed) {
+                console.log('⚠️ 수업계획 상태 알림이 이미 표시됨 - 건너뜀');
+                return;
+            }
+
             console.log('📋 수업계획 상태 확인 시작');
             
             const currentUser = AuthManager?.getCurrentUser();
@@ -316,10 +391,13 @@ const StudentManager = {
             this.updateLessonPlanButton(lessonPlan);
             
             // 교구 신청 버튼 상태 업데이트
-            await this.updateApplicationButtonsState();
+            await this.updateApplicationButtonsState(lessonPlan);
 
-            // 수업계획 상태 알림 표시
+            // 수업계획 상태 알림 표시 (단일 알림만)
             await this.showLessonPlanStatusNotice(lessonPlan);
+
+            // 알림 표시 완료 플래그 설정
+            this.noticeDisplayed = true;
 
             console.log('✅ 수업계획 상태 확인 완료');
         } catch (error) {
@@ -337,42 +415,42 @@ const StudentManager = {
                 return;
             }
 
-            if (lessonPlan && lessonPlan.status === 'submitted') {
+            if (lessonPlan) {
                 if (lessonPlan.status === 'approved') {
                     // 승인된 경우
                     lessonPlanBtn.innerHTML = `
                         <i data-lucide="calendar-check"></i>
-                        수업계획 승인됨
+                        수업계획 승인됨 (확인가능)
                     `;
                     lessonPlanBtn.className = 'btn btn-success';
                 } else if (lessonPlan.status === 'rejected') {
                     // 반려된 경우
                     lessonPlanBtn.innerHTML = `
                         <i data-lucide="calendar-x"></i>
-                        수업계획 반려됨 (수정필요)
+                        수업계획 수정 필요
                     `;
                     lessonPlanBtn.className = 'btn btn-danger';
-                } else {
-                    // 승인 대기 중
+                } else if (lessonPlan.status === 'submitted') {
+                    // 제출됨 (승인 대기 중)
                     lessonPlanBtn.innerHTML = `
                         <i data-lucide="calendar-clock"></i>
-                        수업계획 승인대기
+                        수업계획 확인 (승인대기중)
                     `;
                     lessonPlanBtn.className = 'btn btn-warning';
-                }
-            } else {
-                // 미완료된 경우
-                if (lessonPlan && lessonPlan.status === 'draft') {
+                } else {
+                    // 임시저장 상태
                     lessonPlanBtn.innerHTML = `
                         <i data-lucide="calendar-edit"></i>
                         수업계획 완료하기 (필수)
                     `;
-                } else {
-                    lessonPlanBtn.innerHTML = `
-                        <i data-lucide="calendar-plus"></i>
-                        수업계획 작성하기 (필수)
-                    `;
+                    lessonPlanBtn.className = 'btn btn-warning';
                 }
+            } else {
+                // 미작성 상태
+                lessonPlanBtn.innerHTML = `
+                    <i data-lucide="calendar-plus"></i>
+                    수업계획 작성하기 (필수)
+                `;
                 lessonPlanBtn.className = 'btn btn-warning';
             }
 
@@ -385,8 +463,8 @@ const StudentManager = {
         }
     },
 
-    // 교구 신청 버튼 상태 업데이트 - 안전성 강화
-    async updateApplicationButtonsState() {
+    // 교구 신청 버튼 상태 업데이트 - 개선된 버전
+    async updateApplicationButtonsState(lessonPlan) {
         try {
             console.log('🔘 교구 신청 버튼 상태 업데이트');
             
@@ -396,6 +474,26 @@ const StudentManager = {
                 return;
             }
 
+            // 수업계획이 승인되었는지 확인
+            if (!lessonPlan || lessonPlan.status !== 'approved') {
+                // 수업계획이 승인되지 않았으면 교구 신청 불가
+                let message = '수업계획 승인 후 신청 가능합니다 (필수)';
+                
+                if (!lessonPlan) {
+                    message = '수업계획 작성 후 승인받아야 신청 가능합니다 (필수)';
+                } else if (lessonPlan.status === 'submitted') {
+                    message = '수업계획 승인 대기 중 - 승인 후 신청 가능합니다';
+                } else if (lessonPlan.status === 'rejected') {
+                    message = '수업계획이 반려됨 - 수정 후 승인받아야 신청 가능합니다';
+                } else if (lessonPlan.status === 'draft') {
+                    message = '수업계획 완료 제출 후 승인받아야 신청 가능합니다 (필수)';
+                }
+                
+                this.disableApplicationButtons(message);
+                return;
+            }
+
+            // 수업계획이 승인된 경우 예산 상태 확인
             let budgetStatus = null;
             try {
                 budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
@@ -405,15 +503,12 @@ const StudentManager = {
                 return;
             }
 
-            const newAppBtn = document.getElementById('newApplicationBtn');
-            const bundleAppBtn = document.getElementById('bundleApplicationBtn');
-            
-            if (!budgetStatus || !budgetStatus.canApplyForEquipment) {
-                // 교구 신청 불가능한 경우
-                this.disableApplicationButtons('수업계획 승인 후 신청 가능합니다 (필수)');
+            if (!budgetStatus || budgetStatus.allocated === 0) {
+                this.disableApplicationButtons('예산 배정 처리 중입니다. 잠시만 기다려주세요.');
             } else {
-                // 교구 신청 가능한 경우
+                // 교구 신청 가능
                 this.enableApplicationButtons();
+                console.log('✅ 교구 신청 버튼 활성화됨');
             }
 
             console.log('✅ 교구 신청 버튼 상태 업데이트 완료');
@@ -433,8 +528,23 @@ const StudentManager = {
                     btn.disabled = true;
                     btn.title = reason;
                     btn.classList.add('disabled');
+                    
+                    // 버튼 텍스트에 상태 표시 추가
+                    const icon = btn.querySelector('i');
+                    const iconClass = icon ? icon.getAttribute('data-lucide') : 'package';
+                    
+                    if (btnId === 'newApplicationBtn') {
+                        btn.innerHTML = `<i data-lucide="${iconClass}"></i> 교구 신청 (승인 필요)`;
+                    } else {
+                        btn.innerHTML = `<i data-lucide="${iconClass}"></i> 묶음 신청 (승인 필요)`;
+                    }
                 }
             });
+            
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         } catch (error) {
             console.error('교구 신청 버튼 비활성화 오류:', error);
         }
@@ -450,14 +560,29 @@ const StudentManager = {
                     btn.disabled = false;
                     btn.title = '';
                     btn.classList.remove('disabled');
+                    
+                    // 버튼 텍스트 원복
+                    const icon = btn.querySelector('i');
+                    const iconClass = icon ? icon.getAttribute('data-lucide') : 'package';
+                    
+                    if (btnId === 'newApplicationBtn') {
+                        btn.innerHTML = `<i data-lucide="${iconClass}"></i> 새 교구 신청`;
+                    } else {
+                        btn.innerHTML = `<i data-lucide="${iconClass}"></i> 묶음 신청`;
+                    }
                 }
             });
+            
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         } catch (error) {
             console.error('교구 신청 버튼 활성화 오류:', error);
         }
     },
 
-    // 수업계획 상태 알림 표시 - 개선된 버전
+    // 수업계획 상태 알림 표시 - 개선된 버전 (단일 알림만)
     async showLessonPlanStatusNotice(lessonPlan) {
         try {
             // 기존 알림 제거
@@ -465,13 +590,6 @@ const StudentManager = {
 
             const currentUser = AuthManager?.getCurrentUser();
             if (!currentUser) return;
-
-            let budgetStatus = null;
-            try {
-                budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
-            } catch (error) {
-                console.error('예산 상태 조회 오류:', error);
-            }
 
             let canEdit = true;
             try {
@@ -484,6 +602,7 @@ const StudentManager = {
             let noticeType = '';
 
             if (!lessonPlan) {
+                // 수업계획이 없는 경우
                 if (!canEdit) {
                     noticeContent = `
                         <div class="notice-content warning">
@@ -502,7 +621,7 @@ const StudentManager = {
                             <div>
                                 <h4>📋 수업계획 작성이 필요합니다 (필수)</h4>
                                 <p><strong>수업계획은 필수 제출 사항입니다.</strong> 교구 신청 전에 반드시 수업계획을 작성하고 관리자의 승인을 받아야 합니다.</p>
-                                <button class="btn primary small" onclick="StudentManager.goToLessonPlan()">
+                                <button class="btn primary small" onclick="StudentManager.handleLessonPlanClick()">
                                     ✍️ 지금 작성하기
                                 </button>
                             </div>
@@ -511,6 +630,7 @@ const StudentManager = {
                     noticeType = 'info';
                 }
             } else if (lessonPlan.status === 'draft') {
+                // 임시저장 상태
                 if (canEdit) {
                     noticeContent = `
                         <div class="notice-content warning">
@@ -518,7 +638,7 @@ const StudentManager = {
                             <div>
                                 <h4>📝 수업계획을 완료해주세요 (필수)</h4>
                                 <p>임시저장된 수업계획이 있습니다. <strong>수업계획 완료 제출은 필수사항</strong>이며, 관리자 승인을 받아야 교구 신청이 가능합니다.</p>
-                                <button class="btn warning small" onclick="StudentManager.goToLessonPlan()">
+                                <button class="btn warning small" onclick="StudentManager.handleLessonPlanClick()">
                                     ⚡ 완료하기
                                 </button>
                             </div>
@@ -527,6 +647,7 @@ const StudentManager = {
                     noticeType = 'warning';
                 }
             } else if (lessonPlan.status === 'rejected') {
+                // 반려된 경우
                 if (canEdit) {
                     noticeContent = `
                         <div class="notice-content danger">
@@ -535,7 +656,7 @@ const StudentManager = {
                                 <h4>❌ 수업계획이 반려되었습니다 (수정 필수)</h4>
                                 <p><strong>반려 사유:</strong> ${lessonPlan.rejection_reason || '사유 없음'}</p>
                                 <p>수업계획이 승인되어야 교구 신청이 가능합니다. 반려 사유를 확인하고 즉시 수정해주세요.</p>
-                                <button class="btn danger small" onclick="StudentManager.goToLessonPlan()">
+                                <button class="btn danger small" onclick="StudentManager.handleLessonPlanClick()">
                                     🔧 수정하기
                                 </button>
                             </div>
@@ -556,29 +677,38 @@ const StudentManager = {
                     noticeType = 'danger';
                 }
             } else if (lessonPlan.status === 'submitted') {
+                // 제출됨 - 승인 대기 중
                 noticeContent = `
                     <div class="notice-content info">
                         <i data-lucide="calendar-clock"></i>
                         <div>
                             <h4>⏳ 수업계획 승인 대기 중입니다</h4>
                             <p>관리자의 승인을 기다리고 있습니다. 수업계획이 승인되면 교구 신청이 가능합니다.</p>
+                            <button class="btn secondary small" onclick="StudentManager.handleLessonPlanClick()">
+                                📋 제출한 계획 확인하기
+                            </button>
                         </div>
                     </div>
                 `;
                 noticeType = 'info';
-            } else if (lessonPlan.status === 'approved' && budgetStatus && budgetStatus.allocated === 0) {
+            } else if (lessonPlan.status === 'approved') {
+                // 승인됨 - 성공 메시지
                 noticeContent = `
-                    <div class="notice-content warning">
-                        <i data-lucide="alert-triangle"></i>
+                    <div class="notice-content success">
+                        <i data-lucide="calendar-check"></i>
                         <div>
-                            <h4>⚡ 예산 배정 처리 중입니다</h4>
-                            <p>수업계획이 승인되었으나 예산 배정이 완료되지 않았습니다. 잠시 후 다시 확인해주세요.</p>
+                            <h4>✅ 수업계획이 승인되었습니다!</h4>
+                            <p>이제 교구 신청이 가능합니다. 승인된 예산 내에서 필요한 교구를 신청해주세요.</p>
+                            <button class="btn success small" onclick="StudentManager.handleLessonPlanClick()">
+                                📋 승인된 계획 확인하기
+                            </button>
                         </div>
                     </div>
                 `;
-                noticeType = 'warning';
+                noticeType = 'success';
             }
 
+            // 알림 표시 (내용이 있는 경우만)
             if (noticeContent) {
                 this.displayNotice(noticeContent, noticeType);
             }
@@ -587,38 +717,50 @@ const StudentManager = {
         }
     },
 
-    // 기존 알림 제거
+    // 기존 알림 제거 - 강화된 버전
     removeExistingNotices() {
         try {
-            const existingNotice = document.getElementById('lessonPlanNotice');
-            if (existingNotice) {
-                existingNotice.remove();
-            }
+            const noticeSelectors = [
+                '#lessonPlanNotice',
+                '#basicNotice',
+                '.dashboard-notice',
+                '.lesson-plan-notice',
+                '.notice-duplicate'
+            ];
 
-            const basicNotice = document.getElementById('basicNotice');
-            if (basicNotice) {
-                basicNotice.remove();
-            }
+            noticeSelectors.forEach(selector => {
+                const notices = document.querySelectorAll(selector);
+                notices.forEach(notice => {
+                    if (notice && notice.parentNode) {
+                        notice.parentNode.removeChild(notice);
+                    }
+                });
+            });
         } catch (error) {
             console.error('기존 알림 제거 오류:', error);
         }
     },
 
-    // 알림 표시
+    // 알림 표시 - 중복 방지 강화
     displayNotice(content, type) {
         try {
+            // 기존 알림 완전 제거
+            this.removeExistingNotices();
+            
             const notice = document.createElement('div');
             notice.id = 'lessonPlanNotice';
             notice.className = `dashboard-notice ${type}`;
             notice.innerHTML = content;
             
             const dashboardHeader = document.querySelector('.dashboard-header');
-            if (dashboardHeader) {
+            if (dashboardHeader && dashboardHeader.parentNode) {
                 dashboardHeader.parentNode.insertBefore(notice, dashboardHeader.nextSibling);
                 
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
+                
+                console.log('✅ 수업계획 상태 알림 표시됨:', type);
             }
         } catch (error) {
             console.error('알림 표시 오류:', error);
@@ -654,7 +796,7 @@ const StudentManager = {
                 <div>
                     <h4>📋 수업계획 작성이 필요합니다</h4>
                     <p>교구 신청을 위해서는 먼저 수업계획을 작성해야 합니다.</p>
-                    <button class="btn primary small" onclick="StudentManager.goToLessonPlan()">
+                    <button class="btn primary small" onclick="StudentManager.handleLessonPlanClick()">
                         ✍️ 수업계획 작성하기
                     </button>
                 </div>
@@ -1164,13 +1306,18 @@ const StudentManager = {
         console.log('영수증 제출');
     },
 
-    // 대시보드 새로고침
+    // 대시보드 새로고침 - 중복 방지 기능 추가
     async refreshDashboard() {
         try {
             console.log('🔄 대시보드 새로고침');
+            
+            // 중복 방지 플래그 리셋
+            this.noticeDisplayed = false;
+            
             await this.loadApplications();
             await this.updateBudgetStatus();
             await this.checkLessonPlanStatus();
+            
             console.log('✅ 대시보드 새로고침 완료');
         } catch (error) {
             console.error('❌ 대시보드 새로고침 오류:', error);
