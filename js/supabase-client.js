@@ -493,24 +493,39 @@ const SupabaseAPI = {
     // 수업계획 관련 함수들 - 안전성 강화
     // ===================
 
-    // 학생 수업계획 조회 - single() 문제 해결
+    // 학생 수업계획 조회 - 올바른 우선순위로 수업계획 반환 (버그 수정)
     async getStudentLessonPlan(studentId) {
         const result = await this.safeApiCall('학생 수업계획 조회', async () => {
             const client = await this.ensureClient();
             
-            // single() 대신 배열로 받아서 처리
+            // 모든 수업계획을 최신순으로 조회
             const { data, error } = await client
                 .from('lesson_plans')
                 .select('*')
-                .eq('user_id', studentId);
+                .eq('user_id', studentId)
+                .order('updated_at', { ascending: false });
 
             if (error) {
                 return { data: null, error };
             }
 
-            // 가장 최근 수업계획 반환
-            const plan = data && data.length > 0 ? data[0] : null;
-            return { data: plan, error: null };
+            if (!data || data.length === 0) {
+                return { data: null, error: null };
+            }
+
+            // 우선순위: submitted/approved > draft
+            // 1. 제출완료/승인된 수업계획 중 가장 최근 것
+            const submittedPlan = data.find(plan => 
+                plan.status === 'submitted' || plan.status === 'approved'
+            );
+            
+            if (submittedPlan) {
+                return { data: submittedPlan, error: null };
+            }
+            
+            // 2. 제출된 계획이 없으면 가장 최근 임시저장 반환
+            const draftPlan = data.find(plan => plan.status === 'draft');
+            return { data: draftPlan || data[0], error: null };
         }, { studentId });
 
         return result.success ? result.data : null;
