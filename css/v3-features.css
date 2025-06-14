@@ -1,0 +1,834 @@
+/* v3.0 통합 최적화 - 새로운 기능들을 위한 CSS 스타일 */
+/* 실시간 알림, 파일 업로드, 시스템 모니터링, 보안 기능 등 */
+
+/* ===================
+   실시간 알림 시스템
+   =================== */
+
+/* 알림 버튼 */
+.notification-btn {
+    position: relative;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ef4444;
+    color: white;
+    border-radius: 50%;
+    min-width: 18px;
+    height: 18px;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* 실시간 상태 표시 */
+.realtime-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f0f9ff;
+    border: 1px solid #0ea5e9;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #0369a1;
+    margin-bottom: 1rem;
+}
+
+.realtime-status i {
+    width: 16px;
+    height: 16px;
+    animation: pulse-gentle 2s infinite;
+}
+
+@keyframes pulse-gentle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* 연결 상태 표시 */
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    margin-top: 1rem;
+    transition: all 0.3s ease;
+}
+
+.connection-status.connected {
+    background: #f0f9ff;
+    color: #0369a1;
+    border: 1px solid #0ea5e9;
+}
+
+.connection-status.error {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #ef4444;
+}
+
+.connection-status i {
+    width: 16px;
+    height: 16px;
+}
+
+/* ===================
+   토스트 알림 시스템
+   =================== */
+
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 400px;
+}
+
+.welcome-toast, .toast {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #10b981;
+    animation: slideInRight 0.3s ease, fadeOut 0.3s ease 2.7s;
+    animation-fill-mode: forwards;
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.toast-content i {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.toast.error {
+    border-left-color: #ef4444;
+}
+
+.toast.warning {
+    border-left-color: #f59e0b;
+}
+
+.toast.info {
+    border-left-color: #3b82f6;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+/* ===================
+   안내 오버레이 시스템
+   =================== */
+
+.lesson-plan-guidance-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+    animation: fadeIn 0.3s ease;
+}
+
+.guidance-content {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 500px;
+    text-align: center;
+    animation: scaleIn 0.3s ease;
+}
+
+.guidance-icon {
+    margin-bottom: 1rem;
+}
+
+.guidance-content h3 {
+    margin: 0 0 1rem 0;
+    color: #1f2937;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.guidance-content p {
+    margin: 0 0 1.5rem 0;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* ===================
+   파일 업로드 시스템
+   =================== */
+
+.file-upload-area {
+    position: relative;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background: #fafafa;
+}
+
+.file-upload-area:hover {
+    border-color: #4f46e5;
+    background: #f8faff;
+}
+
+.file-upload-area.dragover {
+    border-color: #4f46e5;
+    background: #f0f9ff;
+    transform: scale(1.02);
+}
+
+.file-upload-area input[type="file"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-upload-content {
+    pointer-events: none;
+}
+
+.file-upload-content i {
+    width: 48px;
+    height: 48px;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+}
+
+.file-upload-content p {
+    margin: 0 0 0.5rem 0;
+    color: #374151;
+    font-weight: 500;
+}
+
+.file-upload-content small {
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+/* 파일 미리보기 */
+.receipt-preview {
+    margin-top: 1rem;
+    position: relative;
+    display: inline-block;
+}
+
+.receipt-preview img {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.receipt-preview .btn.small {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 업로드 진행상황 */
+.upload-progress {
+    margin-top: 1rem;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #4f46e5;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    animation: progress-shimmer 2s infinite;
+}
+
+@keyframes progress-shimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: 200px 0; }
+}
+
+.progress-text {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    text-align: center;
+}
+
+/* ===================
+   시스템 상태 모니터링
+   =================== */
+
+.system-status-panel {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.system-status-panel h3 {
+    margin: 0 0 1rem 0;
+    color: #1f2937;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.status-item label {
+    font-weight: 500;
+    color: #374151;
+}
+
+.status-item span {
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.status-item .status-healthy {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-item .status-warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-item .status-error {
+    background: #fecaca;
+    color: #991b1b;
+}
+
+/* 시스템 헬스 모달 */
+.system-health-container {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.health-overview {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.health-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.health-status i {
+    width: 24px;
+    height: 24px;
+}
+
+.health-details {
+    display: grid;
+    gap: 2rem;
+}
+
+.health-section h4 {
+    margin: 0 0 1rem 0;
+    color: #1f2937;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.health-items {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.health-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+/* ===================
+   개발자 도구 UI
+   =================== */
+
+.dev-tools {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: #f3f4f6;
+    border-radius: 6px;
+    text-align: center;
+    border: 1px dashed #d1d5db;
+}
+
+.dev-tools small {
+    color: #6b7280;
+    font-style: italic;
+}
+
+.quick-login-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease;
+}
+
+.dialog-content {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    min-width: 300px;
+    text-align: center;
+}
+
+.dialog-content h3 {
+    margin: 0 0 1.5rem 0;
+    color: #1f2937;
+}
+
+.dialog-content .btn {
+    margin: 0.25rem;
+    min-width: 120px;
+}
+
+/* 버전 정보 */
+.version-info {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+/* ===================
+   자동 저장 상태
+   =================== */
+
+.auto-save-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.5rem 1rem;
+    background: #f0f9ff;
+    border: 1px solid #0ea5e9;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    color: #0369a1;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.auto-save-status.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.auto-save-status.saving {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #92400e;
+}
+
+.auto-save-status.error {
+    background: #fecaca;
+    border-color: #ef4444;
+    color: #991b1b;
+}
+
+.auto-save-status i {
+    width: 16px;
+    height: 16px;
+}
+
+/* ===================
+   보안 강화 UI
+   =================== */
+
+.security-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.75rem 1rem;
+    background: #f0f9ff;
+    border: 1px solid #0ea5e9;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #0369a1;
+    margin-top: 1rem;
+}
+
+.security-notice i {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* 로그인 시도 관련 경고 */
+.login-warning {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin: 1rem 0;
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+/* 잠금 상태 UI */
+.account-locked {
+    background: #fef2f2;
+    border: 1px solid #ef4444;
+    color: #dc2626;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.account-locked i {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 0.5rem;
+}
+
+/* ===================
+   통계 카드 개선
+   =================== */
+
+.stat-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.3), transparent);
+    animation: loading-shimmer 2s infinite;
+}
+
+@keyframes loading-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.stat-card.updated::before {
+    background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.5), transparent);
+    animation: update-flash 0.5s ease;
+}
+
+@keyframes update-flash {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+/* ===================
+   반응형 개선
+   =================== */
+
+@media (max-width: 768px) {
+    .toast-container {
+        left: 20px;
+        right: 20px;
+        max-width: none;
+    }
+    
+    .guidance-content {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+    
+    .system-status-panel {
+        padding: 1rem;
+    }
+    
+    .status-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .health-overview {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .auto-save-status {
+        position: static;
+        margin: 1rem 0;
+    }
+    
+    .file-upload-area {
+        padding: 1.5rem;
+    }
+    
+    .file-upload-content i {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+/* ===================
+   다크 모드 지원 (추후 확장)
+   =================== */
+
+@media (prefers-color-scheme: dark) {
+    .system-status-panel,
+    .guidance-content,
+    .welcome-toast,
+    .toast {
+        background: #1f2937;
+        color: #f9fafb;
+        border-color: #374151;
+    }
+    
+    .status-item,
+    .health-item {
+        background: #374151;
+        border-color: #4b5563;
+    }
+    
+    .file-upload-area {
+        background: #374151;
+        border-color: #4b5563;
+        color: #f9fafb;
+    }
+    
+    .file-upload-area:hover {
+        background: #4b5563;
+    }
+}
+
+/* ===================
+   접근성 개선
+   =================== */
+
+/* 포커스 링 개선 */
+.notification-btn:focus,
+.btn:focus,
+.file-upload-area:focus-within {
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
+}
+
+/* 고대비 모드 지원 */
+@media (prefers-contrast: high) {
+    .realtime-status,
+    .connection-status,
+    .auto-save-status {
+        border-width: 2px;
+    }
+    
+    .toast {
+        border-left-width: 6px;
+    }
+}
+
+/* 애니메이션 감소 */
+@media (prefers-reduced-motion: reduce) {
+    .notification-badge,
+    .realtime-status i,
+    .progress-fill,
+    .stat-card::before {
+        animation: none;
+    }
+    
+    .welcome-toast,
+    .toast,
+    .lesson-plan-guidance-overlay,
+    .guidance-content {
+        animation: none;
+    }
+    
+    * {
+        transition: none !important;
+    }
+}
+
+/* ===================
+   프린트 스타일
+   =================== */
+
+@media print {
+    .toast-container,
+    .lesson-plan-guidance-overlay,
+    .quick-login-dialog,
+    .dev-tools,
+    .notification-badge,
+    .realtime-status,
+    .auto-save-status {
+        display: none !important;
+    }
+    
+    .system-status-panel,
+    .health-details {
+        page-break-inside: avoid;
+    }
+}
+
+/* ===================
+   유틸리티 클래스
+   =================== */
+
+.fade-in {
+    animation: fadeIn 0.3s ease;
+}
+
+.slide-up {
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.loading-dots::after {
+    content: '';
+    animation: dots 1.5s infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80%, 100% { content: '...'; }
+}
+
+.success-flash {
+    animation: successFlash 0.5s ease;
+}
+
+@keyframes successFlash {
+    0%, 100% { background-color: transparent; }
+    50% { background-color: rgba(16, 185, 129, 0.1); }
+}
+
+.error-shake {
+    animation: errorShake 0.5s ease;
+}
+
+@keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
