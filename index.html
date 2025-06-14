@@ -88,36 +88,45 @@
                                     <input type="date" id="endDate" required>
                                 </div>
                                 <div class="form-group">
-                                    <label>총 수업 횟수 *</label>
-                                    <input type="number" id="totalLessons" min="1" max="100" required placeholder="예: 24">
-                                    <small class="text-muted">이 횟수를 기준으로 예산이 배정됩니다</small>
+                                    <label>총 수업 횟수</label>
+                                    <div class="lesson-count-display">
+                                        <span id="totalLessonsDisplay" class="lesson-count-number">0</span>
+                                        <span class="lesson-count-label">회</span>
+                                    </div>
+                                    <small class="text-muted">아래에서 수업을 추가하면 자동으로 계산됩니다</small>
                                 </div>
                             </div>
-                            <button type="button" id="generateTableBtn" class="btn secondary">
-                                <i data-lucide="table"></i>
-                                수업 계획표 생성
-                            </button>
                         </div>
 
                         <!-- 수업 계획표 -->
-                        <div id="lessonTableSection" class="lesson-table-section" style="display: none;">
-                            <h2>수업 계획표</h2>
+                        <div class="lesson-table-section">
+                            <div class="lesson-table-header">
+                                <h2>수업 계획표</h2>
+                                <button type="button" id="addLessonBtn" class="btn primary">
+                                    <i data-lucide="plus"></i>
+                                    수업 추가
+                                </button>
+                            </div>
                             <div class="lesson-plan-requirements">
                                 <div class="requirement-notice">
                                     <i data-lucide="alert-circle"></i>
                                     <div>
                                         <strong>필수 제출 사항</strong>
-                                        <p>모든 수업의 주제와 내용을 구체적으로 작성해주세요. 이는 <strong>필수 제출 사항</strong>이며, 관리자가 이 내용을 검토하여 승인 여부를 결정합니다. 불완전한 수업계획은 승인되지 않습니다.</p>
+                                        <p>모든 수업의 주제와 내용을 구체적으로 작성해주세요. 수업은 개별적으로 추가/삭제할 수 있으며, 총 수업 횟수는 자동으로 계산됩니다.</p>
                                     </div>
                                 </div>
                             </div>
                             <div id="lessonTableContainer" class="lesson-table-container">
-                                <!-- 동적으로 생성될 수업 계획표 -->
+                                <div class="empty-lessons-message">
+                                    <i data-lucide="calendar-plus"></i>
+                                    <p>아직 추가된 수업이 없습니다.</p>
+                                    <p>위의 "수업 추가" 버튼을 클릭하여 첫 번째 수업을 추가해보세요.</p>
+                                </div>
                             </div>
                         </div>
 
                         <!-- 추가 정보 -->
-                        <div id="additionalInfoSection" class="additional-info-section" style="display: none;">
+                        <div class="additional-info-section">
                             <h2>추가 정보</h2>
                             <div class="form-group">
                                 <label>전체 수업 목표 *</label>
