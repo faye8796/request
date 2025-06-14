@@ -1,8 +1,9 @@
-// 수업계획 관리 모듈 (Supabase 연동) - 기존 데이터 로드 개선 버전
+// 수업계획 관리 모듈 (Supabase 연동) - 기존 데이터 로드 개선 버전 + 총 수업 횟수 변경 시 자동 테이블 재생성 기능 추가
 const LessonPlanManager = {
     currentLessonPlan: null,
     isEditMode: false,
     isInitialized: false,
+    currentLessonData: {}, // 현재 입력된 수업 데이터 임시 저장
 
     // 수업계획 페이지 초기화
     async init() {
@@ -69,7 +70,7 @@ const LessonPlanManager = {
         return isAuth;
     },
 
-    // 이벤트 바인딩 (중복 방지)
+    // 이벤트 바인딩 (중복 방지) - 수정: totalLessons 변경 이벤트 추가
     bindEvents() {
         // 기존 이벤트 리스너 제거
         this.unbindEvents();
@@ -99,16 +100,193 @@ const LessonPlanManager = {
             startDate.addEventListener('change', this.calculateDuration.bind(this));
             endDate.addEventListener('change', this.calculateDuration.bind(this));
         }
+
+        // 🆕 총 수업 횟수 변경 시 자동 테이블 재생성
+        const totalLessons = document.getElementById('totalLessons');
+        if (totalLessons) {
+            totalLessons.addEventListener('change', this.handleTotalLessonsChange.bind(this));
+            totalLessons.addEventListener('input', this.handleTotalLessonsInput.bind(this));
+        }
     },
 
-    // 이벤트 리스너 제거
+    // 🆕 총 수업 횟수 변경 처리 (change 이벤트)
+    async handleTotalLessonsChange(e) {
+        try {
+            console.log('📊 총 수업 횟수 변경 감지');
+            
+            const newTotalLessons = parseInt(e.target.value);
+            const tableContainer = document.getElementById('lessonTableContainer');
+            
+            // 유효성 검사
+            if (isNaN(newTotalLessons) || newTotalLessons <= 0) {
+                this.showMessage('⚠️ 총 수업 횟수는 1 이상의 숫자여야 합니다.', 'warning');
+                return;
+            }
+
+            if (newTotalLessons > 100) {
+                this.showMessage('⚠️ 총 수업 횟수는 100회를 초과할 수 없습니다.', 'warning');
+                e.target.value = 100;
+                return;
+            }
+
+            // 기존 테이블이 있는지 확인
+            if (!tableContainer || !tableContainer.innerHTML.trim()) {
+                console.log('📋 기존 테이블이 없어 변경 처리를 건너뜁니다.');
+                return;
+            }
+
+            // 현재 입력된 데이터 백업
+            this.backupCurrentLessonData();
+
+            const currentLessonCount = this.getCurrentLessonCount();
+            console.log(`📊 수업 횟수 변경: ${currentLessonCount} → ${newTotalLessons}`);
+
+            if (newTotalLessons !== currentLessonCount) {
+                await this.handleLessonCountChange(currentLessonCount, newTotalLessons);
+            }
+
+        } catch (error) {
+            console.error('❌ 총 수업 횟수 변경 처리 오류:', error);
+            this.showMessage('❌ 총 수업 횟수 변경 중 오류가 발생했습니다.', 'error');
+        }
+    },
+
+    // 🆕 총 수업 횟수 입력 처리 (input 이벤트 - 실시간 유효성 검사)
+    handleTotalLessonsInput(e) {
+        try {
+            const value = parseInt(e.target.value);
+            
+            if (isNaN(value)) return;
+
+            if (value > 100) {
+                e.target.value = 100;
+                this.showMessage('⚠️ 총 수업 횟수는 최대 100회입니다.', 'warning');
+            } else if (value < 1) {
+                e.target.value = 1;
+                this.showMessage('⚠️ 총 수업 횟수는 최소 1회입니다.', 'warning');
+            }
+        } catch (error) {
+            console.error('총 수업 횟수 입력 처리 오류:', error);
+        }
+    },
+
+    // 🆕 수업 횟수 변경 처리
+    async handleLessonCountChange(oldCount, newCount) {
+        try {
+            let confirmMessage = '';
+            let warningMessage = '';
+
+            if (newCount > oldCount) {
+                // 수업 횟수 증가
+                const addedCount = newCount - oldCount;
+                confirmMessage = `수업 횟수를 ${oldCount}회에서 ${newCount}회로 늘리시겠습니까?\n\n✅ ${addedCount}개의 새로운 수업 항목이 추가됩니다.\n✅ 기존에 입력한 데이터는 그대로 유지됩니다.`;
+            } else {
+                // 수업 횟수 감소
+                const removedCount = oldCount - newCount;
+                confirmMessage = `수업 횟수를 ${oldCount}회에서 ${newCount}회로 줄이시겠습니까?\n\n⚠️ ${newCount + 1}회차부터 ${oldCount}회차까지 총 ${removedCount}개 수업의 데이터가 삭제됩니다.\n✅ ${newCount}회차까지의 데이터는 그대로 유지됩니다.\n\n❗ 삭제된 데이터는 복구할 수 없습니다.`;
+                warningMessage = `\n\n⚠️ 주의: 줄어든 수업의 데이터가 완전히 삭제됩니다!`;
+            }
+
+            // 사용자 확인
+            if (!confirm(confirmMessage + warningMessage)) {
+                // 취소된 경우 원래 값으로 복원
+                const totalLessonsInput = document.getElementById('totalLessons');
+                if (totalLessonsInput) {
+                    totalLessonsInput.value = oldCount;
+                }
+                console.log('📋 사용자가 수업 횟수 변경을 취소했습니다.');
+                return;
+            }
+
+            // 테이블 재생성
+            await this.regenerateTableWithData(newCount);
+
+            // 성공 메시지
+            if (newCount > oldCount) {
+                this.showMessage(`✅ 수업 계획표가 ${newCount}회차로 확장되었습니다!\n✅ 기존 데이터는 그대로 유지되었습니다.`, 'success');
+            } else {
+                this.showMessage(`✅ 수업 계획표가 ${newCount}회차로 축소되었습니다!\n⚠️ ${newCount + 1}회차 이후의 데이터가 삭제되었습니다.`, 'warning');
+            }
+
+        } catch (error) {
+            console.error('❌ 수업 횟수 변경 처리 오류:', error);
+            this.showMessage('❌ 수업 횟수 변경 중 오류가 발생했습니다.', 'error');
+        }
+    },
+
+    // 🆕 현재 입력된 수업 데이터 백업
+    backupCurrentLessonData() {
+        try {
+            console.log('💾 현재 수업 데이터 백업 시작');
+            this.currentLessonData = {};
+
+            const topicInputs = document.querySelectorAll('[id^="lessonTopic_"]');
+            topicInputs.forEach(input => {
+                const lessonNumber = input.id.split('_')[1];
+                const contentInput = document.getElementById(`lessonContent_${lessonNumber}`);
+                
+                if (input.value.trim() || (contentInput && contentInput.value.trim())) {
+                    this.currentLessonData[lessonNumber] = {
+                        topic: input.value.trim(),
+                        content: contentInput ? contentInput.value.trim() : ''
+                    };
+                }
+            });
+
+            console.log('✅ 수업 데이터 백업 완료:', Object.keys(this.currentLessonData).length + '개 항목');
+        } catch (error) {
+            console.error('❌ 수업 데이터 백업 오류:', error);
+            this.currentLessonData = {};
+        }
+    },
+
+    // 🆕 현재 테이블의 수업 횟수 확인
+    getCurrentLessonCount() {
+        try {
+            const topicInputs = document.querySelectorAll('[id^="lessonTopic_"]');
+            return topicInputs.length;
+        } catch (error) {
+            console.error('현재 수업 횟수 확인 오류:', error);
+            return 0;
+        }
+    },
+
+    // 🆕 백업된 데이터와 함께 테이블 재생성
+    async regenerateTableWithData(newTotalLessons) {
+        try {
+            console.log('🔄 데이터 보존하며 테이블 재생성 시작');
+
+            // 새로운 수업 데이터 생성
+            const lessons = this.createSimpleLessons(newTotalLessons);
+            
+            // 테이블 재생성
+            this.createLessonTable(lessons);
+
+            // 백업된 데이터 복원 (새로운 횟수 범위 내에서만)
+            for (let i = 1; i <= newTotalLessons; i++) {
+                const lessonData = this.currentLessonData[i];
+                if (lessonData) {
+                    this.safeSetValue(`lessonTopic_${i}`, lessonData.topic);
+                    this.safeSetValue(`lessonContent_${i}`, lessonData.content);
+                }
+            }
+
+            console.log('✅ 테이블 재생성 및 데이터 복원 완료');
+        } catch (error) {
+            console.error('❌ 테이블 재생성 오류:', error);
+            throw error;
+        }
+    },
+
+    // 이벤트 리스너 제거 - 수정: totalLessons 이벤트 추가
     unbindEvents() {
         const elements = [
             'generateTableBtn',
             'lessonPlanForm', 
             'saveDraftBtn',
             'startDate',
-            'endDate'
+            'endDate',
+            'totalLessons' // 🆕 추가
         ];
 
         elements.forEach(id => {
@@ -119,6 +297,8 @@ const LessonPlanManager = {
                 element.removeEventListener('submit', this.handleFormSubmit);
                 element.removeEventListener('click', this.handleSaveDraft);
                 element.removeEventListener('change', this.calculateDuration);
+                element.removeEventListener('change', this.handleTotalLessonsChange); // 🆕 추가
+                element.removeEventListener('input', this.handleTotalLessonsInput); // 🆕 추가
             }
         });
     },
@@ -509,7 +689,7 @@ const LessonPlanManager = {
         }
     },
 
-    // 현재 데이터 수집
+    // 현재 데이터 수집 - 🆕 수정: totalLessons 설정값 기준으로 데이터 수집 제한
     collectFormData() {
         console.log('📊 폼 데이터 수집 시작');
         
@@ -519,25 +699,26 @@ const LessonPlanManager = {
         const overallGoals = document.getElementById('overallGoals').value.trim();
         const specialNotes = document.getElementById('specialNotes').value.trim();
 
-        // 수업별 데이터 수집
+        // 🆕 수정: totalLessons 설정값 기준으로만 데이터 수집
         const lessons = [];
-        const totalLessonInputs = document.querySelectorAll('[id^="lessonTopic_"]');
         
-        console.log(`🔍 ${totalLessonInputs.length}개 수업 입력 필드 발견`);
-        
-        totalLessonInputs.forEach(input => {
-            const lessonNumber = input.id.split('_')[1];
-            const topic = input.value.trim();
-            const contentInput = document.getElementById(`lessonContent_${lessonNumber}`);
-            
-            const content = contentInput ? contentInput.value.trim() : '';
-            
-            lessons.push({
-                lessonNumber: parseInt(lessonNumber),
-                topic: topic,
-                content: content
-            });
-        });
+        // totalLessons가 유효한 경우에만 해당 수만큼만 수집
+        if (!isNaN(totalLessons) && totalLessons > 0) {
+            for (let i = 1; i <= totalLessons; i++) {
+                const topicInput = document.getElementById(`lessonTopic_${i}`);
+                const contentInput = document.getElementById(`lessonContent_${i}`);
+                
+                if (topicInput && contentInput) {
+                    lessons.push({
+                        lessonNumber: i,
+                        topic: topicInput.value.trim(),
+                        content: contentInput.value.trim()
+                    });
+                }
+            }
+        } else {
+            console.warn('⚠️ totalLessons가 유효하지 않음:', totalLessons);
+        }
 
         const formData = {
             startDate,
@@ -550,15 +731,23 @@ const LessonPlanManager = {
 
         console.log('📋 수집된 데이터:', {
             기본정보: { startDate, endDate, totalLessons },
-            수업수: lessons.length,
+            설정된수업수: totalLessons,
+            실제수집된수업수: lessons.length,
             목표길이: overallGoals.length,
             특별사항길이: specialNotes.length
         });
 
+        // 🆕 데이터 일관성 검증
+        if (totalLessons !== lessons.length) {
+            console.warn(`⚠️ 데이터 불일치 감지: 설정 수업수(${totalLessons}) ≠ 수집된 수업수(${lessons.length})`);
+            // 설정값 기준으로 보정
+            this.showMessage(`⚠️ 데이터 불일치가 감지되어 ${totalLessons}개 수업 기준으로 보정했습니다.`, 'warning');
+        }
+
         return formData;
     },
 
-    // 폼 유효성 검사 (수업 계획 필수 검증 추가)
+    // 폼 유효성 검사 (수업 계획 필수 검증 추가) - 🆕 수정: 데이터 일관성 체크 강화
     validateForm(data) {
         const errors = [];
 
@@ -576,26 +765,37 @@ const LessonPlanManager = {
             errors.push('❌ 총 수업 횟수는 1~100회 사이여야 합니다.');
         }
 
+        // 🆕 데이터 일관성 검증 강화
+        if (data.totalLessons && data.lessons) {
+            if (data.totalLessons !== data.lessons.length) {
+                errors.push(`❌ 설정된 수업 횟수(${data.totalLessons})와 실제 수업 데이터 수(${data.lessons.length})가 일치하지 않습니다.`);
+            }
+        }
+
         // 수업 계획 내용 검증 (필수)
         if (data.lessons && data.lessons.length > 0) {
             let emptyTopicCount = 0;
             let emptyContentCount = 0;
+            const emptyTopicLessons = [];
+            const emptyContentLessons = [];
             
             data.lessons.forEach((lesson, index) => {
                 if (!lesson.topic || lesson.topic.trim() === '') {
                     emptyTopicCount++;
+                    emptyTopicLessons.push(lesson.lessonNumber);
                 }
                 if (!lesson.content || lesson.content.trim() === '') {
                     emptyContentCount++;
+                    emptyContentLessons.push(lesson.lessonNumber);
                 }
             });
             
             if (emptyTopicCount > 0) {
-                errors.push(`❌ ${emptyTopicCount}개 수업의 주제가 비어있습니다. 모든 수업의 주제를 입력해주세요. (필수 항목)`);
+                errors.push(`❌ ${emptyTopicCount}개 수업의 주제가 비어있습니다. (${emptyTopicLessons.join(', ')}회차) 모든 수업의 주제를 입력해주세요. (필수 항목)`);
             }
             
             if (emptyContentCount > 0) {
-                errors.push(`❌ ${emptyContentCount}개 수업의 내용이 비어있습니다. 모든 수업의 내용을 구체적으로 작성해주세요. (필수 항목)`);
+                errors.push(`❌ ${emptyContentCount}개 수업의 내용이 비어있습니다. (${emptyContentLessons.join(', ')}회차) 모든 수업의 내용을 구체적으로 작성해주세요. (필수 항목)`);
             }
         } else {
             errors.push('❌ 수업 계획표를 생성하고 각 수업의 주제와 내용을 작성해주세요. (필수 항목)');
