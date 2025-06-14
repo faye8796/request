@@ -305,9 +305,9 @@ const SupabaseAPI = {
     // 인증 관련 함수들 - 안전성 강화
     // ===================
 
-    // 학생 인증 (이름 + 생년월일) - single() 문제 해결
+    // 학생 인증 (이름 + 생년월일) - 버그 수정: 인증 상태 저장
     async authenticateStudent(name, birthDate) {
-        return await this.safeApiCall('학생 인증', async () => {
+        const result = await this.safeApiCall('학생 인증', async () => {
             const client = await this.ensureClient();
             
             // single() 대신 배열로 받아서 처리
@@ -326,6 +326,27 @@ const SupabaseAPI = {
             const user = data && data.length > 0 ? data[0] : null;
             return { data: user, error: null };
         }, { name, birthDate });
+
+        // 인증 성공 시 현재 사용자 설정 (버그 수정)
+        if (result.success && result.data) {
+            this.currentUser = result.data;
+            this.currentUserType = 'student';
+            
+            // 세션 저장 (폴백용)
+            try {
+                sessionStorage.setItem('userSession', JSON.stringify({
+                    user: result.data,
+                    userType: 'student',
+                    loginTime: new Date().toISOString()
+                }));
+            } catch (error) {
+                console.warn('세션 저장 실패:', error);
+            }
+            
+            this.logSuccess('학생 인증 및 세션 설정', result.data.name);
+        }
+
+        return result;
     },
 
     // 관리자 인증 (관리자 코드) - single() 문제 해결
@@ -379,7 +400,7 @@ const SupabaseAPI = {
 
                 this.currentUser = adminUser;
                 this.currentUserType = 'admin';
-                return { success: true, user: adminUser };
+                return { success: true, data: adminUser };
             }
 
             return result;
@@ -393,6 +414,12 @@ const SupabaseAPI = {
     logout() {
         this.currentUser = null;
         this.currentUserType = null;
+        // 세션 스토리지 정리
+        try {
+            sessionStorage.removeItem('userSession');
+        } catch (error) {
+            console.warn('세션 정리 실패:', error);
+        }
         this.logSuccess('로그아웃');
     },
 
