@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="css/student.css">
     <link rel="stylesheet" href="css/admin.css">
     <link rel="stylesheet" href="css/lesson-plan.css">
+    <link rel="stylesheet" href="css/v3-features.css">
     
     <!-- External Libraries -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -278,7 +279,7 @@
                         </div>
                         <div class="status-item">
                             <label>실시간 기능:</label>
-                            <span id="realtimeStatus">확인 중...</span>
+                            <span id="realtimeStatusAdmin">확인 중...</span>
                         </div>
                         <div class="status-item">
                             <label>파일 저장소:</label>
@@ -835,12 +836,25 @@
         // 파일 드래그 앤 드롭 지원
         document.addEventListener('dragover', function(e) {
             e.preventDefault();
+            const uploadArea = document.getElementById('fileUploadArea');
+            if (uploadArea && uploadArea.contains(e.target)) {
+                uploadArea.classList.add('dragover');
+            }
+        });
+        
+        document.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            const uploadArea = document.getElementById('fileUploadArea');
+            if (uploadArea && !uploadArea.contains(e.relatedTarget)) {
+                uploadArea.classList.remove('dragover');
+            }
         });
         
         document.addEventListener('drop', function(e) {
             e.preventDefault();
             const uploadArea = document.getElementById('fileUploadArea');
             if (uploadArea && uploadArea.contains(e.target)) {
+                uploadArea.classList.remove('dragover');
                 const files = e.dataTransfer.files;
                 if (files.length > 0) {
                     const fileInput = document.getElementById('receiptFile');
@@ -861,6 +875,16 @@
                 e.preventDefault();
                 const healthBtn = document.getElementById('systemHealthBtn');
                 if (healthBtn) healthBtn.click();
+            }
+            
+            // Ctrl + T : 테스트 모드 토글 (관리자만)
+            if (e.ctrlKey && e.key === 't' && window.AuthManager?.isAdmin()) {
+                e.preventDefault();
+                if (window.SupabaseAPI?.toggleTestMode) {
+                    window.SupabaseAPI.toggleTestMode().then(newMode => {
+                        console.log('테스트 모드:', newMode ? '활성화' : '비활성화');
+                    });
+                }
             }
         });
     </script>
