@@ -1,4 +1,4 @@
-// 수업계획 관리 모듈 (Supabase 연동) - 필수 계획 검증 버전
+// 수업계획 관리 모듈 (Supabase 연동) - 인증 문제 해결 버전
 const LessonPlanManager = {
     currentLessonPlan: null,
     isEditMode: false,
@@ -16,6 +16,57 @@ const LessonPlanManager = {
         await this.checkEditPermission();
         this.isInitialized = true;
         console.log('✅ LessonPlanManager 초기화 완료');
+    },
+
+    // 안전한 사용자 정보 조회 (인증 문제 해결)
+    getSafeCurrentUser() {
+        try {
+            // 1차: AuthManager에서 조회
+            if (window.AuthManager && typeof window.AuthManager.getCurrentUser === 'function') {
+                const user = window.AuthManager.getCurrentUser();
+                if (user && user.id) {
+                    console.log('✅ AuthManager에서 사용자 정보 조회:', user.name);
+                    return user;
+                }
+            }
+
+            // 2차: SupabaseAPI에서 조회
+            if (window.SupabaseAPI && window.SupabaseAPI.currentUser) {
+                const user = window.SupabaseAPI.currentUser;
+                if (user && user.id) {
+                    console.log('✅ SupabaseAPI에서 사용자 정보 조회:', user.name);
+                    return user;
+                }
+            }
+
+            // 3차: 세션 스토리지에서 조회 (폴백)
+            try {
+                const sessionData = sessionStorage.getItem('userSession');
+                if (sessionData) {
+                    const parsed = JSON.parse(sessionData);
+                    if (parsed.user && parsed.user.id) {
+                        console.log('✅ 세션에서 사용자 정보 복원:', parsed.user.name);
+                        return parsed.user;
+                    }
+                }
+            } catch (sessionError) {
+                console.warn('세션 복원 실패:', sessionError);
+            }
+
+            console.warn('⚠️ 사용자 정보를 찾을 수 없습니다');
+            return null;
+        } catch (error) {
+            console.error('❌ 사용자 정보 조회 중 오류:', error);
+            return null;
+        }
+    },
+
+    // 인증 상태 확인 (개선된 버전)
+    isUserAuthenticated() {
+        const user = this.getSafeCurrentUser();
+        const isAuth = !!(user && user.id);
+        console.log('🔍 인증 상태 확인:', isAuth ? '로그인됨' : '로그인 안됨', user ? `(${user.name})` : '');
+        return isAuth;
     },
 
     // 이벤트 바인딩 (중복 방지)
@@ -344,7 +395,7 @@ const LessonPlanManager = {
         try {
             console.log('📖 기존 데이터 로드 시작');
             
-            const currentUser = AuthManager.getCurrentUser();
+            const currentUser = this.getSafeCurrentUser();
             if (!currentUser) {
                 console.log('사용자 정보가 없어 기존 데이터 로드를 건너뜁니다.');
                 return;
@@ -496,7 +547,7 @@ const LessonPlanManager = {
         return errors;
     },
 
-    // 임시저장
+    // 임시저장 (인증 문제 해결)
     async saveDraft() {
         try {
             console.log('💾 임시저장 시작');
@@ -507,13 +558,22 @@ const LessonPlanManager = {
                 return;
             }
 
-            const currentUser = AuthManager.getCurrentUser();
+            // 개선된 사용자 인증 확인
+            const currentUser = this.getSafeCurrentUser();
             if (!currentUser) {
-                this.showMessage('❌ 로그인이 필요합니다.', 'warning');
+                this.showMessage('❌ 로그인 상태를 확인할 수 없습니다. 다시 로그인해주세요.', 'warning');
+                console.error('인증 실패: 사용자 정보가 없습니다');
+                
+                // 3초 후 로그인 페이지로 리다이렉트
+                setTimeout(() => {
+                    if (window.App && window.App.showPage) {
+                        window.App.showPage('loginPage');
+                    }
+                }, 3000);
                 return;
             }
 
-            console.log('👤 사용자 확인:', currentUser.id);
+            console.log('👤 사용자 확인:', currentUser.id, currentUser.name);
 
             const data = this.collectFormData();
             
@@ -535,7 +595,7 @@ const LessonPlanManager = {
         }
     },
 
-    // 폼 제출 처리 (필수 검증 강화)
+    // 폼 제출 처리 (인증 문제 해결)
     async handleFormSubmit_actual(e) {
         e.preventDefault();
         
@@ -548,13 +608,22 @@ const LessonPlanManager = {
                 return;
             }
 
-            const currentUser = AuthManager.getCurrentUser();
+            // 개선된 사용자 인증 확인
+            const currentUser = this.getSafeCurrentUser();
             if (!currentUser) {
-                this.showMessage('❌ 로그인이 필요합니다.', 'warning');
+                this.showMessage('❌ 로그인 상태를 확인할 수 없습니다. 다시 로그인해주세요.', 'warning');
+                console.error('인증 실패: 사용자 정보가 없습니다');
+                
+                // 3초 후 로그인 페이지로 리다이렉트
+                setTimeout(() => {
+                    if (window.App && window.App.showPage) {
+                        window.App.showPage('loginPage');
+                    }
+                }, 3000);
                 return;
             }
 
-            console.log('👤 사용자 확인:', currentUser.id);
+            console.log('👤 사용자 확인:', currentUser.id, currentUser.name);
 
             const data = this.collectFormData();
             const errors = this.validateForm(data);
