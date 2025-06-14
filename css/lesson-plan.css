@@ -1,4 +1,4 @@
-/* 수업계획 페이지 스타일 - 밝은 테마 */
+/* 수업계획 페이지 스타일 - 밝은 테마 (개선된 UX) */
 
 .lesson-plan-container {
     max-width: 1200px;
@@ -159,6 +159,23 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+.btn.danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+}
+
+.btn.danger:hover {
+    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+.btn.small {
+    padding: 8px 16px;
+    font-size: 12px;
+    min-width: auto;
+}
+
 .btn:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -168,6 +185,77 @@
     opacity: 0.6;
     cursor: not-allowed;
     transform: none !important;
+}
+
+/* 총 수업 횟수 표시 */
+.lesson-count-display {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    border: 2px solid #2196f3;
+    border-radius: 12px;
+    margin-top: 8px;
+}
+
+.lesson-count-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1565c0;
+}
+
+.lesson-count-label {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #0d47a1;
+}
+
+/* 수업 계획표 헤더 */
+.lesson-table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.lesson-table-header h2 {
+    color: #2c3e50;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 빈 수업 상태 메시지 */
+.empty-lessons-message {
+    text-align: center;
+    padding: 60px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    color: #6c757d;
+}
+
+.empty-lessons-message i {
+    font-size: 3rem;
+    color: #adb5bd;
+    margin-bottom: 16px;
+}
+
+.empty-lessons-message p {
+    margin: 8px 0;
+    font-size: 16px;
+}
+
+.empty-lessons-message p:first-of-type {
+    font-weight: 600;
+    color: #495057;
+    font-size: 18px;
 }
 
 /* 폼 섹션 */
@@ -251,7 +339,7 @@
 
 .table-header {
     display: grid;
-    grid-template-columns: 120px 1fr 2fr;
+    grid-template-columns: 100px 1fr 2fr 120px;
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border-bottom: 2px solid #dee2e6;
 }
@@ -274,7 +362,7 @@
 
 .table-row {
     display: grid;
-    grid-template-columns: 120px 1fr 2fr;
+    grid-template-columns: 100px 1fr 2fr 120px;
     border-bottom: 1px solid #e9ecef;
     transition: background-color 0.2s ease;
     background: #ffffff;
@@ -307,6 +395,11 @@
     font-size: 14px;
 }
 
+.lesson-actions {
+    justify-content: center;
+    padding: 12px;
+}
+
 /* 입력 필드 스타일 */
 .topic-input, .content-textarea {
     width: 100%;
@@ -336,6 +429,39 @@
     line-height: 1.5;
 }
 
+/* 수업 삭제 버튼 스타일 */
+.delete-lesson-btn {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+.delete-lesson-btn:hover {
+    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+.delete-lesson-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+.delete-lesson-btn i {
+    width: 14px;
+    height: 14px;
+}
+
 /* 폼 액션 버튼 */
 .form-actions {
     display: flex;
@@ -361,18 +487,19 @@
 }
 
 /* 특별한 버튼 스타일링 */
-#generateTableBtn {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    color: #495057;
-    border: 2px solid #007bff;
+#addLessonBtn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    font-weight: 600;
+    padding: 12px 20px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
 }
 
-#generateTableBtn:hover {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    color: #343a40;
-    border-color: #0056b3;
+#addLessonBtn:hover {
+    background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
 }
 
 #saveDraftBtn {
@@ -399,13 +526,29 @@
         padding: 20px 16px;
     }
     
+    .lesson-table-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    
     .form-grid {
         grid-template-columns: 1fr;
         gap: 16px;
     }
     
+    .lesson-count-display {
+        flex-direction: column;
+        text-align: center;
+        gap: 4px;
+    }
+    
+    .lesson-count-number {
+        font-size: 2.5rem;
+    }
+    
     .table-header, .table-row {
-        grid-template-columns: 80px 1fr;
+        grid-template-columns: 70px 1fr 80px;
     }
     
     .cell:nth-child(3) {
@@ -426,6 +569,41 @@
     
     .basic-info-section, .lesson-table-section, .additional-info-section {
         padding: 20px;
+    }
+    
+    .delete-lesson-btn {
+        padding: 6px 10px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .table-header, .table-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .cell {
+        padding: 12px 16px;
+        border-right: none;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .cell:last-child {
+        border-bottom: none;
+    }
+    
+    .lesson-number {
+        background: #e3f2fd;
+        color: #1565c0;
+        font-weight: 700;
+        justify-content: flex-start;
+        border-radius: 6px;
+    }
+    
+    .lesson-actions {
+        justify-content: flex-end;
+        padding: 12px 16px;
     }
 }
 
@@ -457,7 +635,9 @@
     .form-actions,
     .lesson-plan-message,
     .edit-disabled,
-    .requirement-notice {
+    .requirement-notice,
+    .delete-lesson-btn,
+    .lesson-table-header .btn {
         display: none;
     }
     
@@ -465,5 +645,9 @@
         max-width: none;
         padding: 0;
         background: white;
+    }
+    
+    .table-header, .table-row {
+        grid-template-columns: 100px 1fr 2fr;
     }
 }
