@@ -1,4 +1,4 @@
-// 인증 관리 모듈 (Supabase 연동) - 수정된 버전
+// 인증 관리 모듈 (Supabase 연동) - 페이지 새로고침 시 로그인 상태 유지 추가
 const AuthManager = {
     // 초기화
     init() {
@@ -7,10 +7,181 @@ const AuthManager = {
         this.checkExistingSession();
     },
 
-    // 기존 세션 확인
+    // 기존 세션 확인 - 페이지 새로고침 시 로그인 상태 복원
     async checkExistingSession() {
-        // 기존 인증 상태가 있는지 확인 (개발 중에는 생략)
-        // 추후 Supabase Auth를 사용할 때 구현
+        try {
+            console.log('🔍 기존 세션 확인 시작');
+            
+            // 세션 스토리지에서 사용자 정보 복원 시도
+            const sessionData = this.getStoredSession();
+            
+            if (!sessionData) {
+                console.log('📭 저장된 세션이 없습니다.');
+                return false;
+            }
+
+            console.log('📦 저장된 세션 발견:', sessionData.userType, sessionData.user?.name);
+
+            // 세션 유효성 확인 (24시간 이내)
+            if (!this.isSessionValid(sessionData)) {
+                console.log('⏰ 세션이 만료되었습니다.');
+                this.clearStoredSession();
+                return false;
+            }
+
+            // SupabaseAPI가 로드될 때까지 대기
+            if (!window.SupabaseAPI) {
+                console.log('⏳ SupabaseAPI 로드 대기 중...');
+                await this.waitForSupabaseAPI();
+            }
+
+            // 데이터베이스에서 사용자 정보 재검증
+            const isValid = await this.validateStoredUser(sessionData);
+            if (!isValid) {
+                console.log('❌ 저장된 사용자 정보가 유효하지 않습니다.');
+                this.clearStoredSession();
+                return false;
+            }
+
+            // 인증 상태 복원
+            this.restoreAuthenticationState(sessionData);
+
+            // 적절한 페이지로 리다이렉트
+            await this.redirectToUserPage(sessionData.userType, sessionData.user);
+
+            console.log('✅ 세션 복원 완료');
+            return true;
+
+        } catch (error) {
+            console.error('❌ 세션 확인 중 오류:', error);
+            this.clearStoredSession();
+            return false;
+        }
+    },
+
+    // 저장된 세션 조회
+    getStoredSession() {
+        try {
+            const sessionData = sessionStorage.getItem('userSession');
+            if (!sessionData) return null;
+
+            const parsed = JSON.parse(sessionData);
+            
+            // 필수 데이터 검증
+            if (!parsed.user || !parsed.userType || !parsed.loginTime) {
+                console.warn('⚠️ 세션 데이터가 불완전합니다.');
+                return null;
+            }
+
+            return parsed;
+        } catch (error) {
+            console.warn('⚠️ 세션 데이터 파싱 오류:', error);
+            return null;
+        }
+    },
+
+    // 세션 유효성 확인 (24시간)
+    isSessionValid(sessionData) {
+        try {
+            const loginTime = new Date(sessionData.loginTime);
+            const now = new Date();
+            const hoursDiff = (now - loginTime) / (1000 * 60 * 60);
+            
+            return hoursDiff < 24; // 24시간 이내
+        } catch (error) {
+            console.warn('⚠️ 세션 유효성 확인 오류:', error);
+            return false;
+        }
+    },
+
+    // SupabaseAPI 로드 대기
+    async waitForSupabaseAPI(maxWaitTime = 10000) {
+        const startTime = Date.now();
+        
+        return new Promise((resolve, reject) => {
+            const checkAPI = setInterval(() => {
+                if (window.SupabaseAPI) {
+                    clearInterval(checkAPI);
+                    resolve(true);
+                } else if (Date.now() - startTime > maxWaitTime) {
+                    clearInterval(checkAPI);
+                    reject(new Error('SupabaseAPI 로드 타임아웃'));
+                }
+            }, 100);
+        });
+    },
+
+    // 저장된 사용자 정보 검증
+    async validateStoredUser(sessionData) {
+        try {
+            const { user, userType } = sessionData;
+
+            if (userType === 'student') {
+                // 학생 정보 재검증
+                const result = await SupabaseAPI.authenticateStudent(user.name, user.birth_date);
+                return result.success && result.data && result.data.id === user.id;
+            } else if (userType === 'admin') {
+                // 관리자는 단순히 ID 존재 여부만 확인 (코드 재입력 불필요)
+                return user && user.user_type === 'admin';
+            }
+
+            return false;
+        } catch (error) {
+            console.warn('⚠️ 사용자 정보 검증 오류:', error);
+            return false;
+        }
+    },
+
+    // 인증 상태 복원
+    restoreAuthenticationState(sessionData) {
+        try {
+            console.log('🔄 인증 상태 복원:', sessionData.user.name);
+            
+            // SupabaseAPI에 사용자 정보 설정
+            SupabaseAPI.currentUser = sessionData.user;
+            SupabaseAPI.currentUserType = sessionData.userType;
+
+            console.log('✅ SupabaseAPI 상태 복원 완료');
+        } catch (error) {
+            console.error('❌ 인증 상태 복원 오류:', error);
+            throw error;
+        }
+    },
+
+    // 사용자 페이지로 리다이렉트
+    async redirectToUserPage(userType, user) {
+        try {
+            console.log('🔀 페이지 리다이렉트:', userType);
+
+            // 로그인 페이지가 아닌 경우 리다이렉트 생략
+            const currentPage = document.querySelector('.page.active');
+            if (currentPage && !currentPage.id.includes('loginPage')) {
+                console.log('📍 이미 적절한 페이지에 있습니다.');
+                return;
+            }
+
+            if (userType === 'student') {
+                await this.safeRedirectStudent(user.id);
+            } else if (userType === 'admin') {
+                this.redirectToAdminPage();
+            }
+        } catch (error) {
+            console.error('❌ 페이지 리다이렉트 오류:', error);
+            // 오류 발생 시 로그인 페이지로 이동
+            if (typeof App !== 'undefined' && App.showPage) {
+                App.showPage('loginPage');
+            }
+        }
+    },
+
+    // 저장된 세션 삭제
+    clearStoredSession() {
+        try {
+            sessionStorage.removeItem('userSession');
+            console.log('🗑️ 저장된 세션 삭제 완료');
+        } catch (error) {
+            console.warn('⚠️ 세션 삭제 오류:', error);
+        }
     },
 
     // 이벤트 리스너 설정
@@ -471,7 +642,7 @@ const AuthManager = {
         }
     },
 
-    // 로그아웃 처리 - 안전성 강화
+    // 로그아웃 처리 - 세션 정리 추가
     handleLogout() {
         try {
             if (this.showConfirm('정말로 로그아웃하시겠습니까?')) {
@@ -479,6 +650,9 @@ const AuthManager = {
                 if (typeof SupabaseAPI !== 'undefined') {
                     SupabaseAPI.logout();
                 }
+                
+                // 세션 스토리지 정리
+                this.clearStoredSession();
                 
                 // 모든 알림 제거
                 this.clearAllNotices();
@@ -498,6 +672,8 @@ const AuthManager = {
                         studentNameInput.focus();
                     }
                 }, 100);
+
+                console.log('✅ 로그아웃 완료 - 세션 정리됨');
             }
         } catch (error) {
             console.error('로그아웃 처리 오류:', error);
@@ -745,4 +921,4 @@ const AuthManager = {
 // 전역 접근을 위한 window 객체에 추가
 window.AuthManager = AuthManager;
 
-console.log('🔐 AuthManager loaded successfully');
+console.log('🔐 AuthManager loaded successfully with persistent login support');
