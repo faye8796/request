@@ -1,6 +1,6 @@
 // Supabase 클라이언트 설정 및 API 관리 - 초기화 오류 개선 버전
 // JSON 객체 에러 및 single() 메서드 문제 해결 + 사용자 친화적 오류 메시지 강화
-// 예산 재계산 시스템 통합
+// 예산 재계산 시스템 통합 + 예산 배정 알고리즘 수정
 
 // 설정 파일이 로드될 때까지 대기 - 개선된 버전
 function waitForConfig() {
@@ -1065,13 +1065,15 @@ const SupabaseAPI = {
         return result.success ? result.data : [];
     },
 
-    // 수업계획 승인
+    // 수업계획 승인 - 예산 배정 알고리즘 수정
     async approveLessonPlan(studentId) {
         return await this.safeApiCall('수업계획 승인', async () => {
             const client = await this.ensureClient();
             const now = new Date().toISOString();
             
-            // 수업계획 승인 처리
+            console.log(`💰 수업계획 승인 및 예산 배정 시작 - 학생 ID: ${studentId}`);
+            
+            // 수업계획 승인 처리 및 수업 데이터 조회
             const planResult = await client
                 .from('lesson_plans')
                 .update({
@@ -1087,11 +1089,29 @@ const SupabaseAPI = {
                 return { data: null, error: planResult.error };
             }
 
+            // 승인된 수업계획에서 실제 수업 횟수 추출
+            const approvedPlan = planResult.data[0];
+            const lessonData = approvedPlan.lessons;
+            const actualTotalLessons = parseInt(lessonData?.totalLessons) || 0;
+            
+            console.log(`📚 수업계획 데이터:`, {
+                planId: approvedPlan.id,
+                actualTotalLessons: actualTotalLessons,
+                lessonData: lessonData
+            });
+
             // 학생 정보 조회
             const student = await this.getStudentById(studentId);
             if (!student) {
                 return { data: null, error: new Error('학생 정보를 찾을 수 없습니다.') };
             }
+
+            console.log(`👤 학생 정보:`, {
+                studentId: student.id,
+                name: student.name,
+                field: student.field,
+                userProfileTotalLessons: student.total_lessons // 참고용
+            });
 
             // 예산 설정 조회
             const budgetSettingsResult = await client
@@ -1102,10 +1122,24 @@ const SupabaseAPI = {
 
             if (budgetSettingsResult.data && budgetSettingsResult.data.length > 0) {
                 const settings = budgetSettingsResult.data[0];
-                const allocatedBudget = Math.min(
-                    student.total_lessons * settings.per_lesson_amount,
-                    settings.max_budget_limit
-                );
+                
+                console.log(`⚙️ 예산 설정:`, {
+                    field: settings.field,
+                    perLessonAmount: settings.per_lesson_amount,
+                    maxBudgetLimit: settings.max_budget_limit
+                });
+
+                // 📊 수정된 예산 계산 로직: 수업계획의 실제 수업 횟수 사용
+                const calculatedBudget = actualTotalLessons * settings.per_lesson_amount;
+                const allocatedBudget = Math.min(calculatedBudget, settings.max_budget_limit);
+                
+                console.log(`💰 예산 계산:`, {
+                    수업횟수: actualTotalLessons,
+                    회당예산: settings.per_lesson_amount,
+                    계산된예산: calculatedBudget,
+                    최대한도: settings.max_budget_limit,
+                    최종배정예산: allocatedBudget
+                });
 
                 // 학생 예산 생성/업데이트
                 const budgetData = {
@@ -1113,7 +1147,8 @@ const SupabaseAPI = {
                     field: student.field,
                     allocated_budget: allocatedBudget,
                     used_budget: 0,
-                    lesson_plan_id: planResult.data[0].id
+                    lesson_plan_id: approvedPlan.id,
+                    updated_at: now
                 };
 
                 // 기존 예산 확인
@@ -1124,28 +1159,38 @@ const SupabaseAPI = {
 
                 if (existingBudgetResult.data && existingBudgetResult.data.length > 0) {
                     // 업데이트
-                    await client
+                    const updateResult = await client
                         .from('student_budgets')
                         .update(budgetData)
                         .eq('user_id', studentId);
+                    
+                    console.log(`🔄 예산 업데이트 결과:`, updateResult.error ? updateResult.error : '성공');
                 } else {
                     // 새로 생성
-                    await client
+                    const insertResult = await client
                         .from('student_budgets')
                         .insert([budgetData]);
+                    
+                    console.log(`➕ 예산 생성 결과:`, insertResult.error ? insertResult.error : '성공');
                 }
+
+                console.log(`✅ 수업계획 승인 및 예산 배정 완료 - ${student.name}: ${allocatedBudget.toLocaleString('ko-KR')}원`);
 
                 return {
                     data: {
                         approved: true,
                         budgetInfo: {
-                            allocated: allocatedBudget
+                            allocated: allocatedBudget,
+                            lessonCount: actualTotalLessons,
+                            perLessonAmount: settings.per_lesson_amount,
+                            maxBudgetLimit: settings.max_budget_limit
                         }
                     },
                     error: null
                 };
             }
 
+            console.log(`⚠️ 예산 설정을 찾을 수 없습니다 - 분야: ${student.field}`);
             return { data: { approved: true }, error: null };
         }, { studentId });
     },
@@ -1196,7 +1241,7 @@ const SupabaseAPI = {
         return config?.APP?.DEFAULT_BUDGET_SETTINGS || {};
     },
 
-    // 분야별 예산 설정 업데이트 - 예산 재계산 기능 통합
+    // 분야별 예산 설정 업데이트 - 예산 재계산 기능 통합 + 수정된 재계산 로직
     async updateFieldBudgetSettings(field, settings) {
         return await this.safeApiCall('분야별 예산 설정 업데이트', async () => {
             const client = await this.ensureClient();
@@ -1246,12 +1291,14 @@ const SupabaseAPI = {
         }, { field, settings });
     },
 
-    // 새로 추가: 해당 분야 학생들의 예산 재계산
+    // 수정된 학생 예산 재계산 - 수업계획의 totalLessons 사용
     async recalculateStudentBudgets(field, newSettings) {
         return await this.safeApiCall('학생 예산 재계산', async () => {
             const client = await this.ensureClient();
             
-            // 1. 해당 분야의 승인된 학생들 조회
+            console.log(`🔄 ${field} 분야 학생 예산 재계산 시작`);
+            
+            // 1. 해당 분야의 승인된 학생들과 수업계획 정보 조회
             const studentsResult = await client
                 .from('student_budgets')
                 .select(`
@@ -1259,36 +1306,61 @@ const SupabaseAPI = {
                     user_id,
                     allocated_budget,
                     used_budget,
-                    user_profiles!inner(field, total_lessons)
+                    lesson_plan_id,
+                    user_profiles!inner(field)
                 `)
                 .eq('user_profiles.field', field);
 
             if (!studentsResult.data || studentsResult.data.length === 0) {
                 console.log(`📊 ${field} 분야에 재계산할 학생이 없습니다.`);
-                return { data: { updated: 0 }, error: null };
+                return { data: { updated: 0, total: 0 }, error: null };
             }
 
-            console.log(`🔄 ${field} 분야 ${studentsResult.data.length}명의 예산 재계산 시작`);
+            console.log(`📚 ${field} 분야 ${studentsResult.data.length}명의 예산 재계산 진행`);
             
-            // 2. 각 학생의 새 예산 계산 및 업데이트
+            // 2. 각 학생별로 수업계획의 totalLessons 조회 및 예산 재계산
             const updatePromises = studentsResult.data.map(async (student) => {
-                const totalLessons = student.user_profiles?.total_lessons || 20; // 기본값
-                const newAllocatedBudget = Math.min(
-                    totalLessons * newSettings.perLessonAmount,
-                    newSettings.maxBudget
-                );
+                try {
+                    // 학생의 승인된 수업계획 조회
+                    const lessonPlanResult = await client
+                        .from('lesson_plans')
+                        .select('lessons')
+                        .eq('user_id', student.user_id)
+                        .eq('status', 'approved');
 
-                // 사용 예산이 새 배정 예산을 초과하지 않도록 체크
-                const adjustedUsedBudget = Math.min(student.used_budget, newAllocatedBudget);
+                    let actualTotalLessons = 0;
+                    if (lessonPlanResult.data && lessonPlanResult.data.length > 0) {
+                        const lessonData = lessonPlanResult.data[0].lessons;
+                        actualTotalLessons = parseInt(lessonData?.totalLessons) || 0;
+                    }
 
-                return await client
-                    .from('student_budgets')
-                    .update({
-                        allocated_budget: newAllocatedBudget,
-                        used_budget: adjustedUsedBudget,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', student.id);
+                    // 새로운 예산 계산 (수업계획의 실제 수업 횟수 사용)
+                    const calculatedBudget = actualTotalLessons * newSettings.perLessonAmount;
+                    const newAllocatedBudget = Math.min(calculatedBudget, newSettings.maxBudget);
+
+                    // 사용 예산이 새 배정 예산을 초과하지 않도록 체크
+                    const adjustedUsedBudget = Math.min(student.used_budget, newAllocatedBudget);
+
+                    console.log(`👤 ${student.user_id} 예산 재계산:`, {
+                        actualTotalLessons,
+                        calculatedBudget,
+                        newAllocatedBudget,
+                        oldAllocated: student.allocated_budget,
+                        adjustedUsedBudget
+                    });
+
+                    return await client
+                        .from('student_budgets')
+                        .update({
+                            allocated_budget: newAllocatedBudget,
+                            used_budget: adjustedUsedBudget,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', student.id);
+                } catch (error) {
+                    console.error(`❌ 학생 ${student.user_id} 예산 재계산 실패:`, error);
+                    return { error: error };
+                }
             });
 
             const results = await Promise.all(updatePromises);
@@ -1864,4 +1936,4 @@ window.addEventListener('supabaseInitError', (event) => {
 });
 
 // 초기화 완료 로그
-console.log('🚀 SupabaseAPI loaded successfully with budget recalculation system integrated');
+console.log('🚀 SupabaseAPI loaded successfully with fixed budget allocation algorithm');
