@@ -1,6 +1,7 @@
 // 관리자 기능 관리 모듈 (Supabase 연동) - 관계 쿼리 문제 완전 해결 + 예산 재계산 시스템 통합
 const AdminManager = {
     currentSearchTerm: '',
+    currentViewingLessonPlan: null, // 현재 보고 있는 수업계획
 
     // 초기화
     async init() {
@@ -63,6 +64,29 @@ const AdminManager = {
             }
         });
 
+        // 세부 수업계획 보기 모달 이벤트 (새로 추가)
+        Utils.on('#viewLessonPlanCloseBtn', 'click', () => this.hideViewLessonPlanModal());
+        Utils.on('#viewLessonPlanModal', 'click', (e) => {
+            if (e.target.id === 'viewLessonPlanModal') {
+                this.hideViewLessonPlanModal();
+            }
+        });
+
+        // 세부 수업계획 모달의 승인/반려 버튼
+        Utils.on('#approveLessonPlanBtn', 'click', (e) => {
+            const studentId = e.target.dataset.studentId;
+            if (studentId) {
+                this.approveLessonPlan(studentId, e.target);
+            }
+        });
+
+        Utils.on('#rejectLessonPlanBtn', 'click', (e) => {
+            const studentId = e.target.dataset.studentId;
+            if (studentId) {
+                this.rejectLessonPlan(studentId, e.target);
+            }
+        });
+
         // 영수증 보기 모달 이벤트
         Utils.on('#viewReceiptCloseBtn', 'click', () => this.hideViewReceiptModal());
         Utils.on('#viewReceiptModal', 'click', (e) => {
@@ -74,6 +98,178 @@ const AdminManager = {
 
         // 키보드 단축키
         this.setupKeyboardShortcuts();
+    },
+
+    // 세부 수업계획 보기 모달 표시 (새로 추가)
+    async showViewLessonPlanModal(studentId, lessonPlan) {
+        try {
+            const modal = Utils.$('#viewLessonPlanModal');
+            if (!modal) {
+                Utils.showToast('세부 수업계획 모달을 찾을 수 없습니다.', 'error');
+                return;
+            }
+
+            // 현재 보고 있는 수업계획 저장
+            this.currentViewingLessonPlan = lessonPlan;
+
+            // 학생 정보 표시
+            const userProfile = lessonPlan.user_profiles || {};
+            Utils.$('#detailStudentName').textContent = userProfile.name || '알 수 없음';
+            Utils.$('#detailStudentInfo').textContent = `${userProfile.sejong_institute || ''} • ${userProfile.field || ''}`;
+
+            // 수업 정보 표시
+            const lessons = lessonPlan.lessons || {};
+            const startDate = lessons.startDate || '';
+            const endDate = lessons.endDate || '';
+            const totalLessons = lessons.totalLessons || 0;
+
+            Utils.$('#detailPlanPeriod').textContent = startDate && endDate ? `${startDate} ~ ${endDate}` : '기간 미설정';
+            Utils.$('#detailTotalLessons').textContent = `총 ${totalLessons}회`;
+
+            // 예산 정보 계산 및 표시
+            await this.displayBudgetAllocationInfo(userProfile.field, totalLessons);
+
+            // 수업 목표 표시
+            Utils.$('#detailOverallGoals').textContent = lessons.overallGoals || '목표가 설정되지 않았습니다.';
+
+            // 수업 일정표 표시
+            this.displayLessonSchedule(lessons.schedule || []);
+
+            // 특별 고려사항 표시
+            const specialNotes = lessons.specialNotes || '';
+            const specialNotesSection = Utils.$('#specialNotesSection');
+            if (specialNotes.trim()) {
+                Utils.$('#detailSpecialNotes').textContent = specialNotes;
+                specialNotesSection.style.display = 'block';
+            } else {
+                specialNotesSection.style.display = 'none';
+            }
+
+            // 승인/반려 버튼 표시 설정
+            this.setupLessonPlanModalButtons(lessonPlan, studentId);
+
+            // 모달 표시
+            modal.classList.add('active');
+
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+        } catch (error) {
+            console.error('Error showing lesson plan detail modal:', error);
+            Utils.showToast('수업계획 상세보기 중 오류가 발생했습니다.', 'error');
+        }
+    },
+
+    // 세부 수업계획 보기 모달 숨김 (새로 추가)
+    hideViewLessonPlanModal() {
+        const modal = Utils.$('#viewLessonPlanModal');
+        if (modal) {
+            modal.classList.remove('active');
+            this.currentViewingLessonPlan = null;
+        }
+    },
+
+    // 예산 배정 정보 표시 (새로 추가)
+    async displayBudgetAllocationInfo(field, totalLessons) {
+        try {
+            // 분야별 예산 설정 가져오기
+            const budgetSettings = await SupabaseAPI.getAllFieldBudgetSettings();
+            const fieldSetting = budgetSettings[field] || { perLessonAmount: 0, maxBudget: 0 };
+
+            // 예산 계산
+            const perLessonAmount = fieldSetting.perLessonAmount || 0;
+            const maxBudget = fieldSetting.maxBudget || 0;
+            const calculatedBudget = perLessonAmount * totalLessons;
+            const finalBudget = maxBudget > 0 ? Math.min(calculatedBudget, maxBudget) : calculatedBudget;
+
+            // 화면에 표시
+            Utils.$('#detailField').textContent = field || '미설정';
+            Utils.$('#detailPerLessonAmount').textContent = Utils.formatPrice(perLessonAmount);
+            Utils.$('#detailLessonCount').textContent = `${totalLessons}회`;
+            Utils.$('#detailTotalBudget').textContent = Utils.formatPrice(finalBudget);
+
+            // 상한선 적용 여부 표시
+            const calculationNote = Utils.$('#viewLessonPlanModal .budget-calculation-note small');
+            if (maxBudget > 0 && calculatedBudget > maxBudget) {
+                calculationNote.innerHTML = `
+                    <i data-lucide="info"></i> 
+                    계산된 예산: ${Utils.formatPrice(calculatedBudget)} → 
+                    최대 상한 적용: ${Utils.formatPrice(finalBudget)}
+                `;
+            } else {
+                calculationNote.innerHTML = `
+                    <i data-lucide="info"></i> 
+                    총 예산 = ${Utils.formatPrice(perLessonAmount)} × ${totalLessons}회 = ${Utils.formatPrice(finalBudget)}
+                `;
+            }
+
+        } catch (error) {
+            console.error('Error displaying budget allocation info:', error);
+            // 오류 시 기본값 표시
+            Utils.$('#detailField').textContent = field || '미설정';
+            Utils.$('#detailPerLessonAmount').textContent = '0원';
+            Utils.$('#detailLessonCount').textContent = `${totalLessons}회`;
+            Utils.$('#detailTotalBudget').textContent = '계산 중...';
+        }
+    },
+
+    // 수업 일정표 표시 (새로 추가)
+    displayLessonSchedule(schedule) {
+        const container = Utils.$('#detailLessonSchedule');
+        
+        if (!schedule || schedule.length === 0) {
+            container.innerHTML = '<div class="empty-schedule-message">등록된 수업 일정이 없습니다.</div>';
+            return;
+        }
+
+        // 테이블 생성
+        const table = Utils.createElement('table', 'schedule-table');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>차시</th>
+                    <th>날짜</th>
+                    <th>주제</th>
+                    <th>내용</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${schedule.map((lesson, index) => `
+                    <tr>
+                        <td><strong>${index + 1}차시</strong></td>
+                        <td class="lesson-date">${lesson.date || '-'}</td>
+                        <td class="lesson-topic">${this.escapeHtml(lesson.topic || '-')}</td>
+                        <td class="lesson-content">${this.escapeHtml(lesson.content || '-')}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+
+        container.innerHTML = '';
+        container.appendChild(table);
+    },
+
+    // 수업계획 모달 버튼 설정 (새로 추가)
+    setupLessonPlanModalButtons(lessonPlan, studentId) {
+        const approveBtn = Utils.$('#approveLessonPlanBtn');
+        const rejectBtn = Utils.$('#rejectLessonPlanBtn');
+
+        // 버튼에 학생 ID 설정
+        if (approveBtn) approveBtn.dataset.studentId = studentId;
+        if (rejectBtn) rejectBtn.dataset.studentId = studentId;
+
+        // 승인 상태에 따라 버튼 표시/숨김
+        if (lessonPlan.status === 'submitted' && lessonPlan.approval_status === 'pending') {
+            // 대기 중인 경우 승인/반려 버튼 표시
+            if (approveBtn) approveBtn.style.display = 'inline-flex';
+            if (rejectBtn) rejectBtn.style.display = 'inline-flex';
+        } else {
+            // 그 외의 경우 버튼 숨김
+            if (approveBtn) approveBtn.style.display = 'none';
+            if (rejectBtn) rejectBtn.style.display = 'none';
+        }
     },
 
     // 예산 설정 모달 표시 (수정됨 - 분야별 예산 현황 보기 기능 추가)
@@ -573,7 +769,7 @@ const AdminManager = {
         if (rejectedElement) rejectedElement.textContent = `반려됨: ${stats.rejected}`;
     },
 
-    // 수업계획 카드 생성
+    // 수업계획 카드 생성 (수정됨 - 상세보기 버튼 추가)
     createLessonPlanCard(plan) {
         const card = Utils.createElement('div', 'lesson-plan-card');
         
@@ -649,14 +845,23 @@ const AdminManager = {
         return card;
     },
 
-    // 수업계획 액션 버튼 생성
+    // 수업계획 액션 버튼 생성 (수정됨 - 상세보기 버튼 추가)
     createLessonPlanActionButtons(plan) {
+        const baseButtons = `
+            <button class="btn small secondary view-lesson-plan-btn" 
+                    data-action="view-detail" 
+                    data-student-id="${plan.user_id}"
+                    title="상세 수업계획 보기">
+                <i data-lucide="eye"></i> 상세보기
+            </button>
+        `;
+
         if (plan.status !== 'submitted') {
-            return '<span class="plan-action-note">수업계획이 제출되지 않았습니다.</span>';
+            return baseButtons + '<span class="plan-action-note">수업계획이 제출되지 않았습니다.</span>';
         }
         
         if (plan.approval_status === 'approved') {
-            return `
+            return baseButtons + `
                 <span class="plan-approved-info">
                     승인일: ${plan.approved_at ? new Date(plan.approved_at).toLocaleDateString('ko-KR') : '-'}
                 </span>
@@ -664,7 +869,7 @@ const AdminManager = {
         }
         
         if (plan.approval_status === 'rejected') {
-            return `
+            return baseButtons + `
                 <div class="plan-rejected-actions">
                     <span class="plan-rejected-info">
                         반려일: ${plan.updated_at ? new Date(plan.updated_at).toLocaleDateString('ko-KR') : '-'}
@@ -677,7 +882,7 @@ const AdminManager = {
         }
         
         // 대기 중인 경우
-        return `
+        return baseButtons + `
             <button class="btn small approve" data-action="approve" data-student-id="${plan.user_id}">
                 <i data-lucide="check"></i> 승인
             </button>
@@ -687,7 +892,7 @@ const AdminManager = {
         `;
     },
 
-    // 수업계획 액션 이벤트 리스너 설정
+    // 수업계획 액션 이벤트 리스너 설정 (수정됨 - 상세보기 버튼 포함)
     setupLessonPlanActionListeners() {
         const actionButtons = Utils.$$('#lessonPlansList button[data-action]');
         
@@ -701,15 +906,39 @@ const AdminManager = {
         });
     },
 
-    // 수업계획 액션 처리
-    handleLessonPlanAction(action, studentId, buttonElement) {
+    // 수업계획 액션 처리 (수정됨 - 상세보기 액션 추가)
+    async handleLessonPlanAction(action, studentId, buttonElement) {
         switch(action) {
+            case 'view-detail':
+                await this.viewLessonPlanDetail(studentId);
+                break;
             case 'approve':
                 this.approveLessonPlan(studentId, buttonElement);
                 break;
             case 'reject':
                 this.rejectLessonPlan(studentId, buttonElement);
                 break;
+        }
+    },
+
+    // 수업계획 상세보기 (새로 추가)
+    async viewLessonPlanDetail(studentId) {
+        try {
+            // 현재 로드된 수업계획에서 해당 학생의 계획 찾기
+            const allPlans = await this.safeLoadAllLessonPlans();
+            const lessonPlan = allPlans.find(plan => plan.user_id === studentId);
+            
+            if (!lessonPlan) {
+                Utils.showToast('수업계획을 찾을 수 없습니다.', 'error');
+                return;
+            }
+            
+            // 세부 수업계획 모달 표시
+            await this.showViewLessonPlanModal(studentId, lessonPlan);
+            
+        } catch (error) {
+            console.error('Error viewing lesson plan detail:', error);
+            Utils.showToast('수업계획 상세보기 중 오류가 발생했습니다.', 'error');
         }
     },
 
@@ -724,6 +953,9 @@ const AdminManager = {
                 if (result.success) {
                     await this.loadLessonPlansForManagement();
                     await this.loadBudgetOverview();
+                    
+                    // 세부 수업계획 모달이 열려있으면 닫기
+                    this.hideViewLessonPlanModal();
                     
                     let message = '수업계획이 승인되었습니다.';
                     if (result.data?.budgetInfo) {
@@ -755,6 +987,10 @@ const AdminManager = {
                 if (result.success) {
                     await this.loadLessonPlansForManagement();
                     await this.loadBudgetOverview();
+                    
+                    // 세부 수업계획 모달이 열려있으면 닫기
+                    this.hideViewLessonPlanModal();
+                    
                     Utils.showToast('수업계획이 반려되었습니다.', 'success');
                 } else {
                     Utils.hideLoading(buttonElement);
