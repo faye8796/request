@@ -647,6 +647,81 @@
         </div>
     </div>
 
+    <!-- 세부 수업계획 보기 모달 (관리자용) - 새로 추가 -->
+    <div id="viewLessonPlanModal" class="modal">
+        <div class="modal-content large">
+            <h3>세부 수업계획 보기</h3>
+            <div class="lesson-plan-detail-container">
+                <div class="lesson-plan-header-info">
+                    <div class="student-info-detail">
+                        <h4 id="detailStudentName">학생명</h4>
+                        <p id="detailStudentInfo">세종학당 • 분야</p>
+                    </div>
+                    <div class="plan-period-info">
+                        <span id="detailPlanPeriod">기간</span>
+                        <span id="detailTotalLessons">총 수업 횟수</span>
+                    </div>
+                </div>
+
+                <div class="budget-allocation-info">
+                    <h4><i data-lucide="dollar-sign"></i> 예산 배정 정보</h4>
+                    <div class="budget-detail-grid">
+                        <div class="budget-detail-item">
+                            <span class="budget-label">분야</span>
+                            <span id="detailField" class="budget-value">-</span>
+                        </div>
+                        <div class="budget-detail-item">
+                            <span class="budget-label">회당 지원금</span>
+                            <span id="detailPerLessonAmount" class="budget-value">-</span>
+                        </div>
+                        <div class="budget-detail-item">
+                            <span class="budget-label">총 수업 횟수</span>
+                            <span id="detailLessonCount" class="budget-value">-</span>
+                        </div>
+                        <div class="budget-detail-item primary">
+                            <span class="budget-label">배정될 총 예산</span>
+                            <span id="detailTotalBudget" class="budget-value highlight">-</span>
+                        </div>
+                    </div>
+                    <div class="budget-calculation-note">
+                        <small><i data-lucide="info"></i> 총 예산 = 회당 지원금 × 총 수업 횟수 (최대 상한선 적용)</small>
+                    </div>
+                </div>
+
+                <div class="lesson-plan-content-detail">
+                    <div class="lesson-goals-section">
+                        <h4><i data-lucide="target"></i> 전체 수업 목표</h4>
+                        <div id="detailOverallGoals" class="content-text">-</div>
+                    </div>
+
+                    <div class="lesson-schedule-section">
+                        <h4><i data-lucide="calendar"></i> 수업 일정표</h4>
+                        <div id="detailLessonSchedule" class="lesson-schedule-table">
+                            <!-- 동적으로 생성됨 -->
+                        </div>
+                    </div>
+
+                    <div class="special-notes-section" id="specialNotesSection" style="display: none;">
+                        <h4><i data-lucide="alert-circle"></i> 특별 고려사항</h4>
+                        <div id="detailSpecialNotes" class="content-text">-</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" id="viewLessonPlanCloseBtn" class="btn secondary">닫기</button>
+                <button type="button" id="approveLessonPlanBtn" class="btn approve" 
+                        style="display: none;" data-student-id="">
+                    <i data-lucide="check"></i> 승인하기
+                </button>
+                <button type="button" id="rejectLessonPlanBtn" class="btn reject" 
+                        style="display: none;" data-student-id="">
+                    <i data-lucide="x"></i> 반려하기
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Files -->
     <!-- 설정 파일을 가장 먼저 로드 -->
     <script src="js/config.js"></script>
