@@ -225,6 +225,8 @@ const SupabaseAPI = {
                 return { success: true, data: null };
             case '학생 신청 내역 조회':
                 return { success: true, data: [] };
+            case '배송지 정보 조회':
+                return { success: true, data: null };
             case '시스템 설정 조회':
                 return { 
                     success: true, 
@@ -644,6 +646,73 @@ const SupabaseAPI = {
                 .insert([requestData])
                 .select();
         }, { studentId, itemName: itemData.name });
+    },
+
+    // ===================
+    // 배송지 설정 관련 함수들 - 새로 추가
+    // ===================
+
+    // 배송지 정보 조회
+    async getShippingInfo(studentId) {
+        const result = await this.safeApiCall('배송지 정보 조회', async () => {
+            const client = await this.ensureClient();
+            
+            // single() 대신 배열로 받아서 처리
+            const { data, error } = await client
+                .from('shipping_addresses')
+                .select('*')
+                .eq('user_id', studentId);
+
+            if (error) {
+                return { data: null, error };
+            }
+
+            // 첫 번째 (유일한) 배송지 정보 반환
+            const shippingInfo = data && data.length > 0 ? data[0] : null;
+            return { data: shippingInfo, error: null };
+        }, { studentId });
+
+        return result.success ? result.data : null;
+    },
+
+    // 배송지 정보 저장/업데이트
+    async saveShippingInfo(studentId, shippingData) {
+        const result = await this.safeApiCall('배송지 정보 저장', async () => {
+            const client = await this.ensureClient();
+            
+            const shippingRecord = {
+                user_id: studentId,
+                recipient_name: shippingData.recipient_name,
+                phone: shippingData.phone,
+                address: shippingData.address,
+                postal_code: shippingData.postal_code || null,
+                delivery_note: shippingData.delivery_note || null,
+                updated_at: new Date().toISOString()
+            };
+
+            // 기존 배송지 정보 확인
+            const existingResult = await client
+                .from('shipping_addresses')
+                .select('id')
+                .eq('user_id', studentId);
+
+            if (existingResult.data && existingResult.data.length > 0) {
+                // 업데이트
+                return await client
+                    .from('shipping_addresses')
+                    .update(shippingRecord)
+                    .eq('user_id', studentId)
+                    .select();
+            } else {
+                // 새로 생성
+                return await client
+                    .from('shipping_addresses')
+                    .insert([{ ...shippingRecord, created_at: new Date().toISOString() }])
+                    .select();
+            }
+        }, { studentId, recipient: shippingData.recipient_name });
+
+        return result;
     },
 
     // ===================
