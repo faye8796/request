@@ -675,7 +675,7 @@ const SupabaseAPI = {
         return result.success ? result.data : null;
     },
 
-    // 수업계획 저장/업데이트 - 안전성 강화
+    // 수업계획 저장/업데이트 - 수정된 버전 (재제출 시 승인 정보 초기화)
     async saveLessonPlan(studentId, planData, isDraft = false) {
         console.log('🔄 수업계획 저장 시작:', { studentId, isDraft, dataKeys: Object.keys(planData) });
         
@@ -683,6 +683,17 @@ const SupabaseAPI = {
             const client = await this.ensureClient();
             const status = isDraft ? 'draft' : 'submitted';
             const submitTime = isDraft ? null : new Date().toISOString();
+
+            // 기존 수업계획 확인 - single() 대신 배열로
+            const existingResult = await client
+                .from('lesson_plans')
+                .select('id, status, approved_at, approved_by')
+                .eq('user_id', studentId);
+
+            const isReSubmission = existingResult.data && 
+                                  existingResult.data.length > 0 && 
+                                  existingResult.data[0].approved_at && 
+                                  !isDraft;
 
             const lessonPlanData = {
                 user_id: studentId,
@@ -692,11 +703,13 @@ const SupabaseAPI = {
                 updated_at: new Date().toISOString()
             };
 
-            // 기존 수업계획 확인 - single() 대신 배열로
-            const existingResult = await client
-                .from('lesson_plans')
-                .select('id')
-                .eq('user_id', studentId);
+            // 재제출인 경우 승인 정보 초기화
+            if (isReSubmission) {
+                console.log('🔄 수업계획 재제출 감지 - 승인 정보 초기화');
+                lessonPlanData.approved_at = null;
+                lessonPlanData.approved_by = null;
+                lessonPlanData.rejection_reason = null;
+            }
 
             if (existingResult.data && existingResult.data.length > 0) {
                 // 업데이트 - 모든 기존 수업계획을 업데이트 (정상적으로는 1개만 있어야 함)
@@ -933,19 +946,26 @@ const SupabaseAPI = {
                 }
             }
 
-            // 4. 데이터 병합 및 approval_status 계산
+            // 4. 데이터 병합 및 approval_status 계산 (수정된 로직)
             const enrichedPlans = lessonPlans.map(plan => {
                 let approval_status = 'pending';
                 
-                // 더 명확한 상태 판단 로직
-                if (plan.approved_at && plan.approved_by) {
-                    approval_status = 'approved';
-                } else if (plan.rejection_reason && plan.rejection_reason.trim() !== '') {
-                    approval_status = 'rejected';
+                // 수정된 상태 판단 로직: status가 우선
+                if (plan.status === 'draft') {
+                    approval_status = 'draft';
                 } else if (plan.status === 'submitted') {
-                    approval_status = 'pending'; // 제출됨, 아직 처리 안됨
-                } else {
-                    approval_status = 'draft'; // draft 상태나 기타
+                    // submitted 상태에서는 승인/반려 정보 확인
+                    if (plan.approved_at && plan.approved_by && !plan.rejection_reason) {
+                        approval_status = 'approved';
+                    } else if (plan.rejection_reason && plan.rejection_reason.trim() !== '') {
+                        approval_status = 'rejected';
+                    } else {
+                        approval_status = 'pending'; // 제출됨, 아직 처리 안됨
+                    }
+                } else if (plan.status === 'approved') {
+                    approval_status = 'approved';
+                } else if (plan.status === 'rejected') {
+                    approval_status = 'rejected';
                 }
                 
                 // 사용자 프로필 정보 추가
@@ -980,13 +1000,11 @@ const SupabaseAPI = {
         const result = await this.safeApiCall('대기 중인 수업계획 조회', async () => {
             const client = await this.ensureClient();
             
-            // 1. 대기 중인 수업계획만 조회
+            // 1. 대기 중인 수업계획만 조회 (수정된 조건)
             const lessonPlansResult = await client
                 .from('lesson_plans')
                 .select('*')
                 .eq('status', 'submitted')
-                .is('approved_at', null)
-                .is('rejection_reason', null)
                 .order('submitted_at', { ascending: true });
 
             if (lessonPlansResult.error) {
@@ -995,12 +1013,19 @@ const SupabaseAPI = {
 
             const lessonPlans = lessonPlansResult.data || [];
             
-            if (lessonPlans.length === 0) {
+            // 실제로 대기 중인 계획만 필터링 (submitted 상태이면서 승인도 반려도 안된 것)
+            const pendingPlans = lessonPlans.filter(plan => 
+                plan.status === 'submitted' && 
+                (!plan.approved_at || !plan.approved_by) && 
+                (!plan.rejection_reason || plan.rejection_reason.trim() === '')
+            );
+            
+            if (pendingPlans.length === 0) {
                 return { data: [], error: null };
             }
 
             // 2. 사용자 ID 목록 추출
-            const userIds = [...new Set(lessonPlans.map(plan => plan.user_id).filter(id => id))];
+            const userIds = [...new Set(pendingPlans.map(plan => plan.user_id).filter(id => id))];
             
             // 3. 사용자 프로필 데이터 별도 조회
             let userProfiles = {};
@@ -1018,7 +1043,7 @@ const SupabaseAPI = {
             }
 
             // 4. 데이터 병합
-            const enrichedPlans = lessonPlans.map(plan => {
+            const enrichedPlans = pendingPlans.map(plan => {
                 const userProfile = userProfiles[plan.user_id] || {
                     id: plan.user_id,
                     name: '사용자 정보 없음',
@@ -1051,7 +1076,8 @@ const SupabaseAPI = {
                 .update({
                     status: 'approved',
                     approved_at: now,
-                    approved_by: this.currentUser?.id
+                    approved_by: this.currentUser?.id,
+                    rejection_reason: null // 승인 시 반려 사유 초기화
                 })
                 .eq('user_id', studentId)
                 .select();
@@ -1133,6 +1159,8 @@ const SupabaseAPI = {
                 .update({
                     status: 'rejected',
                     rejection_reason: reason,
+                    approved_at: null, // 반려 시 승인 정보 초기화
+                    approved_by: null,
                     updated_at: new Date().toISOString()
                 })
                 .eq('user_id', studentId)
