@@ -1,26 +1,29 @@
-// Supabase 클라이언트 설정 및 API 관리 - 완전 안정화 버전 + 관리자 함수 추가
-// JSON 객체 에러 및 single() 메서드 문제 해결
+// Supabase 클라이언트 설정 및 API 관리 - 초기화 오류 개선 버전
+// JSON 객체 에러 및 single() 메서드 문제 해결 + 사용자 친화적 오류 메시지 강화
 
-// 설정 파일이 로드될 때까지 대기
+// 설정 파일이 로드될 때까지 대기 - 개선된 버전
 function waitForConfig() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         if (window.CONFIG) {
             resolve(window.CONFIG);
         } else {
-            // config.js가 로드될 때까지 100ms마다 확인
+            console.log('⏳ CONFIG 로드 대기 중...');
+            let waitCount = 0;
+            const maxWait = 100; // 10초 (100 * 100ms)
+            
             const checkConfig = setInterval(() => {
+                waitCount++;
+                
                 if (window.CONFIG) {
                     clearInterval(checkConfig);
+                    console.log('✅ CONFIG 로드 완료');
                     resolve(window.CONFIG);
+                } else if (waitCount >= maxWait) {
+                    clearInterval(checkConfig);
+                    console.error('❌ CONFIG 로드 타임아웃');
+                    reject(new Error('시스템 설정을 불러올 수 없습니다. 페이지를 새로고침해주세요.'));
                 }
             }, 100);
-            
-            // 30초 후 타임아웃
-            setTimeout(() => {
-                clearInterval(checkConfig);
-                console.error('Config 로드 타임아웃');
-                resolve(null);
-            }, 30000);
         }
     });
 }
@@ -31,7 +34,7 @@ let initializationPromise = null;
 let connectionRetryCount = 0;
 const MAX_RETRY_COUNT = 3;
 
-// 클라이언트 초기화 함수 - 안정성 강화
+// 클라이언트 초기화 함수 - 안정성 강화 + 사용자 친화적 메시지
 async function initializeSupabaseClient() {
     if (supabaseClient) return supabaseClient;
     
@@ -40,18 +43,28 @@ async function initializeSupabaseClient() {
     
     initializationPromise = (async () => {
         try {
+            console.log('🚀 Supabase 클라이언트 초기화 시작...');
+            
+            // 네트워크 연결 상태 먼저 확인
+            if (!navigator.onLine) {
+                throw new Error('인터넷 연결이 없습니다. 네트워크 연결을 확인해주세요.');
+            }
+            
             const config = await waitForConfig();
             
             if (!config) {
-                throw new Error('Config 로드 실패 - 네트워크 연결을 확인하세요');
+                throw new Error('시스템 설정을 불러오지 못했습니다. 페이지를 새로고침해주세요.');
             }
             
+            // Supabase 라이브러리 로드 확인
             if (!window.supabase || !window.supabase.createClient) {
-                throw new Error('Supabase 라이브러리가 로드되지 않았습니다. 페이지를 새로고침해주세요.');
+                console.error('❌ Supabase 라이브러리를 찾을 수 없습니다');
+                throw new Error('필수 라이브러리를 불러오지 못했습니다. 페이지를 새로고침해주세요.');
             }
             
             const { createClient } = window.supabase;
             
+            // Supabase 클라이언트 생성
             supabaseClient = createClient(
                 config.SUPABASE.URL,
                 config.SUPABASE.ANON_KEY,
@@ -78,6 +91,17 @@ async function initializeSupabaseClient() {
                 }
             );
             
+            // 연결 테스트
+            const testQuery = await supabaseClient
+                .from('system_settings')
+                .select('setting_key')
+                .limit(1);
+            
+            if (testQuery.error && testQuery.error.code !== 'PGRST116') {
+                console.error('❌ Supabase 연결 테스트 실패:', testQuery.error);
+                throw new Error('데이터베이스 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+            }
+            
             console.log('✅ Supabase client initialized successfully');
             connectionRetryCount = 0; // 성공 시 재시도 카운트 리셋
             return supabaseClient;
@@ -85,23 +109,46 @@ async function initializeSupabaseClient() {
             console.error('❌ Supabase client initialization failed:', error);
             connectionRetryCount++;
             
+            // 재시도 로직
             if (connectionRetryCount < MAX_RETRY_COUNT) {
                 console.log(`🔄 재시도 중... (${connectionRetryCount}/${MAX_RETRY_COUNT})`);
-                await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+                await new Promise(resolve => setTimeout(resolve, 2000)); // 2초 대기
                 initializationPromise = null; // 재시도를 위해 초기화
                 return initializeSupabaseClient();
             }
             
-            throw error;
+            // 최종 실패 시 사용자 친화적 메시지
+            let userFriendlyMessage = error.message;
+            
+            if (error.message.includes('fetch') || error.message.includes('network')) {
+                userFriendlyMessage = '네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인하고 다시 시도해주세요.';
+            } else if (error.message.includes('timeout')) {
+                userFriendlyMessage = '서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.';
+            } else if (error.message.includes('설정')) {
+                userFriendlyMessage = error.message; // 이미 사용자 친화적
+            } else if (!error.message.includes('데이터베이스') && !error.message.includes('라이브러리')) {
+                userFriendlyMessage = '서비스 연결에 문제가 있습니다. 페이지를 새로고침하거나 관리자에게 문의해주세요.';
+            }
+            
+            const enhancedError = new Error(userFriendlyMessage);
+            enhancedError.originalError = error;
+            enhancedError.retryCount = connectionRetryCount;
+            
+            throw enhancedError;
         }
     })();
     
     return initializationPromise;
 }
 
-// 즉시 초기화 시작
+// 즉시 초기화 시작 - 오류 처리 강화
 initializeSupabaseClient().catch(error => {
     console.error('초기 Supabase 클라이언트 초기화 실패:', error);
+    
+    // 전역 이벤트로 초기화 실패 알림
+    window.dispatchEvent(new CustomEvent('supabaseInitError', { 
+        detail: { error: error.message, originalError: error.originalError } 
+    }));
 });
 
 // Supabase API 관리자 - 안전한 단일/다중 결과 처리
@@ -112,13 +159,18 @@ const SupabaseAPI = {
     currentUser: null,
     currentUserType: null,
 
-    // 클라이언트가 초기화될 때까지 대기하는 헬퍼 함수
+    // 클라이언트가 초기화될 때까지 대기하는 헬퍼 함수 - 개선됨
     async ensureClient() {
         if (!this.client) {
-            await initializeSupabaseClient();
+            try {
+                await initializeSupabaseClient();
+            } catch (error) {
+                console.error('클라이언트 초기화 실패:', error);
+                throw new Error(`서비스 연결 실패: ${error.message}`);
+            }
         }
         if (!this.client) {
-            throw new Error('Supabase 클라이언트를 초기화할 수 없습니다. 네트워크 연결을 확인하세요.');
+            throw new Error('데이터베이스 연결을 설정할 수 없습니다. 페이지를 새로고침해주세요.');
         }
         return this.client;
     },
@@ -148,7 +200,7 @@ const SupabaseAPI = {
         }
     },
 
-    // 안전한 API 호출 래퍼 - 개선된 버전
+    // 안전한 API 호출 래퍼 - 개선된 버전 (사용자 친화적 메시지)
     async safeApiCall(operation, apiFunction, context = {}) {
         try {
             const result = await apiFunction();
@@ -161,7 +213,11 @@ const SupabaseAPI = {
             
             if (result.error) {
                 this.logError(operation, result.error, context);
-                return { success: false, message: this.getErrorMessage(result.error), error: result.error };
+                return { 
+                    success: false, 
+                    message: this.getErrorMessage(result.error, operation), 
+                    error: result.error 
+                };
             }
             
             this.logSuccess(operation, result.data);
@@ -179,9 +235,19 @@ const SupabaseAPI = {
                 };
             }
             
+            // 초기화 오류 처리
+            if (this.isInitializationError(error)) {
+                return {
+                    success: false,
+                    message: error.message, // 이미 사용자 친화적
+                    error: error,
+                    isInitializationError: true
+                };
+            }
+            
             return { 
                 success: false, 
-                message: this.getErrorMessage(error), 
+                message: this.getErrorMessage(error, operation), 
                 error: error 
             };
         }
@@ -200,7 +266,16 @@ const SupabaseAPI = {
         return error?.message?.includes('fetch') ||
                error?.message?.includes('network') ||
                error?.message?.includes('Failed to fetch') ||
+               error?.message?.includes('timeout') ||
                error?.code === 'NETWORK_ERROR';
+    },
+
+    // 초기화 에러 판별 - 새로 추가
+    isInitializationError(error) {
+        return error?.message?.includes('서비스 연결 실패') ||
+               error?.message?.includes('데이터베이스 연결') ||
+               error?.message?.includes('시스템 설정') ||
+               error?.message?.includes('필수 라이브러리');
     },
 
     // 406 에러 처리
@@ -246,19 +321,28 @@ const SupabaseAPI = {
         }
     },
 
-    // 에러 메시지 처리
-    getErrorMessage(error) {
+    // 에러 메시지 처리 - 개선됨 (더 구체적인 사용자 친화적 메시지)
+    getErrorMessage(error, operation = '') {
         if (typeof error === 'string') {
             return error;
         }
         
         if (error?.message) {
-            // 사용자 친화적인 메시지로 변환
+            // 이미 사용자 친화적인 메시지인 경우
+            if (error.message.includes('네트워크 연결') || 
+                error.message.includes('서버 응답') ||
+                error.message.includes('데이터베이스 연결') ||
+                error.message.includes('시스템 설정') ||
+                error.message.includes('필수 라이브러리')) {
+                return error.message;
+            }
+            
+            // 데이터베이스 에러 코드를 사용자 친화적 메시지로 변환
             if (error.message.includes('PGRST116')) {
-                return '데이터를 찾을 수 없습니다.';
+                return '요청하신 데이터를 찾을 수 없습니다.';
             }
             if (error.message.includes('permission denied') || error.message.includes('RLS')) {
-                return '접근 권한이 없습니다.';
+                return '접근 권한이 없습니다. 다시 로그인해주세요.';
             }
             if (error.message.includes('duplicate key')) {
                 return '이미 존재하는 데이터입니다.';
@@ -272,11 +356,41 @@ const SupabaseAPI = {
             if (error.message.includes('JSON object requested, multiple')) {
                 return '데이터 조회 중 오류가 발생했습니다.';
             }
+            if (error.message.includes('timeout')) {
+                return '서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.';
+            }
+            if (error.message.includes('fetch') || error.message.includes('network')) {
+                return '네트워크 연결을 확인하고 다시 시도해주세요.';
+            }
+            
+            // 작업별 특화 메시지
+            if (operation) {
+                if (operation.includes('로그인') || operation.includes('인증')) {
+                    return '로그인 처리 중 문제가 발생했습니다. 입력 정보를 확인해주세요.';
+                }
+                if (operation.includes('저장') || operation.includes('등록')) {
+                    return '데이터 저장 중 문제가 발생했습니다. 다시 시도해주세요.';
+                }
+                if (operation.includes('조회') || operation.includes('검색')) {
+                    return '데이터를 불러오는 중 문제가 발생했습니다.';
+                }
+                if (operation.includes('삭제')) {
+                    return '데이터 삭제 중 문제가 발생했습니다.';
+                }
+                if (operation.includes('업데이트') || operation.includes('수정')) {
+                    return '데이터 수정 중 문제가 발생했습니다.';
+                }
+            }
+            
+            // 일반적인 경우 원본 메시지 사용 (단, 너무 길면 줄임)
+            if (error.message.length > 100) {
+                return '처리 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.';
+            }
             
             return error.message;
         }
         
-        return '알 수 없는 오류가 발생했습니다.';
+        return '알 수 없는 오류가 발생했습니다. 관리자에게 문의해주세요.';
     },
 
     // 에러 로깅 헬퍼 - 개선된 버전
@@ -291,6 +405,7 @@ const SupabaseAPI = {
             if (error?.hint) console.log('Hint:', error.hint);
             if (error?.code) console.log('Code:', error.code);
             if (error?.status) console.log('Status:', error.status);
+            if (error?.originalError) console.log('Original Error:', error.originalError);
             console.groupEnd();
         }
     },
@@ -408,7 +523,10 @@ const SupabaseAPI = {
             return result;
         } catch (error) {
             this.logError('관리자 인증', error);
-            return { success: false, message: '관리자 인증 중 오류가 발생했습니다.' };
+            return { 
+                success: false, 
+                message: this.getErrorMessage(error, '관리자 인증') 
+            };
         }
     },
 
@@ -752,7 +870,7 @@ const SupabaseAPI = {
         }
 
         // 기본 설정 반환
-        const config = await waitForConfig();
+        const config = await waitForConfig().catch(() => null);
         return config?.APP?.DEFAULT_SYSTEM_SETTINGS || {
             test_mode: false,
             lesson_plan_deadline: '2024-12-31',
@@ -954,7 +1072,7 @@ const SupabaseAPI = {
         }
 
         // 기본 설정 반환
-        const config = await waitForConfig();
+        const config = await waitForConfig().catch(() => null);
         return config?.APP?.DEFAULT_BUDGET_SETTINGS || {};
     },
 
@@ -1341,25 +1459,53 @@ const SupabaseAPI = {
         });
     },
 
-    // 헬스 체크
+    // 헬스 체크 - 개선됨
     async healthCheck() {
         try {
-            const connectionTest = await this.testConnection();
-            const settings = await this.getSystemSettings();
+            const startTime = Date.now();
+            
+            // 기본 체크
+            const basicChecks = {
+                client: !!this.client,
+                config: !!window.CONFIG,
+                network: navigator.onLine
+            };
+            
+            // 연결 테스트
+            let connectionTest = { success: false, error: '클라이언트 없음' };
+            if (basicChecks.client && basicChecks.network) {
+                connectionTest = await this.testConnection();
+            }
+            
+            // 시스템 설정 조회
+            let settingsCount = 0;
+            if (connectionTest.success) {
+                try {
+                    const settings = await this.getSystemSettings();
+                    settingsCount = Object.keys(settings).length;
+                } catch (error) {
+                    console.warn('설정 조회 실패:', error);
+                }
+            }
+            
+            const responseTime = Date.now() - startTime;
+            const status = connectionTest.success ? 'healthy' : 'unhealthy';
             
             return {
-                status: connectionTest.success ? 'healthy' : 'unhealthy',
+                status,
+                basicChecks,
                 connection: connectionTest.success,
-                systemSettings: Object.keys(settings).length,
+                systemSettings: settingsCount,
+                responseTimeMs: responseTime,
                 timestamp: new Date().toISOString(),
-                error: connectionTest.success ? null : connectionTest.message
+                error: connectionTest.success ? null : connectionTest.error || connectionTest.message
             };
         } catch (error) {
             this.logError('헬스 체크', error);
             return {
                 status: 'error',
                 connection: false,
-                error: error.message,
+                error: this.getErrorMessage(error, '헬스 체크'),
                 timestamp: new Date().toISOString()
             };
         }
@@ -1368,6 +1514,16 @@ const SupabaseAPI = {
 
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
+
+// 초기화 상태 이벤트 리스너
+window.addEventListener('supabaseInitError', (event) => {
+    console.error('Supabase 초기화 오류 이벤트:', event.detail);
+    
+    // 사용자에게 알림 (Utils가 로드된 경우에만)
+    if (window.Utils && window.Utils.showAlert) {
+        window.Utils.showAlert(event.detail.error, 'error');
+    }
+});
 
 // 초기화 완료 로그
 console.log('🚀 SupabaseAPI loaded successfully');
