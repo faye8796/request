@@ -1,0 +1,109 @@
+/* 모달 위치 수정 - 확실한 중앙 정렬 보장 */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    /* 기존 flex 방식에 추가 보장 */
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 1rem;
+    /* 백업 중앙 정렬 방식 */
+    display: flex !important;
+}
+
+.modal.active {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* 모달 컨텐츠 중앙 정렬 강화 */
+.modal-content {
+    background: white !important;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    color: #1f2937 !important;
+    /* 확실한 중앙 정렬을 위한 추가 속성 */
+    margin: auto;
+    position: relative;
+    /* 애니메이션 추가 */
+    animation: modalFadeIn 0.3s ease-out;
+    transform-origin: center;
+}
+
+/* 큰 모달용 중앙 정렬 */
+.modal-content.large {
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: auto;
+}
+
+/* 모달 페이드인 애니메이션 */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* 모바일에서 모달 중앙 정렬 보장 */
+@media (max-width: 768px) {
+    .modal {
+        padding: 0.5rem;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    .modal-content {
+        margin: auto;
+        width: calc(100% - 1rem);
+        max-width: none;
+        min-height: auto;
+    }
+    
+    .modal-content.large {
+        width: calc(100% - 1rem);
+        max-width: none;
+    }
+}
+
+/* 특정 모달들에 대한 추가 보장 */
+#applicationModal,
+#bundleModal,
+#shippingModal,
+#receiptModal,
+#viewReceiptModal,
+#lessonPlanSettingsModal,
+#budgetSettingsModal,
+#lessonPlanManagementModal,
+#viewLessonPlanModal {
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+#applicationModal .modal-content,
+#bundleModal .modal-content,
+#shippingModal .modal-content,
+#receiptModal .modal-content,
+#viewReceiptModal .modal-content,
+#lessonPlanSettingsModal .modal-content,
+#budgetSettingsModal .modal-content,
+#lessonPlanManagementModal .modal-content,
+#viewLessonPlanModal .modal-content {
+    margin: auto;
+    position: relative;
+}
