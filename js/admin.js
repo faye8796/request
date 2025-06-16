@@ -1,4 +1,4 @@
-// 관리자 기능 관리 모듈 (Supabase 연동) - 버그 수정됨
+// 관리자 기능 관리 모듈 (Supabase 연동) - 관계 쿼리 문제 완전 해결
 const AdminManager = {
     currentSearchTerm: '',
 
@@ -82,7 +82,7 @@ const AdminManager = {
         
         // 모달이 없으면 오류 메시지 표시
         if (!modal) {
-            Utils.showAlert('예산 설정 모달을 찾을 수 없습니다.');
+            Utils.showToast('예산 설정 모달을 찾을 수 없습니다.', 'error');
             return;
         }
 
@@ -91,7 +91,7 @@ const AdminManager = {
         // 현재 설정값으로 폼 채우기
         const tbody = modal.querySelector('#budgetSettingsTable tbody');
         if (!tbody) {
-            Utils.showAlert('예산 설정 테이블을 찾을 수 없습니다.');
+            Utils.showToast('예산 설정 테이블을 찾을 수 없습니다.', 'error');
             return;
         }
         
@@ -163,15 +163,15 @@ const AdminManager = {
             this.hideBudgetSettingsModal();
             
             if (successCount > 0) {
-                Utils.showAlert(`${successCount}개 분야의 예산 설정이 저장되었습니다.`);
+                Utils.showToast(`${successCount}개 분야의 예산 설정이 저장되었습니다.`, 'success');
                 await this.loadBudgetOverview();
             } else {
-                Utils.showAlert('예산 설정 저장 중 오류가 발생했습니다.');
+                Utils.showToast('예산 설정 저장 중 오류가 발생했습니다.', 'error');
             }
             
         } catch (error) {
             Utils.hideLoading(submitBtn);
-            Utils.showAlert('예산 설정 저장 중 오류가 발생했습니다.');
+            Utils.showToast('예산 설정 저장 중 오류가 발생했습니다.', 'error');
             console.error('Budget settings error:', error);
         }
     },
@@ -182,7 +182,7 @@ const AdminManager = {
         
         // 모달이 없으면 오류 메시지 표시
         if (!modal) {
-            Utils.showAlert('수업계획 관리 모달을 찾을 수 없습니다.');
+            Utils.showToast('수업계획 관리 모달을 찾을 수 없습니다.', 'error');
             return;
         }
 
@@ -204,29 +204,27 @@ const AdminManager = {
         }
     },
 
-    // 수업계획 목록 로드 (관리용)
+    // 수업계획 목록 로드 (관리용) - 완전히 안전한 방식으로 재작성
     async loadLessonPlansForManagement() {
         try {
-            const allPlans = await SupabaseAPI.getAllLessonPlans();
+            console.log('🔄 수업계획 관리 데이터 로드 시작...');
             
-            // 통계 계산
-            const pendingCount = allPlans.filter(p => p.status === 'submitted' && (!p.approval_status || p.approval_status === 'pending')).length;
-            const approvedCount = allPlans.filter(p => p.approval_status === 'approved').length;
-            const rejectedCount = allPlans.filter(p => p.approval_status === 'rejected').length;
+            // 안전한 데이터 로드
+            const allPlans = await this.safeLoadAllLessonPlans();
+            
+            console.log('📋 로드된 수업계획:', allPlans.length, '건');
+            
+            // 통계 계산 (안전한 방식)
+            const stats = this.calculateLessonPlanStats(allPlans);
             
             // 통계 업데이트
-            const pendingElement = Utils.$('#pendingPlansCount');
-            const approvedElement = Utils.$('#approvedPlansCount');
-            const rejectedElement = Utils.$('#rejectedPlansCount');
-            
-            if (pendingElement) pendingElement.textContent = `대기 중: ${pendingCount}`;
-            if (approvedElement) approvedElement.textContent = `승인됨: ${approvedCount}`;
-            if (rejectedElement) rejectedElement.textContent = `반려됨: ${rejectedCount}`;
+            this.updateLessonPlanStats(stats);
             
             // 수업계획 목록 생성
             const container = Utils.$('#lessonPlansList');
             if (!container) {
-                console.error('Lesson plans list container not found');
+                console.error('❌ Lesson plans list container not found');
+                Utils.showToast('수업계획 목록 컨테이너를 찾을 수 없습니다.', 'error');
                 return;
             }
             
@@ -237,9 +235,15 @@ const AdminManager = {
                 return;
             }
             
+            // 수업계획 카드 생성
             allPlans.forEach(plan => {
-                const planCard = this.createLessonPlanCard(plan);
-                container.appendChild(planCard);
+                try {
+                    const planCard = this.createLessonPlanCard(plan);
+                    container.appendChild(planCard);
+                } catch (error) {
+                    console.error('❌ 수업계획 카드 생성 오류:', error);
+                    // 개별 카드 오류는 전체를 중단시키지 않음
+                }
             });
             
             // 아이콘 재생성
@@ -250,10 +254,175 @@ const AdminManager = {
             // 이벤트 리스너 재설정
             this.setupLessonPlanActionListeners();
             
+            console.log('✅ 수업계획 관리 데이터 로드 완료');
+            
         } catch (error) {
-            console.error('Error loading lesson plans for management:', error);
-            Utils.showAlert('수업계획 목록을 불러오는 중 오류가 발생했습니다.');
+            console.error('❌ Error loading lesson plans for management:', error);
+            Utils.showToast('수업계획 목록을 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.', 'error');
+            
+            // 오류 시 빈 상태 표시
+            const container = Utils.$('#lessonPlansList');
+            if (container) {
+                container.innerHTML = '<div class="error-state">데이터를 불러올 수 없습니다. 새로고침을 시도해보세요.</div>';
+            }
         }
+    },
+
+    // 안전한 수업계획 데이터 로드 (개선된 버전)
+    async safeLoadAllLessonPlans() {
+        try {
+            // SupabaseAPI의 getAllLessonPlans 호출
+            const allPlans = await SupabaseAPI.getAllLessonPlans();
+            
+            if (!Array.isArray(allPlans)) {
+                console.warn('⚠️ getAllLessonPlans returned non-array:', allPlans);
+                return [];
+            }
+            
+            // 각 수업계획에 대해 안전한 데이터 확인
+            const safePlans = allPlans.map(plan => {
+                return {
+                    ...plan,
+                    // 사용자 프로필 안전성 확보
+                    user_profiles: plan.user_profiles || {
+                        id: plan.user_id || 'unknown',
+                        name: '사용자 정보 없음',
+                        field: '미설정',
+                        sejong_institute: '미설정'
+                    },
+                    // 수업 데이터 안전성 확보
+                    lessons: plan.lessons || {
+                        totalLessons: 0,
+                        startDate: '',
+                        endDate: '',
+                        overallGoals: '목표가 설정되지 않았습니다.'
+                    },
+                    // 상태 데이터 안전성 확보
+                    status: plan.status || 'draft',
+                    approval_status: plan.approval_status || 'pending'
+                };
+            });
+            
+            return safePlans;
+            
+        } catch (error) {
+            console.error('❌ 수업계획 데이터 로드 실패:', error);
+            
+            // 네트워크 오류인지 확인
+            if (error.message?.includes('fetch') || error.message?.includes('network')) {
+                throw new Error('네트워크 연결을 확인하고 다시 시도해주세요.');
+            }
+            
+            // 데이터베이스 오류인지 확인
+            if (error.message?.includes('relationship') || error.message?.includes('embed')) {
+                console.warn('⚠️ 관계 쿼리 오류 발생, 대체 방식으로 재시도...');
+                return await this.fallbackLoadLessonPlans();
+            }
+            
+            throw error;
+        }
+    },
+
+    // 대체 수업계획 로드 방식 (관계 문제 시)
+    async fallbackLoadLessonPlans() {
+        try {
+            console.log('🔄 대체 방식으로 수업계획 로드 중...');
+            
+            // 기본 수업계획 데이터만 로드
+            const basicPlans = await SupabaseAPI.safeApiCall('기본 수업계획 조회', async () => {
+                const client = await SupabaseAPI.ensureClient();
+                return await client
+                    .from('lesson_plans')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+            });
+            
+            if (!basicPlans.success) {
+                throw new Error(basicPlans.message || '수업계획 데이터를 가져올 수 없습니다.');
+            }
+            
+            const plans = basicPlans.data || [];
+            
+            // 사용자 정보를 별도로 가져와서 병합
+            const userIds = [...new Set(plans.map(p => p.user_id).filter(id => id))];
+            let userProfiles = {};
+            
+            if (userIds.length > 0) {
+                const profileResult = await SupabaseAPI.safeApiCall('사용자 프로필 조회', async () => {
+                    const client = await SupabaseAPI.ensureClient();
+                    return await client
+                        .from('user_profiles')
+                        .select('id, name, field, sejong_institute')
+                        .in('id', userIds);
+                });
+                
+                if (profileResult.success && profileResult.data) {
+                    profileResult.data.forEach(profile => {
+                        userProfiles[profile.id] = profile;
+                    });
+                }
+            }
+            
+            // 데이터 병합
+            return plans.map(plan => ({
+                ...plan,
+                user_profiles: userProfiles[plan.user_id] || {
+                    id: plan.user_id || 'unknown',
+                    name: '사용자 정보 없음',
+                    field: '미설정',
+                    sejong_institute: '미설정'
+                },
+                approval_status: this.calculateApprovalStatus(plan)
+            }));
+            
+        } catch (error) {
+            console.error('❌ 대체 방식 로드도 실패:', error);
+            throw new Error('수업계획 데이터를 불러올 수 없습니다. 관리자에게 문의해주세요.');
+        }
+    },
+
+    // 승인 상태 계산 (안전한 방식)
+    calculateApprovalStatus(plan) {
+        if (!plan) return 'pending';
+        
+        if (plan.approved_at && plan.approved_by) {
+            return 'approved';
+        } else if (plan.rejection_reason && plan.rejection_reason.trim() !== '') {
+            return 'rejected';
+        } else if (plan.status === 'submitted') {
+            return 'pending';
+        } else {
+            return 'draft';
+        }
+    },
+
+    // 수업계획 통계 계산
+    calculateLessonPlanStats(plans) {
+        const stats = {
+            pending: 0,
+            approved: 0,
+            rejected: 0
+        };
+        
+        plans.forEach(plan => {
+            const status = plan.approval_status || 'pending';
+            if (stats.hasOwnProperty(status)) {
+                stats[status]++;
+            }
+        });
+        
+        return stats;
+    },
+
+    // 수업계획 통계 업데이트
+    updateLessonPlanStats(stats) {
+        const pendingElement = Utils.$('#pendingPlansCount');
+        const approvedElement = Utils.$('#approvedPlansCount');
+        const rejectedElement = Utils.$('#rejectedPlansCount');
+        
+        if (pendingElement) pendingElement.textContent = `대기 중: ${stats.pending}`;
+        if (approvedElement) approvedElement.textContent = `승인됨: ${stats.approved}`;
+        if (rejectedElement) rejectedElement.textContent = `반려됨: ${stats.rejected}`;
     },
 
     // 수업계획 카드 생성
@@ -274,19 +443,28 @@ const AdminManager = {
             approvalStatusClass = 'rejected';
         }
         
-        // 수업 데이터에서 총 수업 횟수 계산
-        const totalLessons = plan.lessons?.totalLessons || 0;
-        const startDate = plan.lessons?.startDate || '';
-        const endDate = plan.lessons?.endDate || '';
+        // 수업 데이터에서 총 수업 횟수 계산 (안전한 방식)
+        const lessons = plan.lessons || {};
+        const totalLessons = lessons.totalLessons || 0;
+        const startDate = lessons.startDate || '';
+        const endDate = lessons.endDate || '';
+        const overallGoals = lessons.overallGoals || '목표가 설정되지 않았습니다.';
+        const specialNotes = lessons.specialNotes || '';
+        
+        // 사용자 정보 (안전한 방식)
+        const userProfile = plan.user_profiles || {};
+        const userName = userProfile.name || '알 수 없음';
+        const userInstitute = userProfile.sejong_institute || '';
+        const userField = userProfile.field || '';
         
         card.innerHTML = `
             <div class="plan-card-header">
                 <div class="plan-student-info">
-                    <h4>${plan.user_profiles?.name || '알 수 없음'}</h4>
-                    <p>${plan.user_profiles?.sejong_institute || ''} • ${plan.user_profiles?.field || ''}</p>
+                    <h4>${this.escapeHtml(userName)}</h4>
+                    <p>${this.escapeHtml(userInstitute)} • ${this.escapeHtml(userField)}</p>
                     <div class="plan-meta">
                         <span>수업 횟수: ${totalLessons}회</span>
-                        <span>기간: ${startDate} ~ ${endDate}</span>
+                        <span>기간: ${this.escapeHtml(startDate)} ~ ${this.escapeHtml(endDate)}</span>
                     </div>
                 </div>
                 <div class="plan-status-info">
@@ -298,12 +476,12 @@ const AdminManager = {
             <div class="plan-card-content">
                 <div class="plan-goals">
                     <strong>수업 목표:</strong>
-                    <p>${plan.lessons?.overallGoals || '목표가 설정되지 않았습니다.'}</p>
+                    <p>${this.escapeHtml(overallGoals)}</p>
                 </div>
-                ${plan.lessons?.specialNotes ? `
+                ${specialNotes ? `
                     <div class="plan-notes">
                         <strong>특별 고려사항:</strong>
-                        <p>${plan.lessons.specialNotes}</p>
+                        <p>${this.escapeHtml(specialNotes)}</p>
                     </div>
                 ` : ''}
             </div>
@@ -311,7 +489,7 @@ const AdminManager = {
             ${plan.rejection_reason ? `
                 <div class="plan-rejection-reason">
                     <strong>반려 사유:</strong>
-                    <p>${plan.rejection_reason}</p>
+                    <p>${this.escapeHtml(plan.rejection_reason)}</p>
                 </div>
             ` : ''}
             
@@ -368,7 +546,7 @@ const AdminManager = {
         actionButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 const action = e.target.closest('button').dataset.action;
-                const studentId = parseInt(e.target.closest('button').dataset.studentId);
+                const studentId = e.target.closest('button').dataset.studentId;
                 
                 this.handleLessonPlanAction(action, studentId, e.target);
             });
@@ -400,17 +578,17 @@ const AdminManager = {
                     await this.loadBudgetOverview();
                     
                     let message = '수업계획이 승인되었습니다.';
-                    if (result.budgetInfo) {
-                        message += `\n배정된 예산: ${Utils.formatPrice(result.budgetInfo.allocated)}`;
+                    if (result.data?.budgetInfo) {
+                        message += `\n배정된 예산: ${Utils.formatPrice(result.data.budgetInfo.allocated)}`;
                     }
-                    Utils.showAlert(message);
+                    Utils.showToast(message, 'success');
                 } else {
                     Utils.hideLoading(buttonElement);
-                    Utils.showAlert(result.message || '승인 처리 중 오류가 발생했습니다.');
+                    Utils.showToast(result.message || '승인 처리 중 오류가 발생했습니다.', 'error');
                 }
             } catch (error) {
                 Utils.hideLoading(buttonElement);
-                Utils.showAlert('승인 처리 중 오류가 발생했습니다.');
+                Utils.showToast('승인 처리 중 오류가 발생했습니다.', 'error');
                 console.error('Approve lesson plan error:', error);
             }
         }
@@ -429,14 +607,14 @@ const AdminManager = {
                 if (result.success) {
                     await this.loadLessonPlansForManagement();
                     await this.loadBudgetOverview();
-                    Utils.showAlert('수업계획이 반려되었습니다.');
+                    Utils.showToast('수업계획이 반려되었습니다.', 'success');
                 } else {
                     Utils.hideLoading(buttonElement);
-                    Utils.showAlert(result.message || '반려 처리 중 오류가 발생했습니다.');
+                    Utils.showToast(result.message || '반려 처리 중 오류가 발생했습니다.', 'error');
                 }
             } catch (error) {
                 Utils.hideLoading(buttonElement);
-                Utils.showAlert('반려 처리 중 오류가 발생했습니다.');
+                Utils.showToast('반려 처리 중 오류가 발생했습니다.', 'error');
                 console.error('Reject lesson plan error:', error);
             }
         }
@@ -447,7 +625,7 @@ const AdminManager = {
         try {
             const receipt = await SupabaseAPI.getReceiptByRequestId(requestId);
             if (!receipt) {
-                Utils.showAlert('영수증을 찾을 수 없습니다.');
+                Utils.showToast('영수증을 찾을 수 없습니다.', 'error');
                 return;
             }
 
@@ -477,7 +655,7 @@ const AdminManager = {
             modal.classList.add('active');
         } catch (error) {
             console.error('Error showing receipt modal:', error);
-            Utils.showAlert('영수증을 불러오는 중 오류가 발생했습니다.');
+            Utils.showToast('영수증을 불러오는 중 오류가 발생했습니다.', 'error');
         }
     },
 
@@ -502,9 +680,9 @@ const AdminManager = {
             link.click();
             document.body.removeChild(link);
             
-            Utils.showAlert('영수증 이미지가 다운로드되었습니다.');
+            Utils.showToast('영수증 이미지가 다운로드되었습니다.', 'success');
         } catch (error) {
-            Utils.showAlert('이미지 다운로드 중 오류가 발생했습니다.');
+            Utils.showToast('이미지 다운로드 중 오류가 발생했습니다.', 'error');
             console.error('Download error:', error);
         }
     },
@@ -596,11 +774,11 @@ const AdminManager = {
                 statusText = canEdit ? '수정 가능' : '수정 불가능';
             }
             
-            Utils.showAlert(`수업계획 설정이 저장되었습니다.\n현재 상태: ${statusText}`);
+            Utils.showToast(`수업계획 설정이 저장되었습니다.\n현재 상태: ${statusText}`, 'success');
             
         } catch (error) {
             Utils.hideLoading(submitBtn);
-            Utils.showAlert('설정 저장 중 오류가 발생했습니다.');
+            Utils.showToast('설정 저장 중 오류가 발생했습니다.', 'error');
             console.error('Lesson plan settings error:', error);
         }
     },
@@ -610,11 +788,11 @@ const AdminManager = {
         try {
             const newMode = await SupabaseAPI.toggleTestMode();
             const statusText = newMode ? '테스트 모드 활성화 (항상 편집 가능)' : '테스트 모드 비활성화';
-            Utils.showAlert(statusText);
+            Utils.showToast(statusText, 'success');
             return newMode;
         } catch (error) {
             console.error('Error toggling test mode:', error);
-            Utils.showAlert('테스트 모드 변경 중 오류가 발생했습니다.');
+            Utils.showToast('테스트 모드 변경 중 오류가 발생했습니다.', 'error');
             return false;
         }
     },
@@ -777,7 +955,7 @@ const AdminManager = {
             this.renderApplications(applications);
         } catch (error) {
             console.error('Error loading applications:', error);
-            Utils.showAlert('신청 내역을 불러오는 중 오류가 발생했습니다.');
+            Utils.showToast('신청 내역을 불러오는 중 오류가 발생했습니다.', 'error');
         }
     },
 
@@ -996,14 +1174,14 @@ const AdminManager = {
                 
                 if (result.success) {
                     await this.refreshData();
-                    Utils.showAlert('승인되었습니다.');
+                    Utils.showToast('승인되었습니다.', 'success');
                 } else {
                     Utils.hideLoading(buttonElement);
-                    Utils.showAlert(result.message || '승인 처리 중 오류가 발생했습니다.');
+                    Utils.showToast(result.message || '승인 처리 중 오류가 발생했습니다.', 'error');
                 }
             } catch (error) {
                 Utils.hideLoading(buttonElement);
-                Utils.showAlert('승인 처리 중 오류가 발생했습니다.');
+                Utils.showToast('승인 처리 중 오류가 발생했습니다.', 'error');
                 console.error('Approve item error:', error);
             }
         }
@@ -1021,14 +1199,14 @@ const AdminManager = {
                 
                 if (result.success) {
                     await this.refreshData();
-                    Utils.showAlert('반려 처리되었습니다.');
+                    Utils.showToast('반려 처리되었습니다.', 'success');
                 } else {
                     Utils.hideLoading(buttonElement);
-                    Utils.showAlert(result.message || '반려 처리 중 오류가 발생했습니다.');
+                    Utils.showToast(result.message || '반려 처리 중 오류가 발생했습니다.', 'error');
                 }
             } catch (error) {
                 Utils.hideLoading(buttonElement);
-                Utils.showAlert('반려 처리 중 오류가 발생했습니다.');
+                Utils.showToast('반려 처리 중 오류가 발생했습니다.', 'error');
                 console.error('Reject item error:', error);
             }
         }
@@ -1044,14 +1222,14 @@ const AdminManager = {
                 
                 if (result.success) {
                     await this.refreshData();
-                    Utils.showAlert('구매완료로 처리되었습니다.');
+                    Utils.showToast('구매완료로 처리되었습니다.', 'success');
                 } else {
                     Utils.hideLoading(buttonElement);
-                    Utils.showAlert(result.message || '구매완료 처리 중 오류가 발생했습니다.');
+                    Utils.showToast(result.message || '구매완료 처리 중 오류가 발생했습니다.', 'error');
                 }
             } catch (error) {
                 Utils.hideLoading(buttonElement);
-                Utils.showAlert('구매완료 처리 중 오류가 발생했습니다.');
+                Utils.showToast('구매완료 처리 중 오류가 발생했습니다.', 'error');
                 console.error('Mark as purchased error:', error);
             }
         }
@@ -1074,14 +1252,14 @@ const AdminManager = {
             const exportData = await SupabaseAPI.prepareExportData();
             
             if (exportData.length === 0) {
-                Utils.showAlert('내보낼 데이터가 없습니다.');
+                Utils.showToast('내보낼 데이터가 없습니다.', 'warning');
             } else {
                 const filename = `sejong_applications_${this.getDateString()}.csv`;
                 Utils.downloadCSV(exportData, filename);
-                Utils.showAlert(`${exportData.length}건의 데이터를 내보냈습니다.`);
+                Utils.showToast(`${exportData.length}건의 데이터를 내보냈습니다.`, 'success');
             }
         } catch (error) {
-            Utils.showAlert('데이터 내보내기 중 오류가 발생했습니다.');
+            Utils.showToast('데이터 내보내기 중 오류가 발생했습니다.', 'error');
             console.error('Export error:', error);
         } finally {
             if (exportBtn) {
@@ -1114,6 +1292,7 @@ const AdminManager = {
 
     // HTML 이스케이프
     escapeHtml(text) {
+        if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
