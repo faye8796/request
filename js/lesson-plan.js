@@ -75,6 +75,12 @@ const LessonPlanManager = {
         // 기존 이벤트 리스너 제거
         this.unbindEvents();
 
+        // 닫기 버튼
+        const closeLessonPlanBtn = document.getElementById('closeLessonPlanBtn');
+        if (closeLessonPlanBtn) {
+            closeLessonPlanBtn.addEventListener('click', this.handleCloseClick.bind(this));
+        }
+
         // 수업 추가 버튼
         const addLessonBtn = document.getElementById('addLessonBtn');
         if (addLessonBtn) {
@@ -105,6 +111,7 @@ const LessonPlanManager = {
     // 이벤트 리스너 제거
     unbindEvents() {
         const elements = [
+            'closeLessonPlanBtn',
             'addLessonBtn',
             'lessonPlanForm', 
             'saveDraftBtn',
@@ -115,12 +122,72 @@ const LessonPlanManager = {
         elements.forEach(id => {
             const element = document.getElementById(id);
             if (element) {
+                element.removeEventListener('click', this.handleCloseClick);
                 element.removeEventListener('click', this.handleAddLesson);
                 element.removeEventListener('submit', this.handleFormSubmit);
                 element.removeEventListener('click', this.handleSaveDraft);
                 element.removeEventListener('change', this.calculateDuration);
             }
         });
+    },
+
+    // 닫기 버튼 클릭 핸들러
+    handleCloseClick() {
+        console.log('❌ 수업계획 페이지 닫기 버튼 클릭');
+        
+        // 변경사항이 있는지 확인
+        const hasChanges = this.hasUnsavedChanges();
+        
+        if (hasChanges) {
+            // 변경사항이 있으면 확인 대화상자 표시
+            const confirmClose = confirm(
+                '수업계획에 변경사항이 있습니다.\n\n' +
+                '저장하지 않고 나가시겠습니까?\n\n' +
+                '✅ 확인: 변경사항을 버리고 나가기\n' +
+                '❌ 취소: 계속 작성하기'
+            );
+            
+            if (!confirmClose) {
+                console.log('📝 사용자가 계속 작성하기를 선택');
+                return;
+            }
+        }
+        
+        console.log('🔄 학생 대시보드로 이동');
+        this.goToStudentDashboard();
+    },
+
+    // 변경사항 확인
+    hasUnsavedChanges() {
+        try {
+            // 기본 정보 확인
+            const startDate = document.getElementById('startDate')?.value?.trim() || '';
+            const endDate = document.getElementById('endDate')?.value?.trim() || '';
+            const overallGoals = document.getElementById('overallGoals')?.value?.trim() || '';
+            const specialNotes = document.getElementById('specialNotes')?.value?.trim() || '';
+            
+            // 수업 데이터 확인
+            const hasLessons = this.lessons && this.lessons.length > 0;
+            const hasLessonContent = hasLessons && this.lessons.some(lesson => 
+                (lesson.topic && lesson.topic.trim()) || 
+                (lesson.content && lesson.content.trim())
+            );
+            
+            // 변경사항이 있는지 확인
+            const hasBasicInfo = startDate || endDate || overallGoals || specialNotes;
+            const hasContent = hasBasicInfo || hasLessonContent;
+            
+            console.log('🔍 변경사항 확인:', {
+                기본정보: hasBasicInfo,
+                수업내용: hasLessonContent,
+                전체변경: hasContent
+            });
+            
+            return hasContent;
+        } catch (error) {
+            console.error('변경사항 확인 오류:', error);
+            return false;
+        }
     },
 
     // 수업 추가 핸들러
@@ -650,7 +717,7 @@ const LessonPlanManager = {
             
             if (result.success) {
                 console.log('✅ 임시저장 성공:', result.data?.id);
-                this.showMessage('✅ 수업계획이 임시저장되었습니다!\\n\\n⚠️ 완료 제출까지 해야 승인 검토가 시작됩니다.', 'success');
+                this.showMessage('✅ 수업계획이 임시저장되었습니다!\n\n⚠️ 완료 제출까지 해야 승인 검토가 시작됩니다.', 'success');
                 this.currentLessonPlan = result.data;
                 this.isEditMode = true;
             } else {
@@ -692,12 +759,12 @@ const LessonPlanManager = {
 
             if (errors.length > 0) {
                 console.warn('⚠️ 폼 검증 실패:', errors);
-                this.showMessage('❌ 다음 사항을 확인해주세요:\\n\\n' + errors.join('\\n'), 'warning');
+                this.showMessage('❌ 다음 사항을 확인해주세요:\n\n' + errors.join('\n'), 'warning');
                 return;
             }
 
             // 완료 확인 메시지
-            if (!confirm(`수업계획을 완료 제출하시겠습니까?\\n\\n✅ 총 ${data.totalLessons}개 수업이 작성되었습니다.\\n✅ 완료 제출 후 관리자 승인을 받으면 교구 신청이 가능합니다.\\n\\n⚠️ 수업계획 제출은 필수 사항입니다.`)) {
+            if (!confirm(`수업계획을 완료 제출하시겠습니까?\n\n✅ 총 ${data.totalLessons}개 수업이 작성되었습니다.\n✅ 완료 제출 후 관리자 승인을 받으면 교구 신청이 가능합니다.\n\n⚠️ 수업계획 제출은 필수 사항입니다.`)) {
                 console.log('📋 사용자가 제출을 취소했습니다.');
                 return;
             }
@@ -708,7 +775,7 @@ const LessonPlanManager = {
             
             if (result.success) {
                 console.log('✅ 수업계획 완료 성공:', result.data?.id);
-                this.showMessage('🎉 수업계획이 완료 제출되었습니다!\\n\\n✅ 관리자 승인 후 교구 신청이 가능합니다.\\n📋 수업계획은 필수 제출 사항이므로 승인을 기다려주세요.', 'success');
+                this.showMessage('🎉 수업계획이 완료 제출되었습니다!\n\n✅ 관리자 승인 후 교구 신청이 가능합니다.\n📋 수업계획은 필수 제출 사항이므로 승인을 기다려주세요.', 'success');
                 
                 // 2초 후 학생 대시보드로 이동
                 setTimeout(() => {
