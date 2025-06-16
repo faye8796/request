@@ -750,7 +750,7 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 교구 신청 관련 함수들 - 안전성 강화
+    // 교구 신청 관련 함수들 - 안전성 강화 및 신규 함수 추가
     // ===================
 
     // 학생 신청 내역 조회
@@ -767,7 +767,98 @@ const SupabaseAPI = {
         return result.success ? (result.data || []) : [];
     },
 
-    // 교구 신청 추가
+    // === 새로 추가된 함수들: 교구 신청 ===
+
+    // 일반 교구 신청 생성 - 새로 추가
+    async createApplication(studentId, applicationData) {
+        return await this.safeApiCall('일반 교구 신청 생성', async () => {
+            const client = await this.ensureClient();
+            
+            const requestData = {
+                user_id: studentId,
+                item_name: applicationData.item_name,
+                purpose: applicationData.purpose,
+                price: applicationData.price,
+                purchase_type: applicationData.purchase_type || 'online',
+                purchase_link: applicationData.purchase_link || null,
+                is_bundle: false,
+                bundle_info: null,
+                status: 'pending',
+                created_at: new Date().toISOString()
+            };
+
+            return await client
+                .from('requests')
+                .insert([requestData])
+                .select();
+        }, { studentId, itemName: applicationData.item_name });
+    },
+
+    // 묶음 교구 신청 생성 - 새로 추가
+    async createBundleApplication(studentId, bundleData) {
+        return await this.safeApiCall('묶음 교구 신청 생성', async () => {
+            const client = await this.ensureClient();
+            
+            const requestData = {
+                user_id: studentId,
+                item_name: bundleData.item_name,
+                purpose: bundleData.purpose,
+                price: bundleData.price,
+                purchase_type: 'online', // 묶음은 항상 온라인
+                purchase_link: bundleData.purchase_link,
+                is_bundle: true,
+                bundle_info: {
+                    credentials: bundleData.bundle_credentials
+                },
+                status: 'pending',
+                created_at: new Date().toISOString()
+            };
+
+            return await client
+                .from('requests')
+                .insert([requestData])
+                .select();
+        }, { studentId, bundleName: bundleData.item_name });
+    },
+
+    // 신청 수정 - 새로 추가
+    async updateApplication(applicationId, applicationData) {
+        return await this.safeApiCall('교구 신청 수정', async () => {
+            const client = await this.ensureClient();
+            
+            const updateData = {
+                item_name: applicationData.item_name,
+                purpose: applicationData.purpose,
+                price: applicationData.price,
+                purchase_type: applicationData.purchase_type || 'online',
+                purchase_link: applicationData.purchase_link || null,
+                updated_at: new Date().toISOString()
+            };
+
+            return await client
+                .from('requests')
+                .update(updateData)
+                .eq('id', applicationId)
+                .eq('status', 'pending') // 대기 중인 신청만 수정 가능
+                .select();
+        }, { applicationId });
+    },
+
+    // 신청 삭제 - 새로 추가
+    async deleteApplication(applicationId) {
+        return await this.safeApiCall('교구 신청 삭제', async () => {
+            const client = await this.ensureClient();
+            
+            return await client
+                .from('requests')
+                .delete()
+                .eq('id', applicationId)
+                .eq('status', 'pending') // 대기 중인 신청만 삭제 가능
+                .select();
+        }, { applicationId });
+    },
+
+    // 기존 addApplication 함수는 유지 (하위 호환성)
     async addApplication(studentId, itemData) {
         return await this.safeApiCall('교구 신청 추가', async () => {
             const client = await this.ensureClient();
@@ -1936,4 +2027,4 @@ window.addEventListener('supabaseInitError', (event) => {
 });
 
 // 초기화 완료 로그
-console.log('🚀 SupabaseAPI loaded successfully with fixed budget allocation algorithm');
+console.log('🚀 SupabaseAPI loaded successfully with createApplication and createBundleApplication functions');
