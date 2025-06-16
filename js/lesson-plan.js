@@ -4,6 +4,7 @@ const LessonPlanManager = {
     isEditMode: false,
     isInitialized: false,
     lessons: [], // 수업 데이터 배열
+    isFromDashboard: false, // 대시보드에서 접근했는지 여부
 
     // 수업계획 페이지 초기화
     async init() {
@@ -131,9 +132,41 @@ const LessonPlanManager = {
         });
     },
 
+    // 닫기 버튼 가시성 업데이트
+    updateCloseButtonVisibility(fromDashboard = false) {
+        try {
+            const closeLessonPlanBtn = document.getElementById('closeLessonPlanBtn');
+            if (!closeLessonPlanBtn) {
+                console.warn('닫기 버튼을 찾을 수 없습니다');
+                return;
+            }
+
+            this.isFromDashboard = fromDashboard;
+
+            if (fromDashboard) {
+                // 대시보드에서 접근한 경우: 닫기 버튼 표시
+                closeLessonPlanBtn.style.display = 'inline-flex';
+                console.log('✅ 닫기 버튼 표시 (대시보드에서 접근)');
+            } else {
+                // 최초 로그인에서 접근한 경우: 닫기 버튼 숨김
+                closeLessonPlanBtn.style.display = 'none';
+                console.log('✅ 닫기 버튼 숨김 (최초 로그인에서 접근)');
+            }
+        } catch (error) {
+            console.error('❌ 닫기 버튼 가시성 업데이트 오류:', error);
+        }
+    },
+
     // 닫기 버튼 클릭 핸들러
     handleCloseClick() {
         console.log('❌ 수업계획 페이지 닫기 버튼 클릭');
+        
+        // 대시보드에서 접근한 경우에만 닫기 가능
+        if (!this.isFromDashboard) {
+            console.log('⚠️ 최초 로그인 모드에서는 닫기 불가');
+            this.showMessage('수업계획 작성은 필수입니다. 완료 후 교구 신청이 가능합니다.', 'warning');
+            return;
+        }
         
         // 변경사항이 있는지 확인
         const hasChanges = this.hasUnsavedChanges();
@@ -141,9 +174,9 @@ const LessonPlanManager = {
         if (hasChanges) {
             // 변경사항이 있으면 확인 대화상자 표시
             const confirmClose = confirm(
-                '수업계획에 변경사항이 있습니다.\n\n' +
-                '저장하지 않고 나가시겠습니까?\n\n' +
-                '✅ 확인: 변경사항을 버리고 나가기\n' +
+                '수업계획에 변경사항이 있습니다.\\n\\n' +
+                '저장하지 않고 나가시겠습니까?\\n\\n' +
+                '✅ 확인: 변경사항을 버리고 나가기\\n' +
                 '❌ 취소: 계속 작성하기'
             );
             
@@ -251,7 +284,7 @@ const LessonPlanManager = {
             const lesson = this.lessons[lessonIndex];
             
             // 확인 대화상자
-            if (!confirm(`${lesson.lessonNumber}회차 수업을 삭제하시겠습니까?\n\n주제: ${lesson.topic || '(미입력)'}\n\n삭제된 수업은 복구할 수 없습니다.`)) {
+            if (!confirm(`${lesson.lessonNumber}회차 수업을 삭제하시겠습니까?\\n\\n주제: ${lesson.topic || '(미입력)'}\\n\\n삭제된 수업은 복구할 수 없습니다.`)) {
                 return;
             }
 
@@ -717,7 +750,7 @@ const LessonPlanManager = {
             
             if (result.success) {
                 console.log('✅ 임시저장 성공:', result.data?.id);
-                this.showMessage('✅ 수업계획이 임시저장되었습니다!\n\n⚠️ 완료 제출까지 해야 승인 검토가 시작됩니다.', 'success');
+                this.showMessage('✅ 수업계획이 임시저장되었습니다!\\n\\n⚠️ 완료 제출까지 해야 승인 검토가 시작됩니다.', 'success');
                 this.currentLessonPlan = result.data;
                 this.isEditMode = true;
             } else {
@@ -759,12 +792,12 @@ const LessonPlanManager = {
 
             if (errors.length > 0) {
                 console.warn('⚠️ 폼 검증 실패:', errors);
-                this.showMessage('❌ 다음 사항을 확인해주세요:\n\n' + errors.join('\n'), 'warning');
+                this.showMessage('❌ 다음 사항을 확인해주세요:\\n\\n' + errors.join('\\n'), 'warning');
                 return;
             }
 
             // 완료 확인 메시지
-            if (!confirm(`수업계획을 완료 제출하시겠습니까?\n\n✅ 총 ${data.totalLessons}개 수업이 작성되었습니다.\n✅ 완료 제출 후 관리자 승인을 받으면 교구 신청이 가능합니다.\n\n⚠️ 수업계획 제출은 필수 사항입니다.`)) {
+            if (!confirm(`수업계획을 완료 제출하시겠습니까?\\n\\n✅ 총 ${data.totalLessons}개 수업이 작성되었습니다.\\n✅ 완료 제출 후 관리자 승인을 받으면 교구 신청이 가능합니다.\\n\\n⚠️ 수업계획 제출은 필수 사항입니다.`)) {
                 console.log('📋 사용자가 제출을 취소했습니다.');
                 return;
             }
@@ -775,7 +808,7 @@ const LessonPlanManager = {
             
             if (result.success) {
                 console.log('✅ 수업계획 완료 성공:', result.data?.id);
-                this.showMessage('🎉 수업계획이 완료 제출되었습니다!\n\n✅ 관리자 승인 후 교구 신청이 가능합니다.\n📋 수업계획은 필수 제출 사항이므로 승인을 기다려주세요.', 'success');
+                this.showMessage('🎉 수업계획이 완료 제출되었습니다!\\n\\n✅ 관리자 승인 후 교구 신청이 가능합니다.\\n📋 수업계획은 필수 제출 사항이므로 승인을 기다려주세요.', 'success');
                 
                 // 2초 후 학생 대시보드로 이동
                 setTimeout(() => {
@@ -800,9 +833,12 @@ const LessonPlanManager = {
         }
     },
 
-    // 수업계획 페이지 표시
-    async showLessonPlanPage() {
-        console.log('📄 수업계획 페이지 표시');
+    // 수업계획 페이지 표시 - 개선된 버전 (닫기 버튼 제어 추가)
+    async showLessonPlanPage(fromDashboard = false) {
+        console.log('📄 수업계획 페이지 표시', { fromDashboard });
+        
+        // 닫기 버튼 가시성 업데이트
+        this.updateCloseButtonVisibility(fromDashboard);
         
         // 모든 기존 알림 제거
         this.clearAllNotices();
