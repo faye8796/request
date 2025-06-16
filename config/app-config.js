@@ -1,3 +1,12 @@
+/**
+ * 애플리케이션 설정 파일
+ * 
+ * @description 환경 설정 파일 - 간소화 버전. Supabase 연동 후 중복 설정 제거 및 최적화
+ * @dependencies 없음 (독립적 설정 파일)
+ * @author Claude AI
+ * @date 2025-06-16
+ */
+
 // 환경 설정 파일 - 간소화 버전
 // Supabase 연동 후 중복 설정 제거 및 최적화
 
