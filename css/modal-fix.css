@@ -1,58 +1,81 @@
-/* 모달 위치 수정 - 확실한 중앙 정렬 보장 */
+/* ========================================
+   모달 중앙 정렬 완전 해결 스타일
+   모든 모달이 확실히 중앙에 위치하도록 보장
+   ======================================== */
+
+/* 모든 모달에 대한 강력한 중앙 정렬 보장 */
 .modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    /* 기존 flex 방식에 추가 보장 */
+    display: none !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    z-index: 1000 !important;
+    padding: 1rem !important;
+    
+    /* Flexbox 중앙 정렬 - 가장 확실한 방법 */
+    display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 1rem;
-    /* 백업 중앙 정렬 방식 */
-    display: flex !important;
+    
+    /* 추가 보장을 위한 속성들 */
+    place-items: center !important;
+    place-content: center !important;
+    
+    /* 스크롤 허용하면서도 중앙 정렬 유지 */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
 }
 
+/* 활성 상태일 때도 동일한 중앙 정렬 적용 */
 .modal.active {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    place-items: center !important;
+    place-content: center !important;
 }
 
 /* 모달 컨텐츠 중앙 정렬 강화 */
 .modal-content {
     background: white !important;
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    width: 100%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
+    border-radius: 0.5rem !important;
+    padding: 1.5rem !important;
+    width: 100% !important;
+    max-width: 500px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
     color: #1f2937 !important;
+    
     /* 확실한 중앙 정렬을 위한 추가 속성 */
-    margin: auto;
-    position: relative;
-    /* 애니메이션 추가 */
-    animation: modalFadeIn 0.3s ease-out;
-    transform-origin: center;
+    margin: auto !important;
+    position: relative !important;
+    flex-shrink: 0 !important;
+    
+    /* Transform을 사용한 백업 중앙 정렬 */
+    transform: translate(0, 0) !important;
+    
+    /* 애니메이션과 그림자 효과 */
+    animation: modalSlideIn 0.3s ease-out !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
 }
 
 /* 큰 모달용 중앙 정렬 */
 .modal-content.large {
-    max-width: 800px;
-    max-height: 90vh;
-    overflow-y: auto;
-    margin: auto;
+    max-width: 800px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    margin: auto !important;
+    width: 95% !important;
 }
 
-/* 모달 페이드인 애니메이션 */
-@keyframes modalFadeIn {
+/* 모달 등장 애니메이션 */
+@keyframes modalSlideIn {
     from {
         opacity: 0;
-        transform: scale(0.9) translateY(-20px);
+        transform: scale(0.95) translateY(-10px);
     }
     to {
         opacity: 1;
@@ -60,28 +83,46 @@
     }
 }
 
-/* 모바일에서 모달 중앙 정렬 보장 */
+/* 모바일에서 모달 중앙 정렬 특별 처리 */
 @media (max-width: 768px) {
     .modal {
-        padding: 0.5rem;
+        padding: 0.5rem !important;
         align-items: center !important;
         justify-content: center !important;
+        place-items: center !important;
+        place-content: center !important;
     }
     
     .modal-content {
-        margin: auto;
-        width: calc(100% - 1rem);
-        max-width: none;
-        min-height: auto;
+        margin: auto !important;
+        width: calc(100% - 1rem) !important;
+        max-width: none !important;
+        min-height: auto !important;
+        transform: translate(0, 0) !important;
     }
     
     .modal-content.large {
-        width: calc(100% - 1rem);
-        max-width: none;
+        width: calc(100% - 1rem) !important;
+        max-width: none !important;
+        height: auto !important;
+        max-height: 95vh !important;
     }
 }
 
-/* 특정 모달들에 대한 추가 보장 */
+/* 매우 작은 화면에서 추가 보장 */
+@media (max-width: 480px) {
+    .modal {
+        padding: 0.25rem !important;
+    }
+    
+    .modal-content {
+        width: calc(100% - 0.5rem) !important;
+        padding: 1rem !important;
+        border-radius: 0.375rem !important;
+    }
+}
+
+/* 특정 모달들에 대한 개별 중앙 정렬 보장 */
 #applicationModal,
 #bundleModal,
 #shippingModal,
@@ -91,10 +132,30 @@
 #budgetSettingsModal,
 #lessonPlanManagementModal,
 #viewLessonPlanModal {
+    display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    place-items: center !important;
+    place-content: center !important;
 }
 
+#applicationModal.active,
+#bundleModal.active,
+#shippingModal.active,
+#receiptModal.active,
+#viewReceiptModal.active,
+#lessonPlanSettingsModal.active,
+#budgetSettingsModal.active,
+#lessonPlanManagementModal.active,
+#viewLessonPlanModal.active {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    place-items: center !important;
+    place-content: center !important;
+}
+
+/* 모든 모달 컨텐츠에 중앙 정렬 적용 */
 #applicationModal .modal-content,
 #bundleModal .modal-content,
 #shippingModal .modal-content,
@@ -104,6 +165,121 @@
 #budgetSettingsModal .modal-content,
 #lessonPlanManagementModal .modal-content,
 #viewLessonPlanModal .modal-content {
-    margin: auto;
-    position: relative;
+    margin: auto !important;
+    position: relative !important;
+    flex-shrink: 0 !important;
+    transform: translate(0, 0) !important;
+}
+
+/* CSS Grid를 사용한 백업 중앙 정렬 방법 */
+.modal.grid-center {
+    display: grid !important;
+    place-items: center !important;
+    place-content: center !important;
+    grid-template-rows: 1fr auto 1fr !important;
+    grid-template-columns: 1fr auto 1fr !important;
+}
+
+.modal.grid-center .modal-content {
+    grid-row: 2 !important;
+    grid-column: 2 !important;
+    margin: 0 !important;
+}
+
+/* 다크모드 대응 */
+@media (prefers-color-scheme: dark) {
+    .modal {
+        background: rgba(0, 0, 0, 0.75) !important;
+    }
+    
+    .modal-content {
+        background: white !important;
+        color: #1f2937 !important;
+    }
+}
+
+/* 높은 해상도 화면에서 중앙 정렬 보장 */
+@media (min-width: 1920px) {
+    .modal {
+        align-items: center !important;
+        justify-content: center !important;
+        place-items: center !important;
+        place-content: center !important;
+    }
+    
+    .modal-content {
+        margin: auto !important;
+        transform: translate(0, 0) !important;
+    }
+}
+
+/* 세로 화면에서 중앙 정렬 보장 */
+@media (orientation: portrait) {
+    .modal {
+        align-items: center !important;
+        justify-content: center !important;
+        place-items: center !important;
+        place-content: center !important;
+    }
+}
+
+/* 가로 화면에서 중앙 정렬 보장 */
+@media (orientation: landscape) {
+    .modal {
+        align-items: center !important;
+        justify-content: center !important;
+        place-items: center !important;
+        place-content: center !important;
+    }
+}
+
+/* 스크롤이 있는 모달의 중앙 정렬 보장 */
+.modal-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 접근성을 위한 포커스 관리 */
+.modal[aria-hidden="false"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.modal-content:focus {
+    outline: 2px solid #4f46e5;
+    outline-offset: 2px;
+}
+
+/* 디버깅을 위한 임시 스타일 (필요시 사용) */
+.debug-modal {
+    border: 2px solid red !important;
+}
+
+.debug-modal .modal-content {
+    border: 2px solid blue !important;
+}
+
+/* 모달 오버레이 클릭 영역 확보 */
+.modal::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
 }
