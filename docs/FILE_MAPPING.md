@@ -14,92 +14,30 @@
 - `js/auth.js` → `src/core/core-auth.js`
 - `js/supabase-client.js` → `src/core/core-supabase.js`
 - `js/utils.js` → `src/core/util-common.js`
-- `css/main.css` → `src/core/core-main.css`
-- `css/admin.css` → `src/core/core-admin.css`
-- `css/student.css` → `src/core/core-student.css`
-- `css/login.css` → `src/core/core-login.css`
 
 ### 📁 src/modules/ (기능 모듈)
 - `js/lesson-plan.js` → `src/modules/module-lesson-plan.js`
-- `css/lesson-plan.css` → `src/modules/module-lesson-plan.css`
 
 ### 📁 src/fixes/ (버그 수정)
 - `js/api-fix.js` → `src/fixes/fix-api-calls.js`
 - `js/student-validation-fix.js` → `src/fixes/fix-student-validation.js`
-- `css/modal-fix.css` → `src/fixes/fix-modal-overlap.css`
 
 ### 📁 src/enhancements/ (개선 사항)
 - `js/purchase-validation.js` → `src/enhancements/enhancement-purchase-validation.js`
-- `css/ux-enhancement.css` → `src/enhancements/enhancement-ux.css`
 
-## 🎯 Claude 업데이트 시 참고사항
+## 🎯 Claude 업데이트 권장사항
 
-### 1. 새로운 기능 추가
-- **경로**: `src/modules/module-[기능명].js/css`
-- **명명**: module-접두사 사용
-- **의존성**: core 파일들에 의존 가능
+**분리된 구조 유지하기**: 현재의 분리된 파일 구조를 그대로 유지하는 것을 권장합니다.
 
-### 2. 버그 수정
-- **경로**: `src/fixes/fix-[문제설명].js/css`
-- **명명**: fix-접두사 사용
-- **문서화**: 어떤 문제를 해결하는지 명시
+### 이유:
+1. **모듈별 독립성**: 각 기능을 독립적으로 수정/업데이트 가능
+2. **롤백 용이성**: 문제 발생 시 특정 기능만 쉽게 되돌릴 수 있음  
+3. **버그 추적**: 문제의 원인을 빠르게 파악 가능
+4. **선택적 로드**: 필요에 따라 특정 기능만 로드 가능
+5. **Claude 이해도**: 각 파일의 명확한 역할로 AI가 더 정확한 업데이트 수행
 
-### 3. 개선 사항
-- **경로**: `src/enhancements/enhancement-[개선내용].js/css`
-- **명명**: enhancement-접두사 사용
-- **문서화**: 어떤 개선을 제공하는지 명시
-
-### 4. 핵심 시스템 수정
-- **경로**: `src/core/core-[모듈명].js/css`
-- **주의**: 다른 모듈들이 의존하므로 신중하게 수정
-- **테스트**: 수정 후 전체 시스템 동작 확인 필요
-
-## 📝 HTML 파일 수정 필요사항
-
-`index.html`에서 스크립트 및 스타일시트 경로를 새로운 구조에 맞게 업데이트해야 합니다:
-
-```html
-<!-- 설정 파일 -->
-<script src="config/app-config.js"></script>
-
-<!-- 핵심 시스템 CSS -->
-<link rel="stylesheet" href="src/core/core-main.css">
-<link rel="stylesheet" href="src/core/core-login.css">
-<link rel="stylesheet" href="src/core/core-admin.css">
-<link rel="stylesheet" href="src/core/core-student.css">
-
-<!-- 핵심 시스템 JS -->
-<script src="src/core/util-common.js"></script>
-<script src="src/core/core-supabase.js"></script>
-<script src="src/core/core-auth.js"></script>
-
-<!-- 기능 모듈 -->
-<link rel="stylesheet" href="src/modules/module-lesson-plan.css">
-<script src="src/modules/module-lesson-plan.js"></script>
-
-<!-- 수정 사항 -->
-<link rel="stylesheet" href="src/fixes/fix-modal-overlap.css">
-<script src="src/fixes/fix-api-calls.js"></script>
-<script src="src/fixes/fix-student-validation.js"></script>
-
-<!-- 개선 사항 -->
-<link rel="stylesheet" href="src/enhancements/enhancement-ux.css">
-<script src="src/enhancements/enhancement-purchase-validation.js"></script>
-
-<!-- 핵심 애플리케이션 (마지막에 로드) -->
-<script src="src/core/core-student.js"></script>
-<script src="src/core/core-admin.js"></script>
-<script src="src/core/core-app.js"></script>
-```
-
-## 🔗 의존성 순서
-
-1. **설정**: `config/app-config.js`
-2. **유틸리티**: `src/core/util-common.js`
-3. **데이터베이스**: `src/core/core-supabase.js`
-4. **인증**: `src/core/core-auth.js`
-5. **기능 모듈**: `src/modules/`
-6. **수정사항**: `src/fixes/`
-7. **개선사항**: `src/enhancements/`
-8. **핵심 앱**: `src/core/core-student.js`, `src/core/core-admin.js`
-9. **메인 앱**: `src/core/core-app.js` (마지막)
+### Claude 업데이트 시 장점:
+- 🎯 **명확한 파일 역할**: 파일명만 봐도 기능을 이해
+- 🔧 **독립적 수정**: 특정 기능만 안전하게 업데이트  
+- 📝 **체계적 문서화**: 각 모듈별 명확한 문서 존재
+- 🚀 **빠른 개발**: 원하는 기능을 빠르게 찾아 수정 가능
