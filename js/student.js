@@ -1212,7 +1212,8 @@ const StudentManager = {
         return div.innerHTML;
     },
 
-    // 모달 관련 기본 함수들 (간단한 구현)
+    // 모달 관련 기능들 - 실제 구현
+
     showApplicationModal() {
         try {
             console.log('신청 모달 표시');
@@ -1239,17 +1240,160 @@ const StudentManager = {
         console.log('묶음 신청 모달 숨김');
     },
 
-    showShippingModal() {
+    // 배송지 설정 모달 표시 - 실제 구현
+    async showShippingModal() {
         try {
             console.log('배송지 설정 모달 표시');
-            alert('배송지 설정 기능이 준비 중입니다.');
+            
+            const currentUser = AuthManager?.getCurrentUser();
+            if (!currentUser) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            // 기존 배송지 정보 로드
+            await this.loadShippingInfo();
+            
+            // 모달 표시
+            const modal = document.getElementById('shippingModal');
+            if (modal) {
+                modal.style.display = 'block';
+            }
         } catch (error) {
             console.error('배송지 설정 모달 표시 오류:', error);
+            alert('배송지 설정을 여는 중 오류가 발생했습니다.');
         }
     },
 
+    // 배송지 설정 모달 숨김 - 실제 구현
     hideShippingModal() {
-        console.log('배송지 설정 모달 숨김');
+        try {
+            console.log('배송지 설정 모달 숨김');
+            const modal = document.getElementById('shippingModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            
+            // 폼 초기화
+            const form = document.getElementById('shippingForm');
+            if (form) {
+                form.reset();
+            }
+        } catch (error) {
+            console.error('배송지 모달 숨김 오류:', error);
+        }
+    },
+
+    // 배송지 정보 로드
+    async loadShippingInfo() {
+        try {
+            console.log('📦 기존 배송지 정보 로드');
+            
+            const currentUser = AuthManager?.getCurrentUser();
+            if (!currentUser) return;
+
+            let shippingInfo = null;
+            try {
+                shippingInfo = await SupabaseAPI.getShippingInfo(currentUser.id);
+            } catch (error) {
+                console.error('배송지 정보 조회 오류:', error);
+                return;
+            }
+
+            if (shippingInfo) {
+                // 폼에 기존 정보 채우기
+                const fields = {
+                    'shippingName': shippingInfo.recipient_name,
+                    'shippingPhone': shippingInfo.phone,
+                    'shippingAddress': shippingInfo.address,
+                    'shippingPostcode': shippingInfo.postal_code,
+                    'shippingNote': shippingInfo.delivery_note
+                };
+
+                Object.entries(fields).forEach(([fieldId, value]) => {
+                    const field = document.getElementById(fieldId);
+                    if (field && value) {
+                        field.value = value;
+                    }
+                });
+
+                console.log('✅ 기존 배송지 정보 로드 완료');
+            }
+        } catch (error) {
+            console.error('배송지 정보 로드 오류:', error);
+        }
+    },
+
+    // 배송지 정보 제출 - 실제 구현
+    async handleShippingSubmit() {
+        try {
+            console.log('배송지 정보 저장 시작');
+            
+            const currentUser = AuthManager?.getCurrentUser();
+            if (!currentUser) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            // 폼 데이터 수집
+            const formData = {
+                recipient_name: document.getElementById('shippingName')?.value?.trim() || '',
+                phone: document.getElementById('shippingPhone')?.value?.trim() || '',
+                address: document.getElementById('shippingAddress')?.value?.trim() || '',
+                postal_code: document.getElementById('shippingPostcode')?.value?.trim() || '',
+                delivery_note: document.getElementById('shippingNote')?.value?.trim() || ''
+            };
+
+            // 필수 필드 검증
+            if (!formData.recipient_name) {
+                alert('받는 분 성명을 입력해주세요.');
+                document.getElementById('shippingName')?.focus();
+                return;
+            }
+
+            if (!formData.phone) {
+                alert('연락처를 입력해주세요.');
+                document.getElementById('shippingPhone')?.focus();
+                return;
+            }
+
+            if (!formData.address) {
+                alert('주소를 입력해주세요.');
+                document.getElementById('shippingAddress')?.focus();
+                return;
+            }
+
+            // 제출 버튼 비활성화
+            const submitBtn = document.querySelector('#shippingForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = '저장 중...';
+            }
+
+            try {
+                // Supabase에 배송지 정보 저장
+                await SupabaseAPI.saveShippingInfo(currentUser.id, formData);
+                
+                alert('배송지 정보가 성공적으로 저장되었습니다.');
+                this.hideShippingModal();
+                
+                console.log('✅ 배송지 정보 저장 완료');
+            } catch (apiError) {
+                console.error('배송지 저장 API 오류:', apiError);
+                alert('배송지 정보 저장에 실패했습니다. 다시 시도해주세요.');
+            }
+
+        } catch (error) {
+            console.error('❌ 배송지 제출 오류:', error);
+            alert('배송지 정보 저장 중 오류가 발생했습니다.');
+        } finally {
+            // 제출 버튼 복원
+            const submitBtn = document.querySelector('#shippingForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '저장하기';
+            }
+        }
     },
 
     showReceiptModal() {
@@ -1296,10 +1440,6 @@ const StudentManager = {
 
     handleBundleSubmit() {
         console.log('묶음 신청 제출');
-    },
-
-    handleShippingSubmit() {
-        console.log('배송지 제출');
     },
 
     handleReceiptSubmit() {
