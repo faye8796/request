@@ -1,4 +1,4 @@
-// 공통 유틸리티 함수들
+// 공통 유틸리티 함수들 - 토스트 알림 기능 추가
 const Utils = {
     // 날짜 포맷팅
     formatDate(dateString) {
@@ -103,10 +103,132 @@ const Utils = {
         }
     },
 
-    // 알림 메시지 표시
+    // ===================
+    // 개선된 알림 시스템 (토스트 + 모달)
+    // ===================
+
+    // 토스트 컨테이너 생성 (한 번만 실행)
+    _ensureToastContainer() {
+        let container = this.$('#toast-container');
+        if (!container) {
+            container = this.createElement('div', 'toast-container');
+            container.id = 'toast-container';
+            container.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                pointer-events: none;
+            `;
+            document.body.appendChild(container);
+        }
+        return container;
+    },
+
+    // 토스트 알림 표시 (새로 추가)
+    showToast(message, type = 'info', duration = 3000) {
+        try {
+            const container = this._ensureToastContainer();
+            
+            const toast = this.createElement('div', `toast toast-${type}`);
+            toast.style.cssText = `
+                background: ${this._getToastColor(type)};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                margin-bottom: 10px;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                pointer-events: auto;
+                max-width: 400px;
+                word-wrap: break-word;
+                font-size: 14px;
+                line-height: 1.4;
+            `;
+            
+            // 아이콘 추가
+            const icon = this._getToastIcon(type);
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span>${icon}</span>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // 애니메이션 효과
+            setTimeout(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            }, 10);
+            
+            // 자동 제거
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, duration);
+            
+            // 클릭으로 제거
+            toast.addEventListener('click', () => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            });
+            
+        } catch (error) {
+            console.error('토스트 알림 생성 실패:', error);
+            // 폴백으로 기본 alert 사용
+            alert(message);
+        }
+    },
+
+    // 토스트 색상 결정
+    _getToastColor(type) {
+        const colors = {
+            'success': '#10b981',
+            'error': '#ef4444', 
+            'warning': '#f59e0b',
+            'info': '#3b82f6'
+        };
+        return colors[type] || colors.info;
+    },
+
+    // 토스트 아이콘 결정
+    _getToastIcon(type) {
+        const icons = {
+            'success': '✅',
+            'error': '❌',
+            'warning': '⚠️',
+            'info': 'ℹ️'
+        };
+        return icons[type] || icons.info;
+    },
+
+    // 개선된 알림 메시지 표시
     showAlert(message, type = 'info') {
-        // 간단한 alert 대신 향후 토스트 알림으로 교체 가능
-        alert(message);
+        // 심각한 오류는 모달로, 일반적인 알림은 토스트로
+        if (type === 'error' && (message.includes('새로고침') || message.includes('관리자에게 문의'))) {
+            // 심각한 오류는 모달 alert 사용
+            alert(message);
+        } else {
+            // 일반적인 알림은 토스트 사용
+            this.showToast(message, type);
+        }
     },
 
     // 확인 대화상자
@@ -142,7 +264,7 @@ const Utils = {
     // 입력 필드 검증
     validateRequired(value, fieldName) {
         if (!value || !value.trim()) {
-            this.showAlert(`${fieldName}은(는) 필수 입력 항목입니다.`);
+            this.showAlert(`${fieldName}은(는) 필수 입력 항목입니다.`, 'warning');
             return false;
         }
         return true;
@@ -165,7 +287,7 @@ const Utils = {
     // 날짜 검증
     validateDateRange(startDate, endDate, fieldName = '날짜') {
         if (!startDate || !endDate) {
-            this.showAlert(`${fieldName} 범위를 올바르게 입력해주세요.`);
+            this.showAlert(`${fieldName} 범위를 올바르게 입력해주세요.`, 'warning');
             return false;
         }
 
@@ -173,7 +295,7 @@ const Utils = {
         const end = new Date(endDate);
 
         if (start >= end) {
-            this.showAlert('종료일은 시작일보다 늦어야 합니다.');
+            this.showAlert('종료일은 시작일보다 늦어야 합니다.', 'warning');
             return false;
         }
 
@@ -184,12 +306,12 @@ const Utils = {
     validateNumberRange(value, min, max, fieldName = '값') {
         const num = parseInt(value);
         if (isNaN(num)) {
-            this.showAlert(`${fieldName}에 올바른 숫자를 입력해주세요.`);
+            this.showAlert(`${fieldName}에 올바른 숫자를 입력해주세요.`, 'warning');
             return false;
         }
 
         if (num < min || num > max) {
-            this.showAlert(`${fieldName}은(는) ${min}~${max} 사이의 값이어야 합니다.`);
+            this.showAlert(`${fieldName}은(는) ${min}~${max} 사이의 값이어야 합니다.`, 'warning');
             return false;
         }
 
@@ -199,12 +321,12 @@ const Utils = {
     // 문자열 길이 검증
     validateLength(value, minLength, maxLength, fieldName = '내용') {
         if (value.length < minLength) {
-            this.showAlert(`${fieldName}은(는) 최소 ${minLength}자 이상이어야 합니다.`);
+            this.showAlert(`${fieldName}은(는) 최소 ${minLength}자 이상이어야 합니다.`, 'warning');
             return false;
         }
 
         if (value.length > maxLength) {
-            this.showAlert(`${fieldName}은(는) 최대 ${maxLength}자까지 입력 가능합니다.`);
+            this.showAlert(`${fieldName}은(는) 최대 ${maxLength}자까지 입력 가능합니다.`, 'warning');
             return false;
         }
 
@@ -263,7 +385,7 @@ const Utils = {
     // CSV 다운로드
     downloadCSV(data, filename = 'export.csv') {
         if (!data || data.length === 0) {
-            this.showAlert('내보낼 데이터가 없습니다.');
+            this.showAlert('내보낼 데이터가 없습니다.', 'warning');
             return;
         }
 
@@ -297,13 +419,18 @@ const Utils = {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        this.showToast('파일이 다운로드되었습니다.', 'success');
     },
 
     // 상태 뱃지 HTML 생성 (Supabase API 사용)
     createStatusBadge(status) {
-        const statusClass = SupabaseAPI.getStatusClass(status);
-        const statusText = SupabaseAPI.getStatusText(status);
-        return `<span class="status-badge ${statusClass}">${statusText}</span>`;
+        if (window.SupabaseAPI) {
+            const statusClass = window.SupabaseAPI.getStatusClass(status);
+            const statusText = window.SupabaseAPI.getStatusText(status);
+            return `<span class="status-badge ${statusClass}">${statusText}</span>`;
+        }
+        return `<span class="status-badge">${status}</span>`;
     },
 
     // 아이콘 HTML 생성 (Lucide 아이콘)
@@ -451,14 +578,22 @@ const Utils = {
 
     // 스크롤 위치 저장/복원
     saveScrollPosition(key = 'scrollPos') {
-        sessionStorage.setItem(key, window.scrollY.toString());
+        try {
+            sessionStorage.setItem(key, window.scrollY.toString());
+        } catch (error) {
+            console.warn('스크롤 위치 저장 실패:', error);
+        }
     },
 
     restoreScrollPosition(key = 'scrollPos') {
-        const scrollPos = sessionStorage.getItem(key);
-        if (scrollPos) {
-            window.scrollTo(0, parseInt(scrollPos));
-            sessionStorage.removeItem(key);
+        try {
+            const scrollPos = sessionStorage.getItem(key);
+            if (scrollPos) {
+                window.scrollTo(0, parseInt(scrollPos));
+                sessionStorage.removeItem(key);
+            }
+        } catch (error) {
+            console.warn('스크롤 위치 복원 실패:', error);
         }
     },
 
@@ -505,6 +640,67 @@ const Utils = {
         hasServiceWorker() {
             return 'serviceWorker' in navigator;
         }
+    },
+
+    // ===================
+    // 오류 처리 유틸리티 (새로 추가)
+    // ===================
+
+    // 연결 상태 확인
+    async checkConnection() {
+        try {
+            if (!navigator.onLine) {
+                return { connected: false, message: '인터넷 연결이 없습니다.' };
+            }
+
+            // Supabase 연결 테스트
+            if (window.SupabaseAPI) {
+                const result = await window.SupabaseAPI.testConnection();
+                if (result.success) {
+                    return { connected: true, message: '연결 상태가 양호합니다.' };
+                } else {
+                    return { connected: false, message: '데이터베이스 연결에 문제가 있습니다.' };
+                }
+            }
+
+            return { connected: false, message: '서비스가 초기화되지 않았습니다.' };
+        } catch (error) {
+            console.error('연결 상태 확인 오류:', error);
+            return { connected: false, message: '연결 상태를 확인할 수 없습니다.' };
+        }
+    },
+
+    // 시스템 상태 표시
+    async showSystemStatus() {
+        const status = await this.checkConnection();
+        const type = status.connected ? 'success' : 'warning';
+        this.showToast(status.message, type);
+        return status;
+    },
+
+    // 에러 리포트 생성
+    generateErrorReport() {
+        try {
+            const errorLog = JSON.parse(localStorage.getItem('errorLog') || '[]');
+            const recentErrors = errorLog.slice(-10); // 최근 10개 에러
+            
+            const report = {
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                url: window.location.href,
+                errors: recentErrors,
+                systemInfo: {
+                    onLine: navigator.onLine,
+                    cookieEnabled: navigator.cookieEnabled,
+                    language: navigator.language
+                }
+            };
+            
+            return JSON.stringify(report, null, 2);
+        } catch (error) {
+            console.error('에러 리포트 생성 실패:', error);
+            return null;
+        }
     }
 };
 
@@ -517,9 +713,40 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
+    
+    // 연결 상태 모니터링 (선택적)
+    if (window.CONFIG && window.CONFIG.DEV && window.CONFIG.DEV.DEBUG) {
+        setTimeout(() => {
+            Utils.checkConnection().then(status => {
+                console.log('시스템 연결 상태:', status);
+            });
+        }, 3000);
+    }
 });
 
 // 페이지 언로드 시 스크롤 위치 저장
 window.addEventListener('beforeunload', () => {
     Utils.saveScrollPosition();
 });
+
+// 전역 에러 핸들러
+window.addEventListener('error', (event) => {
+    console.error('전역 JavaScript 에러:', event.error);
+    
+    // 개발 모드에서는 더 자세한 정보 표시
+    if (window.CONFIG && window.CONFIG.DEV && window.CONFIG.DEV.DEBUG) {
+        Utils.showToast(`JavaScript 오류: ${event.error.message}`, 'error');
+    }
+});
+
+// 네트워크 상태 변화 감지
+window.addEventListener('online', () => {
+    Utils.showToast('네트워크 연결이 복원되었습니다.', 'success');
+});
+
+window.addEventListener('offline', () => {
+    Utils.showToast('네트워크 연결이 끊어졌습니다.', 'warning');
+});
+
+// 전역 접근을 위해 window 객체에 추가
+window.Utils = Utils;
