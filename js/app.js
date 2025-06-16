@@ -1,13 +1,37 @@
-// 메인 애플리케이션 관리 모듈 (Supabase 연동) - 수정된 버전
+// 메인 애플리케이션 관리 모듈 (Supabase 연동) - 오류 메시지 개선 버전
 const App = {
     // 초기화
-    init() {
+    async init() {
         console.log('세종학당 문화교구 신청 플랫폼 시작');
         
-        this.setupGlobalEventListeners();
-        this.initializeModules();
-        this.handleInitialRoute();
-        this.setupPerformanceMonitoring();
+        try {
+            this.setupGlobalEventListeners();
+            await this.initializeModules();
+            this.handleInitialRoute();
+            this.setupPerformanceMonitoring();
+        } catch (error) {
+            console.error('앱 초기화 중 오류:', error);
+            this.handleInitializationError(error);
+        }
+    },
+
+    // 초기화 오류 처리 - 새로 추가
+    handleInitializationError(error) {
+        console.error('초기화 오류 상세:', error);
+        
+        // 사용자에게 구체적인 오류 메시지 제공
+        if (this.isNetworkError(error)) {
+            Utils.showAlert('네트워크 연결을 확인해주세요. 인터넷 연결 상태를 점검하고 다시 시도해주세요.', 'error');
+        } else if (error.message && error.message.includes('Supabase')) {
+            Utils.showAlert('서비스 연결에 문제가 있습니다. 잠시 후 다시 시도하거나 관리자에게 문의해주세요.', 'warning');
+        } else if (error.message && error.message.includes('Config')) {
+            Utils.showAlert('시스템 설정을 불러오는 중 문제가 발생했습니다. 페이지를 새로고침해주세요.', 'warning');
+        } else {
+            Utils.showAlert(`초기화 중 문제가 발생했습니다: ${error.message}. 페이지를 새로고침하거나 관리자에게 문의해주세요.`, 'error');
+        }
+        
+        // 로그인 페이지로 이동 (안전 모드)
+        this.showPage('loginPage');
     },
 
     // 전역 이벤트 리스너 설정
@@ -36,42 +60,142 @@ const App = {
             this.handlePopState(e);
         });
 
-        // 전역 에러 핸들링
+        // 전역 에러 핸들링 - 개선됨
         window.addEventListener('error', (e) => {
             this.handleGlobalError(e);
         });
+
+        // Promise 에러 핸들링 추가
+        window.addEventListener('unhandledrejection', (e) => {
+            this.handleUnhandledPromiseRejection(e);
+        });
     },
 
-    // DOM 준비 완료 처리
-    onDOMReady() {
-        // Lucide 아이콘 초기화
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
+    // 처리되지 않은 Promise 에러 핸들링 - 새로 추가
+    handleUnhandledPromiseRejection(event) {
+        console.error('처리되지 않은 Promise 에러:', event.reason);
+        
+        // 에러 로깅
+        this.logError({ 
+            message: 'Unhandled Promise Rejection', 
+            error: event.reason,
+            type: 'promise'
+        });
+        
+        // 사용자에게 알림 (필요한 경우만)
+        if (event.reason && event.reason.message && !event.reason.message.includes('NetworkError')) {
+            const userMessage = this.getUserFriendlyErrorMessage(event.reason);
+            console.warn('Promise 에러 발생:', userMessage);
         }
-
-        // 모든 모듈 초기화
-        AuthManager.init();
         
-        // 세션 복원 시도
-        if (AuthManager.restoreSession()) {
-            this.handleSessionRestore();
-        } else {
-            this.showPage('loginPage');
-        }
-
-        // 전역 키보드 단축키 활성화
-        this.setupGlobalKeyboardShortcuts();
-        
-        // 성능 최적화
-        this.optimizePerformance();
-        
-        console.log('앱 초기화 완료');
+        // 기본 에러 처리 방지
+        event.preventDefault();
     },
 
-    // 모듈 초기화
-    initializeModules() {
-        // Supabase API는 이미 로드됨
-        // 다른 모듈들은 필요시 지연 로딩
+    // DOM 준비 완료 처리 - 안전성 강화
+    async onDOMReady() {
+        try {
+            // Lucide 아이콘 초기화
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            // 네트워크 연결 상태 먼저 확인
+            if (!navigator.onLine) {
+                Utils.showAlert('인터넷 연결이 없습니다. 연결 상태를 확인해주세요.', 'warning');
+                this.enableOfflineMode();
+            }
+
+            // Supabase 연결 상태 확인
+            const isSupabaseReady = await this.waitForSupabaseInitialization();
+            if (!isSupabaseReady) {
+                Utils.showAlert('서비스 연결에 문제가 있습니다. 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.', 'warning');
+            }
+
+            // 모든 모듈 초기화
+            AuthManager.init();
+            
+            // 세션 복원 시도
+            if (AuthManager.restoreSession()) {
+                await this.handleSessionRestore();
+            } else {
+                this.showPage('loginPage');
+            }
+
+            // 전역 키보드 단축키 활성화
+            this.setupGlobalKeyboardShortcuts();
+            
+            // 성능 최적화
+            this.optimizePerformance();
+            
+            console.log('앱 초기화 완료');
+        } catch (error) {
+            console.error('DOM 준비 완료 처리 중 오류:', error);
+            this.handleInitializationError(error);
+        }
+    },
+
+    // Supabase 초기화 대기 - 새로 추가
+    async waitForSupabaseInitialization(maxWaitTime = 10000) {
+        const startTime = Date.now();
+        
+        while (Date.now() - startTime < maxWaitTime) {
+            if (window.SupabaseAPI && window.SupabaseAPI.client) {
+                try {
+                    const testResult = await window.SupabaseAPI.testConnection();
+                    if (testResult.success) {
+                        console.log('✅ Supabase 연결 확인됨');
+                        return true;
+                    }
+                } catch (error) {
+                    console.warn('Supabase 연결 테스트 실패:', error);
+                }
+            }
+            
+            // 500ms 대기 후 재시도
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        console.error('❌ Supabase 초기화 타임아웃');
+        return false;
+    },
+
+    // 모듈 초기화 - 비동기로 변경
+    async initializeModules() {
+        try {
+            // CONFIG 로드 대기
+            if (!window.CONFIG) {
+                console.log('CONFIG 로드 대기 중...');
+                let waitCount = 0;
+                while (!window.CONFIG && waitCount < 20) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    waitCount++;
+                }
+                
+                if (!window.CONFIG) {
+                    throw new Error('시스템 설정을 불러올 수 없습니다');
+                }
+            }
+
+            // Supabase API 초기화 대기
+            if (!window.SupabaseAPI) {
+                console.log('SupabaseAPI 로드 대기 중...');
+                let waitCount = 0;
+                while (!window.SupabaseAPI && waitCount < 20) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    waitCount++;
+                }
+                
+                if (!window.SupabaseAPI) {
+                    throw new Error('데이터베이스 연결 서비스를 불러올 수 없습니다');
+                }
+            }
+
+            console.log('모든 필수 모듈 로드 완료');
+        } catch (error) {
+            console.error('모듈 초기화 실패:', error);
+            throw error;
+        }
     },
 
     // 초기 라우트 처리
@@ -400,11 +524,13 @@ const App = {
             
         console.log(statusMessage);
         
-        // 오프라인 모드 처리
-        if (!isOnline) {
-            this.enableOfflineMode();
-        } else {
+        // 사용자에게 알림
+        if (isOnline) {
+            Utils.showToast('네트워크 연결이 복원되었습니다.', 'success');
             this.disableOfflineMode();
+        } else {
+            Utils.showToast('네트워크 연결이 끊어졌습니다.', 'warning');
+            this.enableOfflineMode();
         }
     },
 
@@ -426,50 +552,84 @@ const App = {
         });
     },
 
-    // 전역 에러 처리 - 강화된 버전
+    // 전역 에러 처리 - 강화된 버전 (개선됨)
     handleGlobalError(error) {
         console.error('전역 에러 발생:', error);
         
         // 에러 로깅
         this.logError(error);
         
+        // 네트워크 에러는 별도 처리
+        if (this.isNetworkError(error)) {
+            this.handleNetworkError();
+            return;
+        }
+        
+        // 인증 에러는 별도 처리
+        if (this.isAuthenticationError(error)) {
+            this.handleAuthenticationError();
+            return;
+        }
+        
         // 사용자에게 친화적인 에러 메시지 표시
         const userMessage = this.getUserFriendlyErrorMessage(error);
         
-        // 에러 유형에 따른 처리
-        if (this.isNetworkError(error)) {
-            this.handleNetworkError();
-        } else if (this.isAuthenticationError(error)) {
-            this.handleAuthenticationError();
-        } else {
-            Utils.showAlert(userMessage);
+        // 중요하지 않은 에러는 콘솔에만 기록
+        if (this.isMinorError(error)) {
+            console.warn('경미한 에러:', userMessage);
+            return;
         }
+        
+        // 심각한 에러만 사용자에게 알림
+        Utils.showAlert(userMessage, 'error');
+    },
+
+    // 경미한 에러 판별 - 새로 추가
+    isMinorError(error) {
+        if (!error || !error.message) return false;
+        
+        const minorErrorPatterns = [
+            'ResizeObserver loop limit exceeded',
+            'Non-passive event listener',
+            'Loading chunk',
+            'ChunkLoadError',
+            'Script error'
+        ];
+        
+        return minorErrorPatterns.some(pattern => 
+            error.message.includes(pattern)
+        );
     },
 
     // 네트워크 에러 판별
     isNetworkError(error) {
-        return error.message && (
-            error.message.includes('fetch') ||
-            error.message.includes('network') ||
-            error.message.includes('Failed to fetch') ||
-            error.message.includes('NetworkError')
-        );
+        if (!error || !error.message) return false;
+        
+        return error.message.includes('fetch') ||
+               error.message.includes('network') ||
+               error.message.includes('Failed to fetch') ||
+               error.message.includes('NetworkError') ||
+               error.message.includes('timeout');
     },
 
     // 인증 에러 판별
     isAuthenticationError(error) {
-        return error.message && (
-            error.message.includes('401') ||
-            error.message.includes('403') ||
-            error.message.includes('Unauthorized') ||
-            error.message.includes('permission')
-        );
+        if (!error || !error.message) return false;
+        
+        return error.message.includes('401') ||
+               error.message.includes('403') ||
+               error.message.includes('Unauthorized') ||
+               error.message.includes('permission') ||
+               error.message.includes('Authentication');
     },
 
     // 네트워크 에러 처리
     handleNetworkError() {
         console.warn('네트워크 에러 발생 - 오프라인 모드 활성화');
         this.enableOfflineMode();
+        
+        // 사용자에게 알림
+        Utils.showToast('네트워크 연결을 확인해주세요.', 'warning');
         
         // 자동 재연결 시도
         setTimeout(() => {
@@ -482,16 +642,19 @@ const App = {
         console.warn('인증 에러 발생 - 로그인 페이지로 이동');
         AuthManager.logout();
         this.showPage('loginPage');
-        Utils.showAlert('세션이 만료되었습니다. 다시 로그인해주세요.');
+        Utils.showAlert('세션이 만료되었습니다. 다시 로그인해주세요.', 'warning');
     },
 
     // 네트워크 연결 테스트
     async testNetworkConnection() {
         try {
-            const result = await SupabaseAPI.testConnection();
-            if (result.success) {
-                console.log('네트워크 연결 복원됨');
-                this.disableOfflineMode();
+            if (window.SupabaseAPI) {
+                const result = await SupabaseAPI.testConnection();
+                if (result.success) {
+                    console.log('네트워크 연결 복원됨');
+                    this.disableOfflineMode();
+                    Utils.showToast('네트워크 연결이 복원되었습니다.', 'success');
+                }
             }
         } catch (error) {
             console.log('네트워크 연결 실패 - 재시도 예정');
@@ -504,16 +667,16 @@ const App = {
     // 에러 로깅 - 개선된 버전
     logError(error) {
         const errorInfo = {
-            message: error.message,
-            filename: error.filename,
-            lineno: error.lineno,
-            colno: error.colno,
-            stack: error.error ? error.error.stack : '',
+            message: error.message || 'Unknown error',
+            filename: error.filename || '',
+            lineno: error.lineno || 0,
+            colno: error.colno || 0,
+            stack: error.error ? error.error.stack : (error.stack || ''),
             timestamp: new Date().toISOString(),
             userAgent: navigator.userAgent,
             url: window.location.href,
-            userId: SupabaseAPI.currentUser ? SupabaseAPI.currentUser.id : null,
-            userType: SupabaseAPI.currentUserType
+            userId: window.SupabaseAPI?.currentUser?.id || null,
+            userType: window.SupabaseAPI?.currentUserType || null
         };
         
         // 로컬 스토리지에 에러 로그 저장
@@ -532,21 +695,54 @@ const App = {
         }
     },
 
-    // 사용자 친화적 에러 메시지 생성
+    // 사용자 친화적 에러 메시지 생성 - 개선됨
     getUserFriendlyErrorMessage(error) {
-        if (this.isNetworkError(error)) {
-            return '네트워크 연결을 확인해주세요.';
+        if (!error) {
+            return '알 수 없는 문제가 발생했습니다.';
+        }
+
+        // 에러 메시지가 있는 경우
+        if (error.message) {
+            // 네트워크 관련 에러
+            if (this.isNetworkError(error)) {
+                return '네트워크 연결을 확인해주세요. 인터넷 연결 상태를 점검하고 다시 시도해주세요.';
+            }
+            
+            // 인증 관련 에러
+            if (this.isAuthenticationError(error)) {
+                return '로그인이 필요하거나 세션이 만료되었습니다. 다시 로그인해주세요.';
+            }
+            
+            // Supabase 관련 에러
+            if (error.message.includes('Supabase') || error.message.includes('supabase')) {
+                return '데이터베이스 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.';
+            }
+            
+            // 406 에러
+            if (error.message.includes('406')) {
+                return '일시적으로 서비스에 접근할 수 없습니다. 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.';
+            }
+            
+            // Config 관련 에러
+            if (error.message.includes('Config') || error.message.includes('설정')) {
+                return '시스템 설정을 불러오는 중 문제가 발생했습니다. 페이지를 새로고침해주세요.';
+            }
+            
+            // 스크립트 로딩 에러
+            if (error.message.includes('Loading chunk') || error.message.includes('Script')) {
+                return '일부 파일을 불러오는 중 문제가 발생했습니다. 페이지를 새로고침해주세요.';
+            }
+            
+            // 일반적인 에러
+            if (error.message.length > 100) {
+                return '시스템 처리 중 문제가 발생했습니다. 페이지를 새로고침하거나 관리자에게 문의해주세요.';
+            }
+            
+            return `문제가 발생했습니다: ${error.message}`;
         }
         
-        if (this.isAuthenticationError(error)) {
-            return '세션이 만료되었습니다. 다시 로그인해주세요.';
-        }
-        
-        if (error.message && error.message.includes('406')) {
-            return '일시적으로 서비스에 접근할 수 없습니다. 잠시 후 다시 시도해주세요.';
-        }
-        
-        return '예상치 못한 오류가 발생했습니다. 페이지를 새로고침하거나 관리자에게 문의해주세요.';
+        // 에러 메시지가 없는 경우
+        return '시스템 처리 중 문제가 발생했습니다. 페이지를 새로고침하거나 관리자에게 문의해주세요.';
     },
 
     // 성능 최적화
@@ -690,7 +886,7 @@ const App = {
     showAppInfo() {
         const info = `
 세종학당 문화교구 신청 플랫폼
-버전: 1.2.1 (406 Error Fixed)
+버전: 1.2.2 (Error Message Enhanced)
 개발: Claude AI Assistant
 
 이 플랫폼은 세종학당 문화인턴들의 교구 신청을 위해 개발되었습니다.
@@ -701,7 +897,7 @@ const App = {
 • 수업계획 작성 및 관리
 • 관리자 승인 시스템
 • Excel 데이터 내보내기
-• 406 에러 대응 강화
+• 향상된 오류 처리 시스템
 
 문의사항이 있으시면 관리자에게 연락해주세요.
         `;
@@ -713,12 +909,12 @@ const App = {
     showDebugInfo() {
         if (confirm('개발자 모드를 활성화하시겠습니까?')) {
             console.log('=== 디버그 정보 ===');
-            console.log('현재 사용자:', SupabaseAPI.currentUser);
-            console.log('사용자 타입:', SupabaseAPI.currentUserType);
+            console.log('현재 사용자:', window.SupabaseAPI?.currentUser);
+            console.log('사용자 타입:', window.SupabaseAPI?.currentUserType);
             
             // 전역 변수로 접근 가능하게 설정
             window.DEBUG = {
-                SupabaseAPI,
+                SupabaseAPI: window.SupabaseAPI,
                 AuthManager,
                 StudentManager: window.StudentManager,
                 AdminManager: window.AdminManager,
@@ -737,16 +933,43 @@ const App = {
         try {
             console.log('🔍 시스템 상태 확인 중...');
             
-            const healthStatus = await SupabaseAPI.healthCheck();
-            console.log('시스템 상태:', healthStatus);
+            // 기본 체크
+            const checks = {
+                config: !!window.CONFIG,
+                supabaseAPI: !!window.SupabaseAPI,
+                authManager: !!window.AuthManager,
+                utils: !!window.Utils,
+                network: navigator.onLine
+            };
             
-            if (healthStatus.status === 'healthy') {
-                console.log('✅ 시스템이 정상 작동 중입니다.');
-            } else {
-                console.warn('⚠️ 시스템에 문제가 있을 수 있습니다:', healthStatus.error);
+            console.log('기본 체크:', checks);
+            
+            // Supabase 연결 테스트
+            let supabaseHealth = null;
+            if (window.SupabaseAPI) {
+                try {
+                    supabaseHealth = await window.SupabaseAPI.healthCheck();
+                } catch (error) {
+                    supabaseHealth = { status: 'error', error: error.message };
+                }
             }
             
-            return healthStatus;
+            const overallHealth = {
+                status: checks.config && checks.supabaseAPI && checks.network ? 'healthy' : 'warning',
+                basicChecks: checks,
+                supabase: supabaseHealth,
+                timestamp: new Date().toISOString()
+            };
+            
+            console.log('전체 시스템 상태:', overallHealth);
+            
+            if (overallHealth.status === 'healthy') {
+                console.log('✅ 시스템이 정상 작동 중입니다.');
+            } else {
+                console.warn('⚠️ 시스템에 문제가 있을 수 있습니다.');
+            }
+            
+            return overallHealth;
         } catch (error) {
             console.error('❌ 시스템 상태 확인 실패:', error);
             return { status: 'error', error: error.message };
