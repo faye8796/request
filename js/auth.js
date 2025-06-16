@@ -654,7 +654,7 @@ const AuthManager = {
         }
     },
 
-    // 수업계획 페이지로 리다이렉션
+    // 수업계획 페이지로 리다이렉션 - 최초 로그인에서 접근
     redirectToLessonPlan() {
         try {
             if (typeof App !== 'undefined' && App.showPage) {
@@ -662,7 +662,8 @@ const AuthManager = {
                 
                 setTimeout(() => {
                     if (typeof LessonPlanManager !== 'undefined' && LessonPlanManager.showLessonPlanPage) {
-                        LessonPlanManager.showLessonPlanPage();
+                        // fromDashboard=false로 설정하여 닫기 버튼 숨김 (최초 로그인)
+                        LessonPlanManager.showLessonPlanPage(false);
                     }
                 }, 200);
             } else {
