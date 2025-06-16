@@ -562,7 +562,7 @@ const AdminManager = {
             
             // 예산 재계산 확인 메시지
             const shouldRecalculate = Utils.showConfirm(
-                '예산 설정을 업데이트하시겠습니까?\n\n✅ 기존에 승인받은 학생들의 예산도 새로운 설정에 맞춰 자동으로 재계산됩니다.\n⚠️ 이미 사용한 예산이 새 배정 예산을 초과하는 경우 적절히 조정됩니다.'
+                '예산 설정을 업데이트하시겠습니까?\\n\\n✅ 기존에 승인받은 학생들의 예산도 새로운 설정에 맞춰 자동으로 재계산됩니다.\\n⚠️ 이미 사용한 예산이 새 배정 예산을 초과하는 경우 적절히 조정됩니다.'
             );
             
             if (!shouldRecalculate) {
@@ -596,9 +596,9 @@ const AdminManager = {
                 // 재계산 결과 메시지 추가
                 if (recalculationResults.length > 0) {
                     const totalRecalculated = recalculationResults.reduce((sum, result) => sum + result.updated, 0);
-                    message += `\n\n📊 ${totalRecalculated}명의 학생 예산이 자동으로 재계산되었습니다:`;
+                    message += `\\n\\n📊 ${totalRecalculated}명의 학생 예산이 자동으로 재계산되었습니다:`;
                     recalculationResults.forEach(result => {
-                        message += `\n• ${result.field}: ${result.updated}/${result.total}명`;
+                        message += `\\n• ${result.field}: ${result.updated}/${result.total}명`;
                     });
                 }
                 
@@ -956,12 +956,14 @@ const AdminManager = {
         if (rejectedElement) rejectedElement.textContent = `반려됨: ${stats.rejected}`;
     },
 
-    // 수업계획 카드 생성 (수정됨 - 상세보기 버튼 추가)
+    // 수업계획 카드 생성 (수정됨 - 승인 상태 표시 버그 수정)
     createLessonPlanCard(plan) {
         const card = Utils.createElement('div', 'lesson-plan-card');
         
-        const statusText = plan.status === 'submitted' ? '제출완료' : '임시저장';
-        const statusClass = plan.status === 'submitted' ? 'completed' : 'draft';
+        // 제출완료 조건: 'submitted' 또는 'approved' 상태
+        const isSubmitted = plan.status === 'submitted' || plan.status === 'approved';
+        const statusText = isSubmitted ? '제출완료' : '임시저장';
+        const statusClass = isSubmitted ? 'completed' : 'draft';
         
         let approvalStatusText = '대기 중';
         let approvalStatusClass = 'pending';
@@ -1028,7 +1030,7 @@ const AdminManager = {
         return card;
     },
 
-    // 수업계획 액션 버튼 생성 (수정됨 - 상세보기 버튼 추가)
+    // 수업계획 액션 버튼 생성 (수정됨 - 승인 상태 표시 버그 수정)
     createLessonPlanActionButtons(plan) {
         const baseButtons = `
             <button class="btn small secondary view-lesson-plan-btn" 
@@ -1039,7 +1041,8 @@ const AdminManager = {
             </button>
         `;
 
-        if (plan.status !== 'submitted') {
+        // 제출되지 않은 경우 (draft 상태)
+        if (plan.status === 'draft') {
             return baseButtons + '<span class="plan-action-note">수업계획이 제출되지 않았습니다.</span>';
         }
         
@@ -1064,7 +1067,7 @@ const AdminManager = {
             `;
         }
         
-        // 대기 중인 경우
+        // 대기 중인 경우 (submitted 상태이면서 아직 승인/반려 안됨)
         return baseButtons + `
             <button class="btn small approve" data-action="approve" data-student-id="${plan.user_id}">
                 <i data-lucide="check"></i> 승인
@@ -1147,7 +1150,7 @@ const AdminManager = {
                     
                     let message = '수업계획이 승인되었습니다.';
                     if (result.data?.budgetInfo) {
-                        message += `\n배정된 예산: ${Utils.formatPrice(result.data.budgetInfo.allocated)}`;
+                        message += `\\n배정된 예산: ${Utils.formatPrice(result.data.budgetInfo.allocated)}`;
                     }
                     Utils.showToast(message, 'success');
                 } else {
@@ -1346,7 +1349,7 @@ const AdminManager = {
                 statusText = canEdit ? '수정 가능' : '수정 불가능';
             }
             
-            Utils.showToast(`수업계획 설정이 저장되었습니다.\n현재 상태: ${statusText}`, 'success');
+            Utils.showToast(`수업계획 설정이 저장되었습니다.\\n현재 상태: ${statusText}`, 'success');
             
         } catch (error) {
             Utils.hideLoading(submitBtn);
