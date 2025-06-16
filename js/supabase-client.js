@@ -517,6 +517,18 @@ const SupabaseAPI = {
 
                 this.currentUser = adminUser;
                 this.currentUserType = 'admin';
+                
+                // 관리자 세션 저장
+                try {
+                    sessionStorage.setItem('userSession', JSON.stringify({
+                        user: adminUser,
+                        userType: 'admin',
+                        loginTime: new Date().toISOString()
+                    }));
+                } catch (error) {
+                    console.warn('관리자 세션 저장 실패:', error);
+                }
+                
                 return { success: true, data: adminUser };
             }
 
@@ -879,18 +891,20 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 관리자 전용 함수들 - 새로 추가
+    // 관리자 전용 함수들 - 수정됨: JOIN 문제 해결
     // ===================
 
-    // 모든 수업계획 조회 (관리자용) - 수정됨: approval_status 동적 계산
+    // 모든 수업계획 조회 (관리자용) - 수정됨: LEFT JOIN으로 변경하여 안정성 향상
     async getAllLessonPlans() {
         const result = await this.safeApiCall('모든 수업계획 조회', async () => {
             const client = await this.ensureClient();
+            
+            // inner join에서 left join으로 변경하여 사용자 프로필이 없어도 수업계획 표시
             return await client
                 .from('lesson_plans')
                 .select(`
                     *,
-                    user_profiles!inner(
+                    user_profiles(
                         id,
                         name,
                         field,
@@ -905,12 +919,25 @@ const SupabaseAPI = {
             const plansWithApprovalStatus = (result.data || []).map(plan => {
                 let approval_status = 'pending';
                 
+                // 더 명확한 상태 판단 로직
                 if (plan.approved_at && plan.approved_by) {
                     approval_status = 'approved';
-                } else if (plan.rejection_reason) {
+                } else if (plan.rejection_reason && plan.rejection_reason.trim() !== '') {
                     approval_status = 'rejected';
-                } else if (plan.status !== 'submitted') {
-                    approval_status = 'pending'; // draft 상태 등
+                } else if (plan.status === 'submitted') {
+                    approval_status = 'pending'; // 제출됨, 아직 처리 안됨
+                } else {
+                    approval_status = 'draft'; // draft 상태나 기타
+                }
+                
+                // 사용자 프로필이 없는 경우 기본값 설정
+                if (!plan.user_profiles) {
+                    plan.user_profiles = {
+                        id: plan.user_id,
+                        name: '사용자 정보 없음',
+                        field: '미설정',
+                        sejong_institute: '미설정'
+                    };
                 }
                 
                 return {
@@ -919,13 +946,15 @@ const SupabaseAPI = {
                 };
             });
             
+            console.log('📋 수업계획 조회 결과:', plansWithApprovalStatus.length, '건');
             return plansWithApprovalStatus;
         }
 
+        console.warn('⚠️ 수업계획 조회 실패:', result.message);
         return [];
     },
 
-    // 대기 중인 수업계획 조회 (관리자용)
+    // 대기 중인 수업계획 조회 (관리자용) - LEFT JOIN으로 수정
     async getPendingLessonPlans() {
         const result = await this.safeApiCall('대기 중인 수업계획 조회', async () => {
             const client = await this.ensureClient();
@@ -933,7 +962,7 @@ const SupabaseAPI = {
                 .from('lesson_plans')
                 .select(`
                     *,
-                    user_profiles!inner(
+                    user_profiles(
                         id,
                         name,
                         field,
@@ -942,10 +971,29 @@ const SupabaseAPI = {
                 `)
                 .eq('status', 'submitted')
                 .is('approved_at', null)
+                .is('rejection_reason', null)
                 .order('submitted_at', { ascending: true });
         });
 
-        return result.success ? (result.data || []) : [];
+        if (result.success) {
+            // 사용자 프로필이 없는 경우를 위한 처리
+            const plans = (result.data || []).map(plan => {
+                if (!plan.user_profiles) {
+                    plan.user_profiles = {
+                        id: plan.user_id,
+                        name: '사용자 정보 없음',
+                        field: '미설정',
+                        sejong_institute: '미설정'
+                    };
+                }
+                return plan;
+            });
+            
+            console.log('⏳ 대기 중인 수업계획:', plans.length, '건');
+            return plans;
+        }
+
+        return [];
     },
 
     // 수업계획 승인
@@ -1224,7 +1272,7 @@ const SupabaseAPI = {
         };
     },
 
-    // 신청 내역 검색
+    // 신청 내역 검색 - LEFT JOIN으로 수정
     async searchApplications(searchTerm = '') {
         const result = await this.safeApiCall('신청 내역 검색', async () => {
             const client = await this.ensureClient();
@@ -1233,7 +1281,7 @@ const SupabaseAPI = {
                 .from('requests')
                 .select(`
                     *,
-                    user_profiles!inner(
+                    user_profiles(
                         id,
                         name,
                         field,
@@ -1243,13 +1291,31 @@ const SupabaseAPI = {
                 .order('created_at', { ascending: false });
             
             if (searchTerm && searchTerm.trim()) {
-                query = query.ilike('user_profiles.name', `%${searchTerm.trim()}%`);
+                // 사용자 이름으로 필터링할 때 LEFT JOIN 고려
+                query = query.or(`user_profiles.name.ilike.%${searchTerm.trim()}%`);
             }
             
             return query;
         }, { searchTerm });
 
-        return result.success ? (result.data || []) : [];
+        if (result.success) {
+            // 사용자 프로필이 없는 경우를 위한 처리
+            const applications = (result.data || []).map(app => {
+                if (!app.user_profiles) {
+                    app.user_profiles = {
+                        id: app.user_id,
+                        name: '사용자 정보 없음',
+                        field: '미설정',
+                        sejong_institute: '미설정'
+                    };
+                }
+                return app;
+            });
+            
+            return applications;
+        }
+
+        return [];
     },
 
     // 아이템 상태 업데이트
@@ -1276,7 +1342,7 @@ const SupabaseAPI = {
         }, { requestId, status, reason });
     },
 
-    // 내보내기 데이터 준비
+    // 내보내기 데이터 준비 - LEFT JOIN으로 수정
     async prepareExportData() {
         const result = await this.safeApiCall('내보내기 데이터 준비', async () => {
             const client = await this.ensureClient();
@@ -1284,7 +1350,7 @@ const SupabaseAPI = {
                 .from('requests')
                 .select(`
                     *,
-                    user_profiles!inner(
+                    user_profiles(
                         name,
                         field,
                         sejong_institute
@@ -1294,19 +1360,28 @@ const SupabaseAPI = {
         });
 
         if (result.success) {
-            return (result.data || []).map(item => ({
-                '신청일': new Date(item.created_at).toLocaleDateString('ko-KR'),
-                '학생명': item.user_profiles.name,
-                '세종학당': item.user_profiles.sejong_institute,
-                '분야': item.user_profiles.field,
-                '교구명': item.item_name,
-                '사용목적': item.purpose,
-                '가격': item.price,
-                '구매방식': this.getPurchaseMethodText(item.purchase_type),
-                '상태': this.getStatusText(item.status),
-                '구매링크': item.purchase_link || '',
-                '반려사유': item.rejection_reason || ''
-            }));
+            return (result.data || []).map(item => {
+                // 사용자 프로필이 없는 경우 기본값 사용
+                const userProfile = item.user_profiles || {
+                    name: '사용자 정보 없음',
+                    field: '미설정',
+                    sejong_institute: '미설정'
+                };
+
+                return {
+                    '신청일': new Date(item.created_at).toLocaleDateString('ko-KR'),
+                    '학생명': userProfile.name,
+                    '세종학당': userProfile.sejong_institute,
+                    '분야': userProfile.field,
+                    '교구명': item.item_name,
+                    '사용목적': item.purpose,
+                    '가격': item.price,
+                    '구매방식': this.getPurchaseMethodText(item.purchase_type),
+                    '상태': this.getStatusText(item.status),
+                    '구매링크': item.purchase_link || '',
+                    '반려사유': item.rejection_reason || ''
+                };
+            });
         }
 
         return [];
@@ -1376,7 +1451,7 @@ const SupabaseAPI = {
         return settings.test_mode;
     },
 
-    // 영수증 조회 (요청 ID로)
+    // 영수증 조회 (요청 ID로) - LEFT JOIN으로 수정
     async getReceiptByRequestId(requestId) {
         const result = await this.safeApiCall('영수증 조회', async () => {
             const client = await this.ensureClient();
@@ -1385,11 +1460,11 @@ const SupabaseAPI = {
                 .from('receipts')
                 .select(`
                     *,
-                    requests!inner(
+                    requests(
                         item_name,
                         price
                     ),
-                    user_profiles!inner(
+                    user_profiles(
                         name
                     )
                 `)
@@ -1397,12 +1472,17 @@ const SupabaseAPI = {
             
             if (receiptResult.data && receiptResult.data.length > 0) {
                 const receipt = receiptResult.data[0];
+                
+                // 관련 정보가 없는 경우 기본값 사용
+                const requests = receipt.requests || { item_name: '정보 없음', price: 0 };
+                const userProfile = receipt.user_profiles || { name: '사용자 정보 없음' };
+                
                 return {
                     data: {
                         ...receipt,
-                        item_name: receipt.requests.item_name,
-                        student_name: receipt.user_profiles.name,
-                        total_amount: receipt.requests.price
+                        item_name: requests.item_name,
+                        student_name: userProfile.name,
+                        total_amount: requests.price
                     },
                     error: null
                 };
@@ -1526,4 +1606,4 @@ window.addEventListener('supabaseInitError', (event) => {
 });
 
 // 초기화 완료 로그
-console.log('🚀 SupabaseAPI loaded successfully');
+console.log('🚀 SupabaseAPI loaded successfully with enhanced lesson plan data handling');
