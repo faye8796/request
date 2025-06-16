@@ -100,9 +100,11 @@ const AdminManager = {
         this.setupKeyboardShortcuts();
     },
 
-    // 세부 수업계획 보기 모달 표시 (새로 추가)
+    // 세부 수업계획 보기 모달 표시 (수정됨 - 데이터 로드 개선)
     async showViewLessonPlanModal(studentId, lessonPlan) {
         try {
+            console.log('🔍 수업계획 상세보기 시작:', studentId, lessonPlan);
+            
             const modal = Utils.$('#viewLessonPlanModal');
             if (!modal) {
                 Utils.showToast('세부 수업계획 모달을 찾을 수 없습니다.', 'error');
@@ -112,37 +114,47 @@ const AdminManager = {
             // 현재 보고 있는 수업계획 저장
             this.currentViewingLessonPlan = lessonPlan;
 
-            // 학생 정보 표시
+            // 학생 정보 표시 (안전한 방식)
             const userProfile = lessonPlan.user_profiles || {};
-            Utils.$('#detailStudentName').textContent = userProfile.name || '알 수 없음';
-            Utils.$('#detailStudentInfo').textContent = `${userProfile.sejong_institute || ''} • ${userProfile.field || ''}`;
+            const studentName = userProfile.name || '알 수 없음';
+            const institute = userProfile.sejong_institute || '미설정';
+            const field = userProfile.field || '미설정';
 
-            // 수업 정보 표시
-            const lessons = lessonPlan.lessons || {};
-            const startDate = lessons.startDate || '';
-            const endDate = lessons.endDate || '';
-            const totalLessons = lessons.totalLessons || 0;
+            Utils.$('#detailStudentName').textContent = studentName;
+            Utils.$('#detailStudentInfo').textContent = `${institute} • ${field}`;
 
-            Utils.$('#detailPlanPeriod').textContent = startDate && endDate ? `${startDate} ~ ${endDate}` : '기간 미설정';
+            // 수업 정보 파싱 (개선된 방식)
+            const lessonData = this.parseLessonData(lessonPlan.lessons);
+            console.log('📊 파싱된 수업 데이터:', lessonData);
+
+            // 수업 기간 및 횟수 표시
+            const { startDate, endDate, totalLessons, overallGoals, specialNotes, schedule } = lessonData;
+            
+            Utils.$('#detailPlanPeriod').textContent = 
+                (startDate && endDate) ? `${startDate} ~ ${endDate}` : '기간 미설정';
             Utils.$('#detailTotalLessons').textContent = `총 ${totalLessons}회`;
 
             // 예산 정보 계산 및 표시
-            await this.displayBudgetAllocationInfo(userProfile.field, totalLessons);
+            await this.displayBudgetAllocationInfo(field, totalLessons);
 
             // 수업 목표 표시
-            Utils.$('#detailOverallGoals').textContent = lessons.overallGoals || '목표가 설정되지 않았습니다.';
+            const goalsElement = Utils.$('#detailOverallGoals');
+            if (goalsElement) {
+                goalsElement.textContent = overallGoals || '목표가 설정되지 않았습니다.';
+            }
 
-            // 수업 일정표 표시
-            this.displayLessonSchedule(lessons.schedule || []);
+            // 수업 일정표 표시 (개선된 방식)
+            this.displayLessonSchedule(schedule);
 
             // 특별 고려사항 표시
-            const specialNotes = lessons.specialNotes || '';
             const specialNotesSection = Utils.$('#specialNotesSection');
-            if (specialNotes.trim()) {
-                Utils.$('#detailSpecialNotes').textContent = specialNotes;
-                specialNotesSection.style.display = 'block';
+            const specialNotesElement = Utils.$('#detailSpecialNotes');
+            
+            if (specialNotes && specialNotes.trim()) {
+                if (specialNotesElement) specialNotesElement.textContent = specialNotes;
+                if (specialNotesSection) specialNotesSection.style.display = 'block';
             } else {
-                specialNotesSection.style.display = 'none';
+                if (specialNotesSection) specialNotesSection.style.display = 'none';
             }
 
             // 승인/반려 버튼 표시 설정
@@ -156,9 +168,139 @@ const AdminManager = {
                 lucide.createIcons();
             }
 
+            console.log('✅ 수업계획 상세보기 모달 표시 완료');
+
         } catch (error) {
-            console.error('Error showing lesson plan detail modal:', error);
+            console.error('❌ Error showing lesson plan detail modal:', error);
             Utils.showToast('수업계획 상세보기 중 오류가 발생했습니다.', 'error');
+        }
+    },
+
+    // 수업 데이터 파싱 (새로 추가 - 안전한 데이터 파싱)
+    parseLessonData(lessonsRaw) {
+        console.log('🔄 수업 데이터 파싱 시작:', lessonsRaw);
+        
+        // 기본값 설정
+        const defaultData = {
+            startDate: '',
+            endDate: '',
+            totalLessons: 0,
+            overallGoals: '',
+            specialNotes: '',
+            schedule: []
+        };
+
+        try {
+            let lessons = lessonsRaw;
+
+            // 문자열인 경우 JSON 파싱 시도
+            if (typeof lessons === 'string') {
+                try {
+                    lessons = JSON.parse(lessons);
+                    console.log('📝 JSON 파싱 성공:', lessons);
+                } catch (parseError) {
+                    console.warn('⚠️ JSON 파싱 실패, 기본값 사용:', parseError);
+                    return defaultData;
+                }
+            }
+
+            // 객체가 아닌 경우 기본값 반환
+            if (!lessons || typeof lessons !== 'object') {
+                console.warn('⚠️ 유효하지 않은 수업 데이터, 기본값 사용');
+                return defaultData;
+            }
+
+            // 안전한 데이터 추출
+            const result = {
+                startDate: lessons.startDate || lessons.start_date || '',
+                endDate: lessons.endDate || lessons.end_date || '',
+                totalLessons: this.extractTotalLessons(lessons),
+                overallGoals: lessons.overallGoals || lessons.overall_goals || lessons.goals || '',
+                specialNotes: lessons.specialNotes || lessons.special_notes || lessons.notes || '',
+                schedule: this.extractSchedule(lessons)
+            };
+
+            console.log('✅ 수업 데이터 파싱 완료:', result);
+            return result;
+
+        } catch (error) {
+            console.error('❌ 수업 데이터 파싱 오류:', error);
+            return defaultData;
+        }
+    },
+
+    // 총 수업 횟수 추출 (새로 추가)
+    extractTotalLessons(lessons) {
+        // 직접 지정된 값이 있는 경우
+        if (lessons.totalLessons && typeof lessons.totalLessons === 'number') {
+            return lessons.totalLessons;
+        }
+        if (lessons.total_lessons && typeof lessons.total_lessons === 'number') {
+            return lessons.total_lessons;
+        }
+
+        // 스케줄 배열에서 계산
+        const schedule = this.extractSchedule(lessons);
+        if (Array.isArray(schedule) && schedule.length > 0) {
+            return schedule.length;
+        }
+
+        // 기본값
+        return 0;
+    },
+
+    // 수업 일정 추출 (새로 추가)
+    extractSchedule(lessons) {
+        try {
+            // 다양한 경로에서 스케줄 데이터 찾기
+            let schedule = null;
+
+            if (lessons.schedule) {
+                schedule = lessons.schedule;
+            } else if (lessons.lesson_schedule) {
+                schedule = lessons.lesson_schedule;
+            } else if (lessons.lessons) {
+                schedule = lessons.lessons;
+            } else if (lessons.plan) {
+                schedule = lessons.plan;
+            }
+
+            // 문자열인 경우 JSON 파싱 시도
+            if (typeof schedule === 'string') {
+                try {
+                    schedule = JSON.parse(schedule);
+                } catch (parseError) {
+                    console.warn('⚠️ 스케줄 JSON 파싱 실패:', parseError);
+                    schedule = [];
+                }
+            }
+
+            // 배열이 아닌 경우 빈 배열 반환
+            if (!Array.isArray(schedule)) {
+                console.warn('⚠️ 스케줄이 배열이 아님:', schedule);
+                return [];
+            }
+
+            // 각 수업 데이터 정규화
+            return schedule.map((lesson, index) => {
+                if (typeof lesson === 'object' && lesson !== null) {
+                    return {
+                        date: lesson.date || lesson.lesson_date || `${index + 1}차시`,
+                        topic: lesson.topic || lesson.title || lesson.subject || '주제 미설정',
+                        content: lesson.content || lesson.description || lesson.detail || '내용 미설정'
+                    };
+                } else {
+                    return {
+                        date: `${index + 1}차시`,
+                        topic: '주제 미설정',
+                        content: '내용 미설정'
+                    };
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ 스케줄 추출 오류:', error);
+            return [];
         }
     },
 
@@ -185,70 +327,115 @@ const AdminManager = {
             const finalBudget = maxBudget > 0 ? Math.min(calculatedBudget, maxBudget) : calculatedBudget;
 
             // 화면에 표시
-            Utils.$('#detailField').textContent = field || '미설정';
-            Utils.$('#detailPerLessonAmount').textContent = Utils.formatPrice(perLessonAmount);
-            Utils.$('#detailLessonCount').textContent = `${totalLessons}회`;
-            Utils.$('#detailTotalBudget').textContent = Utils.formatPrice(finalBudget);
+            const detailField = Utils.$('#detailField');
+            const detailPerLessonAmount = Utils.$('#detailPerLessonAmount');
+            const detailLessonCount = Utils.$('#detailLessonCount');
+            const detailTotalBudget = Utils.$('#detailTotalBudget');
+
+            if (detailField) detailField.textContent = field || '미설정';
+            if (detailPerLessonAmount) detailPerLessonAmount.textContent = Utils.formatPrice(perLessonAmount);
+            if (detailLessonCount) detailLessonCount.textContent = `${totalLessons}회`;
+            if (detailTotalBudget) detailTotalBudget.textContent = Utils.formatPrice(finalBudget);
 
             // 상한선 적용 여부 표시
             const calculationNote = Utils.$('#viewLessonPlanModal .budget-calculation-note small');
-            if (maxBudget > 0 && calculatedBudget > maxBudget) {
-                calculationNote.innerHTML = `
-                    <i data-lucide="info"></i> 
-                    계산된 예산: ${Utils.formatPrice(calculatedBudget)} → 
-                    최대 상한 적용: ${Utils.formatPrice(finalBudget)}
-                `;
-            } else {
-                calculationNote.innerHTML = `
-                    <i data-lucide="info"></i> 
-                    총 예산 = ${Utils.formatPrice(perLessonAmount)} × ${totalLessons}회 = ${Utils.formatPrice(finalBudget)}
-                `;
+            if (calculationNote) {
+                if (maxBudget > 0 && calculatedBudget > maxBudget) {
+                    calculationNote.innerHTML = `
+                        <i data-lucide="info"></i> 
+                        계산된 예산: ${Utils.formatPrice(calculatedBudget)} → 
+                        최대 상한 적용: ${Utils.formatPrice(finalBudget)}
+                    `;
+                } else {
+                    calculationNote.innerHTML = `
+                        <i data-lucide="info"></i> 
+                        총 예산 = ${Utils.formatPrice(perLessonAmount)} × ${totalLessons}회 = ${Utils.formatPrice(finalBudget)}
+                    `;
+                }
             }
 
         } catch (error) {
-            console.error('Error displaying budget allocation info:', error);
+            console.error('❌ Error displaying budget allocation info:', error);
             // 오류 시 기본값 표시
-            Utils.$('#detailField').textContent = field || '미설정';
-            Utils.$('#detailPerLessonAmount').textContent = '0원';
-            Utils.$('#detailLessonCount').textContent = `${totalLessons}회`;
-            Utils.$('#detailTotalBudget').textContent = '계산 중...';
+            const detailField = Utils.$('#detailField');
+            const detailPerLessonAmount = Utils.$('#detailPerLessonAmount');
+            const detailLessonCount = Utils.$('#detailLessonCount');
+            const detailTotalBudget = Utils.$('#detailTotalBudget');
+
+            if (detailField) detailField.textContent = field || '미설정';
+            if (detailPerLessonAmount) detailPerLessonAmount.textContent = '0원';
+            if (detailLessonCount) detailLessonCount.textContent = `${totalLessons}회`;
+            if (detailTotalBudget) detailTotalBudget.textContent = '계산 중...';
         }
     },
 
-    // 수업 일정표 표시 (새로 추가)
+    // 수업 일정표 표시 (수정됨 - 에러 핸들링 개선)
     displayLessonSchedule(schedule) {
-        const container = Utils.$('#detailLessonSchedule');
+        console.log('📅 수업 일정표 표시:', schedule);
         
-        if (!schedule || schedule.length === 0) {
+        const container = Utils.$('#detailLessonSchedule');
+        if (!container) {
+            console.error('❌ 수업 일정표 컨테이너를 찾을 수 없습니다.');
+            return;
+        }
+        
+        // 스케줄이 없거나 빈 배열인 경우
+        if (!schedule || !Array.isArray(schedule) || schedule.length === 0) {
             container.innerHTML = '<div class="empty-schedule-message">등록된 수업 일정이 없습니다.</div>';
+            console.log('📝 빈 스케줄 메시지 표시');
             return;
         }
 
-        // 테이블 생성
-        const table = Utils.createElement('table', 'schedule-table');
-        table.innerHTML = `
-            <thead>
+        try {
+            // 테이블 생성
+            const table = Utils.createElement('table', 'schedule-table');
+            
+            // 테이블 헤더
+            const thead = Utils.createElement('thead');
+            thead.innerHTML = `
                 <tr>
                     <th>차시</th>
                     <th>날짜</th>
                     <th>주제</th>
                     <th>내용</th>
                 </tr>
-            </thead>
-            <tbody>
-                ${schedule.map((lesson, index) => `
-                    <tr>
-                        <td><strong>${index + 1}차시</strong></td>
-                        <td class="lesson-date">${lesson.date || '-'}</td>
-                        <td class="lesson-topic">${this.escapeHtml(lesson.topic || '-')}</td>
-                        <td class="lesson-content">${this.escapeHtml(lesson.content || '-')}</td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        `;
+            `;
+            table.appendChild(thead);
 
-        container.innerHTML = '';
-        container.appendChild(table);
+            // 테이블 본문
+            const tbody = Utils.createElement('tbody');
+            
+            schedule.forEach((lesson, index) => {
+                const row = Utils.createElement('tr');
+                
+                // 안전한 데이터 추출
+                const lessonNumber = index + 1;
+                const date = lesson.date || '-';
+                const topic = lesson.topic || '-';
+                const content = lesson.content || '-';
+
+                row.innerHTML = `
+                    <td><strong>${lessonNumber}차시</strong></td>
+                    <td class="lesson-date">${this.escapeHtml(date)}</td>
+                    <td class="lesson-topic">${this.escapeHtml(topic)}</td>
+                    <td class="lesson-content">${this.escapeHtml(content)}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+
+            table.appendChild(tbody);
+            
+            // 컨테이너에 테이블 추가
+            container.innerHTML = '';
+            container.appendChild(table);
+            
+            console.log(`✅ 수업 일정표 표시 완료: ${schedule.length}개 수업`);
+
+        } catch (error) {
+            console.error('❌ 수업 일정표 생성 오류:', error);
+            container.innerHTML = '<div class="empty-schedule-message">수업 일정을 표시하는 중 오류가 발생했습니다.</div>';
+        }
     },
 
     // 수업계획 모달 버튼 설정 (새로 추가)
@@ -788,12 +975,8 @@ const AdminManager = {
         }
         
         // 수업 데이터에서 총 수업 횟수 계산 (안전한 방식)
-        const lessons = plan.lessons || {};
-        const totalLessons = lessons.totalLessons || 0;
-        const startDate = lessons.startDate || '';
-        const endDate = lessons.endDate || '';
-        const overallGoals = lessons.overallGoals || '목표가 설정되지 않았습니다.';
-        const specialNotes = lessons.specialNotes || '';
+        const lessonData = this.parseLessonData(plan.lessons);
+        const { totalLessons, startDate, endDate, overallGoals, specialNotes } = lessonData;
         
         // 사용자 정보 (안전한 방식)
         const userProfile = plan.user_profiles || {};
@@ -921,23 +1104,28 @@ const AdminManager = {
         }
     },
 
-    // 수업계획 상세보기 (새로 추가)
+    // 수업계획 상세보기 (수정됨 - 데이터 찾기 개선)
     async viewLessonPlanDetail(studentId) {
         try {
+            console.log('👁️ 수업계획 상세보기 요청:', studentId);
+            
             // 현재 로드된 수업계획에서 해당 학생의 계획 찾기
             const allPlans = await this.safeLoadAllLessonPlans();
             const lessonPlan = allPlans.find(plan => plan.user_id === studentId);
             
             if (!lessonPlan) {
+                console.error('❌ 수업계획을 찾을 수 없음:', studentId);
                 Utils.showToast('수업계획을 찾을 수 없습니다.', 'error');
                 return;
             }
+            
+            console.log('📋 찾은 수업계획:', lessonPlan);
             
             // 세부 수업계획 모달 표시
             await this.showViewLessonPlanModal(studentId, lessonPlan);
             
         } catch (error) {
-            console.error('Error viewing lesson plan detail:', error);
+            console.error('❌ Error viewing lesson plan detail:', error);
             Utils.showToast('수업계획 상세보기 중 오류가 발생했습니다.', 'error');
         }
     },
