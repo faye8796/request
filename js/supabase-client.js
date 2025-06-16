@@ -764,7 +764,7 @@ const SupabaseAPI = {
     // 관리자 전용 함수들 - 새로 추가
     // ===================
 
-    // 모든 수업계획 조회 (관리자용)
+    // 모든 수업계획 조회 (관리자용) - 수정됨: approval_status 동적 계산
     async getAllLessonPlans() {
         const result = await this.safeApiCall('모든 수업계획 조회', async () => {
             const client = await this.ensureClient();
@@ -782,7 +782,29 @@ const SupabaseAPI = {
                 .order('created_at', { ascending: false });
         });
 
-        return result.success ? (result.data || []) : [];
+        if (result.success) {
+            // 각 수업계획에 approval_status 필드 추가 (실제 DB 구조에 맞게 계산)
+            const plansWithApprovalStatus = (result.data || []).map(plan => {
+                let approval_status = 'pending';
+                
+                if (plan.approved_at && plan.approved_by) {
+                    approval_status = 'approved';
+                } else if (plan.rejection_reason) {
+                    approval_status = 'rejected';
+                } else if (plan.status !== 'submitted') {
+                    approval_status = 'pending'; // draft 상태 등
+                }
+                
+                return {
+                    ...plan,
+                    approval_status
+                };
+            });
+            
+            return plansWithApprovalStatus;
+        }
+
+        return [];
     },
 
     // 대기 중인 수업계획 조회 (관리자용)
