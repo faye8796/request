@@ -891,32 +891,50 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 관리자 전용 함수들 - 수정됨: JOIN 문제 해결
+    // 관리자 전용 함수들 - 관계 문제 해결: 분리된 쿼리 방식
     // ===================
 
-    // 모든 수업계획 조회 (관리자용) - 수정됨: LEFT JOIN으로 변경하여 안정성 향상
+    // 모든 수업계획 조회 (관리자용) - 분리된 쿼리로 안전하게 처리
     async getAllLessonPlans() {
         const result = await this.safeApiCall('모든 수업계획 조회', async () => {
             const client = await this.ensureClient();
             
-            // inner join에서 left join으로 변경하여 사용자 프로필이 없어도 수업계획 표시
-            return await client
+            // 1. 수업계획 데이터만 먼저 조회
+            const lessonPlansResult = await client
                 .from('lesson_plans')
-                .select(`
-                    *,
-                    user_profiles(
-                        id,
-                        name,
-                        field,
-                        sejong_institute
-                    )
-                `)
+                .select('*')
                 .order('created_at', { ascending: false });
-        });
 
-        if (result.success) {
-            // 각 수업계획에 approval_status 필드 추가 (실제 DB 구조에 맞게 계산)
-            const plansWithApprovalStatus = (result.data || []).map(plan => {
+            if (lessonPlansResult.error) {
+                return { data: null, error: lessonPlansResult.error };
+            }
+
+            const lessonPlans = lessonPlansResult.data || [];
+            
+            if (lessonPlans.length === 0) {
+                return { data: [], error: null };
+            }
+
+            // 2. 사용자 ID 목록 추출
+            const userIds = [...new Set(lessonPlans.map(plan => plan.user_id).filter(id => id))];
+            
+            // 3. 사용자 프로필 데이터 별도 조회
+            let userProfiles = {};
+            if (userIds.length > 0) {
+                const profilesResult = await client
+                    .from('user_profiles')
+                    .select('id, name, field, sejong_institute')
+                    .in('id', userIds);
+
+                if (profilesResult.data) {
+                    profilesResult.data.forEach(profile => {
+                        userProfiles[profile.id] = profile;
+                    });
+                }
+            }
+
+            // 4. 데이터 병합 및 approval_status 계산
+            const enrichedPlans = lessonPlans.map(plan => {
                 let approval_status = 'pending';
                 
                 // 더 명확한 상태 판단 로직
@@ -930,70 +948,95 @@ const SupabaseAPI = {
                     approval_status = 'draft'; // draft 상태나 기타
                 }
                 
-                // 사용자 프로필이 없는 경우 기본값 설정
-                if (!plan.user_profiles) {
-                    plan.user_profiles = {
-                        id: plan.user_id,
-                        name: '사용자 정보 없음',
-                        field: '미설정',
-                        sejong_institute: '미설정'
-                    };
-                }
+                // 사용자 프로필 정보 추가
+                const userProfile = userProfiles[plan.user_id] || {
+                    id: plan.user_id,
+                    name: '사용자 정보 없음',
+                    field: '미설정',
+                    sejong_institute: '미설정'
+                };
                 
                 return {
                     ...plan,
-                    approval_status
+                    approval_status,
+                    user_profiles: userProfile
                 };
             });
             
-            console.log('📋 수업계획 조회 결과:', plansWithApprovalStatus.length, '건');
-            return plansWithApprovalStatus;
+            console.log('📋 수업계획 조회 결과:', enrichedPlans.length, '건');
+            return { data: enrichedPlans, error: null };
+        });
+
+        if (result.success) {
+            return result.data;
         }
 
         console.warn('⚠️ 수업계획 조회 실패:', result.message);
         return [];
     },
 
-    // 대기 중인 수업계획 조회 (관리자용) - LEFT JOIN으로 수정
+    // 대기 중인 수업계획 조회 (관리자용) - 분리된 쿼리로 처리
     async getPendingLessonPlans() {
         const result = await this.safeApiCall('대기 중인 수업계획 조회', async () => {
             const client = await this.ensureClient();
-            return await client
+            
+            // 1. 대기 중인 수업계획만 조회
+            const lessonPlansResult = await client
                 .from('lesson_plans')
-                .select(`
-                    *,
-                    user_profiles(
-                        id,
-                        name,
-                        field,
-                        sejong_institute
-                    )
-                `)
+                .select('*')
                 .eq('status', 'submitted')
                 .is('approved_at', null)
                 .is('rejection_reason', null)
                 .order('submitted_at', { ascending: true });
-        });
 
-        if (result.success) {
-            // 사용자 프로필이 없는 경우를 위한 처리
-            const plans = (result.data || []).map(plan => {
-                if (!plan.user_profiles) {
-                    plan.user_profiles = {
-                        id: plan.user_id,
-                        name: '사용자 정보 없음',
-                        field: '미설정',
-                        sejong_institute: '미설정'
-                    };
+            if (lessonPlansResult.error) {
+                return { data: null, error: lessonPlansResult.error };
+            }
+
+            const lessonPlans = lessonPlansResult.data || [];
+            
+            if (lessonPlans.length === 0) {
+                return { data: [], error: null };
+            }
+
+            // 2. 사용자 ID 목록 추출
+            const userIds = [...new Set(lessonPlans.map(plan => plan.user_id).filter(id => id))];
+            
+            // 3. 사용자 프로필 데이터 별도 조회
+            let userProfiles = {};
+            if (userIds.length > 0) {
+                const profilesResult = await client
+                    .from('user_profiles')
+                    .select('id, name, field, sejong_institute')
+                    .in('id', userIds);
+
+                if (profilesResult.data) {
+                    profilesResult.data.forEach(profile => {
+                        userProfiles[profile.id] = profile;
+                    });
                 }
-                return plan;
+            }
+
+            // 4. 데이터 병합
+            const enrichedPlans = lessonPlans.map(plan => {
+                const userProfile = userProfiles[plan.user_id] || {
+                    id: plan.user_id,
+                    name: '사용자 정보 없음',
+                    field: '미설정',
+                    sejong_institute: '미설정'
+                };
+                
+                return {
+                    ...plan,
+                    user_profiles: userProfile
+                };
             });
             
-            console.log('⏳ 대기 중인 수업계획:', plans.length, '건');
-            return plans;
-        }
+            console.log('⏳ 대기 중인 수업계획:', enrichedPlans.length, '건');
+            return { data: enrichedPlans, error: null };
+        });
 
-        return [];
+        return result.success ? result.data : [];
     },
 
     // 수업계획 승인
@@ -1272,50 +1315,86 @@ const SupabaseAPI = {
         };
     },
 
-    // 신청 내역 검색 - LEFT JOIN으로 수정
+    // 신청 내역 검색 - 분리된 쿼리로 처리
     async searchApplications(searchTerm = '') {
         const result = await this.safeApiCall('신청 내역 검색', async () => {
             const client = await this.ensureClient();
             
-            let query = client
-                .from('requests')
-                .select(`
-                    *,
-                    user_profiles(
-                        id,
-                        name,
-                        field,
-                        sejong_institute
-                    )
-                `)
-                .order('created_at', { ascending: false });
-            
+            // 1. 기본 requests 데이터 조회
+            let requestsResult;
             if (searchTerm && searchTerm.trim()) {
-                // 사용자 이름으로 필터링할 때 LEFT JOIN 고려
-                query = query.or(`user_profiles.name.ilike.%${searchTerm.trim()}%`);
-            }
-            
-            return query;
-        }, { searchTerm });
-
-        if (result.success) {
-            // 사용자 프로필이 없는 경우를 위한 처리
-            const applications = (result.data || []).map(app => {
-                if (!app.user_profiles) {
-                    app.user_profiles = {
-                        id: app.user_id,
-                        name: '사용자 정보 없음',
-                        field: '미설정',
-                        sejong_institute: '미설정'
-                    };
+                // 검색어가 있는 경우: 먼저 사용자를 찾고 그 사용자의 요청을 조회
+                const usersResult = await client
+                    .from('user_profiles')
+                    .select('id')
+                    .ilike('name', `%${searchTerm.trim()}%`);
+                
+                if (usersResult.data && usersResult.data.length > 0) {
+                    const userIds = usersResult.data.map(user => user.id);
+                    requestsResult = await client
+                        .from('requests')
+                        .select('*')
+                        .in('user_id', userIds)
+                        .order('created_at', { ascending: false });
+                } else {
+                    // 일치하는 사용자가 없으면 빈 결과 반환
+                    requestsResult = { data: [], error: null };
                 }
-                return app;
+            } else {
+                // 검색어가 없는 경우: 모든 요청 조회
+                requestsResult = await client
+                    .from('requests')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+            }
+
+            if (requestsResult.error) {
+                return { data: null, error: requestsResult.error };
+            }
+
+            const requests = requestsResult.data || [];
+            
+            if (requests.length === 0) {
+                return { data: [], error: null };
+            }
+
+            // 2. 사용자 ID 목록 추출
+            const userIds = [...new Set(requests.map(req => req.user_id).filter(id => id))];
+            
+            // 3. 사용자 프로필 데이터 별도 조회
+            let userProfiles = {};
+            if (userIds.length > 0) {
+                const profilesResult = await client
+                    .from('user_profiles')
+                    .select('id, name, field, sejong_institute')
+                    .in('id', userIds);
+
+                if (profilesResult.data) {
+                    profilesResult.data.forEach(profile => {
+                        userProfiles[profile.id] = profile;
+                    });
+                }
+            }
+
+            // 4. 데이터 병합
+            const enrichedRequests = requests.map(request => {
+                const userProfile = userProfiles[request.user_id] || {
+                    id: request.user_id,
+                    name: '사용자 정보 없음',
+                    field: '미설정',
+                    sejong_institute: '미설정'
+                };
+                
+                return {
+                    ...request,
+                    user_profiles: userProfile
+                };
             });
             
-            return applications;
-        }
+            return { data: enrichedRequests, error: null };
+        }, { searchTerm });
 
-        return [];
+        return result.success ? result.data : [];
     },
 
     // 아이템 상태 업데이트
@@ -1342,27 +1421,48 @@ const SupabaseAPI = {
         }, { requestId, status, reason });
     },
 
-    // 내보내기 데이터 준비 - LEFT JOIN으로 수정
+    // 내보내기 데이터 준비 - 분리된 쿼리로 처리
     async prepareExportData() {
         const result = await this.safeApiCall('내보내기 데이터 준비', async () => {
             const client = await this.ensureClient();
-            return await client
+            
+            // 1. 모든 requests 데이터 조회
+            const requestsResult = await client
                 .from('requests')
-                .select(`
-                    *,
-                    user_profiles(
-                        name,
-                        field,
-                        sejong_institute
-                    )
-                `)
+                .select('*')
                 .order('created_at', { ascending: false });
-        });
 
-        if (result.success) {
-            return (result.data || []).map(item => {
-                // 사용자 프로필이 없는 경우 기본값 사용
-                const userProfile = item.user_profiles || {
+            if (requestsResult.error) {
+                return { data: null, error: requestsResult.error };
+            }
+
+            const requests = requestsResult.data || [];
+            
+            if (requests.length === 0) {
+                return { data: [], error: null };
+            }
+
+            // 2. 사용자 ID 목록 추출
+            const userIds = [...new Set(requests.map(req => req.user_id).filter(id => id))];
+            
+            // 3. 사용자 프로필 데이터 별도 조회
+            let userProfiles = {};
+            if (userIds.length > 0) {
+                const profilesResult = await client
+                    .from('user_profiles')
+                    .select('id, name, field, sejong_institute')
+                    .in('id', userIds);
+
+                if (profilesResult.data) {
+                    profilesResult.data.forEach(profile => {
+                        userProfiles[profile.id] = profile;
+                    });
+                }
+            }
+
+            // 4. 내보내기 형태로 데이터 변환
+            const exportData = requests.map(item => {
+                const userProfile = userProfiles[item.user_id] || {
                     name: '사용자 정보 없음',
                     field: '미설정',
                     sejong_institute: '미설정'
@@ -1382,9 +1482,11 @@ const SupabaseAPI = {
                     '반려사유': item.rejection_reason || ''
                 };
             });
-        }
+            
+            return { data: exportData, error: null };
+        });
 
-        return [];
+        return result.success ? result.data : [];
     },
 
     // 시스템 설정 업데이트
@@ -1451,44 +1553,51 @@ const SupabaseAPI = {
         return settings.test_mode;
     },
 
-    // 영수증 조회 (요청 ID로) - LEFT JOIN으로 수정
+    // 영수증 조회 (요청 ID로) - 분리된 쿼리로 처리
     async getReceiptByRequestId(requestId) {
         const result = await this.safeApiCall('영수증 조회', async () => {
             const client = await this.ensureClient();
             
+            // 1. 영수증 데이터 조회
             const receiptResult = await client
                 .from('receipts')
-                .select(`
-                    *,
-                    requests(
-                        item_name,
-                        price
-                    ),
-                    user_profiles(
-                        name
-                    )
-                `)
+                .select('*')
                 .eq('request_id', requestId);
             
-            if (receiptResult.data && receiptResult.data.length > 0) {
-                const receipt = receiptResult.data[0];
-                
-                // 관련 정보가 없는 경우 기본값 사용
-                const requests = receipt.requests || { item_name: '정보 없음', price: 0 };
-                const userProfile = receipt.user_profiles || { name: '사용자 정보 없음' };
-                
-                return {
-                    data: {
-                        ...receipt,
-                        item_name: requests.item_name,
-                        student_name: userProfile.name,
-                        total_amount: requests.price
-                    },
-                    error: null
-                };
+            if (receiptResult.error || !receiptResult.data || receiptResult.data.length === 0) {
+                return { data: null, error: receiptResult.error || null };
             }
             
-            return { data: null, error: null };
+            const receipt = receiptResult.data[0];
+            
+            // 2. 관련 요청 정보 조회
+            const requestResult = await client
+                .from('requests')
+                .select('item_name, price')
+                .eq('id', requestId);
+            
+            // 3. 사용자 정보 조회
+            const userResult = await client
+                .from('user_profiles')
+                .select('name')
+                .eq('id', receipt.user_id);
+            
+            // 4. 데이터 병합
+            const requestInfo = requestResult.data && requestResult.data.length > 0 ? 
+                requestResult.data[0] : { item_name: '정보 없음', price: 0 };
+            
+            const userInfo = userResult.data && userResult.data.length > 0 ? 
+                userResult.data[0] : { name: '사용자 정보 없음' };
+            
+            return {
+                data: {
+                    ...receipt,
+                    item_name: requestInfo.item_name,
+                    student_name: userInfo.name,
+                    total_amount: requestInfo.price
+                },
+                error: null
+            };
         }, { requestId });
 
         return result.success ? result.data : null;
@@ -1606,4 +1715,4 @@ window.addEventListener('supabaseInitError', (event) => {
 });
 
 // 초기화 완료 로그
-console.log('🚀 SupabaseAPI loaded successfully with enhanced lesson plan data handling');
+console.log('🚀 SupabaseAPI loaded successfully with separated query approach for relationship handling');
