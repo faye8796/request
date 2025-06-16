@@ -105,10 +105,10 @@ const StudentManager = {
         }
     },
 
-    // 수업계획 버튼 클릭 처리 - 개선된 버전
+    // 수업계획 버튼 클릭 처리 - 개선된 버전 (대시보드에서 접근)
     async handleLessonPlanClick() {
         try {
-            console.log('📋 수업계획 버튼 클릭 처리');
+            console.log('📋 수업계획 버튼 클릭 처리 (대시보드에서 접근)');
             
             const currentUser = AuthManager?.getCurrentUser();
             if (!currentUser) {
@@ -133,12 +133,13 @@ const StudentManager = {
                 return;
             }
 
-            // LessonPlanManager 초기화 및 기존 데이터 로드
+            // LessonPlanManager 초기화 및 기존 데이터 로드 - 대시보드에서 접근했음을 알림
             if (typeof LessonPlanManager !== 'undefined') {
                 setTimeout(async () => {
                     try {
                         if (LessonPlanManager.showLessonPlanPage) {
-                            await LessonPlanManager.showLessonPlanPage();
+                            // fromDashboard=true로 설정하여 닫기 버튼 표시
+                            await LessonPlanManager.showLessonPlanPage(true);
                         }
                         
                         // 기존 데이터가 있고 편집 가능한 상태라면 로드
