@@ -1,10 +1,15 @@
-// 인증 관리 모듈 (Supabase 연동) - 페이지 새로고침 시 로그인 상태 유지 추가
+// 인증 관리 모듈 (Supabase 연동) - 개선된 알림 시스템 적용
 const AuthManager = {
     // 초기화
-    init() {
-        this.setupEventListeners();
-        this.initializeTabs();
-        this.checkExistingSession();
+    async init() {
+        try {
+            this.setupEventListeners();
+            this.initializeTabs();
+            await this.checkExistingSession();
+        } catch (error) {
+            console.error('AuthManager 초기화 오류:', error);
+            this.showAlert('인증 시스템 초기화 중 문제가 발생했습니다. 페이지를 새로고침해주세요.', 'error');
+        }
     },
 
     // 기존 세션 확인 - 페이지 새로고침 시 로그인 상태 복원
@@ -32,7 +37,13 @@ const AuthManager = {
             // SupabaseAPI가 로드될 때까지 대기
             if (!window.SupabaseAPI) {
                 console.log('⏳ SupabaseAPI 로드 대기 중...');
-                await this.waitForSupabaseAPI();
+                try {
+                    await this.waitForSupabaseAPI();
+                } catch (error) {
+                    console.error('SupabaseAPI 로드 실패:', error);
+                    this.showAlert('서비스 초기화에 실패했습니다. 페이지를 새로고침해주세요.', 'error');
+                    return false;
+                }
             }
 
             // 데이터베이스에서 사용자 정보 재검증
@@ -40,6 +51,7 @@ const AuthManager = {
             if (!isValid) {
                 console.log('❌ 저장된 사용자 정보가 유효하지 않습니다.');
                 this.clearStoredSession();
+                this.showAlert('세션이 만료되었습니다. 다시 로그인해주세요.', 'warning');
                 return false;
             }
 
@@ -50,11 +62,21 @@ const AuthManager = {
             await this.redirectToUserPage(sessionData.userType, sessionData.user);
 
             console.log('✅ 세션 복원 완료');
+            this.showAlert(`환영합니다, ${sessionData.user.name}님! 자동 로그인되었습니다.`, 'success');
             return true;
 
         } catch (error) {
             console.error('❌ 세션 확인 중 오류:', error);
             this.clearStoredSession();
+            
+            // 사용자에게 구체적인 오류 메시지 제공
+            if (error.message && error.message.includes('네트워크')) {
+                this.showAlert('네트워크 연결을 확인하고 다시 시도해주세요.', 'error');
+            } else if (error.message && error.message.includes('서버')) {
+                this.showAlert('서버 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.', 'error');
+            } else {
+                this.showAlert('자동 로그인에 실패했습니다. 수동으로 로그인해주세요.', 'warning');
+            }
             return false;
         }
     },
@@ -105,7 +127,7 @@ const AuthManager = {
                     resolve(true);
                 } else if (Date.now() - startTime > maxWaitTime) {
                     clearInterval(checkAPI);
-                    reject(new Error('SupabaseAPI 로드 타임아웃'));
+                    reject(new Error('서비스 초기화 시간이 초과되었습니다.'));
                 }
             }, 100);
         });
@@ -171,6 +193,7 @@ const AuthManager = {
             if (typeof App !== 'undefined' && App.showPage) {
                 App.showPage('loginPage');
             }
+            this.showAlert('페이지 이동 중 문제가 발생했습니다. 다시 로그인해주세요.', 'error');
         }
     },
 
@@ -303,7 +326,7 @@ const AuthManager = {
         }
     },
 
-    // 학생 로그인 처리 (Supabase 연동) - 안전성 강화
+    // 학생 로그인 처리 (Supabase 연동) - 개선된 오류 메시지
     async handleStudentLogin() {
         try {
             const nameInput = document.getElementById('studentName');
@@ -311,7 +334,7 @@ const AuthManager = {
             
             if (!nameInput || !birthInput) {
                 console.error('로그인 입력 필드를 찾을 수 없습니다');
-                this.showAlert('로그인 폼에 문제가 있습니다. 페이지를 새로고침해주세요.');
+                this.showAlert('로그인 폼에 문제가 있습니다. 페이지를 새로고침해주세요.', 'error');
                 return;
             }
 
@@ -333,7 +356,14 @@ const AuthManager = {
             } catch (error) {
                 console.error('Student authentication API error:', error);
                 this.hideLoading(loginBtn);
-                this.showAlert('서버와의 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.');
+                
+                if (error.message && error.message.includes('네트워크')) {
+                    this.showAlert('네트워크 연결을 확인하고 다시 시도해주세요.', 'error');
+                } else if (error.message && error.message.includes('서버')) {
+                    this.showAlert('서버 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.', 'error');
+                } else {
+                    this.showAlert('로그인 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.', 'error');
+                }
                 return;
             }
             
@@ -341,24 +371,32 @@ const AuthManager = {
                 this.loginSuccess('student', result.data);
             } else {
                 this.hideLoading(loginBtn);
-                this.showAlert(result.message || '학생 정보를 찾을 수 없습니다.\\n이름과 생년월일을 다시 확인해주세요.');
+                
+                // 더 구체적인 오류 메시지 제공
+                if (result.message && result.message.includes('찾을 수 없습니다')) {
+                    this.showAlert('입력하신 정보와 일치하는 학생을 찾을 수 없습니다.\n이름과 생년월일을 다시 확인해주세요.', 'warning');
+                } else if (result.message && result.message.includes('권한')) {
+                    this.showAlert('접근 권한이 없습니다. 관리자에게 문의해주세요.', 'error');
+                } else {
+                    this.showAlert(result.message || '로그인에 실패했습니다. 입력 정보를 확인하고 다시 시도해주세요.', 'warning');
+                }
             }
         } catch (error) {
             console.error('Student login error:', error);
             const loginBtn = document.getElementById('studentLoginBtn');
             this.hideLoading(loginBtn);
-            this.showAlert('로그인 중 오류가 발생했습니다. 페이지를 새로고침 후 다시 시도해주세요.');
+            this.showAlert('로그인 처리 중 예상치 못한 오류가 발생했습니다. 페이지를 새로고침 후 다시 시도해주세요.', 'error');
         }
     },
 
-    // 관리자 로그인 처리 (Supabase 연동) - 안전성 강화
+    // 관리자 로그인 처리 (Supabase 연동) - 개선된 오류 메시지
     async handleAdminLogin() {
         try {
             const codeInput = document.getElementById('adminCode');
             
             if (!codeInput) {
                 console.error('관리자 코드 입력 필드를 찾을 수 없습니다');
-                this.showAlert('로그인 폼에 문제가 있습니다. 페이지를 새로고침해주세요.');
+                this.showAlert('로그인 폼에 문제가 있습니다. 페이지를 새로고침해주세요.', 'error');
                 return;
             }
 
@@ -378,7 +416,14 @@ const AuthManager = {
             } catch (error) {
                 console.error('Admin authentication API error:', error);
                 this.hideLoading(loginBtn);
-                this.showAlert('서버와의 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.');
+                
+                if (error.message && error.message.includes('네트워크')) {
+                    this.showAlert('네트워크 연결을 확인하고 다시 시도해주세요.', 'error');
+                } else if (error.message && error.message.includes('서버')) {
+                    this.showAlert('서버 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.', 'error');
+                } else {
+                    this.showAlert('관리자 인증 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.', 'error');
+                }
                 return;
             }
             
@@ -386,27 +431,38 @@ const AuthManager = {
                 this.loginSuccess('admin', result.data);
             } else {
                 this.hideLoading(loginBtn);
-                this.showAlert(result.message || '관리자 코드가 올바르지 않습니다.');
+                
+                // 더 구체적인 오류 메시지 제공
+                if (result.message && result.message.includes('올바르지 않습니다')) {
+                    this.showAlert('관리자 코드가 일치하지 않습니다. 다시 확인해주세요.', 'warning');
+                } else if (result.message && result.message.includes('권한')) {
+                    this.showAlert('관리자 접근 권한이 없습니다.', 'error');
+                } else {
+                    this.showAlert(result.message || '관리자 인증에 실패했습니다. 코드를 확인하고 다시 시도해주세요.', 'warning');
+                }
             }
         } catch (error) {
             console.error('Admin login error:', error);
             const loginBtn = document.getElementById('adminLoginBtn');
             this.hideLoading(loginBtn);
-            this.showAlert('로그인 중 오류가 발생했습니다. 페이지를 새로고침 후 다시 시도해주세요.');
+            this.showAlert('관리자 로그인 처리 중 예상치 못한 오류가 발생했습니다. 페이지를 새로고침 후 다시 시도해주세요.', 'error');
         }
     },
 
-    // 로그인 성공 처리 - 안전성 강화
+    // 로그인 성공 처리 - 개선된 세션 저장
     async loginSuccess(userType, user) {
         try {
             console.log('Login success:', { userType, user });
+            
+            // 세션 저장 - 향상된 방식
+            this.saveSession(userType, user);
             
             // 입력 필드 초기화
             this.clearLoginForms();
 
             // 성공 메시지 표시
             const userName = user.name || '사용자';
-            this.showAlert(`환영합니다, ${userName}님!`);
+            this.showAlert(`환영합니다, ${userName}님!`, 'success');
 
             // 해당 페이지로 이동
             if (userType === 'student') {
@@ -417,7 +473,24 @@ const AuthManager = {
             }
         } catch (error) {
             console.error('로그인 성공 처리 오류:', error);
-            this.showAlert('로그인 후 페이지 이동 중 문제가 발생했습니다. 다시 시도해주세요.');
+            this.showAlert('로그인 후 페이지 이동 중 문제가 발생했습니다. 새로고침 후 다시 시도해주세요.', 'error');
+        }
+    },
+
+    // 세션 저장 - 새로 추가
+    saveSession(userType, user) {
+        try {
+            const sessionData = {
+                user: user,
+                userType: userType,
+                loginTime: new Date().toISOString()
+            };
+            
+            sessionStorage.setItem('userSession', JSON.stringify(sessionData));
+            console.log('✅ 세션 저장 완료');
+        } catch (error) {
+            console.warn('⚠️ 세션 저장 실패:', error);
+            // 세션 저장 실패는 치명적이지 않으므로 조용히 처리
         }
     },
 
@@ -432,15 +505,15 @@ const AuthManager = {
                 }
             } else {
                 console.error('App.showPage 함수를 찾을 수 없습니다');
-                this.showAlert('관리자 페이지로 이동할 수 없습니다. 페이지를 새로고침해주세요.');
+                this.showAlert('관리자 페이지로 이동할 수 없습니다. 페이지를 새로고침해주세요.', 'error');
             }
         } catch (error) {
             console.error('관리자 페이지 리다이렉션 오류:', error);
-            this.showAlert('관리자 페이지로 이동하는 중 오류가 발생했습니다.');
+            this.showAlert('관리자 페이지로 이동하는 중 오류가 발생했습니다.', 'error');
         }
     },
 
-    // 안전한 학생 리다이렉션 처리 (오류 메시지 중복 방지) - 개선된 버전
+    // 안전한 학생 리다이렉션 처리 (조용한 처리) - 개선된 버전
     async safeRedirectStudent(studentId) {
         try {
             // 추가 알림 제거 - 환영 메시지만 표시
@@ -505,11 +578,11 @@ const AuthManager = {
                 }
             } else {
                 console.error('App.showPage 함수를 찾을 수 없습니다');
-                this.showAlert('수업계획 페이지로 이동할 수 없습니다. 페이지를 새로고침해주세요.');
+                this.showAlert('수업계획 페이지로 이동할 수 없습니다. 페이지를 새로고침해주세요.', 'error');
             }
         } catch (error) {
             console.error('수업계획 페이지 리다이렉션 오류:', error);
-            this.showAlert('수업계획 페이지로 이동하는 중 오류가 발생했습니다.');
+            this.showAlert('수업계획 페이지로 이동하는 중 오류가 발생했습니다.', 'error');
         }
     },
 
@@ -526,11 +599,11 @@ const AuthManager = {
                 }
             } else {
                 console.error('App.showPage 함수를 찾을 수 없습니다');
-                this.showAlert('학생 대시보드로 이동할 수 없습니다. 페이지를 새로고침해주세요.');
+                this.showAlert('학생 대시보드로 이동할 수 없습니다. 페이지를 새로고침해주세요.', 'error');
             }
         } catch (error) {
             console.error('학생 대시보드 리다이렉션 오류:', error);
-            this.showAlert('학생 대시보드로 이동하는 중 오류가 발생했습니다.');
+            this.showAlert('학생 대시보드로 이동하는 중 오류가 발생했습니다.', 'error');
         }
     },
 
@@ -674,10 +747,11 @@ const AuthManager = {
                 }, 100);
 
                 console.log('✅ 로그아웃 완료 - 세션 정리됨');
+                this.showAlert('로그아웃되었습니다.', 'info');
             }
         } catch (error) {
             console.error('로그아웃 처리 오류:', error);
-            this.showAlert('로그아웃 중 오류가 발생했습니다.');
+            this.showAlert('로그아웃 중 오류가 발생했습니다.', 'error');
         }
     },
 
@@ -855,20 +929,43 @@ const AuthManager = {
         return this.getUserType() === 'admin';
     },
 
-    // 유틸리티 함수들 - 안전성 강화
+    // 세션 복원 (외부 호출용)
+    restoreSession() {
+        try {
+            const sessionData = this.getStoredSession();
+            if (sessionData && this.isSessionValid(sessionData)) {
+                this.restoreAuthenticationState(sessionData);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('세션 복원 오류:', error);
+            return false;
+        }
+    },
+
+    // 유틸리티 함수들 - 개선된 알림 시스템 사용
     validateRequired(value, fieldName) {
         if (!value || value.trim() === '') {
-            this.showAlert(`${fieldName}을(를) 입력해주세요.`);
+            this.showAlert(`${fieldName}을(를) 입력해주세요.`, 'warning');
             return false;
         }
         return true;
     },
 
-    showAlert(message) {
+    showAlert(message, type = 'info') {
         try {
-            alert(message);
+            // Utils의 개선된 알림 시스템 사용
+            if (window.Utils && window.Utils.showAlert) {
+                window.Utils.showAlert(message, type);
+            } else {
+                // 폴백으로 기본 alert 사용
+                alert(message);
+            }
         } catch (error) {
             console.error('알림 표시 오류:', error);
+            // 최후의 수단으로 콘솔에 메시지 출력
+            console.log('Alert:', message);
         }
     },
 
@@ -921,4 +1018,4 @@ const AuthManager = {
 // 전역 접근을 위한 window 객체에 추가
 window.AuthManager = AuthManager;
 
-console.log('🔐 AuthManager loaded successfully with persistent login support');
+console.log('🔐 AuthManager loaded successfully with enhanced error handling');
