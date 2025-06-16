@@ -11,8 +11,10 @@
     <link rel="stylesheet" href="css/student.css">
     <link rel="stylesheet" href="css/admin.css">
     <link rel="stylesheet" href="css/lesson-plan.css">
-    <!-- ⭐ 모달 중앙 정렬 CSS를 마지막에 로드 (우선순위 최상위) -->
+    <!-- ⭐ 모달 중앙 정렬 CSS (우선순위 최상위) -->
     <link rel="stylesheet" href="css/modal-fix.css">
+    <!-- ⭐ 사용자 경험 개선 CSS -->
+    <link rel="stylesheet" href="css/ux-enhancement.css">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -343,7 +345,7 @@
                     <input type="number" id="itemPrice" required placeholder="가격을 입력하세요">
                 </div>
                 <div class="form-group" id="itemLinkGroup">
-                    <label id="itemLinkLabel">구매 링크 *</label>
+                    <label id="itemLinkLabel">구매 링크 <span class="required-text">*</span></label>
                     <input type="url" id="itemLink" placeholder="관리자가 구매할 수 있는 정확한 링크를 입력하세요 (필수)">
                 </div>
                 <div class="modal-actions">
@@ -750,7 +752,7 @@
     <!-- API 호출 오류 수정 (SupabaseAPI 및 StudentManager 패치) -->
     <script src="js/api-fix.js"></script>
     
-    <!-- ⭐ 5단계: 아이콘 초기화 (모든 패치 완료 후) -->
+    <!-- ⭐ 5단계: 아이콘 초기화 및 최종 시스템 점검 -->
     <script>
         // 페이지 로드 완료 후 Lucide 아이콘 초기화
         document.addEventListener('DOMContentLoaded', function() {
@@ -794,17 +796,60 @@
                 }
                 
                 // 패치 적용 상태 확인
-                if (window.SupabaseAPI && window.SupabaseAPI.createApplication) {
-                    console.log('✅ API 수정 패치 적용됨');
-                }
+                const patchStatus = {
+                    'API 수정': window.SupabaseAPI && window.SupabaseAPI.createApplication,
+                    '링크 필수': window.StudentManager && window.StudentManager.getApplicationFormData,
+                    '모달 중앙': document.querySelector('#modal-fix\\.css, link[href*="modal-fix"]'),
+                    'UX 개선': document.querySelector('link[href*="ux-enhancement"]')
+                };
                 
-                if (window.StudentManager && window.StudentManager.getApplicationFormData) {
-                    console.log('✅ 온라인 구매 링크 필수 패치 적용됨');
-                }
+                Object.entries(patchStatus).forEach(([patch, applied]) => {
+                    if (applied) {
+                        console.log(`✅ ${patch} 패치 적용됨`);
+                    } else {
+                        console.warn(`⚠️ ${patch} 패치 미적용`);
+                    }
+                });
             };
             
             // 1초 후 시스템 상태 체크 (모든 초기화 완료 대기)
             setTimeout(checkSystemStatus, 1000);
+        });
+        
+        // 개발자용 디버그 툴 (Ctrl + Shift + D)
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyD') {
+                const debug = document.querySelector('.system-debug') || (() => {
+                    const div = document.createElement('div');
+                    div.className = 'system-debug';
+                    document.body.appendChild(div);
+                    return div;
+                })();
+                
+                debug.classList.toggle('show');
+                
+                if (debug.classList.contains('show')) {
+                    const updateDebugInfo = () => {
+                        debug.innerHTML = `
+                            <strong>시스템 상태</strong><br>
+                            API: ${typeof window.SupabaseAPI !== 'undefined' ? '✅' : '❌'}<br>
+                            Student: ${typeof window.StudentManager !== 'undefined' ? '✅' : '❌'}<br>
+                            Patches: ${window.SupabaseAPI?.createApplication ? '✅' : '❌'}<br>
+                            Network: ${navigator.onLine ? '🌐' : '🚫'}<br>
+                            Time: ${new Date().toLocaleTimeString()}
+                        `;
+                    };
+                    
+                    updateDebugInfo();
+                    const interval = setInterval(() => {
+                        if (debug.classList.contains('show')) {
+                            updateDebugInfo();
+                        } else {
+                            clearInterval(interval);
+                        }
+                    }, 1000);
+                }
+            }
         });
     </script>
 </body>
