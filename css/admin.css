@@ -782,6 +782,145 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+/* 분야별 예산 현황 보기 버튼 스타일 */
+.field-status-btn {
+    background: linear-gradient(135deg, #6366f1 0%, #5856eb 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    text-align: center;
+    white-space: nowrap;
+    min-height: 28px;
+}
+
+.field-status-btn:hover {
+    background: linear-gradient(135deg, #5856eb 0%, #4f46e5 100%);
+    box-shadow: 0 3px 8px rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+}
+
+.field-status-btn svg {
+    width: 0.75rem;
+    height: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* Budget Status Modal Styles */
+.budget-status-modal .modal-content {
+    max-width: 1000px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.budget-statistics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.budget-statistics .stat-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.budget-statistics .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: #cbd5e1;
+}
+
+.budget-statistics .stat-card h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.budget-statistics .stat-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1;
+}
+
+.student-budget-list {
+    background: white;
+    border-radius: 0.75rem;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+}
+
+.student-budget-list h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 1rem;
+    padding: 1.5rem 1.5rem 0;
+}
+
+.budget-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.budget-table th,
+.budget-table td {
+    padding: 0.875rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.875rem;
+}
+
+.budget-table th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.budget-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.budget-table tbody tr:nth-child(even) {
+    background: #fafbfc;
+}
+
+.budget-table tbody tr:nth-child(even):hover {
+    background: #f3f4f6;
+}
+
+.budget-table .over-budget {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.budget-table .usage-rate {
+    font-weight: 500;
+    color: #059669;
+}
+
 /* Lesson Plan Management Modal Styles */
 .lesson-plan-management-container {
     max-height: 70vh;
@@ -1484,6 +1623,58 @@
         padding: 0.375rem;
     }
 
+    /* Budget Status Modal Mobile */
+    .budget-status-modal .modal-content {
+        max-width: 95%;
+        max-height: 90vh;
+        padding: 1rem;
+    }
+
+    .budget-statistics {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .budget-statistics .stat-card {
+        padding: 1rem;
+    }
+
+    .budget-statistics .stat-card h4 {
+        font-size: 0.8rem;
+        margin-bottom: 0.375rem;
+    }
+
+    .budget-statistics .stat-value {
+        font-size: 1.5rem;
+    }
+
+    .budget-table {
+        font-size: 0.8rem;
+    }
+
+    .budget-table th,
+    .budget-table td {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .budget-table th {
+        font-size: 0.75rem;
+    }
+
+    /* Field Status Button Mobile */
+    .field-status-btn {
+        padding: 0.25rem 0.375rem;
+        font-size: 0.7rem;
+        min-height: 24px;
+        margin-left: 4px;
+    }
+
+    .field-status-btn svg {
+        width: 0.7rem;
+        height: 0.7rem;
+    }
+
     /* Lesson Plan Management Mobile */
     .management-header {
         flex-direction: column;
@@ -1659,6 +1850,61 @@
         margin-top: -2rem;
     }
 
+    /* Budget Status Modal Mobile */
+    .budget-status-modal .modal-content {
+        padding: 0.75rem;
+    }
+
+    .budget-statistics {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .budget-statistics .stat-card {
+        padding: 0.75rem;
+    }
+
+    .budget-statistics .stat-card h4 {
+        font-size: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .budget-statistics .stat-value {
+        font-size: 1.25rem;
+    }
+
+    .student-budget-list h4 {
+        font-size: 1rem;
+        padding: 1rem 1rem 0;
+    }
+
+    .budget-table {
+        font-size: 0.75rem;
+    }
+
+    .budget-table th,
+    .budget-table td {
+        padding: 0.375rem 0.5rem;
+    }
+
+    .budget-table th {
+        font-size: 0.7rem;
+    }
+
+    /* Field Status Button Mobile */
+    .field-status-btn {
+        padding: 0.2rem 0.3rem;
+        font-size: 0.65rem;
+        min-height: 20px;
+        margin-left: 2px;
+    }
+
+    .field-status-btn svg {
+        width: 0.65rem;
+        height: 0.65rem;
+    }
+
     /* Budget Settings Mobile */
     .budget-settings-info {
         padding: 0.75rem;
@@ -1757,6 +2003,18 @@
     .budget-overview-section {
         border-width: 2px;
     }
+
+    .budget-status-modal .modal-content {
+        border-width: 2px;
+    }
+
+    .budget-table {
+        border-width: 2px;
+    }
+
+    .field-status-btn {
+        border: 2px solid #4f46e5;
+    }
 }
 
 /* Reduced Motion */
@@ -1768,7 +2026,9 @@
     .lesson-plan-card,
     .budget-summary-item,
     .toggle-shipping-btn,
-    .shipping-header {
+    .shipping-header,
+    .field-status-btn,
+    .budget-statistics .stat-card {
         transition: none;
     }
     
@@ -1776,7 +2036,9 @@
     .btn:hover,
     .view-receipt-btn:hover,
     .lesson-plan-card:hover,
-    .budget-summary-item:hover {
+    .budget-summary-item:hover,
+    .field-status-btn:hover,
+    .budget-statistics .stat-card:hover {
         transform: none;
     }
 }
