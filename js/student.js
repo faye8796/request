@@ -1,4 +1,4 @@
-// 학생 기능 관리 모듈 (Supabase 연동) - 문제 해결 버전
+// 학생 기능 관리 모듈 (Supabase 연동) - 교구 신청 기능 활성화 버전
 const StudentManager = {
     currentEditingItem: null,
     currentReceiptItem: null,
@@ -1213,35 +1213,176 @@ const StudentManager = {
         return div.innerHTML;
     },
 
-    // 모달 관련 기능들 - 실제 구현
+    // === 모달 관련 기능들 - 실제 구현 ===
 
-    showApplicationModal() {
+    // 일반 교구 신청 모달 표시 - 실제 구현
+    async showApplicationModal() {
         try {
-            console.log('신청 모달 표시');
-            alert('교구 신청 기능이 준비 중입니다.');
+            console.log('🛒 일반 교구 신청 모달 표시');
+            
+            const currentUser = AuthManager?.getCurrentUser();
+            if (!currentUser) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            // 수업계획 승인 상태 확인
+            let lessonPlan = null;
+            try {
+                lessonPlan = await SupabaseAPI.getStudentLessonPlan(currentUser.id);
+            } catch (error) {
+                console.error('수업계획 상태 확인 오류:', error);
+                alert('수업계획 상태를 확인할 수 없습니다. 새로고침 후 다시 시도해주세요.');
+                return;
+            }
+
+            if (!lessonPlan || lessonPlan.status !== 'approved') {
+                alert('수업계획이 승인된 후에 교구 신청이 가능합니다.');
+                return;
+            }
+
+            // 예산 상태 확인
+            let budgetStatus = null;
+            try {
+                budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+            } catch (error) {
+                console.error('예산 상태 확인 오류:', error);
+                alert('예산 정보를 확인할 수 없습니다. 새로고침 후 다시 시도해주세요.');
+                return;
+            }
+
+            if (!budgetStatus || budgetStatus.allocated === 0) {
+                alert('예산이 아직 배정되지 않았습니다. 관리자에게 문의하세요.');
+                return;
+            }
+
+            if (budgetStatus.remaining <= 0) {
+                alert('사용 가능한 예산이 없습니다.');
+                return;
+            }
+
+            // 기존 폼 데이터 초기화
+            this.resetApplicationForm();
+
+            // 모달 표시
+            const modal = document.getElementById('applicationModal');
+            if (modal) {
+                modal.style.display = 'block';
+                
+                // 제목 설정
+                const title = document.getElementById('applicationModalTitle');
+                if (title) {
+                    title.textContent = '새 교구 신청';
+                }
+
+                // 편집 모드 플래그 초기화
+                this.currentEditingItem = null;
+                
+                console.log('✅ 일반 교구 신청 모달 표시 완료');
+            }
+
         } catch (error) {
-            console.error('신청 모달 표시 오류:', error);
+            console.error('❌ 일반 교구 신청 모달 표시 오류:', error);
+            alert('교구 신청 모달을 여는 중 오류가 발생했습니다.');
         }
     },
 
+    // 일반 교구 신청 모달 숨김
     hideApplicationModal() {
-        console.log('신청 모달 숨김');
-    },
-
-    showBundleModal() {
         try {
-            console.log('묶음 신청 모달 표시');
-            alert('묶음 신청 기능이 준비 중입니다.');
+            console.log('일반 교구 신청 모달 숨김');
+            const modal = document.getElementById('applicationModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            
+            // 폼 초기화
+            this.resetApplicationForm();
+            this.currentEditingItem = null;
         } catch (error) {
-            console.error('묶음 신청 모달 표시 오류:', error);
+            console.error('일반 교구 신청 모달 숨김 오류:', error);
         }
     },
 
-    hideBundleModal() {
-        console.log('묶음 신청 모달 숨김');
+    // 묶음 신청 모달 표시 - 실제 구현
+    async showBundleModal() {
+        try {
+            console.log('📦 묶음 신청 모달 표시');
+            
+            const currentUser = AuthManager?.getCurrentUser();
+            if (!currentUser) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            // 수업계획 승인 상태 확인
+            let lessonPlan = null;
+            try {
+                lessonPlan = await SupabaseAPI.getStudentLessonPlan(currentUser.id);
+            } catch (error) {
+                console.error('수업계획 상태 확인 오류:', error);
+                alert('수업계획 상태를 확인할 수 없습니다. 새로고침 후 다시 시도해주세요.');
+                return;
+            }
+
+            if (!lessonPlan || lessonPlan.status !== 'approved') {
+                alert('수업계획이 승인된 후에 교구 신청이 가능합니다.');
+                return;
+            }
+
+            // 예산 상태 확인
+            let budgetStatus = null;
+            try {
+                budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+            } catch (error) {
+                console.error('예산 상태 확인 오류:', error);
+                alert('예산 정보를 확인할 수 없습니다. 새로고침 후 다시 시도해주세요.');
+                return;
+            }
+
+            if (!budgetStatus || budgetStatus.allocated === 0) {
+                alert('예산이 아직 배정되지 않았습니다. 관리자에게 문의하세요.');
+                return;
+            }
+
+            if (budgetStatus.remaining <= 0) {
+                alert('사용 가능한 예산이 없습니다.');
+                return;
+            }
+
+            // 기존 폼 데이터 초기화
+            this.resetBundleForm();
+
+            // 모달 표시
+            const modal = document.getElementById('bundleModal');
+            if (modal) {
+                modal.style.display = 'block';
+                console.log('✅ 묶음 신청 모달 표시 완료');
+            }
+
+        } catch (error) {
+            console.error('❌ 묶음 신청 모달 표시 오류:', error);
+            alert('묶음 신청 모달을 여는 중 오류가 발생했습니다.');
+        }
     },
 
-    // 배송지 설정 모달 표시 - 실제 구현
+    // 묶음 신청 모달 숨김
+    hideBundleModal() {
+        try {
+            console.log('묶음 신청 모달 숨김');
+            const modal = document.getElementById('bundleModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            
+            // 폼 초기화
+            this.resetBundleForm();
+        } catch (error) {
+            console.error('묶음 신청 모달 숨김 오류:', error);
+        }
+    },
+
+    // 배송지 설정 모달 표시 - 실제 구현 (기존과 동일)
     async showShippingModal() {
         try {
             console.log('배송지 설정 모달 표시');
@@ -1266,7 +1407,7 @@ const StudentManager = {
         }
     },
 
-    // 배송지 설정 모달 숨김 - 실제 구현
+    // 배송지 설정 모달 숨김 - 실제 구현 (기존과 동일)
     hideShippingModal() {
         try {
             console.log('배송지 설정 모달 숨김');
@@ -1285,7 +1426,274 @@ const StudentManager = {
         }
     },
 
-    // 배송지 정보 로드
+    // 폼 초기화 함수들
+    resetApplicationForm() {
+        try {
+            const form = document.getElementById('applicationForm');
+            if (form) {
+                form.reset();
+                
+                // 구매 방식을 온라인으로 기본 설정
+                const onlineRadio = form.querySelector('input[name="purchaseMethod"][value="online"]');
+                if (onlineRadio) {
+                    onlineRadio.checked = true;
+                    this.handlePurchaseMethodChange('online');
+                }
+            }
+        } catch (error) {
+            console.error('일반 신청 폼 초기화 오류:', error);
+        }
+    },
+
+    resetBundleForm() {
+        try {
+            const form = document.getElementById('bundleForm');
+            if (form) {
+                form.reset();
+            }
+        } catch (error) {
+            console.error('묶음 신청 폼 초기화 오류:', error);
+        }
+    },
+
+    // 구매 방식 변경 처리
+    handlePurchaseMethodChange(method) {
+        try {
+            const linkGroup = document.getElementById('itemLinkGroup');
+            const linkLabel = document.getElementById('itemLinkLabel');
+            const linkInput = document.getElementById('itemLink');
+            
+            if (method === 'offline') {
+                if (linkLabel) linkLabel.textContent = '참고 링크 (선택)';
+                if (linkInput) linkInput.placeholder = '참고할 수 있는 링크가 있다면 입력하세요';
+            } else {
+                if (linkLabel) linkLabel.textContent = '구매 링크 (선택)';
+                if (linkInput) linkInput.placeholder = '구매 가능한 링크를 입력하세요';
+            }
+        } catch (error) {
+            console.error('구매 방식 변경 처리 오류:', error);
+        }
+    },
+
+    // 일반 교구 신청 제출 처리
+    async handleApplicationSubmit() {
+        try {
+            console.log('📝 일반 교구 신청 제출 처리');
+            
+            const currentUser = AuthManager?.getCurrentUser();
+            if (!currentUser) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            // 폼 데이터 수집
+            const formData = this.getApplicationFormData();
+            if (!formData) {
+                return; // 검증 실패
+            }
+
+            // 예산 확인
+            const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+            if (formData.price > budgetStatus.remaining) {
+                alert(`신청 가격이 잔여 예산을 초과합니다.\n잔여 예산: ${this.formatPrice(budgetStatus.remaining)}\n신청 가격: ${this.formatPrice(formData.price)}`);
+                return;
+            }
+
+            // 제출 버튼 비활성화
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = '신청 중...';
+            }
+
+            try {
+                if (this.currentEditingItem) {
+                    // 수정 모드
+                    await SupabaseAPI.updateApplication(this.currentEditingItem, formData);
+                    alert('교구 신청이 성공적으로 수정되었습니다.');
+                } else {
+                    // 새 신청 모드
+                    await SupabaseAPI.createApplication(currentUser.id, formData);
+                    alert('교구 신청이 성공적으로 등록되었습니다.');
+                }
+                
+                this.hideApplicationModal();
+                await this.refreshDashboard();
+                
+            } catch (apiError) {
+                console.error('교구 신청 API 오류:', apiError);
+                alert('교구 신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+            }
+
+        } catch (error) {
+            console.error('❌ 일반 교구 신청 제출 처리 오류:', error);
+            alert('교구 신청 중 오류가 발생했습니다.');
+        } finally {
+            // 제출 버튼 복원
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = this.currentEditingItem ? '수정하기' : '신청하기';
+            }
+        }
+    },
+
+    // 묶음 신청 제출 처리
+    async handleBundleSubmit() {
+        try {
+            console.log('📦 묶음 신청 제출 처리');
+            
+            const currentUser = AuthManager?.getCurrentUser();
+            if (!currentUser) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            // 폼 데이터 수집
+            const formData = this.getBundleFormData();
+            if (!formData) {
+                return; // 검증 실패
+            }
+
+            // 예산 확인
+            const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+            if (formData.price > budgetStatus.remaining) {
+                alert(`신청 가격이 잔여 예산을 초과합니다.\n잔여 예산: ${this.formatPrice(budgetStatus.remaining)}\n신청 가격: ${this.formatPrice(formData.price)}`);
+                return;
+            }
+
+            // 제출 버튼 비활성화
+            const submitBtn = document.querySelector('#bundleForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = '신청 중...';
+            }
+
+            try {
+                await SupabaseAPI.createBundleApplication(currentUser.id, formData);
+                alert('묶음 교구 신청이 성공적으로 등록되었습니다.');
+                
+                this.hideBundleModal();
+                await this.refreshDashboard();
+                
+            } catch (apiError) {
+                console.error('묶음 신청 API 오류:', apiError);
+                alert('묶음 신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+            }
+
+        } catch (error) {
+            console.error('❌ 묶음 신청 제출 처리 오류:', error);
+            alert('묶음 신청 중 오류가 발생했습니다.');
+        } finally {
+            // 제출 버튼 복원
+            const submitBtn = document.querySelector('#bundleForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '묶음 신청하기';
+            }
+        }
+    },
+
+    // 폼 데이터 수집 및 검증
+    getApplicationFormData() {
+        try {
+            const formData = {
+                item_name: document.getElementById('itemName')?.value?.trim() || '',
+                purpose: document.getElementById('itemPurpose')?.value?.trim() || '',
+                price: parseInt(document.getElementById('itemPrice')?.value) || 0,
+                purchase_link: document.getElementById('itemLink')?.value?.trim() || '',
+                purchase_type: document.querySelector('input[name="purchaseMethod"]:checked')?.value || 'online',
+                is_bundle: false
+            };
+
+            // 필수 필드 검증
+            if (!formData.item_name) {
+                alert('교구명을 입력해주세요.');
+                document.getElementById('itemName')?.focus();
+                return null;
+            }
+
+            if (!formData.purpose) {
+                alert('사용 목적을 입력해주세요.');
+                document.getElementById('itemPurpose')?.focus();
+                return null;
+            }
+
+            if (!formData.price || formData.price <= 0) {
+                alert('올바른 가격을 입력해주세요.');
+                document.getElementById('itemPrice')?.focus();
+                return null;
+            }
+
+            return formData;
+        } catch (error) {
+            console.error('일반 신청 폼 데이터 수집 오류:', error);
+            alert('폼 데이터 처리 중 오류가 발생했습니다.');
+            return null;
+        }
+    },
+
+    getBundleFormData() {
+        try {
+            const formData = {
+                item_name: document.getElementById('bundleName')?.value?.trim() || '',
+                purpose: document.getElementById('bundlePurpose')?.value?.trim() || '',
+                price: parseInt(document.getElementById('bundlePrice')?.value) || 0,
+                purchase_link: document.getElementById('bundleLink')?.value?.trim() || '',
+                purchase_type: 'online', // 묶음은 항상 온라인
+                is_bundle: true,
+                bundle_credentials: {
+                    user_id: document.getElementById('bundleUserId')?.value?.trim() || '',
+                    password: document.getElementById('bundlePassword')?.value?.trim() || ''
+                }
+            };
+
+            // 필수 필드 검증
+            if (!formData.item_name) {
+                alert('묶음 교구명을 입력해주세요.');
+                document.getElementById('bundleName')?.focus();
+                return null;
+            }
+
+            if (!formData.purpose) {
+                alert('사용 목적을 입력해주세요.');
+                document.getElementById('bundlePurpose')?.focus();
+                return null;
+            }
+
+            if (!formData.price || formData.price <= 0) {
+                alert('올바른 가격을 입력해주세요.');
+                document.getElementById('bundlePrice')?.focus();
+                return null;
+            }
+
+            if (!formData.purchase_link) {
+                alert('구매 링크를 입력해주세요.');
+                document.getElementById('bundleLink')?.focus();
+                return null;
+            }
+
+            if (!formData.bundle_credentials.user_id) {
+                alert('계정 ID를 입력해주세요.');
+                document.getElementById('bundleUserId')?.focus();
+                return null;
+            }
+
+            if (!formData.bundle_credentials.password) {
+                alert('비밀번호를 입력해주세요.');
+                document.getElementById('bundlePassword')?.focus();
+                return null;
+            }
+
+            return formData;
+        } catch (error) {
+            console.error('묶음 신청 폼 데이터 수집 오류:', error);
+            alert('폼 데이터 처리 중 오류가 발생했습니다.');
+            return null;
+        }
+    },
+
+    // 배송지 정보 로드 (기존과 동일)
     async loadShippingInfo() {
         try {
             console.log('📦 기존 배송지 정보 로드');
@@ -1325,7 +1733,7 @@ const StudentManager = {
         }
     },
 
-    // 배송지 정보 제출 - 실제 구현
+    // 배송지 정보 제출 - 실제 구현 (기존과 동일)
     async handleShippingSubmit() {
         try {
             console.log('배송지 정보 저장 시작');
@@ -1397,6 +1805,7 @@ const StudentManager = {
         }
     },
 
+    // 나머지 기존 함수들 (간단한 구현)
     showReceiptModal() {
         console.log('영수증 등록 모달 표시');
     },
@@ -1405,7 +1814,6 @@ const StudentManager = {
         console.log('영수증 등록 모달 숨김');
     },
 
-    // 드래그 앤 드롭 설정 (간단한 구현)
     setupDragAndDrop() {
         // 기본 구현
     },
@@ -1418,11 +1826,6 @@ const StudentManager = {
         // 기본 구현
     },
 
-    handlePurchaseMethodChange() {
-        // 기본 구현
-    },
-
-    // 기타 필요한 함수들
     editApplication() {
         console.log('신청 수정');
     },
@@ -1433,14 +1836,6 @@ const StudentManager = {
 
     openReceiptModal() {
         console.log('영수증 모달 열기');
-    },
-
-    handleApplicationSubmit() {
-        console.log('신청 제출');
-    },
-
-    handleBundleSubmit() {
-        console.log('묶음 신청 제출');
     },
 
     handleReceiptSubmit() {
@@ -1470,4 +1865,4 @@ const StudentManager = {
 window.StudentManager = StudentManager;
 
 // DOM 로드 완료 시 초기화 방지 (App에서 호출)
-console.log('📚 StudentManager loaded successfully');
+console.log('📚 StudentManager loaded successfully - 교구 신청 기능 활성화됨');
