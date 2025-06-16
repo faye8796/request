@@ -1,18 +1,22 @@
-// 인증 관리 모듈 (Supabase 연동) - 개선된 알림 시스템 적용
+// 인증 관리 모듈 (Supabase 연동) - 개선된 알림 시스템 적용 + 로그인 유지 안정성 강화
 const AuthManager = {
     // 초기화
     async init() {
         try {
             this.setupEventListeners();
             this.initializeTabs();
-            await this.checkExistingSession();
+            
+            // 페이지 로드 후 약간의 지연을 두고 세션 확인 (안정성 향상)
+            setTimeout(async () => {
+                await this.checkExistingSession();
+            }, 500);
         } catch (error) {
             console.error('AuthManager 초기화 오류:', error);
             this.showAlert('인증 시스템 초기화 중 문제가 발생했습니다. 페이지를 새로고침해주세요.', 'error');
         }
     },
 
-    // 기존 세션 확인 - 페이지 새로고침 시 로그인 상태 복원
+    // 기존 세션 확인 - 페이지 새로고침 시 로그인 상태 복원 (강화된 버전)
     async checkExistingSession() {
         try {
             console.log('🔍 기존 세션 확인 시작');
@@ -34,16 +38,26 @@ const AuthManager = {
                 return false;
             }
 
-            // SupabaseAPI가 로드될 때까지 대기
+            // SupabaseAPI가 로드될 때까지 대기 (더 긴 타임아웃과 재시도)
             if (!window.SupabaseAPI) {
                 console.log('⏳ SupabaseAPI 로드 대기 중...');
                 try {
-                    await this.waitForSupabaseAPI();
+                    await this.waitForSupabaseAPI(15000); // 15초로 증가
                 } catch (error) {
                     console.error('SupabaseAPI 로드 실패:', error);
                     this.showAlert('서비스 초기화에 실패했습니다. 페이지를 새로고침해주세요.', 'error');
                     return false;
                 }
+            }
+
+            // Supabase 클라이언트가 초기화될 때까지 추가 대기
+            try {
+                await this.waitForSupabaseInit();
+            } catch (error) {
+                console.error('Supabase 클라이언트 초기화 대기 실패:', error);
+                this.clearStoredSession();
+                this.showAlert('데이터베이스 연결에 실패했습니다. 다시 로그인해주세요.', 'warning');
+                return false;
             }
 
             // 데이터베이스에서 사용자 정보 재검증
@@ -116,14 +130,15 @@ const AuthManager = {
         }
     },
 
-    // SupabaseAPI 로드 대기
-    async waitForSupabaseAPI(maxWaitTime = 10000) {
+    // SupabaseAPI 로드 대기 (개선된 버전)
+    async waitForSupabaseAPI(maxWaitTime = 15000) {
         const startTime = Date.now();
         
         return new Promise((resolve, reject) => {
             const checkAPI = setInterval(() => {
                 if (window.SupabaseAPI) {
                     clearInterval(checkAPI);
+                    console.log('✅ SupabaseAPI 로드 완료');
                     resolve(true);
                 } else if (Date.now() - startTime > maxWaitTime) {
                     clearInterval(checkAPI);
@@ -133,15 +148,49 @@ const AuthManager = {
         });
     },
 
-    // 저장된 사용자 정보 검증
+    // Supabase 클라이언트 초기화 대기 (새로 추가)
+    async waitForSupabaseInit(maxWaitTime = 10000) {
+        const startTime = Date.now();
+        
+        return new Promise((resolve, reject) => {
+            const checkInit = setInterval(async () => {
+                try {
+                    if (window.SupabaseAPI && window.SupabaseAPI.client) {
+                        // 간단한 연결 테스트
+                        const testResult = await window.SupabaseAPI.testConnection();
+                        if (testResult.success) {
+                            clearInterval(checkInit);
+                            console.log('✅ Supabase 클라이언트 초기화 완료');
+                            resolve(true);
+                        }
+                    }
+                    
+                    if (Date.now() - startTime > maxWaitTime) {
+                        clearInterval(checkInit);
+                        reject(new Error('데이터베이스 연결 초기화 시간이 초과되었습니다.'));
+                    }
+                } catch (error) {
+                    // 테스트 실패는 무시하고 계속 시도
+                    console.log('🔄 Supabase 연결 테스트 재시도 중...');
+                }
+            }, 500);
+        });
+    },
+
+    // 저장된 사용자 정보 검증 (개선된 버전)
     async validateStoredUser(sessionData) {
         try {
             const { user, userType } = sessionData;
 
             if (userType === 'student') {
-                // 학생 정보 재검증
-                const result = await SupabaseAPI.authenticateStudent(user.name, user.birth_date);
-                return result.success && result.data && result.data.id === user.id;
+                // 학생 정보 재검증 - 더 안전한 방식
+                try {
+                    const result = await SupabaseAPI.authenticateStudent(user.name, user.birth_date);
+                    return result.success && result.data && result.data.id === user.id;
+                } catch (error) {
+                    console.warn('학생 정보 검증 실패:', error);
+                    return false;
+                }
             } else if (userType === 'admin') {
                 // 관리자는 단순히 ID 존재 여부만 확인 (코드 재입력 불필요)
                 return user && user.user_type === 'admin';
@@ -170,23 +219,32 @@ const AuthManager = {
         }
     },
 
-    // 사용자 페이지로 리다이렉트
+    // 사용자 페이지로 리다이렉트 (개선된 버전)
     async redirectToUserPage(userType, user) {
         try {
             console.log('🔀 페이지 리다이렉트:', userType);
 
-            // 로그인 페이지가 아닌 경우 리다이렉트 생략
-            const currentPage = document.querySelector('.page.active');
-            if (currentPage && !currentPage.id.includes('loginPage')) {
-                console.log('📍 이미 적절한 페이지에 있습니다.');
-                return;
+            // 현재 활성 페이지 확인 - 더 안전한 방식
+            const currentPage = this.getCurrentActivePage();
+            
+            // 로그인 페이지가 아닌 경우 리다이렉트 생략 (단, 적절한 페이지인지 확인)
+            if (currentPage && !currentPage.includes('login')) {
+                const isCorrectPage = this.isCorrectPageForUser(currentPage, userType);
+                if (isCorrectPage) {
+                    console.log('📍 이미 적절한 페이지에 있습니다.');
+                    return;
+                }
             }
 
-            if (userType === 'student') {
-                await this.safeRedirectStudent(user.id);
-            } else if (userType === 'admin') {
-                this.redirectToAdminPage();
-            }
+            // 약간의 지연을 두고 리다이렉트 (UI 안정성)
+            setTimeout(async () => {
+                if (userType === 'student') {
+                    await this.safeRedirectStudent(user.id);
+                } else if (userType === 'admin') {
+                    this.redirectToAdminPage();
+                }
+            }, 100);
+            
         } catch (error) {
             console.error('❌ 페이지 리다이렉트 오류:', error);
             // 오류 발생 시 로그인 페이지로 이동
@@ -194,6 +252,32 @@ const AuthManager = {
                 App.showPage('loginPage');
             }
             this.showAlert('페이지 이동 중 문제가 발생했습니다. 다시 로그인해주세요.', 'error');
+        }
+    },
+
+    // 현재 활성 페이지 확인 (새로 추가)
+    getCurrentActivePage() {
+        try {
+            const activePage = document.querySelector('.page.active');
+            return activePage ? activePage.id : null;
+        } catch (error) {
+            console.warn('현재 페이지 확인 오류:', error);
+            return null;
+        }
+    },
+
+    // 사용자 타입에 맞는 올바른 페이지인지 확인 (새로 추가)
+    isCorrectPageForUser(currentPage, userType) {
+        try {
+            if (userType === 'student') {
+                return ['studentPage', 'lessonPlanPage'].includes(currentPage);
+            } else if (userType === 'admin') {
+                return currentPage === 'adminPage';
+            }
+            return false;
+        } catch (error) {
+            console.warn('페이지 검증 오류:', error);
+            return false;
         }
     },
 
@@ -374,7 +458,7 @@ const AuthManager = {
                 
                 // 더 구체적인 오류 메시지 제공
                 if (result.message && result.message.includes('찾을 수 없습니다')) {
-                    this.showAlert('입력하신 정보와 일치하는 학생을 찾을 수 없습니다.\n이름과 생년월일을 다시 확인해주세요.', 'warning');
+                    this.showAlert('입력하신 정보와 일치하는 학생을 찾을 수 없습니다.\\n이름과 생년월일을 다시 확인해주세요.', 'warning');
                 } else if (result.message && result.message.includes('권한')) {
                     this.showAlert('접근 권한이 없습니다. 관리자에게 문의해주세요.', 'error');
                 } else {
@@ -464,13 +548,15 @@ const AuthManager = {
             const userName = user.name || '사용자';
             this.showAlert(`환영합니다, ${userName}님!`, 'success');
 
-            // 해당 페이지로 이동
-            if (userType === 'student') {
-                // 학생의 경우 수업계획 완료 여부 체크 - 안전한 방법으로 처리
-                await this.safeRedirectStudent(user.id);
-            } else if (userType === 'admin') {
-                this.redirectToAdminPage();
-            }
+            // 해당 페이지로 이동 (약간의 지연)
+            setTimeout(async () => {
+                if (userType === 'student') {
+                    // 학생의 경우 수업계획 완료 여부 체크 - 안전한 방법으로 처리
+                    await this.safeRedirectStudent(user.id);
+                } else if (userType === 'admin') {
+                    this.redirectToAdminPage();
+                }
+            }, 500);
         } catch (error) {
             console.error('로그인 성공 처리 오류:', error);
             this.showAlert('로그인 후 페이지 이동 중 문제가 발생했습니다. 새로고침 후 다시 시도해주세요.', 'error');
@@ -500,9 +586,12 @@ const AuthManager = {
             if (typeof App !== 'undefined' && App.showPage) {
                 App.showPage('adminPage');
                 
-                if (typeof AdminManager !== 'undefined' && AdminManager.init) {
-                    AdminManager.init();
-                }
+                // AdminManager 초기화 (약간의 지연)
+                setTimeout(() => {
+                    if (typeof AdminManager !== 'undefined' && AdminManager.init) {
+                        AdminManager.init();
+                    }
+                }, 200);
             } else {
                 console.error('App.showPage 함수를 찾을 수 없습니다');
                 this.showAlert('관리자 페이지로 이동할 수 없습니다. 페이지를 새로고침해주세요.', 'error');
@@ -571,11 +660,11 @@ const AuthManager = {
             if (typeof App !== 'undefined' && App.showPage) {
                 App.showPage('lessonPlanPage');
                 
-                if (typeof LessonPlanManager !== 'undefined' && LessonPlanManager.showLessonPlanPage) {
-                    setTimeout(() => {
+                setTimeout(() => {
+                    if (typeof LessonPlanManager !== 'undefined' && LessonPlanManager.showLessonPlanPage) {
                         LessonPlanManager.showLessonPlanPage();
-                    }, 100);
-                }
+                    }
+                }, 200);
             } else {
                 console.error('App.showPage 함수를 찾을 수 없습니다');
                 this.showAlert('수업계획 페이지로 이동할 수 없습니다. 페이지를 새로고침해주세요.', 'error');
@@ -592,11 +681,11 @@ const AuthManager = {
             if (typeof App !== 'undefined' && App.showPage) {
                 App.showPage('studentPage');
                 
-                if (typeof StudentManager !== 'undefined' && StudentManager.init) {
-                    setTimeout(() => {
+                setTimeout(() => {
+                    if (typeof StudentManager !== 'undefined' && StudentManager.init) {
                         StudentManager.init();
-                    }, 100);
-                }
+                    }
+                }, 200);
             } else {
                 console.error('App.showPage 함수를 찾을 수 없습니다');
                 this.showAlert('학생 대시보드로 이동할 수 없습니다. 페이지를 새로고침해주세요.', 'error');
@@ -1018,4 +1107,4 @@ const AuthManager = {
 // 전역 접근을 위한 window 객체에 추가
 window.AuthManager = AuthManager;
 
-console.log('🔐 AuthManager loaded successfully with enhanced error handling');
+console.log('🔐 AuthManager loaded successfully with enhanced session persistence and error handling');
