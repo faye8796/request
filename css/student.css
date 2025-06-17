@@ -699,10 +699,12 @@
     max-width: 500px;
 }
 
-/* Application Form Modal Specific Styles */
+/* Application Form Modal Specific Styles - 모달 크기 고정 */
 #applicationModal .modal-content,
 #bundleModal .modal-content {
-    max-width: 600px;
+    width: 550px !important;
+    min-width: 550px !important;
+    max-width: calc(100vw - 2rem);
 }
 
 #applicationModal .form-group textarea,
@@ -1079,6 +1081,14 @@
     .purchase-method-badge {
         font-size: 0.7rem;
         padding: 0.2rem 0.4rem;
+    }
+
+    /* 모바일 모달 크기 조정 */
+    #applicationModal .modal-content,
+    #bundleModal .modal-content {
+        width: calc(100vw - 1rem) !important;
+        min-width: 320px !important;
+        max-width: calc(100vw - 1rem);
     }
 }
 
