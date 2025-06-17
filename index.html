@@ -19,6 +19,10 @@
     <!-- 개선 사항 -->
     <link rel="stylesheet" href="css/ux-enhancement.css">
     
+    <!-- 🔧 버그 수정 CSS -->
+    <link rel="stylesheet" href="src/fixes/fix-login-styles.css">
+    <link rel="stylesheet" href="src/fixes/fix-lesson-plan-styles.css">
+    
     <!-- 외부 라이브러리 -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -313,6 +317,9 @@
     <!-- 1단계: 설정 파일 -->
     <script src="config/app-config.js"></script>
     
+    <!-- 🔧 안전성 개선 (최우선 로드) -->
+    <script src="src/fixes/fix-javascript-errors.js"></script>
+    
     <!-- 2단계: 핵심 시스템 -->
     <script src="src/core/util-common.js"></script>
     <script src="src/core/core-supabase.js"></script>
@@ -327,6 +334,7 @@
     <!-- 4단계: 버그 수정 -->
     <script src="src/fixes/fix-api-improvements.js"></script>
     <script src="src/fixes/fix-student-validation.js"></script>
+    <script src="src/fixes/fix-lesson-plan-logic.js"></script>
     
     <!-- 5단계: 메인 애플리케이션 (마지막) -->
     <script src="src/core/core-app.js"></script>
@@ -335,46 +343,55 @@
     <script>
         // Claude 친화적 구조 확인
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🤖 Claude Optimized Structure v2.0 로딩 중...');
+            console.log('🤖 Claude Optimized Structure v2.0 - 버그 수정 버전 로딩 중...');
             
-            // Lucide 아이콘 초기화
+            // 안전한 Lucide 아이콘 초기화
             setTimeout(function() {
-                if (typeof lucide !== 'undefined') {
+                if (window.safeLucideInit) {
+                    window.safeLucideInit();
+                } else if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
-                    console.log('✅ Lucide icons initialized');
+                    console.log('✅ Lucide icons initialized (fallback)');
                 }
             }, 100);
             
             // 컴포넌트 로드 상태 확인
             setTimeout(function() {
-                const components = {
-                    'CONFIG': typeof window.CONFIG !== 'undefined',
-                    'Utils': typeof window.Utils !== 'undefined', 
-                    'SupabaseAPI': typeof window.SupabaseAPI !== 'undefined',
-                    'AuthManager': typeof window.AuthManager !== 'undefined',
-                    'App': typeof window.App !== 'undefined'
-                };
-                
-                const loaded = Object.entries(components).filter(([name, status]) => status);
-                const missing = Object.entries(components).filter(([name, status]) => !status);
-                
-                console.log('✅ 로드된 핵심 컴포넌트:', loaded.map(([name]) => name));
-                if (missing.length > 0) {
-                    console.warn('⚠️ 누락된 컴포넌트:', missing.map(([name]) => name));
+                if (window.checkComponentLoad) {
+                    const status = window.checkComponentLoad();
+                    console.log(`📊 컴포넌트 로드 상태: ${status.loaded}/${status.total}`);
+                    
+                    if (status.allLoaded) {
+                        console.log('🎉 모든 컴포넌트 로드 완료!');
+                    } else {
+                        console.warn('⚠️ 일부 컴포넌트 누락:', status.missing);
+                    }
+                } else {
+                    // 기존 방식으로 폴백
+                    const components = {
+                        'CONFIG': typeof window.CONFIG !== 'undefined',
+                        'Utils': typeof window.Utils !== 'undefined', 
+                        'SupabaseAPI': typeof window.SupabaseAPI !== 'undefined',
+                        'AuthManager': typeof window.AuthManager !== 'undefined',
+                        'App': typeof window.App !== 'undefined'
+                    };
+                    
+                    const loaded = Object.entries(components).filter(([name, status]) => status);
+                    const missing = Object.entries(components).filter(([name, status]) => !status);
+                    
+                    console.log('✅ 로드된 핵심 컴포넌트:', loaded.map(([name]) => name));
+                    if (missing.length > 0) {
+                        console.warn('⚠️ 누락된 컴포넌트:', missing.map(([name]) => name));
+                    }
                 }
                 
-                // Claude 친화적 구조 완료 표시
-                if (loaded.length >= 4) {
-                    console.log('🎉 Claude 친화적 구조 초기화 완료!');
-                    
-                    // 개발 환경에서 추가 정보 표시
-                    if (window.CONFIG?.DEV?.DEBUG) {
-                        console.log('🔧 개발 모드 활성화');
-                        console.log('📋 사용 가능한 함수들:');
-                        console.log('  • showAppInfo() - 앱 정보');
-                        console.log('  • checkSystemHealth() - 시스템 상태');
-                        console.log('  • showDebugInfo() - 디버그 정보');
-                    }
+                // 개발 환경에서 추가 정보 표시
+                if (window.CONFIG?.DEV?.DEBUG) {
+                    console.log('🔧 개발 모드 활성화');
+                    console.log('📋 사용 가능한 함수들:');
+                    console.log('  • showAppInfo() - 앱 정보');
+                    console.log('  • checkSystemHealth() - 시스템 상태');
+                    console.log('  • showDebugInfo() - 디버그 정보');
                 }
             }, 500);
         });
@@ -390,8 +407,10 @@
                         if (status.status === 'healthy') {
                             console.log('✅ 시스템 상태: 정상');
                         } else {
-                            console.warn('⚠️ 시스템 상태 확인 필요');
+                            console.warn('⚠️ 시스템 상태 확인 필요:', status);
                         }
+                    }).catch(error => {
+                        console.error('❌ 시스템 상태 확인 오류:', error);
                     });
                 }
             }, 1000);
@@ -402,18 +421,20 @@
             if (e.ctrlKey && e.shiftKey && e.code === 'KeyC') {
                 console.log('🤖 Claude Debug Mode Activated');
                 console.table({
-                    'Project Structure': 'Claude Optimized v2.0',
+                    'Project Structure': 'Claude Optimized v2.0 - 버그 수정 버전',
                     'Config': window.CONFIG ? '✅' : '❌',
                     'Utils': window.Utils ? '✅' : '❌',
                     'Database': window.SupabaseAPI ? '✅' : '❌',
                     'Auth': window.AuthManager ? '✅' : '❌',
-                    'App': window.App ? '✅' : '❌'
+                    'App': window.App ? '✅' : '❌',
+                    'Safety Utils': window.safeCall ? '✅' : '❌'
                 });
                 
                 if (window.CONFIG?.DEV?.DEBUG) {
                     console.log('💡 Quick Commands:');
                     console.log('  showAppInfo() - App information');
                     console.log('  checkSystemHealth() - System health check');
+                    console.log('  safeCall(fn, args) - Safe function call');
                     console.log('  dev.quickLogin("student") - Quick login');
                 }
             }
