@@ -800,7 +800,7 @@ body {
     line-height: 1.4;
 }
 
-/* Modal - 개선된 중앙 정렬 */
+/* Modal - 깔끔한 flexbox 중앙 정렬 */
 .modal {
     display: none;
     position: fixed;
@@ -810,10 +810,10 @@ body {
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
     z-index: 1000;
+    /* flexbox를 사용한 완벽한 중앙 정렬 */
     align-items: center;
     justify-content: center;
     padding: 1rem;
-    /* 더 확실한 중앙 정렬을 위한 추가 스타일 */
     box-sizing: border-box;
 }
 
@@ -830,14 +830,9 @@ body {
     max-height: 90vh;
     overflow-y: auto;
     color: #1f2937 !important;
-    /* 중앙 정렬 보장을 위한 추가 스타일 */
-    margin: auto;
-    position: relative;
+    /* flexbox 컨테이너에서는 transform이 필요 없음 */
     box-sizing: border-box;
-    /* 브라우저 호환성을 위한 백업 중앙 정렬 */
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    position: relative;
 }
 
 .modal-content h3 {
@@ -1402,20 +1397,15 @@ body {
         min-width: 600px;
     }
 
-    /* 모바일 모달 개선 */
+    /* 모바일 모달 최적화 */
     .modal {
         padding: 0.5rem;
     }
     
     .modal-content {
-        margin: 0;
-        /* 모바일에서는 transform 제거하고 flexbox만 사용 */
-        position: static;
-        left: auto;
-        top: auto;
-        transform: none;
         max-width: 100%;
         max-height: 95vh;
+        width: 100%;
     }
     
     .modal-actions {
