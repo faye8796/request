@@ -308,7 +308,7 @@
 
     <!-- 모달들은 기존과 동일하므로 생략... -->
 
-    <!-- 🚀 JavaScript Files - Claude 친화적 구조 -->
+    <!-- 🚀 JavaScript Files - Claude 친화적 구조 (NEW) -->
     
     <!-- 1단계: 설정 파일 -->
     <script src="config/app-config.js"></script>
@@ -317,19 +317,18 @@
     <script src="src/core/util-common.js"></script>
     <script src="src/core/core-supabase.js"></script>
     <script src="src/core/core-auth.js"></script>
+    <script src="src/core/core-admin.js"></script>
+    <script src="src/core/core-student.js"></script>
     
     <!-- 3단계: 기능 모듈 -->
-    <script src="js/lesson-plan.js"></script>
-    <script src="js/student.js"></script>
-    <script src="js/admin.js"></script>
+    <script src="src/modules/module-lesson-plan.js"></script>
+    <script src="src/modules/module-purchase-validation.js"></script>
     
-    <!-- 4단계: 수정사항 -->
-    <script src="js/api-fix.js"></script>
+    <!-- 4단계: 버그 수정 -->
+    <script src="src/fixes/fix-api-improvements.js"></script>
+    <script src="src/fixes/fix-student-validation.js"></script>
     
-    <!-- 5단계: 개선사항 -->
-    <script src="js/purchase-validation.js"></script>
-    
-    <!-- 6단계: 메인 애플리케이션 (마지막) -->
+    <!-- 5단계: 메인 애플리케이션 (마지막) -->
     <script src="src/core/core-app.js"></script>
     
     <!-- 시스템 초기화 및 상태 확인 -->
