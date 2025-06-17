@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>세종학당 문화교구 신청 플랫폼 - Claude Optimized v2.0</title>
+    <title>세종학당 문화교구 신청 플랫폼 - Claude Optimized v2.1</title>
     
     <!-- 🎨 CSS Files - Claude 친화적 구조 -->
     <!-- 핵심 스타일 -->
@@ -37,7 +37,7 @@
                     <div class="login-header">
                         <h1>세종학당 문화교구 신청</h1>
                         <p>Cultural Equipment Request Platform</p>
-                        <small class="version-info">v2.0.0 - Claude Optimized</small>
+                        <small class="version-info">v2.1.0 - Claude Optimized (Bug Fixed)</small>
                     </div>
 
                     <div class="login-tabs">
@@ -310,9 +310,7 @@
         </div>
     </div>
 
-    <!-- 모달들은 기존과 동일하므로 생략... -->
-
-    <!-- 🚀 JavaScript Files - Claude 친화적 구조 (NEW) -->
+    <!-- 🚀 JavaScript Files - Claude 친화적 구조 (v2.1 - 중요 버그 수정) -->
     
     <!-- 1단계: 설정 파일 -->
     <script src="config/app-config.js"></script>
@@ -336,6 +334,9 @@
     <script src="src/fixes/fix-student-validation.js"></script>
     <script src="src/fixes/fix-lesson-plan-logic.js"></script>
     
+    <!-- 🔧 중요: 관리자 대시보드 오류 수정 (핵심 모듈 로드 후) -->
+    <script src="src/fixes/fix-admin-dashboard-critical.js"></script>
+    
     <!-- 5단계: 메인 애플리케이션 (마지막) -->
     <script src="src/core/core-app.js"></script>
     
@@ -343,7 +344,7 @@
     <script>
         // Claude 친화적 구조 확인
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🤖 Claude Optimized Structure v2.0 - 버그 수정 버전 로딩 중...');
+            console.log('🤖 Claude Optimized Structure v2.1 - 중요 버그 수정 버전 로딩 중...');
             
             // 안전한 Lucide 아이콘 초기화
             setTimeout(function() {
@@ -373,6 +374,7 @@
                         'Utils': typeof window.Utils !== 'undefined', 
                         'SupabaseAPI': typeof window.SupabaseAPI !== 'undefined',
                         'AuthManager': typeof window.AuthManager !== 'undefined',
+                        'AdminManager': typeof window.AdminManager !== 'undefined',
                         'App': typeof window.App !== 'undefined'
                     };
                     
@@ -421,11 +423,12 @@
             if (e.ctrlKey && e.shiftKey && e.code === 'KeyC') {
                 console.log('🤖 Claude Debug Mode Activated');
                 console.table({
-                    'Project Structure': 'Claude Optimized v2.0 - 버그 수정 버전',
+                    'Project Structure': 'Claude Optimized v2.1 - 중요 버그 수정 버전',
                     'Config': window.CONFIG ? '✅' : '❌',
                     'Utils': window.Utils ? '✅' : '❌',
                     'Database': window.SupabaseAPI ? '✅' : '❌',
                     'Auth': window.AuthManager ? '✅' : '❌',
+                    'Admin': window.AdminManager ? '✅' : '❌',
                     'App': window.App ? '✅' : '❌',
                     'Safety Utils': window.safeCall ? '✅' : '❌'
                 });
@@ -439,6 +442,16 @@
                 }
             }
         });
+        
+        // 버전 정보 표시
+        console.log('🚀 세종학당 문화교구 신청 플랫폼 v2.1');
+        console.log('📋 주요 수정사항:');
+        console.log('  • 관리자 대시보드 모달 오류 수정');
+        console.log('  • JavaScript 모듈 로딩 순서 개선');
+        console.log('  • 예산 설정 모달 동적 생성');
+        console.log('  • 수업계획 관리 모달 동적 생성');
+        console.log('  • 모달 닫기 처리 개선');
+        console.log('  • 버튼 안전성 강화');
     </script>
 </body>
 </html>
