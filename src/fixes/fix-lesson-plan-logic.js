@@ -1,9 +1,9 @@
 /**
- * 수업계획 상태 확인 로직 버그 수정
+ * 수업계획 상태 확인 로직 버그 수정 (정정 버전)
  * 
- * @problem '이가짜' 사용자가 이미 승인된 수업계획이 있는데도 수업계획 작성하라고 표시됨
- * @solution 수업계획 상태 확인 로직을 개선하여 정확한 상태 표시
- * @affects 학생 로그인 시 수업계획 상태 확인 부분
+ * @problem '이가짜' 사용자가 이미 승인된 수업계획이 있는데도 수업계획 작성 페이지로 리다이렉트됨
+ * @solution 실제 호출되는 함수들을 정확히 수정하여 올바른 로직 적용
+ * @affects core-auth.js의 safeRedirectStudent 로직
  * @author Claude AI
  * @date 2025-06-17
  */
@@ -11,330 +11,299 @@
 (function() {
     'use strict';
     
-    console.log('🔧 수업계획 상태 확인 로직 수정 적용 시작...');
+    console.log('🔧 수업계획 상태 확인 로직 버그 수정 (정정 버전) 시작...');
 
-    // 기존 수업계획 확인 함수 개선
-    if (window.SupabaseAPI && window.SupabaseAPI.checkLessonPlanStatus) {
-        const originalCheckLessonPlanStatus = window.SupabaseAPI.checkLessonPlanStatus;
+    // 기존 core-auth.js의 safeRedirectStudent 함수를 완전히 재정의
+    if (window.AuthManager && window.AuthManager.safeRedirectStudent) {
+        console.log('🔄 AuthManager.safeRedirectStudent 함수 재정의 중...');
         
-        window.SupabaseAPI.checkLessonPlanStatus = async function(userId) {
+        window.AuthManager.safeRedirectStudent = async function(studentId) {
             try {
-                console.log('🔍 수업계획 상태 확인 중...', userId);
+                console.log('🔍 수업계획 상태 확인 시작 - 학생 ID:', studentId);
                 
-                // 사용자의 수업계획 데이터 조회
-                const { data: lessonPlans, error } = await this.supabase
+                // 추가 알림 제거 - 환영 메시지만 표시
+                this.clearAllNotices();
+                
+                // SupabaseAPI 존재 확인
+                if (typeof SupabaseAPI === 'undefined') {
+                    console.warn('SupabaseAPI를 찾을 수 없습니다 - 기본 대시보드로 이동');
+                    setTimeout(() => {
+                        this.redirectToStudentDashboard();
+                    }, 1000);
+                    return;
+                }
+
+                // 수업계획 상태 직접 확인 (DB 쿼리)
+                const lessonPlanData = await this.directCheckLessonPlan(studentId);
+                console.log('📋 수업계획 데이터:', lessonPlanData);
+                
+                // 상태에 따른 리다이렉트 결정
+                const shouldGoToDashboard = this.shouldRedirectToDashboard(lessonPlanData);
+                
+                if (shouldGoToDashboard) {
+                    console.log('✅ 수업계획 완료 - 학생 대시보드로 이동');
+                    setTimeout(() => {
+                        this.redirectToStudentDashboard();
+                    }, 1000);
+                } else {
+                    console.log('📝 수업계획 작성 필요 - 수업계획 페이지로 이동');
+                    setTimeout(() => {
+                        this.redirectToLessonPlanWithMessage(lessonPlanData);
+                    }, 1000);
+                }
+                
+            } catch (error) {
+                console.warn('❌ 수업계획 상태 확인 오류:', error);
+                // 오류 발생 시 기본적으로 대시보드로 이동
+                setTimeout(() => {
+                    console.log('🏠 오류로 인한 기본 대시보드 이동');
+                    this.redirectToStudentDashboard();
+                }, 1000);
+            }
+        };
+        
+        // 직접 수업계획 확인 함수 추가
+        window.AuthManager.directCheckLessonPlan = async function(studentId) {
+            try {
+                if (!window.SupabaseAPI || !window.SupabaseAPI.client) {
+                    throw new Error('SupabaseAPI 클라이언트를 사용할 수 없습니다');
+                }
+
+                const client = await window.SupabaseAPI.ensureClient();
+                
+                // 직접 DB 쿼리로 수업계획 상태 확인
+                const { data, error } = await client
                     .from('lesson_plans')
                     .select('*')
-                    .eq('user_id', userId)
+                    .eq('user_id', studentId)
                     .order('created_at', { ascending: false })
                     .limit(1);
 
                 if (error) {
-                    console.error('❌ 수업계획 조회 오류:', error);
-                    return { status: 'none', data: null, error };
+                    console.error('수업계획 조회 오류:', error);
+                    return null;
                 }
 
-                // 수업계획이 없는 경우
-                if (!lessonPlans || lessonPlans.length === 0) {
-                    console.log('📝 수업계획이 없음 - 작성 필요');
-                    return { 
-                        status: 'none', 
-                        data: null, 
-                        message: '수업계획을 작성해주세요.',
-                        error: null 
-                    };
+                if (!data || data.length === 0) {
+                    console.log('📭 수업계획이 없습니다');
+                    return null;
                 }
 
-                const latestPlan = lessonPlans[0];
-                console.log('📋 최신 수업계획:', latestPlan);
+                const plan = data[0];
+                console.log('📋 수업계획 조회 결과:', {
+                    id: plan.id,
+                    status: plan.status,
+                    approved_at: plan.approved_at,
+                    submitted_at: plan.submitted_at,
+                    rejection_reason: plan.rejection_reason
+                });
 
-                // 상태별 처리
-                switch (latestPlan.status) {
-                    case 'approved':
-                        console.log('✅ 수업계획 승인됨');
-                        return { 
-                            status: 'approved', 
-                            data: latestPlan,
-                            message: '수업계획이 승인되었습니다. 교구 신청이 가능합니다.',
-                            error: null 
-                        };
-                        
-                    case 'submitted':
-                        console.log('⏳ 수업계획 검토 중');
-                        return { 
-                            status: 'pending', 
-                            data: latestPlan,
-                            message: '수업계획이 검토 중입니다. 승인까지 잠시 기다려주세요.',
-                            error: null 
-                        };
-                        
-                    case 'rejected':
-                        console.log('❌ 수업계획 반려됨');
-                        return { 
-                            status: 'rejected', 
-                            data: latestPlan,
-                            message: `수업계획이 반려되었습니다. 사유: ${latestPlan.rejection_reason || '사유 없음'}`,
-                            error: null 
-                        };
-                        
-                    case 'draft':
-                    default:
-                        console.log('📝 수업계획 임시저장 상태');
-                        return { 
-                            status: 'draft', 
-                            data: latestPlan,
-                            message: '임시저장된 수업계획이 있습니다. 계속 작성해서 제출하세요.',
-                            error: null 
-                        };
-                }
+                return plan;
                 
             } catch (error) {
-                console.error('❌ 수업계획 상태 확인 중 오류:', error);
-                return { 
-                    status: 'error', 
-                    data: null, 
-                    message: '수업계획 상태를 확인할 수 없습니다.',
-                    error 
-                };
+                console.error('❌ 직접 수업계획 확인 오류:', error);
+                return null;
             }
         };
         
-        console.log('✅ 수업계획 상태 확인 함수 개선됨');
-    }
+        // 대시보드 리다이렉트 여부 판단 함수 추가
+        window.AuthManager.shouldRedirectToDashboard = function(lessonPlanData) {
+            if (!lessonPlanData) {
+                console.log('📝 수업계획 없음 → 작성 페이지');
+                return false;
+            }
 
-    // 학생 페이지 로드 시 수업계획 상태 확인 개선
-    if (window.StudentManager && window.StudentManager.checkLessonPlanRequirement) {
-        const originalCheckLessonPlanRequirement = window.StudentManager.checkLessonPlanRequirement;
-        
-        window.StudentManager.checkLessonPlanRequirement = async function(userProfile) {
-            try {
-                console.log('🔍 수업계획 요구사항 확인 중...', userProfile);
-                
-                const statusResult = await window.SupabaseAPI.checkLessonPlanStatus(userProfile.id);
-                
-                console.log('📊 수업계획 상태 결과:', statusResult);
-                
-                if (statusResult.error) {
-                    console.error('❌ 상태 확인 오류:', statusResult.error);
-                    return false;
-                }
+            const status = lessonPlanData.status;
+            console.log('📊 수업계획 상태 분석:', status);
 
-                // 승인된 수업계획이 있으면 통과
-                if (statusResult.status === 'approved') {
-                    console.log('✅ 승인된 수업계획 존재 - 교구 신청 가능');
-                    
-                    // 수업계획 버튼 상태 업데이트
-                    const lessonPlanBtn = document.getElementById('lessonPlanBtn');
-                    if (lessonPlanBtn) {
-                        lessonPlanBtn.innerHTML = `
-                            <i data-lucide="check-circle"></i>
-                            수업계획 완료
-                        `;
-                        lessonPlanBtn.classList.add('completed');
-                        lessonPlanBtn.title = '수업계획이 승인되었습니다';
-                    }
-                    
+            // approved 상태면 무조건 대시보드
+            if (status === 'approved') {
+                console.log('✅ 승인된 수업계획 → 대시보드');
+                return true;
+            }
+
+            // submitted 상태이고 승인/반려 처리가 안됐으면 대시보드 (검토중)
+            if (status === 'submitted') {
+                const hasApproval = lessonPlanData.approved_at && lessonPlanData.approved_by;
+                const hasRejection = lessonPlanData.rejection_reason && lessonPlanData.rejection_reason.trim();
+                
+                if (!hasApproval && !hasRejection) {
+                    console.log('⏳ 제출됨 (검토중) → 대시보드');
                     return true;
-                }
-
-                // 제출 대기 중인 경우
-                if (statusResult.status === 'pending') {
-                    console.log('⏳ 수업계획 검토 중');
-                    
-                    const lessonPlanBtn = document.getElementById('lessonPlanBtn');
-                    if (lessonPlanBtn) {
-                        lessonPlanBtn.innerHTML = `
-                            <i data-lucide="clock"></i>
-                            검토 중
-                        `;
-                        lessonPlanBtn.classList.add('pending');
-                        lessonPlanBtn.title = '수업계획이 검토 중입니다';
-                    }
-                    
+                } else if (hasRejection) {
+                    console.log('❌ 반려됨 → 작성 페이지');
                     return false;
                 }
+            }
 
-                // 반려된 경우
-                if (statusResult.status === 'rejected') {
-                    console.log('❌ 수업계획 반려됨');
-                    
-                    const lessonPlanBtn = document.getElementById('lessonPlanBtn');
-                    if (lessonPlanBtn) {
-                        lessonPlanBtn.innerHTML = `
-                            <i data-lucide="x-circle"></i>
-                            재작성 필요
-                        `;
-                        lessonPlanBtn.classList.add('rejected');
-                        lessonPlanBtn.title = statusResult.message || '수업계획이 반려되었습니다';
-                    }
-                    
-                    return false;
-                }
-
-                // 임시저장 또는 미작성인 경우
-                console.log('📝 수업계획 작성 필요');
-                
-                const lessonPlanBtn = document.getElementById('lessonPlanBtn');
-                if (lessonPlanBtn) {
-                    if (statusResult.status === 'draft') {
-                        lessonPlanBtn.innerHTML = `
-                            <i data-lucide="edit"></i>
-                            계속 작성
-                        `;
-                        lessonPlanBtn.title = '임시저장된 수업계획이 있습니다';
-                    } else {
-                        lessonPlanBtn.innerHTML = `
-                            <i data-lucide="calendar"></i>
-                            수업계획 작성
-                        `;
-                        lessonPlanBtn.title = '수업계획을 작성해주세요';
-                    }
-                    lessonPlanBtn.classList.add('required');
-                }
-                
+            // draft 상태면 작성 페이지
+            if (status === 'draft') {
+                console.log('📝 임시저장됨 → 작성 페이지');
                 return false;
+            }
+
+            // rejected 상태면 작성 페이지
+            if (status === 'rejected') {
+                console.log('❌ 반려됨 → 작성 페이지');
+                return false;
+            }
+
+            // 기타 경우 기본값 (대시보드)
+            console.log('❓ 알 수 없는 상태 → 대시보드 (기본값)');
+            return true;
+        };
+        
+        // 메시지와 함께 수업계획 페이지로 이동
+        window.AuthManager.redirectToLessonPlanWithMessage = function(lessonPlanData) {
+            try {
+                this.redirectToLessonPlan();
+                
+                // 상태에 따른 적절한 메시지 표시
+                setTimeout(() => {
+                    if (!lessonPlanData) {
+                        this.showLessonPlanGuidance();
+                    } else if (lessonPlanData.status === 'draft') {
+                        this.showLessonPlanContinueGuidance();
+                    } else if (lessonPlanData.status === 'rejected') {
+                        this.showLessonPlanRejectedGuidance(lessonPlanData.rejection_reason);
+                    } else {
+                        this.showLessonPlanGuidance();
+                    }
+                }, 500);
                 
             } catch (error) {
-                console.error('❌ 수업계획 요구사항 확인 중 오류:', error);
-                return false;
+                console.error('❌ 수업계획 페이지 이동 오류:', error);
             }
         };
         
-        console.log('✅ 수업계획 요구사항 확인 함수 개선됨');
-    }
-
-    // 학생 대시보드 업데이트 시 수업계획 상태 반영
-    if (window.StudentManager && window.StudentManager.updateDashboard) {
-        const originalUpdateDashboard = window.StudentManager.updateDashboard;
-        
-        window.StudentManager.updateDashboard = async function(userProfile) {
+        // 반려 안내 메시지 추가
+        window.AuthManager.showLessonPlanRejectedGuidance = function(rejectionReason) {
             try {
-                // 기존 대시보드 업데이트 실행
-                await originalUpdateDashboard.call(this, userProfile);
+                this.clearAllNotices();
                 
-                // 수업계획 상태 확인 및 UI 업데이트
-                const statusResult = await window.SupabaseAPI.checkLessonPlanStatus(userProfile.id);
-                
-                // 수업계획 상태에 따른 메시지 표시
-                let statusMessage = '';
-                let statusClass = '';
-                
-                switch (statusResult.status) {
-                    case 'approved':
-                        statusMessage = '✅ 수업계획이 승인되었습니다. 교구 신청이 가능합니다.';
-                        statusClass = 'success';
-                        break;
-                    case 'pending':
-                        statusMessage = '⏳ 수업계획 검토 중입니다. 승인까지 잠시 기다려주세요.';
-                        statusClass = 'warning';
-                        break;
-                    case 'rejected':
-                        statusMessage = `❌ 수업계획이 반려되었습니다. ${statusResult.message || ''}`;
-                        statusClass = 'error';
-                        break;
-                    case 'draft':
-                        statusMessage = '📝 임시저장된 수업계획이 있습니다. 계속 작성해서 제출하세요.';
-                        statusClass = 'info';
-                        break;
-                    case 'none':
-                    default:
-                        statusMessage = '📝 수업계획을 작성해주세요. 승인 후 교구 신청이 가능합니다.';
-                        statusClass = 'info';
-                        break;
-                }
-                
-                // 상태 메시지 표시
-                const statusContainer = document.createElement('div');
-                statusContainer.className = `lesson-plan-status ${statusClass}`;
-                statusContainer.innerHTML = `
-                    <div class="status-message">
-                        <p>${statusMessage}</p>
+                const guidance = document.createElement('div');
+                guidance.className = 'lesson-plan-guidance-overlay';
+                guidance.innerHTML = `
+                    <div class="guidance-content">
+                        <div class="guidance-icon">
+                            <i data-lucide="x-circle" style="width: 3rem; height: 3rem; color: #dc3545;"></i>
+                        </div>
+                        <h3>수업계획이 반려되었습니다</h3>
+                        <p><strong>반려 사유:</strong> ${rejectionReason || '사유가 제공되지 않았습니다'}</p>
+                        <p>수정 후 다시 제출해주세요.</p>
+                        <button class="btn primary" onclick="this.parentElement.parentElement.remove()">
+                            수정하기
+                        </button>
                     </div>
                 `;
                 
-                // 기존 상태 메시지 제거 후 새로 추가
-                const existingStatus = document.querySelector('.lesson-plan-status');
-                if (existingStatus) {
-                    existingStatus.remove();
+                document.body.appendChild(guidance);
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
                 }
                 
-                const dashboardHeader = document.querySelector('.dashboard-header');
-                if (dashboardHeader) {
-                    dashboardHeader.appendChild(statusContainer);
-                }
-                
-                console.log('📊 수업계획 상태 UI 업데이트 완료:', statusResult.status);
+                // 10초 후 자동 제거
+                setTimeout(() => {
+                    if (guidance.parentNode) {
+                        guidance.parentNode.removeChild(guidance);
+                    }
+                }, 10000);
                 
             } catch (error) {
-                console.error('❌ 대시보드 업데이트 중 오류:', error);
+                console.error('반려 안내 표시 오류:', error);
             }
         };
         
-        console.log('✅ 학생 대시보드 업데이트 함수 개선됨');
+        console.log('✅ AuthManager.safeRedirectStudent 함수 재정의 완료');
+    } else {
+        console.warn('⚠️ AuthManager.safeRedirectStudent 함수를 찾을 수 없습니다');
     }
 
-    // CSS 스타일 추가
+    // 기존 quietlyCheckLessonPlan 함수도 개선
+    if (window.AuthManager && window.AuthManager.quietlyCheckLessonPlan) {
+        window.AuthManager.quietlyCheckLessonPlan = async function(studentId) {
+            return await this.directCheckLessonPlan(studentId);
+        };
+        console.log('✅ AuthManager.quietlyCheckLessonPlan 함수 개선 완료');
+    }
+
+    // 추가 CSS 스타일
     const style = document.createElement('style');
     style.textContent = `
-        .lesson-plan-status {
-            margin: 15px 0;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border-left: 4px solid;
+        .lesson-plan-guidance-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .guidance-content {
             background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.3s ease-out;
         }
         
-        .lesson-plan-status.success {
-            border-left-color: #28a745;
-            background-color: #d4edda;
-            color: #155724;
+        .guidance-icon {
+            margin-bottom: 1rem;
         }
         
-        .lesson-plan-status.warning {
-            border-left-color: #ffc107;
-            background-color: #fff3cd;
-            color: #856404;
+        .guidance-content h3 {
+            margin: 0 0 1rem 0;
+            color: #2c3e50;
+            font-size: 1.5rem;
         }
         
-        .lesson-plan-status.error {
-            border-left-color: #dc3545;
-            background-color: #f8d7da;
-            color: #721c24;
+        .guidance-content p {
+            margin: 0.5rem 0;
+            color: #6c757d;
+            line-height: 1.5;
         }
         
-        .lesson-plan-status.info {
-            border-left-color: #17a2b8;
-            background-color: #d1ecf1;
-            color: #0c5460;
+        .guidance-content .btn {
+            margin-top: 1.5rem;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
         
-        .lesson-plan-status p {
-            margin: 0;
-            font-weight: 500;
+        .guidance-content .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
         }
         
-        #lessonPlanBtn.completed {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
-            color: white !important;
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         
-        #lessonPlanBtn.pending {
-            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%) !important;
-            color: white !important;
-        }
-        
-        #lessonPlanBtn.rejected {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
-            color: white !important;
-        }
-        
-        #lessonPlanBtn.required {
-            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
-            color: white !important;
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     `;
     document.head.appendChild(style);
 
-    console.log('✅ 수업계획 상태 확인 로직 버그 수정 완료');
+    console.log('✅ 수업계획 상태 확인 로직 버그 수정 (정정 버전) 완료');
 })();
