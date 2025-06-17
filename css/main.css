@@ -819,15 +819,16 @@ body {
     place-items: center;
 }
 
-/* 모달이 활성화될 때 표시 - 개선됨 */
-.modal.show {
+/* 모달이 활성화될 때 표시 - 개선됨 (show와 active 클래스 모두 지원) */
+.modal.show,
+.modal.active {
     display: grid !important;
     opacity: 1;
     visibility: visible;
 }
 
 /* 애니메이션이 없는 상태에서는 숨김 */
-.modal:not(.show) {
+.modal:not(.show):not(.active) {
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -854,7 +855,8 @@ body {
 }
 
 /* 모달 표시 애니메이션 */
-.modal.show .modal-content {
+.modal.show .modal-content,
+.modal.active .modal-content {
     animation: modalFadeIn 0.3s ease-out;
 }
 
@@ -1465,7 +1467,8 @@ body {
         table-layout: fixed;
     }
     
-    .modal.show {
+    .modal.show,
+    .modal.active {
         display: table !important;
     }
     
@@ -1516,7 +1519,8 @@ body {
 }
 
 /* 모달 포커스 관리 */
-.modal.show {
+.modal.show,
+.modal.active {
     outline: none;
 }
 
@@ -1533,7 +1537,7 @@ body {
 }
 
 /* 모달 닫기 시 애니메이션 */
-.modal:not(.show) .modal-content {
+.modal:not(.show):not(.active) .modal-content {
     animation: modalFadeOut 0.2s ease-in;
 }
 
