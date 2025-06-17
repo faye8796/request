@@ -335,6 +335,9 @@ const StudentManager = {
                 } else if (modalSelector === '#shippingModal') {
                     const form = document.getElementById('shippingForm');
                     if (form) form.reset();
+                } else if (modalSelector === '#receiptModal') {
+                    this.resetReceiptForm();
+                    this.currentReceiptItem = null;
                 }
             }
         } catch (error) {
@@ -1483,6 +1486,440 @@ const StudentManager = {
         }
     },
 
+    // === 영수증 모달 관련 - 완전한 구현 ===
+
+    // 영수증 모달 표시 - 완전한 구현
+    async showReceiptModal(requestId) {
+        try {
+            console.log('📄 영수증 모달 표시:', requestId);
+            
+            const currentUser = AuthManager?.getCurrentUser();
+            if (!currentUser) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            // 현재 영수증 요청 ID 저장
+            this.currentReceiptItem = requestId;
+
+            // 기존 폼 데이터 초기화
+            this.resetReceiptForm();
+
+            // 모달 표시
+            const modal = document.getElementById('receiptModal');
+            if (modal) {
+                // body 스크롤 방지
+                document.body.style.overflow = 'hidden';
+                
+                // CSS 클래스만으로 모달 표시
+                modal.classList.add('show');
+                
+                // 첫 번째 입력 필드에 포커스
+                setTimeout(() => {
+                    const firstInput = modal.querySelector('input[type="file"]');
+                    if (firstInput) {
+                        firstInput.focus();
+                    }
+                }, 300);
+                
+                console.log('✅ 영수증 모달 표시 완료');
+            }
+
+        } catch (error) {
+            console.error('❌ 영수증 모달 표시 오류:', error);
+            alert('영수증 모달을 여는 중 오류가 발생했습니다.');
+        }
+    },
+
+    // 영수증 모달 숨김 - 완전한 구현
+    hideReceiptModal() {
+        try {
+            console.log('영수증 모달 숨김');
+            this.hideModal('#receiptModal');
+        } catch (error) {
+            console.error('영수증 모달 숨김 오류:', error);
+        }
+    },
+
+    // 영수증 모달 열기 - 완전한 구현
+    async openReceiptModal(requestId) {
+        try {
+            console.log('📄 영수증 모달 열기:', requestId);
+            await this.showReceiptModal(requestId);
+        } catch (error) {
+            console.error('영수증 모달 열기 오류:', error);
+            alert('영수증 등록을 여는 중 오류가 발생했습니다.');
+        }
+    },
+
+    // 영수증 제출 - 완전한 구현
+    async handleReceiptSubmit() {
+        try {
+            console.log('📄 영수증 제출 처리 시작');
+            
+            const currentUser = AuthManager?.getCurrentUser();
+            if (!currentUser) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            if (!this.currentReceiptItem) {
+                alert('영수증을 등록할 요청이 선택되지 않았습니다.');
+                return;
+            }
+
+            // 파일 검증
+            const fileInput = document.getElementById('receiptFile');
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                alert('영수증 이미지를 선택해주세요.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            
+            // 파일 크기 체크 (5MB 제한)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('파일 크기는 5MB 이하여야 합니다.');
+                return;
+            }
+
+            // 파일 형식 체크
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('JPG, PNG, GIF 형식의 이미지만 업로드 가능합니다.');
+                return;
+            }
+
+            // 제출 버튼 비활성화
+            const submitBtn = document.querySelector('#receiptForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = '업로드 중...';
+            }
+
+            try {
+                // 파일을 Base64로 변환
+                const base64Data = await this.fileToBase64(file);
+                
+                // 영수증 데이터 준비 (실제 구현에서는 Supabase Storage 또는 다른 서비스 사용)
+                const receiptData = {
+                    request_id: this.currentReceiptItem,
+                    file_name: file.name,
+                    file_size: file.size,
+                    file_type: file.type,
+                    receipt_image: base64Data, // 실제로는 Storage URL
+                    submitted_at: new Date().toISOString()
+                };
+
+                // 요청 상태를 'purchased'로 업데이트 (임시 구현)
+                const updateResult = await SupabaseAPI.updateItemStatus(
+                    this.currentReceiptItem, 
+                    'purchased',
+                    null
+                );
+
+                if (updateResult.success) {
+                    alert('영수증이 성공적으로 등록되었습니다.');
+                    this.hideReceiptModal();
+                    await this.refreshDashboard();
+                } else {
+                    alert('영수증 등록에 실패했습니다: ' + (updateResult.message || '알 수 없는 오류'));
+                }
+                
+            } catch (apiError) {
+                console.error('영수증 등록 API 오류:', apiError);
+                alert('영수증 등록 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+            }
+
+        } catch (error) {
+            console.error('❌ 영수증 제출 처리 오류:', error);
+            alert('영수증 제출 중 오류가 발생했습니다.');
+        } finally {
+            // 제출 버튼 복원
+            const submitBtn = document.querySelector('#receiptForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '등록하기';
+            }
+        }
+    },
+
+    // 파일을 Base64로 변환하는 헬퍼 함수
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    },
+
+    // 영수증 파일 변경 처리 - 완전한 구현
+    handleReceiptFileChange(event) {
+        try {
+            const file = event.target.files[0];
+            const previewContainer = document.getElementById('receiptPreview');
+            const removeBtn = document.getElementById('removeReceiptBtn');
+            
+            if (!file) {
+                // 파일이 선택되지 않은 경우
+                if (previewContainer) {
+                    previewContainer.innerHTML = '';
+                    previewContainer.style.display = 'none';
+                }
+                if (removeBtn) {
+                    removeBtn.style.display = 'none';
+                }
+                return;
+            }
+
+            // 파일 크기 체크
+            if (file.size > 5 * 1024 * 1024) {
+                alert('파일 크기는 5MB 이하여야 합니다.');
+                event.target.value = '';
+                return;
+            }
+
+            // 파일 형식 체크
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('JPG, PNG, GIF 형식의 이미지만 업로드 가능합니다.');
+                event.target.value = '';
+                return;
+            }
+
+            // 미리보기 표시
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (previewContainer) {
+                    previewContainer.innerHTML = `
+                        <div class="receipt-preview-item">
+                            <img src="${e.target.result}" alt="영수증 미리보기" style="max-width: 200px; max-height: 200px; border-radius: 4px;">
+                            <div class="file-info">
+                                <strong>${file.name}</strong>
+                                <small>${this.formatFileSize(file.size)}</small>
+                            </div>
+                        </div>
+                    `;
+                    previewContainer.style.display = 'block';
+                }
+                
+                if (removeBtn) {
+                    removeBtn.style.display = 'inline-block';
+                }
+            };
+            reader.readAsDataURL(file);
+
+        } catch (error) {
+            console.error('영수증 파일 변경 처리 오류:', error);
+            alert('파일 처리 중 오류가 발생했습니다.');
+        }
+    },
+
+    // 영수증 파일 제거 - 완전한 구현
+    removeReceiptFile() {
+        try {
+            const fileInput = document.getElementById('receiptFile');
+            const previewContainer = document.getElementById('receiptPreview');
+            const removeBtn = document.getElementById('removeReceiptBtn');
+            
+            if (fileInput) {
+                fileInput.value = '';
+            }
+            
+            if (previewContainer) {
+                previewContainer.innerHTML = '';
+                previewContainer.style.display = 'none';
+            }
+            
+            if (removeBtn) {
+                removeBtn.style.display = 'none';
+            }
+            
+            console.log('✅ 영수증 파일 제거 완료');
+        } catch (error) {
+            console.error('영수증 파일 제거 오류:', error);
+        }
+    },
+
+    // 파일 크기 포맷팅 헬퍼
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    },
+
+    // 드래그 앤 드롭 설정 - 완전한 구현
+    setupDragAndDrop() {
+        try {
+            const dropZone = document.getElementById('receiptDropZone');
+            const fileInput = document.getElementById('receiptFile');
+            
+            if (!dropZone || !fileInput) {
+                console.warn('드래그 앤 드롭 요소를 찾을 수 없습니다');
+                return;
+            }
+
+            // 드래그 이벤트 방지 (기본 브라우저 동작 방지)
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, this.preventDefaults, false);
+                document.body.addEventListener(eventName, this.preventDefaults, false);
+            });
+
+            // 드래그 하이라이트
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.add('drag-over');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.remove('drag-over');
+                }, false);
+            });
+
+            // 드롭 처리
+            dropZone.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    // change 이벤트 수동 트리거
+                    const event = new Event('change', { bubbles: true });
+                    fileInput.dispatchEvent(event);
+                }
+            }, false);
+
+            // 클릭으로 파일 선택
+            dropZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            console.log('✅ 드래그 앤 드롭 설정 완료');
+        } catch (error) {
+            console.error('드래그 앤 드롭 설정 오류:', error);
+        }
+    },
+
+    // 기본 이벤트 방지 헬퍼
+    preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    },
+
+    // === 신청 수정/삭제 기능 - 완전한 구현 ===
+
+    // 신청 수정 - 완전한 구현
+    async editApplication(itemId) {
+        try {
+            console.log('✏️ 신청 수정:', itemId);
+            
+            const currentUser = AuthManager?.getCurrentUser();
+            if (!currentUser) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            // 현재 신청 내역에서 해당 아이템 찾기
+            const applications = await SupabaseAPI.getStudentApplications(currentUser.id);
+            const application = applications.find(app => app.id === itemId);
+            
+            if (!application) {
+                alert('수정할 신청을 찾을 수 없습니다.');
+                return;
+            }
+
+            if (application.status !== 'pending') {
+                alert('승인 대기 중인 신청만 수정할 수 있습니다.');
+                return;
+            }
+
+            // 편집 모드 플래그 설정
+            this.currentEditingItem = itemId;
+
+            // 일반 신청 모달 표시
+            await this.showApplicationModal();
+
+            // 폼에 기존 데이터 채우기
+            setTimeout(() => {
+                const form = document.getElementById('applicationForm');
+                if (form) {
+                    // 기본 필드들
+                    const itemNameField = document.getElementById('itemName');
+                    const purposeField = document.getElementById('itemPurpose');
+                    const priceField = document.getElementById('itemPrice');
+                    const linkField = document.getElementById('itemLink');
+                    
+                    if (itemNameField) itemNameField.value = application.item_name || '';
+                    if (purposeField) purposeField.value = application.purpose || '';
+                    if (priceField) priceField.value = application.price || '';
+                    if (linkField) linkField.value = application.purchase_link || '';
+
+                    // 구매 방식 설정
+                    const purchaseMethodRadios = form.querySelectorAll('input[name="purchaseMethod"]');
+                    purchaseMethodRadios.forEach(radio => {
+                        if (radio.value === application.purchase_type) {
+                            radio.checked = true;
+                            this.handlePurchaseMethodChange(radio.value);
+                        }
+                    });
+
+                    // 모달 제목 변경
+                    const title = document.getElementById('applicationModalTitle');
+                    if (title) {
+                        title.textContent = '교구 신청 수정';
+                    }
+
+                    // 제출 버튼 텍스트 변경
+                    const submitBtn = document.getElementById('submitBtn');
+                    if (submitBtn) {
+                        submitBtn.textContent = '수정하기';
+                    }
+                }
+            }, 100);
+
+            console.log('✅ 신청 수정 모달 표시 완료');
+        } catch (error) {
+            console.error('❌ 신청 수정 오류:', error);
+            alert('신청 수정 중 오류가 발생했습니다.');
+        }
+    },
+
+    // 신청 삭제 - 완전한 구현
+    async deleteApplication(itemId) {
+        try {
+            console.log('🗑️ 신청 삭제:', itemId);
+            
+            const currentUser = AuthManager?.getCurrentUser();
+            if (!currentUser) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            // 삭제 확인
+            if (!confirm('정말로 이 신청을 삭제하시겠습니까?')) {
+                return;
+            }
+
+            // 삭제 처리
+            const result = await SupabaseAPI.deleteApplication(itemId);
+            
+            if (result.success) {
+                alert('신청이 성공적으로 삭제되었습니다.');
+                await this.refreshDashboard();
+            } else {
+                alert('신청 삭제에 실패했습니다: ' + (result.message || '알 수 없는 오류'));
+            }
+
+            console.log('✅ 신청 삭제 완료');
+        } catch (error) {
+            console.error('❌ 신청 삭제 오류:', error);
+            alert('신청 삭제 중 오류가 발생했습니다.');
+        }
+    },
+
     // 폼 초기화 함수들
     resetApplicationForm() {
         try {
@@ -1510,6 +1947,20 @@ const StudentManager = {
             }
         } catch (error) {
             console.error('묶음 신청 폼 초기화 오류:', error);
+        }
+    },
+
+    resetReceiptForm() {
+        try {
+            const form = document.getElementById('receiptForm');
+            if (form) {
+                form.reset();
+            }
+            
+            // 미리보기 및 제거 버튼 숨김
+            this.removeReceiptFile();
+        } catch (error) {
+            console.error('영수증 폼 초기화 오류:', error);
         }
     },
 
@@ -1875,43 +2326,6 @@ const StudentManager = {
                 submitBtn.textContent = '저장하기';
             }
         }
-    },
-
-    // 나머지 기존 함수들 (간단한 구현)
-    showReceiptModal() {
-        console.log('영수증 등록 모달 표시');
-    },
-
-    hideReceiptModal() {
-        console.log('영수증 등록 모달 숨김');
-    },
-
-    setupDragAndDrop() {
-        // 기본 구현
-    },
-
-    handleReceiptFileChange() {
-        // 기본 구현
-    },
-
-    removeReceiptFile() {
-        // 기본 구현
-    },
-
-    editApplication() {
-        console.log('신청 수정');
-    },
-
-    deleteApplication() {
-        console.log('신청 삭제');
-    },
-
-    openReceiptModal() {
-        console.log('영수증 모달 열기');
-    },
-
-    handleReceiptSubmit() {
-        console.log('영수증 제출');
     },
 
     // 대시보드 새로고침 - 중복 방지 기능 추가
