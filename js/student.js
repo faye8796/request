@@ -1,4 +1,4 @@
-// 학생 기능 관리 모듈 (Supabase 연동) - 교구 신청 기능 활성화 버전
+// 학생 기능 관리 모듈 (Supabase 연동) - 교구 신청 기능 활성화 버전 - 중복 등록 버그 수정
 const StudentManager = {
     currentEditingItem: null,
     currentReceiptItem: null,
@@ -1991,11 +1991,22 @@ const StudentManager = {
         }
     },
 
-    // 일반 교구 신청 제출 처리
+    // 일반 교구 신청 제출 처리 - 중복 방지 강화
     async handleApplicationSubmit() {
+        console.log('📝 일반 교구 신청 제출 처리');
+        
+        // 🚀 즉시 버튼 비활성화 (중복 클릭 방지)
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+            if (submitBtn.disabled) {
+                console.log('⚠️ 이미 처리 중 - 중복 클릭 무시');
+                return; // 이미 처리 중이면 무시
+            }
+            submitBtn.disabled = true;
+            submitBtn.textContent = '처리 중...';
+        }
+        
         try {
-            console.log('📝 일반 교구 신청 제출 처리');
-            
             const currentUser = AuthManager?.getCurrentUser();
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
@@ -2008,45 +2019,35 @@ const StudentManager = {
                 return; // 검증 실패
             }
 
-            // 예산 확인
+            // 예산 확인 (이제 버튼이 이미 비활성화된 상태에서 진행)
             const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
             if (formData.price > budgetStatus.remaining) {
                 alert(`신청 가격이 잔여 예산을 초과합니다.\n잔여 예산: ${this.formatPrice(budgetStatus.remaining)}\n신청 가격: ${this.formatPrice(formData.price)}`);
                 return;
             }
 
-            // 제출 버튼 비활성화
-            const submitBtn = document.getElementById('submitBtn');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = '신청 중...';
+            // API 호출
+            if (this.currentEditingItem) {
+                // 수정 모드
+                await SupabaseAPI.updateApplication(this.currentEditingItem, formData);
+                alert('교구 신청이 성공적으로 수정되었습니다.');
+            } else {
+                // 새 신청 모드
+                await SupabaseAPI.createApplication(currentUser.id, formData);
+                alert('교구 신청이 성공적으로 등록되었습니다.');
             }
-
-            try {
-                if (this.currentEditingItem) {
-                    // 수정 모드
-                    await SupabaseAPI.updateApplication(this.currentEditingItem, formData);
-                    alert('교구 신청이 성공적으로 수정되었습니다.');
-                } else {
-                    // 새 신청 모드
-                    await SupabaseAPI.createApplication(currentUser.id, formData);
-                    alert('교구 신청이 성공적으로 등록되었습니다.');
-                }
+            
+            this.hideApplicationModal();
+            await this.refreshDashboard();
                 
-                this.hideApplicationModal();
-                await this.refreshDashboard();
-                
-            } catch (apiError) {
-                console.error('교구 신청 API 오류:', apiError);
-                alert('교구 신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
-            }
-
+        } catch (apiError) {
+            console.error('교구 신청 API 오류:', apiError);
+            alert('교구 신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
         } catch (error) {
             console.error('❌ 일반 교구 신청 제출 처리 오류:', error);
             alert('교구 신청 중 오류가 발생했습니다.');
         } finally {
-            // 제출 버튼 복원
-            const submitBtn = document.getElementById('submitBtn');
+            // 항상 버튼 복원 (오류 발생 시에도)
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = this.currentEditingItem ? '수정하기' : '신청하기';
@@ -2054,11 +2055,22 @@ const StudentManager = {
         }
     },
 
-    // 묶음 신청 제출 처리
+    // 묶음 신청 제출 처리 - 중복 방지 강화
     async handleBundleSubmit() {
+        console.log('📦 묶음 신청 제출 처리');
+        
+        // 🚀 즉시 버튼 비활성화 (중복 클릭 방지)
+        const submitBtn = document.querySelector('#bundleForm button[type="submit"]');
+        if (submitBtn) {
+            if (submitBtn.disabled) {
+                console.log('⚠️ 이미 처리 중 - 중복 클릭 무시');
+                return; // 이미 처리 중이면 무시
+            }
+            submitBtn.disabled = true;
+            submitBtn.textContent = '처리 중...';
+        }
+        
         try {
-            console.log('📦 묶음 신청 제출 처리');
-            
             const currentUser = AuthManager?.getCurrentUser();
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
@@ -2071,38 +2083,28 @@ const StudentManager = {
                 return; // 검증 실패
             }
 
-            // 예산 확인
+            // 예산 확인 (이제 버튼이 이미 비활성화된 상태에서 진행)
             const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
             if (formData.price > budgetStatus.remaining) {
                 alert(`신청 가격이 잔여 예산을 초과합니다.\n잔여 예산: ${this.formatPrice(budgetStatus.remaining)}\n신청 가격: ${this.formatPrice(formData.price)}`);
                 return;
             }
 
-            // 제출 버튼 비활성화
-            const submitBtn = document.querySelector('#bundleForm button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = '신청 중...';
-            }
-
-            try {
-                await SupabaseAPI.createBundleApplication(currentUser.id, formData);
-                alert('묶음 교구 신청이 성공적으로 등록되었습니다.');
+            // API 호출
+            await SupabaseAPI.createBundleApplication(currentUser.id, formData);
+            alert('묶음 교구 신청이 성공적으로 등록되었습니다.');
+            
+            this.hideBundleModal();
+            await this.refreshDashboard();
                 
-                this.hideBundleModal();
-                await this.refreshDashboard();
-                
-            } catch (apiError) {
-                console.error('묶음 신청 API 오류:', apiError);
-                alert('묶음 신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
-            }
-
+        } catch (apiError) {
+            console.error('묶음 신청 API 오류:', apiError);
+            alert('묶음 신청 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
         } catch (error) {
             console.error('❌ 묶음 신청 제출 처리 오류:', error);
             alert('묶음 신청 중 오류가 발생했습니다.');
         } finally {
-            // 제출 버튼 복원
-            const submitBtn = document.querySelector('#bundleForm button[type="submit"]');
+            // 항상 버튼 복원 (오류 발생 시에도)
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = '묶음 신청하기';
@@ -2351,4 +2353,4 @@ const StudentManager = {
 window.StudentManager = StudentManager;
 
 // DOM 로드 완료 시 초기화 방지 (App에서 호출)
-console.log('📚 StudentManager loaded successfully - 교구 신청 기능 활성화됨');
+console.log('📚 StudentManager loaded successfully - 중복 등록 버그 수정 완료');
