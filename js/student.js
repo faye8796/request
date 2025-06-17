@@ -295,24 +295,7 @@ const StudentManager = {
                 this.safeAddEventListener(modalId, 'click', (e) => {
                     // 모달 자체를 클릭했을 때만 닫기 (내용 영역 클릭 시에는 닫지 않음)
                     if (e.target === e.currentTarget) {
-                        const modal = document.querySelector(modalId);
-                        if (modal) {
-                            modal.classList.remove('show');
-                            setTimeout(() => {
-                                modal.style.display = 'none';
-                                document.body.style.overflow = '';
-                            }, 300);
-                            
-                            // 해당 모달의 폼 초기화
-                            if (modalId === '#applicationModal') {
-                                this.resetApplicationForm();
-                            } else if (modalId === '#bundleModal') {
-                                this.resetBundleForm();
-                            } else if (modalId === '#shippingModal') {
-                                const form = document.getElementById('shippingForm');
-                                if (form) form.reset();
-                            }
-                        }
+                        this.hideModal(modalId);
                     }
                 });
             });
@@ -320,14 +303,7 @@ const StudentManager = {
             // ESC 키로 모달 닫기
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
-                    const openModal = document.querySelector('.modal.show');
-                    if (openModal) {
-                        openModal.classList.remove('show');
-                        setTimeout(() => {
-                            openModal.style.display = 'none';
-                            document.body.style.overflow = '';
-                        }, 300);
-                    }
+                    this.hideAllModals();
                 }
             });
 
@@ -339,6 +315,30 @@ const StudentManager = {
             this.setupDragAndDrop();
         } catch (error) {
             console.error('모달 상호작용 이벤트 설정 오류:', error);
+        }
+    },
+
+    // 개선된 모달 숨김 함수 (일반화)
+    hideModal(modalSelector) {
+        try {
+            const modal = document.querySelector(modalSelector);
+            if (modal) {
+                modal.classList.remove('show');
+                document.body.style.overflow = '';
+                
+                // 해당 모달의 폼 초기화
+                if (modalSelector === '#applicationModal') {
+                    this.resetApplicationForm();
+                    this.currentEditingItem = null;
+                } else if (modalSelector === '#bundleModal') {
+                    this.resetBundleForm();
+                } else if (modalSelector === '#shippingModal') {
+                    const form = document.getElementById('shippingForm');
+                    if (form) form.reset();
+                }
+            }
+        } catch (error) {
+            console.error('모달 숨김 오류:', error);
         }
     },
 
@@ -355,12 +355,10 @@ const StudentManager = {
             document.body.style.overflow = '';
             
             // 개별 모달 숨김 함수 호출
-            setTimeout(() => {
-                this.hideApplicationModal();
-                this.hideBundleModal();
-                this.hideShippingModal();
-                this.hideReceiptModal();
-            }, 300);
+            this.hideApplicationModal();
+            this.hideBundleModal();
+            this.hideShippingModal();
+            this.hideReceiptModal();
         } catch (error) {
             console.error('모달 숨김 오류:', error);
         }
@@ -1257,9 +1255,9 @@ const StudentManager = {
         return div.innerHTML;
     },
 
-    // === 모달 관련 기능들 - 실제 구현 ===
+    // === 모달 관련 기능들 - 수정된 구현 ===
 
-    // 일반 교구 신청 모달 표시 - 실제 구현
+    // 일반 교구 신청 모달 표시 - 수정된 구현 (CSS 클래스만 사용)
     async showApplicationModal() {
         try {
             console.log('🛒 일반 교구 신청 모달 표시');
@@ -1308,14 +1306,13 @@ const StudentManager = {
             // 기존 폼 데이터 초기화
             this.resetApplicationForm();
 
-            // 모달 표시 (개선된 방식)
+            // 모달 표시 (CSS 클래스만 사용 - 수정됨)
             const modal = document.getElementById('applicationModal');
             if (modal) {
-                // 모달 표시 전 body 스크롤 방지
+                // body 스크롤 방지
                 document.body.style.overflow = 'hidden';
                 
-                // 모달을 부드럽게 표시
-                modal.style.display = 'flex';
+                // CSS 클래스만으로 모달 표시
                 modal.classList.add('show');
                 
                 // 제목 설정
@@ -1344,32 +1341,17 @@ const StudentManager = {
         }
     },
 
-    // 일반 교구 신청 모달 숨김 (개선된 방식)
+    // 일반 교구 신청 모달 숨김 (수정된 방식)
     hideApplicationModal() {
         try {
             console.log('일반 교구 신청 모달 숨김');
-            const modal = document.getElementById('applicationModal');
-            if (modal) {
-                // 부드러운 숨김 효과
-                modal.classList.remove('show');
-                
-                // 애니메이션 완료 후 display none
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                    // body 스크롤 복원
-                    document.body.style.overflow = '';
-                }, 300);
-            }
-            
-            // 폼 초기화
-            this.resetApplicationForm();
-            this.currentEditingItem = null;
+            this.hideModal('#applicationModal');
         } catch (error) {
             console.error('일반 교구 신청 모달 숨김 오류:', error);
         }
     },
 
-    // 묶음 신청 모달 표시 - 실제 구현
+    // 묶음 신청 모달 표시 - 수정된 구현 (CSS 클래스만 사용)
     async showBundleModal() {
         try {
             console.log('📦 묶음 신청 모달 표시');
@@ -1418,14 +1400,13 @@ const StudentManager = {
             // 기존 폼 데이터 초기화
             this.resetBundleForm();
 
-            // 모달 표시 (개선된 방식)
+            // 모달 표시 (CSS 클래스만 사용 - 수정됨)
             const modal = document.getElementById('bundleModal');
             if (modal) {
                 // body 스크롤 방지
                 document.body.style.overflow = 'hidden';
                 
-                // 모달을 부드럽게 표시
-                modal.style.display = 'flex';
+                // CSS 클래스만으로 모달 표시
                 modal.classList.add('show');
                 
                 // 첫 번째 입력 필드에 포커스
@@ -1445,31 +1426,17 @@ const StudentManager = {
         }
     },
 
-    // 묶음 신청 모달 숨김 (개선된 방식)
+    // 묶음 신청 모달 숨김 (수정된 방식)
     hideBundleModal() {
         try {
             console.log('묶음 신청 모달 숨김');
-            const modal = document.getElementById('bundleModal');
-            if (modal) {
-                // 부드러운 숨김 효과
-                modal.classList.remove('show');
-                
-                // 애니메이션 완료 후 display none
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                    // body 스크롤 복원
-                    document.body.style.overflow = '';
-                }, 300);
-            }
-            
-            // 폼 초기화
-            this.resetBundleForm();
+            this.hideModal('#bundleModal');
         } catch (error) {
             console.error('묶음 신청 모달 숨김 오류:', error);
         }
     },
 
-    // 배송지 설정 모달 표시 - 실제 구현 (기존과 동일)
+    // 배송지 설정 모달 표시 - 수정된 구현 (CSS 클래스만 사용)
     async showShippingModal() {
         try {
             console.log('배송지 설정 모달 표시');
@@ -1483,14 +1450,13 @@ const StudentManager = {
             // 기존 배송지 정보 로드
             await this.loadShippingInfo();
             
-            // 모달 표시 (개선된 방식)
+            // 모달 표시 (CSS 클래스만 사용 - 수정됨)
             const modal = document.getElementById('shippingModal');
             if (modal) {
                 // body 스크롤 방지
                 document.body.style.overflow = 'hidden';
                 
-                // 모달을 부드럽게 표시
-                modal.style.display = 'flex';
+                // CSS 클래스만으로 모달 표시
                 modal.classList.add('show');
                 
                 // 첫 번째 입력 필드에 포커스
@@ -1507,28 +1473,11 @@ const StudentManager = {
         }
     },
 
-    // 배송지 설정 모달 숨김 (개선된 방식)
+    // 배송지 설정 모달 숨김 (수정된 방식)
     hideShippingModal() {
         try {
             console.log('배송지 설정 모달 숨김');
-            const modal = document.getElementById('shippingModal');
-            if (modal) {
-                // 부드러운 숨김 효과
-                modal.classList.remove('show');
-                
-                // 애니메이션 완료 후 display none
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                    // body 스크롤 복원
-                    document.body.style.overflow = '';
-                }, 300);
-            }
-            
-            // 폼 초기화
-            const form = document.getElementById('shippingForm');
-            if (form) {
-                form.reset();
-            }
+            this.hideModal('#shippingModal');
         } catch (error) {
             console.error('배송지 모달 숨김 오류:', error);
         }
