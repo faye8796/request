@@ -800,39 +800,52 @@ body {
     line-height: 1.4;
 }
 
-/* Modal - 깔끔한 flexbox 중앙 정렬 */
+/* Modal - 강력한 중앙 정렬 (모든 브라우저 지원) */
 .modal {
+    display: none !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    z-index: 1000 !important;
+    /* 다중 중앙 정렬 방법 */
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 1rem !important;
+    box-sizing: border-box !important;
+    /* Grid 백업 */
     display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    /* flexbox를 사용한 완벽한 중앙 정렬 */
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    box-sizing: border-box;
+    place-items: center;
 }
 
 .modal.active {
-    display: flex;
+    display: flex !important;
+    display: grid !important;
 }
 
 .modal-content {
     background: white !important;
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    width: 100%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
+    border-radius: 0.5rem !important;
+    padding: 1.5rem !important;
+    width: 100% !important;
+    max-width: 500px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
     color: #1f2937 !important;
-    /* flexbox 컨테이너에서는 transform이 필요 없음 */
-    box-sizing: border-box;
-    position: relative;
+    box-sizing: border-box !important;
+    position: relative !important;
+    /* 모든 위치 속성 초기화 */
+    margin: 0 auto !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    /* 추가 중앙 정렬 백업 */
+    justify-self: center;
+    align-self: center;
 }
 
 .modal-content h3 {
@@ -1399,13 +1412,13 @@ body {
 
     /* 모바일 모달 최적화 */
     .modal {
-        padding: 0.5rem;
+        padding: 0.5rem !important;
     }
     
     .modal-content {
-        max-width: 100%;
-        max-height: 95vh;
-        width: 100%;
+        max-width: 100% !important;
+        max-height: 95vh !important;
+        width: 100% !important;
     }
     
     .modal-actions {
@@ -1418,28 +1431,56 @@ body {
     }
 }
 
+/* 최후 수단: 절대 중앙 정렬 */
+#applicationModal,
+#bundleModal,
+#shippingModal,
+#receiptModal,
+#viewReceiptModal,
+#lessonPlanSettingsModal,
+#budgetSettingsModal,
+#lessonPlanManagementModal,
+#viewLessonPlanModal {
+    text-align: center !important;
+}
+
+#applicationModal .modal-content,
+#bundleModal .modal-content,
+#shippingModal .modal-content,
+#receiptModal .modal-content,
+#viewReceiptModal .modal-content,
+#lessonPlanSettingsModal .modal-content,
+#budgetSettingsModal .modal-content,
+#lessonPlanManagementModal .modal-content,
+#viewLessonPlanModal .modal-content {
+    text-align: left !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    margin: 0 auto !important;
+}
+
 /* 접근성 및 브라우저 호환성 개선 */
 @supports not (display: flex) {
     .modal {
-        display: table;
-        table-layout: fixed;
+        display: table !important;
+        table-layout: fixed !important;
     }
     
     .modal-content {
-        display: table-cell;
-        vertical-align: middle;
-        text-align: center;
+        display: table-cell !important;
+        vertical-align: middle !important;
+        text-align: center !important;
     }
 }
 
 /* 고대비 모드 지원 */
 @media (prefers-contrast: high) {
     .modal {
-        background: rgba(0, 0, 0, 0.8);
+        background: rgba(0, 0, 0, 0.8) !important;
     }
     
     .modal-content {
-        border: 2px solid #000;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+        border: 2px solid #000 !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
     }
 }
