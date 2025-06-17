@@ -1,6 +1,7 @@
 // Supabase 클라이언트 설정 및 API 관리 - 초기화 오류 개선 버전
 // JSON 객체 에러 및 single() 메서드 문제 해결 + 사용자 친화적 오류 메시지 강화
 // 예산 재계산 시스템 통합 + 예산 배정 알고리즘 수정
+// 교구신청 API 함수들 추가 - createApplication, createBundleApplication, updateApplication, deleteApplication
 
 // 설정 파일이 로드될 때까지 대기 - 개선된 버전
 function waitForConfig() {
@@ -750,7 +751,7 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 교구 신청 관련 함수들 - 안전성 강화
+    // 교구 신청 관련 함수들 - 안전성 강화 + 누락된 함수들 추가
     // ===================
 
     // 학생 신청 내역 조회
@@ -767,7 +768,105 @@ const SupabaseAPI = {
         return result.success ? (result.data || []) : [];
     },
 
-    // 교구 신청 추가
+    // 교구 신청 생성 - 새로 추가된 함수
+    async createApplication(studentId, formData) {
+        console.log('🛒 교구 신청 생성:', { studentId, formData });
+        
+        return await this.safeApiCall('교구 신청 생성', async () => {
+            const client = await this.ensureClient();
+            
+            const requestData = {
+                user_id: studentId,
+                item_name: formData.item_name,
+                purpose: formData.purpose,
+                price: formData.price,
+                purchase_type: formData.purchase_type || 'online',
+                purchase_link: formData.purchase_link || null,
+                is_bundle: formData.is_bundle || false,
+                status: 'pending',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            return await client
+                .from('requests')
+                .insert([requestData])
+                .select();
+        }, { studentId, itemName: formData.item_name });
+    },
+
+    // 묶음 교구 신청 생성 - 새로 추가된 함수
+    async createBundleApplication(studentId, formData) {
+        console.log('📦 묶음 교구 신청 생성:', { studentId, formData });
+        
+        return await this.safeApiCall('묶음 교구 신청 생성', async () => {
+            const client = await this.ensureClient();
+            
+            const requestData = {
+                user_id: studentId,
+                item_name: formData.item_name,
+                purpose: formData.purpose,
+                price: formData.price,
+                purchase_type: 'online', // 묶음은 항상 온라인
+                purchase_link: formData.purchase_link,
+                is_bundle: true,
+                bundle_info: JSON.stringify({
+                    credentials: formData.bundle_credentials
+                }),
+                status: 'pending',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            return await client
+                .from('requests')
+                .insert([requestData])
+                .select();
+        }, { studentId, itemName: formData.item_name });
+    },
+
+    // 교구 신청 수정 - 새로 추가된 함수
+    async updateApplication(requestId, formData) {
+        console.log('✏️ 교구 신청 수정:', { requestId, formData });
+        
+        return await this.safeApiCall('교구 신청 수정', async () => {
+            const client = await this.ensureClient();
+            
+            const updateData = {
+                item_name: formData.item_name,
+                purpose: formData.purpose,
+                price: formData.price,
+                purchase_type: formData.purchase_type || 'online',
+                purchase_link: formData.purchase_link || null,
+                updated_at: new Date().toISOString()
+            };
+
+            return await client
+                .from('requests')
+                .update(updateData)
+                .eq('id', requestId)
+                .eq('status', 'pending') // 승인 대기 중인 것만 수정 가능
+                .select();
+        }, { requestId, itemName: formData.item_name });
+    },
+
+    // 교구 신청 삭제 - 새로 추가된 함수
+    async deleteApplication(requestId) {
+        console.log('🗑️ 교구 신청 삭제:', { requestId });
+        
+        return await this.safeApiCall('교구 신청 삭제', async () => {
+            const client = await this.ensureClient();
+            
+            return await client
+                .from('requests')
+                .delete()
+                .eq('id', requestId)
+                .eq('status', 'pending') // 승인 대기 중인 것만 삭제 가능
+                .select();
+        }, { requestId });
+    },
+
+    // 교구 신청 추가 (기존 함수 유지 - 호환성)
     async addApplication(studentId, itemData) {
         return await this.safeApiCall('교구 신청 추가', async () => {
             const client = await this.ensureClient();
@@ -1945,4 +2044,4 @@ window.addEventListener('supabaseInitError', (event) => {
 });
 
 // 초기화 완료 로그
-console.log('🚀 SupabaseAPI loaded successfully with updated stats including total students count');
+console.log('🚀 SupabaseAPI loaded successfully with fixed missing API functions - createApplication, createBundleApplication, updateApplication, deleteApplication added');
