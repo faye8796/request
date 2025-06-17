@@ -742,6 +742,15 @@ body {
     overflow-y: auto;
 }
 
+/* Expanded Modal for Lesson Plan Management */
+.modal-content.expanded {
+    width: 90vw;
+    height: 90vh;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -1448,6 +1457,12 @@ body {
         width: 100%;
         margin: 0;
         min-width: auto;
+    }
+    
+    .modal-content.expanded {
+        width: 95vw;
+        height: 85vh;
+        max-width: none;
     }
     
     .modal-actions {
