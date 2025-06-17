@@ -1418,7 +1418,7 @@ const AdminManager = {
         });
     },
 
-    // 통계 로드
+    // 통계 로드 - 수정된 버전 (구매 요청 신청자수/전체 학생 수 형태로 표시)
     async loadStatistics() {
         try {
             const stats = await SupabaseAPI.getStats();
@@ -1427,7 +1427,10 @@ const AdminManager = {
             const pendingCountEl = Utils.$('#pendingCount');
             const approvedCountEl = Utils.$('#approvedCount');
             
-            if (applicantCountEl) applicantCountEl.textContent = stats.applicantCount;
+            // 구매 요청 신청자수를 [신청자수] / [전체 학생 수] 형태로 표시
+            if (applicantCountEl) {
+                applicantCountEl.textContent = `${stats.applicantCount} / ${stats.totalStudents}`;
+            }
             if (pendingCountEl) pendingCountEl.textContent = stats.pendingCount;
             if (approvedCountEl) approvedCountEl.textContent = stats.approvedCount;
         } catch (error) {
