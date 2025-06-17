@@ -1,14 +1,14 @@
 /**
  * 애플리케이션 설정 파일
  * 
- * @description 환경 설정 파일 - 간소화 버전. Supabase 연동 후 중복 설정 제거 및 최적화
+ * @description 환경 설정 파일 - v2.1 버그 수정 버전. 관리자 대시보드 오류 수정 반영
  * @dependencies 없음 (독립적 설정 파일)
  * @author Claude AI
- * @date 2025-06-16
+ * @date 2025-06-17
  */
 
-// 환경 설정 파일 - 간소화 버전
-// Supabase 연동 후 중복 설정 제거 및 최적화
+// 환경 설정 파일 - v2.1 버그 수정 버전
+// 관리자 대시보드 중요 오류 수정 및 안정성 개선
 
 const CONFIG = {
     // Supabase 설정
@@ -20,7 +20,7 @@ const CONFIG = {
     // 애플리케이션 설정
     APP: {
         NAME: '세종학당 문화교구 신청 플랫폼',
-        VERSION: '2.0.0', // Supabase 연동 버전
+        VERSION: '2.1.0', // 관리자 대시보드 중요 오류 수정 버전
         ADMIN_CODE: 'admin123',
         
         // 기본 예산 설정 (DB 초기화용 - 실제 운영시 DB에서 관리)
@@ -66,7 +66,30 @@ const CONFIG = {
         SEARCH_DEBOUNCE_MS: 300,
         TOAST_DURATION_MS: 3000,
         MAX_FILE_SIZE_MB: 5,
-        SUPPORTED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+        SUPPORTED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+        
+        // v2.1 추가: 모달 설정
+        MODAL_SETTINGS: {
+            CLOSE_ON_ESCAPE: true,
+            CLOSE_ON_BACKDROP_CLICK: true,
+            FADE_DURATION_MS: 200
+        }
+    },
+
+    // v2.1 추가: 버그 수정 및 안정성 설정
+    FIXES: {
+        ADMIN_DASHBOARD: {
+            ENABLED: true,
+            AUTO_CREATE_MODALS: true,
+            SAFE_EVENT_HANDLING: true,
+            WAIT_FOR_ADMIN_MANAGER: true,
+            MAX_WAIT_ATTEMPTS: 20
+        },
+        JAVASCRIPT_ERRORS: {
+            GLOBAL_ERROR_HANDLING: true,
+            PROMISE_REJECTION_HANDLING: true,
+            SAFE_FUNCTION_CALLS: true
+        }
     }
 };
 
@@ -97,7 +120,8 @@ const FINAL_CONFIG = {
         DEBUG: getEnvValue('DEBUG', CONFIG.DEV.DEBUG),
         MOCK_DATA_ENABLED: getEnvValue('MOCK_DATA_ENABLED', CONFIG.DEV.MOCK_DATA_ENABLED)
     },
-    UI: CONFIG.UI
+    UI: CONFIG.UI,
+    FIXES: CONFIG.FIXES // v2.1 추가
 };
 
 // 설정 유효성 검사
@@ -131,12 +155,16 @@ const DevTools = {
     // 설정 정보 출력
     printConfig() {
         if (!FINAL_CONFIG.DEV.DEBUG) return;
-        console.group('🔧 Application Configuration');
+        console.group('🔧 Application Configuration v2.1');
         console.log('App Name:', FINAL_CONFIG.APP.NAME);
         console.log('Version:', FINAL_CONFIG.APP.VERSION);
         console.log('Debug Mode:', FINAL_CONFIG.DEV.DEBUG);
         console.log('Mock Data:', FINAL_CONFIG.DEV.MOCK_DATA_ENABLED);
         console.log('Supabase URL:', FINAL_CONFIG.SUPABASE.URL);
+        console.log('Fixes Enabled:', {
+            'Admin Dashboard': FINAL_CONFIG.FIXES.ADMIN_DASHBOARD.ENABLED,
+            'JavaScript Errors': FINAL_CONFIG.FIXES.JAVASCRIPT_ERRORS.GLOBAL_ERROR_HANDLING
+        });
         console.groupEnd();
     },
 
@@ -147,31 +175,31 @@ const DevTools = {
             return;
         }
 
-        if (!window.DataManager) {
-            console.error('DataManager가 로드되지 않았습니다.');
+        if (!window.AuthManager) {
+            console.error('AuthManager가 로드되지 않았습니다.');
             return;
         }
 
         try {
             if (type === 'student') {
                 const { name, birthDate } = FINAL_CONFIG.DEV.QUICK_LOGIN.STUDENT;
-                const success = await window.DataManager.authenticateStudent(name, birthDate);
-                console.log(success ? '학생 빠른 로그인 성공' : '학생 빠른 로그인 실패');
+                const success = await window.AuthManager.handleStudentLogin(name, birthDate);
+                console.log(success ? '✅ 학생 빠른 로그인 성공' : '❌ 학생 빠른 로그인 실패');
                 return success;
             } else if (type === 'admin') {
-                const success = await window.DataManager.authenticateAdmin(FINAL_CONFIG.DEV.QUICK_LOGIN.ADMIN_CODE);
-                console.log(success ? '관리자 빠른 로그인 성공' : '관리자 빠른 로그인 실패');
+                const success = await window.AuthManager.handleAdminLogin(FINAL_CONFIG.DEV.QUICK_LOGIN.ADMIN_CODE);
+                console.log(success ? '✅ 관리자 빠른 로그인 성공' : '❌ 관리자 빠른 로그인 실패');
                 return success;
             }
         } catch (error) {
-            console.error('빠른 로그인 오류:', error);
+            console.error('❌ 빠른 로그인 오류:', error);
         }
     },
 
     // API 연결 테스트
     async testApiConnection() {
         if (!window.SupabaseAPI) {
-            console.error('SupabaseAPI가 로드되지 않았습니다.');
+            console.error('❌ SupabaseAPI가 로드되지 않았습니다.');
             return false;
         }
 
@@ -184,6 +212,50 @@ const DevTools = {
             console.error('❌ API 연결 실패:', error);
             return false;
         }
+    },
+
+    // v2.1 추가: 관리자 대시보드 상태 확인
+    checkAdminDashboardHealth() {
+        if (!FINAL_CONFIG.DEV.DEBUG) return;
+        
+        console.group('🩺 관리자 대시보드 상태 확인');
+        
+        // 필수 모달 존재 확인
+        const requiredModals = [
+            'budgetSettingsModal',
+            'lessonPlanManagementModal', 
+            'viewLessonPlanModal',
+            'viewReceiptModal',
+            'lessonPlanSettingsModal'
+        ];
+        
+        const modalStatus = {};
+        requiredModals.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            modalStatus[modalId] = modal ? '✅ 존재' : '❌ 누락';
+        });
+        
+        console.table(modalStatus);
+        
+        // AdminManager 상태 확인
+        console.log('AdminManager:', window.AdminManager ? '✅ 로드됨' : '❌ 누락');
+        
+        // 버튼 상태 확인
+        const adminButtons = [
+            '#budgetSettingsBtn',
+            '#lessonPlanManagementBtn',
+            '#lessonPlanSettingsBtn',
+            '#exportBtn'
+        ];
+        
+        const buttonStatus = {};
+        adminButtons.forEach(selector => {
+            const button = document.querySelector(selector);
+            buttonStatus[selector] = button ? '✅ 존재' : '❌ 누락';
+        });
+        
+        console.table(buttonStatus);
+        console.groupEnd();
     }
 };
 
@@ -201,11 +273,12 @@ if (typeof window !== 'undefined') {
             
             // 개발자 도구를 전역에 추가
             window.dev = DevTools;
-            console.log('💡 개발 도구 사용법:');
+            console.log('💡 개발 도구 사용법 (v2.1):');
             console.log('  dev.quickLogin("student") - 학생 빠른 로그인');
             console.log('  dev.quickLogin("admin") - 관리자 빠른 로그인');
             console.log('  dev.testApiConnection() - API 연결 테스트');
             console.log('  dev.printConfig() - 설정 정보 출력');
+            console.log('  dev.checkAdminDashboardHealth() - 관리자 대시보드 상태 확인');
         }
     });
 }
@@ -222,6 +295,14 @@ if (typeof window !== 'undefined') {
         setTimeout(async () => {
             if (FINAL_CONFIG.DEV.DEBUG && window.DevTools) {
                 await window.DevTools.testApiConnection();
+                
+                // v2.1 추가: 관리자 페이지인 경우 대시보드 상태도 확인
+                const adminPage = document.getElementById('adminPage');
+                if (adminPage && adminPage.classList.contains('page')) {
+                    setTimeout(() => {
+                        window.DevTools.checkAdminDashboardHealth();
+                    }, 1000);
+                }
             }
         }, 3000);
     });
