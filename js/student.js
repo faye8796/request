@@ -289,14 +289,46 @@ const StudentManager = {
     // 모달 상호작용 이벤트 설정
     setupModalInteractionEvents() {
         try {
-            // 모달 배경 클릭으로 닫기
+            // 모달 배경 클릭으로 닫기 (개선된 방식)
             const modals = ['#applicationModal', '#bundleModal', '#shippingModal', '#receiptModal'];
             modals.forEach(modalId => {
                 this.safeAddEventListener(modalId, 'click', (e) => {
-                    if (e.target.id === modalId.substring(1)) {
-                        this.hideAllModals();
+                    // 모달 자체를 클릭했을 때만 닫기 (내용 영역 클릭 시에는 닫지 않음)
+                    if (e.target === e.currentTarget) {
+                        const modal = document.querySelector(modalId);
+                        if (modal) {
+                            modal.classList.remove('show');
+                            setTimeout(() => {
+                                modal.style.display = 'none';
+                                document.body.style.overflow = '';
+                            }, 300);
+                            
+                            // 해당 모달의 폼 초기화
+                            if (modalId === '#applicationModal') {
+                                this.resetApplicationForm();
+                            } else if (modalId === '#bundleModal') {
+                                this.resetBundleForm();
+                            } else if (modalId === '#shippingModal') {
+                                const form = document.getElementById('shippingForm');
+                                if (form) form.reset();
+                            }
+                        }
                     }
                 });
+            });
+            
+            // ESC 키로 모달 닫기
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const openModal = document.querySelector('.modal.show');
+                    if (openModal) {
+                        openModal.classList.remove('show');
+                        setTimeout(() => {
+                            openModal.style.display = 'none';
+                            document.body.style.overflow = '';
+                        }, 300);
+                    }
+                }
             });
 
             // 영수증 파일 업로드
@@ -310,13 +342,25 @@ const StudentManager = {
         }
     },
 
-    // 모든 모달 숨김
+    // 모든 모달 숨김 (개선된 방식)
     hideAllModals() {
         try {
-            this.hideApplicationModal();
-            this.hideBundleModal();
-            this.hideShippingModal();
-            this.hideReceiptModal();
+            // 모든 모달에서 show 클래스 제거
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                modal.classList.remove('show');
+            });
+            
+            // body 스크롤 복원
+            document.body.style.overflow = '';
+            
+            // 개별 모달 숨김 함수 호출
+            setTimeout(() => {
+                this.hideApplicationModal();
+                this.hideBundleModal();
+                this.hideShippingModal();
+                this.hideReceiptModal();
+            }, 300);
         } catch (error) {
             console.error('모달 숨김 오류:', error);
         }
@@ -1264,10 +1308,15 @@ const StudentManager = {
             // 기존 폼 데이터 초기화
             this.resetApplicationForm();
 
-            // 모달 표시
+            // 모달 표시 (개선된 방식)
             const modal = document.getElementById('applicationModal');
             if (modal) {
-                modal.style.display = 'block';
+                // 모달 표시 전 body 스크롤 방지
+                document.body.style.overflow = 'hidden';
+                
+                // 모달을 부드럽게 표시
+                modal.style.display = 'flex';
+                modal.classList.add('show');
                 
                 // 제목 설정
                 const title = document.getElementById('applicationModalTitle');
@@ -1278,6 +1327,14 @@ const StudentManager = {
                 // 편집 모드 플래그 초기화
                 this.currentEditingItem = null;
                 
+                // 첫 번째 입력 필드에 포커스
+                setTimeout(() => {
+                    const firstInput = modal.querySelector('input, textarea');
+                    if (firstInput) {
+                        firstInput.focus();
+                    }
+                }, 300);
+                
                 console.log('✅ 일반 교구 신청 모달 표시 완료');
             }
 
@@ -1287,13 +1344,21 @@ const StudentManager = {
         }
     },
 
-    // 일반 교구 신청 모달 숨김
+    // 일반 교구 신청 모달 숨김 (개선된 방식)
     hideApplicationModal() {
         try {
             console.log('일반 교구 신청 모달 숨김');
             const modal = document.getElementById('applicationModal');
             if (modal) {
-                modal.style.display = 'none';
+                // 부드러운 숨김 효과
+                modal.classList.remove('show');
+                
+                // 애니메이션 완료 후 display none
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    // body 스크롤 복원
+                    document.body.style.overflow = '';
+                }, 300);
             }
             
             // 폼 초기화
@@ -1353,10 +1418,24 @@ const StudentManager = {
             // 기존 폼 데이터 초기화
             this.resetBundleForm();
 
-            // 모달 표시
+            // 모달 표시 (개선된 방식)
             const modal = document.getElementById('bundleModal');
             if (modal) {
-                modal.style.display = 'block';
+                // body 스크롤 방지
+                document.body.style.overflow = 'hidden';
+                
+                // 모달을 부드럽게 표시
+                modal.style.display = 'flex';
+                modal.classList.add('show');
+                
+                // 첫 번째 입력 필드에 포커스
+                setTimeout(() => {
+                    const firstInput = modal.querySelector('input, textarea');
+                    if (firstInput) {
+                        firstInput.focus();
+                    }
+                }, 300);
+                
                 console.log('✅ 묶음 신청 모달 표시 완료');
             }
 
@@ -1366,13 +1445,21 @@ const StudentManager = {
         }
     },
 
-    // 묶음 신청 모달 숨김
+    // 묶음 신청 모달 숨김 (개선된 방식)
     hideBundleModal() {
         try {
             console.log('묶음 신청 모달 숨김');
             const modal = document.getElementById('bundleModal');
             if (modal) {
-                modal.style.display = 'none';
+                // 부드러운 숨김 효과
+                modal.classList.remove('show');
+                
+                // 애니메이션 완료 후 display none
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    // body 스크롤 복원
+                    document.body.style.overflow = '';
+                }, 300);
             }
             
             // 폼 초기화
@@ -1396,10 +1483,23 @@ const StudentManager = {
             // 기존 배송지 정보 로드
             await this.loadShippingInfo();
             
-            // 모달 표시
+            // 모달 표시 (개선된 방식)
             const modal = document.getElementById('shippingModal');
             if (modal) {
-                modal.style.display = 'block';
+                // body 스크롤 방지
+                document.body.style.overflow = 'hidden';
+                
+                // 모달을 부드럽게 표시
+                modal.style.display = 'flex';
+                modal.classList.add('show');
+                
+                // 첫 번째 입력 필드에 포커스
+                setTimeout(() => {
+                    const firstInput = modal.querySelector('input, textarea');
+                    if (firstInput) {
+                        firstInput.focus();
+                    }
+                }, 300);
             }
         } catch (error) {
             console.error('배송지 설정 모달 표시 오류:', error);
@@ -1407,13 +1507,21 @@ const StudentManager = {
         }
     },
 
-    // 배송지 설정 모달 숨김 - 실제 구현 (기존과 동일)
+    // 배송지 설정 모달 숨김 (개선된 방식)
     hideShippingModal() {
         try {
             console.log('배송지 설정 모달 숨김');
             const modal = document.getElementById('shippingModal');
             if (modal) {
-                modal.style.display = 'none';
+                // 부드러운 숨김 효과
+                modal.classList.remove('show');
+                
+                // 애니메이션 완료 후 display none
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    // body 스크롤 복원
+                    document.body.style.overflow = '';
+                }, 300);
             }
             
             // 폼 초기화
