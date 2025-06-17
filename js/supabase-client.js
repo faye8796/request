@@ -1485,7 +1485,7 @@ const SupabaseAPI = {
         };
     },
 
-    // 일반 통계
+    // 일반 통계 - 전체 학생 수 조회 추가
     async getStats() {
         const result = await this.safeApiCall('일반 통계 조회', async () => {
             const client = await this.ensureClient();
@@ -1495,6 +1495,12 @@ const SupabaseAPI = {
                 .from('requests')
                 .select('user_id')
                 .not('user_id', 'is', null);
+            
+            // 전체 학생 수 (데이터베이스에 등록된 학생 수)
+            const totalStudentsResult = await client
+                .from('user_profiles')
+                .select('id', { count: 'exact' })
+                .eq('user_type', 'student');
             
             // 미승인 아이템
             const pendingResult = await client
@@ -1511,6 +1517,7 @@ const SupabaseAPI = {
             return {
                 data: {
                     applicants: applicantResult.data || [],
+                    totalStudents: totalStudentsResult.count || 0,
                     pendingCount: pendingResult.count || 0,
                     approvedCount: approvedResult.count || 0
                 },
@@ -1519,11 +1526,12 @@ const SupabaseAPI = {
         });
 
         if (result.success) {
-            const { applicants, pendingCount, approvedCount } = result.data;
+            const { applicants, totalStudents, pendingCount, approvedCount } = result.data;
             const uniqueApplicants = new Set(applicants.map(a => a.user_id));
             
             return {
                 applicantCount: uniqueApplicants.size,
+                totalStudents: totalStudents,
                 pendingCount,
                 approvedCount
             };
@@ -1531,6 +1539,7 @@ const SupabaseAPI = {
 
         return {
             applicantCount: 0,
+            totalStudents: 0,
             pendingCount: 0,
             approvedCount: 0
         };
@@ -1936,4 +1945,4 @@ window.addEventListener('supabaseInitError', (event) => {
 });
 
 // 초기화 완료 로그
-console.log('🚀 SupabaseAPI loaded successfully with fixed budget allocation algorithm');
+console.log('🚀 SupabaseAPI loaded successfully with updated stats including total students count');
