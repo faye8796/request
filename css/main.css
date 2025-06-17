@@ -800,7 +800,7 @@ body {
     line-height: 1.4;
 }
 
-/* Modal - 개선된 버전 (위치 문제 해결) */
+/* Modal - 개선된 버전 (위치 문제 완전 해결) */
 .modal {
     position: fixed;
     top: 0;
@@ -815,14 +815,25 @@ body {
     padding: 1rem;
     box-sizing: border-box;
     backdrop-filter: blur(2px);
+    /* 중앙 정렬을 위한 CSS Grid 사용 */
+    place-items: center;
 }
 
-/* 모달이 활성화될 때 flex 표시 */
-.modal.show,
-.modal[style*="display: block"] {
-    display: flex !important;
+/* 모달이 활성화될 때 표시 - 개선됨 */
+.modal.show {
+    display: grid !important;
+    opacity: 1;
+    visibility: visible;
 }
 
+/* 애니메이션이 없는 상태에서는 숨김 */
+.modal:not(.show) {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* 모달 내용 */
 .modal-content {
     background: white !important;
     border-radius: 0.75rem;
@@ -835,8 +846,16 @@ body {
     box-sizing: border-box;
     position: relative;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    animation: modalFadeIn 0.3s ease-out;
     transform: translateZ(0);
+    /* 모달 중앙 정렬 보장 */
+    margin: auto;
+    /* 모바일 대응 */
+    min-width: 280px;
+}
+
+/* 모달 표시 애니메이션 */
+.modal.show .modal-content {
+    animation: modalFadeIn 0.3s ease-out;
 }
 
 @keyframes modalFadeIn {
@@ -1412,16 +1431,21 @@ body {
         min-width: 600px;
     }
 
-    /* 모바일 모달 최적화 */
+    /* 모바일 모달 최적화 - 개선됨 */
     .modal {
         padding: 0.5rem;
+        /* 모바일에서 상단 정렬 */
+        align-items: flex-start;
+        place-items: start center;
+        padding-top: 2rem;
     }
     
     .modal-content {
-        max-width: 100%;
-        max-height: 95vh;
+        max-width: calc(100vw - 1rem);
+        max-height: calc(100vh - 4rem);
         width: 100%;
         margin: 0;
+        min-width: auto;
     }
     
     .modal-actions {
@@ -1432,19 +1456,17 @@ body {
     .modal-actions .btn {
         width: 100%;
     }
-
-    /* 모바일에서 모달 위치 조정 */
-    .modal.show {
-        align-items: flex-start;
-        padding-top: 2rem;
-    }
 }
 
 /* 접근성 및 브라우저 호환성 개선 */
-@supports not (display: flex) {
+@supports not (display: grid) {
     .modal {
         display: table;
         table-layout: fixed;
+    }
+    
+    .modal.show {
+        display: table !important;
     }
     
     .modal-content {
@@ -1475,7 +1497,7 @@ body {
     z-index: 1050;
 }
 
-/* 스크롤바 숨김 (모달에서) */
+/* 스크롤바 최적화 (모달에서) */
 .modal-content::-webkit-scrollbar {
     width: 6px;
 }
@@ -1491,4 +1513,37 @@ body {
 
 .modal-content::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 0, 0, 0.3);
+}
+
+/* 모달 포커스 관리 */
+.modal.show {
+    outline: none;
+}
+
+.modal-content:focus {
+    outline: 2px solid #4f46e5;
+    outline-offset: -2px;
+}
+
+/* 애니메이션 성능 최적화 */
+.modal,
+.modal-content {
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+}
+
+/* 모달 닫기 시 애니메이션 */
+.modal:not(.show) .modal-content {
+    animation: modalFadeOut 0.2s ease-in;
+}
+
+@keyframes modalFadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
 }
