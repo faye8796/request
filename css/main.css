@@ -800,7 +800,7 @@ body {
     line-height: 1.4;
 }
 
-/* Modal */
+/* Modal - 개선된 중앙 정렬 */
 .modal {
     display: none;
     position: fixed;
@@ -813,6 +813,8 @@ body {
     align-items: center;
     justify-content: center;
     padding: 1rem;
+    /* 더 확실한 중앙 정렬을 위한 추가 스타일 */
+    box-sizing: border-box;
 }
 
 .modal.active {
@@ -828,6 +830,14 @@ body {
     max-height: 90vh;
     overflow-y: auto;
     color: #1f2937 !important;
+    /* 중앙 정렬 보장을 위한 추가 스타일 */
+    margin: auto;
+    position: relative;
+    box-sizing: border-box;
+    /* 브라우저 호환성을 위한 백업 중앙 정렬 */
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .modal-content h3 {
@@ -1392,4 +1402,54 @@ body {
         min-width: 600px;
     }
 
-    /* 모
+    /* 모바일 모달 개선 */
+    .modal {
+        padding: 0.5rem;
+    }
+    
+    .modal-content {
+        margin: 0;
+        /* 모바일에서는 transform 제거하고 flexbox만 사용 */
+        position: static;
+        left: auto;
+        top: auto;
+        transform: none;
+        max-width: 100%;
+        max-height: 95vh;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .modal-actions .btn {
+        width: 100%;
+    }
+}
+
+/* 접근성 및 브라우저 호환성 개선 */
+@supports not (display: flex) {
+    .modal {
+        display: table;
+        table-layout: fixed;
+    }
+    
+    .modal-content {
+        display: table-cell;
+        vertical-align: middle;
+        text-align: center;
+    }
+}
+
+/* 고대비 모드 지원 */
+@media (prefers-contrast: high) {
+    .modal {
+        background: rgba(0, 0, 0, 0.8);
+    }
+    
+    .modal-content {
+        border: 2px solid #000;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+}
