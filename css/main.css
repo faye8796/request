@@ -800,9 +800,8 @@ body {
     line-height: 1.4;
 }
 
-/* Modal - 수정된 버전 (JavaScript와 호환) */
+/* Modal - 개선된 버전 (위치 문제 해결) */
 .modal {
-    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -810,21 +809,23 @@ body {
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
     z-index: 1000;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 1rem;
     box-sizing: border-box;
+    backdrop-filter: blur(2px);
 }
 
-/* JavaScript에서 display: block 설정 시 flexbox로 동작 */
-.modal[style*="display: block"],
-.modal.active {
+/* 모달이 활성화될 때 flex 표시 */
+.modal.show,
+.modal[style*="display: block"] {
     display: flex !important;
 }
 
 .modal-content {
     background: white !important;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     padding: 1.5rem;
     width: 100%;
     max-width: 500px;
@@ -833,6 +834,20 @@ body {
     color: #1f2937 !important;
     box-sizing: border-box;
     position: relative;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: modalFadeIn 0.3s ease-out;
+    transform: translateZ(0);
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .modal-content h3 {
@@ -1406,6 +1421,7 @@ body {
         max-width: 100%;
         max-height: 95vh;
         width: 100%;
+        margin: 0;
     }
     
     .modal-actions {
@@ -1415,6 +1431,12 @@ body {
     
     .modal-actions .btn {
         width: 100%;
+    }
+
+    /* 모바일에서 모달 위치 조정 */
+    .modal.show {
+        align-items: flex-start;
+        padding-top: 2rem;
     }
 }
 
@@ -1442,4 +1464,31 @@ body {
         border: 2px solid #000;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
     }
+}
+
+/* 모달 스택 관리 */
+.modal.modal-backdrop {
+    z-index: 1040;
+}
+
+.modal.modal-dialog {
+    z-index: 1050;
+}
+
+/* 스크롤바 숨김 (모달에서) */
+.modal-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
 }
