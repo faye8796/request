@@ -1513,7 +1513,7 @@ const StudentManager = {
         }
     },
 
-    // 구매 방식 변경 처리
+    // 구매 방식 변경 처리 - 수정된 구현 (온라인 구매 시 필수)
     handlePurchaseMethodChange(method) {
         try {
             const linkGroup = document.getElementById('itemLinkGroup');
@@ -1521,11 +1521,19 @@ const StudentManager = {
             const linkInput = document.getElementById('itemLink');
             
             if (method === 'offline') {
+                // 오프라인 구매: 참고 링크 (선택)
                 if (linkLabel) linkLabel.textContent = '참고 링크 (선택)';
-                if (linkInput) linkInput.placeholder = '참고할 수 있는 링크가 있다면 입력하세요';
+                if (linkInput) {
+                    linkInput.placeholder = '참고할 수 있는 링크가 있다면 입력하세요';
+                    linkInput.removeAttribute('required');
+                }
             } else {
-                if (linkLabel) linkLabel.textContent = '구매 링크 (선택)';
-                if (linkInput) linkInput.placeholder = '구매 가능한 링크를 입력하세요';
+                // 온라인 구매: 구매 링크 (필수)
+                if (linkLabel) linkLabel.textContent = '구매 링크 *';
+                if (linkInput) {
+                    linkInput.placeholder = '구매 가능한 링크를 입력하세요';
+                    linkInput.setAttribute('required', 'required');
+                }
             }
         } catch (error) {
             console.error('구매 방식 변경 처리 오류:', error);
@@ -1651,7 +1659,7 @@ const StudentManager = {
         }
     },
 
-    // 폼 데이터 수집 및 검증
+    // 폼 데이터 수집 및 검증 - 수정된 구현 (온라인 구매 시 링크 필수 검증)
     getApplicationFormData() {
         try {
             const formData = {
@@ -1679,6 +1687,13 @@ const StudentManager = {
             if (!formData.price || formData.price <= 0) {
                 alert('올바른 가격을 입력해주세요.');
                 document.getElementById('itemPrice')?.focus();
+                return null;
+            }
+
+            // 온라인 구매 시 구매 링크 필수 검증 추가
+            if (formData.purchase_type === 'online' && !formData.purchase_link) {
+                alert('온라인 구매 시 구매 링크는 필수입니다.');
+                document.getElementById('itemLink')?.focus();
                 return null;
             }
 
