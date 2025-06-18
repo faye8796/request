@@ -497,6 +497,28 @@
                 // localStorage에 저장
                 localStorage.setItem('currentStudent', JSON.stringify(correctData));
                 
+                // sessionStorage의 userSession도 함께 업데이트 (중요!)
+                try {
+                    const existingSession = sessionStorage.getItem('userSession');
+                    if (existingSession) {
+                        const sessionData = JSON.parse(existingSession);
+                        // 사용자 데이터 업데이트
+                        sessionData.user = correctData;
+                        sessionData.updated_at = new Date().toISOString();
+                        sessionStorage.setItem('userSession', JSON.stringify(sessionData));
+                        
+                        // SupabaseAPI.currentUser도 업데이트
+                        if (typeof SupabaseAPI !== 'undefined') {
+                            SupabaseAPI.currentUser = correctData;
+                            console.log('✅ SupabaseAPI.currentUser 업데이트 완료');
+                        }
+                        
+                        console.log('✅ sessionStorage의 userSession 업데이트 완료');
+                    }
+                } catch (sessionError) {
+                    console.warn('⚠️ sessionStorage 업데이트 중 오류:', sessionError);
+                }
+                
                 // 구조적 문제 해결됨으로 표시
                 sessionStorage.removeItem('hasDataStructuralIssues');
                 
