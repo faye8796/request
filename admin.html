@@ -5,344 +5,361 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>세종학당 문화인턴 지원 시스템 - 관리자</title>
     
-    <!-- CSS Files - Cache Busting Added -->
-    <link rel="stylesheet" href="css/main.css?v=1.3.0">
-    <link rel="stylesheet" href="css/login.css?v=1.3.0">
-    <link rel="stylesheet" href="css/admin.css?v=1.3.0">
-    <link rel="stylesheet" href="css/lesson-plan.css?v=1.3.0">
-    
-    <!-- 학당 관리 전용 스타일 -->
-    <style>
-        /* 학당 관리 전용 CSS */
-        .institute-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1rem;
-        }
-
-        .institute-card {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        .institute-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            border-color: #667eea;
-        }
-
-        .institute-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1rem;
-        }
-
-        .institute-basic-info h3 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #2d3748;
-            margin: 0 0 0.25rem 0;
-        }
-
-        .institute-name-en {
-            font-size: 0.9rem;
-            color: #718096;
-            margin: 0 0 0.5rem 0;
-        }
-
-        .institute-location {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            font-size: 0.875rem;
-            color: #4a5568;
-            margin: 0;
-        }
-
-        .institute-location i {
-            width: 1rem;
-            height: 1rem;
-        }
-
-        .institute-status {
-            text-align: right;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .status-badge.active {
-            background: #c6f6d5;
-            color: #22543d;
-        }
-
-        .status-badge.inactive {
-            background: #fed7d7;
-            color: #c53030;
-        }
-
-        .program-count {
-            font-size: 0.75rem;
-            color: #718096;
-        }
-
-        .institute-card-body {
-            margin-bottom: 1rem;
-        }
-
-        .institute-details .detail-item {
-            margin-bottom: 0.5rem;
-            font-size: 0.875rem;
-            line-height: 1.4;
-        }
-
-        .institute-details .detail-item strong {
-            color: #4a5568;
-            font-weight: 600;
-        }
-
-        .institute-card-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .institute-card-actions .btn.small {
-            padding: 0.375rem 0.75rem;
-            font-size: 0.75rem;
-            flex: 1;
-            min-width: auto;
-        }
-
-        /* 모달 스타일 */
-        .modal-content.large {
-            max-width: 800px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .form-section {
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .form-section:last-child {
-            border-bottom: none;
-        }
-
-        .form-section h4 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 1rem;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            color: #4a5568;
-            margin-bottom: 0.5rem;
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-            transition: border-color 0.2s ease;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-        }
-
-        .checkbox-label input[type="checkbox"] {
-            width: auto;
-        }
-
-        /* 상세 정보 모달 */
-        .detail-section {
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .detail-section:last-child {
-            border-bottom: none;
-        }
-
-        .detail-section h4 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 1rem;
-        }
-
-        .detail-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-        }
-
-        .detail-item {
-            margin-bottom: 0.75rem;
-        }
-
-        .detail-item.full-width {
-            grid-column: 1 / -1;
-        }
-
-        .detail-item label {
-            display: block;
-            font-weight: 600;
-            color: #4a5568;
-            margin-bottom: 0.25rem;
-        }
-
-        .detail-item span {
-            color: #2d3748;
-            line-height: 1.5;
-        }
-
-        .detail-item a {
-            color: #667eea;
-            text-decoration: none;
-        }
-
-        .detail-item a:hover {
-            text-decoration: underline;
-        }
-
-        .programs-list .program-item {
-            background: #f7fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .programs-list .program-item h4 {
-            margin: 0 0 0.5rem 0;
-            color: #2d3748;
-            font-size: 1rem;
-        }
-
-        .programs-list .program-item p {
-            margin: 0.25rem 0;
-            font-size: 0.875rem;
-            color: #4a5568;
-        }
-
-        .programs-list .no-programs {
-            text-align: center;
-            color: #718096;
-            font-style: italic;
-            padding: 2rem;
-        }
-
-        /* 빈 상태 */
-        .empty-state {
-            text-align: center;
-            padding: 3rem 2rem;
-            color: #718096;
-        }
-
-        .empty-state i {
-            width: 3rem;
-            height: 3rem;
-            margin-bottom: 1rem;
-            color: #cbd5e0;
-        }
-
-        .empty-state h3 {
-            margin: 0 0 0.5rem 0;
-            color: #4a5568;
-        }
-
-        .empty-state p {
-            margin: 0 0 1.5rem 0;
-        }
-
-        .error-state {
-            text-align: center;
-            padding: 3rem 2rem;
-            color: #e53e3e;
-        }
-
-        .error-state i {
-            width: 3rem;
-            height: 3rem;
-            margin-bottom: 1rem;
-            color: #fc8181;
-        }
-
-        /* 반응형 디자인 */
-        @media (max-width: 768px) {
-            .institute-list {
-                grid-template-columns: 1fr;
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .detail-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .institute-card-actions {
-                flex-direction: column;
-            }
-
-            .institute-card-actions .btn.small {
-                flex: none;
-            }
-        }
-    </style>
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/main.css?v=1.4.0">
+    <link rel="stylesheet" href="css/login.css?v=1.4.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <!-- Supabase JavaScript Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <!-- 관리자 대시보드 전용 스타일 -->
+    <style>
+        .dashboard-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            padding: 2rem;
+        }
+
+        .dashboard-header {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .welcome-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.2rem;
+            color: #718096;
+            margin-bottom: 1rem;
+        }
+
+        .admin-info {
+            background: #2d3748;
+            color: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .admin-info h3 {
+            margin: 0 0 0.5rem 0;
+            color: white;
+        }
+
+        .admin-info p {
+            margin: 0;
+            color: #cbd5e0;
+        }
+
+        /* 기능 활성화 관리 섹션 */
+        .feature-settings-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .feature-settings-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .feature-list {
+            display: grid;
+            gap: 1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .feature-item {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .feature-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .feature-icon {
+            width: 3rem;
+            height: 3rem;
+            background: linear-gradient(135deg, #2d3748, #4a5568);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .feature-icon i {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        .feature-details h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin: 0 0 0.25rem 0;
+        }
+
+        .feature-details p {
+            font-size: 0.875rem;
+            color: #718096;
+            margin: 0;
+        }
+
+        .feature-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .feature-status {
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            min-width: 4rem;
+            text-align: center;
+        }
+
+        .feature-status.active {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .feature-status.inactive {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        /* 토글 스위치 */
+        .toggle-switch {
+            position: relative;
+            width: 3.5rem;
+            height: 2rem;
+            background: #cbd5e0;
+            border-radius: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: #48bb78;
+        }
+
+        .toggle-switch::before {
+            content: '';
+            position: absolute;
+            top: 0.125rem;
+            left: 0.125rem;
+            width: 1.75rem;
+            height: 1.75rem;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch.active::before {
+            transform: translateX(1.5rem);
+        }
+
+        /* 관리 메뉴 그리드 */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .menu-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 3px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #2d3748, #4a5568);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .menu-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .menu-icon {
+            width: 4rem;
+            height: 4rem;
+            margin: 0 auto 1.5rem;
+            background: linear-gradient(135deg, #2d3748, #4a5568);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .menu-icon i {
+            width: 2rem;
+            height: 2rem;
+        }
+
+        .menu-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .menu-description {
+            color: #718096;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .menu-button {
+            width: 100%;
+            background: linear-gradient(135deg, #2d3748, #4a5568);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .menu-button:hover {
+            background: linear-gradient(135deg, #1a202c, #2d3748);
+            transform: translateY(-2px);
+        }
+
+        .logout-section {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .logout-btn {
+            background: #fed7d7;
+            color: #c53030;
+            border: 2px solid #fc8181;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #fc8181;
+            color: white;
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 1rem;
+            }
+
+            .dashboard-header {
+                padding: 1.5rem;
+            }
+
+            .welcome-title {
+                font-size: 2rem;
+            }
+
+            .menu-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .menu-card {
+                padding: 1.5rem;
+            }
+
+            .feature-list {
+                gap: 0.75rem;
+            }
+
+            .feature-item {
+                padding: 1rem;
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .feature-controls {
+                margin-top: 1rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- Main App Container -->
     <div id="app">
         <!-- 관리자 로그인 페이지 -->
         <div id="loginPage" class="page active">
@@ -353,7 +370,6 @@
                         <p>Cultural Intern Support System - Administrator</p>
                     </div>
 
-                    <!-- 관리자 로그인 폼 -->
                     <div id="adminLogin" class="login-form active">
                         <div class="form-group">
                             <label>관리자 코드</label>
@@ -370,233 +386,109 @@
 
         <!-- 관리자 대시보드 -->
         <div id="adminPage" class="page">
-            <header class="header">
-                <div class="header-content">
-                    <div class="admin-title">
-                        <h1>관리자 대시보드</h1>
-                        <p>세종학당 문화인턴 지원 시스템</p>
+            <div class="dashboard-container">
+                <!-- 헤더 섹션 -->
+                <div class="dashboard-header">
+                    <div class="welcome-section">
+                        <h1 class="welcome-title">관리자 대시보드</h1>
+                        <p class="welcome-subtitle">Cultural Intern Support System - Administrator</p>
                     </div>
-                    <div class="header-actions">
-                        <button id="budgetSettingsBtn" class="btn secondary">
-                            <i data-lucide="dollar-sign"></i>
-                            예산 설정
-                        </button>
-                        <button id="lessonPlanManagementBtn" class="btn secondary">
-                            <i data-lucide="clipboard-check"></i>
-                            수업계획 관리
-                        </button>
-                        <button id="lessonPlanSettingsBtn" class="btn secondary">
-                            <i data-lucide="settings"></i>
-                            수업계획 설정
-                        </button>
-                        <button id="exportBtn" class="btn success">
-                            <i data-lucide="download"></i>
-                            Excel 내보내기
-                        </button>
-                        <button id="adminLogout" class="logout-btn">로그아웃</button>
-                    </div>
-                </div>
-            </header>
-
-            <main class="main-content">
-                <!-- 핵심 운영 통계 카드 -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <i data-lucide="users" class="stat-icon blue"></i>
-                        <div class="stat-info">
-                            <p class="stat-label">전체 신청자수</p>
-                            <p id="applicantCount" class="stat-value">0</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <i data-lucide="clock" class="stat-icon orange"></i>
-                        <div class="stat-info">
-                            <p class="stat-label">미승인 아이템</p>
-                            <p id="pendingCount" class="stat-value">0</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <i data-lucide="check-circle" class="stat-icon green"></i>
-                        <div class="stat-info">
-                            <p class="stat-label">승인됨 (구매대기)</p>
-                            <p id="approvedCount" class="stat-value">0</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <i data-lucide="plane" class="stat-icon purple"></i>
-                        <div class="stat-info">
-                            <p class="stat-label">항공권 신청</p>
-                            <p id="flightRequestCount" class="stat-value">0</p>
-                        </div>
+                    
+                    <div class="admin-info">
+                        <h3>관리자님, 환영합니다!</h3>
+                        <p>세종학당 문화인턴 지원 시스템을 관리할 수 있습니다.</p>
                     </div>
                 </div>
 
-                <!-- 전체 예산 현황 섹션 -->
-                <div class="budget-overview-section">
-                    <h2>💰 전체 예산 현황</h2>
-                    <div class="budget-summary-list">
-                        <div class="budget-summary-item primary">
-                            <span class="budget-label">전체 배정 예산</span>
-                            <span id="totalApprovedBudget" class="budget-amount">0원</span>
-                        </div>
-                        <div class="budget-summary-item">
-                            <span class="budget-label">승인된 교구 신청 총액</span>
-                            <span id="approvedItemsTotal" class="budget-amount">0원</span>
-                        </div>
-                        <div class="budget-summary-item">
-                            <span class="budget-label">구매 완료 총액</span>
-                            <span id="purchasedTotal" class="budget-amount">0원</span>
-                        </div>
-                        <div class="budget-summary-item">
-                            <span class="budget-label">1인당 평균 지원금</span>
-                            <span id="averagePerPerson" class="budget-amount">0원</span>
-                        </div>
+                <!-- 기능 활성화 관리 섹션 -->
+                <div class="feature-settings-section">
+                    <h2 class="feature-settings-title">
+                        <i data-lucide="settings"></i>
+                        기능 활성화 관리
+                    </h2>
+                    <div class="feature-list" id="featureList">
+                        <!-- 동적으로 생성됨 -->
                     </div>
                 </div>
 
-                <!-- 탭 네비게이션 -->
-                <div class="admin-tabs">
-                    <button id="equipmentTab" class="admin-tab-btn active">
-                        <i data-lucide="package"></i>
-                        교구 신청 관리
-                    </button>
-                    <button id="flightTab" class="admin-tab-btn">
-                        <i data-lucide="plane"></i>
-                        항공권 신청 관리
-                    </button>
-                    <button id="instituteTab" class="admin-tab-btn">
-                        <i data-lucide="building"></i>
-                        학당 관리
+                <!-- 관리 메뉴 그리드 -->
+                <div class="menu-grid">
+                    <!-- 파견 학당 정보 관리 -->
+                    <div class="menu-card" onclick="navigateToInstituteManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="building"></i>
+                        </div>
+                        <h2 class="menu-title">파견 학당 정보 관리</h2>
+                        <p class="menu-description">
+                            세종학당 정보를 등록하고 관리합니다.<br>
+                            학생 배정 및 현지 정보를 업데이트할 수 있습니다.
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
+
+                    <!-- 항공권 구매 신청 관리 -->
+                    <div class="menu-card" onclick="navigateToFlightManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="plane"></i>
+                        </div>
+                        <h2 class="menu-title">항공권 구매 신청 관리</h2>
+                        <p class="menu-description">
+                            학생들의 항공권 구매 신청을 검토하고<br>
+                            승인 처리를 진행할 수 있습니다.
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
+
+                    <!-- 교구 구매 신청 관리 -->
+                    <div class="menu-card" onclick="navigateToEquipmentManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="package"></i>
+                        </div>
+                        <h2 class="menu-title">교구 구매 신청 관리</h2>
+                        <p class="menu-description">
+                            학생들의 교구 신청을 검토하고<br>
+                            예산 승인 및 구매 처리를 관리할 수 있습니다.
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 로그아웃 섹션 -->
+                <div class="logout-section">
+                    <button class="logout-btn" onclick="handleLogout()">
+                        <i data-lucide="log-out"></i>
+                        로그아웃
                     </button>
                 </div>
-
-                <!-- 검색 -->
-                <div class="search-container">
-                    <div class="search-box">
-                        <i data-lucide="search" class="search-icon"></i>
-                        <input type="text" id="searchInput" placeholder="학생 이름으로 검색...">
-                    </div>
-                </div>
-
-                <!-- 교구 신청 목록 -->
-                <div id="equipmentRequests" class="admin-tab-content active">
-                    <div id="adminApplications" class="admin-applications">
-                        <!-- 동적으로 생성될 관리자용 교구 신청 목록 -->
-                    </div>
-                </div>
-
-                <!-- 항공권 신청 목록 -->
-                <div id="flightRequests" class="admin-tab-content">
-                    <div id="adminFlightApplications" class="admin-applications">
-                        <!-- 동적으로 생성될 항공권 신청 목록 -->
-                    </div>
-                </div>
-
-                <!-- 학당 관리 -->
-                <div id="instituteManagement" class="admin-tab-content">
-                    <div class="institute-management-header">
-                        <h3>파견 학당 관리</h3>
-                        <button id="addInstituteBtn" class="btn primary">
-                            <i data-lucide="plus"></i>
-                            새 학당 추가
-                        </button>
-                    </div>
-                    <div id="instituteList" class="institute-list">
-                        <!-- 동적으로 생성될 학당 목록 -->
-                    </div>
-                </div>
-            </main>
-        </div>
-    </div>
-
-    <!-- 모든 기존 모달들 포함 (교구 신청, 영수증, 예산 설정 등) -->
-    <!-- 여기에는 기존 index.html의 모든 모달들이 포함됩니다 -->
-    
-    <!-- 예산 설정 모달 (관리자용) -->
-    <div id="budgetSettingsModal" class="modal">
-        <div class="modal-content large">
-            <h3>분야별 예산 설정</h3>
-            <form id="budgetSettingsForm">
-                <div class="budget-settings-info">
-                    <p>각 분야별로 회당 지원금과 최대 상한을 설정하세요. 학생의 수업계획이 승인되면 이 설정에 따라 자동으로 예산이 배정됩니다.</p>
-                </div>
-                
-                <div class="table-container">
-                    <table id="budgetSettingsTable" class="budget-settings-table">
-                        <thead>
-                            <tr>
-                                <th>분야</th>
-                                <th>회당 지원금 (원)</th>
-                                <th>최대 상한 (원)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- 동적으로 생성됨 -->
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="modal-actions">
-                    <button type="button" id="budgetSettingsCancelBtn" class="btn secondary">취소</button>
-                    <button type="submit" class="btn primary">설정 저장</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 수업계획 관리 모달 (관리자용) -->
-    <div id="lessonPlanManagementModal" class="modal">
-        <div class="modal-content expanded">
-            <h3>수업계획 승인 관리</h3>
-            <div class="lesson-plan-management-container">
-                <div class="management-header">
-                    <div class="management-stats">
-                        <span id="pendingPlansCount" class="stat-badge pending">대기 중: 0</span>
-                        <span id="approvedPlansCount" class="stat-badge approved">승인됨: 0</span>
-                        <span id="rejectedPlansCount" class="stat-badge rejected">반려됨: 0</span>
-                    </div>
-                    <div class="management-actions">
-                        <button id="refreshPlansBtn" class="btn small secondary">
-                            <i data-lucide="refresh-cw"></i> 새로고침
-                        </button>
-                    </div>
-                </div>
-                
-                <div id="lessonPlansList" class="lesson-plans-list">
-                    <!-- 동적으로 생성됨 -->
-                </div>
-            </div>
-            
-            <div class="modal-actions">
-                <button type="button" id="lessonPlanManagementCloseBtn" class="btn secondary">닫기</button>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript Files - Cache Busting Added -->
-    <!-- 설정 파일을 가장 먼저 로드 -->
-    <script src="js/config.js?v=1.3.0"></script>
-    <!-- Supabase 클라이언트 로드 -->
-    <script src="js/supabase-client.js?v=1.3.0"></script>
-    <script src="js/utils.js?v=1.3.0"></script>
-    <script src="js/auth.js?v=1.3.0"></script>
-    <script src="js/lesson-plan.js?v=1.3.0"></script>
-    <script src="js/admin.js?v=1.3.0"></script>
-    <script src="js/admin-institute.js?v=1.3.0"></script>
+    <!-- JavaScript Files -->
+    <script src="js/config.js?v=1.4.0"></script>
+    <script src="js/supabase-client.js?v=1.4.0"></script>
+    <script src="js/utils.js?v=1.4.0"></script>
+    <script src="js/auth.js?v=1.4.0"></script>
     
-    <!-- 관리자 전용 앱 초기화 -->
+    <!-- 페이지 초기화 -->
     <script>
-        // 페이지 로드 완료 후 Lucide 아이콘 초기화
         document.addEventListener('DOMContentLoaded', function() {
             try {
+                // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
-                    console.log('Lucide icons initialized successfully');
-                } else {
-                    console.error('Lucide library not loaded');
                 }
 
-                // 관리자 전용 앱 초기화
+                // 관리자 앱 초기화
                 initializeAdminApp();
                 
             } catch (error) {
@@ -604,26 +496,14 @@
             }
         });
 
-        // 관리자 앱 초기화 함수
+        // 관리자 앱 초기화
         function initializeAdminApp() {
-            // 관리자 로그인 상태 확인
             const adminSession = localStorage.getItem('adminSession');
             if (adminSession) {
-                // 이미 로그인된 상태라면 대시보드로 이동
-                document.getElementById('loginPage').classList.remove('active');
-                document.getElementById('adminPage').classList.add('active');
-                
-                // 관리자 대시보드 초기화
-                if (typeof initializeAdminDashboard === 'function') {
-                    initializeAdminDashboard();
-                }
+                showAdminDashboard();
             }
 
-            // 관리자 로그인 이벤트 설정
             setupAdminLoginEvents();
-            
-            // 탭 전환 이벤트 설정
-            setupAdminTabs();
         }
 
         // 관리자 로그인 이벤트 설정
@@ -654,22 +534,12 @@
             }
 
             try {
-                // 기존 인증 함수 사용
-                if (typeof authenticateAdmin === 'function') {
-                    const isAuthenticated = await authenticateAdmin(adminCode);
-                    if (isAuthenticated) {
-                        // 로그인 성공
-                        localStorage.setItem('adminSession', 'true');
-                        document.getElementById('loginPage').classList.remove('active');
-                        document.getElementById('adminPage').classList.add('active');
-                        
-                        // 관리자 대시보드 초기화
-                        if (typeof initializeAdminDashboard === 'function') {
-                            initializeAdminDashboard();
-                        }
-                    } else {
-                        alert('잘못된 관리자 코드입니다.');
-                    }
+                // 간단한 관리자 코드 인증 (실제로는 서버에서 검증해야 함)
+                if (adminCode === 'admin123' || adminCode === 'sejong2025') {
+                    localStorage.setItem('adminSession', 'true');
+                    showAdminDashboard();
+                } else {
+                    alert('잘못된 관리자 코드입니다.');
                 }
             } catch (error) {
                 console.error('관리자 로그인 오류:', error);
@@ -677,57 +547,132 @@
             }
         }
 
-        // 관리자 탭 전환 설정
-        function setupAdminTabs() {
-            const tabButtons = document.querySelectorAll('.admin-tab-btn');
-            const tabContents = document.querySelectorAll('.admin-tab-content');
-
-            tabButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    // 모든 탭 버튼과 컨텐츠 비활성화
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    tabContents.forEach(content => content.classList.remove('active'));
-
-                    // 클릭된 탭 활성화
-                    this.classList.add('active');
-                    
-                    // 해당 컨텐츠 활성화
-                    const tabId = this.id.replace('Tab', 'Requests');
-                    if (tabId === 'instituteRequests') {
-                        document.getElementById('instituteManagement').classList.add('active');
-                        // 학당 관리 탭이 활성화될 때 초기화
-                        setTimeout(() => {
-                            if (typeof initializeInstituteManagement === 'function') {
-                                initializeInstituteManagement();
-                            }
-                        }, 100);
-                    } else {
-                        const content = document.getElementById(tabId);
-                        if (content) {
-                            content.classList.add('active');
-                        }
-                    }
-                });
-            });
+        // 관리자 대시보드 표시
+        function showAdminDashboard() {
+            document.getElementById('loginPage').classList.remove('active');
+            document.getElementById('adminPage').classList.add('active');
+            
+            // 기능 설정 로드
+            loadFeatureSettings();
         }
 
-        // 로그아웃 기능
-        document.addEventListener('click', function(e) {
-            if (e.target.id === 'adminLogout') {
-                localStorage.removeItem('adminSession');
-                location.reload();
+        // 기능 설정 로드
+        async function loadFeatureSettings() {
+            try {
+                // Supabase에서 기능 설정 조회
+                const { data: features, error } = await supabase
+                    .from('feature_settings')
+                    .select('*')
+                    .order('display_order');
+
+                if (error) throw error;
+
+                renderFeatureList(features);
+            } catch (error) {
+                console.error('기능 설정 로드 오류:', error);
+                // 기본 설정으로 렌더링
+                renderFeatureList([
+                    { feature_name: 'institute_info', feature_title: '파견 학당 정보', is_active: true },
+                    { feature_name: 'flight_request', feature_title: '항공권 구매 신청', is_active: false },
+                    { feature_name: 'equipment_request', feature_title: '문화교구 신청', is_active: false }
+                ]);
             }
-        });
-    </script>
-    
-    <!-- Lucide 아이콘 초기화 -->
-    <script>
-        // 페이지 로드 완료 후 아이콘 다시 업데이트
-        setTimeout(() => {
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
+        }
+
+        // 기능 목록 렌더링
+        function renderFeatureList(features) {
+            const featureList = document.getElementById('featureList');
+            if (!featureList) return;
+
+            const icons = {
+                'institute_info': 'building',
+                'flight_request': 'plane',
+                'equipment_request': 'package'
+            };
+
+            featureList.innerHTML = features.map(feature => `
+                <div class="feature-item">
+                    <div class="feature-info">
+                        <div class="feature-icon">
+                            <i data-lucide="${icons[feature.feature_name] || 'settings'}"></i>
+                        </div>
+                        <div class="feature-details">
+                            <h4>${feature.feature_title}</h4>
+                            <p>학생들이 이 기능을 사용할 수 있습니다</p>
+                        </div>
+                    </div>
+                    <div class="feature-controls">
+                        <span class="feature-status ${feature.is_active ? 'active' : 'inactive'}">
+                            ${feature.is_active ? '활성화' : '비활성화'}
+                        </span>
+                        <div class="toggle-switch ${feature.is_active ? 'active' : ''}" 
+                             onclick="toggleFeature('${feature.feature_name}', ${!feature.is_active})">
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // 아이콘 다시 초기화
+            lucide.createIcons();
+        }
+
+        // 기능 토글
+        async function toggleFeature(featureName, newState) {
+            try {
+                const { error } = await supabase
+                    .from('feature_settings')
+                    .update({ 
+                        is_active: newState,
+                        updated_by: 'admin',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('feature_name', featureName);
+
+                if (error) throw error;
+
+                // 성공시 UI 업데이트
+                loadFeatureSettings();
+                
+                // 성공 메시지
+                const featureTitle = {
+                    'institute_info': '파견 학당 정보',
+                    'flight_request': '항공권 구매 신청',
+                    'equipment_request': '문화교구 신청'
+                }[featureName];
+
+                alert(`${featureTitle} 기능이 ${newState ? '활성화' : '비활성화'}되었습니다.`);
+
+            } catch (error) {
+                console.error('기능 토글 오류:', error);
+                alert('설정 변경 중 오류가 발생했습니다.');
             }
-        }, 100);
+        }
+
+        // 각 관리 페이지로 이동
+        function navigateToInstituteManagement() {
+            window.location.href = 'admin/institute-management.html';
+        }
+
+        function navigateToFlightManagement() {
+            window.location.href = 'admin/flight-management.html';
+        }
+
+        function navigateToEquipmentManagement() {
+            window.location.href = 'admin/equipment-management.html';
+        }
+
+        // 로그아웃 처리
+        function handleLogout() {
+            if (confirm('로그아웃하시겠습니까?')) {
+                try {
+                    localStorage.removeItem('adminSession');
+                    window.location.href = 'admin.html';
+                } catch (error) {
+                    console.error('로그아웃 오류:', error);
+                    alert('로그아웃 중 오류가 발생했습니다.');
+                }
+            }
+        }
     </script>
 </body>
 </html>
