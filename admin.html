@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>세종학당 문화인턴 지원 시스템 - 관리자</title>
+    
+    <!-- CSS Files - Cache Busting Added -->
+    <link rel="stylesheet" href="css/main.css?v=1.3.0">
+    <link rel="stylesheet" href="css/login.css?v=1.3.0">
+    <link rel="stylesheet" href="css/admin.css?v=1.3.0">
+    <link rel="stylesheet" href="css/lesson-plan.css?v=1.3.0">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Supabase JavaScript Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Main App Container -->
+    <div id="app">
+        <!-- 관리자 로그인 페이지 -->
+        <div id="loginPage" class="page active">
+            <div class="login-container">
+                <div class="login-card">
+                    <div class="login-header">
+                        <h1>세종학당 문화인턴 지원 시스템</h1>
+                        <p>Cultural Intern Support System - Administrator</p>
+                        <div class="admin-badge">
+                            <i data-lucide="shield-check"></i>
+                            관리자 전용
+                        </div>
+                    </div>
+
+                    <!-- 관리자 로그인 폼 -->
+                    <div id="adminLogin" class="login-form active">
+                        <div class="form-group">
+                            <label>관리자 코드</label>
+                            <input type="password" id="adminCode" placeholder="관리자 코드를 입력하세요">
+                        </div>
+                        <button id="adminLoginBtn" class="login-btn admin">
+                            <i data-lucide="log-in"></i>
+                            관리자 로그인
+                        </button>
+                        
+                        <div class="login-help">
+                            <p><i data-lucide="info"></i> 학생용 페이지는 <a href="index.html">여기</a>에서 접속하세요.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 관리자 대시보드 -->
+        <div id="adminPage" class="page">
+            <header class="header">
+                <div class="header-content">
+                    <div class="admin-title">
+                        <h1>관리자 대시보드</h1>
+                        <p>세종학당 문화인턴 지원 시스템</p>
+                    </div>
+                    <div class="header-actions">
+                        <button id="budgetSettingsBtn" class="btn secondary">
+                            <i data-lucide="dollar-sign"></i>
+                            예산 설정
+                        </button>
+                        <button id="lessonPlanManagementBtn" class="btn secondary">
+                            <i data-lucide="clipboard-check"></i>
+                            수업계획 관리
+                        </button>
+                        <button id="lessonPlanSettingsBtn" class="btn secondary">
+                            <i data-lucide="settings"></i>
+                            수업계획 설정
+                        </button>
+                        <button id="exportBtn" class="btn success">
+                            <i data-lucide="download"></i>
+                            Excel 내보내기
+                        </button>
+                        <button id="adminLogout" class="logout-btn">로그아웃</button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <!-- 핵심 운영 통계 카드 -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i data-lucide="users" class="stat-icon blue"></i>
+                        <div class="stat-info">
+                            <p class="stat-label">전체 신청자수</p>
+                            <p id="applicantCount" class="stat-value">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i data-lucide="clock" class="stat-icon orange"></i>
+                        <div class="stat-info">
+                            <p class="stat-label">미승인 아이템</p>
+                            <p id="pendingCount" class="stat-value">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i data-lucide="check-circle" class="stat-icon green"></i>
+                        <div class="stat-info">
+                            <p class="stat-label">승인됨 (구매대기)</p>
+                            <p id="approvedCount" class="stat-value">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i data-lucide="plane" class="stat-icon purple"></i>
+                        <div class="stat-info">
+                            <p class="stat-label">항공권 신청</p>
+                            <p id="flightRequestCount" class="stat-value">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 전체 예산 현황 섹션 -->
+                <div class="budget-overview-section">
+                    <h2>💰 전체 예산 현황</h2>
+                    <div class="budget-summary-list">
+                        <div class="budget-summary-item primary">
+                            <span class="budget-label">전체 배정 예산</span>
+                            <span id="totalApprovedBudget" class="budget-amount">0원</span>
+                        </div>
+                        <div class="budget-summary-item">
+                            <span class="budget-label">승인된 교구 신청 총액</span>
+                            <span id="approvedItemsTotal" class="budget-amount">0원</span>
+                        </div>
+                        <div class="budget-summary-item">
+                            <span class="budget-label">구매 완료 총액</span>
+                            <span id="purchasedTotal" class="budget-amount">0원</span>
+                        </div>
+                        <div class="budget-summary-item">
+                            <span class="budget-label">1인당 평균 지원금</span>
+                            <span id="averagePerPerson" class="budget-amount">0원</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 탭 네비게이션 -->
+                <div class="admin-tabs">
+                    <button id="equipmentTab" class="admin-tab-btn active">
+                        <i data-lucide="package"></i>
+                        교구 신청 관리
+                    </button>
+                    <button id="flightTab" class="admin-tab-btn">
+                        <i data-lucide="plane"></i>
+                        항공권 신청 관리
+                    </button>
+                    <button id="instituteTab" class="admin-tab-btn">
+                        <i data-lucide="building"></i>
+                        학당 관리
+                    </button>
+                </div>
+
+                <!-- 검색 -->
+                <div class="search-container">
+                    <div class="search-box">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="searchInput" placeholder="학생 이름으로 검색...">
+                    </div>
+                </div>
+
+                <!-- 교구 신청 목록 -->
+                <div id="equipmentRequests" class="admin-tab-content active">
+                    <div id="adminApplications" class="admin-applications">
+                        <!-- 동적으로 생성될 관리자용 교구 신청 목록 -->
+                    </div>
+                </div>
+
+                <!-- 항공권 신청 목록 -->
+                <div id="flightRequests" class="admin-tab-content">
+                    <div id="adminFlightApplications" class="admin-applications">
+                        <!-- 동적으로 생성될 항공권 신청 목록 -->
+                    </div>
+                </div>
+
+                <!-- 학당 관리 -->
+                <div id="instituteManagement" class="admin-tab-content">
+                    <div class="institute-management-header">
+                        <h3>파견 학당 관리</h3>
+                        <button id="addInstituteBtn" class="btn primary">
+                            <i data-lucide="plus"></i>
+                            새 학당 추가
+                        </button>
+                    </div>
+                    <div id="instituteList" class="institute-list">
+                        <!-- 동적으로 생성될 학당 목록 -->
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 모든 기존 모달들 포함 (교구 신청, 영수증, 예산 설정 등) -->
+    <!-- 여기에는 기존 index.html의 모든 모달들이 포함됩니다 -->
+    
+    <!-- 예산 설정 모달 (관리자용) -->
+    <div id="budgetSettingsModal" class="modal">
+        <div class="modal-content large">
+            <h3>분야별 예산 설정</h3>
+            <form id="budgetSettingsForm">
+                <div class="budget-settings-info">
+                    <p>각 분야별로 회당 지원금과 최대 상한을 설정하세요. 학생의 수업계획이 승인되면 이 설정에 따라 자동으로 예산이 배정됩니다.</p>
+                </div>
+                
+                <div class="table-container">
+                    <table id="budgetSettingsTable" class="budget-settings-table">
+                        <thead>
+                            <tr>
+                                <th>분야</th>
+                                <th>회당 지원금 (원)</th>
+                                <th>최대 상한 (원)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 동적으로 생성됨 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" id="budgetSettingsCancelBtn" class="btn secondary">취소</button>
+                    <button type="submit" class="btn primary">설정 저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 수업계획 관리 모달 (관리자용) -->
+    <div id="lessonPlanManagementModal" class="modal">
+        <div class="modal-content expanded">
+            <h3>수업계획 승인 관리</h3>
+            <div class="lesson-plan-management-container">
+                <div class="management-header">
+                    <div class="management-stats">
+                        <span id="pendingPlansCount" class="stat-badge pending">대기 중: 0</span>
+                        <span id="approvedPlansCount" class="stat-badge approved">승인됨: 0</span>
+                        <span id="rejectedPlansCount" class="stat-badge rejected">반려됨: 0</span>
+                    </div>
+                    <div class="management-actions">
+                        <button id="refreshPlansBtn" class="btn small secondary">
+                            <i data-lucide="refresh-cw"></i> 새로고침
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="lessonPlansList" class="lesson-plans-list">
+                    <!-- 동적으로 생성됨 -->
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" id="lessonPlanManagementCloseBtn" class="btn secondary">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Files - Cache Busting Added -->
+    <!-- 설정 파일을 가장 먼저 로드 -->
+    <script src="js/config.js?v=1.3.0"></script>
+    <!-- Supabase 클라이언트 로드 -->
+    <script src="js/supabase-client.js?v=1.3.0"></script>
+    <script src="js/utils.js?v=1.3.0"></script>
+    <script src="js/auth.js?v=1.3.0"></script>
+    <script src="js/lesson-plan.js?v=1.3.0"></script>
+    <script src="js/admin.js?v=1.3.0"></script>
+    
+    <!-- 관리자 전용 앱 초기화 -->
+    <script>
+        // 페이지 로드 완료 후 Lucide 아이콘 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                    console.log('Lucide icons initialized successfully');
+                } else {
+                    console.error('Lucide library not loaded');
+                }
+
+                // 관리자 전용 앱 초기화
+                initializeAdminApp();
+                
+            } catch (error) {
+                console.error('관리자 페이지 초기화 오류:', error);
+            }
+        });
+
+        // 관리자 앱 초기화 함수
+        function initializeAdminApp() {
+            // 관리자 로그인 상태 확인
+            const adminSession = localStorage.getItem('adminSession');
+            if (adminSession) {
+                // 이미 로그인된 상태라면 대시보드로 이동
+                document.getElementById('loginPage').classList.remove('active');
+                document.getElementById('adminPage').classList.add('active');
+                
+                // 관리자 대시보드 초기화
+                if (typeof initializeAdminDashboard === 'function') {
+                    initializeAdminDashboard();
+                }
+            }
+
+            // 관리자 로그인 이벤트 설정
+            setupAdminLoginEvents();
+            
+            // 탭 전환 이벤트 설정
+            setupAdminTabs();
+        }
+
+        // 관리자 로그인 이벤트 설정
+        function setupAdminLoginEvents() {
+            const adminLoginBtn = document.getElementById('adminLoginBtn');
+            const adminCodeInput = document.getElementById('adminCode');
+
+            if (adminLoginBtn) {
+                adminLoginBtn.addEventListener('click', handleAdminLogin);
+            }
+
+            if (adminCodeInput) {
+                adminCodeInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        handleAdminLogin();
+                    }
+                });
+            }
+        }
+
+        // 관리자 로그인 처리
+        async function handleAdminLogin() {
+            const adminCode = document.getElementById('adminCode').value;
+            
+            if (!adminCode) {
+                alert('관리자 코드를 입력해주세요.');
+                return;
+            }
+
+            try {
+                // 기존 인증 함수 사용
+                if (typeof authenticateAdmin === 'function') {
+                    const isAuthenticated = await authenticateAdmin(adminCode);
+                    if (isAuthenticated) {
+                        // 로그인 성공
+                        localStorage.setItem('adminSession', 'true');
+                        document.getElementById('loginPage').classList.remove('active');
+                        document.getElementById('adminPage').classList.add('active');
+                        
+                        // 관리자 대시보드 초기화
+                        if (typeof initializeAdminDashboard === 'function') {
+                            initializeAdminDashboard();
+                        }
+                    } else {
+                        alert('잘못된 관리자 코드입니다.');
+                    }
+                }
+            } catch (error) {
+                console.error('관리자 로그인 오류:', error);
+                alert('로그인 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 관리자 탭 전환 설정
+        function setupAdminTabs() {
+            const tabButtons = document.querySelectorAll('.admin-tab-btn');
+            const tabContents = document.querySelectorAll('.admin-tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // 모든 탭 버튼과 컨텐츠 비활성화
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+
+                    // 클릭된 탭 활성화
+                    this.classList.add('active');
+                    
+                    // 해당 컨텐츠 활성화
+                    const tabId = this.id.replace('Tab', 'Requests');
+                    if (tabId === 'instituteRequests') {
+                        document.getElementById('instituteManagement').classList.add('active');
+                    } else {
+                        const content = document.getElementById(tabId);
+                        if (content) {
+                            content.classList.add('active');
+                        }
+                    }
+                });
+            });
+        }
+
+        // 로그아웃 기능
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'adminLogout') {
+                localStorage.removeItem('adminSession');
+                location.reload();
+            }
+        });
+    </script>
+    
+    <!-- Lucide 아이콘 초기화 -->
+    <script>
+        // 페이지 로드 완료 후 아이콘 다시 업데이트
+        setTimeout(() => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }, 100);
+    </script>
+</body>
+</html>
