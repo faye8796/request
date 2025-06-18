@@ -2511,3 +2511,190 @@ window.StudentManager = StudentManager;
 
 // DOM 로드 완료 시 초기화 방지 (App에서 호출)
 console.log('📚 StudentManager loaded successfully - 구문 오류 및 중복 등록 버그 수정 완료');
+
+// 🔧 student.js 파일 맨 끝에 추가할 코드 (라인 3100 이후)
+
+// 🆕 호환성 함수 추가 (equipment-request.html에서 사용)
+window.initializeStudentPage = function() {
+    console.log('🔄 initializeStudentPage 호출됨 (호환성 함수)');
+    
+    if (typeof StudentManager !== 'undefined' && StudentManager.init) {
+        return StudentManager.init();
+    } else {
+        console.error('❌ StudentManager를 찾을 수 없습니다');
+        return Promise.reject(new Error('StudentManager를 찾을 수 없습니다'));
+    }
+};
+
+// 🆕 초기화 상태 추적 개선
+StudentManager.initializationStatus = 'pending';
+StudentManager.initializationError = null;
+StudentManager.maxRetryAttempts = 3;
+StudentManager.currentRetryAttempt = 0;
+
+// 🆕 초기화 상태 확인 함수들
+StudentManager.isReady = function() {
+    return this.initializationStatus === 'success' && this.isInitialized;
+};
+
+StudentManager.getInitializationInfo = function() {
+    return {
+        status: this.initializationStatus,
+        isInitialized: this.isInitialized,
+        error: this.initializationError,
+        retryAttempt: this.currentRetryAttempt,
+        maxRetryAttempts: this.maxRetryAttempts
+    };
+};
+
+// 🔧 기존 init 함수 개선 (StudentManager.init 함수를 다음 코드로 교체)
+StudentManager.init = function() {
+    if (this.isInitialized) {
+        console.log('⚠️ StudentManager 이미 초기화됨 - 기존 인스턴스 반환');
+        return Promise.resolve();
+    }
+
+    // 이미 초기화 진행 중인 경우
+    if (this.initializationStatus === 'pending' && this.currentRetryAttempt > 0) {
+        console.log('⏳ StudentManager 초기화 진행 중...');
+        return this.waitForInitialization();
+    }
+
+    this.initializationStatus = 'pending';
+    this.currentRetryAttempt++;
+    
+    console.log(`🎓 StudentManager 초기화 시작 (시도 ${this.currentRetryAttempt}/${this.maxRetryAttempts})`);
+
+    return this.performInitialization()
+        .then(() => {
+            this.initializationStatus = 'success';
+            this.initializationError = null;
+            this.currentRetryAttempt = 0;
+            this.isInitialized = true;
+            console.log('✅ StudentManager 초기화 완료');
+            return Promise.resolve();
+        })
+        .catch((error) => {
+            this.initializationStatus = 'failed';
+            this.initializationError = error;
+            console.error(`❌ StudentManager 초기화 실패 (${this.currentRetryAttempt}/${this.maxRetryAttempts}):`, error);
+            
+            // 자동 재시도 로직
+            if (this.currentRetryAttempt < this.maxRetryAttempts) {
+                console.log(`🔄 ${this.currentRetryAttempt * 2}초 후 자동 재시도...`);
+                const self = this;
+                return new Promise((resolve, reject) => {
+                    setTimeout(() => {
+                        self.initializationStatus = 'pending';
+                        self.init().then(resolve).catch(reject);
+                    }, this.currentRetryAttempt * 2000); // 점진적 지연
+                });
+            }
+            
+            return Promise.reject(error);
+        });
+};
+
+// 🆕 실제 초기화 로직 분리
+StudentManager.performInitialization = function() {
+    try {
+        console.log('🔧 StudentManager 구성 요소 초기화 중...');
+        
+        // 이벤트 리스너 설정
+        this.setupEventListeners();
+        
+        const self = this;
+        
+        // 순차적 초기화 (Promise 체인)
+        return this.updateUserDisplay()
+            .then(function() {
+                console.log('👤 사용자 표시 업데이트 완료');
+                return self.loadApplications();
+            })
+            .then(function() {
+                console.log('📑 신청 내역 로드 완료');
+                return self.updateBudgetStatus();
+            })
+            .then(function() {
+                console.log('💰 예산 상태 업데이트 완료');
+                return self.checkLessonPlanStatus();
+            })
+            .then(function() {
+                console.log('📋 수업계획 상태 확인 완료');
+                console.log('✅ 모든 구성 요소 초기화 완료');
+            });
+    } catch (error) {
+        console.error('❌ StudentManager 구성 요소 초기화 오류:', error);
+        return Promise.reject(error);
+    }
+};
+
+// 🆕 초기화 대기 함수
+StudentManager.waitForInitialization = function() {
+    const self = this;
+    return new Promise((resolve, reject) => {
+        const checkInterval = setInterval(() => {
+            if (self.initializationStatus === 'success') {
+                clearInterval(checkInterval);
+                resolve();
+            } else if (self.initializationStatus === 'failed') {
+                clearInterval(checkInterval);
+                reject(self.initializationError || new Error('초기화 실패'));
+            }
+        }, 100);
+        
+        // 30초 타임아웃
+        setTimeout(() => {
+            clearInterval(checkInterval);
+            reject(new Error('초기화 대기 시간 초과'));
+        }, 30000);
+    });
+};
+
+// 🔧 개선된 안전한 API 호출 (기존 safeApiCall 함수 개선)
+StudentManager.safeApiCall = function(apiFunction) {
+    try {
+        if (typeof apiFunction === 'function') {
+            const result = apiFunction();
+            
+            // Promise인지 확인
+            if (result && typeof result.then === 'function') {
+                return result.catch(error => {
+                    console.error('API 호출 중 Promise 오류:', error);
+                    return Promise.reject(this.createUserFriendlyError(error));
+                });
+            }
+            
+            return Promise.resolve(result);
+        }
+        return Promise.reject(new Error('유효하지 않은 API 함수입니다'));
+    } catch (error) {
+        console.error('API 호출 중 동기 오류:', error);
+        return Promise.reject(this.createUserFriendlyError(error));
+    }
+};
+
+// 🆕 사용자 친화적 오류 메시지 생성
+StudentManager.createUserFriendlyError = function(error) {
+    let message = '알 수 없는 오류가 발생했습니다.';
+    
+    if (error && error.message) {
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+            message = '네트워크 연결을 확인하고 다시 시도해주세요.';
+        } else if (error.message.includes('timeout')) {
+            message = '서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.';
+        } else if (error.message.includes('permission') || error.message.includes('auth')) {
+            message = '인증 오류가 발생했습니다. 다시 로그인해주세요.';
+        } else if (error.message.includes('Not found') || error.message.includes('404')) {
+            message = '요청한 데이터를 찾을 수 없습니다.';
+        } else {
+            message = error.message;
+        }
+    }
+    
+    const friendlyError = new Error(message);
+    friendlyError.originalError = error;
+    return friendlyError;
+};
+
+console.log('🔧 StudentManager 호환성 및 에러 처리 개선 완료');
