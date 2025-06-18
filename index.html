@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>세종학당 문화교구 신청 플랫폼</title>
     
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/login.css">
-    <link rel="stylesheet" href="css/student.css">
-    <link rel="stylesheet" href="css/admin.css">
-    <link rel="stylesheet" href="css/lesson-plan.css">
+    <!-- CSS Files - Cache Busting Added -->
+    <link rel="stylesheet" href="css/main.css?v=1.2.3">
+    <link rel="stylesheet" href="css/login.css?v=1.2.3">
+    <link rel="stylesheet" href="css/student.css?v=1.2.3">
+    <link rel="stylesheet" href="css/admin.css?v=1.2.3">
+    <link rel="stylesheet" href="css/lesson-plan.css?v=1.2.3">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -443,7 +443,7 @@
                 
                 <div class="form-group">
                     <label>영수증 이미지 *</label>
-                    <div class="file-upload-area">
+                    <div class="file-upload-area" id="receiptDropZone">
                         <input type="file" id="receiptFile" accept="image/*" required>
                         <div class="file-upload-content">
                             <i data-lucide="upload"></i>
@@ -451,13 +451,13 @@
                             <small>JPG, PNG, GIF 파일 지원 (최대 5MB)</small>
                         </div>
                         <div id="receiptPreview" class="receipt-preview" style="display: none;">
-                            <img id="receiptPreviewImage" alt="영수증 미리보기">
-                            <button type="button" id="removeReceiptBtn" class="btn small danger">
-                                <i data-lucide="x"></i>
-                                제거
-                            </button>
+                            <!-- 동적으로 생성됨 -->
                         </div>
                     </div>
+                    <button type="button" id="removeReceiptBtn" class="btn small danger" style="display: none;">
+                        <i data-lucide="x"></i>
+                        파일 제거
+                    </button>
                 </div>
                 
                 <div class="form-group">
@@ -726,27 +726,31 @@
         </div>
     </div>
 
-    <!-- JavaScript Files -->
+    <!-- JavaScript Files - Cache Busting Added -->
     <!-- 설정 파일을 가장 먼저 로드 -->
-    <script src="js/config.js"></script>
+    <script src="js/config.js?v=1.2.3"></script>
     <!-- Supabase 클라이언트 로드 (업데이트된 버전) -->
-    <script src="js/supabase-client.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/lesson-plan.js"></script>
-    <script src="js/student.js"></script>
-    <script src="js/admin.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/supabase-client.js?v=1.2.3"></script>
+    <script src="js/utils.js?v=1.2.3"></script>
+    <script src="js/auth.js?v=1.2.3"></script>
+    <script src="js/lesson-plan.js?v=1.2.3"></script>
+    <script src="js/student.js?v=1.2.3"></script>
+    <script src="js/admin.js?v=1.2.3"></script>
+    <script src="js/app.js?v=1.2.3"></script>
     
     <!-- Lucide 아이콘 초기화 -->
     <script>
         // 페이지 로드 완료 후 Lucide 아이콘 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-                console.log('Lucide icons initialized successfully');
-            } else {
-                console.error('Lucide library not loaded');
+            try {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                    console.log('Lucide icons initialized successfully');
+                } else {
+                    console.error('Lucide library not loaded');
+                }
+            } catch (error) {
+                console.error('Lucide 아이콘 초기화 오류:', error);
             }
         });
     </script>
