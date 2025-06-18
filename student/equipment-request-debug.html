@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>문화교구 신청 (디버깅) - 세종학당 문화인턴 지원 시스템</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="../css/main.css?v=1.3.0">
+    <link rel="stylesheet" href="../css/student.css?v=1.3.0">
+    <link rel="stylesheet" href="../css/lesson-plan.css?v=1.3.0">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Supabase JavaScript Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <style>
+        .debug-panel {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 2px solid #333;
+        }
+
+        .debug-panel h4 {
+            color: #ffff00;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .debug-error {
+            color: #ff4444;
+        }
+
+        .debug-success {
+            color: #44ff44;
+        }
+
+        .debug-info {
+            color: #4444ff;
+        }
+
+        .test-button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0.25rem;
+        }
+
+        .test-button:hover {
+            background: #005999;
+        }
+    </style>
+</head>
+<body>
+    <!-- 디버깅 패널 -->
+    <div class="debug-panel">
+        <h4>🔍 디버깅 정보</h4>
+        <div id="debugLog">시스템 초기화 중...</div>
+        <div style="margin-top: 1rem;">
+            <button class="test-button" onclick="testUserAuth()">사용자 인증 테스트</button>
+            <button class="test-button" onclick="testDatabaseConnection()">DB 연결 테스트</button>
+            <button class="test-button" onclick="testLoadApplications()">신청내역 로드 테스트</button>
+            <button class="test-button" onclick="clearStorageAndReload()">스토리지 초기화</button>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app">
+        <!-- 학생 대시보드 (교구 신청) -->
+        <div id="studentPage" class="page active">
+            <header class="header">
+                <div class="header-content">
+                    <div class="user-info">
+                        <div class="breadcrumb">
+                            <a href="dashboard.html" class="breadcrumb-link">
+                                <i data-lucide="home"></i>
+                                대시보드
+                            </a>
+                            <i data-lucide="chevron-right"></i>
+                            <span>문화교구 신청 (디버깅)</span>
+                        </div>
+                        <h1 id="studentWelcome">문화교구 신청</h1>
+                        <p id="studentDetails">수업에 필요한 교구를 신청하고 관리하세요</p>
+                        <!-- 예산 현황 표시 영역 -->
+                        <div id="budgetStatus" class="budget-status-container"></div>
+                    </div>
+                    <div class="header-actions">
+                        <button id="backToDashboard" class="btn secondary">
+                            <i data-lucide="arrow-left"></i>
+                            대시보드
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="dashboard-header">
+                    <h2>교구 신청 현황</h2>
+                    <div class="dashboard-actions">
+                        <button id="newApplicationBtn" class="btn primary">
+                            <i data-lucide="plus"></i>
+                            새 교구 신청 (테스트)
+                        </button>
+                    </div>
+                </div>
+
+                <div id="studentApplications" class="applications-grid">
+                    <!-- 동적으로 생성될 신청 내역 -->
+                </div>
+
+                <div id="noApplications" class="empty-state" style="display: none;">
+                    <i data-lucide="package" class="empty-icon"></i>
+                    <p>아직 신청한 교구가 없습니다.</p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="../js/config.js?v=1.3.0"></script>
+    <script src="../js/supabase-client.js?v=1.3.0"></script>
+    <script src="../js/utils.js?v=1.3.0"></script>
+    <script src="../js/auth.js?v=1.3.0"></script>
+    
+    <!-- 디버깅 스크립트 -->
+    <script>
+        // 디버깅 로그 함수
+        function debugLog(message, type = 'info') {
+            const logDiv = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type === 'error' ? 'debug-error' : type === 'success' ? 'debug-success' : 'debug-info';
+            
+            logDiv.innerHTML += `<div class="${colorClass}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[DEBUG] ${message}`);
+        }
+
+        // 사용자 인증 테스트
+        async function testUserAuth() {
+            debugLog('사용자 인증 상태 확인 중...', 'info');
+            
+            try {
+                // localStorage에서 사용자 정보 확인
+                const currentStudent = localStorage.getItem('currentStudent');
+                const studentSession = localStorage.getItem('studentSession');
+                
+                debugLog(`currentStudent: ${currentStudent ? '존재' : '없음'}`, currentStudent ? 'success' : 'error');
+                debugLog(`studentSession: ${studentSession ? '존재' : '없음'}`, studentSession ? 'success' : 'error');
+                
+                if (currentStudent) {
+                    const studentData = JSON.parse(currentStudent);
+                    debugLog(`학생 이름: ${studentData.name}`, 'success');
+                    debugLog(`학생 ID: ${studentData.id}`, 'success');
+                    debugLog(`생년월일: ${studentData.birth_date}`, 'success');
+                    
+                    // SupabaseAPI에서 해당 학생 정보 재확인
+                    if (window.SupabaseAPI) {
+                        const result = await SupabaseAPI.authenticateStudent(studentData.name, studentData.birth_date);
+                        if (result.success) {
+                            debugLog('Supabase 인증 성공 ✅', 'success');
+                            debugLog(`DB 학생 ID: ${result.data.id}`, 'success');
+                        } else {
+                            debugLog(`Supabase 인증 실패: ${result.message}`, 'error');
+                        }
+                    }
+                } else {
+                    debugLog('로그인된 사용자가 없습니다', 'error');
+                }
+            } catch (error) {
+                debugLog(`인증 테스트 오류: ${error.message}`, 'error');
+            }
+        }
+
+        // 데이터베이스 연결 테스트
+        async function testDatabaseConnection() {
+            debugLog('데이터베이스 연결 테스트 중...', 'info');
+            
+            try {
+                if (!window.SupabaseAPI) {
+                    debugLog('SupabaseAPI를 찾을 수 없습니다', 'error');
+                    return;
+                }
+                
+                const healthCheck = await SupabaseAPI.healthCheck();
+                debugLog(`DB 상태: ${healthCheck.status}`, healthCheck.status === 'healthy' ? 'success' : 'error');
+                debugLog(`응답시간: ${healthCheck.responseTimeMs}ms`, 'info');
+                
+                if (healthCheck.error) {
+                    debugLog(`DB 오류: ${healthCheck.error}`, 'error');
+                }
+            } catch (error) {
+                debugLog(`DB 연결 테스트 오류: ${error.message}`, 'error');
+            }
+        }
+
+        // 신청 내역 로드 테스트
+        async function testLoadApplications() {
+            debugLog('신청 내역 로드 테스트 중...', 'info');
+            
+            try {
+                const currentStudent = localStorage.getItem('currentStudent');
+                if (!currentStudent) {
+                    debugLog('로그인된 사용자가 없습니다', 'error');
+                    return;
+                }
+                
+                const studentData = JSON.parse(currentStudent);
+                debugLog(`학생 ID로 신청내역 조회: ${studentData.id}`, 'info');
+                
+                if (window.SupabaseAPI) {
+                    const applications = await SupabaseAPI.getStudentApplications(studentData.id);
+                    debugLog(`조회된 신청 내역: ${applications.length}건`, applications.length > 0 ? 'success' : 'info');
+                    
+                    if (applications.length > 0) {
+                        applications.forEach((app, index) => {
+                            debugLog(`${index + 1}. ${app.item_name} - ${app.price}원 (${app.status})`, 'success');
+                        });
+                        
+                        // 실제 화면에 렌더링
+                        renderApplicationsDebug(applications);
+                    } else {
+                        debugLog('신청 내역이 없습니다', 'info');
+                    }
+                } else {
+                    debugLog('SupabaseAPI를 찾을 수 없습니다', 'error');
+                }
+            } catch (error) {
+                debugLog(`신청내역 로드 오류: ${error.message}`, 'error');
+            }
+        }
+
+        // 실제 신청 내역 렌더링 (디버그용)
+        function renderApplicationsDebug(applications) {
+            const container = document.getElementById('studentApplications');
+            const emptyState = document.getElementById('noApplications');
+            
+            container.innerHTML = '';
+            emptyState.style.display = 'none';
+            container.style.display = 'block';
+            
+            applications.forEach(app => {
+                const card = document.createElement('div');
+                card.className = 'application-card';
+                card.innerHTML = `
+                    <div class="application-card-header">
+                        <h3>${app.item_name}</h3>
+                        <span class="status-badge ${getStatusClass(app.status)}">${getStatusText(app.status)}</span>
+                    </div>
+                    <div class="application-details">
+                        <div class="detail-item">
+                            <span class="detail-label">목적</span>
+                            <span class="detail-value">${app.purpose}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">가격</span>
+                            <span class="detail-value">${app.price.toLocaleString('ko-KR')}원</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">구매방식</span>
+                            <span class="detail-value">${app.purchase_type === 'offline' ? '오프라인' : '온라인'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">신청일</span>
+                            <span class="detail-value">${new Date(app.created_at).toLocaleDateString('ko-KR')}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            
+            debugLog(`${applications.length}개의 신청 내역이 화면에 표시되었습니다`, 'success');
+        }
+
+        // 유틸리티 함수들
+        function getStatusClass(status) {
+            const statusMap = {
+                'pending': 'warning',
+                'approved': 'success', 
+                'rejected': 'danger',
+                'purchased': 'info',
+                'completed': 'info'
+            };
+            return statusMap[status] || 'secondary';
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '검토 중',
+                'approved': '승인됨',
+                'rejected': '반려됨',
+                'purchased': '구매완료',
+                'completed': '구매완료'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 스토리지 초기화 및 새로고침
+        function clearStorageAndReload() {
+            localStorage.clear();
+            sessionStorage.clear();
+            debugLog('스토리지 초기화 후 새로고침합니다...', 'info');
+            setTimeout(() => {
+                window.location.href = '../index.html';
+            }, 1000);
+        }
+
+        // 페이지 로드 완료 후 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog('페이지 로드 완료', 'success');
+            
+            // Lucide 아이콘 초기화
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+                debugLog('Lucide 아이콘 초기화 완료', 'success');
+            }
+
+            // 자동 테스트 실행
+            setTimeout(() => {
+                debugLog('자동 진단 시작...', 'info');
+                testUserAuth();
+                setTimeout(() => testDatabaseConnection(), 500);
+                setTimeout(() => testLoadApplications(), 1000);
+            }, 1000);
+
+            // 대시보드 이동 버튼
+            const backBtn = document.getElementById('backToDashboard');
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
+                    window.location.href = 'dashboard.html';
+                });
+            }
+
+            // 새 신청 테스트 버튼
+            const newAppBtn = document.getElementById('newApplicationBtn');
+            if (newAppBtn) {
+                newAppBtn.addEventListener('click', () => {
+                    debugLog('새 교구 신청 버튼 클릭됨', 'info');
+                    alert('디버깅 모드에서는 신청 기능이 비활성화되어 있습니다.');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
