@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>문화교구 신청 - 세종학당 문화인턴 지원 시스템</title>
+    
+    <!-- CSS Files - Cache Busting Added -->
+    <link rel="stylesheet" href="../css/main.css?v=1.3.0">
+    <link rel="stylesheet" href="../css/student.css?v=1.3.0">
+    <link rel="stylesheet" href="../css/lesson-plan.css?v=1.3.0">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Supabase JavaScript Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Main App Container -->
+    <div id="app">
+        <!-- 수업 계획 작성 페이지 -->
+        <div id="lessonPlanPage" class="page">
+            <div class="lesson-plan-container">
+                <div class="lesson-plan-header">
+                    <h1>수업 계획 작성</h1>
+                    <p>파견 기간 동안의 상세한 수업 계획을 <strong>필수적으로</strong> 작성해주세요. 관리자가 이 내용을 검토하여 승인 여부를 결정하며, 승인 후에만 교구 신청이 가능합니다.</p>
+                </div>
+
+                <div class="lesson-plan-content">
+                    <form id="lessonPlanForm">
+                        <!-- 기본 정보 입력 -->
+                        <div class="basic-info-section">
+                            <h2>기본 정보</h2>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>파견 시작일 *</label>
+                                    <input type="date" id="startDate" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>파견 종료일 *</label>
+                                    <input type="date" id="endDate" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>총 수업 횟수</label>
+                                    <div class="lesson-count-display">
+                                        <span id="totalLessonsDisplay" class="lesson-count-number">0</span>
+                                        <span class="lesson-count-label">회</span>
+                                    </div>
+                                    <small class="text-muted">아래에서 수업을 추가하면 자동으로 계산됩니다</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 수업 계획표 -->
+                        <div class="lesson-table-section">
+                            <div class="lesson-table-header">
+                                <h2>수업 계획표</h2>
+                                <button type="button" id="addLessonBtn" class="btn primary">
+                                    <i data-lucide="plus"></i>
+                                    수업 추가
+                                </button>
+                            </div>
+                            <div class="lesson-plan-requirements">
+                                <div class="requirement-notice">
+                                    <i data-lucide="alert-circle"></i>
+                                    <div>
+                                        <strong>필수 제출 사항</strong>
+                                        <p>모든 수업의 주제와 내용을 구체적으로 작성해주세요. 수업은 개별적으로 추가/삭제할 수 있으며, 총 수업 횟수는 자동으로 계산됩니다.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="lessonTableContainer" class="lesson-table-container">
+                                <div class="empty-lessons-message">
+                                    <i data-lucide="calendar-plus"></i>
+                                    <p>아직 추가된 수업이 없습니다.</p>
+                                    <p>위의 "수업 추가" 버튼을 클릭하여 첫 번째 수업을 추가해보세요.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 추가 정보 -->
+                        <div class="additional-info-section">
+                            <h2>추가 정보</h2>
+                            <div class="form-group">
+                                <label>전체 수업 목표 *</label>
+                                <textarea id="overallGoals" rows="4" required placeholder="전체 수업을 통해 달성하고자 하는 목표를 구체적으로 입력하세요"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>특별 고려사항</label>
+                                <textarea id="specialNotes" rows="3" placeholder="현지 상황이나 특별히 고려해야 할 사항이 있으면 입력하세요"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- 제출 버튼 -->
+                        <div class="form-actions">
+                            <button type="button" id="closeLessonPlanBtn" class="btn secondary">
+                                <i data-lucide="arrow-left"></i>
+                                대시보드로 돌아가기
+                            </button>
+                            <button type="button" id="saveDraftBtn" class="btn secondary">
+                                <i data-lucide="save"></i>
+                                임시 저장
+                            </button>
+                            <button type="submit" class="btn primary">
+                                <i data-lucide="check"></i>
+                                수업 계획 완료 및 제출
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 학생 대시보드 (교구 신청) -->
+        <div id="studentPage" class="page active">
+            <header class="header">
+                <div class="header-content">
+                    <div class="user-info">
+                        <div class="breadcrumb">
+                            <a href="dashboard.html" class="breadcrumb-link">
+                                <i data-lucide="home"></i>
+                                대시보드
+                            </a>
+                            <i data-lucide="chevron-right"></i>
+                            <span>문화교구 신청</span>
+                        </div>
+                        <h1 id="studentWelcome">문화교구 신청</h1>
+                        <p id="studentDetails">수업에 필요한 교구를 신청하고 관리하세요</p>
+                        <!-- 예산 현황 표시 영역 -->
+                        <div id="budgetStatus" class="budget-status-container"></div>
+                    </div>
+                    <div class="header-actions">
+                        <button id="lessonPlanBtn" class="btn secondary">
+                            <i data-lucide="calendar"></i>
+                            수업 계획
+                        </button>
+                        <button id="shippingAddressBtn" class="btn secondary">
+                            <i data-lucide="map-pin"></i>
+                            배송지 설정
+                        </button>
+                        <button id="backToDashboard" class="btn secondary">
+                            <i data-lucide="arrow-left"></i>
+                            대시보드
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="dashboard-header">
+                    <h2>교구 신청 현황</h2>
+                    <div class="dashboard-actions">
+                        <button id="bundleApplicationBtn" class="btn secondary">
+                            <i data-lucide="shopping-cart"></i>
+                            묶음 신청
+                        </button>
+                        <button id="newApplicationBtn" class="btn primary">
+                            <i data-lucide="plus"></i>
+                            새 교구 신청
+                        </button>
+                    </div>
+                </div>
+
+                <div id="studentApplications" class="applications-grid">
+                    <!-- 동적으로 생성될 신청 내역 -->
+                </div>
+
+                <div id="noApplications" class="empty-state" style="display: none;">
+                    <i data-lucide="package" class="empty-icon"></i>
+                    <p>아직 신청한 교구가 없습니다.</p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 교구 신청 모달 -->
+    <div id="applicationModal" class="modal">
+        <div class="modal-content">
+            <h3 id="applicationModalTitle">새 교구 신청</h3>
+            <form id="applicationForm">
+                <!-- 구매 방식 선택 -->
+                <div class="form-group">
+                    <label>구매 방식 *</label>
+                    <div class="purchase-method-options">
+                        <label class="radio-option">
+                            <input type="radio" name="purchaseMethod" value="online" checked>
+                            <span class="radio-custom"></span>
+                            <div class="radio-content">
+                                <strong>온라인 구매</strong>
+                                <p>관리자가 대신 구매하여 배송</p>
+                            </div>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="purchaseMethod" value="offline">
+                            <span class="radio-custom"></span>
+                            <div class="radio-content">
+                                <strong>오프라인 구매</strong>
+                                <p>직접 구매 후 영수증 제출로 비용 정산</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>교구명 *</label>
+                    <input type="text" id="itemName" required placeholder="교구 이름을 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label>사용 목적 *</label>
+                    <textarea id="itemPurpose" required rows="3" placeholder="교구 사용 목적을 설명하세요"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>가격 (원) *</label>
+                    <input type="number" id="itemPrice" required placeholder="가격을 입력하세요">
+                </div>
+                <div class="form-group" id="itemLinkGroup">
+                    <label id="itemLinkLabel">구매 링크 *</label>
+                    <input type="url" id="itemLink" required placeholder="구매 가능한 링크를 입력하세요">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="cancelBtn" class="btn secondary">취소</button>
+                    <button type="submit" class="btn primary" id="submitBtn">신청하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 묶음 신청 모달 -->
+    <div id="bundleModal" class="modal">
+        <div class="modal-content">
+            <h3>묶음 교구 신청</h3>
+            <form id="bundleForm">
+                <div class="form-group">
+                    <label>묶음 교구명 *</label>
+                    <input type="text" id="bundleName" required placeholder="묶음 교구를 대표하는 이름을 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label>사용 목적 *</label>
+                    <textarea id="bundlePurpose" required rows="3" placeholder="묶음 교구의 사용 목적을 설명하세요"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>총 가격 (원) *</label>
+                    <input type="number" id="bundlePrice" required placeholder="묶음 구매 총 가격을 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label>구매 링크 *</label>
+                    <input type="url" id="bundleLink" required placeholder="쿠팡 등 온라인 쇼핑몰 링크를 입력하세요">
+                </div>
+                <div class="bundle-credentials">
+                    <h4>온라인 쇼핑몰 계정 정보</h4>
+                    <div class="form-group">
+                        <label>사용자 ID *</label>
+                        <input type="text" id="bundleUserId" required placeholder="쿠팡/아마존 등 계정 ID를 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label>비밀번호 *</label>
+                        <input type="password" id="bundlePassword" required placeholder="계정 비밀번호를 입력하세요">
+                    </div>
+                    <p class="security-notice">
+                        <i data-lucide="shield"></i>
+                        계정 정보는 구매 완료 후 즉시 삭제됩니다.
+                    </p>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="bundleCancelBtn" class="btn secondary">취소</button>
+                    <button type="submit" class="btn primary">묶음 신청하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 배송지 설정 모달 -->
+    <div id="shippingModal" class="modal">
+        <div class="modal-content">
+            <h3>배송지 설정</h3>
+            <form id="shippingForm">
+                <div class="form-group">
+                    <label>받는 분 *</label>
+                    <input type="text" id="shippingName" required placeholder="받는 분 성명을 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label>연락처 *</label>
+                    <input type="tel" id="shippingPhone" required placeholder="연락처를 입력하세요">
+                </div>
+                <div class="form-group">
+                    <label>주소 *</label>
+                    <textarea id="shippingAddress" required rows="3" placeholder="상세 주소를 입력하세요&#10;예: 서울특별시 강남구 테헤란로 123, 456호"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>우편번호</label>
+                    <input type="text" id="shippingPostcode" placeholder="우편번호 (선택)">
+                </div>
+                <div class="form-group">
+                    <label>배송 요청사항</label>
+                    <textarea id="shippingNote" rows="2" placeholder="배송 시 요청사항이 있으면 입력하세요"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="shippingCancelBtn" class="btn secondary">취소</button>
+                    <button type="submit" class="btn primary">저장하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 영수증 등록 모달 -->
+    <div id="receiptModal" class="modal">
+        <div class="modal-content">
+            <h3>영수증 등록</h3>
+            <form id="receiptForm">
+                <div class="receipt-info">
+                    <div class="receipt-item-info">
+                        <h4 id="receiptItemName">교구명</h4>
+                        <p id="receiptItemPrice">가격: </p>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>영수증 이미지 *</label>
+                    <div class="file-upload-area" id="receiptDropZone">
+                        <input type="file" id="receiptFile" accept="image/*" required>
+                        <div class="file-upload-content">
+                            <i data-lucide="upload"></i>
+                            <p>영수증 이미지를 선택하거나 여기에 드래그하세요</p>
+                            <small>JPG, PNG, GIF 파일 지원 (최대 5MB)</small>
+                        </div>
+                        <div id="receiptPreview" class="receipt-preview" style="display: none;">
+                            <!-- 동적으로 생성됨 -->
+                        </div>
+                    </div>
+                    <button type="button" id="removeReceiptBtn" class="btn small danger" style="display: none;">
+                        <i data-lucide="x"></i>
+                        파일 제거
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    <label>구매일시</label>
+                    <input type="datetime-local" id="purchaseDateTime" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>구매처</label>
+                    <input type="text" id="purchaseStore" placeholder="구매한 상점명을 입력하세요">
+                </div>
+                
+                <div class="form-group">
+                    <label>비고</label>
+                    <textarea id="receiptNote" rows="2" placeholder="추가 설명이 있으면 입력하세요"></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" id="receiptCancelBtn" class="btn secondary">취소</button>
+                    <button type="submit" class="btn primary">영수증 제출</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Files - Cache Busting Added -->
+    <!-- 설정 파일을 가장 먼저 로드 -->
+    <script src="../js/config.js?v=1.3.0"></script>
+    <!-- Supabase 클라이언트 로드 (업데이트된 버전) -->
+    <script src="../js/supabase-client.js?v=1.3.0"></script>
+    <script src="../js/utils.js?v=1.3.0"></script>
+    <script src="../js/auth.js?v=1.3.0"></script>
+    <script src="../js/lesson-plan.js?v=1.3.0"></script>
+    <script src="../js/student.js?v=1.3.0"></script>
+    
+    <!-- 교구 신청 페이지 초기화 -->
+    <script>
+        // 페이지 로드 완료 후 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                // Lucide 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                    console.log('Lucide icons initialized successfully');
+                } else {
+                    console.error('Lucide library not loaded');
+                }
+
+                // 학생 인증 확인
+                checkStudentAuthentication();
+                
+                // 학생 정보 로드
+                loadStudentInfo();
+
+                // 기존 student.js 초기화 (있는 경우)
+                if (typeof initializeStudentPage === 'function') {
+                    initializeStudentPage();
+                }
+
+                // 대시보드 이동 버튼 설정
+                setupNavigationButtons();
+                
+            } catch (error) {
+                console.error('교구 신청 페이지 초기화 오류:', error);
+            }
+        });
+
+        // 학생 인증 확인
+        function checkStudentAuthentication() {
+            const studentData = localStorage.getItem('currentStudent');
+            if (!studentData) {
+                alert('로그인이 필요합니다.');
+                window.location.href = '../index.html';
+                return;
+            }
+        }
+
+        // 학생 정보 로드
+        function loadStudentInfo() {
+            try {
+                const studentData = JSON.parse(localStorage.getItem('currentStudent'));
+                if (studentData) {
+                    const welcomeElement = document.getElementById('studentWelcome');
+                    if (welcomeElement) {
+                        welcomeElement.textContent = `${studentData.name}님의 교구 신청`;
+                    }
+                }
+            } catch (error) {
+                console.error('학생 정보 로드 오류:', error);
+            }
+        }
+
+        // 네비게이션 버튼 설정
+        function setupNavigationButtons() {
+            // 대시보드로 돌아가기 버튼
+            const backToDashboardBtn = document.getElementById('backToDashboard');
+            const closeLessonPlanBtn = document.getElementById('closeLessonPlanBtn');
+            
+            if (backToDashboardBtn) {
+                backToDashboardBtn.addEventListener('click', function() {
+                    window.location.href = 'dashboard.html';
+                });
+            }
+
+            if (closeLessonPlanBtn) {
+                closeLessonPlanBtn.addEventListener('click', function() {
+                    // 수업계획 페이지 닫기
+                    document.getElementById('lessonPlanPage').classList.remove('active');
+                    document.getElementById('studentPage').classList.add('active');
+                });
+            }
+
+            // 브레드크럼 링크
+            const breadcrumbLink = document.querySelector('.breadcrumb-link');
+            if (breadcrumbLink) {
+                breadcrumbLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.location.href = 'dashboard.html';
+                });
+            }
+        }
+
+        // 수업계획 버튼 클릭 시 처리
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'lessonPlanBtn') {
+                // 수업계획 페이지 표시
+                document.getElementById('studentPage').classList.remove('active');
+                document.getElementById('lessonPlanPage').classList.add('active');
+                
+                // 기존 lesson-plan.js 초기화 (있는 경우)
+                if (typeof initializeLessonPlan === 'function') {
+                    initializeLessonPlan();
+                }
+            }
+        });
+    </script>
+    
+    <!-- Lucide 아이콘 초기화 -->
+    <script>
+        // 페이지 로드 완료 후 Lucide 아이콘 재초기화
+        setTimeout(() => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }, 100);
+    </script>
+</body>
+</html>
