@@ -1885,3 +1885,392 @@ const AdminManager = {
         return `${year}${month}${day}`;
     }
 };
+
+// admin.js 패치 - 기존 AdminManager 객체에 추가할 함수들
+
+// AdminManager 객체가 이미 정의되어 있다고 가정하고, 누락된 함수들을 추가
+
+// 1. initializeAdminDashboard 함수 추가 (equipment-management.html에서 호출됨)
+AdminManager.initializeAdminDashboard = async function() {
+    console.log('🚀 AdminManager.initializeAdminDashboard 호출됨');
+    
+    try {
+        // 기존 init() 함수와 동일한 로직 실행
+        await this.init();
+        console.log('✅ 관리자 대시보드 초기화 완료');
+        return true;
+    } catch (error) {
+        console.error('❌ 관리자 대시보드 초기화 실패:', error);
+        throw error;
+    }
+};
+
+// 2. loadAdminApplications 함수 추가 (equipment-management.html에서 호출됨)
+AdminManager.loadAdminApplications = async function() {
+    console.log('📋 AdminManager.loadAdminApplications 호출됨');
+    
+    try {
+        // 기존 loadApplications() 함수와 동일한 로직 실행
+        await this.loadApplications();
+        console.log('✅ 관리자 신청 목록 로드 완료');
+    } catch (error) {
+        console.error('❌ 관리자 신청 목록 로드 실패:', error);
+        throw error;
+    }
+};
+
+// 3. 모달 HTML 동적 생성 함수들 추가
+AdminManager.createBudgetSettingsModal = function() {
+    // 예산 설정 모달이 없으면 동적으로 생성
+    if (!document.getElementById('budgetSettingsModal')) {
+        const modalHTML = `
+            <div id="budgetSettingsModal" class="modal">
+                <div class="modal-content large">
+                    <div class="modal-header">
+                        <h3>분야별 예산 설정</h3>
+                        <button class="close-btn" onclick="AdminManager.hideBudgetSettingsModal()">&times;</button>
+                    </div>
+                    <form id="budgetSettingsForm">
+                        <div class="budget-settings-info">
+                            <p>각 분야별로 회당 지원금과 최대 상한을 설정하세요. 학생의 수업계획이 승인되면 이 설정에 따라 자동으로 예산이 배정됩니다.</p>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table id="budgetSettingsTable" class="budget-settings-table">
+                                <thead>
+                                    <tr>
+                                        <th>분야</th>
+                                        <th>회당 지원금 (원)</th>
+                                        <th>최대 상한 (원)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- 동적으로 생성됨 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button type="button" id="budgetSettingsCancelBtn" class="btn secondary">취소</button>
+                            <button type="submit" class="btn primary">설정 저장</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+};
+
+AdminManager.createLessonPlanManagementModal = function() {
+    // 수업계획 관리 모달이 없으면 동적으로 생성
+    if (!document.getElementById('lessonPlanManagementModal')) {
+        const modalHTML = `
+            <div id="lessonPlanManagementModal" class="modal">
+                <div class="modal-content expanded">
+                    <div class="modal-header">
+                        <h3>수업계획 승인 관리</h3>
+                        <button class="close-btn" onclick="AdminManager.hideLessonPlanManagementModal()">&times;</button>
+                    </div>
+                    <div class="lesson-plan-management-container">
+                        <div class="management-header">
+                            <div class="management-stats">
+                                <span id="pendingPlansCount" class="stat-badge pending">대기 중: 0</span>
+                                <span id="approvedPlansCount" class="stat-badge approved">승인됨: 0</span>
+                                <span id="rejectedPlansCount" class="stat-badge rejected">반려됨: 0</span>
+                            </div>
+                            <div class="management-actions">
+                                <button id="refreshPlansBtn" class="btn small secondary">
+                                    <i data-lucide="refresh-cw"></i> 새로고침
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="lessonPlansList" class="lesson-plans-list">
+                            <!-- 동적으로 생성됨 -->
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="button" id="lessonPlanManagementCloseBtn" class="btn secondary">닫기</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+};
+
+AdminManager.createViewLessonPlanModal = function() {
+    // 수업계획 상세보기 모달이 없으면 동적으로 생성
+    if (!document.getElementById('viewLessonPlanModal')) {
+        const modalHTML = `
+            <div id="viewLessonPlanModal" class="modal">
+                <div class="modal-content large">
+                    <div class="modal-header">
+                        <h3>수업계획 상세보기</h3>
+                        <button class="close-btn" onclick="AdminManager.hideViewLessonPlanModal()">&times;</button>
+                    </div>
+                    <div class="lesson-plan-detail">
+                        <div class="student-info-section">
+                            <h4 id="detailStudentName">학생명</h4>
+                            <p id="detailStudentInfo">학당 정보</p>
+                        </div>
+                        
+                        <div class="plan-overview-section">
+                            <div class="plan-overview-grid">
+                                <div class="overview-item">
+                                    <span class="label">수업 기간:</span>
+                                    <span id="detailPlanPeriod" class="value">-</span>
+                                </div>
+                                <div class="overview-item">
+                                    <span class="label">총 수업 횟수:</span>
+                                    <span id="detailTotalLessons" class="value">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="budget-allocation-section">
+                            <h4>예산 배정 정보</h4>
+                            <div class="budget-allocation-grid">
+                                <div class="allocation-item">
+                                    <span class="label">분야:</span>
+                                    <span id="detailField" class="value">-</span>
+                                </div>
+                                <div class="allocation-item">
+                                    <span class="label">회당 지원금:</span>
+                                    <span id="detailPerLessonAmount" class="value">-</span>
+                                </div>
+                                <div class="allocation-item">
+                                    <span class="label">수업 횟수:</span>
+                                    <span id="detailLessonCount" class="value">-</span>
+                                </div>
+                                <div class="allocation-item">
+                                    <span class="label">총 배정 예산:</span>
+                                    <span id="detailTotalBudget" class="value total">-</span>
+                                </div>
+                            </div>
+                            <div class="budget-calculation-note">
+                                <small><!-- 계산 과정 표시 --></small>
+                            </div>
+                        </div>
+                        
+                        <div class="lesson-goals-section">
+                            <h4>수업 목표</h4>
+                            <p id="detailOverallGoals">-</p>
+                        </div>
+                        
+                        <div class="lesson-schedule-section">
+                            <h4>수업 일정표</h4>
+                            <div id="detailLessonSchedule" class="lesson-schedule-container">
+                                <!-- 동적으로 생성됨 -->
+                            </div>
+                        </div>
+                        
+                        <div id="specialNotesSection" class="special-notes-section">
+                            <h4>특별 고려사항</h4>
+                            <p id="detailSpecialNotes">-</p>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="button" id="viewLessonPlanCloseBtn" class="btn secondary">닫기</button>
+                        <button type="button" id="approveLessonPlanBtn" class="btn approve">
+                            <i data-lucide="check"></i> 승인
+                        </button>
+                        <button type="button" id="rejectLessonPlanBtn" class="btn reject">
+                            <i data-lucide="x"></i> 반려
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+};
+
+// 4. 모달 표시 함수들 개선 (모달이 없으면 생성)
+AdminManager.showBudgetSettingsModal = async function() {
+    console.log('💰 예산 설정 모달 표시 요청');
+    
+    try {
+        // 모달이 없으면 생성
+        this.createBudgetSettingsModal();
+        
+        // 기존 로직 실행
+        const modal = document.getElementById('budgetSettingsModal');
+        
+        if (!modal) {
+            throw new Error('예산 설정 모달을 생성할 수 없습니다.');
+        }
+
+        // SupabaseAPI를 통해 현재 설정 가져오기
+        if (window.SupabaseAPI && typeof window.SupabaseAPI.getAllFieldBudgetSettings === 'function') {
+            const settings = await SupabaseAPI.getAllFieldBudgetSettings();
+            this.populateBudgetSettingsForm(settings);
+        } else {
+            console.warn('⚠️ SupabaseAPI를 사용할 수 없습니다. 기본값으로 설정합니다.');
+            this.populateBudgetSettingsForm({});
+        }
+        
+        modal.classList.add('active');
+        
+        // 아이콘 재생성
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        console.log('✅ 예산 설정 모달 표시 완료');
+        
+    } catch (error) {
+        console.error('❌ 예산 설정 모달 표시 실패:', error);
+        alert('예산 설정 모달을 열 수 없습니다: ' + error.message);
+    }
+};
+
+AdminManager.showLessonPlanManagementModal = async function() {
+    console.log('📋 수업계획 관리 모달 표시 요청');
+    
+    try {
+        // 모달이 없으면 생성
+        this.createLessonPlanManagementModal();
+        
+        const modal = document.getElementById('lessonPlanManagementModal');
+        
+        if (!modal) {
+            throw new Error('수업계획 관리 모달을 생성할 수 없습니다.');
+        }
+
+        // 수업계획 데이터 로드
+        await this.loadLessonPlansForManagement();
+        
+        modal.classList.add('active');
+
+        // 새로고침 버튼 이벤트 리스너 설정
+        const refreshBtn = document.getElementById('refreshPlansBtn');
+        if (refreshBtn) {
+            refreshBtn.removeEventListener('click', this.loadLessonPlansForManagement);
+            refreshBtn.addEventListener('click', () => this.loadLessonPlansForManagement());
+        }
+        
+        console.log('✅ 수업계획 관리 모달 표시 완료');
+        
+    } catch (error) {
+        console.error('❌ 수업계획 관리 모달 표시 실패:', error);
+        alert('수업계획 관리 모달을 열 수 없습니다: ' + error.message);
+    }
+};
+
+// 5. 예산 설정 폼 채우기 함수 추가
+AdminManager.populateBudgetSettingsForm = function(settings) {
+    const tbody = document.querySelector('#budgetSettingsTable tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    // 기본 분야들 (settings에 없으면 기본값 사용)
+    const defaultFields = {
+        '한국어교육': { perLessonAmount: 15000, maxBudget: 400000 },
+        '전통문화예술': { perLessonAmount: 25000, maxBudget: 600000 },
+        'K-Pop 문화': { perLessonAmount: 10000, maxBudget: 300000 },
+        '한국현대문화': { perLessonAmount: 18000, maxBudget: 450000 },
+        '전통음악': { perLessonAmount: 30000, maxBudget: 750000 },
+        '한국미술': { perLessonAmount: 22000, maxBudget: 550000 },
+        '한국요리문화': { perLessonAmount: 35000, maxBudget: 800000 }
+    };
+    
+    // settings와 기본값 병합
+    const finalSettings = { ...defaultFields, ...settings };
+    
+    Object.entries(finalSettings).forEach(([field, setting]) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                ${field}
+                <button class="btn small secondary field-status-btn" 
+                        data-field="${field}" 
+                        title="분야별 예산 현황 보기"
+                        style="margin-left: 8px;">
+                    <i data-lucide="eye"></i>
+                </button>
+            </td>
+            <td>
+                <input type="number" 
+                       data-field="${field}" 
+                       data-type="perLessonAmount" 
+                       value="${setting.perLessonAmount || 0}" 
+                       min="0" step="1000" class="amount-input">
+            </td>
+            <td>
+                <input type="number" 
+                       data-field="${field}" 
+                       data-type="maxBudget" 
+                       value="${setting.maxBudget || 0}" 
+                       min="0" step="10000" class="amount-input">
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // 분야별 예산 현황 보기 버튼 이벤트 리스너 추가
+    const fieldStatusButtons = document.querySelectorAll('.field-status-btn');
+    fieldStatusButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const field = e.target.closest('button').dataset.field;
+            this.showFieldBudgetStatus(field);
+        });
+    });
+};
+
+// 6. 안전한 함수 호출을 위한 래퍼 추가
+AdminManager.safeCall = function(functionName, ...args) {
+    try {
+        if (typeof this[functionName] === 'function') {
+            return this[functionName](...args);
+        } else {
+            console.warn(`⚠️ AdminManager.${functionName} 함수를 찾을 수 없습니다.`);
+            return null;
+        }
+    } catch (error) {
+        console.error(`❌ AdminManager.${functionName} 호출 오류:`, error);
+        return null;
+    }
+};
+
+// 7. 디버깅을 위한 상태 확인 함수
+AdminManager.getStatus = function() {
+    return {
+        initialized: typeof this.init === 'function',
+        currentSearchTerm: this.currentSearchTerm || '',
+        currentViewingLessonPlan: this.currentViewingLessonPlan || null,
+        availableFunctions: Object.getOwnPropertyNames(this).filter(prop => typeof this[prop] === 'function')
+    };
+};
+
+// 8. 전역 접근을 위해 window 객체에 추가 (이미 있을 수도 있지만 안전하게)
+if (typeof window !== 'undefined') {
+    window.AdminManager = AdminManager;
+    
+    // 개발자 도구에서 사용할 수 있도록
+    if (window.CONFIG && window.CONFIG.DEV && window.CONFIG.DEV.DEBUG) {
+        console.log('🛠️ AdminManager 패치 적용 완료');
+        console.log('사용 가능한 함수들:', AdminManager.getStatus().availableFunctions);
+    }
+}
+
+// 9. 초기화 함수 자동 실행 (페이지가 완전히 로드된 후)
+document.addEventListener('DOMContentLoaded', function() {
+    // equipment-management.html에서만 자동 초기화
+    if (window.location.pathname.includes('equipment-management.html')) {
+        console.log('🏥 교구 관리 페이지에서 AdminManager 자동 설정');
+        
+        // 약간의 지연 후 초기화 (다른 스크립트들이 로드될 시간 확보)
+        setTimeout(() => {
+            if (typeof AdminManager !== 'undefined' && !AdminManager._autoInitialized) {
+                AdminManager._autoInitialized = true;
+                console.log('🔧 AdminManager 자동 초기화 수행');
+            }
+        }, 100);
+    }
+});

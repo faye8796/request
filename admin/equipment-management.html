@@ -76,6 +76,37 @@
             background: #cbd5e0;
         }
 
+        /* 로딩 상태 스타일 */
+        .loading-state {
+            text-align: center;
+            padding: 3rem;
+            color: #718096;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3182ce;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 3rem;
+            color: #e53e3e;
+            background: #fed7d7;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
         /* 모바일 반응형 */
         @media (max-width: 768px) {
             .equipment-management-container {
@@ -127,136 +158,91 @@
             </div>
         </div>
 
-        <!-- 핵심 운영 통계 카드 -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <i data-lucide="users" class="stat-icon blue"></i>
-                <div class="stat-info">
-                    <p class="stat-label">전체 신청자수</p>
-                    <p id="applicantCount" class="stat-value">0</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <i data-lucide="clock" class="stat-icon orange"></i>
-                <div class="stat-info">
-                    <p class="stat-label">미승인 아이템</p>
-                    <p id="pendingCount" class="stat-value">0</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <i data-lucide="check-circle" class="stat-icon green"></i>
-                <div class="stat-info">
-                    <p class="stat-label">승인됨 (구매대기)</p>
-                    <p id="approvedCount" class="stat-value">0</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <i data-lucide="package" class="stat-icon purple"></i>
-                <div class="stat-info">
-                    <p class="stat-label">구매완료</p>
-                    <p id="purchasedCount" class="stat-value">0</p>
-                </div>
-            </div>
+        <!-- 로딩 상태 -->
+        <div id="loadingState" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>데이터를 불러오는 중...</p>
         </div>
 
-        <!-- 전체 예산 현황 섹션 -->
-        <div class="budget-overview-section">
-            <h2>💰 전체 예산 현황</h2>
-            <div class="budget-summary-list">
-                <div class="budget-summary-item primary">
-                    <span class="budget-label">전체 배정 예산</span>
-                    <span id="totalApprovedBudget" class="budget-amount">0원</span>
-                </div>
-                <div class="budget-summary-item">
-                    <span class="budget-label">승인된 교구 신청 총액</span>
-                    <span id="approvedItemsTotal" class="budget-amount">0원</span>
-                </div>
-                <div class="budget-summary-item">
-                    <span class="budget-label">구매 완료 총액</span>
-                    <span id="purchasedTotal" class="budget-amount">0원</span>
-                </div>
-                <div class="budget-summary-item">
-                    <span class="budget-label">1인당 평균 지원금</span>
-                    <span id="averagePerPerson" class="budget-amount">0원</span>
-                </div>
-            </div>
+        <!-- 에러 상태 -->
+        <div id="errorState" class="error-state" style="display: none;">
+            <p>데이터를 불러올 수 없습니다.</p>
+            <button class="btn primary" onclick="retryDataLoad()">다시 시도</button>
         </div>
 
-        <!-- 검색 -->
-        <div class="search-container">
-            <div class="search-box">
-                <i data-lucide="search" class="search-icon"></i>
-                <input type="text" id="searchInput" placeholder="학생 이름으로 검색...">
-            </div>
-        </div>
-
-        <!-- 교구 신청 목록 -->
-        <div id="adminApplications" class="admin-applications">
-            <!-- 동적으로 생성될 관리자용 교구 신청 목록 -->
-        </div>
-    </div>
-
-    <!-- 모달들 (예산 설정, 수업계획 관리 등) -->
-    <!-- 예산 설정 모달 -->
-    <div id="budgetSettingsModal" class="modal">
-        <div class="modal-content large">
-            <h3>분야별 예산 설정</h3>
-            <form id="budgetSettingsForm">
-                <div class="budget-settings-info">
-                    <p>각 분야별로 회당 지원금과 최대 상한을 설정하세요. 학생의 수업계획이 승인되면 이 설정에 따라 자동으로 예산이 배정됩니다.</p>
-                </div>
-                
-                <div class="table-container">
-                    <table id="budgetSettingsTable" class="budget-settings-table">
-                        <thead>
-                            <tr>
-                                <th>분야</th>
-                                <th>회당 지원금 (원)</th>
-                                <th>최대 상한 (원)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- 동적으로 생성됨 -->
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="modal-actions">
-                    <button type="button" id="budgetSettingsCancelBtn" class="btn secondary">취소</button>
-                    <button type="submit" class="btn primary">설정 저장</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 수업계획 관리 모달 -->
-    <div id="lessonPlanManagementModal" class="modal">
-        <div class="modal-content expanded">
-            <h3>수업계획 승인 관리</h3>
-            <div class="lesson-plan-management-container">
-                <div class="management-header">
-                    <div class="management-stats">
-                        <span id="pendingPlansCount" class="stat-badge pending">대기 중: 0</span>
-                        <span id="approvedPlansCount" class="stat-badge approved">승인됨: 0</span>
-                        <span id="rejectedPlansCount" class="stat-badge rejected">반려됨: 0</span>
-                    </div>
-                    <div class="management-actions">
-                        <button id="refreshPlansBtn" class="btn small secondary">
-                            <i data-lucide="refresh-cw"></i> 새로고침
-                        </button>
+        <!-- 메인 콘텐츠 -->
+        <div id="mainContent" style="display: none;">
+            <!-- 핵심 운영 통계 카드 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i data-lucide="users" class="stat-icon blue"></i>
+                    <div class="stat-info">
+                        <p class="stat-label">전체 신청자수</p>
+                        <p id="applicantCount" class="stat-value">0</p>
                     </div>
                 </div>
-                
-                <div id="lessonPlansList" class="lesson-plans-list">
-                    <!-- 동적으로 생성됨 -->
+                <div class="stat-card">
+                    <i data-lucide="clock" class="stat-icon orange"></i>
+                    <div class="stat-info">
+                        <p class="stat-label">미승인 아이템</p>
+                        <p id="pendingCount" class="stat-value">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i data-lucide="check-circle" class="stat-icon green"></i>
+                    <div class="stat-info">
+                        <p class="stat-label">승인됨 (구매대기)</p>
+                        <p id="approvedCount" class="stat-value">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i data-lucide="package" class="stat-icon purple"></i>
+                    <div class="stat-info">
+                        <p class="stat-label">구매완료</p>
+                        <p id="purchasedCount" class="stat-value">0</p>
+                    </div>
                 </div>
             </div>
-            
-            <div class="modal-actions">
-                <button type="button" id="lessonPlanManagementCloseBtn" class="btn secondary">닫기</button>
+
+            <!-- 전체 예산 현황 섹션 -->
+            <div class="budget-overview-section">
+                <h2>💰 전체 예산 현황</h2>
+                <div class="budget-summary-list">
+                    <div class="budget-summary-item primary">
+                        <span class="budget-label">전체 배정 예산</span>
+                        <span id="totalApprovedBudget" class="budget-amount">0원</span>
+                    </div>
+                    <div class="budget-summary-item">
+                        <span class="budget-label">승인된 교구 신청 총액</span>
+                        <span id="approvedItemsTotal" class="budget-amount">0원</span>
+                    </div>
+                    <div class="budget-summary-item">
+                        <span class="budget-label">구매 완료 총액</span>
+                        <span id="purchasedTotal" class="budget-amount">0원</span>
+                    </div>
+                    <div class="budget-summary-item">
+                        <span class="budget-label">1인당 평균 지원금</span>
+                        <span id="averagePerPerson" class="budget-amount">0원</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 검색 -->
+            <div class="search-container">
+                <div class="search-box">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="학생 이름으로 검색...">
+                </div>
+            </div>
+
+            <!-- 교구 신청 목록 -->
+            <div id="adminApplications" class="admin-applications">
+                <!-- 동적으로 생성될 관리자용 교구 신청 목록 -->
             </div>
         </div>
     </div>
+
+    <!-- 모달들은 admin.js에서 동적으로 생성됨 -->
 
     <!-- JavaScript Files -->
     <script src="../js/config.js?v=1.4.0"></script>
@@ -266,9 +252,17 @@
     <script src="../js/lesson-plan.js?v=1.4.0"></script>
     <script src="../js/admin.js?v=1.4.0"></script>
     
-    <!-- 페이지 초기화 -->
+    <!-- 교구 관리 페이지 전용 스크립트 -->
     <script>
+        // 전역 변수
+        let isDataLoaded = false;
+        let retryCount = 0;
+        const MAX_RETRY_COUNT = 3;
+
+        // 페이지 초기화
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 교구 관리 페이지 초기화 시작');
+            
             try {
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
@@ -276,106 +270,482 @@
                 }
 
                 // 관리자 인증 확인
-                checkAdminAuthentication();
+                if (!checkAdminAuthentication()) {
+                    return; // 인증 실패시 여기서 중단
+                }
                 
                 // 교구 관리 초기화
                 initializeEquipmentManagement();
                 
             } catch (error) {
-                console.error('교구 관리 페이지 초기화 오류:', error);
+                console.error('❌ 교구 관리 페이지 초기화 오류:', error);
+                showErrorState();
             }
         });
 
-        // 관리자 인증 확인
+        // 관리자 인증 확인 (개선된 버전)
         function checkAdminAuthentication() {
+            console.log('🔐 관리자 인증 확인 중...');
+            
             const adminSession = localStorage.getItem('adminSession');
             if (!adminSession) {
+                console.warn('⚠️ 관리자 세션이 없습니다');
                 alert('관리자 로그인이 필요합니다.');
                 window.location.href = '../admin.html';
-                return;
+                return false;
             }
+
+            console.log('✅ 관리자 인증 확인됨');
+            return true;
         }
 
-        // 교구 관리 초기화
-        function initializeEquipmentManagement() {
-            try {
-                // 기존 admin.js의 initializeAdminDashboard 함수 호출
-                if (typeof initializeAdminDashboard === 'function') {
-                    initializeAdminDashboard();
-                } else {
-                    console.warn('initializeAdminDashboard 함수를 찾을 수 없습니다.');
-                    loadBasicData();
-                }
-            } catch (error) {
-                console.error('교구 관리 초기화 오류:', error);
-                loadBasicData();
-            }
-        }
-
-        // 기본 데이터 로드
-        function loadBasicData() {
-            // 통계 데이터 로드
-            loadStatistics();
+        // 교구 관리 초기화 (완전히 새로운 버전)
+        async function initializeEquipmentManagement() {
+            console.log('🚀 교구 관리 시스템 초기화 중...');
             
-            // 교구 신청 목록 로드
-            loadEquipmentRequests();
+            try {
+                showLoadingState();
+
+                // 1. Supabase 클라이언트 초기화 대기
+                await waitForSupabaseClient();
+
+                // 2. AdminManager 초기화 대기
+                await waitForAdminManager();
+
+                // 3. 데이터 로드
+                await loadAllData();
+
+                // 4. 성공시 메인 콘텐츠 표시
+                showMainContent();
+                isDataLoaded = true;
+                
+                console.log('✅ 교구 관리 시스템 초기화 완료');
+
+            } catch (error) {
+                console.error('❌ 교구 관리 초기화 실패:', error);
+                showErrorState(error.message);
+            }
         }
 
-        // 통계 데이터 로드
-        async function loadStatistics() {
-            try {
-                // Supabase에서 통계 데이터 조회
-                const { data: applications, error } = await supabase
-                    .from('equipment_requests')
-                    .select('*');
+        // Supabase 클라이언트 초기화 대기
+        function waitForSupabaseClient() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 50; // 5초 대기
 
-                if (error) throw error;
-
-                // 통계 계산
-                const stats = {
-                    total: applications.length,
-                    pending: applications.filter(app => app.status === 'pending').length,
-                    approved: applications.filter(app => app.status === 'approved').length,
-                    purchased: applications.filter(app => app.status === 'purchased').length
+                const checkSupabase = () => {
+                    attempts++;
+                    
+                    if (window.supabase && window.SupabaseAPI) {
+                        console.log('✅ Supabase 클라이언트 준비됨');
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        reject(new Error('Supabase 클라이언트 초기화 시간 초과'));
+                    } else {
+                        setTimeout(checkSupabase, 100);
+                    }
                 };
 
-                // UI 업데이트
-                document.getElementById('applicantCount').textContent = stats.total;
-                document.getElementById('pendingCount').textContent = stats.pending;
-                document.getElementById('approvedCount').textContent = stats.approved;
-                document.getElementById('purchasedCount').textContent = stats.purchased;
+                checkSupabase();
+            });
+        }
+
+        // AdminManager 초기화 대기
+        function waitForAdminManager() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 30; // 3초 대기
+
+                const checkAdminManager = () => {
+                    attempts++;
+                    
+                    if (window.AdminManager && typeof window.AdminManager.init === 'function') {
+                        console.log('✅ AdminManager 준비됨');
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        console.warn('⚠️ AdminManager를 찾을 수 없음, 직접 로드 시도');
+                        resolve(); // AdminManager 없어도 계속 진행
+                    } else {
+                        setTimeout(checkAdminManager, 100);
+                    }
+                };
+
+                checkAdminManager();
+            });
+        }
+
+        // 모든 데이터 로드
+        async function loadAllData() {
+            console.log('📊 데이터 로드 시작...');
+
+            try {
+                // AdminManager가 있으면 사용, 없으면 직접 구현
+                if (window.AdminManager && typeof window.AdminManager.init === 'function') {
+                    console.log('🔄 AdminManager 사용하여 초기화');
+                    await AdminManager.init();
+                } else {
+                    console.log('🔄 직접 데이터 로드 방식 사용');
+                    await loadDataDirectly();
+                }
+
+                // 이벤트 리스너 설정
+                setupEventListeners();
+
+                console.log('✅ 모든 데이터 로드 완료');
 
             } catch (error) {
-                console.error('통계 데이터 로드 오류:', error);
+                console.error('❌ 데이터 로드 실패:', error);
+                throw error;
             }
         }
 
-        // 교구 신청 목록 로드
-        async function loadEquipmentRequests() {
+        // 직접 데이터 로드 (AdminManager 없을 때)
+        async function loadDataDirectly() {
+            console.log('📋 직접 데이터 로드 방식 실행');
+
+            // 통계 데이터 로드
+            await loadStatisticsDirectly();
+            
+            // 예산 현황 로드
+            await loadBudgetOverviewDirectly();
+            
+            // 교구 신청 목록 로드
+            await loadApplicationsDirectly();
+        }
+
+        // 통계 데이터 직접 로드
+        async function loadStatisticsDirectly() {
             try {
-                // 기존 admin.js의 loadAdminApplications 함수 호출
-                if (typeof loadAdminApplications === 'function') {
-                    loadAdminApplications();
-                } else {
-                    console.warn('loadAdminApplications 함수를 찾을 수 없습니다.');
+                if (!window.SupabaseAPI || typeof window.SupabaseAPI.getStats !== 'function') {
+                    console.warn('⚠️ SupabaseAPI.getStats 함수를 찾을 수 없음');
+                    return;
                 }
+
+                const stats = await SupabaseAPI.getStats();
+                
+                updateElementText('#applicantCount', `${stats.applicantCount} / ${stats.totalStudents}`);
+                updateElementText('#pendingCount', stats.pendingCount);
+                updateElementText('#approvedCount', stats.approvedCount);
+                updateElementText('#purchasedCount', stats.purchasedCount || 0);
+
+                console.log('📊 통계 데이터 로드 완료:', stats);
+
             } catch (error) {
-                console.error('교구 신청 목록 로드 오류:', error);
+                console.error('❌ 통계 데이터 로드 실패:', error);
+                // 실패해도 계속 진행
+            }
+        }
+
+        // 예산 현황 직접 로드
+        async function loadBudgetOverviewDirectly() {
+            try {
+                if (!window.SupabaseAPI || typeof window.SupabaseAPI.getBudgetOverviewStats !== 'function') {
+                    console.warn('⚠️ SupabaseAPI.getBudgetOverviewStats 함수를 찾을 수 없음');
+                    return;
+                }
+
+                const budgetStats = await SupabaseAPI.getBudgetOverviewStats();
+                
+                updateElementText('#totalApprovedBudget', formatPrice(budgetStats.totalApprovedBudget));
+                updateElementText('#approvedItemsTotal', formatPrice(budgetStats.approvedItemsTotal));
+                updateElementText('#purchasedTotal', formatPrice(budgetStats.purchasedTotal));
+                updateElementText('#averagePerPerson', formatPrice(budgetStats.averagePerPerson));
+
+                console.log('💰 예산 현황 로드 완료:', budgetStats);
+
+            } catch (error) {
+                console.error('❌ 예산 현황 로드 실패:', error);
+                // 실패해도 계속 진행
+            }
+        }
+
+        // 교구 신청 목록 직접 로드
+        async function loadApplicationsDirectly() {
+            try {
+                if (!window.SupabaseAPI || typeof window.SupabaseAPI.searchApplications !== 'function') {
+                    console.warn('⚠️ SupabaseAPI.searchApplications 함수를 찾을 수 없음');
+                    return;
+                }
+
+                const applications = await SupabaseAPI.searchApplications('');
+                renderApplicationsDirectly(applications);
+
+                console.log('📋 교구 신청 목록 로드 완료:', applications.length, '건');
+
+            } catch (error) {
+                console.error('❌ 교구 신청 목록 로드 실패:', error);
+                // 실패시 빈 목록 표시
+                const container = document.getElementById('adminApplications');
+                if (container) {
+                    container.innerHTML = '<div class="no-results">교구 신청 목록을 불러올 수 없습니다.</div>';
+                }
+            }
+        }
+
+        // 교구 신청 목록 직접 렌더링
+        function renderApplicationsDirectly(applications) {
+            const container = document.getElementById('adminApplications');
+            if (!container) return;
+
+            if (!applications || applications.length === 0) {
+                container.innerHTML = '<div class="no-results">신청 내역이 없습니다.</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            
+            applications.forEach(application => {
+                const applicationCard = createSimpleApplicationCard(application);
+                container.appendChild(applicationCard);
+            });
+
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // 간단한 신청 카드 생성
+        function createSimpleApplicationCard(application) {
+            const card = document.createElement('div');
+            card.className = 'admin-application-card';
+            
+            const userName = application.user_profiles?.name || '알 수 없음';
+            const institute = application.user_profiles?.sejong_institute || '미설정';
+            const field = application.user_profiles?.field || '미설정';
+            const submittedDate = formatDate(application.created_at);
+            const statusText = getStatusText(application.status);
+            const statusClass = getStatusClass(application.status);
+            
+            card.innerHTML = `
+                <div class="admin-application-header">
+                    <div class="student-info">
+                        <div>
+                            <h3>${escapeHtml(userName)}</h3>
+                            <p class="submission-date">신청일: ${submittedDate}</p>
+                            <p class="institute-info">${escapeHtml(institute)} • ${escapeHtml(field)}</p>
+                        </div>
+                        <span class="item-count">1개 항목</span>
+                    </div>
+                </div>
+                
+                <div class="admin-application-body">
+                    <div class="admin-item-card">
+                        <div class="admin-item-header">
+                            <div class="admin-item-info">
+                                <h4>${escapeHtml(application.item_name)}</h4>
+                                <p>${escapeHtml(application.purpose)}</p>
+                                <div class="admin-item-details">
+                                    <span><strong>가격:</strong> ${formatPrice(application.price)}</span>
+                                </div>
+                            </div>
+                            <div class="admin-item-actions">
+                                <span class="admin-status-badge status-badge ${statusClass}">${statusText}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // 이벤트 리스너 설정
+        function setupEventListeners() {
+            console.log('🔧 이벤트 리스너 설정 중...');
+
+            // 예산 설정 버튼
+            const budgetBtn = document.getElementById('budgetSettingsBtn');
+            if (budgetBtn) {
+                budgetBtn.addEventListener('click', handleBudgetSettings);
+            }
+
+            // 수업계획 관리 버튼
+            const lessonPlanBtn = document.getElementById('lessonPlanManagementBtn');
+            if (lessonPlanBtn) {
+                lessonPlanBtn.addEventListener('click', handleLessonPlanManagement);
+            }
+
+            // Excel 내보내기 버튼
+            const exportBtn = document.getElementById('exportBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', handleExport);
+            }
+
+            // 검색 입력
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', debounce(handleSearch, 300));
+            }
+
+            console.log('✅ 이벤트 리스너 설정 완료');
+        }
+
+        // 예산 설정 처리
+        function handleBudgetSettings() {
+            console.log('💰 예산 설정 버튼 클릭');
+            
+            if (window.AdminManager && typeof window.AdminManager.showBudgetSettingsModal === 'function') {
+                AdminManager.showBudgetSettingsModal();
+            } else {
+                alert('예산 설정 기능을 불러올 수 없습니다. 페이지를 새로고침해주세요.');
+            }
+        }
+
+        // 수업계획 관리 처리
+        function handleLessonPlanManagement() {
+            console.log('📋 수업계획 관리 버튼 클릭');
+            
+            if (window.AdminManager && typeof window.AdminManager.showLessonPlanManagementModal === 'function') {
+                AdminManager.showLessonPlanManagementModal();
+            } else {
+                alert('수업계획 관리 기능을 불러올 수 없습니다. 페이지를 새로고침해주세요.');
+            }
+        }
+
+        // Excel 내보내기 처리
+        async function handleExport() {
+            console.log('📤 Excel 내보내기 버튼 클릭');
+            
+            if (window.AdminManager && typeof window.AdminManager.handleExport === 'function') {
+                await AdminManager.handleExport();
+            } else {
+                alert('Excel 내보내기 기능을 불러올 수 없습니다. 페이지를 새로고침해주세요.');
+            }
+        }
+
+        // 검색 처리
+        function handleSearch(event) {
+            const searchTerm = event.target.value.trim();
+            console.log('🔍 검색어:', searchTerm);
+            
+            if (window.AdminManager && typeof window.AdminManager.handleSearch === 'function') {
+                AdminManager.handleSearch(searchTerm);
+            } else {
+                console.warn('⚠️ AdminManager.handleSearch 함수를 찾을 수 없음');
             }
         }
 
         // 대시보드로 돌아가기
         function goBackToDashboard() {
+            console.log('🔙 대시보드로 돌아가기');
             window.location.href = '../admin.html';
+        }
+
+        // 데이터 재시도
+        function retryDataLoad() {
+            retryCount++;
+            if (retryCount <= MAX_RETRY_COUNT) {
+                console.log(`🔄 데이터 재시도 ${retryCount}/${MAX_RETRY_COUNT}`);
+                initializeEquipmentManagement();
+            } else {
+                alert('여러 번 시도했지만 데이터를 불러올 수 없습니다. 페이지를 새로고침해주세요.');
+            }
+        }
+
+        // UI 상태 관리 함수들
+        function showLoadingState() {
+            document.getElementById('loadingState').style.display = 'block';
+            document.getElementById('errorState').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'none';
+        }
+
+        function showErrorState(message = '') {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+            document.getElementById('mainContent').style.display = 'none';
+            
+            if (message) {
+                const errorElement = document.querySelector('#errorState p');
+                if (errorElement) {
+                    errorElement.textContent = `오류: ${message}`;
+                }
+            }
+        }
+
+        function showMainContent() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+        }
+
+        // 유틸리티 함수들
+        function updateElementText(selector, text) {
+            const element = document.querySelector(selector);
+            if (element) {
+                element.textContent = text;
+            }
+        }
+
+        function formatPrice(price) {
+            if (typeof price !== 'number') return '0원';
+            return new Intl.NumberFormat('ko-KR').format(price) + '원';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            return new Date(dateString).toLocaleDateString('ko-KR');
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '승인대기',
+                'approved': '승인됨',
+                'rejected': '반려됨',
+                'purchased': '구매완료'
+            };
+            return statusMap[status] || '알 수 없음';
+        }
+
+        function getStatusClass(status) {
+            const classMap = {
+                'pending': 'pending',
+                'approved': 'approved',
+                'rejected': 'rejected',
+                'purchased': 'purchased'
+            };
+            return classMap[status] || '';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
 
         // 키보드 단축키 (개발자용)
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'd') {
                 e.preventDefault();
-                console.log('교구 관리 페이지 - 디버그 모드');
+                console.log('🛠️ 교구 관리 페이지 - 디버그 정보');
+                console.log('isDataLoaded:', isDataLoaded);
+                console.log('retryCount:', retryCount);
+                console.log('AdminManager 사용가능:', !!window.AdminManager);
+                console.log('SupabaseAPI 사용가능:', !!window.SupabaseAPI);
             }
         });
+
+        // 전역 함수로 노출 (디버깅용)
+        window.EquipmentManagement = {
+            retryDataLoad,
+            loadAllData,
+            showLoadingState,
+            showErrorState,
+            showMainContent
+        };
     </script>
 </body>
 </html>
