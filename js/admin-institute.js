@@ -194,6 +194,9 @@ function createInstituteCard(institute) {
             <button class="btn small secondary" onclick="showInstituteDetail('${institute.id}')">
                 <i data-lucide="eye"></i> 상세보기
             </button>
+            <button class="btn small info" onclick="showProgramManagementModal('${institute.id}')">
+                <i data-lucide="calendar"></i> 프로그램 관리
+            </button>
             <button class="btn small primary" onclick="showEditInstituteModal('${institute.id}')">
                 <i data-lucide="edit"></i> 편집
             </button>
@@ -209,6 +212,546 @@ function createInstituteCard(institute) {
     `;
     
     return card;
+}
+
+/**
+ * 문화 프로그램 관리
+ */
+function showProgramManagementModal(instituteId) {
+    const institute = currentInstitutes.find(inst => inst.id === instituteId);
+    if (!institute) {
+        Utils.showToast('학당 정보를 찾을 수 없습니다.', 'error');
+        return;
+    }
+    
+    // 모달이 없으면 생성
+    if (!Utils.$('#programManagementModal')) {
+        createProgramManagementModal();
+    }
+    
+    // 현재 편집 중인 학당 설정
+    currentEditingInstitute = institute;
+    
+    // 모달 제목 설정
+    Utils.$('#programManagementModal .modal-header h3').textContent = 
+        `${institute.name_ko} - 문화 프로그램 관리`;
+    
+    // 프로그램 목록 로드
+    loadProgramsList(instituteId);
+    
+    Utils.$('#programManagementModal').classList.add('active');
+}
+
+/**
+ * 프로그램 목록 로드
+ */
+async function loadProgramsList(instituteId) {
+    try {
+        const { data: programs, error } = await supabase
+            .from('cultural_programs')
+            .select('*')
+            .eq('institute_id', instituteId)
+            .order('program_name');
+        
+        if (error) {
+            throw error;
+        }
+        
+        renderProgramsList(programs || []);
+        
+    } catch (error) {
+        console.error('프로그램 목록 로드 오류:', error);
+        const container = Utils.$('#programsList');
+        if (container) {
+            container.innerHTML = `
+                <div class="error-state">
+                    <i data-lucide="alert-circle"></i>
+                    <p>프로그램 목록을 불러올 수 없습니다.</p>
+                    <button class="btn secondary" onclick="loadProgramsList('${instituteId}')">
+                        다시 시도
+                    </button>
+                </div>
+            `;
+        }
+    }
+}
+
+/**
+ * 프로그램 목록 렌더링
+ */
+function renderProgramsList(programs) {
+    const container = Utils.$('#programsList');
+    if (!container) return;
+    
+    if (programs.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i data-lucide="calendar-x"></i>
+                <h4>등록된 문화 프로그램이 없습니다</h4>
+                <p>새 프로그램을 추가해보세요.</p>
+                <button class="btn primary" onclick="showAddProgramModal()">
+                    <i data-lucide="plus"></i>
+                    새 프로그램 추가
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    programs.forEach(program => {
+        const card = createProgramCard(program);
+        container.appendChild(card);
+    });
+    
+    // 아이콘 재생성
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+/**
+ * 프로그램 카드 생성
+ */
+function createProgramCard(program) {
+    const card = Utils.createElement('div', 'program-card');
+    
+    card.innerHTML = `
+        <div class="program-card-header">
+            <h4>${Utils.escapeHtml(program.program_name)}</h4>
+            <div class="program-actions">
+                <button class="btn small secondary" onclick="showEditProgramModal('${program.id}')">
+                    <i data-lucide="edit"></i> 편집
+                </button>
+                <button class="btn small danger" onclick="deleteProgram('${program.id}')">
+                    <i data-lucide="trash-2"></i> 삭제
+                </button>
+            </div>
+        </div>
+        <div class="program-card-body">
+            ${program.location ? `
+                <div class="program-detail">
+                    <strong>장소:</strong> ${Utils.escapeHtml(program.location)}
+                </div>
+            ` : ''}
+            ${program.max_capacity ? `
+                <div class="program-detail">
+                    <strong>최대 수용:</strong> ${program.max_capacity}명
+                </div>
+            ` : ''}
+            ${program.equipment_needed ? `
+                <div class="program-detail">
+                    <strong>필요 교구:</strong> ${Utils.escapeHtml(program.equipment_needed)}
+                </div>
+            ` : ''}
+            ${program.description ? `
+                <div class="program-detail">
+                    <strong>설명:</strong> ${Utils.escapeHtml(program.description)}
+                </div>
+            ` : ''}
+        </div>
+    `;
+    
+    return card;
+}
+
+/**
+ * 프로그램 추가 모달 표시
+ */
+function showAddProgramModal() {
+    if (!Utils.$('#addProgramModal')) {
+        createProgramModals();
+    }
+    
+    // 폼 초기화
+    const form = Utils.$('#addProgramForm');
+    if (form) {
+        form.reset();
+    }
+    
+    Utils.$('#addProgramModal').classList.add('active');
+    
+    // 첫 번째 입력 필드에 포커스
+    setTimeout(() => {
+        const firstInput = Utils.$('#addProgramName');
+        if (firstInput) firstInput.focus();
+    }, 100);
+}
+
+/**
+ * 프로그램 편집 모달 표시
+ */
+async function showEditProgramModal(programId) {
+    try {
+        if (!Utils.$('#editProgramModal')) {
+            createProgramModals();
+        }
+        
+        // 프로그램 정보 가져오기
+        const { data: program, error } = await supabase
+            .from('cultural_programs')
+            .select('*')
+            .eq('id', programId)
+            .single();
+        
+        if (error) {
+            throw error;
+        }
+        
+        if (!program) {
+            Utils.showToast('프로그램 정보를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        // 폼에 기존 데이터 채우기
+        Utils.$('#editProgramId').value = program.id;
+        Utils.$('#editProgramName').value = program.program_name || '';
+        Utils.$('#editProgramLocation').value = program.location || '';
+        Utils.$('#editProgramCapacity').value = program.max_capacity || '';
+        Utils.$('#editProgramEquipment').value = program.equipment_needed || '';
+        Utils.$('#editProgramDescription').value = program.description || '';
+        
+        Utils.$('#editProgramModal').classList.add('active');
+        
+        // 첫 번째 입력 필드에 포커스
+        setTimeout(() => {
+            const firstInput = Utils.$('#editProgramName');
+            if (firstInput) firstInput.focus();
+        }, 100);
+        
+    } catch (error) {
+        console.error('프로그램 편집 모달 표시 오류:', error);
+        Utils.showToast('프로그램 정보를 불러오는 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+/**
+ * 프로그램 추가 처리
+ */
+async function handleAddProgram() {
+    try {
+        if (!currentEditingInstitute) {
+            Utils.showToast('학당 정보를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        const form = Utils.$('#addProgramForm');
+        const formData = new FormData(form);
+        
+        // 필수 필드 검증
+        if (!formData.get('program_name')?.trim()) {
+            Utils.showToast('프로그램명을 입력해주세요.', 'warning');
+            return;
+        }
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        Utils.showLoading(submitBtn);
+        
+        // 프로그램 데이터 준비
+        const programData = {
+            institute_id: currentEditingInstitute.id,
+            program_name: formData.get('program_name').trim(),
+            location: formData.get('location')?.trim() || null,
+            max_capacity: formData.get('max_capacity') ? 
+                parseInt(formData.get('max_capacity')) : null,
+            equipment_needed: formData.get('equipment_needed')?.trim() || null,
+            description: formData.get('description')?.trim() || null
+        };
+        
+        // Supabase에 저장
+        const { data, error } = await supabase
+            .from('cultural_programs')
+            .insert([programData])
+            .select()
+            .single();
+        
+        if (error) {
+            throw error;
+        }
+        
+        Utils.hideLoading(submitBtn);
+        hideProgramModal('add');
+        
+        Utils.showToast('새 프로그램이 추가되었습니다.', 'success');
+        
+        // 프로그램 목록 새로고침
+        await loadProgramsList(currentEditingInstitute.id);
+        
+        // 학당 목록도 새로고침 (프로그램 개수 업데이트)
+        await loadInstitutesList();
+        
+    } catch (error) {
+        const submitBtn = Utils.$('#addProgramForm button[type="submit"]');
+        if (submitBtn) Utils.hideLoading(submitBtn);
+        
+        console.error('프로그램 추가 오류:', error);
+        Utils.showToast('프로그램 추가 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+/**
+ * 프로그램 편집 처리
+ */
+async function handleEditProgram() {
+    try {
+        const form = Utils.$('#editProgramForm');
+        const formData = new FormData(form);
+        const programId = formData.get('program_id');
+        
+        if (!programId) {
+            Utils.showToast('프로그램 ID를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        // 필수 필드 검증
+        if (!formData.get('program_name')?.trim()) {
+            Utils.showToast('프로그램명을 입력해주세요.', 'warning');
+            return;
+        }
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        Utils.showLoading(submitBtn);
+        
+        // 업데이트할 데이터 준비
+        const updateData = {
+            program_name: formData.get('program_name').trim(),
+            location: formData.get('location')?.trim() || null,
+            max_capacity: formData.get('max_capacity') ? 
+                parseInt(formData.get('max_capacity')) : null,
+            equipment_needed: formData.get('equipment_needed')?.trim() || null,
+            description: formData.get('description')?.trim() || null
+        };
+        
+        // Supabase에서 업데이트
+        const { data, error } = await supabase
+            .from('cultural_programs')
+            .update(updateData)
+            .eq('id', programId)
+            .select()
+            .single();
+        
+        if (error) {
+            throw error;
+        }
+        
+        Utils.hideLoading(submitBtn);
+        hideProgramModal('edit');
+        
+        Utils.showToast('프로그램 정보가 수정되었습니다.', 'success');
+        
+        // 프로그램 목록 새로고침
+        if (currentEditingInstitute) {
+            await loadProgramsList(currentEditingInstitute.id);
+        }
+        
+        // 학당 목록도 새로고침
+        await loadInstitutesList();
+        
+    } catch (error) {
+        const submitBtn = Utils.$('#editProgramForm button[type="submit"]');
+        if (submitBtn) Utils.hideLoading(submitBtn);
+        
+        console.error('프로그램 편집 오류:', error);
+        Utils.showToast('프로그램 편집 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+/**
+ * 프로그램 삭제
+ */
+async function deleteProgram(programId) {
+    try {
+        // 프로그램 정보 가져오기
+        const { data: program, error: fetchError } = await supabase
+            .from('cultural_programs')
+            .select('program_name')
+            .eq('id', programId)
+            .single();
+        
+        if (fetchError) {
+            throw fetchError;
+        }
+        
+        if (!program) {
+            Utils.showToast('프로그램 정보를 찾을 수 없습니다.', 'error');
+            return;
+        }
+        
+        const confirmed = Utils.showConfirm(
+            `'${program.program_name}' 프로그램을 삭제하시겠습니까?\\n\\n` +
+            `⚠️ 주의: 이 작업은 되돌릴 수 없습니다.`
+        );
+        
+        if (!confirmed) return;
+        
+        // Supabase에서 삭제
+        const { error } = await supabase
+            .from('cultural_programs')
+            .delete()
+            .eq('id', programId);
+        
+        if (error) {
+            throw error;
+        }
+        
+        Utils.showToast('프로그램이 삭제되었습니다.', 'success');
+        
+        // 프로그램 목록 새로고침
+        if (currentEditingInstitute) {
+            await loadProgramsList(currentEditingInstitute.id);
+        }
+        
+        // 학당 목록도 새로고침 (프로그램 개수 업데이트)
+        await loadInstitutesList();
+        
+    } catch (error) {
+        console.error('프로그램 삭제 오류:', error);
+        Utils.showToast('프로그램 삭제 중 오류가 발생했습니다.', 'error');
+    }
+}
+
+/**
+ * 프로그램 모달 숨김
+ */
+function hideProgramModal(type) {
+    const modals = {
+        'add': '#addProgramModal',
+        'edit': '#editProgramModal',
+        'management': '#programManagementModal'
+    };
+    
+    const modal = Utils.$(modals[type]);
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    
+    // 관리 모달을 닫을 때 현재 편집 중인 학당 정보 초기화
+    if (type === 'management') {
+        currentEditingInstitute = null;
+    }
+}
+
+/**
+ * 프로그램 관리 모달 HTML 생성
+ */
+function createProgramManagementModal() {
+    const modalHTML = `
+        <!-- 프로그램 관리 모달 -->
+        <div id="programManagementModal" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3>문화 프로그램 관리</h3>
+                    <button class="close-btn" onclick="hideProgramModal('management')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="program-management-header">
+                        <button class="btn primary" onclick="showAddProgramModal()">
+                            <i data-lucide="plus"></i>
+                            새 프로그램 추가
+                        </button>
+                    </div>
+                    <div id="programsList" class="programs-list">
+                        <!-- 프로그램 목록이 여기에 표시됩니다 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+/**
+ * 프로그램 추가/편집 모달 HTML 생성
+ */
+function createProgramModals() {
+    const modalsHTML = `
+        <!-- 프로그램 추가 모달 -->
+        <div id="addProgramModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>새 프로그램 추가</h3>
+                    <button class="close-btn" onclick="hideProgramModal('add')">&times;</button>
+                </div>
+                <form id="addProgramForm" onsubmit="event.preventDefault(); handleAddProgram();">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="addProgramName">프로그램명 *</label>
+                            <input type="text" id="addProgramName" name="program_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="addProgramLocation">장소</label>
+                            <input type="text" id="addProgramLocation" name="location">
+                        </div>
+                        <div class="form-group">
+                            <label for="addProgramCapacity">최대 수용 인원</label>
+                            <input type="number" id="addProgramCapacity" name="max_capacity" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="addProgramEquipment">필요 교구/시설</label>
+                            <textarea id="addProgramEquipment" name="equipment_needed" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="addProgramDescription">설명</label>
+                            <textarea id="addProgramDescription" name="description" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn secondary" onclick="hideProgramModal('add')">취소</button>
+                        <button type="submit" class="btn primary">
+                            <i data-lucide="plus"></i>
+                            프로그램 추가
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- 프로그램 편집 모달 -->
+        <div id="editProgramModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>프로그램 정보 편집</h3>
+                    <button class="close-btn" onclick="hideProgramModal('edit')">&times;</button>
+                </div>
+                <form id="editProgramForm" onsubmit="event.preventDefault(); handleEditProgram();">
+                    <div class="modal-body">
+                        <input type="hidden" id="editProgramId" name="program_id">
+                        <div class="form-group">
+                            <label for="editProgramName">프로그램명 *</label>
+                            <input type="text" id="editProgramName" name="program_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProgramLocation">장소</label>
+                            <input type="text" id="editProgramLocation" name="location">
+                        </div>
+                        <div class="form-group">
+                            <label for="editProgramCapacity">최대 수용 인원</label>
+                            <input type="number" id="editProgramCapacity" name="max_capacity" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="editProgramEquipment">필요 교구/시설</label>
+                            <textarea id="editProgramEquipment" name="equipment_needed" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProgramDescription">설명</label>
+                            <textarea id="editProgramDescription" name="description" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn secondary" onclick="hideProgramModal('edit')">취소</button>
+                        <button type="submit" class="btn primary">
+                            <i data-lucide="save"></i>
+                            변경사항 저장
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalsHTML);
 }
 
 /**
