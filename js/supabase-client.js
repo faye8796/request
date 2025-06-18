@@ -2033,6 +2033,19 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
+// 전역 supabase 객체 노출 (호환성을 위해)
+Object.defineProperty(window, 'supabase', {
+    get: function() {
+        if (supabaseClient) {
+            return supabaseClient;
+        }
+        console.warn('⚠️ Supabase 클라이언트가 아직 초기화되지 않았습니다.');
+        return null;
+    },
+    enumerable: true,
+    configurable: true
+});
+
 // 초기화 상태 이벤트 리스너
 window.addEventListener('supabaseInitError', (event) => {
     console.error('Supabase 초기화 오류 이벤트:', event.detail);
@@ -2044,4 +2057,4 @@ window.addEventListener('supabaseInitError', (event) => {
 });
 
 // 초기화 완료 로그
-console.log('🚀 SupabaseAPI loaded successfully with fixed missing API functions - createApplication, createBundleApplication, updateApplication, deleteApplication added');
+console.log('🚀 SupabaseAPI loaded successfully with global supabase object exposure for compatibility');
