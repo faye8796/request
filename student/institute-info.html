@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>파견 학당 정보 - 세종학당 문화인턴 지원 시스템</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="../css/main.css?v=1.3.0">
+    <link rel="stylesheet" href="../css/student.css?v=1.3.0">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Supabase JavaScript Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <style>
+        .institute-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+        }
+
+        .institute-header {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-subtitle {
+            font-size: 1.2rem;
+            color: #718096;
+            margin-bottom: 1rem;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f7fafc;
+            color: #4a5568;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+
+        .institute-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .institute-card {
+            background: white;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .institute-logo {
+            width: 4rem;
+            height: 4rem;
+            background: rgba(255,255,255,0.2);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+
+        .institute-name-ko {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .institute-name-en {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 1rem;
+        }
+
+        .institute-location {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .info-section {
+            margin-bottom: 2rem;
+        }
+
+        .info-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .info-item {
+            background: #f7fafc;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-value {
+            color: #2d3748;
+            line-height: 1.6;
+        }
+
+        .contact-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .contact-link:hover {
+            color: #5a67d8;
+            text-decoration: underline;
+        }
+
+        .programs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .program-card {
+            background: #f7fafc;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .program-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .program-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .program-details {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .program-details li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            color: #4a5568;
+        }
+
+        .program-details li i {
+            color: #667eea;
+            margin-top: 0.2rem;
+            flex-shrink: 0;
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem;
+        }
+
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 3px solid #e2e8f0;
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            border: 2px solid #fc8181;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #718096;
+        }
+
+        .empty-state i {
+            width: 4rem;
+            height: 4rem;
+            margin-bottom: 1rem;
+            color: #cbd5e0;
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .institute-container {
+                padding: 1rem;
+            }
+
+            .institute-header {
+                padding: 1.5rem;
+            }
+
+            .header-title {
+                font-size: 2rem;
+            }
+
+            .institute-name-ko {
+                font-size: 1.5rem;
+            }
+
+            .card-body {
+                padding: 1.5rem;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .programs-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="institute-container">
+        <!-- 헤더 섹션 -->
+        <div class="institute-header">
+            <h1 class="header-title">파견 학당 정보</h1>
+            <p class="header-subtitle">배정받은 세종학당의 상세 정보</p>
+            <a href="dashboard.html" class="back-button">
+                <i data-lucide="arrow-left"></i>
+                대시보드로 돌아가기
+            </a>
+        </div>
+
+        <div class="institute-content">
+            <!-- 로딩 상태 -->
+            <div id="loadingSpinner" class="loading-spinner">
+                <div class="spinner"></div>
+            </div>
+
+            <!-- 에러 메시지 -->
+            <div id="errorMessage" class="error-message" style="display: none;">
+                <i data-lucide="alert-circle"></i>
+                정보를 불러오는 중 오류가 발생했습니다.
+            </div>
+
+            <!-- 빈 상태 -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <i data-lucide="building"></i>
+                <h3>등록된 학당 정보가 없습니다</h3>
+                <p>관리자에게 문의하여 학당 정보를 등록받으세요.</p>
+            </div>
+
+            <!-- 학당 정보 카드 -->
+            <div id="instituteCard" class="institute-card" style="display: none;">
+                <!-- 카드 헤더 -->
+                <div class="card-header">
+                    <div class="institute-logo">
+                        <i data-lucide="building"></i>
+                    </div>
+                    <h2 class="institute-name-ko" id="instituteNameKo">-</h2>
+                    <p class="institute-name-en" id="instituteNameEn">-</p>
+                    <div class="institute-location">
+                        <i data-lucide="map-pin"></i>
+                        <span id="instituteLocation">-</span>
+                    </div>
+                </div>
+
+                <!-- 카드 본문 -->
+                <div class="card-body">
+                    <!-- 기본 정보 -->
+                    <div class="info-section">
+                        <h3 class="info-title">
+                            <i data-lucide="info"></i>
+                            기본 정보
+                        </h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i data-lucide="building-2"></i>
+                                    운영기관
+                                </div>
+                                <div class="info-value" id="instituteOperator">-</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i data-lucide="map-pin"></i>
+                                    주소
+                                </div>
+                                <div class="info-value" id="instituteAddress">-</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i data-lucide="phone"></i>
+                                    연락처
+                                </div>
+                                <div class="info-value" id="institutePhone">-</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i data-lucide="instagram"></i>
+                                    SNS
+                                </div>
+                                <div class="info-value" id="instituteSns">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 담당자 정보 -->
+                    <div class="info-section">
+                        <h3 class="info-title">
+                            <i data-lucide="users"></i>
+                            담당자 정보
+                        </h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i data-lucide="user"></i>
+                                    주담당자
+                                </div>
+                                <div class="info-value" id="contactPerson">-</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i data-lucide="mail"></i>
+                                    이메일
+                                </div>
+                                <div class="info-value" id="contactEmail">-</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i data-lucide="user-check"></i>
+                                    현지 담당자
+                                </div>
+                                <div class="info-value" id="localCoordinator">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 근무 정보 -->
+                    <div class="info-section">
+                        <h3 class="info-title">
+                            <i data-lucide="clock"></i>
+                            근무 및 활동 정보
+                        </h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i data-lucide="calendar"></i>
+                                    근무 시간
+                                </div>
+                                <div class="info-value" id="workingHours">-</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i data-lucide="book-open"></i>
+                                    문화강좌 시간
+                                </div>
+                                <div class="info-value" id="culturalHours">-</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i data-lucide="schedule"></i>
+                                    수업 일정
+                                </div>
+                                <div class="info-value" id="classSchedule">-</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i data-lucide="users-2"></i>
+                                    반당 최대 인원
+                                </div>
+                                <div class="info-value" id="maxStudents">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 기타 정보 -->
+                    <div class="info-section">
+                        <h3 class="info-title">
+                            <i data-lucide="settings"></i>
+                            추가 정보
+                        </h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i data-lucide="globe"></i>
+                                    현지어 요구수준
+                                </div>
+                                <div class="info-value" id="languageRequirement">-</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i data-lucide="gift"></i>
+                                    학당 지원사항
+                                </div>
+                                <div class="info-value" id="supportProvided">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 문화 프로그램 -->
+                    <div class="info-section">
+                        <h3 class="info-title">
+                            <i data-lucide="sparkles"></i>
+                            문화 프로그램
+                        </h3>
+                        <div class="programs-grid" id="programsGrid">
+                            <!-- 프로그램 카드들이 여기에 동적으로 추가됩니다 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="../js/config.js?v=1.3.0"></script>
+    <script src="../js/supabase-client.js?v=1.3.0"></script>
+    <script src="../js/utils.js?v=1.3.0"></script>
+    <script src="../js/auth.js?v=1.3.0"></script>
+    <script src="../js/student/institute-info.js?v=1.3.0"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                // Lucide 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+
+                // 학생 인증 확인
+                checkStudentAuthentication();
+                
+                // 학당 정보 로드
+                loadInstituteInfo();
+
+            } catch (error) {
+                console.error('페이지 초기화 오류:', error);
+                showError('페이지 로드 중 오류가 발생했습니다.');
+            }
+        });
+
+        // 학생 인증 확인
+        function checkStudentAuthentication() {
+            const studentData = localStorage.getItem('currentStudent');
+            if (!studentData) {
+                alert('로그인이 필요합니다.');
+                window.location.href = '../index.html';
+                return;
+            }
+        }
+
+        // 에러 표시
+        function showError(message) {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('instituteCard').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+            
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        // 빈 상태 표시
+        function showEmptyState() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('instituteCard').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'block';
+        }
+
+        // 학당 정보 표시
+        function showInstituteInfo(institute, programs) {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+
+            // 기본 정보 채우기
+            document.getElementById('instituteNameKo').textContent = institute.name_ko || '-';
+            document.getElementById('instituteNameEn').textContent = institute.name_en || '-';
+            document.getElementById('instituteLocation').textContent = `${institute.city || '-'}, ${institute.country || '-'}`;
+            document.getElementById('instituteOperator').textContent = institute.operator || '-';
+            document.getElementById('instituteAddress').textContent = institute.address || '-';
+            document.getElementById('institutePhone').textContent = institute.phone || '-';
+            
+            // SNS 링크 처리
+            const snsElement = document.getElementById('instituteSns');
+            if (institute.sns_url) {
+                snsElement.innerHTML = `<a href="${institute.sns_url}" target="_blank" class="contact-link">Instagram</a>`;
+            } else {
+                snsElement.textContent = '-';
+            }
+
+            // 담당자 정보
+            document.getElementById('contactPerson').textContent = institute.contact_person || '-';
+            
+            // 이메일 링크 처리
+            const emailElement = document.getElementById('contactEmail');
+            if (institute.contact_email) {
+                emailElement.innerHTML = `<a href="mailto:${institute.contact_email}" class="contact-link">${institute.contact_email}</a>`;
+            } else {
+                emailElement.textContent = '-';
+            }
+
+            document.getElementById('localCoordinator').textContent = 
+                institute.local_coordinator ? `${institute.local_coordinator} (${institute.local_coordinator_role || '현지 담당자'})` : '-';
+
+            // 근무 정보
+            document.getElementById('workingHours').textContent = institute.working_hours_per_week || '-';
+            document.getElementById('culturalHours').textContent = 
+                institute.cultural_class_hours ? `주 ${institute.cultural_class_hours}시간` : '-';
+            document.getElementById('classSchedule').textContent = institute.class_schedule || '-';
+            document.getElementById('maxStudents').textContent = 
+                institute.max_students_per_class ? `${institute.max_students_per_class}명` : '-';
+
+            // 추가 정보
+            document.getElementById('languageRequirement').textContent = institute.local_language_requirement || '-';
+            document.getElementById('supportProvided').textContent = institute.support_provided || '-';
+
+            // 문화 프로그램 표시
+            displayPrograms(programs);
+
+            document.getElementById('instituteCard').style.display = 'block';
+        }
+
+        // 문화 프로그램 표시
+        function displayPrograms(programs) {
+            const programsGrid = document.getElementById('programsGrid');
+            programsGrid.innerHTML = '';
+
+            if (!programs || programs.length === 0) {
+                programsGrid.innerHTML = `
+                    <div class="empty-state">
+                        <i data-lucide="calendar-x"></i>
+                        <p>등록된 문화 프로그램이 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            programs.forEach(program => {
+                const programCard = document.createElement('div');
+                programCard.className = 'program-card';
+                programCard.innerHTML = `
+                    <h4 class="program-name">
+                        <i data-lucide="star"></i>
+                        ${program.program_name}
+                    </h4>
+                    <ul class="program-details">
+                        ${program.location ? `
+                            <li>
+                                <i data-lucide="map-pin"></i>
+                                <span><strong>장소:</strong> ${program.location}</span>
+                            </li>
+                        ` : ''}
+                        ${program.max_capacity ? `
+                            <li>
+                                <i data-lucide="users"></i>
+                                <span><strong>최대 수용:</strong> ${program.max_capacity}명</span>
+                            </li>
+                        ` : ''}
+                        ${program.equipment_needed ? `
+                            <li>
+                                <i data-lucide="package"></i>
+                                <span><strong>교구/시설:</strong> ${program.equipment_needed}</span>
+                            </li>
+                        ` : ''}
+                        ${program.description ? `
+                            <li>
+                                <i data-lucide="file-text"></i>
+                                <span><strong>설명:</strong> ${program.description}</span>
+                            </li>
+                        ` : ''}
+                    </ul>
+                `;
+                programsGrid.appendChild(programCard);
+            });
+
+            // 아이콘 다시 렌더링
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+    </script>
+</body>
+</html>
