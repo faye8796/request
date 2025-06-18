@@ -383,164 +383,134 @@
     <script src="../js/lesson-plan.js?v=1.3.0"></script>
     <script src="../js/student.js?v=1.3.0"></script>
     
-    <!-- 교구 신청 페이지 초기화 -->
+    <!-- 교구 신청 페이지 초기화 - 간소화된 버전 -->
     <script>
-        // 강화된 학생 데이터 구조 검증 및 수정 함수
-        function validateAndFixStudentData(data) {
-            console.log('🔍 원본 학생 데이터 검증 시작:', data);
+        /**
+         * 간소화된 equipment-request.html 데이터 검증 로직
+         * 복잡한 데이터 변환 로직을 제거하고 간단한 검증만 수행
+         * dashboard.js에서 이미 표준화된 데이터가 전달되므로 단순 검증만 필요
+         */
+
+        // 🔧 기존의 복잡한 validateAndFixStudentData 함수를 간단하게 대체
+        function validateStudentData(data) {
+            console.log('🔍 간단한 학생 데이터 검증 시작:', data);
             
-            let fixed = { ...data };
-            let wasFixed = false;
-            let hasStructuralIssues = false;
+            // 필수 필드 확인
+            const requiredFields = ['id', 'name', 'sejong_institute', 'field'];
+            const missingFields = [];
             
-            // 1. ID 필드 확인 및 수정 - 이가짜 학생의 경우
-            if (!fixed.id) {
-                if (fixed.name === '이가짜' && (fixed.birth === '1992-02-02' || fixed.birth_date === '1992-02-02')) {
-                    fixed.id = '13c27f96-ee99-4eb0-9ab7-56121d14a6a7';
-                    console.log('✅ 이가짜 학생 ID 자동 설정:', fixed.id);
-                    wasFixed = true;
-                    hasStructuralIssues = true;
-                } else {
-                    console.error('❌ 중요: ID 필드가 누락되어 있습니다!');
-                    hasStructuralIssues = true;
+            for (let field of requiredFields) {
+                if (!data[field]) {
+                    missingFields.push(field);
                 }
             }
             
-            // 2. 생년월일 필드 통일 (birth → birth_date)
-            if (fixed.birth && !fixed.birth_date) {
-                fixed.birth_date = fixed.birth;
-                delete fixed.birth;
-                console.log('✅ birth → birth_date 필드 수정:', fixed.birth_date);
-                wasFixed = true;
-                hasStructuralIssues = true;
+            if (missingFields.length > 0) {
+                console.warn('⚠️ 누락된 필수 필드:', missingFields);
+                return {
+                    isValid: false,
+                    data: data,
+                    missingFields: missingFields
+                };
             }
             
-            // 3. 세종학당 필드 통일 (institute → sejong_institute)
-            if (fixed.institute && !fixed.sejong_institute) {
-                // 이가짜 학생의 경우 DB와 일치하게 수정
-                if (fixed.name === '이가짜') {
-                    fixed.sejong_institute = '테스트학당';
-                    console.log('✅ 이가짜 학생 sejong_institute 수정:', fixed.sejong_institute);
-                } else {
-                    fixed.sejong_institute = fixed.institute;
-                    console.log('✅ institute → sejong_institute 필드 수정:', fixed.sejong_institute);
-                }
-                delete fixed.institute;
-                wasFixed = true;
-                hasStructuralIssues = true;
-            }
-            
-            // 4. 필드(전공) 정보 수정 - 이가짜 학생의 경우
-            if (fixed.name === '이가짜' && fixed.field !== '테스트 분야') {
-                fixed.field = '테스트 분야';
-                console.log('✅ 이가짜 학생 field 값 DB와 일치하게 수정:', fixed.field);
-                wasFixed = true;
-                hasStructuralIssues = true;
-            }
-            
-            // 5. 사용자 타입 설정
-            if (!fixed.user_type) {
-                fixed.user_type = 'student';
-                wasFixed = true;
-            }
-            
-            // 6. 필수 DB 필드들 추가 (이가짜 학생의 경우)
-            if (fixed.name === '이가짜' && fixed.id === '13c27f96-ee99-4eb0-9ab7-56121d14a6a7') {
-                if (!fixed.created_at) {
-                    fixed.created_at = '2025-06-13T10:59:32.551137+00:00';
-                    fixed.updated_at = '2025-06-17T04:26:06.950005+00:00';
-                    wasFixed = true;
-                }
-            }
-            
-            // 7. 구조적 문제 상태 저장
-            if (hasStructuralIssues) {
-                sessionStorage.setItem('hasDataStructuralIssues', 'true');
-                console.log('⚠️ 데이터 구조적 문제가 발견되었습니다.');
-            } else {
-                sessionStorage.removeItem('hasDataStructuralIssues');
-            }
-            
-            if (wasFixed) {
-                console.log('🔧 최종 수정된 학생 데이터:', fixed);
-                console.log('📊 수정 사항 요약:');
-                console.log('  - ID 필드:', data.id ? '유지' : '추가됨');
-                console.log('  - birth_date 필드:', data.birth_date ? '유지' : '수정됨');
-                console.log('  - sejong_institute 필드:', data.sejong_institute ? '유지' : '수정됨');
-                console.log('  - field 값:', data.field === fixed.field ? '유지' : '수정됨');
-            } else {
-                console.log('✅ 학생 데이터 구조가 이미 올바름');
-            }
-            
-            return { data: fixed, wasFixed, hasStructuralIssues };
+            console.log('✅ 학생 데이터 검증 완료 - 모든 필수 필드 존재');
+            return {
+                isValid: true,
+                data: data,
+                missingFields: []
+            };
         }
 
-        // 수동 데이터 구조 수정 함수
+        // 🔧 데이터 구조 문제 수동 수정 함수 (간소화)
         function manualFixDataStructure() {
-            console.log('🔧 수동 데이터 구조 수정 시작...');
+            console.log('🔧 데이터 구조 간단 수정 시작...');
             
             try {
-                const studentData = JSON.parse(localStorage.getItem('currentStudent') || '{}');
+                // localStorage에서 현재 데이터 읽기
+                const currentData = JSON.parse(localStorage.getItem('currentStudent') || '{}');
                 
-                // 강제로 올바른 구조로 수정
-                const correctData = {
-                    id: '13c27f96-ee99-4eb0-9ab7-56121d14a6a7',
-                    name: '이가짜',
-                    birth_date: '1992-02-02',
-                    sejong_institute: '테스트학당',
-                    field: '테스트 분야',
-                    user_type: 'student',
-                    created_at: '2025-06-13T10:59:32.551137+00:00',
-                    updated_at: '2025-06-17T04:26:06.950005+00:00'
+                // dashboard.js에서 이미 표준화된 데이터가 와야 하므로
+                // 간단한 기본값만 설정
+                const fixedData = {
+                    id: currentData.id || 'temp_' + Date.now(),
+                    name: currentData.name || '사용자',
+                    birth_date: currentData.birth_date || currentData.birth || '1990-01-01',
+                    sejong_institute: currentData.sejong_institute || currentData.institute || '소속 기관',
+                    field: currentData.field || '전공 분야',
+                    user_type: currentData.user_type || 'student',
+                    created_at: currentData.created_at || new Date().toISOString(),
+                    updated_at: new Date().toISOString()
                 };
                 
                 // localStorage에 저장
-                localStorage.setItem('currentStudent', JSON.stringify(correctData));
+                localStorage.setItem('currentStudent', JSON.stringify(fixedData));
                 
-                // sessionStorage의 userSession도 함께 업데이트 (중요!)
-                try {
-                    const existingSession = sessionStorage.getItem('userSession');
-                    if (existingSession) {
-                        const sessionData = JSON.parse(existingSession);
-                        // 사용자 데이터 업데이트
-                        sessionData.user = correctData;
-                        sessionData.updated_at = new Date().toISOString();
-                        sessionStorage.setItem('userSession', JSON.stringify(sessionData));
-                        
-                        // SupabaseAPI.currentUser도 업데이트
-                        if (typeof SupabaseAPI !== 'undefined') {
-                            SupabaseAPI.currentUser = correctData;
-                            console.log('✅ SupabaseAPI.currentUser 업데이트 완료');
-                        }
-                        
-                        console.log('✅ sessionStorage의 userSession 업데이트 완료');
-                    }
-                } catch (sessionError) {
-                    console.warn('⚠️ sessionStorage 업데이트 중 오류:', sessionError);
-                }
+                console.log('✅ 데이터 구조 간단 수정 완료:', fixedData);
+                alert('✅ 데이터가 수정되었습니다!');
                 
-                // 구조적 문제 해결됨으로 표시
-                sessionStorage.removeItem('hasDataStructuralIssues');
-                
-                // UI 업데이트
-                hideDataStructureAlert();
-                loadStudentInfo();
-                
-                console.log('✅ 데이터 구조가 성공적으로 수정되었습니다:', correctData);
-                
-                // 사용자에게 성공 알림
-                alert('✅ 데이터 구조가 성공적으로 수정되었습니다!\n이제 모든 기능이 정상적으로 작동합니다.');
-                
-                // 페이지 새로고침으로 변경사항 적용
+                // 페이지 새로고침
                 window.location.reload();
                 
             } catch (error) {
                 console.error('❌ 데이터 구조 수정 실패:', error);
-                alert('❌ 데이터 구조 수정에 실패했습니다. 콘솔을 확인해주세요.');
+                alert('❌ 데이터 수정에 실패했습니다.');
             }
         }
 
-        // 데이터 구조 경고 표시/숨김 함수
+        // 🔧 간단한 학생 정보 로드 함수
+        function loadStudentInfo() {
+            try {
+                const studentData = JSON.parse(localStorage.getItem('currentStudent') || '{}');
+                
+                if (studentData && Object.keys(studentData).length > 0) {
+                    // 간단한 검증
+                    const validation = validateStudentData(studentData);
+                    
+                    if (!validation.isValid) {
+                        console.warn('⚠️ 데이터 검증 실패. 누락된 필드:', validation.missingFields);
+                        showDataStructureAlert();
+                    } else {
+                        console.log('✅ 학생 데이터 검증 성공');
+                        hideDataStructureAlert();
+                    }
+                    
+                    // UI 업데이트 (항상 시도)
+                    updateStudentUI(studentData);
+                } else {
+                    console.warn('⚠️ 학생 데이터가 없습니다');
+                    showDataStructureAlert();
+                }
+            } catch (error) {
+                console.error('❌ 학생 정보 로드 오류:', error);
+                showDataStructureAlert();
+            }
+        }
+
+        // 🔧 학생 UI 업데이트 (안전한 버전)
+        function updateStudentUI(studentData) {
+            try {
+                // 환영 메시지 업데이트
+                const welcomeElement = document.getElementById('studentWelcome');
+                if (welcomeElement) {
+                    welcomeElement.textContent = `${studentData.name || '사용자'}님의 교구 신청`;
+                }
+                
+                // 상세 정보 업데이트
+                const detailsElement = document.getElementById('studentDetails');
+                if (detailsElement) {
+                    const institute = studentData.sejong_institute || studentData.institute || '소속 기관';
+                    const field = studentData.field || '전공 분야';
+                    detailsElement.textContent = `${institute} - ${field}`;
+                }
+                
+                console.log('✅ 학생 UI 업데이트 완료');
+            } catch (error) {
+                console.error('❌ 학생 UI 업데이트 오류:', error);
+            }
+        }
+
+        // 🔧 데이터 구조 경고 표시/숨김
         function showDataStructureAlert() {
             const alertElement = document.getElementById('dataStatusAlert');
             if (alertElement) {
@@ -555,93 +525,18 @@
             }
         }
 
-        // 페이지 로드 완료 후 초기화
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                // Lucide 아이콘 초기화
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                    console.log('Lucide icons initialized successfully');
-                } else {
-                    console.error('Lucide library not loaded');
-                }
-
-                // 학생 인증 확인
-                checkStudentAuthentication();
-                
-                // 학생 정보 로드 (데이터 구조 수정 포함)
-                loadStudentInfo();
-
-                // 데이터 구조 수정 버튼 이벤트 리스너
-                const fixDataBtn = document.getElementById('fixDataStructureBtn');
-                if (fixDataBtn) {
-                    fixDataBtn.addEventListener('click', manualFixDataStructure);
-                }
-
-                // 기존 student.js 초기화 (있는 경우)
-                if (typeof initializeStudentPage === 'function') {
-                    initializeStudentPage();
-                }
-
-                // 대시보드 이동 버튼 설정
-                setupNavigationButtons();
-                
-            } catch (error) {
-                console.error('교구 신청 페이지 초기화 오류:', error);
-            }
-        });
-
-        // 학생 인증 확인
+        // 🔧 학생 인증 확인 (간소화)
         function checkStudentAuthentication() {
             const studentData = localStorage.getItem('currentStudent');
             if (!studentData) {
                 alert('로그인이 필요합니다.');
                 window.location.href = '../index.html';
-                return;
+                return false;
             }
+            return true;
         }
 
-        // 학생 정보 로드 - 데이터 구조 문제 해결
-        function loadStudentInfo() {
-            try {
-                const studentData = JSON.parse(localStorage.getItem('currentStudent') || '{}');
-                if (studentData && Object.keys(studentData).length > 0) {
-                    // 데이터 구조 검증 및 수정
-                    const validationResult = validateAndFixStudentData(studentData);
-                    const { data: fixedData, wasFixed, hasStructuralIssues } = validationResult;
-                    
-                    // 수정된 데이터가 있으면 localStorage에 저장
-                    if (wasFixed) {
-                        localStorage.setItem('currentStudent', JSON.stringify(fixedData));
-                        console.log('📝 학생 데이터 구조가 수정되어 저장되었습니다');
-                    }
-                    
-                    // 구조적 문제가 있으면 경고 표시
-                    if (hasStructuralIssues) {
-                        showDataStructureAlert();
-                    } else {
-                        hideDataStructureAlert();
-                    }
-                    
-                    // UI 업데이트
-                    const welcomeElement = document.getElementById('studentWelcome');
-                    if (welcomeElement) {
-                        welcomeElement.textContent = `${fixedData.name}님의 교구 신청`;
-                    }
-                    
-                    // 학생 세부 정보 업데이트
-                    const detailsElement = document.getElementById('studentDetails');
-                    if (detailsElement) {
-                        detailsElement.textContent = `${fixedData.sejong_institute || fixedData.institute || '소속 기관'} - ${fixedData.field || '전공 분야'}`;
-                    }
-                }
-            } catch (error) {
-                console.error('학생 정보 로드 오류:', error);
-                showDataStructureAlert(); // 오류 발생 시에도 경고 표시
-            }
-        }
-
-        // 네비게이션 버튼 설정
+        // 🔧 네비게이션 버튼 설정
         function setupNavigationButtons() {
             // 대시보드로 돌아가기 버튼
             const backToDashboardBtn = document.getElementById('backToDashboard');
@@ -671,7 +566,48 @@
             }
         }
 
-        // 수업계획 버튼 클릭 시 처리
+        // 🔧 페이지 초기화 (간소화된 버전)
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                console.log('📋 Equipment Request 페이지 로드 - 간소화된 검증 버전');
+                
+                // Lucide 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                    console.log('✅ Lucide icons 초기화 완료');
+                }
+
+                // 학생 인증 확인
+                if (!checkStudentAuthentication()) {
+                    return;
+                }
+                
+                // 학생 정보 로드 (간소화된 검증)
+                loadStudentInfo();
+
+                // 데이터 구조 수정 버튼 이벤트 리스너
+                const fixDataBtn = document.getElementById('fixDataStructureBtn');
+                if (fixDataBtn) {
+                    fixDataBtn.addEventListener('click', manualFixDataStructure);
+                }
+
+                // 기존 student.js 초기화 (있는 경우)
+                if (typeof initializeStudentPage === 'function') {
+                    initializeStudentPage();
+                }
+
+                // 네비게이션 버튼 설정
+                setupNavigationButtons();
+                
+                console.log('✅ Equipment Request 페이지 초기화 완료');
+                
+            } catch (error) {
+                console.error('❌ Equipment Request 페이지 초기화 오류:', error);
+                alert('페이지 로드 중 오류가 발생했습니다. 새로고침을 시도해주세요.');
+            }
+        });
+
+        // 🔧 수업계획 버튼 클릭 처리
         document.addEventListener('click', function(e) {
             if (e.target.id === 'lessonPlanBtn') {
                 // 수업계획 페이지 표시
@@ -684,6 +620,8 @@
                 }
             }
         });
+
+        console.log('✅ Equipment Request 간소화된 검증 로직 로드 완료');
     </script>
     
     <!-- CSS for Data Structure Alert -->
