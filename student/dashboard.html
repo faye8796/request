@@ -157,29 +157,8 @@
         .menu-description {
             color: #718096;
             line-height: 1.6;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
             text-align: center;
-        }
-
-        .menu-features {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 1.5rem 0;
-        }
-
-        .menu-features li {
-            display: flex;
-            align-items: center;
-            margin-bottom: 0.5rem;
-            color: #4a5568;
-            font-size: 0.9rem;
-        }
-
-        .menu-features li i {
-            width: 1rem;
-            height: 1rem;
-            margin-right: 0.5rem;
-            color: #48bb78;
         }
 
         .menu-button {
@@ -280,14 +259,9 @@
                 </div>
                 <h2 class="menu-title">파견 학당 정보</h2>
                 <p class="menu-description">
-                    배정받은 세종학당의 상세 정보를 확인하고 현지 정보를 열람할 수 있습니다.
+                    배정받은 세종학당의 상세 정보를 확인하고<br>
+                    현지 정보를 열람할 수 있습니다.
                 </p>
-                <ul class="menu-features">
-                    <li><i data-lucide="check"></i> 학당 기본 정보</li>
-                    <li><i data-lucide="check"></i> 연락처 및 주소</li>
-                    <li><i data-lucide="check"></i> 파견 기간 정보</li>
-                    <li><i data-lucide="check"></i> 현지 유용한 정보</li>
-                </ul>
                 <button class="menu-button" onclick="navigateToInstituteInfo()">
                     <i data-lucide="arrow-right"></i>
                     정보 보기
@@ -301,14 +275,9 @@
                 </div>
                 <h2 class="menu-title">항공권 구매 신청</h2>
                 <p class="menu-description">
-                    파견지까지의 항공권 구매를 대행 신청하고 승인 현황을 확인할 수 있습니다.
+                    파견지까지의 항공권 구매를 신청하고<br>
+                    승인 현황을 확인할 수 있습니다.
                 </p>
-                <ul class="menu-features">
-                    <li><i data-lucide="check"></i> 출발지/도착지 설정</li>
-                    <li><i data-lucide="check"></i> 여행 일정 관리</li>
-                    <li><i data-lucide="check"></i> 승객 정보 등록</li>
-                    <li><i data-lucide="check"></i> 구매 대행 신청</li>
-                </ul>
                 <button class="menu-button" onclick="navigateToFlightRequest()" disabled>
                     <i data-lucide="clock"></i>
                     준비 중
@@ -316,23 +285,18 @@
             </div>
 
             <!-- 문화교구 신청 -->
-            <div class="menu-card available" id="equipmentRequestCard">
+            <div class="menu-card coming-soon" id="equipmentRequestCard">
                 <div class="menu-icon">
                     <i data-lucide="package"></i>
                 </div>
                 <h2 class="menu-title">문화교구 신청</h2>
                 <p class="menu-description">
-                    수업에 필요한 문화교구를 신청하고 승인 현황을 확인할 수 있습니다.
+                    수업에 필요한 문화 교구를 신청하고<br>
+                    승인·구매 현황을 확인할 수 있습니다.
                 </p>
-                <ul class="menu-features">
-                    <li><i data-lucide="check"></i> 교구 온라인 신청</li>
-                    <li><i data-lucide="check"></i> 승인 현황 추적</li>
-                    <li><i data-lucide="check"></i> 예산 관리</li>
-                    <li><i data-lucide="check"></i> 배송지 설정</li>
-                </ul>
-                <button class="menu-button" onclick="navigateToEquipmentRequest()">
-                    <i data-lucide="arrow-right"></i>
-                    신청하기
+                <button class="menu-button" onclick="navigateToEquipmentRequest()" disabled>
+                    <i data-lucide="clock"></i>
+                    준비 중
                 </button>
             </div>
         </div>
@@ -416,14 +380,10 @@
             // 추후 구현: window.location.href = 'flight-request.html';
         }
 
-        // 문화교구 신청 페이지로 이동
+        // 문화교구 신청 페이지로 이동 (준비 중)
         function navigateToEquipmentRequest() {
-            try {
-                window.location.href = 'equipment-request.html';
-            } catch (error) {
-                console.error('페이지 이동 오류:', error);
-                alert('페이지 이동 중 오류가 발생했습니다.');
-            }
+            alert('문화교구 신청 기능은 곧 제공될 예정입니다.');
+            // 추후 구현: window.location.href = 'equipment-request.html';
         }
 
         // 로그아웃 처리
