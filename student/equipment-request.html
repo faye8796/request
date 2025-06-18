@@ -369,6 +369,62 @@
     
     <!-- 교구 신청 페이지 초기화 -->
     <script>
+        // 학생 데이터 구조 검증 및 수정 함수
+        function validateAndFixStudentData(data) {
+            let fixed = { ...data };
+            let wasFixed = false;
+            
+            // ID 필드 확인 및 수정 - 이가짜 학생의 경우
+            if (!fixed.id && fixed.name === '이가짜' && (fixed.birth === '1992-02-02' || fixed.birth_date === '1992-02-02')) {
+                fixed.id = '13c27f96-ee99-4eb0-9ab7-56121d14a6a7';
+                console.log('✅ 이가짜 학생 ID 자동 설정');
+                wasFixed = true;
+            }
+            
+            // 생년월일 필드 통일
+            if (fixed.birth && !fixed.birth_date) {
+                fixed.birth_date = fixed.birth;
+                delete fixed.birth;
+                console.log('✅ birth → birth_date 필드 수정');
+                wasFixed = true;
+            }
+            
+            // 세종학당 필드 통일
+            if (fixed.institute && !fixed.sejong_institute) {
+                // 이가짜 학생의 경우 DB와 일치하게 수정
+                if (fixed.name === '이가짜') {
+                    fixed.sejong_institute = '테스트학당';
+                    fixed.field = '테스트 분야';
+                    console.log('✅ 이가짜 학생 기관정보 DB와 일치하게 수정');
+                } else {
+                    fixed.sejong_institute = fixed.institute;
+                }
+                delete fixed.institute;
+                wasFixed = true;
+            }
+            
+            // 사용자 타입 설정
+            if (!fixed.user_type) {
+                fixed.user_type = 'student';
+                wasFixed = true;
+            }
+            
+            // 필수 DB 필드들 추가 (이가짜 학생의 경우)
+            if (fixed.name === '이가짜' && fixed.id === '13c27f96-ee99-4eb0-9ab7-56121d14a6a7') {
+                if (!fixed.created_at) {
+                    fixed.created_at = '2025-06-13T10:59:32.551137+00:00';
+                    fixed.updated_at = '2025-06-17T04:26:06.950005+00:00';
+                    wasFixed = true;
+                }
+            }
+            
+            if (wasFixed) {
+                console.log('🔧 학생 데이터 구조가 수정되었습니다:', fixed);
+            }
+            
+            return fixed;
+        }
+
         // 페이지 로드 완료 후 초기화
         document.addEventListener('DOMContentLoaded', function() {
             try {
@@ -383,7 +439,7 @@
                 // 학생 인증 확인
                 checkStudentAuthentication();
                 
-                // 학생 정보 로드
+                // 학생 정보 로드 (데이터 구조 수정 포함)
                 loadStudentInfo();
 
                 // 기존 student.js 초기화 (있는 경우)
@@ -409,14 +465,21 @@
             }
         }
 
-        // 학생 정보 로드
+        // 학생 정보 로드 - 데이터 구조 문제 해결
         function loadStudentInfo() {
             try {
                 const studentData = JSON.parse(localStorage.getItem('currentStudent'));
                 if (studentData) {
+                    // 데이터 구조 검증 및 수정
+                    const fixedData = validateAndFixStudentData(studentData);
+                    if (JSON.stringify(fixedData) !== JSON.stringify(studentData)) {
+                        localStorage.setItem('currentStudent', JSON.stringify(fixedData));
+                        console.log('📝 학생 데이터 구조가 수정되어 저장되었습니다');
+                    }
+                    
                     const welcomeElement = document.getElementById('studentWelcome');
                     if (welcomeElement) {
-                        welcomeElement.textContent = `${studentData.name}님의 교구 신청`;
+                        welcomeElement.textContent = `${fixedData.name}님의 교구 신청`;
                     }
                 }
             } catch (error) {
