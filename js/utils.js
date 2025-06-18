@@ -78,7 +78,7 @@ const Utils = {
     },
 
     // DOM 요소 생성 헬퍼
-    createElement(tag, className = '', content = '') {
+    createElement(tag, className, content) {
         try {
             const element = document.createElement(tag);
             if (className) element.className = className;
@@ -175,16 +175,16 @@ const Utils = {
             if (!container) {
                 container = this.createElement('div', 'toast-container');
                 container.id = 'toast-container';
-                container.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    z-index: 10000;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                    pointer-events: none;
-                `;
+                container.style.cssText = '\
+                    position: fixed;\
+                    top: 20px;\
+                    right: 20px;\
+                    z-index: 10000;\
+                    display: flex;\
+                    flex-direction: column;\
+                    gap: 10px;\
+                    pointer-events: none;\
+                ';
                 document.body.appendChild(container);
             }
             return container;
@@ -195,54 +195,58 @@ const Utils = {
     },
 
     // 토스트 알림 표시 (새로 추가)
-    showToast(message, type = 'info', duration = 3000) {
+    showToast(message, type, duration) {
+        type = type || 'info';
+        duration = duration || 3000;
+        
         try {
             const container = this._ensureToastContainer();
             if (!container) return;
             
-            const toast = this.createElement('div', `toast toast-${type}`);
-            toast.style.cssText = `
-                background: ${this._getToastColor(type)};
-                color: white;
-                padding: 12px 20px;
-                border-radius: 6px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                margin-bottom: 10px;
-                opacity: 0;
-                transform: translateX(100%);
-                transition: all 0.3s ease;
-                pointer-events: auto;
-                max-width: 400px;
-                word-wrap: break-word;
-                font-size: 14px;
-                line-height: 1.4;
-            `;
+            const toast = this.createElement('div', 'toast toast-' + type);
+            toast.style.cssText = '\
+                background: ' + this._getToastColor(type) + ';\
+                color: white;\
+                padding: 12px 20px;\
+                border-radius: 6px;\
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);\
+                margin-bottom: 10px;\
+                opacity: 0;\
+                transform: translateX(100%);\
+                transition: all 0.3s ease;\
+                pointer-events: auto;\
+                max-width: 400px;\
+                word-wrap: break-word;\
+                font-size: 14px;\
+                line-height: 1.4;\
+            ';
             
             // 아이콘 추가
             const icon = this._getToastIcon(type);
-            toast.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span>${icon}</span>
-                    <span>${message}</span>
-                </div>
-            `;
+            toast.innerHTML = '\
+                <div style="display: flex; align-items: center; gap: 8px;">\
+                    <span>' + icon + '</span>\
+                    <span>' + message + '</span>\
+                </div>\
+            ';
             
             container.appendChild(toast);
             
             // 애니메이션 효과
-            setTimeout(() => {
+            setTimeout(function() {
                 toast.style.opacity = '1';
                 toast.style.transform = 'translateX(0)';
             }, 10);
             
             // 자동 제거
-            setTimeout(() => {
-                this._removeToast(toast);
+            setTimeout(function() {
+                Utils._removeToast(toast);
             }, duration);
             
             // 클릭으로 제거
-            toast.addEventListener('click', () => {
-                this._removeToast(toast);
+            const self = this;
+            toast.addEventListener('click', function() {
+                self._removeToast(toast);
             });
             
         } catch (error) {
@@ -258,7 +262,7 @@ const Utils = {
             if (toast && toast.parentNode) {
                 toast.style.opacity = '0';
                 toast.style.transform = 'translateX(100%)';
-                setTimeout(() => {
+                setTimeout(function() {
                     if (toast.parentNode) {
                         toast.parentNode.removeChild(toast);
                     }
@@ -292,10 +296,12 @@ const Utils = {
     },
 
     // 개선된 알림 메시지 표시
-    showAlert(message, type = 'info') {
+    showAlert(message, type) {
+        type = type || 'info';
+        
         try {
             // 심각한 오류는 모달로, 일반적인 알림은 토스트로
-            if (type === 'error' && (message.includes('새로고침') || message.includes('관리자에게 문의'))) {
+            if (type === 'error' && (message.indexOf('새로고침') !== -1 || message.indexOf('관리자에게 문의') !== -1)) {
                 // 심각한 오류는 모달 alert 사용
                 alert(message);
             } else {
@@ -319,7 +325,9 @@ const Utils = {
     },
 
     // 프롬프트 대화상자
-    showPrompt(message, defaultValue = '') {
+    showPrompt(message, defaultValue) {
+        defaultValue = defaultValue || '';
+        
         try {
             return prompt(message, defaultValue);
         } catch (error) {
@@ -333,8 +341,8 @@ const Utils = {
         try {
             const formData = new FormData(formElement);
             const data = {};
-            for (let [key, value] of formData.entries()) {
-                data[key] = value;
+            for (const pair of formData.entries()) {
+                data[pair[0]] = pair[1];
             }
             return data;
         } catch (error) {
@@ -361,7 +369,7 @@ const Utils = {
     validateRequired(value, fieldName) {
         try {
             if (!value || !value.trim()) {
-                this.showAlert(`${fieldName}은(는) 필수 입력 항목입니다.`, 'warning');
+                this.showAlert(fieldName + '은(는) 필수 입력 항목입니다.', 'warning');
                 return false;
             }
             return true;
@@ -385,16 +393,18 @@ const Utils = {
         try {
             new URL(url);
             return true;
-        } catch {
+        } catch (e) {
             return false;
         }
     },
 
     // 날짜 검증
-    validateDateRange(startDate, endDate, fieldName = '날짜') {
+    validateDateRange(startDate, endDate, fieldName) {
+        fieldName = fieldName || '날짜';
+        
         try {
             if (!startDate || !endDate) {
-                this.showAlert(`${fieldName} 범위를 올바르게 입력해주세요.`, 'warning');
+                this.showAlert(fieldName + ' 범위를 올바르게 입력해주세요.', 'warning');
                 return false;
             }
 
@@ -414,16 +424,18 @@ const Utils = {
     },
 
     // 숫자 범위 검증
-    validateNumberRange(value, min, max, fieldName = '값') {
+    validateNumberRange(value, min, max, fieldName) {
+        fieldName = fieldName || '값';
+        
         try {
             const num = parseInt(value);
             if (isNaN(num)) {
-                this.showAlert(`${fieldName}에 올바른 숫자를 입력해주세요.`, 'warning');
+                this.showAlert(fieldName + '에 올바른 숫자를 입력해주세요.', 'warning');
                 return false;
             }
 
             if (num < min || num > max) {
-                this.showAlert(`${fieldName}은(는) ${min}~${max} 사이의 값이어야 합니다.`, 'warning');
+                this.showAlert(fieldName + '은(는) ' + min + '~' + max + ' 사이의 값이어야 합니다.', 'warning');
                 return false;
             }
 
@@ -435,15 +447,17 @@ const Utils = {
     },
 
     // 문자열 길이 검증
-    validateLength(value, minLength, maxLength, fieldName = '내용') {
+    validateLength(value, minLength, maxLength, fieldName) {
+        fieldName = fieldName || '내용';
+        
         try {
             if (value.length < minLength) {
-                this.showAlert(`${fieldName}은(는) 최소 ${minLength}자 이상이어야 합니다.`, 'warning');
+                this.showAlert(fieldName + '은(는) 최소 ' + minLength + '자 이상이어야 합니다.', 'warning');
                 return false;
             }
 
             if (value.length > maxLength) {
-                this.showAlert(`${fieldName}은(는) 최대 ${maxLength}자까지 입력 가능합니다.`, 'warning');
+                this.showAlert(fieldName + '은(는) 최대 ' + maxLength + '자까지 입력 가능합니다.', 'warning');
                 return false;
             }
 
@@ -455,7 +469,9 @@ const Utils = {
     },
 
     // 문자열 자르기
-    truncateText(text, maxLength = 100) {
+    truncateText(text, maxLength) {
+        maxLength = maxLength || 100;
+        
         try {
             if (text.length <= maxLength) return text;
             return text.substring(0, maxLength) + '...';
@@ -469,7 +485,7 @@ const Utils = {
     highlightText(text, searchTerm) {
         try {
             if (!searchTerm) return text;
-            const regex = new RegExp(`(${searchTerm})`, 'gi');
+            const regex = new RegExp('(' + searchTerm + ')', 'gi');
             return text.replace(regex, '<mark>$1</mark>');
         } catch (error) {
             console.error('검색어 하이라이트 오류:', error);
@@ -481,10 +497,11 @@ const Utils = {
     debounce(func, wait) {
         try {
             let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
+            return function executedFunction() {
+                const args = Array.prototype.slice.call(arguments);
+                const later = function() {
                     clearTimeout(timeout);
-                    func(...args);
+                    func.apply(null, args);
                 };
                 clearTimeout(timeout);
                 timeout = setTimeout(later, wait);
@@ -504,7 +521,7 @@ const Utils = {
             if (element) {
                 element.disabled = true;
                 const originalText = element.textContent;
-                element.dataset.originalText = originalText;
+                element.setAttribute('data-original-text', originalText);
                 element.textContent = '처리중...';
             }
         } catch (error) {
@@ -519,7 +536,7 @@ const Utils = {
             }
             if (element) {
                 element.disabled = false;
-                element.textContent = element.dataset.originalText || element.textContent;
+                element.textContent = element.getAttribute('data-original-text') || element.textContent;
             }
         } catch (error) {
             console.error('로딩 숨김 오류:', error);
@@ -527,7 +544,9 @@ const Utils = {
     },
 
     // CSV 다운로드
-    downloadCSV(data, filename = 'export.csv') {
+    downloadCSV(data, filename) {
+        filename = filename || 'export.csv';
+        
         try {
             if (!data || data.length === 0) {
                 this.showAlert('내보낼 데이터가 없습니다.', 'warning');
@@ -539,11 +558,11 @@ const Utils = {
             let csvContent = headers.join(',') + '\n';
 
             // CSV 데이터 생성
-            data.forEach(row => {
-                const values = headers.map(header => {
+            data.forEach(function(row) {
+                const values = headers.map(function(header) {
                     let value = row[header] || '';
                     // 특수문자가 포함된 경우 따옴표로 감싸기
-                    if (typeof value === 'string' && (value.includes(',') || value.includes('\n') || value.includes('"'))) {
+                    if (typeof value === 'string' && (value.indexOf(',') !== -1 || value.indexOf('\n') !== -1 || value.indexOf('"') !== -1)) {
                         value = '"' + value.replace(/"/g, '""') + '"';
                     }
                     return value;
@@ -578,19 +597,21 @@ const Utils = {
             if (window.SupabaseAPI && window.SupabaseAPI.getStatusClass && window.SupabaseAPI.getStatusText) {
                 const statusClass = window.SupabaseAPI.getStatusClass(status);
                 const statusText = window.SupabaseAPI.getStatusText(status);
-                return `<span class="status-badge ${statusClass}">${statusText}</span>`;
+                return '<span class="status-badge ' + statusClass + '">' + statusText + '</span>';
             }
-            return `<span class="status-badge">${status}</span>`;
+            return '<span class="status-badge">' + status + '</span>';
         } catch (error) {
             console.error('상태 뱃지 생성 오류:', error);
-            return `<span class="status-badge">${status}</span>`;
+            return '<span class="status-badge">' + status + '</span>';
         }
     },
 
     // 아이콘 HTML 생성 (Lucide 아이콘)
-    createIcon(iconName, className = '') {
+    createIcon(iconName, className) {
+        className = className || '';
+        
         try {
-            return `<i data-lucide="${iconName}" class="${className}"></i>`;
+            return '<i data-lucide="' + iconName + '" class="' + className + '"></i>';
         } catch (error) {
             console.error('아이콘 생성 오류:', error);
             return '';
@@ -598,15 +619,17 @@ const Utils = {
     },
 
     // 진행률 바 HTML 생성
-    createProgressBar(percentage, className = '') {
+    createProgressBar(percentage, className) {
+        className = className || '';
+        
         try {
             const safePercentage = Math.min(100, Math.max(0, percentage));
-            return `
-                <div class="progress-bar ${className}">
-                    <div class="progress-fill" style="width: ${safePercentage}%"></div>
-                    <span class="progress-text">${safePercentage}%</span>
-                </div>
-            `;
+            return '\
+                <div class="progress-bar ' + className + '">\
+                    <div class="progress-fill" style="width: ' + safePercentage + '%"></div>\
+                    <span class="progress-text">' + safePercentage + '%</span>\
+                </div>\
+            ';
         } catch (error) {
             console.error('진행률 바 생성 오류:', error);
             return '';
@@ -616,7 +639,9 @@ const Utils = {
     // 수업계획 관련 유틸리티 함수들
     lessonPlan: {
         // 수업 일정 자동 생성
-        generateLessonSchedule(startDate, totalLessons, lessonsPerWeek = 3) {
+        generateLessonSchedule: function(startDate, totalLessons, lessonsPerWeek) {
+            lessonsPerWeek = lessonsPerWeek || 3;
+            
             try {
                 const lessons = [];
                 const start = new Date(startDate);
@@ -664,14 +689,13 @@ const Utils = {
         },
 
         // 수업계획 완성도 계산
-        calculateCompletionRate(lessons) {
+        calculateCompletionRate: function(lessons) {
             try {
                 if (!lessons || lessons.length === 0) return 0;
                 
-                const completedLessons = lessons.filter(lesson => 
-                    lesson.topic && lesson.topic.trim() && 
-                    lesson.content && lesson.content.trim()
-                ).length;
+                const completedLessons = lessons.filter(function(lesson) {
+                    return lesson.topic && lesson.topic.trim() && lesson.content && lesson.content.trim();
+                }).length;
                 
                 return Math.round((completedLessons / lessons.length) * 100);
             } catch (error) {
@@ -681,7 +705,7 @@ const Utils = {
         },
 
         // 수업계획 유효성 검증
-        validateLessonPlan(planData) {
+        validateLessonPlan: function(planData) {
             try {
                 const errors = [];
                 
@@ -723,7 +747,7 @@ const Utils = {
         },
 
         // 수업계획 요약 생성
-        generateSummary(planData) {
+        generateSummary: function(planData) {
             try {
                 if (!planData) return '';
                 
@@ -731,11 +755,11 @@ const Utils = {
                 const weeks = Math.ceil(duration / 7);
                 const avgLessonsPerWeek = planData.lessonsPerWeek || Math.ceil(planData.totalLessons / weeks);
                 
-                return `
-                    파견 기간: ${Utils.formatDate(planData.startDate)} ~ ${Utils.formatDate(planData.endDate)} (${weeks}주)
-                    총 수업 횟수: ${planData.totalLessons}회
-                    주당 평균: ${avgLessonsPerWeek}회
-                `.trim();
+                return '\
+                    파견 기간: ' + Utils.formatDate(planData.startDate) + ' ~ ' + Utils.formatDate(planData.endDate) + ' (' + weeks + '주)\
+                    총 수업 횟수: ' + planData.totalLessons + '회\
+                    주당 평균: ' + avgLessonsPerWeek + '회\
+                '.trim();
             } catch (error) {
                 console.error('수업계획 요약 생성 오류:', error);
                 return '';
@@ -744,26 +768,28 @@ const Utils = {
     },
 
     // 반응형 이미지 로딩
-    lazyLoadImages() {
+    lazyLoadImages: function() {
         try {
             const images = document.querySelectorAll('img[data-src]');
             if ('IntersectionObserver' in window) {
-                const imageObserver = new IntersectionObserver((entries, observer) => {
-                    entries.forEach(entry => {
+                const imageObserver = new IntersectionObserver(function(entries, observer) {
+                    entries.forEach(function(entry) {
                         if (entry.isIntersecting) {
                             const img = entry.target;
-                            img.src = img.dataset.src;
+                            img.src = img.getAttribute('data-src');
                             img.removeAttribute('data-src');
                             observer.unobserve(img);
                         }
                     });
                 });
 
-                images.forEach(img => imageObserver.observe(img));
+                images.forEach(function(img) {
+                    imageObserver.observe(img);
+                });
             } else {
                 // 폴백: 모든 이미지 즉시 로드
-                images.forEach(img => {
-                    img.src = img.dataset.src;
+                images.forEach(function(img) {
+                    img.src = img.getAttribute('data-src');
                     img.removeAttribute('data-src');
                 });
             }
@@ -773,7 +799,9 @@ const Utils = {
     },
 
     // 스크롤 위치 저장/복원
-    saveScrollPosition(key = 'scrollPos') {
+    saveScrollPosition: function(key) {
+        key = key || 'scrollPos';
+        
         try {
             if (typeof Storage !== 'undefined') {
                 sessionStorage.setItem(key, window.scrollY.toString());
@@ -783,7 +811,9 @@ const Utils = {
         }
     },
 
-    restoreScrollPosition(key = 'scrollPos') {
+    restoreScrollPosition: function(key) {
+        key = key || 'scrollPos';
+        
         try {
             if (typeof Storage !== 'undefined') {
                 const scrollPos = sessionStorage.getItem(key);
@@ -798,7 +828,7 @@ const Utils = {
     },
 
     // 키보드 단축키 핸들러
-    handleKeyboardShortcuts(event) {
+    handleKeyboardShortcuts: function(event) {
         try {
             // Ctrl/Cmd + Enter: 폼 제출
             if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
@@ -824,7 +854,7 @@ const Utils = {
     // 브라우저 지원 확인
     browserSupport: {
         // LocalStorage 지원 확인
-        hasLocalStorage() {
+        hasLocalStorage: function() {
             try {
                 const test = 'test';
                 localStorage.setItem(test, test);
@@ -836,12 +866,12 @@ const Utils = {
         },
 
         // Intersection Observer 지원 확인
-        hasIntersectionObserver() {
+        hasIntersectionObserver: function() {
             return 'IntersectionObserver' in window;
         },
 
         // Service Worker 지원 확인
-        hasServiceWorker() {
+        hasServiceWorker: function() {
             return 'serviceWorker' in navigator;
         }
     },
@@ -851,50 +881,50 @@ const Utils = {
     // ===================
 
     // 연결 상태 확인
-    async checkConnection() {
+    checkConnection: function() {
         try {
             if (!navigator.onLine) {
-                return { connected: false, message: '인터넷 연결이 없습니다.' };
+                return Promise.resolve({ connected: false, message: '인터넷 연결이 없습니다.' });
             }
 
             // Supabase 연결 테스트
             if (window.SupabaseAPI && typeof window.SupabaseAPI.testConnection === 'function') {
-                try {
-                    const result = await window.SupabaseAPI.testConnection();
+                return window.SupabaseAPI.testConnection().then(function(result) {
                     if (result.success) {
                         return { connected: true, message: '연결 상태가 양호합니다.' };
                     } else {
                         return { connected: false, message: '데이터베이스 연결에 문제가 있습니다.' };
                     }
-                } catch (apiError) {
+                }).catch(function(apiError) {
                     console.error('API 연결 테스트 오류:', apiError);
                     return { connected: false, message: '서버 연결 확인 중 오류가 발생했습니다.' };
-                }
+                });
             }
 
-            return { connected: false, message: '서비스가 초기화되지 않았습니다.' };
+            return Promise.resolve({ connected: false, message: '서비스가 초기화되지 않았습니다.' });
         } catch (error) {
             console.error('연결 상태 확인 오류:', error);
-            return { connected: false, message: '연결 상태를 확인할 수 없습니다.' };
+            return Promise.resolve({ connected: false, message: '연결 상태를 확인할 수 없습니다.' });
         }
     },
 
     // 시스템 상태 표시
-    async showSystemStatus() {
-        try {
-            const status = await this.checkConnection();
+    showSystemStatus: function() {
+        const self = this;
+        
+        return this.checkConnection().then(function(status) {
             const type = status.connected ? 'success' : 'warning';
-            this.showToast(status.message, type);
+            self.showToast(status.message, type);
             return status;
-        } catch (error) {
+        }).catch(function(error) {
             console.error('시스템 상태 표시 오류:', error);
-            this.showToast('시스템 상태를 확인할 수 없습니다.', 'error');
+            self.showToast('시스템 상태를 확인할 수 없습니다.', 'error');
             return { connected: false, message: '상태 확인 실패' };
-        }
+        });
     },
 
     // 에러 리포트 생성
-    generateErrorReport() {
+    generateErrorReport: function() {
         try {
             const errorLog = this.browserSupport.hasLocalStorage() ? 
                 JSON.parse(localStorage.getItem('errorLog') || '[]') : [];
@@ -920,7 +950,9 @@ const Utils = {
     },
 
     // 안전한 JSON 파싱
-    safeJSONParse(jsonString, defaultValue = null) {
+    safeJSONParse: function(jsonString, defaultValue) {
+        defaultValue = defaultValue || null;
+        
         try {
             return JSON.parse(jsonString);
         } catch (error) {
@@ -931,7 +963,9 @@ const Utils = {
 
     // 안전한 로컬 스토리지 접근
     safeLocalStorage: {
-        getItem(key, defaultValue = null) {
+        getItem: function(key, defaultValue) {
+            defaultValue = defaultValue || null;
+            
             try {
                 if (Utils.browserSupport.hasLocalStorage()) {
                     const item = localStorage.getItem(key);
@@ -944,7 +978,7 @@ const Utils = {
             }
         },
 
-        setItem(key, value) {
+        setItem: function(key, value) {
             try {
                 if (Utils.browserSupport.hasLocalStorage()) {
                     localStorage.setItem(key, value);
@@ -957,7 +991,7 @@ const Utils = {
             }
         },
 
-        removeItem(key) {
+        removeItem: function(key) {
             try {
                 if (Utils.browserSupport.hasLocalStorage()) {
                     localStorage.removeItem(key);
@@ -973,7 +1007,7 @@ const Utils = {
 };
 
 // 전역 이벤트 리스너 등록 - 안전성 강화
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
     try {
         // 키보드 단축키 활성화
         document.addEventListener('keydown', Utils.handleKeyboardShortcuts);
@@ -985,10 +1019,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 연결 상태 모니터링 (선택적)
         if (window.CONFIG && window.CONFIG.DEV && window.CONFIG.DEV.DEBUG) {
-            setTimeout(() => {
-                Utils.checkConnection().then(status => {
+            setTimeout(function() {
+                Utils.checkConnection().then(function(status) {
                     console.log('시스템 연결 상태:', status);
-                }).catch(error => {
+                }).catch(function(error) {
                     console.error('연결 상태 확인 실패:', error);
                 });
             }, 3000);
@@ -999,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // 페이지 언로드 시 스크롤 위치 저장
-window.addEventListener('beforeunload', () => {
+window.addEventListener('beforeunload', function() {
     try {
         Utils.saveScrollPosition();
     } catch (error) {
@@ -1008,7 +1042,7 @@ window.addEventListener('beforeunload', () => {
 });
 
 // 전역 에러 핸들러 - 개선된 버전
-window.addEventListener('error', (event) => {
+window.addEventListener('error', function(event) {
     try {
         console.error('전역 JavaScript 에러:', event.error);
         
@@ -1038,7 +1072,7 @@ window.addEventListener('error', (event) => {
         
         // 개발 모드에서는 더 자세한 정보 표시
         if (window.CONFIG && window.CONFIG.DEV && window.CONFIG.DEV.DEBUG) {
-            Utils.showToast(`JavaScript 오류: ${event.error ? event.error.message : 'Unknown error'}`, 'error');
+            Utils.showToast('JavaScript 오류: ' + (event.error ? event.error.message : 'Unknown error'), 'error');
         }
     } catch (error) {
         console.error('전역 에러 핸들러 처리 오류:', error);
@@ -1046,7 +1080,7 @@ window.addEventListener('error', (event) => {
 });
 
 // 네트워크 상태 변화 감지 - 안전성 강화
-window.addEventListener('online', () => {
+window.addEventListener('online', function() {
     try {
         Utils.showToast('네트워크 연결이 복원되었습니다.', 'success');
     } catch (error) {
@@ -1054,7 +1088,7 @@ window.addEventListener('online', () => {
     }
 });
 
-window.addEventListener('offline', () => {
+window.addEventListener('offline', function() {
     try {
         Utils.showToast('네트워크 연결이 끊어졌습니다.', 'warning');
     } catch (error) {
