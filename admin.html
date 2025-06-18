@@ -6,15 +6,9 @@
     <title>세종학당 문화인턴 지원 시스템 - 관리자</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="css/main.css?v=1.4.0">
-    <link rel="stylesheet" href="css/login.css?v=1.4.0">
+    <link rel="stylesheet" href="css/main.css?v=1.4.1">
+    <link rel="stylesheet" href="css/login.css?v=1.4.1">
     
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
-    <!-- Supabase JavaScript Client -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
     <!-- 관리자 대시보드 전용 스타일 -->
     <style>
         .dashboard-container {
@@ -335,6 +329,28 @@
             50% { opacity: 0.5; }
         }
 
+        /* 초기화 상태 표시 */
+        .init-status {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: #1a202c;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .init-status.success {
+            background: #22543d;
+        }
+
+        .init-status.error {
+            background: #c53030;
+        }
+
         /* 모바일 반응형 */
         @media (max-width: 768px) {
             .dashboard-container {
@@ -488,49 +504,170 @@
         </div>
     </div>
 
-    <!-- JavaScript Files -->
-    <script src="js/config.js?v=1.4.0"></script>
-    <script src="js/supabase-client.js?v=1.4.0"></script>
-    <script src="js/utils.js?v=1.4.0"></script>
-    <script src="js/auth.js?v=1.4.0"></script>
+    <!-- 초기화 상태 표시 -->
+    <div id="initStatus" class="init-status" style="display: none;">
+        시스템 초기화 중...
+    </div>
+
+    <!-- JavaScript Files - 순서 중요! -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="js/config.js?v=1.4.1"></script>
+    <script src="js/supabase-client.js?v=1.4.1"></script>
+    <script src="js/utils.js?v=1.4.1"></script>
+    <script src="js/auth.js?v=1.4.1"></script>
     
-    <!-- 페이지 초기화 -->
+    <!-- 페이지 초기화 스크립트 -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        // 초기화 상태 관리
+        const InitManager = {
+            status: document.getElementById('initStatus'),
+            
+            show(message, type = 'info') {
+                if (this.status) {
+                    this.status.textContent = message;
+                    this.status.className = `init-status ${type}`;
+                    this.status.style.display = 'block';
+                }
+                console.log(`🔄 ${message}`);
+            },
+            
+            hide() {
+                if (this.status) {
+                    setTimeout(() => {
+                        this.status.style.display = 'none';
+                    }, 2000);
+                }
+            },
+            
+            success(message) {
+                this.show(message, 'success');
+                this.hide();
+            },
+            
+            error(message) {
+                this.show(message, 'error');
+                setTimeout(() => this.hide(), 5000); // 에러는 더 오래 표시
+            }
+        };
+
+        // 안전한 초기화 함수
+        async function safeInitialize() {
             try {
-                // Lucide 아이콘 초기화
+                InitManager.show('시스템 초기화 중...');
+                
+                // 1. 필수 객체들이 로드될 때까지 대기
+                await waitForEssentials();
+                InitManager.show('필수 라이브러리 로드 완료');
+                
+                // 2. Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
+                    InitManager.show('아이콘 초기화 완료');
+                } else {
+                    console.warn('⚠️ Lucide 아이콘 라이브러리를 찾을 수 없습니다.');
                 }
-
-                // 관리자 앱 초기화
-                initializeAdminApp();
+                
+                // 3. SupabaseAPI 초기화 대기
+                await waitForSupabaseAPI();
+                InitManager.show('데이터베이스 연결 완료');
+                
+                // 4. 관리자 앱 초기화
+                await initializeAdminApp();
+                InitManager.success('시스템 초기화 완료');
                 
             } catch (error) {
-                console.error('관리자 페이지 초기화 오류:', error);
+                console.error('❌ 초기화 실패:', error);
+                InitManager.error(`초기화 실패: ${error.message}`);
+                
+                // 개발 모드에서는 더 자세한 정보 표시
+                if (window.CONFIG?.DEV?.DEBUG) {
+                    alert(`초기화 오류가 발생했습니다:\n${error.message}\n\n콘솔을 확인해주세요.`);
+                }
             }
-        });
+        }
+
+        // 필수 객체들이 로드될 때까지 대기
+        function waitForEssentials() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 100; // 10초
+                
+                const check = () => {
+                    attempts++;
+                    
+                    const hasConfig = window.CONFIG;
+                    const hasSupabase = window.supabase && window.supabase.createClient;
+                    
+                    console.log(`🔍 초기화 체크 ${attempts}/${maxAttempts}:`, {
+                        CONFIG: hasConfig,
+                        Supabase: hasSupabase
+                    });
+                    
+                    if (hasConfig && hasSupabase) {
+                        console.log('✅ 필수 객체 로드 완료');
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        const missing = [];
+                        if (!hasConfig) missing.push('CONFIG');
+                        if (!hasSupabase) missing.push('Supabase');
+                        reject(new Error(`필수 라이브러리 로드 실패: ${missing.join(', ')}`));
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                
+                check();
+            });
+        }
+
+        // SupabaseAPI 초기화 대기
+        function waitForSupabaseAPI() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 50; // 5초
+                
+                const check = async () => {
+                    attempts++;
+                    
+                    if (window.SupabaseAPI && typeof window.SupabaseAPI.ensureClient === 'function') {
+                        try {
+                            await window.SupabaseAPI.ensureClient();
+                            console.log('✅ SupabaseAPI 초기화 완료');
+                            resolve();
+                        } catch (error) {
+                            console.warn(`⚠️ SupabaseAPI 연결 시도 ${attempts}/${maxAttempts} 실패:`, error.message);
+                            if (attempts >= maxAttempts) {
+                                reject(new Error(`SupabaseAPI 초기화 실패: ${error.message}`));
+                            } else {
+                                setTimeout(check, 100);
+                            }
+                        }
+                    } else if (attempts >= maxAttempts) {
+                        reject(new Error('SupabaseAPI를 찾을 수 없습니다'));
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                
+                check();
+            });
+        }
 
         // 관리자 앱 초기화
-        function initializeAdminApp() {
-            console.log('🚀 관리자 앱 초기화');
+        async function initializeAdminApp() {
+            console.log('🚀 관리자 앱 초기화 시작');
             
-            try {
-                const adminSession = localStorage.getItem('adminSession');
-                if (adminSession) {
-                    console.log('📋 기존 관리자 세션 발견, 대시보드 표시');
-                    showAdminDashboard();
-                } else {
-                    console.log('🔐 관리자 세션 없음, 로그인 페이지 표시');
-                }
-
-                setupAdminLoginEvents();
-                
-                console.log('✅ 관리자 앱 초기화 완료');
-                
-            } catch (error) {
-                console.error('❌ 관리자 앱 초기화 오류:', error);
+            const adminSession = localStorage.getItem('adminSession');
+            if (adminSession) {
+                console.log('📋 기존 관리자 세션 발견');
+                await showAdminDashboard();
+            } else {
+                console.log('🔐 관리자 세션 없음, 로그인 페이지 표시');
             }
+
+            setupAdminLoginEvents();
+            console.log('✅ 관리자 앱 초기화 완료');
         }
 
         // 관리자 로그인 이벤트 설정
@@ -580,7 +717,7 @@
                 localStorage.setItem('adminLoginTime', new Date().toISOString());
                 
                 // 대시보드 표시
-                showAdminDashboard();
+                await showAdminDashboard();
                 
                 console.log('✅ 관리자 로그인 성공');
                 
@@ -600,7 +737,7 @@
         }
 
         // 관리자 대시보드 표시
-        function showAdminDashboard() {
+        async function showAdminDashboard() {
             console.log('📊 관리자 대시보드 표시');
             
             try {
@@ -608,7 +745,7 @@
                 document.getElementById('adminPage').classList.add('active');
                 
                 // 기능 설정 로드
-                loadFeatureSettings();
+                await loadFeatureSettings();
                 
                 // 관리자 정보 표시
                 displayAdminInfo();
@@ -638,16 +775,17 @@
             }
         }
 
-        // 기능 설정 로드 - SupabaseAPI 사용으로 수정
+        // 기능 설정 로드
         async function loadFeatureSettings() {
             try {
                 console.log('🔧 기능 설정 로드 시작');
                 
-                // SupabaseAPI가 준비될 때까지 대기
-                await waitForSupabaseAPIReady();
+                // SupabaseAPI 클라이언트 확인
+                if (!window.SupabaseAPI) {
+                    throw new Error('SupabaseAPI를 사용할 수 없습니다');
+                }
                 
-                // SupabaseAPI를 통해 기능 설정 조회
-                const client = await SupabaseAPI.ensureClient();
+                const client = await window.SupabaseAPI.ensureClient();
                 const { data: features, error } = await client
                     .from('feature_settings')
                     .select('*')
@@ -671,30 +809,6 @@
                 ];
                 renderFeatureList(defaultFeatures);
             }
-        }
-
-        // SupabaseAPI 준비 상태 확인
-        function waitForSupabaseAPIReady() {
-            return new Promise((resolve, reject) => {
-                let attempts = 0;
-                const maxAttempts = 50; // 5초 대기
-                
-                const checkSupabaseAPI = () => {
-                    attempts++;
-                    
-                    if (window.SupabaseAPI && typeof window.SupabaseAPI.ensureClient === 'function') {
-                        console.log('✅ SupabaseAPI 준비됨');
-                        resolve();
-                    } else if (attempts >= maxAttempts) {
-                        console.error('❌ SupabaseAPI 초기화 시간 초과');
-                        reject(new Error('SupabaseAPI 초기화 시간 초과'));
-                    } else {
-                        setTimeout(checkSupabaseAPI, 100);
-                    }
-                };
-                
-                checkSupabaseAPI();
-            });
         }
 
         // 기능 목록 렌더링
@@ -749,7 +863,7 @@
             console.log('✅ 기능 목록 렌더링 완료');
         }
 
-        // 기능 토글 - SupabaseAPI 사용으로 수정
+        // 기능 토글
         async function toggleFeature(featureName, newState) {
             console.log(`🔄 기능 토글: ${featureName} → ${newState}`);
             
@@ -764,7 +878,7 @@
                     throw new Error('SupabaseAPI를 사용할 수 없습니다');
                 }
                 
-                const client = await SupabaseAPI.ensureClient();
+                const client = await window.SupabaseAPI.ensureClient();
                 const { error } = await client
                     .from('feature_settings')
                     .update({ 
@@ -866,8 +980,21 @@
             }
         }
 
+        // 페이지 로드 시 안전한 초기화 시작
+        document.addEventListener('DOMContentLoaded', safeInitialize);
+        
+        // 추가 안전장치: 페이지 완전 로드 후에도 확인
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (!window.CONFIG) {
+                    console.error('❌ CONFIG가 여전히 로드되지 않았습니다');
+                    InitManager.error('설정 파일 로드 실패');
+                }
+            }, 1000);
+        });
+
         // 개발자 도구 (디버깅용)
-        if (window.CONFIG && window.CONFIG.DEV && window.CONFIG.DEV.DEBUG) {
+        if (typeof window !== 'undefined') {
             window.AdminDebug = {
                 // 강제 로그인
                 forceLogin() {
@@ -893,6 +1020,16 @@
                 async reloadFeatures() {
                     await loadFeatureSettings();
                     console.log('🔄 기능 설정 강제 로드 완료');
+                },
+
+                // 시스템 상태 확인
+                checkSystem() {
+                    console.log('🔍 시스템 상태:', {
+                        CONFIG: !!window.CONFIG,
+                        SupabaseAPI: !!window.SupabaseAPI,
+                        Supabase: !!window.supabase,
+                        Lucide: !!window.lucide
+                    });
                 }
             };
             
@@ -900,6 +1037,7 @@
             console.log('  AdminDebug.forceLogin() - 강제 로그인');
             console.log('  AdminDebug.checkSession() - 세션 정보 확인');
             console.log('  AdminDebug.reloadFeatures() - 기능 설정 강제 로드');
+            console.log('  AdminDebug.checkSystem() - 시스템 상태 확인');
         }
     </script>
 </body>
