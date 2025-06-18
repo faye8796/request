@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>항공권 구매 신청 관리 - 세종학당 문화인턴 지원 시스템</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="../css/main.css?v=1.4.0">
+    <link rel="stylesheet" href="../css/admin.css?v=1.4.0">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Supabase JavaScript Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <style>
+        .flight-management-container {
+            min-height: 100vh;
+            background: #f7fafc;
+            padding: 2rem;
+        }
+
+        .management-header {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .header-title p {
+            color: #718096;
+            margin: 0;
+        }
+
+        .coming-soon-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 4rem 2rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .coming-soon-icon {
+            width: 6rem;
+            height: 6rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin: 0 auto 2rem;
+        }
+
+        .coming-soon-icon i {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        .coming-soon-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 1rem;
+        }
+
+        .coming-soon-description {
+            font-size: 1.1rem;
+            color: #718096;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .back-btn {
+            background: #e2e8f0;
+            color: #4a5568;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: #cbd5e0;
+        }
+
+        @media (max-width: 768px) {
+            .flight-management-container {
+                padding: 1rem;
+            }
+
+            .management-header {
+                padding: 1.5rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .coming-soon-section {
+                padding: 3rem 1.5rem;
+            }
+
+            .coming-soon-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="flight-management-container">
+        <!-- 헤더 섹션 -->
+        <div class="management-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <h1>항공권 구매 신청 관리</h1>
+                    <p>학생들의 항공권 구매 신청을 검토하고 승인 처리를 진행할 수 있습니다.</p>
+                </div>
+                <button class="back-btn" onclick="goBackToDashboard()">
+                    <i data-lucide="arrow-left"></i>
+                    대시보드로 돌아가기
+                </button>
+            </div>
+        </div>
+
+        <!-- Coming Soon 섹션 -->
+        <div class="coming-soon-section">
+            <div class="coming-soon-icon">
+                <i data-lucide="plane"></i>
+            </div>
+            <h2 class="coming-soon-title">항공권 관리 기능 준비 중</h2>
+            <p class="coming-soon-description">
+                학생들의 항공권 구매 신청을 체계적으로 관리할 수 있는 기능을 개발 중입니다.<br>
+                출발지/도착지 설정, 여행 일정 관리, 승인 처리 등의 기능이 포함될 예정입니다.
+            </p>
+            <button class="btn primary" onclick="goBackToDashboard()">
+                <i data-lucide="arrow-left"></i>
+                대시보드로 돌아가기
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="../js/config.js?v=1.4.0"></script>
+    <script src="../js/supabase-client.js?v=1.4.0"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Lucide 아이콘 초기화
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            // 관리자 인증 확인
+            checkAdminAuthentication();
+        });
+
+        function checkAdminAuthentication() {
+            const adminSession = localStorage.getItem('adminSession');
+            if (!adminSession) {
+                alert('관리자 로그인이 필요합니다.');
+                window.location.href = '../admin.html';
+                return;
+            }
+        }
+
+        function goBackToDashboard() {
+            window.location.href = '../admin.html';
+        }
+    </script>
+</body>
+</html>
