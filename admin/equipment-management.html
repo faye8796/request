@@ -257,7 +257,7 @@
         // 전역 변수
         let isDataLoaded = false;
         let retryCount = 0;
-        const MAX_RETRY_COUNT = 3;
+        const EQUIPMENT_MAX_RETRY_COUNT = 3; // 🔧 Fixed: Renamed to avoid conflict with supabase-client.js
 
         // 페이지 초기화
         document.addEventListener('DOMContentLoaded', function() {
@@ -635,8 +635,8 @@
         // 데이터 재시도
         function retryDataLoad() {
             retryCount++;
-            if (retryCount <= MAX_RETRY_COUNT) {
-                console.log(`🔄 데이터 재시도 ${retryCount}/${MAX_RETRY_COUNT}`);
+            if (retryCount <= EQUIPMENT_MAX_RETRY_COUNT) { // 🔧 Fixed: Use renamed variable
+                console.log(`🔄 데이터 재시도 ${retryCount}/${EQUIPMENT_MAX_RETRY_COUNT}`); // 🔧 Fixed: Use renamed variable
                 initializeEquipmentManagement();
             } else {
                 alert('여러 번 시도했지만 데이터를 불러올 수 없습니다. 페이지를 새로고침해주세요.');
