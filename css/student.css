@@ -694,14 +694,10 @@
     display: block;
 }
 
-/* Shipping Modal Styles */
-#shippingModal .modal-content {
-    max-width: 500px;
-}
-
 /* Application Form Modal Specific Styles - 모달 크기 고정 */
 #applicationModal .modal-content,
-#bundleModal .modal-content {
+#bundleModal .modal-content,
+#shippingModal .modal-content {
     width: 550px !important;
     min-width: 550px !important;
     max-width: calc(100vw - 2rem);
@@ -1085,7 +1081,8 @@
 
     /* 모바일 모달 크기 조정 */
     #applicationModal .modal-content,
-    #bundleModal .modal-content {
+    #bundleModal .modal-content,
+    #shippingModal .modal-content {
         width: calc(100vw - 1rem) !important;
         min-width: 320px !important;
         max-width: calc(100vw - 1rem);
