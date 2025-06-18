@@ -368,14 +368,13 @@
     <script src="../js/lesson-plan.js?v=1.3.1"></script>
     <script src="../js/student.js?v=1.3.1"></script>
     
-    <!-- 교구 신청 페이지 초기화 - 완전히 수정된 버전 -->
+    <!-- 교구 신청 페이지 초기화 - 사용자 데이터 동기화 문제 해결 -->
     <script>
         /**
-         * 🚀 완전히 수정된 equipment-request.html 초기화 로직
-         * - 사용자 정보 로딩 문제 해결
-         * - 간소화된 데이터 검증
-         * - 향상된 오류 처리
-         * - 점진적 로딩 전략
+         * 🚀 교구 신청 페이지 초기화 로직 - 사용자 데이터 동기화 문제 해결
+         * - localStorage와 SupabaseAPI 상태 동기화
+         * - AuthManager와 StudentManager 연동 개선
+         * - 안전한 오류 처리 및 재시도 메커니즘
          */
 
         // 🎯 전역 상태 관리
@@ -409,7 +408,35 @@
             return true;
         }
 
-        // 🎯 사용자 정보 로드 (개선된 버전)
+        // 🔧 핵심 수정: SupabaseAPI와 AuthManager 상태 동기화
+        function syncUserDataToSupabaseAPI(studentData) {
+            try {
+                console.log('🔄 SupabaseAPI 상태 동기화 시작');
+                
+                // SupabaseAPI 존재 확인
+                if (typeof SupabaseAPI === 'undefined') {
+                    console.warn('⚠️ SupabaseAPI를 찾을 수 없습니다');
+                    return false;
+                }
+
+                // SupabaseAPI에 사용자 정보 설정
+                SupabaseAPI.currentUser = studentData;
+                SupabaseAPI.currentUserType = 'student';
+
+                console.log('✅ SupabaseAPI 상태 동기화 완료:', {
+                    id: studentData.id,
+                    name: studentData.name,
+                    userType: 'student'
+                });
+
+                return true;
+            } catch (error) {
+                console.error('❌ SupabaseAPI 상태 동기화 오류:', error);
+                return false;
+            }
+        }
+
+        // 🎯 사용자 정보 로드 (개선된 버전 - 동기화 포함)
         function loadAndDisplayUserInfo() {
             console.log('👤 사용자 정보 로드 시작');
             
@@ -431,6 +458,12 @@
                 // 간소화된 검증
                 if (!validateStudentData(studentData)) {
                     throw new Error('사용자 데이터 검증 실패');
+                }
+
+                // 🔧 핵심 추가: SupabaseAPI 상태 동기화
+                const syncSuccess = syncUserDataToSupabaseAPI(studentData);
+                if (!syncSuccess) {
+                    console.warn('⚠️ SupabaseAPI 동기화 실패, 계속 진행');
                 }
 
                 // sessionStorage 동기화
@@ -535,7 +568,7 @@
             }
         }
 
-        // 🎯 StudentManager 초기화 (분리된 로직)
+        // 🔧 StudentManager 초기화 (개선된 버전 - 재시도 로직 강화)
         function initializeStudentManager() {
             console.log('🎓 StudentManager 초기화 시작');
             
@@ -547,24 +580,103 @@
             // StudentManager 존재 확인
             if (typeof StudentManager === 'undefined') {
                 console.error('❌ StudentManager를 찾을 수 없습니다');
-                showManagerError('StudentManager 로딩 실패');
-                return Promise.reject(new Error('StudentManager 없음'));
+                return retryStudentManagerInit();
             }
 
-            // 초기화 시도
-            return StudentManager.init()
-                .then(() => {
-                    window.EquipmentRequestManager.managerInitialized = true;
-                    console.log('✅ StudentManager 초기화 완료');
-                    
-                    // 성공 알림 표시
-                    showSuccessMessage('시스템이 성공적으로 초기화되었습니다');
-                })
-                .catch((error) => {
-                    console.error('❌ StudentManager 초기화 실패:', error);
-                    showManagerError(error.message || '초기화 실패');
-                    throw error;
+            // 최대 3회 재시도
+            const maxAttempts = 3;
+            let currentAttempt = 1;
+
+            function attemptInit(attemptNumber) {
+                console.log(`🎓 StudentManager 초기화 시작 (시도 ${attemptNumber}/${maxAttempts})`);
+                
+                return new Promise((resolve, reject) => {
+                    try {
+                        // StudentManager 구성 요소 초기화 확인
+                        console.log('🔧 StudentManager 구성 요소 초기화 중...');
+                        
+                        // 초기화 실행
+                        const initPromise = StudentManager.init();
+                        
+                        if (initPromise && typeof initPromise.then === 'function') {
+                            // Promise가 반환된 경우
+                            initPromise
+                                .then(() => {
+                                    console.log('👤 사용자 표시 업데이트 완료');
+                                    return StudentManager.loadApplications();
+                                })
+                                .then(() => {
+                                    console.log('📑 신청 내역 로드 완료');
+                                    return StudentManager.updateBudgetStatus();
+                                })
+                                .then(() => {
+                                    console.log('💰 예산 상태 업데이트 완료');
+                                    return StudentManager.checkLessonPlanStatus();
+                                })
+                                .then(() => {
+                                    console.log('📋 수업계획 상태 확인 완료');
+                                    window.EquipmentRequestManager.managerInitialized = true;
+                                    console.log('✅ StudentManager 초기화 완료');
+                                    resolve();
+                                })
+                                .catch((error) => {
+                                    console.error(`❌ StudentManager 초기화 실패 (시도 ${attemptNumber}):`, error);
+                                    reject(error);
+                                });
+                        } else {
+                            // Promise가 반환되지 않은 경우 (즉시 완료)
+                            window.EquipmentRequestManager.managerInitialized = true;
+                            console.log('✅ StudentManager 초기화 완료 (동기)');
+                            resolve();
+                        }
+                    } catch (error) {
+                        console.error(`❌ StudentManager 초기화 실패 (시도 ${attemptNumber}):`, error);
+                        reject(error);
+                    }
                 });
+            }
+
+            function retryInit() {
+                return attemptInit(currentAttempt).catch((error) => {
+                    currentAttempt++;
+                    if (currentAttempt <= maxAttempts) {
+                        console.log(`🔄 StudentManager 초기화 재시도 (${currentAttempt}/${maxAttempts})`);
+                        // 1초 대기 후 재시도
+                        return new Promise(resolve => setTimeout(resolve, 1000)).then(retryInit);
+                    } else {
+                        console.error('❌ StudentManager 초기화 최대 재시도 실패');
+                        showManagerError('StudentManager 초기화에 실패했습니다');
+                        throw error;
+                    }
+                });
+            }
+
+            return retryInit();
+        }
+
+        // 🔄 StudentManager 초기화 재시도 (SupabaseAPI 로드 대기)
+        function retryStudentManagerInit() {
+            console.log('⏳ StudentManager 로드 대기 중...');
+            
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            return new Promise((resolve, reject) => {
+                const checkStudentManager = setInterval(() => {
+                    attempts++;
+                    
+                    if (typeof StudentManager !== 'undefined') {
+                        clearInterval(checkStudentManager);
+                        console.log('✅ StudentManager 로드 완료');
+                        resolve(initializeStudentManager());
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(checkStudentManager);
+                        console.error('❌ StudentManager 로드 시간 초과');
+                        showManagerError('시스템 로딩에 실패했습니다');
+                        reject(new Error('StudentManager 로드 실패'));
+                    }
+                }, 500);
+            });
         }
 
         // 🎯 StudentManager 오류 표시
@@ -721,7 +833,7 @@
             if (loadingEl) loadingEl.remove();
         }
 
-        // 🚀 메인 초기화 함수
+        // 🚀 메인 초기화 함수 (개선된 버전)
         function initializeEquipmentRequestPage() {
             console.log('🚀 Equipment Request 페이지 초기화 시작');
             
@@ -731,7 +843,7 @@
                 // 로딩 표시
                 showLoadingIndicator();
                 
-                // 1단계: 사용자 정보 로드
+                // 1단계: 사용자 정보 로드 및 동기화
                 return loadAndDisplayUserInfo()
                     .then((userData) => {
                         console.log('✅ 1단계: 사용자 정보 로드 완료');
@@ -800,7 +912,7 @@
             return initializeEquipmentRequestPage();
         };
 
-        console.log('✅ Equipment Request 페이지 스크립트 로드 완료');
+        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 - 사용자 데이터 동기화 문제 해결');
         console.log('💡 디버깅 명령어: initializeEquipmentRequestPage() - 시스템 재시작');
     </script>
     
