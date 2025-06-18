@@ -1,11 +1,11 @@
-// 학생 기능 관리 모듈 (Supabase 연동) - 교구 신청 기능 활성화 버전 - 중복 등록 버그 수정
+// 학생 기능 관리 모듈 (Supabase 연동) - 교구 신청 기능 활성화 버전 - 중복 등록 버그 수정 및 구문 오류 해결
 const StudentManager = {
     currentEditingItem: null,
     currentReceiptItem: null,
     isInitialized: false,
     noticeDisplayed: false, // 중복 알림 방지 플래그
 
-    // 초기화 - 안전성 강화
+    // 초기화 - 안전성 강화 및 오류 처리 개선
     async init() {
         if (this.isInitialized) {
             console.log('⚠️ StudentManager 이미 초기화됨 - 건너뜀');
@@ -110,16 +110,17 @@ const StudentManager = {
         try {
             console.log('📋 수업계획 버튼 클릭 처리 (대시보드에서 접근)');
             
-            const currentUser = AuthManager?.getCurrentUser();
+            // 안전한 사용자 확인
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 return;
             }
 
-            // 기존 수업계획 확인
+            // 기존 수업계획 확인 - 안전한 API 호출
             let existingPlan = null;
             try {
-                existingPlan = await SupabaseAPI.getStudentLessonPlan(currentUser.id);
+                existingPlan = await this.safeApiCall(() => SupabaseAPI.getStudentLessonPlan(currentUser.id));
             } catch (error) {
                 console.error('기존 수업계획 조회 오류:', error);
             }
@@ -167,6 +168,33 @@ const StudentManager = {
         } catch (error) {
             console.error('수업계획 버튼 클릭 처리 오류:', error);
             alert('수업계획 페이지로 이동하는 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+        }
+    },
+
+    // 안전한 사용자 정보 가져오기
+    getCurrentUserSafely() {
+        try {
+            if (typeof AuthManager !== 'undefined' && AuthManager.getCurrentUser) {
+                return AuthManager.getCurrentUser();
+            }
+            console.warn('AuthManager 또는 getCurrentUser 메서드를 찾을 수 없습니다');
+            return null;
+        } catch (error) {
+            console.error('사용자 정보 가져오기 오류:', error);
+            return null;
+        }
+    },
+
+    // 안전한 API 호출 래퍼
+    async safeApiCall(apiFunction) {
+        try {
+            if (typeof apiFunction === 'function') {
+                return await apiFunction();
+            }
+            throw new Error('API 함수가 유효하지 않습니다');
+        } catch (error) {
+            console.error('API 호출 오류:', error);
+            throw error;
         }
     },
 
@@ -373,8 +401,8 @@ const StudentManager = {
             console.log('👤 사용자 정보 표시 업데이트 시작');
             
             // AuthManager 존재 확인
-            if (typeof AuthManager === 'undefined') {
-                console.error('AuthManager를 찾을 수 없습니다');
+            if (typeof AuthManager === 'undefined' || !AuthManager.updateUserDisplay) {
+                console.error('AuthManager 또는 updateUserDisplay 메서드를 찾을 수 없습니다');
                 this.showFallbackUserInfo();
                 return;
             }
@@ -416,17 +444,17 @@ const StudentManager = {
 
             console.log('📋 수업계획 상태 확인 시작');
             
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 console.warn('현재 사용자 정보가 없습니다');
                 this.showLessonPlanRequiredNotice();
                 return;
             }
 
-            // API 호출 시도
+            // API 호출 시도 - 안전한 호출
             let lessonPlan = null;
             try {
-                lessonPlan = await SupabaseAPI.getStudentLessonPlan(currentUser.id);
+                lessonPlan = await this.safeApiCall(() => SupabaseAPI.getStudentLessonPlan(currentUser.id));
             } catch (apiError) {
                 console.error('수업계획 조회 API 오류:', apiError);
                 this.showApiErrorNotice();
@@ -514,7 +542,7 @@ const StudentManager = {
         try {
             console.log('🔘 교구 신청 버튼 상태 업데이트');
             
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 this.disableApplicationButtons('로그인이 필요합니다');
                 return;
@@ -542,7 +570,7 @@ const StudentManager = {
             // 수업계획이 승인된 경우 예산 상태 확인
             let budgetStatus = null;
             try {
-                budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+                budgetStatus = await this.safeApiCall(() => SupabaseAPI.getStudentBudgetStatus(currentUser.id));
             } catch (error) {
                 console.error('예산 상태 조회 오류:', error);
                 this.disableApplicationButtons('예산 정보를 불러올 수 없습니다');
@@ -634,12 +662,12 @@ const StudentManager = {
             // 기존 알림 제거
             this.removeExistingNotices();
 
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) return;
 
             let canEdit = true;
             try {
-                canEdit = await SupabaseAPI.canEditLessonPlan();
+                canEdit = await this.safeApiCall(() => SupabaseAPI.canEditLessonPlan());
             } catch (error) {
                 console.error('수업계획 수정 가능 여부 확인 오류:', error);
             }
@@ -855,7 +883,7 @@ const StudentManager = {
         try {
             console.log('📑 신청 내역 로드 시작');
             
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 console.warn('현재 사용자 정보가 없습니다');
                 this.showEmptyApplications();
@@ -864,7 +892,7 @@ const StudentManager = {
 
             let applications = [];
             try {
-                applications = await SupabaseAPI.getStudentApplications(currentUser.id);
+                applications = await this.safeApiCall(() => SupabaseAPI.getStudentApplications(currentUser.id));
             } catch (error) {
                 console.error('신청 내역 조회 API 오류:', error);
                 this.showApplicationsError();
@@ -923,7 +951,7 @@ const StudentManager = {
         try {
             console.log('💰 예산 현황 업데이트 시작');
             
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 console.warn('현재 사용자 정보가 없음');
                 return;
@@ -931,7 +959,7 @@ const StudentManager = {
 
             let budgetStatus = null;
             try {
-                budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+                budgetStatus = await this.safeApiCall(() => SupabaseAPI.getStudentBudgetStatus(currentUser.id));
             } catch (error) {
                 console.error('예산 상태 조회 API 오류:', error);
                 this.showBudgetError();
@@ -1265,7 +1293,7 @@ const StudentManager = {
         try {
             console.log('🛒 일반 교구 신청 모달 표시');
             
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 return;
@@ -1274,7 +1302,7 @@ const StudentManager = {
             // 수업계획 승인 상태 확인
             let lessonPlan = null;
             try {
-                lessonPlan = await SupabaseAPI.getStudentLessonPlan(currentUser.id);
+                lessonPlan = await this.safeApiCall(() => SupabaseAPI.getStudentLessonPlan(currentUser.id));
             } catch (error) {
                 console.error('수업계획 상태 확인 오류:', error);
                 alert('수업계획 상태를 확인할 수 없습니다. 새로고침 후 다시 시도해주세요.');
@@ -1289,7 +1317,7 @@ const StudentManager = {
             // 예산 상태 확인
             let budgetStatus = null;
             try {
-                budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+                budgetStatus = await this.safeApiCall(() => SupabaseAPI.getStudentBudgetStatus(currentUser.id));
             } catch (error) {
                 console.error('예산 상태 확인 오류:', error);
                 alert('예산 정보를 확인할 수 없습니다. 새로고침 후 다시 시도해주세요.');
@@ -1359,7 +1387,7 @@ const StudentManager = {
         try {
             console.log('📦 묶음 신청 모달 표시');
             
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 return;
@@ -1368,7 +1396,7 @@ const StudentManager = {
             // 수업계획 승인 상태 확인
             let lessonPlan = null;
             try {
-                lessonPlan = await SupabaseAPI.getStudentLessonPlan(currentUser.id);
+                lessonPlan = await this.safeApiCall(() => SupabaseAPI.getStudentLessonPlan(currentUser.id));
             } catch (error) {
                 console.error('수업계획 상태 확인 오류:', error);
                 alert('수업계획 상태를 확인할 수 없습니다. 새로고침 후 다시 시도해주세요.');
@@ -1383,7 +1411,7 @@ const StudentManager = {
             // 예산 상태 확인
             let budgetStatus = null;
             try {
-                budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+                budgetStatus = await this.safeApiCall(() => SupabaseAPI.getStudentBudgetStatus(currentUser.id));
             } catch (error) {
                 console.error('예산 상태 확인 오류:', error);
                 alert('예산 정보를 확인할 수 없습니다. 새로고침 후 다시 시도해주세요.');
@@ -1444,7 +1472,7 @@ const StudentManager = {
         try {
             console.log('배송지 설정 모달 표시');
             
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 return;
@@ -1493,7 +1521,7 @@ const StudentManager = {
         try {
             console.log('📄 영수증 모달 표시:', requestId);
             
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 return;
@@ -1557,7 +1585,7 @@ const StudentManager = {
         try {
             console.log('📄 영수증 제출 처리 시작');
             
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 return;
@@ -1612,10 +1640,8 @@ const StudentManager = {
                 };
 
                 // 요청 상태를 'purchased'로 업데이트 (임시 구현)
-                const updateResult = await SupabaseAPI.updateItemStatus(
-                    this.currentReceiptItem, 
-                    'purchased',
-                    null
+                const updateResult = await this.safeApiCall(() => 
+                    SupabaseAPI.updateItemStatus(this.currentReceiptItem, 'purchased', null)
                 );
 
                 if (updateResult.success) {
@@ -1816,14 +1842,14 @@ const StudentManager = {
         try {
             console.log('✏️ 신청 수정:', itemId);
             
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 return;
             }
 
             // 현재 신청 내역에서 해당 아이템 찾기
-            const applications = await SupabaseAPI.getStudentApplications(currentUser.id);
+            const applications = await this.safeApiCall(() => SupabaseAPI.getStudentApplications(currentUser.id));
             const application = applications.find(app => app.id === itemId);
             
             if (!application) {
@@ -1892,7 +1918,7 @@ const StudentManager = {
         try {
             console.log('🗑️ 신청 삭제:', itemId);
             
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 return;
@@ -1904,7 +1930,7 @@ const StudentManager = {
             }
 
             // 삭제 처리
-            const result = await SupabaseAPI.deleteApplication(itemId);
+            const result = await this.safeApiCall(() => SupabaseAPI.deleteApplication(itemId));
             
             if (result.success) {
                 alert('신청이 성공적으로 삭제되었습니다.');
@@ -2007,7 +2033,7 @@ const StudentManager = {
         }
         
         try {
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 return;
@@ -2020,7 +2046,7 @@ const StudentManager = {
             }
 
             // 예산 확인 (이제 버튼이 이미 비활성화된 상태에서 진행)
-            const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+            const budgetStatus = await this.safeApiCall(() => SupabaseAPI.getStudentBudgetStatus(currentUser.id));
             if (formData.price > budgetStatus.remaining) {
                 alert(`신청 가격이 잔여 예산을 초과합니다.\n잔여 예산: ${this.formatPrice(budgetStatus.remaining)}\n신청 가격: ${this.formatPrice(formData.price)}`);
                 return;
@@ -2029,11 +2055,11 @@ const StudentManager = {
             // API 호출
             if (this.currentEditingItem) {
                 // 수정 모드
-                await SupabaseAPI.updateApplication(this.currentEditingItem, formData);
+                await this.safeApiCall(() => SupabaseAPI.updateApplication(this.currentEditingItem, formData));
                 alert('교구 신청이 성공적으로 수정되었습니다.');
             } else {
                 // 새 신청 모드
-                await SupabaseAPI.createApplication(currentUser.id, formData);
+                await this.safeApiCall(() => SupabaseAPI.createApplication(currentUser.id, formData));
                 alert('교구 신청이 성공적으로 등록되었습니다.');
             }
             
@@ -2071,7 +2097,7 @@ const StudentManager = {
         }
         
         try {
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 return;
@@ -2084,14 +2110,14 @@ const StudentManager = {
             }
 
             // 예산 확인 (이제 버튼이 이미 비활성화된 상태에서 진행)
-            const budgetStatus = await SupabaseAPI.getStudentBudgetStatus(currentUser.id);
+            const budgetStatus = await this.safeApiCall(() => SupabaseAPI.getStudentBudgetStatus(currentUser.id));
             if (formData.price > budgetStatus.remaining) {
                 alert(`신청 가격이 잔여 예산을 초과합니다.\n잔여 예산: ${this.formatPrice(budgetStatus.remaining)}\n신청 가격: ${this.formatPrice(formData.price)}`);
                 return;
             }
 
             // API 호출
-            await SupabaseAPI.createBundleApplication(currentUser.id, formData);
+            await this.safeApiCall(() => SupabaseAPI.createBundleApplication(currentUser.id, formData));
             alert('묶음 교구 신청이 성공적으로 등록되었습니다.');
             
             this.hideBundleModal();
@@ -2223,12 +2249,12 @@ const StudentManager = {
         try {
             console.log('📦 기존 배송지 정보 로드');
             
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) return;
 
             let shippingInfo = null;
             try {
-                shippingInfo = await SupabaseAPI.getShippingInfo(currentUser.id);
+                shippingInfo = await this.safeApiCall(() => SupabaseAPI.getShippingInfo(currentUser.id));
             } catch (error) {
                 console.error('배송지 정보 조회 오류:', error);
                 return;
@@ -2263,7 +2289,7 @@ const StudentManager = {
         try {
             console.log('배송지 정보 저장 시작');
             
-            const currentUser = AuthManager?.getCurrentUser();
+            const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 alert('로그인이 필요합니다.');
                 return;
@@ -2306,7 +2332,7 @@ const StudentManager = {
 
             try {
                 // Supabase에 배송지 정보 저장
-                await SupabaseAPI.saveShippingInfo(currentUser.id, formData);
+                await this.safeApiCall(() => SupabaseAPI.saveShippingInfo(currentUser.id, formData));
                 
                 alert('배송지 정보가 성공적으로 저장되었습니다.');
                 this.hideShippingModal();
@@ -2353,4 +2379,4 @@ const StudentManager = {
 window.StudentManager = StudentManager;
 
 // DOM 로드 완료 시 초기화 방지 (App에서 호출)
-console.log('📚 StudentManager loaded successfully - 중복 등록 버그 수정 완료');
+console.log('📚 StudentManager loaded successfully - 구문 오류 및 중복 등록 버그 수정 완료');
