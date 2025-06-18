@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>교구 구매 신청 관리 - 세종학당 문화인턴 지원 시스템</title>
+    
+    <!-- CSS Files - Cache Busting Added -->
+    <link rel="stylesheet" href="../css/main.css?v=1.4.0">
+    <link rel="stylesheet" href="../css/admin.css?v=1.4.0">
+    <link rel="stylesheet" href="../css/lesson-plan.css?v=1.4.0">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Supabase JavaScript Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <!-- 교구 관리 전용 스타일 -->
+    <style>
+        .equipment-management-container {
+            min-height: 100vh;
+            background: #f7fafc;
+            padding: 2rem;
+        }
+
+        .management-header {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .header-title p {
+            color: #718096;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .back-btn {
+            background: #e2e8f0;
+            color: #4a5568;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: #cbd5e0;
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .equipment-management-container {
+                padding: 1rem;
+            }
+
+            .management-header {
+                padding: 1.5rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-actions {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="equipment-management-container">
+        <!-- 헤더 섹션 -->
+        <div class="management-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <h1>교구 구매 신청 관리</h1>
+                    <p>학생들의 문화교구 신청을 검토하고 승인 처리를 진행할 수 있습니다.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="back-btn" onclick="goBackToDashboard()">
+                        <i data-lucide="arrow-left"></i>
+                        대시보드로 돌아가기
+                    </button>
+                    <button id="budgetSettingsBtn" class="btn secondary">
+                        <i data-lucide="dollar-sign"></i>
+                        예산 설정
+                    </button>
+                    <button id="lessonPlanManagementBtn" class="btn secondary">
+                        <i data-lucide="clipboard-check"></i>
+                        수업계획 관리
+                    </button>
+                    <button id="exportBtn" class="btn success">
+                        <i data-lucide="download"></i>
+                        Excel 내보내기
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 핵심 운영 통계 카드 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i data-lucide="users" class="stat-icon blue"></i>
+                <div class="stat-info">
+                    <p class="stat-label">전체 신청자수</p>
+                    <p id="applicantCount" class="stat-value">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i data-lucide="clock" class="stat-icon orange"></i>
+                <div class="stat-info">
+                    <p class="stat-label">미승인 아이템</p>
+                    <p id="pendingCount" class="stat-value">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i data-lucide="check-circle" class="stat-icon green"></i>
+                <div class="stat-info">
+                    <p class="stat-label">승인됨 (구매대기)</p>
+                    <p id="approvedCount" class="stat-value">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <i data-lucide="package" class="stat-icon purple"></i>
+                <div class="stat-info">
+                    <p class="stat-label">구매완료</p>
+                    <p id="purchasedCount" class="stat-value">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 전체 예산 현황 섹션 -->
+        <div class="budget-overview-section">
+            <h2>💰 전체 예산 현황</h2>
+            <div class="budget-summary-list">
+                <div class="budget-summary-item primary">
+                    <span class="budget-label">전체 배정 예산</span>
+                    <span id="totalApprovedBudget" class="budget-amount">0원</span>
+                </div>
+                <div class="budget-summary-item">
+                    <span class="budget-label">승인된 교구 신청 총액</span>
+                    <span id="approvedItemsTotal" class="budget-amount">0원</span>
+                </div>
+                <div class="budget-summary-item">
+                    <span class="budget-label">구매 완료 총액</span>
+                    <span id="purchasedTotal" class="budget-amount">0원</span>
+                </div>
+                <div class="budget-summary-item">
+                    <span class="budget-label">1인당 평균 지원금</span>
+                    <span id="averagePerPerson" class="budget-amount">0원</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 검색 -->
+        <div class="search-container">
+            <div class="search-box">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" id="searchInput" placeholder="학생 이름으로 검색...">
+            </div>
+        </div>
+
+        <!-- 교구 신청 목록 -->
+        <div id="adminApplications" class="admin-applications">
+            <!-- 동적으로 생성될 관리자용 교구 신청 목록 -->
+        </div>
+    </div>
+
+    <!-- 모달들 (예산 설정, 수업계획 관리 등) -->
+    <!-- 예산 설정 모달 -->
+    <div id="budgetSettingsModal" class="modal">
+        <div class="modal-content large">
+            <h3>분야별 예산 설정</h3>
+            <form id="budgetSettingsForm">
+                <div class="budget-settings-info">
+                    <p>각 분야별로 회당 지원금과 최대 상한을 설정하세요. 학생의 수업계획이 승인되면 이 설정에 따라 자동으로 예산이 배정됩니다.</p>
+                </div>
+                
+                <div class="table-container">
+                    <table id="budgetSettingsTable" class="budget-settings-table">
+                        <thead>
+                            <tr>
+                                <th>분야</th>
+                                <th>회당 지원금 (원)</th>
+                                <th>최대 상한 (원)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 동적으로 생성됨 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" id="budgetSettingsCancelBtn" class="btn secondary">취소</button>
+                    <button type="submit" class="btn primary">설정 저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 수업계획 관리 모달 -->
+    <div id="lessonPlanManagementModal" class="modal">
+        <div class="modal-content expanded">
+            <h3>수업계획 승인 관리</h3>
+            <div class="lesson-plan-management-container">
+                <div class="management-header">
+                    <div class="management-stats">
+                        <span id="pendingPlansCount" class="stat-badge pending">대기 중: 0</span>
+                        <span id="approvedPlansCount" class="stat-badge approved">승인됨: 0</span>
+                        <span id="rejectedPlansCount" class="stat-badge rejected">반려됨: 0</span>
+                    </div>
+                    <div class="management-actions">
+                        <button id="refreshPlansBtn" class="btn small secondary">
+                            <i data-lucide="refresh-cw"></i> 새로고침
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="lessonPlansList" class="lesson-plans-list">
+                    <!-- 동적으로 생성됨 -->
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" id="lessonPlanManagementCloseBtn" class="btn secondary">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="../js/config.js?v=1.4.0"></script>
+    <script src="../js/supabase-client.js?v=1.4.0"></script>
+    <script src="../js/utils.js?v=1.4.0"></script>
+    <script src="../js/auth.js?v=1.4.0"></script>
+    <script src="../js/lesson-plan.js?v=1.4.0"></script>
+    <script src="../js/admin.js?v=1.4.0"></script>
+    
+    <!-- 페이지 초기화 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                // Lucide 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+
+                // 관리자 인증 확인
+                checkAdminAuthentication();
+                
+                // 교구 관리 초기화
+                initializeEquipmentManagement();
+                
+            } catch (error) {
+                console.error('교구 관리 페이지 초기화 오류:', error);
+            }
+        });
+
+        // 관리자 인증 확인
+        function checkAdminAuthentication() {
+            const adminSession = localStorage.getItem('adminSession');
+            if (!adminSession) {
+                alert('관리자 로그인이 필요합니다.');
+                window.location.href = '../admin.html';
+                return;
+            }
+        }
+
+        // 교구 관리 초기화
+        function initializeEquipmentManagement() {
+            try {
+                // 기존 admin.js의 initializeAdminDashboard 함수 호출
+                if (typeof initializeAdminDashboard === 'function') {
+                    initializeAdminDashboard();
+                } else {
+                    console.warn('initializeAdminDashboard 함수를 찾을 수 없습니다.');
+                    loadBasicData();
+                }
+            } catch (error) {
+                console.error('교구 관리 초기화 오류:', error);
+                loadBasicData();
+            }
+        }
+
+        // 기본 데이터 로드
+        function loadBasicData() {
+            // 통계 데이터 로드
+            loadStatistics();
+            
+            // 교구 신청 목록 로드
+            loadEquipmentRequests();
+        }
+
+        // 통계 데이터 로드
+        async function loadStatistics() {
+            try {
+                // Supabase에서 통계 데이터 조회
+                const { data: applications, error } = await supabase
+                    .from('equipment_requests')
+                    .select('*');
+
+                if (error) throw error;
+
+                // 통계 계산
+                const stats = {
+                    total: applications.length,
+                    pending: applications.filter(app => app.status === 'pending').length,
+                    approved: applications.filter(app => app.status === 'approved').length,
+                    purchased: applications.filter(app => app.status === 'purchased').length
+                };
+
+                // UI 업데이트
+                document.getElementById('applicantCount').textContent = stats.total;
+                document.getElementById('pendingCount').textContent = stats.pending;
+                document.getElementById('approvedCount').textContent = stats.approved;
+                document.getElementById('purchasedCount').textContent = stats.purchased;
+
+            } catch (error) {
+                console.error('통계 데이터 로드 오류:', error);
+            }
+        }
+
+        // 교구 신청 목록 로드
+        async function loadEquipmentRequests() {
+            try {
+                // 기존 admin.js의 loadAdminApplications 함수 호출
+                if (typeof loadAdminApplications === 'function') {
+                    loadAdminApplications();
+                } else {
+                    console.warn('loadAdminApplications 함수를 찾을 수 없습니다.');
+                }
+            } catch (error) {
+                console.error('교구 신청 목록 로드 오류:', error);
+            }
+        }
+
+        // 대시보드로 돌아가기
+        function goBackToDashboard() {
+            window.location.href = '../admin.html';
+        }
+
+        // 키보드 단축키 (개발자용)
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'd') {
+                e.preventDefault();
+                console.log('교구 관리 페이지 - 디버그 모드');
+            }
+        });
+    </script>
+</body>
+</html>
