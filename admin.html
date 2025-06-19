@@ -514,9 +514,9 @@
         시스템 초기화 중...
     </div>
 
-    <!-- JavaScript Files - 순서 중요! -->
+    <!-- JavaScript Files - 순서 중요! Fixed Supabase version -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
     <script src="js/config.js?v=1.4.3"></script>
     <script src="js/supabase-client.js?v=1.4.3"></script>
     <script src="js/utils.js?v=1.4.3"></script>
@@ -626,7 +626,7 @@
                     
                     // 사용자에게 문제 해결 방법 제시
                     setTimeout(() => {
-                        if (confirm('시스템 초기화에 실패했습니다.\n\n페이지를 새로고침하시겠습니까?')) {
+                        if (confirm('시스템 초기화에 실패했습니다.\\n\\n페이지를 새로고침하시겠습니까?')) {
                             window.location.reload();
                         }
                     }, 1000);
@@ -768,3 +768,117 @@
                     });
                 }
             }
+
+            // 관리자 로그인 처리
+            async function handleAdminLogin() {
+                const code = document.getElementById('adminCode').value.trim();
+                
+                if (!code) {
+                    alert('관리자 코드를 입력해주세요.');
+                    return;
+                }
+
+                try {
+                    // 로딩 상태 표시
+                    const loginBtn = document.getElementById('adminLoginBtn');
+                    const originalText = loginBtn.innerHTML;
+                    loginBtn.innerHTML = '<i data-lucide="loader-2"></i> 로그인 중...';
+                    loginBtn.disabled = true;
+
+                    // 관리자 인증 시도
+                    const result = await SupabaseAPI.authenticateAdmin(code);
+                    
+                    if (result && result.success) {
+                        // 세션 저장
+                        localStorage.setItem('adminSession', 'true');
+                        localStorage.setItem('adminInfo', JSON.stringify(result.data));
+                        
+                        // 대시보드로 전환
+                        await showAdminDashboard();
+                    } else {
+                        alert(result?.message || '관리자 인증에 실패했습니다.');
+                    }
+                    
+                } catch (error) {
+                    console.error('관리자 로그인 오류:', error);
+                    alert('로그인 처리 중 오류가 발생했습니다.');
+                } finally {
+                    // 버튼 상태 복구
+                    const loginBtn = document.getElementById('adminLoginBtn');
+                    loginBtn.innerHTML = '<i data-lucide="log-in"></i> 관리자 로그인';
+                    loginBtn.disabled = false;
+                    
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            }
+
+            // 관리자 대시보드 표시
+            async function showAdminDashboard() {
+                const loginPage = document.getElementById('loginPage');
+                const adminPage = document.getElementById('adminPage');
+                
+                if (loginPage) loginPage.classList.remove('active');
+                if (adminPage) adminPage.classList.add('active');
+                
+                // 기능 설정 로드
+                if (window.AdminManager && typeof window.AdminManager.loadFeatureSettings === 'function') {
+                    await window.AdminManager.loadFeatureSettings();
+                }
+                
+                // 아이콘 재초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+
+            // 로그아웃 처리
+            function handleLogout() {
+                if (confirm('로그아웃하시겠습니까?')) {
+                    localStorage.removeItem('adminSession');
+                    localStorage.removeItem('adminInfo');
+                    
+                    if (window.SupabaseAPI && typeof window.SupabaseAPI.logout === 'function') {
+                        window.SupabaseAPI.logout();
+                    }
+                    
+                    window.location.reload();
+                }
+            }
+
+            // 네비게이션 함수들
+            function navigateToInstituteManagement() {
+                window.location.href = 'admin/institute-management.html';
+            }
+
+            function navigateToFlightManagement() {
+                window.location.href = 'admin/flight-management.html';
+            }
+
+            function navigateToEquipmentManagement() {
+                window.location.href = 'admin/equipment-management.html';
+            }
+
+            // 전역 함수로 노출
+            window.handleAdminLogin = handleAdminLogin;
+            window.handleLogout = handleLogout;
+            window.navigateToInstituteManagement = navigateToInstituteManagement;
+            window.navigateToFlightManagement = navigateToFlightManagement;
+            window.navigateToEquipmentManagement = navigateToEquipmentManagement;
+
+            // DOMContentLoaded 이벤트 리스너
+            document.addEventListener('DOMContentLoaded', safeInitialize);
+
+            return {
+                initialize: safeInitialize,
+                handleAdminLogin,
+                handleLogout,
+                navigateToInstituteManagement,
+                navigateToFlightManagement,
+                navigateToEquipmentManagement
+            };
+        })();
+    </script>
+</body>
+</html>
