@@ -6,8 +6,8 @@
     <title>세종학당 문화인턴 지원 시스템 - 관리자</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="css/main.css?v=1.4.4">
-    <link rel="stylesheet" href="css/login.css?v=1.4.4">
+    <link rel="stylesheet" href="css/main.css?v=1.5.0">
+    <link rel="stylesheet" href="css/login.css?v=1.5.0">
     
     <!-- 관리자 대시보드 전용 스타일 -->
     <style>
@@ -514,14 +514,14 @@
         시스템 초기화 중...
     </div>
 
-    <!-- JavaScript Files - Fixed Supabase CDN URL -->
+    <!-- JavaScript Files - Updated Cache Busting -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
-    <script src="js/config.js?v=1.4.4"></script>
-    <script src="js/supabase-client.js?v=1.4.4"></script>
-    <script src="js/utils.js?v=1.4.4"></script>
-    <script src="js/auth.js?v=1.4.4"></script>
-    <script src="js/admin.js?v=1.4.4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=1.5.0"></script>
+    <script src="js/config.js?v=1.5.0"></script>
+    <script src="js/supabase-client.js?v=1.5.0"></script>
+    <script src="js/utils.js?v=1.5.0"></script>
+    <script src="js/auth.js?v=1.5.0"></script>
+    <script src="js/admin.js?v=1.5.0"></script>
     
     <!-- 페이지 초기화 스크립트 -->
     <script>
@@ -626,7 +626,7 @@
                     
                     // 사용자에게 문제 해결 방법 제시
                     setTimeout(() => {
-                        if (confirm('시스템 초기화에 실패했습니다.\\n\\n페이지를 새로고침하시겠습니까?')) {
+                        if (confirm('시스템 초기화에 실패했습니다.\n\n페이지를 새로고침하시겠습니까?')) {
                             window.location.reload();
                         }
                     }, 1000);
