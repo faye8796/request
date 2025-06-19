@@ -5,6 +5,7 @@ const LessonPlanManager = {
     isInitialized: false,
     lessons: [], // 수업 데이터 배열
     isFromDashboard: false, // 대시보드에서 접근했는지 여부
+    originalData: null, // 🆕 원본 데이터 저장용 (변경감지용)
 
     // 수업계획 페이지 초기화
     async init() {
@@ -132,6 +133,23 @@ const LessonPlanManager = {
         });
     },
 
+    // 🆕 원본 데이터 저장 (변경감지용)
+    saveOriginalData() {
+        try {
+            this.originalData = {
+                startDate: document.getElementById('startDate')?.value?.trim() || '',
+                endDate: document.getElementById('endDate')?.value?.trim() || '',
+                overallGoals: document.getElementById('overallGoals')?.value?.trim() || '',
+                specialNotes: document.getElementById('specialNotes')?.value?.trim() || '',
+                lessons: [...this.lessons] // 깊은 복사
+            };
+            console.log('📦 원본 데이터 저장 완료');
+        } catch (error) {
+            console.error('원본 데이터 저장 오류:', error);
+            this.originalData = null;
+        }
+    },
+
     // 닫기 버튼 가시성 업데이트
     updateCloseButtonVisibility(fromDashboard = false) {
         try {
@@ -190,35 +208,71 @@ const LessonPlanManager = {
         this.goToStudentDashboard();
     },
 
-    // 변경사항 확인
+    // 🔧 수정된 변경사항 확인
     hasUnsavedChanges() {
         try {
-            // 기본 정보 확인
-            const startDate = document.getElementById('startDate')?.value?.trim() || '';
-            const endDate = document.getElementById('endDate')?.value?.trim() || '';
-            const overallGoals = document.getElementById('overallGoals')?.value?.trim() || '';
-            const specialNotes = document.getElementById('specialNotes')?.value?.trim() || '';
-            
-            // 수업 데이터 확인
-            const hasLessons = this.lessons && this.lessons.length > 0;
-            const hasLessonContent = hasLessons && this.lessons.some(lesson => 
-                (lesson.topic && lesson.topic.trim()) || 
-                (lesson.content && lesson.content.trim())
+            // 원본 데이터가 없으면 변경사항 없음으로 처리
+            if (!this.originalData) {
+                console.log('🔍 원본 데이터 없음 → 변경사항 없음');
+                return false;
+            }
+
+            // 현재 데이터 수집
+            const currentData = {
+                startDate: document.getElementById('startDate')?.value?.trim() || '',
+                endDate: document.getElementById('endDate')?.value?.trim() || '',
+                overallGoals: document.getElementById('overallGoals')?.value?.trim() || '',
+                specialNotes: document.getElementById('specialNotes')?.value?.trim() || '',
+                lessons: [...this.lessons]
+            };
+
+            // 기본 정보 비교
+            const basicInfoChanged = (
+                this.originalData.startDate !== currentData.startDate ||
+                this.originalData.endDate !== currentData.endDate ||
+                this.originalData.overallGoals !== currentData.overallGoals ||
+                this.originalData.specialNotes !== currentData.specialNotes
             );
-            
-            // 변경사항이 있는지 확인
-            const hasBasicInfo = startDate || endDate || overallGoals || specialNotes;
-            const hasContent = hasBasicInfo || hasLessonContent;
-            
+
+            // 수업 데이터 비교
+            const lessonsChanged = this.hasLessonsChanged(this.originalData.lessons, currentData.lessons);
+
+            const hasChanges = basicInfoChanged || lessonsChanged;
+
             console.log('🔍 변경사항 확인:', {
-                기본정보: hasBasicInfo,
-                수업내용: hasLessonContent,
-                전체변경: hasContent
+                기본정보변경: basicInfoChanged,
+                수업내용변경: lessonsChanged,
+                전체변경: hasChanges
             });
-            
-            return hasContent;
+
+            return hasChanges;
         } catch (error) {
             console.error('변경사항 확인 오류:', error);
+            return false;
+        }
+    },
+
+    // 🆕 수업 데이터 변경 확인
+    hasLessonsChanged(originalLessons, currentLessons) {
+        try {
+            // 개수가 다르면 변경됨
+            if (originalLessons.length !== currentLessons.length) {
+                return true;
+            }
+
+            // 각 수업 내용 비교
+            for (let i = 0; i < originalLessons.length; i++) {
+                const original = originalLessons[i];
+                const current = currentLessons[i];
+
+                if (original.topic !== current.topic || original.content !== current.content) {
+                    return true;
+                }
+            }
+
+            return false;
+        } catch (error) {
+            console.error('수업 데이터 변경 확인 오류:', error);
             return false;
         }
     },
@@ -580,6 +634,9 @@ const LessonPlanManager = {
                     this.renderLessons();
                     this.updateLessonCount();
                     
+                    // 🆕 원본 데이터 저장 (로드 후)
+                    this.saveOriginalData();
+                    
                     // 상태에 따른 메시지 표시
                     this.showExistingDataMessage(existingPlan.status);
                 }
@@ -587,6 +644,8 @@ const LessonPlanManager = {
                 console.log('✅ 기존 데이터 로드 완료');
             } else {
                 console.log('📝 새로운 수업계획입니다.');
+                // 🆕 빈 데이터에서도 원본 저장
+                this.saveOriginalData();
             }
         } catch (error) {
             console.error('❌ 기존 데이터 로드 오류:', error);
@@ -736,9 +795,7 @@ const LessonPlanManager = {
             if (!currentUser) {
                 this.showMessage('❌ 로그인 상태를 확인할 수 없습니다. 다시 로그인해주세요.', 'warning');
                 setTimeout(() => {
-                    if (window.App && window.App.showPage) {
-                        window.App.showPage('loginPage');
-                    }
+                    this.goToStudentDashboard();
                 }, 3000);
                 return;
             }
@@ -753,6 +810,9 @@ const LessonPlanManager = {
                 this.showMessage('✅ 수업계획이 임시저장되었습니다!\\n\\n⚠️ 완료 제출까지 해야 승인 검토가 시작됩니다.', 'success');
                 this.currentLessonPlan = result.data;
                 this.isEditMode = true;
+                
+                // 🆕 임시저장 후 원본 데이터 업데이트
+                this.saveOriginalData();
             } else {
                 console.error('❌ 임시저장 실패:', result.message);
                 this.showMessage(`❌ ${result.message || '임시저장 중 오류가 발생했습니다.'}`, 'error');
@@ -780,9 +840,7 @@ const LessonPlanManager = {
             if (!currentUser) {
                 this.showMessage('❌ 로그인 상태를 확인할 수 없습니다. 다시 로그인해주세요.', 'warning');
                 setTimeout(() => {
-                    if (window.App && window.App.showPage) {
-                        window.App.showPage('loginPage');
-                    }
+                    this.goToStudentDashboard();
                 }, 3000);
                 return;
             }
@@ -824,12 +882,29 @@ const LessonPlanManager = {
         }
     },
 
-    // 학생 대시보드로 이동
+    // 🔧 수정된 학생 대시보드로 이동
     goToStudentDashboard() {
         console.log('🔄 학생 대시보드로 이동');
-        App.showPage('studentPage');
-        if (window.StudentManager && window.StudentManager.init) {
-            window.StudentManager.init();
+        
+        try {
+            // App 객체 안전성 검사
+            if (window.App && typeof window.App.showPage === 'function') {
+                window.App.showPage('studentPage');
+                
+                // StudentManager 초기화
+                if (window.StudentManager && typeof window.StudentManager.init === 'function') {
+                    window.StudentManager.init();
+                }
+            } else {
+                console.warn('⚠️ App 객체를 찾을 수 없습니다. 페이지 이동을 위해 새로고침합니다.');
+                // 폴백: 학생 대시보드 페이지로 직접 이동
+                const studentDashboardPath = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/student/dashboard.html');
+                window.location.href = studentDashboardPath;
+            }
+        } catch (error) {
+            console.error('❌ 대시보드 이동 오류:', error);
+            // 최후 수단: 현재 페이지 새로고침
+            window.location.reload();
         }
     },
 
