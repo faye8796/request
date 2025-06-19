@@ -261,59 +261,118 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 예산 현황 통계 (admin.js 호환)
+    // 예산 현황 통계 (수정된 버전 - user_budgets 테이블 없이 작동)
     // ===================
     async getBudgetOverviewStats() {
-        const result = await this.safeApiCall('예산 현황 통계 조회', async () => {
+        console.log('💰 예산 현황 통계 계산 시작...');
+        
+        try {
             const client = await this.ensureClient();
             
-            // 승인받은 학생들의 총 배정 예산
-            const budgetResult = await client
-                .from('user_budgets')
-                .select('allocated_budget, used_budget');
+            // 1. 승인된 수업계획을 가진 학생들 조회
+            const approvedLessonPlansResult = await client
+                .from('lesson_plans')
+                .select(`
+                    user_id,
+                    lessons,
+                    user_profiles:user_id (
+                        field
+                    )
+                `)
+                .eq('status', 'submitted')
+                .not('approved_at', 'is', null);
 
-            // 승인된 신청들의 총액
+            // 2. 분야별 예산 설정 조회
+            const fieldBudgetSettings = await this.getAllFieldBudgetSettings();
+
+            // 3. 승인된 신청들의 총액 (approved 상태)
             const approvedRequestsResult = await client
                 .from('requests')
                 .select('price')
                 .eq('status', 'approved');
 
-            // 구매완료된 신청들의 총액
+            // 4. 구매완료된 신청들의 총액 (purchased 상태)
             const purchasedRequestsResult = await client
                 .from('requests')
                 .select('price')
                 .eq('status', 'purchased');
 
-            if (budgetResult.error) throw budgetResult.error;
-            if (approvedRequestsResult.error) throw approvedRequestsResult.error;
-            if (purchasedRequestsResult.error) throw purchasedRequestsResult.error;
+            let totalApprovedBudget = 0;
+            let studentCount = 0;
 
-            const budgets = budgetResult.data || [];
-            const approvedRequests = approvedRequestsResult.data || [];
-            const purchasedRequests = purchasedRequestsResult.data || [];
+            // 승인된 수업계획 기반으로 예산 계산
+            if (approvedLessonPlansResult.data) {
+                approvedLessonPlansResult.data.forEach(plan => {
+                    const userField = plan.user_profiles?.field;
+                    if (userField && fieldBudgetSettings[userField]) {
+                        const fieldSetting = fieldBudgetSettings[userField];
+                        
+                        // 수업 횟수 계산
+                        let totalLessons = 0;
+                        try {
+                            if (plan.lessons) {
+                                let lessons = plan.lessons;
+                                if (typeof lessons === 'string') {
+                                    lessons = JSON.parse(lessons);
+                                }
+                                
+                                if (lessons.totalLessons) {
+                                    totalLessons = lessons.totalLessons;
+                                } else if (lessons.schedule && Array.isArray(lessons.schedule)) {
+                                    totalLessons = lessons.schedule.length;
+                                } else if (lessons.lessons && Array.isArray(lessons.lessons)) {
+                                    totalLessons = lessons.lessons.length;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('수업계획 파싱 오류:', e);
+                            totalLessons = 0;
+                        }
 
-            const totalApprovedBudget = budgets.reduce((sum, budget) => sum + (budget.allocated_budget || 0), 0);
-            const approvedItemsTotal = approvedRequests.reduce((sum, request) => sum + (request.price || 0), 0);
-            const purchasedTotal = purchasedRequests.reduce((sum, request) => sum + (request.price || 0), 0);
-            const averagePerPerson = budgets.length > 0 ? Math.round(totalApprovedBudget / budgets.length) : 0;
+                        // 예산 계산
+                        const calculatedBudget = fieldSetting.perLessonAmount * totalLessons;
+                        const finalBudget = fieldSetting.maxBudget > 0 ? 
+                            Math.min(calculatedBudget, fieldSetting.maxBudget) : 
+                            calculatedBudget;
+                        
+                        totalApprovedBudget += finalBudget;
+                        studentCount++;
+                    }
+                });
+            }
 
-            return {
-                data: {
-                    totalApprovedBudget,
-                    approvedItemsTotal,
-                    purchasedTotal,
-                    averagePerPerson
-                },
-                error: null
+            // 승인된 신청들의 총액
+            const approvedItemsTotal = approvedRequestsResult.data ? 
+                approvedRequestsResult.data.reduce((sum, request) => sum + (request.price || 0), 0) : 0;
+
+            // 구매완료된 신청들의 총액  
+            const purchasedTotal = purchasedRequestsResult.data ?
+                purchasedRequestsResult.data.reduce((sum, request) => sum + (request.price || 0), 0) : 0;
+
+            // 1인당 평균 예산
+            const averagePerPerson = studentCount > 0 ? Math.round(totalApprovedBudget / studentCount) : 0;
+
+            const result = {
+                totalApprovedBudget,
+                approvedItemsTotal,
+                purchasedTotal,
+                averagePerPerson
             };
-        });
 
-        return result.success ? result.data : {
-            totalApprovedBudget: 0,
-            approvedItemsTotal: 0,
-            purchasedTotal: 0,
-            averagePerPerson: 0
-        };
+            console.log('✅ 예산 현황 통계 계산 완료:', result);
+            return result;
+
+        } catch (error) {
+            console.error('❌ 예산 현황 통계 계산 실패:', error);
+            
+            // 오류 발생시 기본값 반환
+            return {
+                totalApprovedBudget: 0,
+                approvedItemsTotal: 0,
+                purchasedTotal: 0,
+                averagePerPerson: 0
+            };
+        }
     },
 
     // ===================
@@ -433,31 +492,100 @@ const SupabaseAPI = {
     },
 
     async getFieldBudgetStatus(field) {
-        const result = await this.safeApiCall('분야별 예산 현황 조회', async () => {
+        console.log(`📊 ${field} 분야 예산 현황 조회...`);
+        
+        try {
             const client = await this.ensureClient();
             
-            // 해당 분야의 승인받은 학생들과 예산 정보
-            const studentsResult = await client
-                .from('user_budgets')
+            // 해당 분야의 승인받은 수업계획을 가진 학생들 조회
+            const approvedPlansResult = await client
+                .from('lesson_plans')
                 .select(`
-                    *,
+                    user_id,
+                    lessons,
                     user_profiles:user_id (
                         name,
                         field,
                         sejong_institute
                     )
                 `)
+                .eq('status', 'submitted')
+                .not('approved_at', 'is', null)
                 .eq('user_profiles.field', field);
 
-            if (studentsResult.error) throw studentsResult.error;
+            if (!approvedPlansResult.data) {
+                return {
+                    success: true,
+                    data: {
+                        students: [],
+                        statistics: {
+                            totalStudents: 0,
+                            totalAllocated: 0,
+                            totalUsed: 0,
+                            utilizationRate: 0
+                        }
+                    }
+                };
+            }
 
-            const students = studentsResult.data || [];
+            const fieldBudgetSettings = await this.getAllFieldBudgetSettings();
+            const fieldSetting = fieldBudgetSettings[field] || { perLessonAmount: 0, maxBudget: 0 };
             
+            // 각 학생의 예산 정보 계산
+            const studentsWithBudget = await Promise.all(
+                approvedPlansResult.data.map(async (plan) => {
+                    // 수업 횟수 계산
+                    let totalLessons = 0;
+                    try {
+                        if (plan.lessons) {
+                            let lessons = plan.lessons;
+                            if (typeof lessons === 'string') {
+                                lessons = JSON.parse(lessons);
+                            }
+                            
+                            if (lessons.totalLessons) {
+                                totalLessons = lessons.totalLessons;
+                            } else if (lessons.schedule && Array.isArray(lessons.schedule)) {
+                                totalLessons = lessons.schedule.length;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('수업계획 파싱 오류:', e);
+                    }
+
+                    // 배정 예산 계산
+                    const calculatedBudget = fieldSetting.perLessonAmount * totalLessons;
+                    const allocatedBudget = fieldSetting.maxBudget > 0 ? 
+                        Math.min(calculatedBudget, fieldSetting.maxBudget) : 
+                        calculatedBudget;
+
+                    // 사용 예산 계산 (해당 학생의 승인된/구매완료된 신청 총액)
+                    const usedBudgetResult = await client
+                        .from('requests')
+                        .select('price')
+                        .eq('user_id', plan.user_id)
+                        .in('status', ['approved', 'purchased']);
+
+                    const usedBudget = usedBudgetResult.data ? 
+                        usedBudgetResult.data.reduce((sum, req) => sum + (req.price || 0), 0) : 0;
+
+                    return {
+                        user_id: plan.user_id,
+                        allocated_budget: allocatedBudget,
+                        used_budget: usedBudget,
+                        user_profiles: plan.user_profiles || {
+                            name: '사용자 정보 없음',
+                            sejong_institute: '미설정'
+                        }
+                    };
+                })
+            );
+
             // 통계 계산
             const statistics = {
-                totalStudents: students.length,
-                totalAllocated: students.reduce((sum, s) => sum + (s.allocated_budget || 0), 0),
-                totalUsed: students.reduce((sum, s) => sum + (s.used_budget || 0), 0),
+                totalStudents: studentsWithBudget.length,
+                totalAllocated: studentsWithBudget.reduce((sum, s) => sum + s.allocated_budget, 0),
+                totalUsed: studentsWithBudget.reduce((sum, s) => sum + s.used_budget, 0),
                 utilizationRate: 0
             };
 
@@ -466,15 +594,20 @@ const SupabaseAPI = {
             }
 
             return {
+                success: true,
                 data: {
-                    students,
+                    students: studentsWithBudget,
                     statistics
-                },
-                error: null
+                }
             };
-        });
 
-        return result;
+        } catch (error) {
+            console.error(`❌ ${field} 분야 예산 현황 조회 실패:`, error);
+            return {
+                success: false,
+                message: '예산 현황을 조회할 수 없습니다.'
+            };
+        }
     },
 
     // ===================
@@ -488,7 +621,7 @@ const SupabaseAPI = {
             const approveResult = await client
                 .from('lesson_plans')
                 .update({
-                    status: 'approved',
+                    status: 'submitted',
                     approved_at: new Date().toISOString(),
                     approved_by: this.currentUser?.id || 'admin',
                     rejection_reason: null,
@@ -1042,4 +1175,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v2.1 loaded - admin.js 호환성 완료');
+console.log('🚀 SupabaseAPI v2.2 loaded - 예산 현황 통계 로직 수정 완료');
