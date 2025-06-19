@@ -6,15 +6,15 @@
     <title>문화교구 신청 - 세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files - Updated Cache Busting -->
-    <link rel="stylesheet" href="../css/main.css?v=1.5.0">
-    <link rel="stylesheet" href="../css/student.css?v=1.5.0">
-    <link rel="stylesheet" href="../css/lesson-plan.css?v=1.5.0">
+    <link rel="stylesheet" href="../css/main.css?v=1.5.1">
+    <link rel="stylesheet" href="../css/student.css?v=1.5.1">
+    <link rel="stylesheet" href="../css/lesson-plan.css?v=1.5.1">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <!-- Supabase JavaScript Client - Fixed CDN URL with Cache Busting -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=1.5.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=1.5.1"></script>
 </head>
 <body>
     <!-- Main App Container -->
@@ -350,23 +350,27 @@
         </div>
     </div>
 
-    <!-- JavaScript Files - Updated Cache Busting -->
+    <!-- JavaScript Files - Updated Cache Busting v1.5.1 -->
     <!-- 설정 파일을 가장 먼저 로드 -->
-    <script src="../js/config.js?v=1.5.0"></script>
-    <!-- Supabase 클라이언트 로드 (업데이트된 버전) -->
-    <script src="../js/supabase-client.js?v=1.5.0"></script>
-    <script src="../js/utils.js?v=1.5.0"></script>
-    <script src="../js/auth.js?v=1.5.0"></script>
-    <script src="../js/lesson-plan.js?v=1.5.0"></script>
-    <script src="../js/student.js?v=1.5.0"></script>
+    <script src="../js/config.js?v=1.5.1"></script>
+    <!-- Supabase 클라이언트 로드 -->
+    <script src="../js/supabase-client.js?v=1.5.1"></script>
+    <!-- 유틸리티 함수들 -->
+    <script src="../js/utils.js?v=1.5.1"></script>
+    <!-- 인증 관리 -->
+    <script src="../js/auth.js?v=1.5.1"></script>
+    <!-- 수업계획 관리 -->
+    <script src="../js/lesson-plan.js?v=1.5.1"></script>
+    <!-- 학생 관리 (마지막에 로드) -->
+    <script src="../js/student.js?v=1.5.1"></script>
     
-    <!-- 교구 신청 페이지 초기화 - 사용자 데이터 동기화 문제 해결 -->
+    <!-- 교구 신청 페이지 초기화 - 개선된 의존성 로딩 대기 -->
     <script>
         /**
-         * 🚀 교구 신청 페이지 초기화 로직 - 사용자 데이터 동기화 문제 해결
-         * - localStorage와 SupabaseAPI 상태 동기화
-         * - AuthManager와 StudentManager 연동 개선
-         * - 안전한 오류 처리 및 재시도 메커니즘
+         * 🚀 교구 신청 페이지 초기화 로직 - 의존성 로딩 대기 개선
+         * - 모든 필수 의존성이 로드될 때까지 대기
+         * - StudentManager 초기화 안정성 강화
+         * - handleLessonPlanClick 함수 누락 문제 해결
          */
 
         // 🎯 전역 상태 관리
@@ -375,99 +379,124 @@
             userDataLoaded: false,
             managerInitialized: false,
             retryCount: 0,
-            maxRetries: 3
+            maxRetries: 3,
+            dependenciesLoaded: false
         };
 
-        // 🎯 간소화된 사용자 데이터 검증 (실제 DB 필드만)
-        function validateStudentData(data) {
-            console.log('🔍 사용자 데이터 검증:', data);
+        // 🔧 의존성 확인 함수 - 강화된 버전
+        function checkRequiredDependencies() {
+            const requiredObjects = [
+                'SupabaseAPI',
+                'AuthManager', 
+                'StudentManager',
+                'LessonPlanManager'
+            ];
             
-            if (!data || typeof data !== 'object') {
-                console.warn('⚠️ 사용자 데이터가 없음');
-                return false;
-            }
-
-            // 필수 필드만 확인 (실제 DB 스키마 기준)
-            const requiredFields = ['id', 'name'];
-            for (const field of requiredFields) {
-                if (!data[field]) {
-                    console.warn(`⚠️ 필수 필드 누락: ${field}`);
-                    return false;
+            const missingDependencies = [];
+            
+            for (const objName of requiredObjects) {
+                if (typeof window[objName] === 'undefined') {
+                    missingDependencies.push(objName);
                 }
             }
             
-            console.log('✅ 사용자 데이터 검증 성공');
+            if (missingDependencies.length > 0) {
+                console.warn('⚠️ 누락된 의존성:', missingDependencies);
+                return false;
+            }
+            
+            console.log('✅ 모든 의존성 로드 완료');
             return true;
         }
 
-        // 🔧 핵심 수정: SupabaseAPI와 AuthManager 상태 동기화
-        function syncUserDataToSupabaseAPI(studentData) {
-            try {
-                console.log('🔄 SupabaseAPI 상태 동기화 시작');
+        // 🔧 의존성 로딩 대기 함수 - 개선된 버전
+        function waitForDependencies(maxWaitTime = 10000) {
+            return new Promise(function(resolve, reject) {
+                const startTime = Date.now();
+                const checkInterval = 200; // 200ms마다 확인
                 
-                // SupabaseAPI 존재 확인
-                if (typeof SupabaseAPI === 'undefined') {
-                    console.warn('⚠️ SupabaseAPI를 찾을 수 없습니다');
-                    return false;
+                function checkDependencies() {
+                    console.log('🔍 의존성 로딩 상태 확인 중...');
+                    
+                    if (checkRequiredDependencies()) {
+                        console.log('✅ 모든 의존성 로드 완료');
+                        window.EquipmentRequestManager.dependenciesLoaded = true;
+                        resolve();
+                        return;
+                    }
+                    
+                    const elapsedTime = Date.now() - startTime;
+                    if (elapsedTime >= maxWaitTime) {
+                        const error = new Error('의존성 로딩 시간 초과');
+                        console.error('❌ 의존성 로딩 시간 초과');
+                        reject(error);
+                        return;
+                    }
+                    
+                    // 다시 확인
+                    setTimeout(checkDependencies, checkInterval);
+                }
+                
+                checkDependencies();
+            });
+        }
+
+        // 🎯 안전한 사용자 정보 가져오기
+        function getCurrentUserSafely() {
+            try {
+                console.log('👤 getCurrentUserSafely 호출됨');
+                
+                // localStorage에서 직접 가져오기
+                const currentStudentData = localStorage.getItem('currentStudent');
+                if (currentStudentData) {
+                    try {
+                        const studentData = JSON.parse(currentStudentData);
+                        if (studentData && studentData.id) {
+                            console.log('✅ localStorage에서 사용자 데이터 가져옴:', {
+                                id: studentData.id,
+                                name: studentData.name
+                            });
+                            return studentData;
+                        }
+                    } catch (parseError) {
+                        console.error('localStorage 데이터 파싱 오류:', parseError);
+                    }
                 }
 
-                // SupabaseAPI에 사용자 정보 설정
-                SupabaseAPI.currentUser = studentData;
-                SupabaseAPI.currentUserType = 'student';
+                // AuthManager에서 시도
+                if (typeof AuthManager !== 'undefined' && AuthManager.getCurrentUser) {
+                    const authUser = AuthManager.getCurrentUser();
+                    if (authUser) {
+                        console.log('✅ AuthManager에서 사용자 데이터 가져옴');
+                        return authUser;
+                    }
+                }
 
-                console.log('✅ SupabaseAPI 상태 동기화 완료:', {
-                    id: studentData.id,
-                    name: studentData.name,
-                    userType: 'student'
-                });
-
-                return true;
+                console.warn('⚠️ 사용자 정보를 찾을 수 없습니다');
+                return null;
             } catch (error) {
-                console.error('❌ SupabaseAPI 상태 동기화 오류:', error);
-                return false;
+                console.error('❌ 사용자 정보 가져오기 오류:', error);
+                return null;
             }
         }
 
-        // 🎯 사용자 정보 로드 (개선된 버전 - 동기화 포함)
+        // 🎯 사용자 정보 로드 및 UI 업데이트
         function loadAndDisplayUserInfo() {
             console.log('👤 사용자 정보 로드 시작');
             
             try {
-                // localStorage에서 사용자 데이터 가져오기
-                const currentStudent = localStorage.getItem('currentStudent');
-                if (!currentStudent) {
+                const currentUser = getCurrentUserSafely();
+                if (!currentUser) {
                     throw new Error('로그인 세션이 없습니다');
                 }
 
-                const studentData = JSON.parse(currentStudent);
-                console.log('📋 로드된 사용자 데이터:', {
-                    id: studentData.id,
-                    name: studentData.name,
-                    sejong_institute: studentData.sejong_institute,
-                    field: studentData.field
-                });
-
-                // 간소화된 검증
-                if (!validateStudentData(studentData)) {
-                    throw new Error('사용자 데이터 검증 실패');
-                }
-
-                // 🔧 핵심 추가: SupabaseAPI 상태 동기화
-                const syncSuccess = syncUserDataToSupabaseAPI(studentData);
-                if (!syncSuccess) {
-                    console.warn('⚠️ SupabaseAPI 동기화 실패, 계속 진행');
-                }
-
-                // sessionStorage 동기화
-                sessionStorage.setItem('currentStudent', currentStudent);
-
                 // UI 업데이트
-                updateUserInterface(studentData);
+                updateUserInterface(currentUser);
                 
                 window.EquipmentRequestManager.userDataLoaded = true;
                 console.log('✅ 사용자 정보 로드 완료');
                 
-                return Promise.resolve(studentData);
+                return Promise.resolve(currentUser);
 
             } catch (error) {
                 console.error('❌ 사용자 정보 로드 오류:', error);
@@ -485,7 +514,7 @@
                     welcomeEl.textContent = `${studentData.name}님의 교구 신청`;
                 }
                 
-                // 상세 정보 (실제 DB 필드 사용)
+                // 상세 정보
                 const detailsEl = document.getElementById('studentDetails');
                 if (detailsEl) {
                     const institute = studentData.sejong_institute || '세종학당';
@@ -499,7 +528,105 @@
             }
         }
 
-        // 🎯 사용자 데이터 오류 표시
+        // 🔧 StudentManager 초기화 - 안전성 강화
+        function initializeStudentManager() {
+            console.log('🎓 StudentManager 초기화 시작');
+            
+            if (window.EquipmentRequestManager.managerInitialized) {
+                console.log('⚠️ StudentManager 이미 초기화됨');
+                return Promise.resolve();
+            }
+
+            // StudentManager 존재 확인
+            if (typeof StudentManager === 'undefined') {
+                console.error('❌ StudentManager를 찾을 수 없습니다');
+                return Promise.reject(new Error('StudentManager를 찾을 수 없습니다'));
+            }
+
+            // handleLessonPlanClick 함수 존재 확인
+            if (typeof StudentManager.handleLessonPlanClick !== 'function') {
+                console.error('❌ handleLessonPlanClick 함수를 찾을 수 없습니다');
+                return Promise.reject(new Error('handleLessonPlanClick 함수를 찾을 수 없습니다'));
+            }
+
+            console.log('✅ StudentManager 및 handleLessonPlanClick 함수 확인됨');
+
+            // 초기화 실행
+            return new Promise(function(resolve, reject) {
+                try {
+                    const initPromise = StudentManager.init();
+                    
+                    if (initPromise && typeof initPromise.then === 'function') {
+                        // Promise가 반환된 경우
+                        initPromise
+                            .then(function() {
+                                window.EquipmentRequestManager.managerInitialized = true;
+                                console.log('✅ StudentManager 초기화 완료');
+                                resolve();
+                            })
+                            .catch(function(error) {
+                                console.error('❌ StudentManager 초기화 실패:', error);
+                                reject(error);
+                            });
+                    } else {
+                        // 즉시 완료
+                        window.EquipmentRequestManager.managerInitialized = true;
+                        console.log('✅ StudentManager 초기화 완료 (동기)');
+                        resolve();
+                    }
+                } catch (error) {
+                    console.error('❌ StudentManager 초기화 실패:', error);
+                    reject(error);
+                }
+            });
+        }
+
+        // 🎯 네비게이션 설정
+        function setupNavigation() {
+            // 대시보드로 돌아가기
+            const backBtn = document.getElementById('backToDashboard');
+            if (backBtn) {
+                backBtn.addEventListener('click', function() {
+                    window.location.href = 'dashboard.html';
+                });
+            }
+
+            // 수업계획 닫기
+            const closePlanBtn = document.getElementById('closeLessonPlanBtn');
+            if (closePlanBtn) {
+                closePlanBtn.addEventListener('click', function() {
+                    document.getElementById('lessonPlanPage').classList.remove('active');
+                    document.getElementById('studentPage').classList.add('active');
+                });
+            }
+
+            // 수업계획 버튼 - 안전한 이벤트 처리
+            const lessonPlanBtn = document.getElementById('lessonPlanBtn');
+            if (lessonPlanBtn) {
+                lessonPlanBtn.addEventListener('click', function() {
+                    console.log('📋 수업계획 버튼 클릭됨');
+                    
+                    // StudentManager와 handleLessonPlanClick 함수 확인
+                    if (typeof StudentManager !== 'undefined' && 
+                        typeof StudentManager.handleLessonPlanClick === 'function') {
+                        
+                        try {
+                            StudentManager.handleLessonPlanClick();
+                        } catch (error) {
+                            console.error('❌ 수업계획 버튼 클릭 처리 오류:', error);
+                            alert('수업계획 페이지로 이동하는 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+                        }
+                    } else {
+                        console.error('❌ StudentManager 또는 handleLessonPlanClick 함수를 찾을 수 없습니다');
+                        alert('시스템이 아직 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+                    }
+                });
+            }
+
+            console.log('✅ 네비게이션 설정 완료');
+        }
+
+        // 🎯 오류 메시지 표시 함수들
         function showUserDataError(message) {
             const errorHtml = `
                 <div class="alert alert-warning" id="userDataError">
@@ -523,155 +650,12 @@
             if (headerContent) {
                 headerContent.insertAdjacentHTML('afterbegin', errorHtml);
                 
-                // 아이콘 재생성
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
             }
         }
 
-        // 🎯 사용자 데이터 재시도
-        function retryUserDataLoad() {
-            console.log('🔄 사용자 데이터 로드 재시도');
-            
-            // 기존 오류 메시지 제거
-            const errorEl = document.getElementById('userDataError');
-            if (errorEl) errorEl.remove();
-            
-            // 재시도
-            loadAndDisplayUserInfo()
-                .then(() => {
-                    // StudentManager도 다시 시도
-                    if (!window.EquipmentRequestManager.managerInitialized) {
-                        initializeStudentManager();
-                    }
-                })
-                .catch(() => {
-                    console.error('❌ 재시도 실패');
-                });
-        }
-
-        // 🎯 로그인 페이지로 이동
-        function redirectToLogin() {
-            if (confirm('로그인 페이지로 이동하시겠습니까?')) {
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.href = '../index.html';
-            }
-        }
-
-        // 🔧 StudentManager 초기화 (개선된 버전 - 재시도 로직 강화)
-        function initializeStudentManager() {
-            console.log('🎓 StudentManager 초기화 시작');
-            
-            if (window.EquipmentRequestManager.managerInitialized) {
-                console.log('⚠️ StudentManager 이미 초기화됨');
-                return Promise.resolve();
-            }
-
-            // StudentManager 존재 확인
-            if (typeof StudentManager === 'undefined') {
-                console.error('❌ StudentManager를 찾을 수 없습니다');
-                return retryStudentManagerInit();
-            }
-
-            // 최대 3회 재시도
-            const maxAttempts = 3;
-            let currentAttempt = 1;
-
-            function attemptInit(attemptNumber) {
-                console.log(`🎓 StudentManager 초기화 시작 (시도 ${attemptNumber}/${maxAttempts})`);
-                
-                return new Promise((resolve, reject) => {
-                    try {
-                        // StudentManager 구성 요소 초기화 확인
-                        console.log('🔧 StudentManager 구성 요소 초기화 중...');
-                        
-                        // 초기화 실행
-                        const initPromise = StudentManager.init();
-                        
-                        if (initPromise && typeof initPromise.then === 'function') {
-                            // Promise가 반환된 경우
-                            initPromise
-                                .then(() => {
-                                    console.log('👤 사용자 표시 업데이트 완료');
-                                    return StudentManager.loadApplications();
-                                })
-                                .then(() => {
-                                    console.log('📑 신청 내역 로드 완료');
-                                    return StudentManager.updateBudgetStatus();
-                                })
-                                .then(() => {
-                                    console.log('💰 예산 상태 업데이트 완료');
-                                    return StudentManager.checkLessonPlanStatus();
-                                })
-                                .then(() => {
-                                    console.log('📋 수업계획 상태 확인 완료');
-                                    window.EquipmentRequestManager.managerInitialized = true;
-                                    console.log('✅ StudentManager 초기화 완료');
-                                    resolve();
-                                })
-                                .catch((error) => {
-                                    console.error(`❌ StudentManager 초기화 실패 (시도 ${attemptNumber}):`, error);
-                                    reject(error);
-                                });
-                        } else {
-                            // Promise가 반환되지 않은 경우 (즉시 완료)
-                            window.EquipmentRequestManager.managerInitialized = true;
-                            console.log('✅ StudentManager 초기화 완료 (동기)');
-                            resolve();
-                        }
-                    } catch (error) {
-                        console.error(`❌ StudentManager 초기화 실패 (시도 ${attemptNumber}):`, error);
-                        reject(error);
-                    }
-                });
-            }
-
-            function retryInit() {
-                return attemptInit(currentAttempt).catch((error) => {
-                    currentAttempt++;
-                    if (currentAttempt <= maxAttempts) {
-                        console.log(`🔄 StudentManager 초기화 재시도 (${currentAttempt}/${maxAttempts})`);
-                        // 1초 대기 후 재시도
-                        return new Promise(resolve => setTimeout(resolve, 1000)).then(retryInit);
-                    } else {
-                        console.error('❌ StudentManager 초기화 최대 재시도 실패');
-                        showManagerError('StudentManager 초기화에 실패했습니다');
-                        throw error;
-                    }
-                });
-            }
-
-            return retryInit();
-        }
-
-        // 🔄 StudentManager 초기화 재시도 (SupabaseAPI 로드 대기)
-        function retryStudentManagerInit() {
-            console.log('⏳ StudentManager 로드 대기 중...');
-            
-            let attempts = 0;
-            const maxAttempts = 10;
-            
-            return new Promise((resolve, reject) => {
-                const checkStudentManager = setInterval(() => {
-                    attempts++;
-                    
-                    if (typeof StudentManager !== 'undefined') {
-                        clearInterval(checkStudentManager);
-                        console.log('✅ StudentManager 로드 완료');
-                        resolve(initializeStudentManager());
-                    } else if (attempts >= maxAttempts) {
-                        clearInterval(checkStudentManager);
-                        console.error('❌ StudentManager 로드 시간 초과');
-                        showManagerError('시스템 로딩에 실패했습니다');
-                        reject(new Error('StudentManager 로드 실패'));
-                    }
-                }, 500);
-            });
-        }
-
-        // 🎯 StudentManager 오류 표시
         function showManagerError(message) {
             const errorHtml = `
                 <div class="alert alert-danger" id="managerError">
@@ -679,12 +663,8 @@
                     <div>
                         <h4>❌ 시스템 초기화 실패</h4>
                         <p>${message}</p>
-                        <p>일부 기능을 사용할 수 없습니다.</p>
                         <div style="margin-top: 10px;">
-                            <button onclick="retryManagerInit()" class="btn btn-sm primary">
-                                <i data-lucide="refresh-cw"></i> 시스템 재시작
-                            </button>
-                            <button onclick="location.reload()" class="btn btn-sm secondary">
+                            <button onclick="location.reload()" class="btn btn-sm primary">
                                 <i data-lucide="rotate-ccw"></i> 페이지 새로고침
                             </button>
                         </div>
@@ -702,94 +682,6 @@
             }
         }
 
-        // 🎯 성공 메시지 표시
-        function showSuccessMessage(message) {
-            const successHtml = `
-                <div class="alert alert-success" id="successMessage">
-                    <i data-lucide="check-circle"></i>
-                    <div>
-                        <p>${message}</p>
-                    </div>
-                </div>
-            `;
-            
-            const mainContent = document.querySelector('.main-content');
-            if (mainContent) {
-                mainContent.insertAdjacentHTML('afterbegin', successHtml);
-                
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-                
-                // 3초 후 자동 제거
-                setTimeout(() => {
-                    const successEl = document.getElementById('successMessage');
-                    if (successEl) successEl.remove();
-                }, 3000);
-            }
-        }
-
-        // 🎯 StudentManager 재시도
-        function retryManagerInit() {
-            console.log('🔄 StudentManager 재초기화');
-            
-            window.EquipmentRequestManager.retryCount++;
-            if (window.EquipmentRequestManager.retryCount > window.EquipmentRequestManager.maxRetries) {
-                alert('최대 재시도 횟수를 초과했습니다. 페이지를 새로고침해주세요.');
-                return;
-            }
-            
-            // 기존 오류 메시지 제거
-            const errorEl = document.getElementById('managerError');
-            if (errorEl) errorEl.remove();
-            
-            // StudentManager 상태 리셋
-            if (typeof StudentManager !== 'undefined') {
-                StudentManager.isInitialized = false;
-                StudentManager.initializationStatus = 'pending';
-            }
-            window.EquipmentRequestManager.managerInitialized = false;
-            
-            // 재시도
-            initializeStudentManager()
-                .catch(() => {
-                    console.error('❌ StudentManager 재시도 실패');
-                });
-        }
-
-        // 🎯 네비게이션 설정
-        function setupNavigation() {
-            // 대시보드로 돌아가기
-            const backBtn = document.getElementById('backToDashboard');
-            if (backBtn) {
-                backBtn.addEventListener('click', () => {
-                    window.location.href = 'dashboard.html';
-                });
-            }
-
-            // 수업계획 닫기
-            const closePlanBtn = document.getElementById('closeLessonPlanBtn');
-            if (closePlanBtn) {
-                closePlanBtn.addEventListener('click', () => {
-                    document.getElementById('lessonPlanPage').classList.remove('active');
-                    document.getElementById('studentPage').classList.add('active');
-                });
-            }
-
-            // 수업계획 버튼
-            document.addEventListener('click', (e) => {
-                if (e.target.id === 'lessonPlanBtn') {
-                    document.getElementById('studentPage').classList.remove('active');
-                    document.getElementById('lessonPlanPage').classList.add('active');
-                    
-                    if (typeof initializeLessonPlan === 'function') {
-                        initializeLessonPlan();
-                    }
-                }
-            });
-        }
-
-        // 🎯 로딩 표시
         function showLoadingIndicator() {
             const loadingHtml = `
                 <div class="loading-indicator" id="systemLoading">
@@ -810,13 +702,38 @@
             }
         }
 
-        // 🎯 로딩 표시 제거
         function hideLoadingIndicator() {
             const loadingEl = document.getElementById('systemLoading');
             if (loadingEl) loadingEl.remove();
         }
 
-        // 🚀 메인 초기화 함수 (개선된 버전)
+        // 🎯 재시도 함수들
+        function retryUserDataLoad() {
+            console.log('🔄 사용자 데이터 로드 재시도');
+            
+            const errorEl = document.getElementById('userDataError');
+            if (errorEl) errorEl.remove();
+            
+            loadAndDisplayUserInfo()
+                .then(function() {
+                    if (!window.EquipmentRequestManager.managerInitialized) {
+                        return initializeStudentManager();
+                    }
+                })
+                .catch(function() {
+                    console.error('❌ 재시도 실패');
+                });
+        }
+
+        function redirectToLogin() {
+            if (confirm('로그인 페이지로 이동하시겠습니까?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '../index.html';
+            }
+        }
+
+        // 🚀 메인 초기화 함수 - 개선된 버전
         function initializeEquipmentRequestPage() {
             console.log('🚀 Equipment Request 페이지 초기화 시작');
             
@@ -826,38 +743,48 @@
                 // 로딩 표시
                 showLoadingIndicator();
                 
-                // 1단계: 사용자 정보 로드 및 동기화
-                return loadAndDisplayUserInfo()
-                    .then((userData) => {
-                        console.log('✅ 1단계: 사용자 정보 로드 완료');
+                // 1단계: 의존성 로딩 대기
+                return waitForDependencies()
+                    .then(function() {
+                        console.log('✅ 1단계: 의존성 로딩 완료');
                         
-                        // 2단계: StudentManager 초기화
+                        // 2단계: 사용자 정보 로드
+                        return loadAndDisplayUserInfo();
+                    })
+                    .then(function(userData) {
+                        console.log('✅ 2단계: 사용자 정보 로드 완료');
+                        
+                        // 3단계: StudentManager 초기화
                         return initializeStudentManager();
                     })
-                    .then(() => {
-                        console.log('✅ 2단계: StudentManager 초기화 완료');
+                    .then(function() {
+                        console.log('✅ 3단계: StudentManager 초기화 완료');
                         
-                        // 3단계: 네비게이션 설정
+                        // 4단계: 네비게이션 설정
                         setupNavigation();
-                        console.log('✅ 3단계: 네비게이션 설정 완료');
+                        console.log('✅ 4단계: 네비게이션 설정 완료');
                         
                         // 초기화 완료
                         window.EquipmentRequestManager.isInitialized = true;
                         console.log('🎉 Equipment Request 페이지 초기화 완료');
                         
                     })
-                    .catch((error) => {
+                    .catch(function(error) {
                         console.error('❌ 페이지 초기화 실패:', error);
                         
-                        // 치명적 오류 처리
+                        // 특정 오류에 대한 처리
                         if (error.message.includes('로그인 세션')) {
-                            setTimeout(() => {
+                            setTimeout(function() {
                                 alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
                                 window.location.href = '../index.html';
                             }, 1000);
+                        } else if (error.message.includes('의존성')) {
+                            showManagerError('시스템 의존성 로딩에 실패했습니다. 페이지를 새로고침해주세요.');
+                        } else {
+                            showManagerError('페이지 초기화에 실패했습니다: ' + error.message);
                         }
                     })
-                    .finally(() => {
+                    .finally(function() {
                         // 로딩 표시 제거
                         hideLoadingIndicator();
                     });
@@ -871,7 +798,7 @@
 
         // 🎯 DOM 로드 완료 시 실행
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📋 DOM 로드 완료 - Equipment Request 페이지');
+            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 (v1.5.1)');
             
             // Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
@@ -879,15 +806,17 @@
                 console.log('✅ Lucide 아이콘 초기화 완료');
             }
             
-            // 페이지 초기화 시작
-            initializeEquipmentRequestPage();
+            // 페이지 초기화 시작 (약간의 지연 후)
+            setTimeout(function() {
+                initializeEquipmentRequestPage();
+            }, 100);
         });
 
         // 🎯 전역 함수 등록 (디버깅용)
         window.retryUserDataLoad = retryUserDataLoad;
         window.redirectToLogin = redirectToLogin;
-        window.retryManagerInit = retryManagerInit;
         window.initializeEquipmentRequestPage = initializeEquipmentRequestPage;
+        window.checkRequiredDependencies = checkRequiredDependencies;
 
         // 🎯 호환성 함수 (기존 코드와의 호환성 유지)
         window.initializeStudentPage = function() {
@@ -895,8 +824,8 @@
             return initializeEquipmentRequestPage();
         };
 
-        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 - 사용자 데이터 동기화 문제 해결');
-        console.log('💡 디버깅 명령어: initializeEquipmentRequestPage() - 시스템 재시작');
+        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 - 의존성 로딩 대기 개선 (v1.5.1)');
+        console.log('💡 디버깅 명령어: checkRequiredDependencies() - 의존성 상태 확인');
     </script>
     
     <!-- 개선된 CSS 스타일 -->
