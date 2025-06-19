@@ -117,14 +117,6 @@
             <header class="header">
                 <div class="header-content">
                     <div class="user-info">
-                        <div class="breadcrumb">
-                            <a href="dashboard.html" class="breadcrumb-link">
-                                <i data-lucide="home"></i>
-                                대시보드
-                            </a>
-                            <i data-lucide="chevron-right"></i>
-                            <span>문화교구 신청</span>
-                        </div>
                         <h1 id="studentWelcome">문화교구 신청</h1>
                         <p id="studentDetails">수업에 필요한 교구를 신청하고 관리하세요</p>
                         
@@ -781,15 +773,6 @@
                 closePlanBtn.addEventListener('click', () => {
                     document.getElementById('lessonPlanPage').classList.remove('active');
                     document.getElementById('studentPage').classList.add('active');
-                });
-            }
-
-            // 브레드크럼
-            const breadcrumbLink = document.querySelector('.breadcrumb-link');
-            if (breadcrumbLink) {
-                breadcrumbLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    window.location.href = 'dashboard.html';
                 });
             }
 
