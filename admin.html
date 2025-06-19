@@ -6,8 +6,8 @@
     <title>세종학당 문화인턴 지원 시스템 - 관리자</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="css/main.css?v=1.4.2">
-    <link rel="stylesheet" href="css/login.css?v=1.4.2">
+    <link rel="stylesheet" href="css/main.css?v=1.4.3">
+    <link rel="stylesheet" href="css/login.css?v=1.4.3">
     
     <!-- 관리자 대시보드 전용 스타일 -->
     <style>
@@ -517,623 +517,254 @@
     <!-- JavaScript Files - 순서 중요! -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="js/config.js?v=1.4.2"></script>
-    <script src="js/supabase-client.js?v=1.4.2"></script>
-    <script src="js/utils.js?v=1.4.2"></script>
-    <script src="js/auth.js?v=1.4.2"></script>
-    <script src="js/admin.js?v=1.4.2"></script>
+    <script src="js/config.js?v=1.4.3"></script>
+    <script src="js/supabase-client.js?v=1.4.3"></script>
+    <script src="js/utils.js?v=1.4.3"></script>
+    <script src="js/auth.js?v=1.4.3"></script>
+    <script src="js/admin.js?v=1.4.3"></script>
     
     <!-- 페이지 초기화 스크립트 -->
     <script>
-        // 초기화 상태 관리
-        const InitManager = {
-            status: document.getElementById('initStatus'),
+        // 전역 네임스페이스로 충돌 방지
+        window.AdminPageController = (function() {
+            'use strict';
             
-            show(message, type = 'info') {
-                if (this.status) {
-                    this.status.textContent = message;
-                    this.status.className = `init-status ${type}`;
-                    this.status.style.display = 'block';
-                }
-                console.log(`🔄 ${message}`);
-            },
-            
-            hide() {
-                if (this.status) {
-                    setTimeout(() => {
-                        this.status.style.display = 'none';
-                    }, 2000);
-                }
-            },
-            
-            success(message) {
-                this.show(message, 'success');
-                this.hide();
-            },
-            
-            error(message) {
-                this.show(message, 'error');
-                setTimeout(() => this.hide(), 5000); // 에러는 더 오래 표시
-            },
+            // 초기화 상태 관리 (고유 변수명 사용)
+            const adminInitState = {
+                configLoaded: false,
+                supabaseInitialized: false,
+                adminManagerReady: false,
+                retryCount: 0,
+                maxRetries: 3
+            };
 
-            warning(message) {
-                this.show(message, 'warning');
-                setTimeout(() => this.hide(), 3000);
-            }
-        };
-
-        // 초기화 전역 변수
-        let initializationState = {
-            configLoaded: false,
-            supabaseInitialized: false,
-            adminManagerReady: false,
-            retryCount: 0,
-            maxRetries: 3
-        };
-
-        // 안전한 초기화 함수
-        async function safeInitialize() {
-            try {
-                InitManager.show('시스템 초기화 중...');
+            // 초기화 상태 표시 관리
+            const InitManager = {
+                status: document.getElementById('initStatus'),
                 
-                // 1. 필수 객체들이 로드될 때까지 대기
-                await waitForEssentials();
-                InitManager.show('필수 라이브러리 로드 완료');
-                
-                // 2. Lucide 아이콘 초기화
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                    InitManager.show('아이콘 초기화 완료');
-                } else {
-                    console.warn('⚠️ Lucide 아이콘 라이브러리를 찾을 수 없습니다.');
-                }
-                
-                // 3. SupabaseAPI 초기화 대기 (중요!)
-                await waitForSupabaseAPI();
-                InitManager.show('데이터베이스 연결 완료');
-                
-                // 4. AdminManager 초기화 확인
-                await waitForAdminManager();
-                InitManager.show('관리자 시스템 준비 완료');
-                
-                // 5. 관리자 앱 초기화
-                await initializeAdminApp();
-                InitManager.success('시스템 초기화 완료');
-                
-                // 초기화 상태 업데이트
-                initializationState.supabaseInitialized = true;
-                initializationState.adminManagerReady = true;
-                
-            } catch (error) {
-                console.error('❌ 초기화 실패:', error);
-                
-                // 재시도 로직
-                if (initializationState.retryCount < initializationState.maxRetries) {
-                    initializationState.retryCount++;
-                    InitManager.warning(`초기화 재시도 중... (${initializationState.retryCount}/${initializationState.maxRetries})`);
-                    
-                    setTimeout(() => {
-                        safeInitialize();
-                    }, 2000 * initializationState.retryCount); // 점진적 지연
-                    return;
-                }
-                
-                InitManager.error(`초기화 실패: ${error.message}`);
-                
-                // 사용자에게 문제 해결 방법 제시
-                setTimeout(() => {
-                    if (confirm('시스템 초기화에 실패했습니다.\n\n페이지를 새로고침하시겠습니까?')) {
-                        window.location.reload();
+                show(message, type = 'info') {
+                    if (this.status) {
+                        this.status.textContent = message;
+                        this.status.className = `init-status ${type}`;
+                        this.status.style.display = 'block';
                     }
-                }, 1000);
-            }
-        }
-
-        // 필수 객체들이 로드될 때까지 대기
-        function waitForEssentials() {
-            return new Promise((resolve, reject) => {
-                let attempts = 0;
-                const maxAttempts = 100; // 10초
+                    console.log(`🔄 ${message}`);
+                },
                 
-                const check = () => {
-                    attempts++;
+                hide() {
+                    if (this.status) {
+                        setTimeout(() => {
+                            this.status.style.display = 'none';
+                        }, 2000);
+                    }
+                },
+                
+                success(message) {
+                    this.show(message, 'success');
+                    this.hide();
+                },
+                
+                error(message) {
+                    this.show(message, 'error');
+                    setTimeout(() => this.hide(), 5000); // 에러는 더 오래 표시
+                },
+
+                warning(message) {
+                    this.show(message, 'warning');
+                    setTimeout(() => this.hide(), 3000);
+                }
+            };
+
+            // 안전한 초기화 함수
+            async function safeInitialize() {
+                try {
+                    InitManager.show('시스템 초기화 중...');
                     
-                    const hasConfig = window.CONFIG;
-                    const hasSupabase = window.supabase && window.supabase.createClient;
+                    // 1. 필수 객체들이 로드될 때까지 대기
+                    await waitForEssentials();
+                    InitManager.show('필수 라이브러리 로드 완료');
                     
-                    console.log(`🔍 초기화 체크 ${attempts}/${maxAttempts}:`, {
-                        CONFIG: hasConfig,
-                        Supabase: hasSupabase
-                    });
-                    
-                    if (hasConfig && hasSupabase) {
-                        console.log('✅ 필수 객체 로드 완료');
-                        initializationState.configLoaded = true;
-                        resolve();
-                    } else if (attempts >= maxAttempts) {
-                        const missing = [];
-                        if (!hasConfig) missing.push('CONFIG');
-                        if (!hasSupabase) missing.push('Supabase');
-                        reject(new Error(`필수 라이브러리 로드 실패: ${missing.join(', ')}`));
+                    // 2. Lucide 아이콘 초기화
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                        InitManager.show('아이콘 초기화 완료');
                     } else {
-                        setTimeout(check, 100);
+                        console.warn('⚠️ Lucide 아이콘 라이브러리를 찾을 수 없습니다.');
                     }
-                };
-                
-                check();
-            });
-        }
-
-        // SupabaseAPI 초기화 대기 (중요!)
-        function waitForSupabaseAPI() {
-            return new Promise((resolve, reject) => {
-                let attempts = 0;
-                const maxAttempts = 50; // 5초
-                
-                const check = async () => {
-                    attempts++;
                     
-                    if (window.SupabaseAPI && typeof window.SupabaseAPI.ensureClient === 'function') {
-                        try {
-                            console.log('🔗 SupabaseAPI 연결 테스트 중...');
-                            const client = await window.SupabaseAPI.ensureClient();
-                            
-                            if (client) {
-                                console.log('✅ SupabaseAPI 초기화 완료');
-                                resolve();
-                                return;
-                            }
-                        } catch (error) {
-                            console.warn(`⚠️ SupabaseAPI 연결 시도 ${attempts}/${maxAttempts} 실패:`, error.message);
-                            
-                            // 특정 에러의 경우 더 자세한 안내
-                            if (error.message.includes('네트워크') || error.message.includes('fetch')) {
-                                if (attempts >= maxAttempts) {
-                                    reject(new Error('네트워크 연결 문제가 있습니다. 인터넷 연결을 확인해주세요.'));
+                    // 3. SupabaseAPI 초기화 대기 (중요!)
+                    await waitForSupabaseAPI();
+                    InitManager.show('데이터베이스 연결 완료');
+                    
+                    // 4. AdminManager 초기화 확인
+                    await waitForAdminManager();
+                    InitManager.show('관리자 시스템 준비 완료');
+                    
+                    // 5. 관리자 앱 초기화
+                    await initializeAdminApp();
+                    InitManager.success('시스템 초기화 완료');
+                    
+                    // 초기화 상태 업데이트
+                    adminInitState.supabaseInitialized = true;
+                    adminInitState.adminManagerReady = true;
+                    
+                } catch (error) {
+                    console.error('❌ 초기화 실패:', error);
+                    
+                    // 재시도 로직
+                    if (adminInitState.retryCount < adminInitState.maxRetries) {
+                        adminInitState.retryCount++;
+                        InitManager.warning(`초기화 재시도 중... (${adminInitState.retryCount}/${adminInitState.maxRetries})`);
+                        
+                        setTimeout(() => {
+                            safeInitialize();
+                        }, 2000 * adminInitState.retryCount); // 점진적 지연
+                        return;
+                    }
+                    
+                    InitManager.error(`초기화 실패: ${error.message}`);
+                    
+                    // 사용자에게 문제 해결 방법 제시
+                    setTimeout(() => {
+                        if (confirm('시스템 초기화에 실패했습니다.\n\n페이지를 새로고침하시겠습니까?')) {
+                            window.location.reload();
+                        }
+                    }, 1000);
+                }
+            }
+
+            // 필수 객체들이 로드될 때까지 대기
+            function waitForEssentials() {
+                return new Promise((resolve, reject) => {
+                    let attempts = 0;
+                    const maxAttempts = 100; // 10초
+                    
+                    const check = () => {
+                        attempts++;
+                        
+                        const hasConfig = window.CONFIG;
+                        const hasSupabase = window.supabase && window.supabase.createClient;
+                        
+                        console.log(`🔍 초기화 체크 ${attempts}/${maxAttempts}:`, {
+                            CONFIG: hasConfig,
+                            Supabase: hasSupabase
+                        });
+                        
+                        if (hasConfig && hasSupabase) {
+                            console.log('✅ 필수 객체 로드 완료');
+                            adminInitState.configLoaded = true;
+                            resolve();
+                        } else if (attempts >= maxAttempts) {
+                            const missing = [];
+                            if (!hasConfig) missing.push('CONFIG');
+                            if (!hasSupabase) missing.push('Supabase');
+                            reject(new Error(`필수 라이브러리 로드 실패: ${missing.join(', ')}`));
+                        } else {
+                            setTimeout(check, 100);
+                        }
+                    };
+                    
+                    check();
+                });
+            }
+
+            // SupabaseAPI 초기화 대기 (중요!)
+            function waitForSupabaseAPI() {
+                return new Promise((resolve, reject) => {
+                    let attempts = 0;
+                    const maxAttempts = 50; // 5초
+                    
+                    const check = async () => {
+                        attempts++;
+                        
+                        if (window.SupabaseAPI && typeof window.SupabaseAPI.ensureClient === 'function') {
+                            try {
+                                console.log('🔗 SupabaseAPI 연결 테스트 중...');
+                                const client = await window.SupabaseAPI.ensureClient();
+                                
+                                if (client) {
+                                    console.log('✅ SupabaseAPI 초기화 완료');
+                                    resolve();
                                     return;
+                                }
+                            } catch (error) {
+                                console.warn(`⚠️ SupabaseAPI 연결 시도 ${attempts}/${maxAttempts} 실패:`, error.message);
+                                
+                                // 특정 에러의 경우 더 자세한 안내
+                                if (error.message.includes('네트워크') || error.message.includes('fetch')) {
+                                    if (attempts >= maxAttempts) {
+                                        reject(new Error('네트워크 연결 문제가 있습니다. 인터넷 연결을 확인해주세요.'));
+                                        return;
+                                    }
                                 }
                             }
                         }
-                    }
+                        
+                        if (attempts >= maxAttempts) {
+                            reject(new Error('SupabaseAPI 초기화에 실패했습니다. 페이지를 새로고침해주세요.'));
+                        } else {
+                            setTimeout(check, 100);
+                        }
+                    };
                     
-                    if (attempts >= maxAttempts) {
-                        reject(new Error('SupabaseAPI 초기화에 실패했습니다. 페이지를 새로고침해주세요.'));
-                    } else {
-                        setTimeout(check, 100);
-                    }
-                };
-                
-                check();
-            });
-        }
-
-        // AdminManager 초기화 대기
-        function waitForAdminManager() {
-            return new Promise((resolve, reject) => {
-                let attempts = 0;
-                const maxAttempts = 30; // 3초
-                
-                const check = () => {
-                    attempts++;
-                    
-                    if (window.AdminManager && typeof window.AdminManager.init === 'function') {
-                        console.log('✅ AdminManager 준비 완료');
-                        resolve();
-                    } else if (attempts >= maxAttempts) {
-                        console.warn('⚠️ AdminManager를 찾을 수 없지만 계속 진행합니다.');
-                        resolve(); // AdminManager가 없어도 기본 기능은 동작하도록
-                    } else {
-                        setTimeout(check, 100);
-                    }
-                };
-                
-                check();
-            });
-        }
-
-        // 관리자 앱 초기화
-        async function initializeAdminApp() {
-            console.log('🚀 관리자 앱 초기화 시작');
-            
-            const adminSession = localStorage.getItem('adminSession');
-            if (adminSession) {
-                console.log('📋 기존 관리자 세션 발견');
-                await showAdminDashboard();
-            } else {
-                console.log('🔐 관리자 세션 없음, 로그인 페이지 표시');
-            }
-
-            setupAdminLoginEvents();
-            console.log('✅ 관리자 앱 초기화 완료');
-        }
-
-        // 관리자 로그인 이벤트 설정
-        function setupAdminLoginEvents() {
-            const adminLoginBtn = document.getElementById('adminLoginBtn');
-            const adminCodeInput = document.getElementById('adminCode');
-
-            if (adminLoginBtn) {
-                adminLoginBtn.addEventListener('click', handleAdminLogin);
-            }
-
-            if (adminCodeInput) {
-                adminCodeInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        handleAdminLogin();
-                    }
+                    check();
                 });
             }
-        }
 
-        // 관리자 로그인 처리
-        async function handleAdminLogin() {
-            const adminCode = document.getElementById('adminCode').value;
-            
-            if (!adminCode) {
-                alert('관리자 코드를 입력해주세요.');
-                return;
+            // AdminManager 초기화 대기
+            function waitForAdminManager() {
+                return new Promise((resolve, reject) => {
+                    let attempts = 0;
+                    const maxAttempts = 30; // 3초
+                    
+                    const check = () => {
+                        attempts++;
+                        
+                        if (window.AdminManager && typeof window.AdminManager.init === 'function') {
+                            console.log('✅ AdminManager 준비 완료');
+                            resolve();
+                        } else if (attempts >= maxAttempts) {
+                            console.warn('⚠️ AdminManager를 찾을 수 없지만 계속 진행합니다.');
+                            resolve(); // AdminManager가 없어도 기본 기능은 동작하도록
+                        } else {
+                            setTimeout(check, 100);
+                        }
+                    };
+                    
+                    check();
+                });
             }
 
-            const loginBtn = document.getElementById('adminLoginBtn');
-            const originalText = loginBtn.innerHTML;
-            
-            try {
-                // 로딩 상태 표시
-                loginBtn.innerHTML = '<i data-lucide="loader-2"></i> 로그인 중...';
-                loginBtn.disabled = true;
+            // 관리자 앱 초기화
+            async function initializeAdminApp() {
+                console.log('🚀 관리자 앱 초기화 시작');
                 
-                // 관리자 코드 검증
-                const validCodes = ['admin123', 'sejong2025'];
-                
-                if (!validCodes.includes(adminCode)) {
-                    throw new Error('잘못된 관리자 코드입니다');
-                }
-                
-                // SupabaseAPI가 초기화되어 있는지 확인
-                if (!window.SupabaseAPI || !initializationState.supabaseInitialized) {
-                    throw new Error('시스템이 아직 초기화 중입니다. 잠시 후 다시 시도해주세요.');
-                }
-                
-                // 세션 정보 저장
-                localStorage.setItem('adminSession', 'true');
-                localStorage.setItem('adminLoginTime', new Date().toISOString());
-                
-                // 대시보드 표시
-                await showAdminDashboard();
-                
-                console.log('✅ 관리자 로그인 성공');
-                
-            } catch (error) {
-                console.error('❌ 관리자 로그인 실패:', error);
-                alert(error.message || '로그인 중 오류가 발생했습니다.');
-                
-                // 로딩 상태 해제
-                loginBtn.innerHTML = originalText;
-                loginBtn.disabled = false;
-                
-                // 아이콘 재생성
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            }
-        }
-
-        // 관리자 대시보드 표시
-        async function showAdminDashboard() {
-            console.log('📊 관리자 대시보드 표시');
-            
-            try {
-                document.getElementById('loginPage').classList.remove('active');
-                document.getElementById('adminPage').classList.add('active');
-                
-                // 기능 설정 로드
-                await loadFeatureSettings();
-                
-                // 관리자 정보 표시
-                displayAdminInfo();
-                
-                console.log('✅ 관리자 대시보드 표시 완료');
-                
-            } catch (error) {
-                console.error('❌ 관리자 대시보드 표시 오류:', error);
-                alert('대시보드를 표시하는 중 오류가 발생했습니다.');
-            }
-        }
-
-        // 관리자 정보 표시
-        function displayAdminInfo() {
-            try {
-                const adminInfoElement = document.querySelector('.admin-info');
-                if (adminInfoElement) {
-                    const loginTime = new Date().toLocaleString('ko-KR');
-                    adminInfoElement.innerHTML = `
-                        <h3>관리자님, 환영합니다!</h3>
-                        <p>세종학당 문화인턴 지원 시스템을 관리할 수 있습니다.</p>
-                        <small>로그인 시간: ${loginTime}</small>
-                    `;
-                }
-            } catch (error) {
-                console.error('❌ 관리자 정보 표시 오류:', error);
-            }
-        }
-
-        // 기능 설정 로드
-        async function loadFeatureSettings() {
-            try {
-                console.log('🔧 기능 설정 로드 시작');
-                
-                // SupabaseAPI 클라이언트 확인
-                if (!window.SupabaseAPI) {
-                    throw new Error('SupabaseAPI를 사용할 수 없습니다');
-                }
-                
-                const client = await window.SupabaseAPI.ensureClient();
-                const { data: features, error } = await client
-                    .from('feature_settings')
-                    .select('*')
-                    .order('display_order');
-
-                if (error && error.code !== 'PGRST116') {
-                    console.warn('⚠️ 기능 설정 조회 실패, 기본값 사용:', error);
-                    throw error;
-                }
-
-                const validFeatures = features || [];
-                console.log('📋 기능 설정 조회 성공:', validFeatures.length, '개');
-                renderFeatureList(validFeatures);
-                
-            } catch (error) {
-                console.error('❌ 기능 설정 로드 오류:', error);
-                // 기본 설정으로 렌더링
-                const defaultFeatures = [
-                    { feature_name: 'institute_info', feature_title: '파견 학당 정보', is_active: true },
-                    { feature_name: 'flight_request', feature_title: '항공권 구매 신청', is_active: false },
-                    { feature_name: 'equipment_request', feature_title: '문화교구 신청', is_active: true }
-                ];
-                renderFeatureList(defaultFeatures);
-            }
-        }
-
-        // 기능 목록 렌더링
-        function renderFeatureList(features) {
-            console.log('🎨 기능 목록 렌더링 시작');
-            
-            const featureList = document.getElementById('featureList');
-            if (!featureList) {
-                console.warn('⚠️ featureList 컨테이너를 찾을 수 없습니다');
-                return;
-            }
-
-            const icons = {
-                'institute_info': 'building',
-                'flight_request': 'plane',
-                'equipment_request': 'package'
-            };
-
-            const descriptions = {
-                'institute_info': '학생들이 파견 학당 정보를 조회할 수 있습니다',
-                'flight_request': '학생들이 항공권 구매 신청을 할 수 있습니다',
-                'equipment_request': '학생들이 문화교구 신청을 할 수 있습니다'
-            };
-
-            featureList.innerHTML = features.map(feature => `
-                <div class="feature-item" data-feature="${feature.feature_name}">
-                    <div class="feature-info">
-                        <div class="feature-icon">
-                            <i data-lucide="${icons[feature.feature_name] || 'settings'}"></i>
-                        </div>
-                        <div class="feature-details">
-                            <h4>${feature.feature_title}</h4>
-                            <p>${descriptions[feature.feature_name] || '기능 설명이 없습니다'}</p>
-                        </div>
-                    </div>
-                    <div class="feature-controls">
-                        <span class="feature-status ${feature.is_active ? 'active' : 'inactive'}">
-                            ${feature.is_active ? '활성화' : '비활성화'}
-                        </span>
-                        <div class="toggle-switch ${feature.is_active ? 'active' : ''}" 
-                             onclick="toggleFeature('${feature.feature_name}', ${!feature.is_active})">
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-
-            // 아이콘 다시 초기화
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-            
-            console.log('✅ 기능 목록 렌더링 완료');
-        }
-
-        // 기능 토글
-        async function toggleFeature(featureName, newState) {
-            console.log(`🔄 기능 토글: ${featureName} → ${newState}`);
-            
-            const featureItem = document.querySelector(`[data-feature="${featureName}"]`);
-            if (featureItem) {
-                featureItem.classList.add('loading');
-            }
-            
-            try {
-                // SupabaseAPI를 통해 클라이언트 확인
-                if (!window.SupabaseAPI) {
-                    throw new Error('SupabaseAPI를 사용할 수 없습니다');
-                }
-                
-                const client = await window.SupabaseAPI.ensureClient();
-                const { error } = await client
-                    .from('feature_settings')
-                    .update({ 
-                        is_active: newState,
-                        updated_by: 'admin',
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('feature_name', featureName);
-
-                if (error) {
-                    console.error('❌ 기능 토글 DB 업데이트 실패:', error);
-                    throw error;
-                }
-
-                // 성공시 UI 업데이트
-                await loadFeatureSettings();
-                
-                // 성공 메시지
-                const featureTitle = {
-                    'institute_info': '파견 학당 정보',
-                    'flight_request': '항공권 구매 신청',
-                    'equipment_request': '문화교구 신청'
-                }[featureName] || featureName;
-
-                alert(`${featureTitle} 기능이 ${newState ? '활성화' : '비활성화'}되었습니다.`);
-                
-                console.log(`✅ 기능 토글 완료: ${featureName}`);
-
-            } catch (error) {
-                console.error('❌ 기능 토글 오류:', error);
-                alert('설정 변경 중 오류가 발생했습니다: ' + error.message);
-                
-                // 실패시 UI 복원
-                await loadFeatureSettings();
-            } finally {
-                if (featureItem) {
-                    featureItem.classList.remove('loading');
-                }
-            }
-        }
-
-        // 각 관리 페이지로 이동
-        function navigateToInstituteManagement() {
-            window.location.href = 'admin/institute-management.html';
-        }
-
-        function navigateToFlightManagement() {
-            window.location.href = 'admin/flight-management.html';
-        }
-
-        function navigateToEquipmentManagement() {
-            console.log('🏥 교구 관리 페이지로 이동 시작');
-            
-            try {
-                // 1. 관리자 세션 확인
                 const adminSession = localStorage.getItem('adminSession');
-                if (!adminSession) {
-                    alert('관리자 로그인이 필요합니다.');
-                    return;
+                if (adminSession) {
+                    console.log('📋 기존 관리자 세션 발견');
+                    await showAdminDashboard();
+                } else {
+                    console.log('🔐 관리자 세션 없음, 로그인 페이지 표시');
                 }
-                
-                // 2. 현재 사용자 정보 저장 (교구 관리 페이지에서 사용할 수 있도록)
-                const adminInfo = {
-                    sessionId: adminSession,
-                    loginTime: new Date().toISOString(),
-                    userType: 'admin'
-                };
-                localStorage.setItem('adminInfo', JSON.stringify(adminInfo));
-                
-                // 3. 교구 관리 페이지로 이동
-                window.location.href = 'admin/equipment-management.html';
-                
-                console.log('✅ 교구 관리 페이지로 이동 완료');
-                
-            } catch (error) {
-                console.error('❌ 교구 관리 페이지 이동 오류:', error);
-                alert('교구 관리 페이지로 이동할 수 없습니다. 다시 시도해주세요.');
-            }
-        }
 
-        // 로그아웃 처리
-        function handleLogout() {
-            if (confirm('로그아웃하시겠습니까?')) {
-                try {
-                    // 모든 관리자 관련 데이터 삭제
-                    localStorage.removeItem('adminSession');
-                    localStorage.removeItem('adminInfo');
-                    localStorage.removeItem('adminLoginTime');
-                    
-                    console.log('✅ 관리자 로그아웃 완료');
-                    
-                    // 페이지 새로고침
-                    window.location.href = 'admin.html';
-                    
-                } catch (error) {
-                    console.error('❌ 로그아웃 오류:', error);
-                    alert('로그아웃 중 오류가 발생했습니다.');
+                setupAdminLoginEvents();
+                console.log('✅ 관리자 앱 초기화 완료');
+            }
+
+            // 관리자 로그인 이벤트 설정
+            function setupAdminLoginEvents() {
+                const adminLoginBtn = document.getElementById('adminLoginBtn');
+                const adminCodeInput = document.getElementById('adminCode');
+
+                if (adminLoginBtn) {
+                    adminLoginBtn.addEventListener('click', handleAdminLogin);
+                }
+
+                if (adminCodeInput) {
+                    adminCodeInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            handleAdminLogin();
+                        }
+                    });
                 }
             }
-        }
-
-        // 페이지 로드 시 안전한 초기화 시작
-        document.addEventListener('DOMContentLoaded', safeInitialize);
-        
-        // 추가 안전장치: 페이지 완전 로드 후에도 확인
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                if (!initializationState.configLoaded) {
-                    console.error('❌ CONFIG가 여전히 로드되지 않았습니다');
-                    InitManager.error('설정 파일 로드 실패');
-                }
-                if (!initializationState.supabaseInitialized) {
-                    console.warn('⚠️ Supabase가 아직 완전히 초기화되지 않았습니다');
-                }
-            }, 2000);
-        });
-
-        // 개발자 도구 (디버깅용)
-        if (typeof window !== 'undefined') {
-            window.AdminDebug = {
-                // 강제 로그인
-                forceLogin() {
-                    localStorage.setItem('adminSession', 'true');
-                    showAdminDashboard();
-                    console.log('🛠️ 강제 로그인 완료');
-                },
-                
-                // 세션 정보 확인
-                checkSession() {
-                    const session = localStorage.getItem('adminSession');
-                    const info = localStorage.getItem('adminInfo');
-                    const loginTime = localStorage.getItem('adminLoginTime');
-                    
-                    console.log('📊 세션 정보:', {
-                        session,
-                        info: info ? JSON.parse(info) : null,
-                        loginTime
-                    });
-                },
-                
-                // 기능 설정 강제 로드
-                async reloadFeatures() {
-                    await loadFeatureSettings();
-                    console.log('🔄 기능 설정 강제 로드 완료');
-                },
-
-                // 시스템 상태 확인
-                checkSystem() {
-                    console.log('🔍 시스템 상태:', {
-                        initState: initializationState,
-                        CONFIG: !!window.CONFIG,
-                        SupabaseAPI: !!window.SupabaseAPI,
-                        AdminManager: !!window.AdminManager,
-                        Supabase: !!window.supabase,
-                        Lucide: !!window.lucide
-                    });
-                },
-
-                // 강제 재초기화
-                async forceReinit() {
-                    initializationState.retryCount = 0;
-                    await safeInitialize();
-                }
-            };
-            
-            console.log('🛠️ 관리자 디버그 도구 사용법:');
-            console.log('  AdminDebug.forceLogin() - 강제 로그인');
-            console.log('  AdminDebug.checkSession() - 세션 정보 확인');
-            console.log('  AdminDebug.reloadFeatures() - 기능 설정 강제 로드');
-            console.log('  AdminDebug.checkSystem() - 시스템 상태 확인');
-            console.log('  AdminDebug.forceReinit() - 강제 재초기화');
-        }
-    </script>
-</body>
-</html>
