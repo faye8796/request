@@ -1,4 +1,4 @@
-// 학생 기능 관리 모듈 (Supabase 연동) - 교구 신청 기능 활성화 버전 - handleLessonPlanClick 수정
+// 학생 기능 관리 모듈 (Supabase 연동) - 교구 신청 기능 활성화 버전 - 수업계획 승인 상태 확인 로직 수정
 const StudentManager = {
     currentEditingItem: null,
     currentReceiptItem: null,
@@ -43,6 +43,40 @@ const StudentManager = {
         }
     },
 
+    // 🔧 수업계획 승인 상태 확인 헬퍼 함수 추가
+    isLessonPlanApproved: function(lessonPlan) {
+        if (!lessonPlan) {
+            return false;
+        }
+        
+        // status가 'submitted'이고 approved_at과 approved_by가 있으면 승인됨
+        return lessonPlan.status === 'submitted' && 
+               lessonPlan.approved_at && 
+               lessonPlan.approved_by && 
+               !lessonPlan.rejection_reason;
+    },
+
+    // 🔧 수업계획 승인 상태 텍스트 반환
+    getLessonPlanApprovalStatus: function(lessonPlan) {
+        if (!lessonPlan) {
+            return 'not_submitted';
+        }
+        
+        if (lessonPlan.status === 'draft') {
+            return 'draft';
+        } else if (lessonPlan.status === 'submitted') {
+            if (lessonPlan.rejection_reason && lessonPlan.rejection_reason.trim() !== '') {
+                return 'rejected';
+            } else if (lessonPlan.approved_at && lessonPlan.approved_by) {
+                return 'approved';
+            } else {
+                return 'pending';
+            }
+        }
+        
+        return 'unknown';
+    },
+
     // 기본 인터페이스 표시 (오류 시 폴백)
     showFallbackInterface: function() {
         try {
@@ -70,15 +104,14 @@ const StudentManager = {
             const notice = document.createElement('div');
             notice.id = 'basicNotice';
             notice.className = 'dashboard-notice warning';
-            notice.innerHTML = '\\
-                <div class="notice-content warning">\\
-                    <i data-lucide="alert-triangle"></i>\\
-                    <div>\\
-                        <h4>시스템 상태</h4>\\
-                        <p>' + message + '</p>\\
-                    </div>\\
-                </div>\\
-            ';
+            notice.innerHTML = '\\' +
+                '<div class="notice-content warning">\\' +
+                    '<i data-lucide="alert-triangle"></i>\\' +
+                    '<div>\\' +
+                        '<h4>시스템 상태</h4>\\' +
+                        '<p>' + message + '</p>\\' +
+                    '</div>\\' +
+                '</div>\\';
 
             const dashboardHeader = document.querySelector('.dashboard-header');
             if (dashboardHeader) {
@@ -176,13 +209,15 @@ const StudentManager = {
                                         console.log('📝 기존 수업계획 데이터 로드:', existingPlan.status);
                                         
                                         // 수업계획 상태에 따른 메시지 표시
+                                        const approvalStatus = self.getLessonPlanApprovalStatus(existingPlan);
                                         let message = '';
-                                        if (existingPlan.status === 'submitted') {
-                                            message = '제출된 수업계획을 확인하고 있습니다. 수정이 필요한 경우 관리자에게 문의하세요.';
-                                        } else if (existingPlan.status === 'rejected') {
-                                            message = '반려된 수업계획입니다. 반려 사유를 확인하고 수정해주세요.';
-                                        } else if (existingPlan.status === 'approved') {
+                                        
+                                        if (approvalStatus === 'approved') {
                                             message = '승인된 수업계획입니다. 교구 신청이 가능합니다.';
+                                        } else if (approvalStatus === 'rejected') {
+                                            message = '반려된 수업계획입니다. 반려 사유를 확인하고 수정해주세요.';
+                                        } else if (approvalStatus === 'pending') {
+                                            message = '제출된 수업계획을 확인하고 있습니다. 수정이 필요한 경우 관리자에게 문의하세요.';
                                         } else {
                                             message = '임시저장된 수업계획입니다. 완료 제출해주세요.';
                                         }
@@ -256,10 +291,9 @@ const StudentManager = {
                     // 새 메시지 추가
                     const notice = document.createElement('div');
                     notice.className = 'edit-mode-notice info';
-                    notice.innerHTML = '\\
-                        <i data-lucide="info"></i>\\
-                        <p>' + message + '</p>\\
-                    ';
+                    notice.innerHTML = '\\' +
+                        '<i data-lucide="info"></i>\\' +
+                        '<p>' + message + '</p>\\';
                     
                     container.insertBefore(notice, container.firstChild);
                     
@@ -290,16 +324,15 @@ const StudentManager = {
                     // 오류 메시지 추가
                     const notice = document.createElement('div');
                     notice.className = 'lesson-plan-error danger';
-                    notice.innerHTML = '\\
-                        <i data-lucide="alert-triangle"></i>\\
-                        <div>\\
-                            <h4>⚠️ 시스템 오류</h4>\\
-                            <p>' + message + '</p>\\
-                            <button onclick="location.reload()" class="btn btn-sm secondary">\\
-                                <i data-lucide="refresh-cw"></i> 페이지 새로고침\\
-                            </button>\\
-                        </div>\\
-                    ';
+                    notice.innerHTML = '\\' +
+                        '<i data-lucide="alert-triangle"></i>\\' +
+                        '<div>\\' +
+                            '<h4>⚠️ 시스템 오류</h4>\\' +
+                            '<p>' + message + '</p>\\' +
+                            '<button onclick="location.reload()" class="btn btn-sm secondary">\\' +
+                                '<i data-lucide="refresh-cw"></i> 페이지 새로고침\\' +
+                            '</button>\\' +
+                        '</div>\\';
                     
                     container.insertBefore(notice, container.firstChild);
                     
@@ -626,7 +659,7 @@ const StudentManager = {
         }
     },
 
-    // 수업계획 버튼 업데이트
+    // 🔧 수업계획 버튼 업데이트 - 승인 상태 확인 로직 수정
     updateLessonPlanButton: function(lessonPlan) {
         try {
             const lessonPlanBtn = document.getElementById('lessonPlanBtn');
@@ -635,42 +668,37 @@ const StudentManager = {
                 return;
             }
 
-            if (lessonPlan) {
-                if (lessonPlan.status === 'approved') {
-                    // 승인된 경우
-                    lessonPlanBtn.innerHTML = '\\
-                        <i data-lucide="calendar-check"></i>\\
-                        수업계획 승인됨 (확인가능)\\
-                    ';
-                    lessonPlanBtn.className = 'btn btn-success';
-                } else if (lessonPlan.status === 'rejected') {
-                    // 반려된 경우
-                    lessonPlanBtn.innerHTML = '\\
-                        <i data-lucide="calendar-x"></i>\\
-                        수업계획 수정 필요\\
-                    ';
-                    lessonPlanBtn.className = 'btn btn-danger';
-                } else if (lessonPlan.status === 'submitted') {
-                    // 제출됨 (승인 대기 중)
-                    lessonPlanBtn.innerHTML = '\\
-                        <i data-lucide="calendar-clock"></i>\\
-                        수업계획 확인 (승인대기중)\\
-                    ';
-                    lessonPlanBtn.className = 'btn btn-warning';
-                } else {
-                    // 임시저장 상태
-                    lessonPlanBtn.innerHTML = '\\
-                        <i data-lucide="calendar-edit"></i>\\
-                        수업계획 완료하기 (필수)\\
-                    ';
-                    lessonPlanBtn.className = 'btn btn-warning';
-                }
+            const approvalStatus = this.getLessonPlanApprovalStatus(lessonPlan);
+
+            if (approvalStatus === 'approved') {
+                // 승인된 경우
+                lessonPlanBtn.innerHTML = '\\' +
+                    '<i data-lucide="calendar-check"></i>\\' +
+                    '수업계획 승인됨 (확인가능)\\';
+                lessonPlanBtn.className = 'btn btn-success';
+            } else if (approvalStatus === 'rejected') {
+                // 반려된 경우
+                lessonPlanBtn.innerHTML = '\\' +
+                    '<i data-lucide="calendar-x"></i>\\' +
+                    '수업계획 수정 필요\\';
+                lessonPlanBtn.className = 'btn btn-danger';
+            } else if (approvalStatus === 'pending') {
+                // 제출됨 (승인 대기 중)
+                lessonPlanBtn.innerHTML = '\\' +
+                    '<i data-lucide="calendar-clock"></i>\\' +
+                    '수업계획 확인 (승인대기중)\\';
+                lessonPlanBtn.className = 'btn btn-warning';
+            } else if (approvalStatus === 'draft') {
+                // 임시저장 상태
+                lessonPlanBtn.innerHTML = '\\' +
+                    '<i data-lucide="calendar-edit"></i>\\' +
+                    '수업계획 완료하기 (필수)\\';
+                lessonPlanBtn.className = 'btn btn-warning';
             } else {
                 // 미작성 상태
-                lessonPlanBtn.innerHTML = '\\
-                    <i data-lucide="calendar-plus"></i>\\
-                    수업계획 작성하기 (필수)\\
-                ';
+                lessonPlanBtn.innerHTML = '\\' +
+                    '<i data-lucide="calendar-plus"></i>\\' +
+                    '수업계획 작성하기 (필수)\\';
                 lessonPlanBtn.className = 'btn btn-warning';
             }
 
@@ -678,12 +706,14 @@ const StudentManager = {
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
+            
+            console.log('✅ 수업계획 버튼 업데이트 완료 - 상태:', approvalStatus);
         } catch (error) {
             console.error('수업계획 버튼 업데이트 오류:', error);
         }
     },
 
-    // 교구 신청 버튼 상태 업데이트 - 개선된 버전
+    // 🔧 교구 신청 버튼 상태 업데이트 - 승인 상태 확인 로직 수정
     updateApplicationButtonsState: function(lessonPlan) {
         try {
             console.log('🔘 교구 신청 버튼 상태 업데이트');
@@ -694,22 +724,25 @@ const StudentManager = {
                 return Promise.resolve();
             }
 
-            // 수업계획이 승인되었는지 확인
-            if (!lessonPlan || lessonPlan.status !== 'approved') {
+            // 🔧 수업계획이 승인되었는지 확인 - 올바른 로직 사용
+            const isApproved = this.isLessonPlanApproved(lessonPlan);
+            if (!isApproved) {
                 // 수업계획이 승인되지 않았으면 교구 신청 불가
+                const approvalStatus = this.getLessonPlanApprovalStatus(lessonPlan);
                 let message = '수업계획 승인 후 신청 가능합니다 (필수)';
                 
-                if (!lessonPlan) {
+                if (approvalStatus === 'not_submitted') {
                     message = '수업계획 작성 후 승인받아야 신청 가능합니다 (필수)';
-                } else if (lessonPlan.status === 'submitted') {
+                } else if (approvalStatus === 'pending') {
                     message = '수업계획 승인 대기 중 - 승인 후 신청 가능합니다';
-                } else if (lessonPlan.status === 'rejected') {
+                } else if (approvalStatus === 'rejected') {
                     message = '수업계획이 반려됨 - 수정 후 승인받아야 신청 가능합니다';
-                } else if (lessonPlan.status === 'draft') {
+                } else if (approvalStatus === 'draft') {
                     message = '수업계획 완료 제출 후 승인받아야 신청 가능합니다 (필수)';
                 }
                 
                 this.disableApplicationButtons(message);
+                console.log('🔴 교구 신청 버튼 비활성화 - 수업계획 미승인:', approvalStatus);
                 return Promise.resolve();
             }
 
@@ -724,7 +757,7 @@ const StudentManager = {
                 } else {
                     // 교구 신청 가능
                     self.enableApplicationButtons();
-                    console.log('✅ 교구 신청 버튼 활성화됨');
+                    console.log('✅ 교구 신청 버튼 활성화됨 - 수업계획 승인됨');
                 }
                 console.log('✅ 교구 신청 버튼 상태 업데이트 완료');
             }).catch(function(error) {
@@ -802,7 +835,7 @@ const StudentManager = {
         }
     },
 
-    // 수업계획 상태 알림 표시 - 개선된 버전 (단일 알림만)
+    // 🔧 수업계획 상태 알림 표시 - 승인 상태 확인 로직 수정
     showLessonPlanStatusNotice: function(lessonPlan) {
         try {
             const self = this;
@@ -819,110 +852,105 @@ const StudentManager = {
                 let noticeContent = '';
                 let noticeType = '';
 
-                if (!lessonPlan) {
+                const approvalStatus = self.getLessonPlanApprovalStatus(lessonPlan);
+
+                if (approvalStatus === 'not_submitted') {
                     // 수업계획이 없는 경우
                     if (!canEdit) {
-                        noticeContent = '\\
-                            <div class="notice-content warning">\\
-                                <i data-lucide="alert-triangle"></i>\\
-                                <div>\\
-                                    <h4>⚠️ 수업계획 수정 기간이 종료되었습니다</h4>\\
-                                    <p>수업계획 작성/수정 가능 기간이 지났습니다. 수업계획은 <strong>필수 제출 사항</strong>이므로 관리자에게 즉시 문의하세요.</p>\\
-                                </div>\\
-                            </div>\\
-                        ';
+                        noticeContent = '\\' +
+                            '<div class="notice-content warning">\\' +
+                                '<i data-lucide="alert-triangle"></i>\\' +
+                                '<div>\\' +
+                                    '<h4>⚠️ 수업계획 수정 기간이 종료되었습니다</h4>\\' +
+                                    '<p>수업계획 작성/수정 가능 기간이 지났습니다. 수업계획은 <strong>필수 제출 사항</strong>이므로 관리자에게 즉시 문의하세요.</p>\\' +
+                                '</div>\\' +
+                            '</div>\\';
                         noticeType = 'warning';
                     } else {
-                        noticeContent = '\\
-                            <div class="notice-content info">\\
-                                <i data-lucide="calendar-plus"></i>\\
-                                <div>\\
-                                    <h4>📋 수업계획 작성이 필요합니다 (필수)</h4>\\
-                                    <p><strong>수업계획은 필수 제출 사항입니다.</strong> 교구 신청 전에 반드시 수업계획을 작성하고 관리자의 승인을 받아야 합니다.</p>\\
-                                    <button class="btn primary small" onclick="StudentManager.handleLessonPlanClick()">\\
-                                        ✍️ 지금 작성하기\\
-                                    </button>\\
-                                </div>\\
-                            </div>\\
-                        ';
+                        noticeContent = '\\' +
+                            '<div class="notice-content info">\\' +
+                                '<i data-lucide="calendar-plus"></i>\\' +
+                                '<div>\\' +
+                                    '<h4>📋 수업계획 작성이 필요합니다 (필수)</h4>\\' +
+                                    '<p><strong>수업계획은 필수 제출 사항입니다.</strong> 교구 신청 전에 반드시 수업계획을 작성하고 관리자의 승인을 받아야 합니다.</p>\\' +
+                                    '<button class="btn primary small" onclick="StudentManager.handleLessonPlanClick()">\\' +
+                                        '✍️ 지금 작성하기\\' +
+                                    '</button>\\' +
+                                '</div>\\' +
+                            '</div>\\';
                         noticeType = 'info';
                     }
-                } else if (lessonPlan.status === 'draft') {
+                } else if (approvalStatus === 'draft') {
                     // 임시저장 상태
                     if (canEdit) {
-                        noticeContent = '\\
-                            <div class="notice-content warning">\\
-                                <i data-lucide="calendar-edit"></i>\\
-                                <div>\\
-                                    <h4>📝 수업계획을 완료해주세요 (필수)</h4>\\
-                                    <p>임시저장된 수업계획이 있습니다. <strong>수업계획 완료 제출은 필수사항</strong>이며, 관리자 승인을 받아야 교구 신청이 가능합니다.</p>\\
-                                    <button class="btn warning small" onclick="StudentManager.handleLessonPlanClick()">\\
-                                        ⚡ 완료하기\\
-                                    </button>\\
-                                </div>\\
-                            </div>\\
-                        ';
+                        noticeContent = '\\' +
+                            '<div class="notice-content warning">\\' +
+                                '<i data-lucide="calendar-edit"></i>\\' +
+                                '<div>\\' +
+                                    '<h4>📝 수업계획을 완료해주세요 (필수)</h4>\\' +
+                                    '<p>임시저장된 수업계획이 있습니다. <strong>수업계획 완료 제출은 필수사항</strong>이며, 관리자 승인을 받아야 교구 신청이 가능합니다.</p>\\' +
+                                    '<button class="btn warning small" onclick="StudentManager.handleLessonPlanClick()">\\' +
+                                        '⚡ 완료하기\\' +
+                                    '</button>\\' +
+                                '</div>\\' +
+                            '</div>\\';
                         noticeType = 'warning';
                     }
-                } else if (lessonPlan.status === 'rejected') {
+                } else if (approvalStatus === 'rejected') {
                     // 반려된 경우
                     if (canEdit) {
-                        noticeContent = '\\
-                            <div class="notice-content danger">\\
-                                <i data-lucide="calendar-x"></i>\\
-                                <div>\\
-                                    <h4>❌ 수업계획이 반려되었습니다 (수정 필수)</h4>\\
-                                    <p><strong>반려 사유:</strong> ' + (lessonPlan.rejection_reason || '사유 없음') + '</p>\\
-                                    <p>수업계획이 승인되어야 교구 신청이 가능합니다. 반려 사유를 확인하고 즉시 수정해주세요.</p>\\
-                                    <button class="btn danger small" onclick="StudentManager.handleLessonPlanClick()">\\
-                                        🔧 수정하기\\
-                                    </button>\\
-                                </div>\\
-                            </div>\\
-                        ';
+                        noticeContent = '\\' +
+                            '<div class="notice-content danger">\\' +
+                                '<i data-lucide="calendar-x"></i>\\' +
+                                '<div>\\' +
+                                    '<h4>❌ 수업계획이 반려되었습니다 (수정 필수)</h4>\\' +
+                                    '<p><strong>반려 사유:</strong> ' + (lessonPlan.rejection_reason || '사유 없음') + '</p>\\' +
+                                    '<p>수업계획이 승인되어야 교구 신청이 가능합니다. 반려 사유를 확인하고 즉시 수정해주세요.</p>\\' +
+                                    '<button class="btn danger small" onclick="StudentManager.handleLessonPlanClick()">\\' +
+                                        '🔧 수정하기\\' +
+                                    '</button>\\' +
+                                '</div>\\' +
+                            '</div>\\';
                         noticeType = 'danger';
                     } else {
-                        noticeContent = '\\
-                            <div class="notice-content danger">\\
-                                <i data-lucide="calendar-x"></i>\\
-                                <div>\\
-                                    <h4>❌ 수업계획이 반려되었습니다</h4>\\
-                                    <p><strong>반려 사유:</strong> ' + (lessonPlan.rejection_reason || '사유 없음') + '</p>\\
-                                    <p>수정 기간이 종료되었습니다. 수업계획은 필수 제출 사항이므로 관리자에게 즉시 문의하세요.</p>\\
-                                </div>\\
-                            </div>\\
-                        ';
+                        noticeContent = '\\' +
+                            '<div class="notice-content danger">\\' +
+                                '<i data-lucide="calendar-x"></i>\\' +
+                                '<div>\\' +
+                                    '<h4>❌ 수업계획이 반려되었습니다</h4>\\' +
+                                    '<p><strong>반려 사유:</strong> ' + (lessonPlan.rejection_reason || '사유 없음') + '</p>\\' +
+                                    '<p>수정 기간이 종료되었습니다. 수업계획은 필수 제출 사항이므로 관리자에게 즉시 문의하세요.</p>\\' +
+                                '</div>\\' +
+                            '</div>\\';
                         noticeType = 'danger';
                     }
-                } else if (lessonPlan.status === 'submitted') {
+                } else if (approvalStatus === 'pending') {
                     // 제출됨 - 승인 대기 중
-                    noticeContent = '\\
-                        <div class="notice-content info">\\
-                            <i data-lucide="calendar-clock"></i>\\
-                            <div>\\
-                                <h4>⏳ 수업계획 승인 대기 중입니다</h4>\\
-                                <p>관리자의 승인을 기다리고 있습니다. 수업계획이 승인되면 교구 신청이 가능합니다.</p>\\
-                                <button class="btn secondary small" onclick="StudentManager.handleLessonPlanClick()">\\
-                                    📋 제출한 계획 확인하기\\
-                                </button>\\
-                            </div>\\
-                        </div>\\
-                    ';
+                    noticeContent = '\\' +
+                        '<div class="notice-content info">\\' +
+                            '<i data-lucide="calendar-clock"></i>\\' +
+                            '<div>\\' +
+                                '<h4>⏳ 수업계획 승인 대기 중입니다</h4>\\' +
+                                '<p>관리자의 승인을 기다리고 있습니다. 수업계획이 승인되면 교구 신청이 가능합니다.</p>\\' +
+                                '<button class="btn secondary small" onclick="StudentManager.handleLessonPlanClick()">\\' +
+                                    '📋 제출한 계획 확인하기\\' +
+                                '</button>\\' +
+                            '</div>\\' +
+                        '</div>\\';
                     noticeType = 'info';
-                } else if (lessonPlan.status === 'approved') {
+                } else if (approvalStatus === 'approved') {
                     // 승인됨 - 성공 메시지
-                    noticeContent = '\\
-                        <div class="notice-content success">\\
-                            <i data-lucide="calendar-check"></i>\\
-                            <div>\\
-                                <h4>✅ 수업계획이 승인되었습니다!</h4>\\
-                                <p>이제 교구 신청이 가능합니다. 승인된 예산 내에서 필요한 교구를 신청해주세요.</p>\\
-                                <button class="btn success small" onclick="StudentManager.handleLessonPlanClick()">\\
-                                    📋 승인된 계획 확인하기\\
-                                </button>\\
-                            </div>\\
-                        </div>\\
-                    ';
+                    noticeContent = '\\' +
+                        '<div class="notice-content success">\\' +
+                            '<i data-lucide="calendar-check"></i>\\' +
+                            '<div>\\' +
+                                '<h4>✅ 수업계획이 승인되었습니다!</h4>\\' +
+                                '<p>이제 교구 신청이 가능합니다. 승인된 예산 내에서 필요한 교구를 신청해주세요.</p>\\' +
+                                '<button class="btn success small" onclick="StudentManager.handleLessonPlanClick()">\\' +
+                                    '📋 승인된 계획 확인하기\\' +
+                                '</button>\\' +
+                            '</div>\\' +
+                        '</div>\\';
                     noticeType = 'success';
                 }
 
@@ -997,34 +1025,32 @@ const StudentManager = {
 
     // 오류 알림 표시
     showErrorNotice: function(message) {
-        this.displayNotice('\\
-            <div class="notice-content danger">\\
-                <i data-lucide="wifi-off"></i>\\
-                <div>\\
-                    <h4>❌ 연결 오류</h4>\\
-                    <p>' + message + '</p>\\
-                    <button class="btn secondary small" onclick="location.reload()">\\
-                        🔄 새로고침\\
-                    </button>\\
-                </div>\\
-            </div>\\
-        ', 'danger');
+        this.displayNotice('\\' +
+            '<div class="notice-content danger">\\' +
+                '<i data-lucide="wifi-off"></i>\\' +
+                '<div>\\' +
+                    '<h4>❌ 연결 오류</h4>\\' +
+                    '<p>' + message + '</p>\\' +
+                    '<button class="btn secondary small" onclick="location.reload()">\\' +
+                        '🔄 새로고침\\' +
+                    '</button>\\' +
+                '</div>\\' +
+            '</div>\\', 'danger');
     },
 
     // 수업계획 필수 알림 표시
     showLessonPlanRequiredNotice: function() {
-        this.displayNotice('\\
-            <div class="notice-content info">\\
-                <i data-lucide="calendar-plus"></i>\\
-                <div>\\
-                    <h4>📋 수업계획 작성이 필요합니다</h4>\\
-                    <p>교구 신청을 위해서는 먼저 수업계획을 작성해야 합니다.</p>\\
-                    <button class="btn primary small" onclick="StudentManager.handleLessonPlanClick()">\\
-                        ✍️ 수업계획 작성하기\\
-                    </button>\\
-                </div>\\
-            </div>\\
-        ', 'info');
+        this.displayNotice('\\' +
+            '<div class="notice-content info">\\' +
+                '<i data-lucide="calendar-plus"></i>\\' +
+                '<div>\\' +
+                    '<h4>📋 수업계획 작성이 필요합니다</h4>\\' +
+                    '<p>교구 신청을 위해서는 먼저 수업계획을 작성해야 합니다.</p>\\' +
+                    '<button class="btn primary small" onclick="StudentManager.handleLessonPlanClick()">\\' +
+                        '✍️ 수업계획 작성하기\\' +
+                    '</button>\\' +
+                '</div>\\' +
+            '</div>\\', 'info');
     },
 
     // 신청 내역 로드 - 안전성 강화
@@ -1077,16 +1103,15 @@ const StudentManager = {
         try {
             const container = document.getElementById('studentApplications');
             if (container) {
-                container.innerHTML = '\\
-                    <div class="error-state">\\
-                        <i data-lucide="alert-circle" style="width: 3rem; height: 3rem; color: #ef4444;"></i>\\
-                        <h3>신청 내역을 불러올 수 없습니다</h3>\\
-                        <p>네트워크 연결을 확인하고 다시 시도해주세요.</p>\\
-                        <button class="btn secondary" onclick="StudentManager.loadApplications()">\\
-                            🔄 다시 시도\\
-                        </button>\\
-                    </div>\\
-                ';
+                container.innerHTML = '\\' +
+                    '<div class="error-state">\\' +
+                        '<i data-lucide="alert-circle" style="width: 3rem; height: 3rem; color: #ef4444;"></i>\\' +
+                        '<h3>신청 내역을 불러올 수 없습니다</h3>\\' +
+                        '<p>네트워크 연결을 확인하고 다시 시도해주세요.</p>\\' +
+                        '<button class="btn secondary" onclick="StudentManager.loadApplications()">\\' +
+                            '🔄 다시 시도\\' +
+                        '</button>\\' +
+                    '</div>\\';
                 
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
@@ -1148,58 +1173,55 @@ const StudentManager = {
 
             if (budgetStatus.allocated === 0) {
                 if (budgetStatus.lessonPlanStatus === 'approved') {
-                    budgetDisplay.innerHTML = '\\
-                        <div class="budget-info processing">\\
-                            <div class="budget-status-text">\\
-                                <i data-lucide="clock"></i>\\
-                                <span>예산 배정 처리 중...</span>\\
-                            </div>\\
-                        </div>\\
-                    ';
+                    budgetDisplay.innerHTML = '\\' +
+                        '<div class="budget-info processing">\\' +
+                            '<div class="budget-status-text">\\' +
+                                '<i data-lucide="clock"></i>\\' +
+                                '<span>예산 배정 처리 중...</span>\\' +
+                            '</div>\\' +
+                        '</div>\\';
                 } else {
-                    budgetDisplay.innerHTML = '\\
-                        <div class="budget-info not-allocated">\\
-                            <div class="budget-status-text">\\
-                                <i data-lucide="alert-circle"></i>\\
-                                <span><strong>수업계획 승인 후 예산이 배정됩니다 (필수)</strong></span>\\
-                            </div>\\
-                        </div>\\
-                    ';
+                    budgetDisplay.innerHTML = '\\' +
+                        '<div class="budget-info not-allocated">\\' +
+                            '<div class="budget-status-text">\\' +
+                                '<i data-lucide="alert-circle"></i>\\' +
+                                '<span><strong>수업계획 승인 후 예산이 배정됩니다 (필수)</strong></span>\\' +
+                            '</div>\\' +
+                        '</div>\\';
                 }
             } else {
                 const usagePercentage = Math.round((budgetStatus.used / budgetStatus.allocated) * 100);
                 const statusClass = usagePercentage >= 90 ? 'danger' : usagePercentage >= 70 ? 'warning' : 'safe';
                 
-                budgetDisplay.innerHTML = '\\
-                    <div class="budget-info allocated">\\
-                        <div class="budget-header">\\
-                            <div class="budget-title">\\
-                                <i data-lucide="wallet"></i>\\
-                                <span>배정 예산 (' + budgetStatus.field + ')</span>\\
-                            </div>\\
-                            <div class="budget-percentage ' + statusClass + '">' + usagePercentage + '%</div>\\
-                        </div>\\
-                        <div class="budget-bar-container">\\
-                            <div class="budget-bar">\\
-                                <div class="budget-progress ' + statusClass + '" style="width: ' + Math.min(usagePercentage, 100) + '%"></div>\\
-                            </div>\\
-                        </div>\\
-                        <div class="budget-details">\\
-                            <div class="budget-item">\\
-                                <span class="label">사용:</span>\\
-                                <span class="value">' + this.formatPrice(budgetStatus.used) + '</span>\\
-                            </div>\\
-                            <div class="budget-item">\\
-                                <span class="label">배정:</span>\\
-                                <span class="value">' + this.formatPrice(budgetStatus.allocated) + '</span>\\
-                            </div>\\
-                            <div class="budget-item remaining">\\
-                                <span class="label">잔여:</span>\\
-                                <span class="value ' + (budgetStatus.remaining <= 0 ? 'zero' : '') + '">' + this.formatPrice(budgetStatus.remaining) + '</span>\\
-                            </div>\\
-                        </div>\\
-                    </div>\\
-                ';
+                budgetDisplay.innerHTML = '\\' +
+                    '<div class="budget-info allocated">\\' +
+                        '<div class="budget-header">\\' +
+                            '<div class="budget-title">\\' +
+                                '<i data-lucide="wallet"></i>\\' +
+                                '<span>배정 예산 (' + budgetStatus.field + ')</span>\\' +
+                            '</div>\\' +
+                            '<div class="budget-percentage ' + statusClass + '">' + usagePercentage + '%</div>\\' +
+                        '</div>\\' +
+                        '<div class="budget-bar-container">\\' +
+                            '<div class="budget-bar">\\' +
+                                '<div class="budget-progress ' + statusClass + '" style="width: ' + Math.min(usagePercentage, 100) + '%"></div>\\' +
+                            '</div>\\' +
+                        '</div>\\' +
+                        '<div class="budget-details">\\' +
+                            '<div class="budget-item">\\' +
+                                '<span class="label">사용:</span>\\' +
+                                '<span class="value">' + this.formatPrice(budgetStatus.used) + '</span>\\' +
+                            '</div>\\' +
+                            '<div class="budget-item">\\' +
+                                '<span class="label">배정:</span>\\' +
+                                '<span class="value">' + this.formatPrice(budgetStatus.allocated) + '</span>\\' +
+                            '</div>\\' +
+                            '<div class="budget-item remaining">\\' +
+                                '<span class="label">잔여:</span>\\' +
+                                '<span class="value ' + (budgetStatus.remaining <= 0 ? 'zero' : '') + '">' + this.formatPrice(budgetStatus.remaining) + '</span>\\' +
+                            '</div>\\' +
+                        '</div>\\' +
+                    '</div>\\';
             }
 
             if (typeof lucide !== 'undefined') {
@@ -1215,15 +1237,14 @@ const StudentManager = {
         try {
             let budgetDisplay = document.getElementById('budgetStatus');
             if (budgetDisplay) {
-                budgetDisplay.innerHTML = '\\
-                    <div class="budget-error">\\
-                        <i data-lucide="wifi-off"></i>\\
-                        예산 정보 연결 오류\\
-                        <button class="btn small secondary" onclick="StudentManager.updateBudgetStatus()">\\
-                            재시도\\
-                        </button>\\
-                    </div>\\
-                ';
+                budgetDisplay.innerHTML = '\\' +
+                    '<div class="budget-error">\\' +
+                        '<i data-lucide="wifi-off"></i>\\' +
+                        '예산 정보 연결 오류\\' +
+                        '<button class="btn small secondary" onclick="StudentManager.updateBudgetStatus()">\\' +
+                            '재시도\\' +
+                        '</button>\\' +
+                    '</div>\\';
                 
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
@@ -1289,84 +1310,77 @@ const StudentManager = {
         
         let receiptButton = '';
         if (application.purchase_type === 'offline' && application.status === 'approved') {
-            receiptButton = '\\
-                <button class="btn small primary receipt-btn" data-item-id="' + application.id + '">\\
-                    <i data-lucide="receipt"></i> 영수증 등록\\
-                </button>\\
-            ';
+            receiptButton = '\\' +
+                '<button class="btn small primary receipt-btn" data-item-id="' + application.id + '">\\' +
+                    '<i data-lucide="receipt"></i> 영수증 등록\\' +
+                '</button>\\';
         }
         
         let receiptStatus = '';
         if (application.purchase_type === 'offline' && application.status === 'purchased') {
-            receiptStatus = '\\
-                <div class="receipt-status">\\
-                    <i data-lucide="check-circle"></i>\\
-                    영수증 제출완료\\
-                    <small>' + new Date(application.updated_at).toLocaleString('ko-KR') + '</small>\\
-                </div>\\
-            ';
+            receiptStatus = '\\' +
+                '<div class="receipt-status">\\' +
+                    '<i data-lucide="check-circle"></i>\\' +
+                    '영수증 제출완료\\' +
+                    '<small>' + new Date(application.updated_at).toLocaleString('ko-KR') + '</small>\\' +
+                '</div>\\';
         }
         
-        card.innerHTML = '\\
-            <div class="application-card-header">\\
-                <div>\\
-                    <div class="card-title-row">\\
-                        <h3>' + this.escapeHtml(application.item_name) + '</h3>\\
-                        <div class="card-badges">\\
-                            <span class="purchase-method-badge ' + purchaseMethodClass + '">\\
-                                <i data-lucide="' + (application.purchase_type === 'offline' ? 'store' : 'shopping-cart') + '"></i> ' + purchaseMethodText + '\\
-                            </span>\\
-                            <span class="type-badge ' + (application.is_bundle ? 'bundle' : 'single') + '">\\
-                                <i data-lucide="' + typeIcon + '"></i> ' + typeText + '\\
-                            </span>\\
-                            <span class="status-badge ' + statusClass + '">' + statusText + '</span>\\
-                        </div>\\
-                    </div>\\
-                    <p class="purpose">' + this.escapeHtml(application.purpose) + '</p>\\
-                </div>\\
-            </div>\\
-            \\
-            <div class="application-details">\\
-                <div class="detail-item">\\
-                    <span class="detail-label">가격</span>\\
-                    <span class="detail-value price-value">' + this.formatPrice(application.price) + '</span>\\
-                </div>\\
-                ' + (application.purchase_link ? '\\
-                    <div class="detail-item">\\
-                        <span class="detail-label">' + (application.purchase_type === 'offline' ? '참고 링크' : '구매 링크') + '</span>\\
-                        <span class="detail-value">\\
-                            <a href="' + this.escapeHtml(application.purchase_link) + '" target="_blank" rel="noopener noreferrer">\\
-                                링크 보기 <i data-lucide="external-link"></i>\\
-                            </a>\\
-                        </span>\\
-                    </div>\\
-                ' : '') + '\\
-            </div>\\
-            \\
-            ' + receiptStatus + '\\
-            \\
-            ' + (application.status === 'pending' ? '\\
-                <div class="card-actions">\\
-                    <button class="btn small secondary edit-btn" data-item-id="' + application.id + '">\\
-                        <i data-lucide="edit-2"></i> 수정\\
-                    </button>\\
-                    <button class="btn small danger delete-btn" data-item-id="' + application.id + '">\\
-                        <i data-lucide="trash-2"></i> 삭제\\
-                    </button>\\
-                </div>\\
-            ' : '\\
-                <div class="card-actions">\\
-                    ' + receiptButton + '\\
-                </div>\\
-            ') + '\\
-            \\
-            ' + (application.rejection_reason ? '\\
-                <div class="rejection-reason">\\
-                    <div class="reason-label">반려 사유</div>\\
-                    <div class="reason-text">' + this.escapeHtml(application.rejection_reason) + '</div>\\
-                </div>\\
-            ' : '') + '\\
-        ';
+        card.innerHTML = '\\' +
+            '<div class="application-card-header">\\' +
+                '<div>\\' +
+                    '<div class="card-title-row">\\' +
+                        '<h3>' + this.escapeHtml(application.item_name) + '</h3>\\' +
+                        '<div class="card-badges">\\' +
+                            '<span class="purchase-method-badge ' + purchaseMethodClass + '">\\' +
+                                '<i data-lucide="' + (application.purchase_type === 'offline' ? 'store' : 'shopping-cart') + '"></i> ' + purchaseMethodText + '\\' +
+                            '</span>\\' +
+                            '<span class="type-badge ' + (application.is_bundle ? 'bundle' : 'single') + '">\\' +
+                                '<i data-lucide="' + typeIcon + '"></i> ' + typeText + '\\' +
+                            '</span>\\' +
+                            '<span class="status-badge ' + statusClass + '">' + statusText + '</span>\\' +
+                        '</div>\\' +
+                    '</div>\\' +
+                    '<p class="purpose">' + this.escapeHtml(application.purpose) + '</p>\\' +
+                '</div>\\' +
+            '</div>\\' +
+            '\\' +
+            '<div class="application-details">\\' +
+                '<div class="detail-item">\\' +
+                    '<span class="detail-label">가격</span>\\' +
+                    '<span class="detail-value price-value">' + this.formatPrice(application.price) + '</span>\\' +
+                '</div>\\' +
+                (application.purchase_link ? '\\' +
+                    '<div class="detail-item">\\' +
+                        '<span class="detail-label">' + (application.purchase_type === 'offline' ? '참고 링크' : '구매 링크') + '</span>\\' +
+                        '<span class="detail-value">\\' +
+                            '<a href="' + this.escapeHtml(application.purchase_link) + '" target="_blank" rel="noopener noreferrer">\\' +
+                                '링크 보기 <i data-lucide="external-link"></i>\\' +
+                            '</a>\\' +
+                        '</span>\\' +
+                    '</div>\\' : '') + '\\' +
+            '</div>\\' +
+            '\\' +
+            receiptStatus + '\\' +
+            '\\' +
+            (application.status === 'pending' ? '\\' +
+                '<div class="card-actions">\\' +
+                    '<button class="btn small secondary edit-btn" data-item-id="' + application.id + '">\\' +
+                        '<i data-lucide="edit-2"></i> 수정\\' +
+                    '</button>\\' +
+                    '<button class="btn small danger delete-btn" data-item-id="' + application.id + '">\\' +
+                        '<i data-lucide="trash-2"></i> 삭제\\' +
+                    '</button>\\' +
+                '</div>\\' : '\\' +
+                '<div class="card-actions">\\' +
+                    receiptButton + '\\' +
+                '</div>\\') + '\\' +
+            '\\' +
+            (application.rejection_reason ? '\\' +
+                '<div class="rejection-reason">\\' +
+                    '<div class="reason-label">반려 사유</div>\\' +
+                    '<div class="reason-text">' + this.escapeHtml(application.rejection_reason) + '</div>\\' +
+                '</div>\\' : '') + '\\';
         
         return card;
     },
@@ -1463,7 +1477,7 @@ const StudentManager = {
             return this.safeApiCall(function() {
                 return SupabaseAPI.getStudentLessonPlan(currentUser.id);
             }).then(function(lessonPlan) {
-                if (!lessonPlan || lessonPlan.status !== 'approved') {
+                if (!self.isLessonPlanApproved(lessonPlan)) {
                     alert('수업계획이 승인된 후에 교구 신청이 가능합니다.');
                     return;
                 }
@@ -1747,4 +1761,4 @@ window.initializeStudentPage = function() {
     }
 };
 
-console.log('📚 StudentManager loaded successfully - handleLessonPlanClick App.showPage 오류 수정 완료 (v1.5.1)');
+console.log('📚 StudentManager loaded successfully - 수업계획 승인 상태 확인 로직 수정 완료 (v1.6.0)');
