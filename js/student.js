@@ -56,6 +56,62 @@ const StudentManager = {
         }
     },
 
+    // 🆕 안전한 학생 대시보드로 이동 함수
+    goToStudentDashboard: function() {
+        try {
+            console.log('🔄 학생 대시보드로 이동 시작');
+            
+            // 1차: App.showPage 시도 (기존 방식)
+            if (window.App && typeof window.App.showPage === 'function') {
+                console.log('✅ App.showPage 사용하여 이동');
+                window.App.showPage('studentPage');
+                
+                // StudentManager 초기화
+                if (window.StudentManager && typeof window.StudentManager.init === 'function') {
+                    window.StudentManager.init();
+                }
+                return true;
+            }
+            
+            // 2차: CSS 클래스를 이용한 페이지 전환
+            const studentPage = document.getElementById('studentPage');
+            const lessonPlanPage = document.getElementById('lessonPlanPage');
+            
+            if (studentPage && lessonPlanPage) {
+                console.log('✅ CSS 클래스 방식으로 페이지 전환');
+                
+                // 수업계획 페이지 숨김
+                lessonPlanPage.classList.remove('active');
+                // 학생 대시보드 표시
+                studentPage.classList.add('active');
+                
+                // 대시보드 새로고침
+                setTimeout(() => {
+                    if (this.refreshDashboard) {
+                        this.refreshDashboard();
+                    }
+                }, 200);
+                
+                return true;
+            }
+            
+            // 3차: 직접 URL 이동 (폴백)
+            console.warn('⚠️ 페이지 요소를 찾을 수 없음 - URL 이동 시도');
+            const studentDashboardPath = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/student/dashboard.html');
+            window.location.href = studentDashboardPath;
+            
+            return false;
+        } catch (error) {
+            console.error('❌ 학생 대시보드 이동 오류:', error);
+            
+            // 최후 수단: 페이지 새로고침
+            console.log('🔄 페이지 새로고침으로 복구 시도');
+            window.location.reload();
+            
+            return false;
+        }
+    },
+
     // 기본 인터페이스 표시 (오류 시 폴백)
     showFallbackInterface: function() {
         try {
@@ -1776,6 +1832,20 @@ const StudentManager = {
 // 전역 접근을 위한 window 객체에 추가
 window.StudentManager = StudentManager;
 
+// 🆕 전역 goToStudentDashboard 함수 추가 (호환성 보장)
+window.goToStudentDashboard = function() {
+    console.log('🔄 전역 goToStudentDashboard 호출됨');
+    
+    if (window.StudentManager && typeof window.StudentManager.goToStudentDashboard === 'function') {
+        return window.StudentManager.goToStudentDashboard();
+    } else {
+        console.error('❌ StudentManager.goToStudentDashboard를 찾을 수 없습니다');
+        // 폴백: 직접 페이지 이동
+        window.location.reload();
+        return false;
+    }
+};
+
 // 호환성 함수 추가
 window.initializeStudentPage = function() {
     console.log('🔄 initializeStudentPage 호출됨 (호환성 함수)');
@@ -1788,4 +1858,4 @@ window.initializeStudentPage = function() {
     }
 };
 
-console.log('📚 StudentManager loaded successfully - 시스템 초기화 실패 문제 해결 완료 (v1.5.2)');
+console.log('📚 StudentManager loaded successfully - goToStudentDashboard 함수 추가 완료 (v1.5.3)');
