@@ -1,5 +1,6 @@
-// 환경 설정 파일 - 간소화 버전
+// 환경 설정 파일 - 간소화 버전 v1.4.2
 // Supabase 연동 후 중복 설정 제거 및 최적화
+// 🆕 관리자 대시보드 안정성 개선
 
 const CONFIG = {
     // Supabase 설정
@@ -11,7 +12,7 @@ const CONFIG = {
     // 애플리케이션 설정
     APP: {
         NAME: '세종학당 문화교구 신청 플랫폼',
-        VERSION: '2.0.0', // Supabase 연동 버전
+        VERSION: '2.0.1', // 관리자 대시보드 안정화 버전
         ADMIN_CODE: 'admin123',
         
         // 기본 예산 설정 (DB 초기화용 - 실제 운영시 DB에서 관리)
@@ -108,7 +109,7 @@ function validateConfig() {
     }
     
     if (errors.length > 0) {
-        console.error('설정 오류:', errors);
+        console.error('⚠️ 설정 오류:', errors);
         if (FINAL_CONFIG.DEV.DEBUG) {
             alert('설정 오류가 발견되었습니다. 콘솔을 확인해주세요.');
         }
@@ -122,7 +123,7 @@ const DevTools = {
     // 설정 정보 출력
     printConfig() {
         if (!FINAL_CONFIG.DEV.DEBUG) return;
-        console.group('🔧 Application Configuration');
+        console.group('🔧 Application Configuration v1.4.2');
         console.log('App Name:', FINAL_CONFIG.APP.NAME);
         console.log('Version:', FINAL_CONFIG.APP.VERSION);
         console.log('Debug Mode:', FINAL_CONFIG.DEV.DEBUG);
@@ -175,6 +176,25 @@ const DevTools = {
             console.error('❌ API 연결 실패:', error);
             return false;
         }
+    },
+
+    // 🆕 초기화 상태 확인
+    checkInitialization() {
+        const state = {
+            configLoaded: !!window.CONFIG,
+            supabaseAPI: !!window.SupabaseAPI,
+            adminManager: !!window.AdminManager,
+            supabaseClient: !!window.supabase,
+            lucideIcons: !!window.lucide
+        };
+
+        console.group('🔍 초기화 상태 확인');
+        Object.entries(state).forEach(([key, value]) => {
+            console.log(`${key}: ${value ? '✅' : '❌'}`);
+        });
+        console.groupEnd();
+
+        return state;
     }
 };
 
@@ -183,8 +203,12 @@ if (typeof window !== 'undefined') {
     window.CONFIG = FINAL_CONFIG;
     window.DevTools = DevTools;
     
+    // 🆕 즉시 설정 로드 확인 로그
+    console.log('⚙️ CONFIG v1.4.2 로드됨:', new Date().toISOString());
+    
     // 페이지 로드 시 설정 검증 및 개발 도구 초기화
     document.addEventListener('DOMContentLoaded', () => {
+        console.log('📋 CONFIG DOMContentLoaded 이벤트 실행');
         validateConfig();
         
         if (FINAL_CONFIG.DEV.DEBUG) {
@@ -197,6 +221,7 @@ if (typeof window !== 'undefined') {
             console.log('  dev.quickLogin("admin") - 관리자 빠른 로그인');
             console.log('  dev.testApiConnection() - API 연결 테스트');
             console.log('  dev.printConfig() - 설정 정보 출력');
+            console.log('  dev.checkInitialization() - 초기화 상태 확인');
         }
     });
 }
@@ -206,14 +231,29 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = { CONFIG: FINAL_CONFIG, DevTools };
 }
 
-// 설정 무결성 확인
+// 🆕 설정 무결성 확인 - 강화된 버전
 if (typeof window !== 'undefined') {
     window.addEventListener('load', () => {
         // 3초 후에 API 연결 상태 확인
         setTimeout(async () => {
             if (FINAL_CONFIG.DEV.DEBUG && window.DevTools) {
+                console.log('🔍 페이지 로드 후 상태 확인 시작');
                 await window.DevTools.testApiConnection();
+                window.DevTools.checkInitialization();
             }
         }, 3000);
+    });
+
+    // 🆕 에러 이벤트 리스너
+    window.addEventListener('error', (event) => {
+        if (FINAL_CONFIG.DEV.DEBUG) {
+            console.error('🚨 글로벌 에러 감지:', event.error);
+        }
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+        if (FINAL_CONFIG.DEV.DEBUG) {
+            console.error('🚨 처리되지 않은 Promise 거부:', event.reason);
+        }
     });
 }
