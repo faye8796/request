@@ -122,7 +122,7 @@ const AuthManager = {
         }
     },
 
-    // 사용자 페이지로 리다이렉트 - 간소화된 버전
+    // 사용자 페이지로 리다이렉트 - 수정된 버전 (실제 페이지 이동)
     async redirectToUserPage(userType, user) {
         try {
             console.log('🔀 페이지 리다이렉트:', userType);
@@ -378,7 +378,7 @@ const AuthManager = {
         }
     },
 
-    // 로그인 성공 처리
+    // 로그인 성공 처리 - 수정된 버전 (실제 페이지 이동)
     async loginSuccess(userType, user) {
         try {
             console.log('✅ 로그인 성공:', { userType, user: user.name });
@@ -392,14 +392,16 @@ const AuthManager = {
             // 성공 메시지 표시
             this.showAlert(`환영합니다, ${user.name}님!`, 'success');
 
-            // 페이지 이동
-            setTimeout(async () => {
+            // 페이지 이동 - 실제 페이지로 리다이렉트
+            setTimeout(() => {
                 if (userType === 'student') {
-                    await this.safeRedirectStudent(user.id);
+                    // 학생 대시보드로 직접 이동
+                    window.location.href = 'student/dashboard.html';
                 } else if (userType === 'admin') {
-                    this.redirectToAdminPage();
+                    // 관리자 페이지로 직접 이동
+                    window.location.href = 'admin.html';
                 }
-            }, 500);
+            }, 1000);
         } catch (error) {
             console.error('로그인 성공 처리 오류:', error);
         }
@@ -430,54 +432,71 @@ const AuthManager = {
         }
     },
 
-    // 관리자 페이지로 리다이렉션
+    // 관리자 페이지로 리다이렉션 - 수정된 버전
     redirectToAdminPage() {
         try {
-            if (window.App && window.App.showPage) {
-                window.App.showPage('adminPage');
-                
-                setTimeout(() => {
-                    if (window.AdminManager && window.AdminManager.init) {
-                        window.AdminManager.init();
-                    }
-                }, 200);
+            console.log('🔀 관리자 페이지로 이동');
+            
+            // SPA 방식이 아닌 실제 페이지 이동
+            if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+                window.location.href = 'admin.html';
+            } else {
+                // 이미 다른 페이지에 있는 경우에는 SPA 방식 시도
+                if (window.App && window.App.showPage) {
+                    window.App.showPage('adminPage');
+                    
+                    setTimeout(() => {
+                        if (window.AdminManager && window.AdminManager.init) {
+                            window.AdminManager.init();
+                        }
+                    }, 200);
+                } else {
+                    // SPA가 없으면 직접 이동
+                    window.location.href = 'admin.html';
+                }
             }
         } catch (error) {
             console.error('관리자 페이지 리다이렉션 오류:', error);
+            // 오류 시 직접 이동
+            window.location.href = 'admin.html';
         }
     },
 
-    // 안전한 학생 리다이렉션 처리
+    // 안전한 학생 리다이렉션 처리 - 수정된 버전 (실제 페이지 이동)
     async safeRedirectStudent(studentId) {
         try {
             console.log('🔄 학생 페이지 리다이렉션 처리');
             
-            // 수업계획 상태 확인
-            const lessonPlan = await this.quietlyCheckLessonPlan(studentId);
-            const hasCompletedPlan = lessonPlan && (lessonPlan.status === 'submitted' || lessonPlan.status === 'approved');
+            // 실제 페이지 이동 방식으로 수정
+            // 수업계획 상태 확인 로직은 제거하고 바로 대시보드로 이동
+            console.log('📍 학생 대시보드로 이동');
             
-            if (!hasCompletedPlan) {
-                // 수업계획 미완료 - 수업계획 페이지로
-                setTimeout(() => {
-                    this.redirectToLessonPlan();
-                    this.showLessonPlanGuidance();
-                }, 1000);
+            // 현재 페이지가 index.html인 경우만 페이지 이동
+            if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+                window.location.href = 'student/dashboard.html';
             } else {
-                // 수업계획 완료 - 학생 대시보드로
-                setTimeout(() => {
-                    this.redirectToStudentDashboard();
-                }, 1000);
+                // 이미 다른 페이지에 있는 경우에는 SPA 방식 시도
+                if (window.App && window.App.showPage) {
+                    window.App.showPage('studentPage');
+                    
+                    setTimeout(() => {
+                        if (window.StudentManager && window.StudentManager.init) {
+                            window.StudentManager.init();
+                        }
+                    }, 200);
+                } else {
+                    // SPA가 없으면 직접 이동
+                    window.location.href = 'student/dashboard.html';
+                }
             }
         } catch (error) {
             console.warn('학생 리다이렉션 처리 중 오류:', error);
             // 오류 시 기본적으로 학생 대시보드로 이동
-            setTimeout(() => {
-                this.redirectToStudentDashboard();
-            }, 1000);
+            window.location.href = 'student/dashboard.html';
         }
     },
 
-    // 수업계획 페이지로 리다이렉션
+    // 수업계획 페이지로 리다이렉션 - 레거시 호환성을 위해 유지
     redirectToLessonPlan() {
         try {
             if (window.App && window.App.showPage) {
@@ -494,7 +513,7 @@ const AuthManager = {
         }
     },
 
-    // 학생 대시보드로 리다이렉션
+    // 학생 대시보드로 리다이렉션 - 레거시 호환성을 위해 유지
     redirectToStudentDashboard() {
         try {
             if (window.App && window.App.showPage) {
@@ -774,4 +793,4 @@ const AuthManager = {
 // 전역 접근을 위한 window 객체에 추가
 window.AuthManager = AuthManager;
 
-console.log('🔐 AuthManager v2.0 loaded - simplified and stable');
+console.log('🔐 AuthManager v2.1 loaded - fixed redirect with actual page navigation');
