@@ -47,18 +47,35 @@
         </div>
     </div>
 
-    <!-- JavaScript Files - 간소화 버전 -->
+    <!-- JavaScript Files - Using existing auth.js instead of simple-auth.js -->
     <script src="js/config.js"></script>
-    <script src="js/simple-auth.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
     
-    <!-- Lucide 아이콘 초기화 -->
+    <!-- Page initialization script -->
     <script>
+        // 페이지 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-                console.log('✅ Lucide icons initialized');
-            } else {
-                console.error('❌ Lucide library not loaded');
+            try {
+                // Lucide 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                    console.log('✅ Lucide icons initialized');
+                } else {
+                    console.error('❌ Lucide library not loaded');
+                }
+
+                // AuthManager 초기화
+                if (window.AuthManager && typeof window.AuthManager.init === 'function') {
+                    window.AuthManager.init();
+                    console.log('✅ AuthManager 초기화 완료');
+                } else {
+                    console.error('❌ AuthManager를 찾을 수 없습니다');
+                }
+                
+            } catch (error) {
+                console.error('❌ 페이지 초기화 오류:', error);
             }
         });
     </script>
