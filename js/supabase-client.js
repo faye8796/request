@@ -376,6 +376,140 @@ const SupabaseAPI = {
     },
 
     // ===================
+    // 🆕 학생 예산 상태 조회 함수 추가 (누락된 함수)
+    // ===================
+    async getStudentBudgetStatus(studentId) {
+        console.log('💰 학생 예산 상태 조회:', studentId);
+        
+        try {
+            const client = await this.ensureClient();
+            
+            // 1. 학생의 프로필 정보 조회 (분야 확인)
+            const profileResult = await client
+                .from('user_profiles')
+                .select('field')
+                .eq('id', studentId)
+                .single();
+
+            if (profileResult.error || !profileResult.data) {
+                console.error('학생 프로필 조회 실패:', profileResult.error);
+                return {
+                    allocated: 0,
+                    used: 0,
+                    remaining: 0,
+                    field: '미설정',
+                    lessonPlanStatus: 'not_submitted'
+                };
+            }
+
+            const studentField = profileResult.data.field;
+            if (!studentField) {
+                console.warn('학생의 분야 정보가 없습니다');
+                return {
+                    allocated: 0,
+                    used: 0,
+                    remaining: 0,
+                    field: '미설정',
+                    lessonPlanStatus: 'not_submitted'
+                };
+            }
+
+            // 2. 학생의 수업계획 상태 확인
+            const lessonPlanResult = await client
+                .from('lesson_plans')
+                .select('status, lessons, approved_at, approved_by')
+                .eq('user_id', studentId)
+                .single();
+
+            let lessonPlanStatus = 'not_submitted';
+            let totalLessons = 0;
+
+            if (lessonPlanResult.data) {
+                const plan = lessonPlanResult.data;
+                
+                // 수업계획 상태 확인
+                if (plan.status === 'draft') {
+                    lessonPlanStatus = 'draft';
+                } else if (plan.status === 'submitted') {
+                    if (plan.approved_at && plan.approved_by) {
+                        lessonPlanStatus = 'approved';
+                        
+                        // 승인된 경우에만 수업 횟수 계산
+                        try {
+                            if (plan.lessons) {
+                                let lessons = plan.lessons;
+                                if (typeof lessons === 'string') {
+                                    lessons = JSON.parse(lessons);
+                                }
+                                
+                                if (lessons.totalLessons) {
+                                    totalLessons = lessons.totalLessons;
+                                } else if (lessons.schedule && Array.isArray(lessons.schedule)) {
+                                    totalLessons = lessons.schedule.length;
+                                } else if (lessons.lessons && Array.isArray(lessons.lessons)) {
+                                    totalLessons = lessons.lessons.length;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('수업계획 파싱 오류:', e);
+                            totalLessons = 0;
+                        }
+                    } else {
+                        lessonPlanStatus = 'pending';
+                    }
+                }
+            }
+
+            // 3. 분야별 예산 설정 조회
+            const fieldBudgetSettings = await this.getAllFieldBudgetSettings();
+            const fieldSetting = fieldBudgetSettings[studentField] || { perLessonAmount: 0, maxBudget: 0 };
+
+            // 4. 배정 예산 계산 (승인된 수업계획이 있을 때만)
+            let allocatedBudget = 0;
+            if (lessonPlanStatus === 'approved' && totalLessons > 0) {
+                const calculatedBudget = fieldSetting.perLessonAmount * totalLessons;
+                allocatedBudget = fieldSetting.maxBudget > 0 ? 
+                    Math.min(calculatedBudget, fieldSetting.maxBudget) : 
+                    calculatedBudget;
+            }
+
+            // 5. 사용 예산 계산 (승인된/구매완료된 신청들의 총액)
+            const usedBudgetResult = await client
+                .from('requests')
+                .select('price')
+                .eq('user_id', studentId)
+                .in('status', ['approved', 'purchased']);
+
+            const usedBudget = usedBudgetResult.data ? 
+                usedBudgetResult.data.reduce((sum, req) => sum + (req.price || 0), 0) : 0;
+
+            // 6. 잔여 예산 계산
+            const remainingBudget = Math.max(0, allocatedBudget - usedBudget);
+
+            const result = {
+                allocated: allocatedBudget,
+                used: usedBudget,
+                remaining: remainingBudget,
+                field: studentField,
+                lessonPlanStatus: lessonPlanStatus
+            };
+
+            console.log('✅ 학생 예산 상태 조회 완료:', result);
+            return result;
+
+        } catch (error) {
+            console.error('❌ 학생 예산 상태 조회 실패:', error);
+            return {
+                allocated: 0,
+                used: 0,
+                remaining: 0,
+                field: '미설정',
+                lessonPlanStatus: 'error'
+            };
+        }
+    },
+
+    // ===================
     // 신청 내역 검색 (admin.js 호환)
     // ===================
     async searchApplications(searchTerm = '') {
@@ -1175,4 +1309,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v2.2 loaded - 예산 현황 통계 로직 수정 완료');
+console.log('🚀 SupabaseAPI v2.3 loaded - getStudentBudgetStatus 함수 추가 완료');
