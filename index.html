@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>세종학당 문화인턴 지원 시스템</title>
     
-    <!-- CSS Files - Updated Cache Busting -->
-    <link rel="stylesheet" href="css/main.css?v=1.5.0">
-    <link rel="stylesheet" href="css/login.css?v=1.5.0">
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/login.css">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
-    <!-- Supabase JavaScript Client - Fixed CDN URL with Cache Busting -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=1.5.0"></script>
+    <!-- Supabase JavaScript Client - Fixed to use unpkg like intern-announcement -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <!-- Main App Container -->
@@ -47,233 +47,20 @@
         </div>
     </div>
 
-    <!-- JavaScript Files - Updated Cache Busting -->
-    <!-- 설정 파일을 가장 먼저 로드 -->
-    <script src="js/config.js?v=1.5.0"></script>
-    <!-- Supabase 클라이언트 로드 -->
-    <script src="js/supabase-client.js?v=1.5.0"></script>
-    <script src="js/utils.js?v=1.5.0"></script>
-    <script src="js/auth.js?v=1.5.0"></script>
-    
-    <!-- 학생 로그인 전용 스크립트 -->
-    <script>
-        // 페이지 로드 완료 후 초기화
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                // Lucide 아이콘 초기화
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                    console.log('Lucide icons initialized successfully');
-                } else {
-                    console.error('Lucide library not loaded');
-                }
-
-                // 기존 세션 확인
-                checkExistingSession();
-                
-                // 학생 로그인 이벤트 설정
-                setupStudentLoginEvents();
-                
-            } catch (error) {
-                console.error('페이지 초기화 오류:', error);
-            }
-        });
-
-        // 기존 세션 확인
-        function checkExistingSession() {
-            const studentSession = localStorage.getItem('currentStudent');
-            if (studentSession) {
-                try {
-                    const studentData = JSON.parse(studentSession);
-                    console.log('기존 세션 발견:', studentData.name);
-                    
-                    // 대시보드로 리다이렉트
-                    window.location.href = 'student/dashboard.html';
-                } catch (error) {
-                    console.error('세션 데이터 파싱 오류:', error);
-                    localStorage.removeItem('currentStudent');
-                }
-            }
-        }
-
-        // 학생 로그인 이벤트 설정
-        function setupStudentLoginEvents() {
-            const studentLoginBtn = document.getElementById('studentLoginBtn');
-            const studentNameInput = document.getElementById('studentName');
-            const studentBirthInput = document.getElementById('studentBirth');
-
-            if (studentLoginBtn) {
-                studentLoginBtn.addEventListener('click', handleStudentLogin);
-            }
-
-            // Enter 키 처리
-            [studentNameInput, studentBirthInput].forEach(input => {
-                if (input) {
-                    input.addEventListener('keypress', function(e) {
-                        if (e.key === 'Enter') {
-                            handleStudentLogin();
-                        }
-                    });
-                }
-            });
-        }
-
-        // 학생 로그인 처리 - 수정된 버전 (실제 DB 인증 사용)
-        async function handleStudentLogin() {
-            const name = document.getElementById('studentName').value.trim();
-            const birth = document.getElementById('studentBirth').value;
-            
-            if (!name || !birth) {
-                alert('이름과 생년월일을 모두 입력해주세요.');
-                return;
-            }
-
-            try {
-                // 로딩 상태 표시
-                const loginBtn = document.getElementById('studentLoginBtn');
-                const originalText = loginBtn.innerHTML;
-                loginBtn.innerHTML = '<i data-lucide="loader-2"></i> 로그인 중...';
-                loginBtn.disabled = true;
-
-                console.log('🔍 학생 인증 시도:', { name, birth });
-
-                // SupabaseAPI 로드 대기
-                let waitCount = 0;
-                while (typeof SupabaseAPI === 'undefined' && waitCount < 50) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    waitCount++;
-                }
-
-                if (typeof SupabaseAPI === 'undefined') {
-                    throw new Error('인증 서비스를 불러올 수 없습니다. 페이지를 새로고침해주세요.');
-                }
-
-                // 실제 DB 인증 시도
-                const result = await SupabaseAPI.authenticateStudent(name, birth);
-                
-                console.log('🎯 인증 결과:', result);
-
-                if (result && result.success && result.data) {
-                    // 실제 DB 데이터 사용
-                    const studentData = {
-                        // 실제 DB 필드 그대로 사용
-                        id: result.data.id,
-                        name: result.data.name,
-                        birth_date: result.data.birth_date,
-                        sejong_institute: result.data.sejong_institute,
-                        field: result.data.field,
-                        user_type: result.data.user_type || 'student',
-                        
-                        // 추가 메타데이터
-                        created_at: result.data.created_at,
-                        updated_at: result.data.updated_at,
-                        loginTime: new Date().toISOString()
-                    };
-                    
-                    console.log('✅ 실제 DB 데이터 사용:', {
-                        name: studentData.name,
-                        sejong_institute: studentData.sejong_institute,
-                        field: studentData.field,
-                        id: studentData.id
-                    });
-                    
-                    // 세션 저장
-                    localStorage.setItem('currentStudent', JSON.stringify(studentData));
-                    localStorage.setItem('studentSession', 'true');
-                    
-                    // sessionStorage에도 동기화 (equipment-request.html에서 사용)
-                    const sessionData = {
-                        user: studentData,
-                        userType: 'student',
-                        loginTime: studentData.loginTime
-                    };
-                    sessionStorage.setItem('userSession', JSON.stringify(sessionData));
-                    
-                    console.log('✅ 세션 저장 완료');
-                    
-                    // 대시보드로 이동
-                    window.location.href = 'student/dashboard.html';
-                    
-                } else {
-                    // 인증 실패 시 구체적인 메시지 표시
-                    console.warn('❌ 인증 실패:', result);
-                    
-                    let errorMessage = '로그인에 실패했습니다.';
-                    if (result && result.message) {
-                        if (result.message.includes('찾을 수 없습니다')) {
-                            errorMessage = '입력하신 정보와 일치하는 학생을 찾을 수 없습니다.\n이름과 생년월일을 다시 확인해주세요.';
-                        } else if (result.message.includes('네트워크')) {
-                            errorMessage = '네트워크 연결을 확인하고 다시 시도해주세요.';
-                        } else if (result.message.includes('서버')) {
-                            errorMessage = '서버에 일시적인 문제가 있습니다. 잠시 후 다시 시도해주세요.';
-                        } else {
-                            errorMessage = result.message;
-                        }
-                    }
-                    
-                    alert(errorMessage);
-                }
-                
-            } catch (error) {
-                console.error('❌ 로그인 처리 오류:', error);
-                
-                let errorMessage = '로그인 처리 중 오류가 발생했습니다.';
-                if (error.message) {
-                    if (error.message.includes('네트워크') || error.message.includes('fetch')) {
-                        errorMessage = '네트워크 연결을 확인하고 다시 시도해주세요.';
-                    } else if (error.message.includes('서비스') || error.message.includes('인증')) {
-                        errorMessage = error.message;
-                    } else {
-                        errorMessage = '시스템 오류가 발생했습니다. 페이지를 새로고침 후 다시 시도해주세요.';
-                    }
-                }
-                
-                alert(errorMessage);
-                
-            } finally {
-                // 버튼 상태 복구
-                const loginBtn = document.getElementById('studentLoginBtn');
-                const originalText = '<i data-lucide="user"></i> 학생 로그인';
-                loginBtn.innerHTML = originalText;
-                loginBtn.disabled = false;
-                
-                // 아이콘 재초기화
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            }
-        }
-
-        // 디버그 정보 (개발자용)
-        function showDebugInfo() {
-            console.log('=== 학생 로그인 페이지 디버그 정보 ===');
-            console.log('현재 세션:', localStorage.getItem('currentStudent'));
-            console.log('SupabaseAPI 상태:', typeof SupabaseAPI !== 'undefined');
-            console.log('네트워크 상태:', navigator.onLine);
-            
-            if (typeof SupabaseAPI !== 'undefined') {
-                console.log('SupabaseAPI 클라이언트:', !!SupabaseAPI.client);
-                console.log('현재 사용자:', SupabaseAPI.currentUser);
-            }
-        }
-
-        // 개발자 단축키 (Ctrl + D)
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'd') {
-                e.preventDefault();
-                showDebugInfo();
-            }
-        });
-    </script>
+    <!-- JavaScript Files - 간소화 버전 -->
+    <script src="js/config.js"></script>
+    <script src="js/simple-auth.js"></script>
     
     <!-- Lucide 아이콘 초기화 -->
     <script>
-        // 페이지 로드 완료 후 아이콘 다시 업데이트
-        setTimeout(() => {
+        document.addEventListener('DOMContentLoaded', function() {
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
+                console.log('✅ Lucide icons initialized');
+            } else {
+                console.error('❌ Lucide library not loaded');
             }
-        }, 100);
+        });
     </script>
 </body>
 </html>
