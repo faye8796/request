@@ -37,6 +37,14 @@ const SupabaseAPI = {
         return this.supabase;
     },
 
+    // 클라이언트 확보 함수
+    async ensureClient() {
+        if (!this.supabase) {
+            await this.init();
+        }
+        return this.supabase;
+    },
+
     // 안전한 API 호출 래퍼
     async safeApiCall(operation, apiFunction, context = {}) {
         try {
@@ -178,6 +186,508 @@ const SupabaseAPI = {
             console.error('❌ 관리자 인증 오류:', error);
             return { success: false, message: this.getErrorMessage(error) };
         }
+    },
+
+    // ===================
+    // 통계 데이터 (admin.js 호환)
+    // ===================
+    async getStats() {
+        const result = await this.safeApiCall('통계 데이터 조회', async () => {
+            const client = await this.ensureClient();
+            
+            // 전체 학생 수
+            const totalStudentsResult = await client
+                .from('user_profiles')
+                .select('id', { count: 'exact' })
+                .eq('user_type', 'student');
+
+            // 신청자 수 (최소 1개 이상 신청한 학생)
+            const applicantsResult = await client
+                .from('requests')
+                .select('user_id', { count: 'exact' })
+                .not('user_id', 'is', null);
+
+            // 대기 중인 신청 건수
+            const pendingResult = await client
+                .from('requests')
+                .select('id', { count: 'exact' })
+                .eq('status', 'pending');
+
+            // 승인된 신청 건수
+            const approvedResult = await client
+                .from('requests')
+                .select('id', { count: 'exact' })
+                .eq('status', 'approved');
+
+            // 구매완료 신청 건수
+            const purchasedResult = await client
+                .from('requests')
+                .select('id', { count: 'exact' })
+                .eq('status', 'purchased');
+
+            if (totalStudentsResult.error) throw totalStudentsResult.error;
+            if (applicantsResult.error) throw applicantsResult.error;
+            if (pendingResult.error) throw pendingResult.error;
+            if (approvedResult.error) throw approvedResult.error;
+            if (purchasedResult.error) throw purchasedResult.error;
+
+            // 신청자 수 계산 (중복 제거)
+            const uniqueApplicants = new Set();
+            if (applicantsResult.data) {
+                applicantsResult.data.forEach(item => {
+                    if (item.user_id) uniqueApplicants.add(item.user_id);
+                });
+            }
+
+            return {
+                data: {
+                    totalStudents: totalStudentsResult.count || 0,
+                    applicantCount: uniqueApplicants.size,
+                    pendingCount: pendingResult.count || 0,
+                    approvedCount: approvedResult.count || 0,
+                    purchasedCount: purchasedResult.count || 0
+                },
+                error: null
+            };
+        });
+
+        return result.success ? result.data : {
+            totalStudents: 0,
+            applicantCount: 0,
+            pendingCount: 0,
+            approvedCount: 0,
+            purchasedCount: 0
+        };
+    },
+
+    // ===================
+    // 예산 현황 통계 (admin.js 호환)
+    // ===================
+    async getBudgetOverviewStats() {
+        const result = await this.safeApiCall('예산 현황 통계 조회', async () => {
+            const client = await this.ensureClient();
+            
+            // 승인받은 학생들의 총 배정 예산
+            const budgetResult = await client
+                .from('user_budgets')
+                .select('allocated_budget, used_budget');
+
+            // 승인된 신청들의 총액
+            const approvedRequestsResult = await client
+                .from('requests')
+                .select('price')
+                .eq('status', 'approved');
+
+            // 구매완료된 신청들의 총액
+            const purchasedRequestsResult = await client
+                .from('requests')
+                .select('price')
+                .eq('status', 'purchased');
+
+            if (budgetResult.error) throw budgetResult.error;
+            if (approvedRequestsResult.error) throw approvedRequestsResult.error;
+            if (purchasedRequestsResult.error) throw purchasedRequestsResult.error;
+
+            const budgets = budgetResult.data || [];
+            const approvedRequests = approvedRequestsResult.data || [];
+            const purchasedRequests = purchasedRequestsResult.data || [];
+
+            const totalApprovedBudget = budgets.reduce((sum, budget) => sum + (budget.allocated_budget || 0), 0);
+            const approvedItemsTotal = approvedRequests.reduce((sum, request) => sum + (request.price || 0), 0);
+            const purchasedTotal = purchasedRequests.reduce((sum, request) => sum + (request.price || 0), 0);
+            const averagePerPerson = budgets.length > 0 ? Math.round(totalApprovedBudget / budgets.length) : 0;
+
+            return {
+                data: {
+                    totalApprovedBudget,
+                    approvedItemsTotal,
+                    purchasedTotal,
+                    averagePerPerson
+                },
+                error: null
+            };
+        });
+
+        return result.success ? result.data : {
+            totalApprovedBudget: 0,
+            approvedItemsTotal: 0,
+            purchasedTotal: 0,
+            averagePerPerson: 0
+        };
+    },
+
+    // ===================
+    // 신청 내역 검색 (admin.js 호환)
+    // ===================
+    async searchApplications(searchTerm = '') {
+        const result = await this.safeApiCall('신청 내역 검색', async () => {
+            const client = await this.ensureClient();
+            
+            let query = client
+                .from('requests')
+                .select(`
+                    *,
+                    user_profiles:user_id (
+                        name,
+                        field,
+                        sejong_institute
+                    )
+                `)
+                .order('created_at', { ascending: false });
+
+            // 검색어가 있으면 필터링
+            if (searchTerm && searchTerm.trim()) {
+                // 먼저 사용자 프로필에서 이름으로 검색
+                const userResult = await client
+                    .from('user_profiles')
+                    .select('id')
+                    .ilike('name', `%${searchTerm}%`);
+
+                if (userResult.data && userResult.data.length > 0) {
+                    const userIds = userResult.data.map(user => user.id);
+                    query = query.in('user_id', userIds);
+                } else {
+                    // 일치하는 사용자가 없으면 빈 결과 반환
+                    return { data: [], error: null };
+                }
+            }
+
+            return await query;
+        });
+
+        return result.success ? (result.data || []) : [];
+    },
+
+    // ===================
+    // 대기중인 수업계획 조회 (admin.js 호환)
+    // ===================
+    async getPendingLessonPlans() {
+        const result = await this.safeApiCall('대기중인 수업계획 조회', async () => {
+            const client = await this.ensureClient();
+            
+            return await client
+                .from('lesson_plans')
+                .select('*')
+                .eq('status', 'submitted')
+                .is('approved_at', null)
+                .is('rejection_reason', null);
+        });
+
+        return result.success ? (result.data || []) : [];
+    },
+
+    // ===================
+    // 분야별 예산 설정 관리 (admin.js 호환)
+    // ===================
+    async getAllFieldBudgetSettings() {
+        const result = await this.safeApiCall('분야별 예산 설정 조회', async () => {
+            const client = await this.ensureClient();
+            
+            return await client
+                .from('field_budget_settings')
+                .select('*');
+        });
+
+        if (result.success && result.data) {
+            const settings = {};
+            result.data.forEach(setting => {
+                settings[setting.field] = {
+                    perLessonAmount: setting.per_lesson_amount || 0,
+                    maxBudget: setting.max_budget || 0
+                };
+            });
+            return settings;
+        }
+
+        // 기본 설정 반환
+        return {
+            '한국어교육': { perLessonAmount: 15000, maxBudget: 400000 },
+            '전통문화예술': { perLessonAmount: 25000, maxBudget: 600000 },
+            'K-Pop 문화': { perLessonAmount: 10000, maxBudget: 300000 },
+            '한국현대문화': { perLessonAmount: 18000, maxBudget: 450000 },
+            '전통음악': { perLessonAmount: 30000, maxBudget: 750000 },
+            '한국미술': { perLessonAmount: 22000, maxBudget: 550000 },
+            '한국요리문화': { perLessonAmount: 35000, maxBudget: 800000 }
+        };
+    },
+
+    async updateFieldBudgetSettings(field, settings) {
+        return await this.safeApiCall('분야별 예산 설정 업데이트', async () => {
+            const client = await this.ensureClient();
+            
+            const updateData = {
+                field: field,
+                per_lesson_amount: settings.perLessonAmount || 0,
+                max_budget: settings.maxBudget || 0,
+                updated_at: new Date().toISOString()
+            };
+
+            // UPSERT 방식으로 업데이트
+            return await client
+                .from('field_budget_settings')
+                .upsert(updateData, {
+                    onConflict: 'field'
+                })
+                .select();
+        });
+    },
+
+    async getFieldBudgetStatus(field) {
+        const result = await this.safeApiCall('분야별 예산 현황 조회', async () => {
+            const client = await this.ensureClient();
+            
+            // 해당 분야의 승인받은 학생들과 예산 정보
+            const studentsResult = await client
+                .from('user_budgets')
+                .select(`
+                    *,
+                    user_profiles:user_id (
+                        name,
+                        field,
+                        sejong_institute
+                    )
+                `)
+                .eq('user_profiles.field', field);
+
+            if (studentsResult.error) throw studentsResult.error;
+
+            const students = studentsResult.data || [];
+            
+            // 통계 계산
+            const statistics = {
+                totalStudents: students.length,
+                totalAllocated: students.reduce((sum, s) => sum + (s.allocated_budget || 0), 0),
+                totalUsed: students.reduce((sum, s) => sum + (s.used_budget || 0), 0),
+                utilizationRate: 0
+            };
+
+            if (statistics.totalAllocated > 0) {
+                statistics.utilizationRate = Math.round((statistics.totalUsed / statistics.totalAllocated) * 100);
+            }
+
+            return {
+                data: {
+                    students,
+                    statistics
+                },
+                error: null
+            };
+        });
+
+        return result;
+    },
+
+    // ===================
+    // 수업계획 승인/반려 (admin.js 호환)
+    // ===================
+    async approveLessonPlan(studentId) {
+        return await this.safeApiCall('수업계획 승인', async () => {
+            const client = await this.ensureClient();
+            
+            // 수업계획 승인 처리
+            const approveResult = await client
+                .from('lesson_plans')
+                .update({
+                    status: 'approved',
+                    approved_at: new Date().toISOString(),
+                    approved_by: this.currentUser?.id || 'admin',
+                    rejection_reason: null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', studentId)
+                .select();
+
+            if (approveResult.error) throw approveResult.error;
+
+            // 예산 배정 로직은 여기에 추가 가능
+            // TODO: 수업계획 기반 예산 배정
+
+            return approveResult;
+        });
+    },
+
+    async rejectLessonPlan(studentId, reason) {
+        return await this.safeApiCall('수업계획 반려', async () => {
+            const client = await this.ensureClient();
+            
+            return await client
+                .from('lesson_plans')
+                .update({
+                    status: 'submitted',
+                    rejection_reason: reason,
+                    approved_at: null,
+                    approved_by: null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', studentId)
+                .select();
+        });
+    },
+
+    // ===================
+    // 교구 신청 상태 업데이트 (admin.js 호환)
+    // ===================
+    async updateItemStatus(requestId, status, rejectionReason = null) {
+        return await this.safeApiCall('교구 신청 상태 업데이트', async () => {
+            const client = await this.ensureClient();
+            
+            const updateData = {
+                status: status,
+                updated_at: new Date().toISOString()
+            };
+
+            if (status === 'rejected' && rejectionReason) {
+                updateData.rejection_reason = rejectionReason;
+            } else if (status === 'approved') {
+                updateData.approved_at = new Date().toISOString();
+                updateData.approved_by = this.currentUser?.id || 'admin';
+                updateData.rejection_reason = null;
+            } else if (status === 'purchased') {
+                updateData.purchased_at = new Date().toISOString();
+            }
+
+            return await client
+                .from('requests')
+                .update(updateData)
+                .eq('id', requestId)
+                .select();
+        });
+    },
+
+    // ===================
+    // Excel 내보내기용 데이터 준비 (admin.js 호환)
+    // ===================
+    async prepareExportData() {
+        const result = await this.safeApiCall('Excel 내보내기용 데이터 준비', async () => {
+            const client = await this.ensureClient();
+            
+            return await client
+                .from('requests')
+                .select(`
+                    *,
+                    user_profiles:user_id (
+                        name,
+                        field,
+                        sejong_institute,
+                        birth_date
+                    )
+                `)
+                .order('created_at', { ascending: false });
+        });
+
+        if (result.success && result.data) {
+            // CSV 형태로 변환
+            return result.data.map(item => ({
+                '신청일': new Date(item.created_at).toLocaleDateString('ko-KR'),
+                '학생명': item.user_profiles?.name || '알 수 없음',
+                '세종학당': item.user_profiles?.sejong_institute || '미설정',
+                '분야': item.user_profiles?.field || '미설정',
+                '교구명': item.item_name || '',
+                '사용목적': item.purpose || '',
+                '가격': item.price || 0,
+                '구매방식': item.purchase_type === 'offline' ? '오프라인' : '온라인',
+                '구매링크': item.purchase_link || '',
+                '묶음여부': item.is_bundle ? '묶음' : '단일',
+                '상태': this.getStatusText(item.status),
+                '승인일': item.approved_at ? new Date(item.approved_at).toLocaleDateString('ko-KR') : '',
+                '반려사유': item.rejection_reason || ''
+            }));
+        }
+
+        return [];
+    },
+
+    // ===================
+    // 시스템 설정 관리 (admin.js 호환)
+    // ===================
+    async updateSystemSetting(key, value) {
+        return await this.safeApiCall('시스템 설정 업데이트', async () => {
+            const client = await this.ensureClient();
+            
+            let settingValue = value;
+            let settingType = 'string';
+            
+            if (typeof value === 'boolean') {
+                settingValue = value.toString();
+                settingType = 'boolean';
+            } else if (typeof value === 'number') {
+                settingValue = value.toString();
+                settingType = 'number';
+            } else if (typeof value === 'object') {
+                settingValue = JSON.stringify(value);
+                settingType = 'json';
+            }
+
+            return await client
+                .from('system_settings')
+                .upsert({
+                    setting_key: key,
+                    setting_value: settingValue,
+                    setting_type: settingType,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'setting_key'
+                })
+                .select();
+        });
+    },
+
+    async toggleTestMode() {
+        const settings = await this.getSystemSettings();
+        const newMode = !settings.test_mode;
+        
+        const result = await this.updateSystemSetting('test_mode', newMode);
+        return result.success ? newMode : false;
+    },
+
+    async canEditLessonPlan() {
+        const settings = await this.getSystemSettings();
+        
+        if (settings.test_mode || settings.ignore_deadline) {
+            return true;
+        }
+        
+        if (settings.lesson_plan_deadline) {
+            const deadline = new Date(settings.lesson_plan_deadline);
+            const now = new Date();
+            return now <= deadline;
+        }
+        
+        return true; // 기본적으로 수정 가능
+    },
+
+    // ===================
+    // 영수증 관리 (admin.js 호환)
+    // ===================
+    async getReceiptByRequestId(requestId) {
+        const result = await this.safeApiCall('영수증 조회', async () => {
+            const client = await this.ensureClient();
+            
+            return await client
+                .from('receipts')
+                .select(`
+                    *,
+                    requests:request_id (
+                        item_name,
+                        user_profiles:user_id (
+                            name
+                        )
+                    )
+                `)
+                .eq('request_id', requestId)
+                .single();
+        });
+
+        if (result.success) {
+            const receipt = result.data;
+            return {
+                ...receipt,
+                item_name: receipt.requests?.item_name,
+                student_name: receipt.requests?.user_profiles?.name
+            };
+        }
+
+        return null;
     },
 
     // ===================
@@ -484,6 +994,10 @@ const SupabaseAPI = {
         return method === 'offline' ? '오프라인' : '온라인';
     },
 
+    getPurchaseMethodClass(method) {
+        return method === 'offline' ? 'offline' : 'online';
+    },
+
     // 로그아웃
     logout() {
         this.currentUser = null;
@@ -528,4 +1042,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v2.0 loaded - simplified and stable');
+console.log('🚀 SupabaseAPI v2.1 loaded - admin.js 호환성 완료');
