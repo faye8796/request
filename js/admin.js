@@ -13,7 +13,7 @@ const AdminManager = {
         await this.loadBudgetSettings();
     },
 
-    // 기능 활성화 관리 로드 (새로 추가 - admin.html에서 호출됨)
+    // 기능 활성화 관리 로드 (student/dashboard.html과 연동)
     async loadFeatureSettings() {
         console.log('⚙️ 기능 활성화 관리 로드 시작');
         
@@ -27,61 +27,57 @@ const AdminManager = {
             // 로딩 상태 표시
             featureList.innerHTML = '<div class="loading-message">기능 설정을 불러오는 중...</div>';
 
-            // 시스템 기능 정의
+            // student/dashboard.html과 연동되는 3개 기능 정의
             const systemFeatures = [
                 {
-                    id: 'equipment_request_enabled',
-                    name: '교구 신청 기능',
-                    description: '학생들이 교구 구매를 신청할 수 있는 기능입니다.',
-                    icon: 'package',
-                    defaultValue: true
+                    id: 'institute_info',
+                    name: '파견 학당 정보 조회',
+                    description: '학생들이 배정받은 세종학당의 상세 정보를 확인할 수 있는 기능입니다.',
+                    icon: 'building'
                 },
                 {
-                    id: 'flight_request_enabled',
-                    name: '항공권 신청 기능',
-                    description: '학생들이 항공권 구매를 신청할 수 있는 기능입니다.',
-                    icon: 'plane',
-                    defaultValue: true
+                    id: 'flight_request', 
+                    name: '항공권 구매 신청',
+                    description: '학생들이 파견지까지의 항공권 구매를 신청할 수 있는 기능입니다.',
+                    icon: 'plane'
                 },
                 {
-                    id: 'institute_info_enabled',
-                    name: '학당 정보 조회 기능',
-                    description: '학생들이 파견 학당 정보를 조회할 수 있는 기능입니다.',
-                    icon: 'building',
-                    defaultValue: true
-                },
-                {
-                    id: 'lesson_plan_enabled',
-                    name: '수업계획 제출 기능',
-                    description: '학생들이 수업계획을 작성하고 제출할 수 있는 기능입니다.',
-                    icon: 'clipboard-check',
-                    defaultValue: true
-                },
-                {
-                    id: 'notification_enabled',
-                    name: '알림 기능',
-                    description: '시스템 알림과 공지사항을 표시하는 기능입니다.',
-                    icon: 'bell',
-                    defaultValue: true
+                    id: 'equipment_request',
+                    name: '문화교구 신청',
+                    description: '학생들이 수업에 필요한 문화 교구를 신청할 수 있는 기능입니다.',
+                    icon: 'package'
                 }
             ];
 
-            // 현재 기능 설정 가져오기
+            // feature_settings 테이블에서 현재 설정 가져오기
             let currentSettings = {};
             try {
-                if (window.SupabaseAPI && typeof window.SupabaseAPI.getSystemSettings === 'function') {
-                    currentSettings = await SupabaseAPI.getSystemSettings();
+                if (window.SupabaseAPI && typeof window.SupabaseAPI.ensureClient === 'function') {
+                    const client = await SupabaseAPI.ensureClient();
+                    const { data: features, error } = await client
+                        .from('feature_settings')
+                        .select('feature_name, is_active');
+                    
+                    if (error) {
+                        console.warn('⚠️ feature_settings 조회 오류:', error);
+                    } else {
+                        features.forEach(feature => {
+                            currentSettings[feature.feature_name] = feature.is_active;
+                        });
+                        console.log('✅ feature_settings 로드 성공:', currentSettings);
+                    }
                 }
             } catch (error) {
-                console.warn('⚠️ 시스템 설정을 가져올 수 없어 기본값을 사용합니다:', error);
+                console.warn('⚠️ 기능 설정을 가져올 수 없어 기본값을 사용합니다:', error);
             }
 
             // 기능 목록 생성
             featureList.innerHTML = '';
             
             systemFeatures.forEach(feature => {
+                // 현재 설정에서 상태 확인, 없으면 true가 기본값
                 const isEnabled = currentSettings[feature.id] !== undefined ? 
-                    currentSettings[feature.id] : feature.defaultValue;
+                    currentSettings[feature.id] : true;
                 
                 const featureItem = this.createFeatureItem(feature, isEnabled);
                 featureList.appendChild(featureItem);
@@ -119,7 +115,7 @@ const AdminManager = {
         }
     },
 
-    // 기능 아이템 생성 (새로 추가)
+    // 기능 아이템 생성
     createFeatureItem(feature, isEnabled) {
         const item = document.createElement('div');
         item.className = 'feature-item';
@@ -151,7 +147,7 @@ const AdminManager = {
         return item;
     },
 
-    // 기능 토글 이벤트 리스너 설정 (새로 추가)
+    // 기능 토글 이벤트 리스너 설정
     setupFeatureToggleListeners() {
         const toggleSwitches = document.querySelectorAll('.toggle-switch');
         
@@ -162,7 +158,7 @@ const AdminManager = {
         });
     },
 
-    // 기능 토글 처리 (새로 추가)
+    // 기능 토글 처리 (feature_settings 테이블 업데이트)
     async handleFeatureToggle(toggleElement) {
         const featureId = toggleElement.dataset.featureId;
         const currentEnabled = toggleElement.dataset.enabled === 'true';
@@ -175,9 +171,46 @@ const AdminManager = {
             toggleElement.classList.add('loading');
             toggleElement.style.pointerEvents = 'none';
 
-            // 데이터베이스 업데이트
-            if (window.SupabaseAPI && typeof window.SupabaseAPI.updateSystemSetting === 'function') {
-                await SupabaseAPI.updateSystemSetting(featureId, newEnabled);
+            // feature_settings 테이블 업데이트
+            if (window.SupabaseAPI && typeof window.SupabaseAPI.ensureClient === 'function') {
+                const client = await SupabaseAPI.ensureClient();
+                
+                // 기존 레코드가 있는지 확인
+                const { data: existing, error: selectError } = await client
+                    .from('feature_settings')
+                    .select('id')
+                    .eq('feature_name', featureId)
+                    .single();
+
+                if (selectError && selectError.code !== 'PGRST116') {
+                    throw new Error(`기능 설정 조회 실패: ${selectError.message}`);
+                }
+
+                if (existing) {
+                    // 기존 레코드 업데이트
+                    const { error: updateError } = await client
+                        .from('feature_settings')
+                        .update({ is_active: newEnabled })
+                        .eq('feature_name', featureId);
+
+                    if (updateError) {
+                        throw new Error(`기능 설정 업데이트 실패: ${updateError.message}`);
+                    }
+                } else {
+                    // 새 레코드 생성
+                    const { error: insertError } = await client
+                        .from('feature_settings')
+                        .insert({
+                            feature_name: featureId,
+                            feature_title: this.getFeatureNameById(featureId),
+                            is_active: newEnabled,
+                            display_order: this.getFeatureDisplayOrder(featureId)
+                        });
+
+                    if (insertError) {
+                        throw new Error(`기능 설정 생성 실패: ${insertError.message}`);
+                    }
+                }
             }
 
             // UI 업데이트
@@ -189,6 +222,8 @@ const AdminManager = {
             
             if (window.Utils && typeof window.Utils.showToast === 'function') {
                 Utils.showToast(`${featureName}이(가) ${statusText}되었습니다.`, 'success');
+            } else {
+                console.log(`✅ ${featureName} ${statusText} 완료`);
             }
 
             console.log(`✅ 기능 토글 완료: ${featureId} = ${newEnabled}`);
@@ -209,7 +244,7 @@ const AdminManager = {
         }
     },
 
-    // 기능 아이템 UI 업데이트 (새로 추가)
+    // 기능 아이템 UI 업데이트
     updateFeatureItemUI(featureId, isEnabled) {
         const featureItem = document.querySelector(`[data-feature-id="${featureId}"]`);
         if (!featureItem) return;
@@ -234,17 +269,26 @@ const AdminManager = {
         }
     },
 
-    // 기능 ID로 이름 찾기 (새로 추가)
+    // 기능 ID로 이름 찾기
     getFeatureNameById(featureId) {
         const featureNames = {
-            'equipment_request_enabled': '교구 신청 기능',
-            'flight_request_enabled': '항공권 신청 기능',
-            'institute_info_enabled': '학당 정보 조회 기능',
-            'lesson_plan_enabled': '수업계획 제출 기능',
-            'notification_enabled': '알림 기능'
+            'institute_info': '파견 학당 정보 조회',
+            'flight_request': '항공권 구매 신청',
+            'equipment_request': '문화교구 신청'
         };
         
         return featureNames[featureId] || '알 수 없는 기능';
+    },
+
+    // 기능 표시 순서 가져오기
+    getFeatureDisplayOrder(featureId) {
+        const displayOrders = {
+            'institute_info': 1,
+            'flight_request': 2,
+            'equipment_request': 3
+        };
+        
+        return displayOrders[featureId] || 99;
     },
 
     // 이벤트 리스너 설정
