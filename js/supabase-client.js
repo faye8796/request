@@ -1,6 +1,6 @@
-// Supabase 클라이언트 설정 및 API 관리 - 안정적인 버전 v4
-// 🔧 라이브러리 로딩 문제 해결 - 간소화된 안정적 버전
-// ✅ 학생 시스템 및 관리자 시스템 호환성 확보
+// Supabase 클라이언트 설정 및 API 관리 - 안정적인 버전 v5
+// 🔧 CDN URL 문제 해결 및 간소화된 초기화 로직
+// ✅ jsdelivr CDN을 통한 안정적인 라이브러리 로딩
 
 // 설정 파일이 로드될 때까지 대기
 function waitForConfig() {
@@ -13,7 +13,7 @@ function waitForConfig() {
         
         console.log('⏳ CONFIG 로드 대기 중...');
         let waitCount = 0;
-        const maxWait = 100; // 10초
+        const maxWait = 50; // 5초
         
         const checkConfig = setInterval(() => {
             waitCount++;
@@ -35,27 +35,23 @@ function waitForConfig() {
 let supabaseClient = null;
 let initializationPromise = null;
 let connectionRetryCount = 0;
-const MAX_RETRY_COUNT = 3;
+const MAX_RETRY_COUNT = 2;
 
-// 간단한 Supabase 라이브러리 확인
+// 간단하고 안정적인 Supabase 라이브러리 확인
 function getSupabaseCreateClient() {
-    // 방법 1: window.supabase (가장 일반적)
+    // 가장 일반적인 방법: window.supabase
     if (window.supabase && typeof window.supabase.createClient === 'function') {
         console.log('📦 Supabase 라이브러리 감지: window.supabase');
         return window.supabase.createClient;
     }
     
-    // 방법 2: 전역 supabase 변수
-    if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
-        console.log('📦 Supabase 라이브러리 감지: global supabase');
-        return supabase.createClient;
-    }
-    
     console.error('❌ Supabase 라이브러리를 찾을 수 없습니다.');
+    console.error('📝 확인 사항: CDN URL이 올바른지 확인하세요');
+    console.error('🌐 올바른 URL: https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js');
     return null;
 }
 
-// 클라이언트 초기화 함수 - 간소화된 버전
+// 클라이언트 초기화 함수 - 간소화된 안정적 버전
 async function initializeSupabaseClient() {
     if (supabaseClient) {
         console.log('✅ 기존 Supabase 클라이언트 재사용');
@@ -85,23 +81,23 @@ async function initializeSupabaseClient() {
                 throw new Error('필수 Supabase 설정이 누락되었습니다.');
             }
             
-            // 3. Supabase 라이브러리 확인 (간소화됨)
+            // 3. Supabase 라이브러리 확인
             console.log('📚 Supabase 라이브러리 확인 중...');
             const createClient = getSupabaseCreateClient();
             
             if (!createClient) {
-                // 라이브러리가 아직 로드되지 않았을 수 있으니 잠시 대기
+                // 잠시 대기 후 재시도
                 console.log('⏳ Supabase 라이브러리 로드 대기...');
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 500));
                 
                 const retryCreateClient = getSupabaseCreateClient();
                 if (!retryCreateClient) {
-                    throw new Error('Supabase 라이브러리를 불러오지 못했습니다. 페이지를 새로고침해주세요.');
+                    throw new Error('Supabase 라이브러리를 불러오지 못했습니다. CDN URL을 확인하고 페이지를 새로고침해주세요.');
                 }
                 
                 console.log('✅ Supabase 라이브러리 확인 완료 (재시도 성공)');
                 
-                // 4. 클라이언트 생성
+                // 클라이언트 생성
                 supabaseClient = retryCreateClient(
                     config.SUPABASE.URL,
                     config.SUPABASE.ANON_KEY,
@@ -116,7 +112,7 @@ async function initializeSupabaseClient() {
             } else {
                 console.log('✅ Supabase 라이브러리 확인 완료');
                 
-                // 4. 클라이언트 생성
+                // 클라이언트 생성
                 supabaseClient = createClient(
                     config.SUPABASE.URL,
                     config.SUPABASE.ANON_KEY,
@@ -136,7 +132,7 @@ async function initializeSupabaseClient() {
             
             console.log('✅ Supabase 클라이언트 생성 완료');
             
-            // 5. 간단한 연결 테스트
+            // 5. 간단한 연결 테스트 (선택적)
             try {
                 console.log('🔍 데이터베이스 연결 테스트 중...');
                 const testQuery = await supabaseClient
@@ -144,7 +140,6 @@ async function initializeSupabaseClient() {
                     .select('setting_key')
                     .limit(1);
                 
-                // 테이블이 없어도 연결 자체는 성공으로 간주
                 console.log('✅ 데이터베이스 연결 테스트 완료');
                 
             } catch (testError) {
@@ -160,9 +155,9 @@ async function initializeSupabaseClient() {
             console.error('❌ Supabase 클라이언트 초기화 실패:', error);
             connectionRetryCount++;
             
-            // 재시도 로직
+            // 재시도 로직 (최대 2회)
             if (connectionRetryCount < MAX_RETRY_COUNT) {
-                const retryDelay = 2000 * connectionRetryCount;
+                const retryDelay = 1000 * connectionRetryCount;
                 console.log(`🔄 재시도 중... (${connectionRetryCount}/${MAX_RETRY_COUNT}) - ${retryDelay}ms 후`);
                 
                 await new Promise(resolve => setTimeout(resolve, retryDelay));
@@ -176,8 +171,8 @@ async function initializeSupabaseClient() {
             let userFriendlyMessage = error.message;
             if (error.message.includes('fetch') || error.message.includes('network')) {
                 userFriendlyMessage = '네트워크 연결에 문제가 있습니다. 인터넷 연결을 확인하고 다시 시도해주세요.';
-            } else if (error.message.includes('라이브러리')) {
-                userFriendlyMessage = 'Supabase 라이브러리 로딩에 문제가 있습니다. 페이지를 새로고침해주세요.';
+            } else if (error.message.includes('라이브러리') || error.message.includes('CDN')) {
+                userFriendlyMessage = 'Supabase 라이브러리 로딩에 문제가 있습니다. CDN 연결을 확인하고 페이지를 새로고침해주세요.';
             }
             
             const enhancedError = new Error(userFriendlyMessage);
@@ -195,7 +190,7 @@ async function initializeSupabaseClient() {
 (async () => {
     try {
         // 페이지 로드 직후 약간 대기
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 100));
         await initializeSupabaseClient();
     } catch (error) {
         console.warn('⚠️ 초기 Supabase 클라이언트 초기화 지연됨:', error.message);
@@ -858,4 +853,4 @@ Object.defineProperty(window, 'supabase', {
     configurable: true
 });
 
-console.log('🚀 SupabaseAPI v4 loaded - simplified and stable version');
+console.log('🚀 SupabaseAPI v5 loaded - CDN URL fixed and simplified');

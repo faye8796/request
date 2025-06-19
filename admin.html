@@ -6,8 +6,8 @@
     <title>세종학당 문화인턴 지원 시스템 - 관리자</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="css/main.css?v=1.4.3">
-    <link rel="stylesheet" href="css/login.css?v=1.4.3">
+    <link rel="stylesheet" href="css/main.css?v=1.4.4">
+    <link rel="stylesheet" href="css/login.css?v=1.4.4">
     
     <!-- 관리자 대시보드 전용 스타일 -->
     <style>
@@ -514,14 +514,14 @@
         시스템 초기화 중...
     </div>
 
-    <!-- JavaScript Files - 순서 중요! Fixed Supabase version -->
+    <!-- JavaScript Files - Fixed Supabase CDN URL -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
-    <script src="js/config.js?v=1.4.3"></script>
-    <script src="js/supabase-client.js?v=1.4.3"></script>
-    <script src="js/utils.js?v=1.4.3"></script>
-    <script src="js/auth.js?v=1.4.3"></script>
-    <script src="js/admin.js?v=1.4.3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+    <script src="js/config.js?v=1.4.4"></script>
+    <script src="js/supabase-client.js?v=1.4.4"></script>
+    <script src="js/utils.js?v=1.4.4"></script>
+    <script src="js/auth.js?v=1.4.4"></script>
+    <script src="js/admin.js?v=1.4.4"></script>
     
     <!-- 페이지 초기화 스크립트 -->
     <script>
@@ -637,13 +637,13 @@
             function waitForEssentials() {
                 return new Promise((resolve, reject) => {
                     let attempts = 0;
-                    const maxAttempts = 100; // 10초
+                    const maxAttempts = 50; // 5초
                     
                     const check = () => {
                         attempts++;
                         
                         const hasConfig = window.CONFIG;
-                        const hasSupabase = window.supabase && window.supabase.createClient;
+                        const hasSupabase = window.supabase && typeof window.supabase.createClient === 'function';
                         
                         console.log(`🔍 초기화 체크 ${attempts}/${maxAttempts}:`, {
                             CONFIG: hasConfig,
@@ -672,7 +672,7 @@
             function waitForSupabaseAPI() {
                 return new Promise((resolve, reject) => {
                     let attempts = 0;
-                    const maxAttempts = 50; // 5초
+                    const maxAttempts = 30; // 3초
                     
                     const check = async () => {
                         attempts++;
