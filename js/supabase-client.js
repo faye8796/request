@@ -261,7 +261,7 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 예산 현황 통계 (수정된 버전 - user_budgets 테이블 없이 작동)
+    // 예산 현황 통계 (수정된 버전)
     // ===================
     async getBudgetOverviewStats() {
         console.log('💰 예산 현황 통계 계산 시작...');
@@ -269,7 +269,7 @@ const SupabaseAPI = {
         try {
             const client = await this.ensureClient();
             
-            // 1. 승인된 수업계획을 가진 학생들 조회
+            // 1. 승인된 수업계획을 가진 학생들 조회 (🔧 approved_at 컬럼 제거에 따른 수정)
             const approvedLessonPlansResult = await client
                 .from('lesson_plans')
                 .select(`
@@ -279,8 +279,7 @@ const SupabaseAPI = {
                         field
                     )
                 `)
-                .eq('status', 'submitted')
-                .not('approved_at', 'is', null);
+                .eq('status', 'approved');  // 🔧 status로만 판단
 
             // 2. 분야별 예산 설정 조회
             const fieldBudgetSettings = await this.getAllFieldBudgetSettings();
@@ -376,7 +375,7 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 🆕 학생 예산 상태 조회 함수 추가 (누락된 함수)
+    // 🔧 학생 예산 상태 조회 함수 수정 (approved_at, approved_by 컬럼 제거 반영)
     // ===================
     async getStudentBudgetStatus(studentId) {
         console.log('💰 학생 예산 상태 조회:', studentId);
@@ -414,10 +413,10 @@ const SupabaseAPI = {
                 };
             }
 
-            // 2. 학생의 수업계획 상태 확인
+            // 2. 🔧 학생의 수업계획 상태 확인 (approved_at, approved_by 컬럼 제거 반영)
             const lessonPlanResult = await client
                 .from('lesson_plans')
-                .select('status, lessons, approved_at, approved_by')
+                .select('status, lessons, rejection_reason')  // 🔧 approved_at, approved_by 제거
                 .eq('user_id', studentId)
                 .single();
 
@@ -427,36 +426,36 @@ const SupabaseAPI = {
             if (lessonPlanResult.data) {
                 const plan = lessonPlanResult.data;
                 
-                // 수업계획 상태 확인
+                // 🔧 수업계획 상태 확인 (status만으로 판단)
                 if (plan.status === 'draft') {
                     lessonPlanStatus = 'draft';
                 } else if (plan.status === 'submitted') {
-                    if (plan.approved_at && plan.approved_by) {
-                        lessonPlanStatus = 'approved';
-                        
-                        // 승인된 경우에만 수업 횟수 계산
-                        try {
-                            if (plan.lessons) {
-                                let lessons = plan.lessons;
-                                if (typeof lessons === 'string') {
-                                    lessons = JSON.parse(lessons);
-                                }
-                                
-                                if (lessons.totalLessons) {
-                                    totalLessons = lessons.totalLessons;
-                                } else if (lessons.schedule && Array.isArray(lessons.schedule)) {
-                                    totalLessons = lessons.schedule.length;
-                                } else if (lessons.lessons && Array.isArray(lessons.lessons)) {
-                                    totalLessons = lessons.lessons.length;
-                                }
+                    lessonPlanStatus = 'pending';
+                } else if (plan.status === 'approved') {
+                    lessonPlanStatus = 'approved';
+                    
+                    // 승인된 경우에만 수업 횟수 계산
+                    try {
+                        if (plan.lessons) {
+                            let lessons = plan.lessons;
+                            if (typeof lessons === 'string') {
+                                lessons = JSON.parse(lessons);
                             }
-                        } catch (e) {
-                            console.warn('수업계획 파싱 오류:', e);
-                            totalLessons = 0;
+                            
+                            if (lessons.totalLessons) {
+                                totalLessons = lessons.totalLessons;
+                            } else if (lessons.schedule && Array.isArray(lessons.schedule)) {
+                                totalLessons = lessons.schedule.length;
+                            } else if (lessons.lessons && Array.isArray(lessons.lessons)) {
+                                totalLessons = lessons.lessons.length;
+                            }
                         }
-                    } else {
-                        lessonPlanStatus = 'pending';
+                    } catch (e) {
+                        console.warn('수업계획 파싱 오류:', e);
+                        totalLessons = 0;
                     }
+                } else if (plan.status === 'rejected') {
+                    lessonPlanStatus = 'rejected';
                 }
             }
 
@@ -552,32 +551,31 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 대기중인 수업계획 조회 (admin.js 호환)
+    // 대기중인 수업계획 조회 (admin.js 호환) 🔧 수정
     // ===================
     async getPendingLessonPlans() {
         const result = await this.safeApiCall('대기중인 수업계획 조회', async () => {
             const client = await this.ensureClient();
             
+            // 🔧 approved_at 컬럼 제거에 따른 수정 - status만으로 판단
             return await client
                 .from('lesson_plans')
                 .select('*')
-                .eq('status', 'submitted')
-                .is('approved_at', null)
-                .is('rejection_reason', null);
+                .eq('status', 'submitted');  // submitted 상태인 것들을 대기중으로 판단
         });
 
         return result.success ? (result.data || []) : [];
     },
 
     // ===================
-    // 분야별 예산 설정 관리 (admin.js 호환) - 🐛 테이블명 수정
+    // 분야별 예산 설정 관리 (admin.js 호환)
     // ===================
     async getAllFieldBudgetSettings() {
         const result = await this.safeApiCall('분야별 예산 설정 조회', async () => {
             const client = await this.ensureClient();
             
             return await client
-                .from('budget_settings')  // 🔧 field_budget_settings → budget_settings로 수정
+                .from('budget_settings')
                 .select('*');
         });
 
@@ -586,7 +584,7 @@ const SupabaseAPI = {
             result.data.forEach(setting => {
                 settings[setting.field] = {
                     perLessonAmount: setting.per_lesson_amount || 0,
-                    maxBudget: setting.max_budget_limit || 0  // 🔧 max_budget → max_budget_limit로 수정
+                    maxBudget: setting.max_budget_limit || 0
                 };
             });
             return settings;
@@ -611,13 +609,13 @@ const SupabaseAPI = {
             const updateData = {
                 field: field,
                 per_lesson_amount: settings.perLessonAmount || 0,
-                max_budget_limit: settings.maxBudget || 0,  // 🔧 max_budget → max_budget_limit로 수정
+                max_budget_limit: settings.maxBudget || 0,
                 updated_at: new Date().toISOString()
             };
 
             // UPSERT 방식으로 업데이트
             return await client
-                .from('budget_settings')  // 🔧 field_budget_settings → budget_settings로 수정
+                .from('budget_settings')
                 .upsert(updateData, {
                     onConflict: 'field'
                 })
@@ -631,7 +629,7 @@ const SupabaseAPI = {
         try {
             const client = await this.ensureClient();
             
-            // 해당 분야의 승인받은 수업계획을 가진 학생들 조회
+            // 🔧 해당 분야의 승인받은 수업계획을 가진 학생들 조회 (approved_at 컬럼 제거 반영)
             const approvedPlansResult = await client
                 .from('lesson_plans')
                 .select(`
@@ -643,8 +641,7 @@ const SupabaseAPI = {
                         sejong_institute
                     )
                 `)
-                .eq('status', 'submitted')
-                .not('approved_at', 'is', null)
+                .eq('status', 'approved')  // 🔧 status로만 판단
                 .eq('user_profiles.field', field);
 
             if (!approvedPlansResult.data) {
@@ -745,18 +742,17 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 수업계획 승인/반려 (admin.js 호환) - 🐛 승인 로직 수정
+    // 🔧 수업계획 승인/반려 (admin.js 호환) - 단순화된 승인 로직
     // ===================
     async approveLessonPlan(studentId) {
         return await this.safeApiCall('수업계획 승인', async () => {
             const client = await this.ensureClient();
             
-            // 🔧 수업계획 승인 처리 - status는 그대로 두고 approved_at만 설정
+            // 🔧 단순화된 승인 처리 - status만 변경
             const approveResult = await client
                 .from('lesson_plans')
                 .update({
-                    approved_at: new Date().toISOString(),
-                    approved_by: this.currentUser?.id || 'admin',
+                    status: 'approved',  // 🔧 status만 변경
                     rejection_reason: null,
                     updated_at: new Date().toISOString()
                 })
@@ -778,9 +774,8 @@ const SupabaseAPI = {
             return await client
                 .from('lesson_plans')
                 .update({
+                    status: 'rejected',  // 🔧 status를 rejected로 변경
                     rejection_reason: reason,
-                    approved_at: null,
-                    approved_by: null,
                     updated_at: new Date().toISOString()
                 })
                 .eq('user_id', studentId)
@@ -804,8 +799,8 @@ const SupabaseAPI = {
             if (status === 'rejected' && rejectionReason) {
                 updateData.rejection_reason = rejectionReason;
             } else if (status === 'approved') {
-                updateData.reviewed_at = new Date().toISOString();  // 🔧 approved_at → reviewed_at
-                updateData.reviewed_by = this.currentUser?.id || 'admin';  // 🔧 approved_by → reviewed_by
+                updateData.reviewed_at = new Date().toISOString();
+                updateData.reviewed_by = this.currentUser?.id || 'admin';
                 updateData.rejection_reason = null;
             } else if (status === 'purchased') {
                 updateData.purchased_at = new Date().toISOString();
@@ -854,7 +849,7 @@ const SupabaseAPI = {
                 '구매링크': item.purchase_link || '',
                 '묶음여부': item.is_bundle ? '묶음' : '단일',
                 '상태': this.getStatusText(item.status),
-                '승인일': item.reviewed_at ? new Date(item.reviewed_at).toLocaleDateString('ko-KR') : '',  // 🔧 approved_at → reviewed_at
+                '승인일': item.reviewed_at ? new Date(item.reviewed_at).toLocaleDateString('ko-KR') : '',
                 '반려사유': item.rejection_reason || ''
             }));
         }
@@ -1022,8 +1017,8 @@ const SupabaseAPI = {
             if (status === 'rejected' && rejectionReason) {
                 updateData.rejection_reason = rejectionReason;
             } else if (status === 'approved') {
-                updateData.reviewed_at = new Date().toISOString();  // 🔧 approved_at → reviewed_at
-                updateData.reviewed_by = this.currentUser?.id || 'admin';  // 🔧 approved_by → reviewed_by
+                updateData.reviewed_at = new Date().toISOString();
+                updateData.reviewed_by = this.currentUser?.id || 'admin';
             }
 
             return await this.supabase
@@ -1063,7 +1058,7 @@ const SupabaseAPI = {
             // 기존 수업계획 확인
             const existingResult = await this.supabase
                 .from('lesson_plans')
-                .select('id, status, approved_at, approved_by')
+                .select('id, status')  // 🔧 approved_at, approved_by 제거
                 .eq('user_id', studentId);
 
             const lessonPlanData = {
@@ -1127,20 +1122,18 @@ const SupabaseAPI = {
                 }
             }
 
-            // 데이터 병합
+            // 🔧 데이터 병합 (approved_at, approved_by 컬럼 제거 반영)
             const enrichedPlans = lessonPlans.map(plan => {
                 let approval_status = 'pending';
                 
                 if (plan.status === 'draft') {
                     approval_status = 'draft';
                 } else if (plan.status === 'submitted') {
-                    if (plan.approved_at && plan.approved_by && !plan.rejection_reason) {
-                        approval_status = 'approved';
-                    } else if (plan.rejection_reason && plan.rejection_reason.trim() !== '') {
-                        approval_status = 'rejected';
-                    } else {
-                        approval_status = 'pending';
-                    }
+                    approval_status = 'pending';
+                } else if (plan.status === 'approved') {
+                    approval_status = 'approved';
+                } else if (plan.status === 'rejected') {
+                    approval_status = 'rejected';
                 }
                 
                 const userProfile = userProfiles[plan.user_id] || {
@@ -1167,17 +1160,14 @@ const SupabaseAPI = {
     async updateLessonPlanStatus(planId, status, rejectionReason = null) {
         return await this.safeApiCall('수업계획 상태 업데이트', async () => {
             const updateData = {
+                status: status,  // 🔧 status 직접 설정
                 updated_at: new Date().toISOString()
             };
 
-            if (status === 'approved') {
-                updateData.approved_at = new Date().toISOString();
-                updateData.approved_by = this.currentUser?.id || 'admin';
-                updateData.rejection_reason = null;
-            } else if (status === 'rejected' && rejectionReason) {
+            if (status === 'rejected' && rejectionReason) {
                 updateData.rejection_reason = rejectionReason;
-                updateData.approved_at = null;
-                updateData.approved_by = null;
+            } else if (status === 'approved') {
+                updateData.rejection_reason = null;
             }
 
             return await this.supabase
@@ -1306,4 +1296,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v2.4 loaded - 테이블명 오류 수정 및 수업계획 승인 로직 개선');
+console.log('🚀 SupabaseAPI v2.5 loaded - lesson_plans 테이블 구조 변경 반영 완료 (approved_at, approved_by 컬럼 제거)');
