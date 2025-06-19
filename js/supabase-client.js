@@ -1,8 +1,10 @@
-// Supabase 클라이언트 설정 및 API 관리 - 초기화 오류 개선 버전 v2
+// Supabase 클라이언트 설정 및 API 관리 - 안정적인 버전 호환성 개선 v3
+// 안정적인 Supabase 2.39.7 버전 호환성 확보
 // JSON 객체 에러 및 single() 메서드 문제 해결 + 사용자 친화적 오류 메시지 강화
 // 예산 재계산 시스템 통합 + 예산 배정 알고리즘 수정
 // 교구신청 API 함수들 추가 - createApplication, createBundleApplication, updateApplication, deleteApplication
 // 🆕 초기화 안정성 대폭 강화 - 관리자 대시보드 오류 해결
+// 🔧 Supabase 라이브러리 감지 및 호환성 개선
 
 // 설정 파일이 로드될 때까지 대기 - 개선된 버전 v2
 function waitForConfig() {
@@ -54,7 +56,88 @@ const initializationState = {
     initEndTime: null
 };
 
-// 클라이언트 초기화 함수 - 안정성 강화 v2 + 상태 추적
+// 🔧 Supabase 라이브러리 감지 개선
+function detectSupabaseLibrary() {
+    console.log('🔍 Supabase 라이브러리 감지 중...');
+    
+    // 다양한 방식으로 Supabase 라이브러리 확인
+    const checks = [
+        // 방법 1: window.supabase (일반적인 UMD 방식)
+        () => window.supabase && typeof window.supabase.createClient === 'function',
+        
+        // 방법 2: window.Supabase (대문자 시작)
+        () => window.Supabase && typeof window.Supabase.createClient === 'function',
+        
+        // 방법 3: 전역 supabase 모듈
+        () => typeof supabase !== 'undefined' && typeof supabase.createClient === 'function',
+        
+        // 방법 4: window.require가 있는 경우 (Node.js 스타일)
+        () => {
+            try {
+                if (typeof window.require === 'function') {
+                    const supabase = window.require('@supabase/supabase-js');
+                    return supabase && typeof supabase.createClient === 'function';
+                }
+                return false;
+            } catch (e) {
+                return false;
+            }
+        }
+    ];
+    
+    for (let i = 0; i < checks.length; i++) {
+        try {
+            if (checks[i]()) {
+                console.log(`✅ Supabase 라이브러리 감지 성공 (방법 ${i + 1})`);
+                return true;
+            }
+        } catch (error) {
+            console.warn(`⚠️ 감지 방법 ${i + 1} 실패:`, error);
+        }
+    }
+    
+    console.error('❌ Supabase 라이브러리를 감지할 수 없습니다');
+    return false;
+}
+
+// 🔧 Supabase createClient 함수 획득
+function getSupabaseCreateClient() {
+    // 방법 1: window.supabase
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+        console.log('📦 Supabase createClient 획득: window.supabase');
+        return window.supabase.createClient;
+    }
+    
+    // 방법 2: window.Supabase
+    if (window.Supabase && typeof window.Supabase.createClient === 'function') {
+        console.log('📦 Supabase createClient 획득: window.Supabase');
+        return window.Supabase.createClient;
+    }
+    
+    // 방법 3: 전역 supabase
+    if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
+        console.log('📦 Supabase createClient 획득: global supabase');
+        return supabase.createClient;
+    }
+    
+    // 방법 4: require 방식 (Node.js 스타일)
+    try {
+        if (typeof window.require === 'function') {
+            const supabaseModule = window.require('@supabase/supabase-js');
+            if (supabaseModule && typeof supabaseModule.createClient === 'function') {
+                console.log('📦 Supabase createClient 획득: require');
+                return supabaseModule.createClient;
+            }
+        }
+    } catch (error) {
+        console.warn('⚠️ require 방식 실패:', error);
+    }
+    
+    console.error('❌ Supabase createClient 함수를 찾을 수 없습니다');
+    return null;
+}
+
+// 클라이언트 초기화 함수 - 안정성 강화 v3 + 라이브러리 호환성 개선
 async function initializeSupabaseClient() {
     // 이미 초기화된 클라이언트가 있으면 반환
     if (supabaseClient && initializationState.apiReady) {
@@ -98,22 +181,32 @@ async function initializeSupabaseClient() {
                 throw new Error('필수 Supabase 설정이 누락되었습니다. 설정을 확인해주세요.');
             }
             
-            // 3단계: Supabase 라이브러리 확인
+            // 3단계: Supabase 라이브러리 확인 (개선됨)
             console.log('📚 Supabase 라이브러리 확인 중...');
-            if (!window.supabase || !window.supabase.createClient) {
+            
+            // 라이브러리 감지 시도
+            let libraryDetected = detectSupabaseLibrary();
+            
+            if (!libraryDetected) {
                 // 라이브러리가 로드되지 않은 경우 잠시 대기 후 재확인
                 console.log('⏳ Supabase 라이브러리 로드 대기...');
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                if (!window.supabase || !window.supabase.createClient) {
+                libraryDetected = detectSupabaseLibrary();
+                
+                if (!libraryDetected) {
                     throw new Error('Supabase 라이브러리를 불러오지 못했습니다. 페이지를 새로고침해주세요.');
                 }
             }
             console.log('✅ Supabase 라이브러리 확인 완료');
             
-            // 4단계: Supabase 클라이언트 생성
+            // 4단계: Supabase 클라이언트 생성 (개선됨)
             console.log('🔧 Supabase 클라이언트 생성 중...');
-            const { createClient } = window.supabase;
+            const createClient = getSupabaseCreateClient();
+            
+            if (!createClient) {
+                throw new Error('Supabase createClient 함수를 찾을 수 없습니다.');
+            }
             
             supabaseClient = createClient(
                 config.SUPABASE.URL,
@@ -218,6 +311,8 @@ async function initializeSupabaseClient() {
                 userFriendlyMessage = '서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.';
             } else if (error.message.includes('설정')) {
                 userFriendlyMessage = error.message; // 이미 사용자 친화적
+            } else if (error.message.includes('라이브러리')) {
+                userFriendlyMessage = 'Supabase 라이브러리 로딩에 문제가 있습니다. 페이지를 새로고침해주세요.';
             } else if (!error.message.includes('데이터베이스') && !error.message.includes('라이브러리')) {
                 userFriendlyMessage = '서비스 연결에 문제가 있습니다. 페이지를 새로고침하거나 관리자에게 문의해주세요.';
             }
@@ -2202,7 +2297,7 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-// 전역 supabase 객체 노출 (호환성을 위해)
+// 전역 supabase 객체 노출 (호환성을 위해) - 개선된 버전
 Object.defineProperty(window, 'supabase', {
     get: function() {
         if (supabaseClient) {
@@ -2235,6 +2330,8 @@ if (typeof window !== 'undefined') {
         getState: () => SupabaseAPI.getInitializationState(),
         checkHealth: () => SupabaseAPI.healthCheck(),
         testConnection: () => SupabaseAPI.checkConnection(),
+        detectLibrary: detectSupabaseLibrary,
+        getCreateClient: getSupabaseCreateClient,
         forceReinit: async () => {
             supabaseClient = null;
             initializationPromise = null;
@@ -2253,8 +2350,10 @@ if (typeof window !== 'undefined') {
     console.log('  SupabaseDebug.getState() - 초기화 상태 확인');
     console.log('  SupabaseDebug.checkHealth() - 헬스 체크');
     console.log('  SupabaseDebug.testConnection() - 연결 테스트');
+    console.log('  SupabaseDebug.detectLibrary() - 라이브러리 감지');
+    console.log('  SupabaseDebug.getCreateClient() - createClient 함수 획득');
     console.log('  SupabaseDebug.forceReinit() - 강제 재초기화');
 }
 
 // 초기화 완료 로그
-console.log('🚀 SupabaseAPI v2 loaded successfully with enhanced initialization stability');
+console.log('🚀 SupabaseAPI v3 loaded successfully with enhanced library compatibility and initialization stability');
