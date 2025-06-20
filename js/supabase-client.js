@@ -1,6 +1,6 @@
 // 간소화된 Supabase API - 관리자 및 학생 시스템용
 // intern-announcement 방식 기반으로 안정성 확보
-// 🚀 v2.10 - 영수증 파일명 생성 로직 수정 ([학생명]_001 형태)
+// 🚀 v2.11 - UUID 오류 수정: reviewed_by 필드에 null 사용
 
 const SupabaseAPI = {
     // Supabase 클라이언트
@@ -1208,7 +1208,7 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 교구 신청 상태 업데이트 (admin.js 호환)
+    // 🔧 교구 신청 상태 업데이트 (admin.js 호환) - reviewed_by UUID 오류 수정
     // ===================
     async updateItemStatus(requestId, status, rejectionReason = null) {
         return await this.safeApiCall('교구 신청 상태 업데이트', async () => {
@@ -1223,7 +1223,8 @@ const SupabaseAPI = {
                 updateData.rejection_reason = rejectionReason;
             } else if (status === 'approved') {
                 updateData.reviewed_at = new Date().toISOString();
-                updateData.reviewed_by = this.currentUser?.id || 'admin';
+                // 🔧 UUID 오류 수정: reviewed_by에 UUID 또는 null만 허용
+                updateData.reviewed_by = this.currentUser?.id || null;
                 updateData.rejection_reason = null;
             } else if (status === 'purchased') {
                 updateData.purchased_at = new Date().toISOString();
@@ -1450,7 +1451,8 @@ const SupabaseAPI = {
                 updateData.rejection_reason = rejectionReason;
             } else if (status === 'approved') {
                 updateData.reviewed_at = new Date().toISOString();
-                updateData.reviewed_by = this.currentUser?.id || 'admin';
+                // 🔧 UUID 오류 수정
+                updateData.reviewed_by = this.currentUser?.id || null;
             } else if (status === 'purchased') {
                 updateData.purchased_at = new Date().toISOString();
             }
@@ -1730,4 +1732,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v2.10 loaded - 영수증 파일명 생성 로직 수정 ([학생명]_001 형태)');
+console.log('🚀 SupabaseAPI v2.11 loaded - UUID 오류 수정: reviewed_by 필드에 null 사용');
