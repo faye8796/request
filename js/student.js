@@ -1,4 +1,5 @@
 // 학생 기능 관리 모듈 (Supabase 연동) - 교구 신청 기능 활성화 버전 - 시스템 초기화 실패 문제 해결
+// 🧹 Placeholder 함수들 제거 완료 - student-addon.js와 충돌 방지 (v1.9.0)
 const StudentManager = {
     currentEditingItem: null,
     currentReceiptItem: null,
@@ -168,11 +169,25 @@ const StudentManager = {
             // 중복 방지를 위한 리스너 제거
             this.removeEventListeners();
 
-            // 새 교구 신청 버튼
-            this.safeAddEventListener('#newApplicationBtn', 'click', this.showApplicationModal.bind(this));
+            // 새 교구 신청 버튼 - student-addon.js에서 구현
+            this.safeAddEventListener('#newApplicationBtn', 'click', function() {
+                // student-addon.js에서 showApplicationModal 구현을 기다림
+                if (window.StudentManager && typeof window.StudentManager.showApplicationModal === 'function') {
+                    window.StudentManager.showApplicationModal();
+                } else {
+                    alert('교구 신청 기능을 준비 중입니다. 잠시만 기다려주세요.');
+                }
+            });
             
-            // 묶음 신청 버튼
-            this.safeAddEventListener('#bundleApplicationBtn', 'click', this.showBundleModal.bind(this));
+            // 묶음 신청 버튼 - student-addon.js에서 구현
+            this.safeAddEventListener('#bundleApplicationBtn', 'click', function() {
+                // student-addon.js에서 showBundleModal 구현을 기다림
+                if (window.StudentManager && typeof window.StudentManager.showBundleModal === 'function') {
+                    window.StudentManager.showBundleModal();
+                } else {
+                    alert('묶음 신청 기능을 준비 중입니다. 잠시만 기다려주세요.');
+                }
+            });
             
             // 배송지 설정 버튼 - student-addon.js에서 처리
             this.safeAddEventListener('#shippingAddressBtn', 'click', function() {
@@ -373,14 +388,24 @@ const StudentManager = {
             this.safeAddEventListener('#cancelBtn', 'click', this.hideApplicationModal.bind(this));
             this.safeAddEventListener('#applicationForm', 'submit', function(e) {
                 e.preventDefault();
-                this.handleApplicationSubmit();
+                // student-addon.js에서 handleApplicationSubmit 구현을 기다림
+                if (window.StudentManager && typeof window.StudentManager.handleApplicationSubmit === 'function') {
+                    window.StudentManager.handleApplicationSubmit();
+                } else {
+                    alert('신청 제출 기능을 준비 중입니다.');
+                }
             }.bind(this));
 
             // 묶음 신청 모달
             this.safeAddEventListener('#bundleCancelBtn', 'click', this.hideBundleModal.bind(this));
             this.safeAddEventListener('#bundleForm', 'submit', function(e) {
                 e.preventDefault();
-                this.handleBundleSubmit();
+                // student-addon.js에서 handleBundleSubmit 구현을 기다림
+                if (window.StudentManager && typeof window.StudentManager.handleBundleSubmit === 'function') {
+                    window.StudentManager.handleBundleSubmit();
+                } else {
+                    alert('묶음 신청 제출 기능을 준비 중입니다.');
+                }
             }.bind(this));
 
             // 🆕 배송지 모달 이벤트 리스너 추가
@@ -400,7 +425,12 @@ const StudentManager = {
             this.safeAddEventListener('#receiptCancelBtn', 'click', this.hideReceiptModal.bind(this));
             this.safeAddEventListener('#receiptForm', 'submit', function(e) {
                 e.preventDefault();
-                this.handleReceiptSubmit();
+                // student-addon.js에서 handleReceiptSubmit 구현을 기다림
+                if (window.StudentManager && typeof window.StudentManager.handleReceiptSubmit === 'function') {
+                    window.StudentManager.handleReceiptSubmit();
+                } else {
+                    alert('영수증 제출 기능을 준비 중입니다.');
+                }
             }.bind(this));
 
             // 구매 방식 변경
@@ -450,12 +480,22 @@ const StudentManager = {
                 }
             });
 
-            // 영수증 파일 업로드
-            this.safeAddEventListener('#receiptFile', 'change', this.handleReceiptFileChange.bind(this));
-            this.safeAddEventListener('#removeReceiptBtn', 'click', this.removeReceiptFile.bind(this));
+            // 영수증 파일 업로드 - student-addon.js에서 구현
+            this.safeAddEventListener('#receiptFile', 'change', function(event) {
+                if (window.StudentManager && typeof window.StudentManager.handleReceiptFileChange === 'function') {
+                    window.StudentManager.handleReceiptFileChange(event);
+                }
+            });
+            this.safeAddEventListener('#removeReceiptBtn', 'click', function() {
+                if (window.StudentManager && typeof window.StudentManager.removeReceiptFile === 'function') {
+                    window.StudentManager.removeReceiptFile();
+                }
+            });
 
-            // 드래그 앤 드롭
-            this.setupDragAndDrop();
+            // 드래그 앤 드롭 - student-addon.js에서 구현
+            if (window.StudentManager && typeof window.StudentManager.setupDragAndDrop === 'function') {
+                window.StudentManager.setupDragAndDrop();
+            }
         } catch (error) {
             console.error('모달 상호작용 이벤트 설정 오류:', error);
         }
@@ -505,6 +545,125 @@ const StudentManager = {
             console.error('모달 숨김 오류:', error);
         }
     },
+
+    // === 모달 숨김 함수들 (구현된 기능만 유지) ===
+    
+    hideApplicationModal: function() {
+        try {
+            console.log('일반 교구 신청 모달 숨김');
+            this.hideModal('#applicationModal');
+        } catch (error) {
+            console.error('일반 교구 신청 모달 숨김 오류:', error);
+        }
+    },
+
+    hideBundleModal: function() {
+        try {
+            console.log('묶음 신청 모달 숨김');
+            this.hideModal('#bundleModal');
+        } catch (error) {
+            console.error('묶음 신청 모달 숨김 오류:', error);
+        }
+    },
+
+    hideReceiptModal: function() {
+        try {
+            console.log('영수증 모달 숨김');
+            this.hideModal('#receiptModal');
+        } catch (error) {
+            console.error('영수증 모달 숨김 오류:', error);
+        }
+    },
+
+    openReceiptModal: function(requestId) {
+        try {
+            console.log('📄 영수증 모달 열기:', requestId);
+            // student-addon.js에서 showReceiptModal 구현을 기다림
+            if (window.StudentManager && typeof window.StudentManager.showReceiptModal === 'function') {
+                return window.StudentManager.showReceiptModal(requestId);
+            } else {
+                alert('영수증 등록 기능을 준비 중입니다.');
+                return Promise.reject(new Error('영수증 기능 준비 중'));
+            }
+        } catch (error) {
+            console.error('영수증 모달 열기 오류:', error);
+            alert('영수증 등록을 여는 중 오류가 발생했습니다.');
+            return Promise.reject(error);
+        }
+    },
+
+    // === 폼 초기화 함수들 ===
+    
+    resetApplicationForm: function() {
+        try {
+            const form = document.getElementById('applicationForm');
+            if (form) {
+                form.reset();
+                
+                const onlineRadio = form.querySelector('input[name="purchaseMethod"][value="online"]');
+                if (onlineRadio) {
+                    onlineRadio.checked = true;
+                    this.handlePurchaseMethodChange('online');
+                }
+            }
+        } catch (error) {
+            console.error('일반 신청 폼 초기화 오류:', error);
+        }
+    },
+
+    resetBundleForm: function() {
+        try {
+            const form = document.getElementById('bundleForm');
+            if (form) {
+                form.reset();
+            }
+        } catch (error) {
+            console.error('묶음 신청 폼 초기화 오류:', error);
+        }
+    },
+
+    resetReceiptForm: function() {
+        try {
+            const form = document.getElementById('receiptForm');
+            if (form) {
+                form.reset();
+            }
+            
+            // student-addon.js에서 removeReceiptFile 구현을 기다림
+            if (window.StudentManager && typeof window.StudentManager.removeReceiptFile === 'function') {
+                window.StudentManager.removeReceiptFile();
+            }
+        } catch (error) {
+            console.error('영수증 폼 초기화 오류:', error);
+        }
+    },
+
+    // 구매 방식 변경 처리
+    handlePurchaseMethodChange: function(method) {
+        try {
+            const linkGroup = document.getElementById('itemLinkGroup');
+            const linkLabel = document.getElementById('itemLinkLabel');
+            const linkInput = document.getElementById('itemLink');
+            
+            if (method === 'offline') {
+                if (linkLabel) linkLabel.textContent = '참고 링크 (선택)';
+                if (linkInput) {
+                    linkInput.placeholder = '참고할 수 있는 링크가 있다면 입력하세요';
+                    linkInput.removeAttribute('required');
+                }
+            } else {
+                if (linkLabel) linkLabel.textContent = '구매 링크 *';
+                if (linkInput) {
+                    linkInput.placeholder = '구매 가능한 링크를 입력하세요';
+                    linkInput.setAttribute('required', 'required');
+                }
+            }
+        } catch (error) {
+            console.error('구매 방식 변경 처리 오류:', error);
+        }
+    },
+
+    // === 사용자 정보 및 상태 관리 ===
 
     // 사용자 정보 표시 업데이트 - 안전성 강화
     updateUserDisplay: function() {
@@ -789,6 +948,8 @@ const StudentManager = {
         }
     },
 
+    // === 알림 시스템 ===
+
     // 수업계획 상태 알림 표시 - 개선된 버전 (단일 알림만)
     showLessonPlanStatusNotice: function(lessonPlan) {
         try {
@@ -1014,6 +1175,8 @@ const StudentManager = {
         `, 'info');
     },
 
+    // === 신청 내역 관리 ===
+
     // 신청 내역 로드 - 안전성 강화
     loadApplications: function() {
         try {
@@ -1083,6 +1246,8 @@ const StudentManager = {
             console.error('신청 내역 오류 표시 오류:', error);
         }
     },
+
+    // === 예산 관리 ===
 
     // 예산 현황 업데이트 - 안전성 강화
     updateBudgetStatus: function() {
@@ -1230,6 +1395,8 @@ const StudentManager = {
         }
     },
 
+    // === 신청 내역 렌더링 ===
+
     // 신청 내역 렌더링 (기존 로직 유지)
     renderApplications: function(applications) {
         const container = document.getElementById('studentApplications');
@@ -1363,21 +1530,31 @@ const StudentManager = {
         try {
             const self = this;
             
-            // 수정 버튼
+            // 수정 버튼 - student-addon.js에서 구현
             const editBtns = document.querySelectorAll('.edit-btn');
             for (let i = 0; i < editBtns.length; i++) {
                 editBtns[i].addEventListener('click', function(e) {
                     const itemId = parseInt(e.target.closest('.edit-btn').getAttribute('data-item-id'));
-                    self.editApplication(itemId);
+                    // student-addon.js에서 editApplication 구현을 기다림
+                    if (window.StudentManager && typeof window.StudentManager.editApplication === 'function') {
+                        window.StudentManager.editApplication(itemId);
+                    } else {
+                        alert('신청 수정 기능을 준비 중입니다.');
+                    }
                 });
             }
 
-            // 삭제 버튼
+            // 삭제 버튼 - student-addon.js에서 구현
             const deleteBtns = document.querySelectorAll('.delete-btn');
             for (let i = 0; i < deleteBtns.length; i++) {
                 deleteBtns[i].addEventListener('click', function(e) {
                     const itemId = parseInt(e.target.closest('.delete-btn').getAttribute('data-item-id'));
-                    self.deleteApplication(itemId);
+                    // student-addon.js에서 deleteApplication 구현을 기다림
+                    if (window.StudentManager && typeof window.StudentManager.deleteApplication === 'function') {
+                        window.StudentManager.deleteApplication(itemId);
+                    } else {
+                        alert('신청 삭제 기능을 준비 중입니다.');
+                    }
                 });
             }
 
@@ -1394,7 +1571,8 @@ const StudentManager = {
         }
     },
 
-    // 유틸리티 함수들
+    // === 유틸리티 함수들 ===
+
     getStatusClass: function(status) {
         const statusMap = {
             'pending': 'warning',
@@ -1429,167 +1607,6 @@ const StudentManager = {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
-    },
-
-    // === 모달 함수들 (student-addon.js에서 구현) ===
-    
-    showApplicationModal: function() {
-        console.log('🛒 일반 교구 신청 모달 표시 - student-addon.js에서 처리');
-        // student-addon.js에서 실제 구현
-    },
-
-    hideApplicationModal: function() {
-        try {
-            console.log('일반 교구 신청 모달 숨김');
-            this.hideModal('#applicationModal');
-        } catch (error) {
-            console.error('일반 교구 신청 모달 숨김 오류:', error);
-        }
-    },
-
-    showBundleModal: function() {
-        console.log('묶음 신청 모달 표시 - student-addon.js에서 처리');
-        // student-addon.js에서 실제 구현
-    },
-
-    hideBundleModal: function() {
-        try {
-            console.log('묶음 신청 모달 숨김');
-            this.hideModal('#bundleModal');
-        } catch (error) {
-            console.error('묶음 신청 모달 숨김 오류:', error);
-        }
-    },
-
-    showReceiptModal: function(requestId) {
-        console.log('영수증 모달 표시 - student-addon.js에서 처리:', requestId);
-        // student-addon.js에서 실제 구현
-    },
-
-    hideReceiptModal: function() {
-        try {
-            console.log('영수증 모달 숨김');
-            this.hideModal('#receiptModal');
-        } catch (error) {
-            console.error('영수증 모달 숨김 오류:', error);
-        }
-    },
-
-    openReceiptModal: function(requestId) {
-        try {
-            console.log('📄 영수증 모달 열기:', requestId);
-            return this.showReceiptModal(requestId);
-        } catch (error) {
-            console.error('영수증 모달 열기 오류:', error);
-            alert('영수증 등록을 여는 중 오류가 발생했습니다.');
-            return Promise.reject(error);
-        }
-    },
-
-    // 폼 초기화 함수들
-    resetApplicationForm: function() {
-        try {
-            const form = document.getElementById('applicationForm');
-            if (form) {
-                form.reset();
-                
-                const onlineRadio = form.querySelector('input[name="purchaseMethod"][value="online"]');
-                if (onlineRadio) {
-                    onlineRadio.checked = true;
-                    this.handlePurchaseMethodChange('online');
-                }
-            }
-        } catch (error) {
-            console.error('일반 신청 폼 초기화 오류:', error);
-        }
-    },
-
-    resetBundleForm: function() {
-        try {
-            const form = document.getElementById('bundleForm');
-            if (form) {
-                form.reset();
-            }
-        } catch (error) {
-            console.error('묶음 신청 폼 초기화 오류:', error);
-        }
-    },
-
-    resetReceiptForm: function() {
-        try {
-            const form = document.getElementById('receiptForm');
-            if (form) {
-                form.reset();
-            }
-            
-            this.removeReceiptFile();
-        } catch (error) {
-            console.error('영수증 폼 초기화 오류:', error);
-        }
-    },
-
-    // 구매 방식 변경 처리
-    handlePurchaseMethodChange: function(method) {
-        try {
-            const linkGroup = document.getElementById('itemLinkGroup');
-            const linkLabel = document.getElementById('itemLinkLabel');
-            const linkInput = document.getElementById('itemLink');
-            
-            if (method === 'offline') {
-                if (linkLabel) linkLabel.textContent = '참고 링크 (선택)';
-                if (linkInput) {
-                    linkInput.placeholder = '참고할 수 있는 링크가 있다면 입력하세요';
-                    linkInput.removeAttribute('required');
-                }
-            } else {
-                if (linkLabel) linkLabel.textContent = '구매 링크 *';
-                if (linkInput) {
-                    linkInput.placeholder = '구매 가능한 링크를 입력하세요';
-                    linkInput.setAttribute('required', 'required');
-                }
-            }
-        } catch (error) {
-            console.error('구매 방식 변경 처리 오류:', error);
-        }
-    },
-
-    // 신청 제출 처리 함수들 (student-addon.js에서 구현)
-    handleApplicationSubmit: function() {
-        console.log('📝 일반 교구 신청 제출 처리 - student-addon.js에서 처리');
-    },
-
-    handleBundleSubmit: function() {
-        console.log('📦 묶음 신청 제출 처리 - student-addon.js에서 처리');
-    },
-
-    handleReceiptSubmit: function() {
-        console.log('📄 영수증 제출 처리 - student-addon.js에서 처리');
-    },
-
-    // 기타 유틸리티 함수들 (간소화를 위해 생략)
-    handleReceiptFileChange: function(event) {
-        console.log('영수증 파일 변경 처리 - student-addon.js에서 처리');
-    },
-
-    removeReceiptFile: function() {
-        console.log('영수증 파일 제거 - student-addon.js에서 처리');
-    },
-
-    setupDragAndDrop: function() {
-        console.log('드래그 앤 드롭 설정 - student-addon.js에서 처리');
-    },
-
-    preventDefaults: function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    },
-
-    editApplication: function(itemId) {
-        console.log('✏️ 신청 수정 - student-addon.js에서 처리:', itemId);
-    },
-
-    deleteApplication: function(itemId) {
-        console.log('🗑️ 신청 삭제 - student-addon.js에서 처리:', itemId);
     },
 
     // 대시보드 새로고침
@@ -1650,4 +1667,4 @@ window.initializeStudentPage = function() {
     }
 };
 
-console.log('📚 StudentManager loaded successfully - 배송지 모달 이벤트 리스너 추가 (v1.8.1)');
+console.log('📚 StudentManager loaded successfully - Placeholder 함수들 제거 완료 (v1.9.0)');
