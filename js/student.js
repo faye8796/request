@@ -174,8 +174,14 @@ const StudentManager = {
             // 묶음 신청 버튼
             this.safeAddEventListener('#bundleApplicationBtn', 'click', this.showBundleModal.bind(this));
             
-            // 배송지 설정 버튼
-            this.safeAddEventListener('#shippingAddressBtn', 'click', this.showShippingModal.bind(this));
+            // 배송지 설정 버튼 - student-addon.js에서 처리
+            this.safeAddEventListener('#shippingAddressBtn', 'click', function() {
+                if (window.StudentAddon && window.StudentAddon.showShippingModal) {
+                    window.StudentAddon.showShippingModal();
+                } else {
+                    alert('배송지 설정 기능을 사용할 수 없습니다. 페이지를 새로고침해주세요.');
+                }
+            });
 
             // 🆕 수업계획 버튼 - 간단화된 버전 (edit 모드로 통일)
             this.safeAddEventListener('#lessonPlanBtn', 'click', this.handleLessonPlanClick.bind(this));
@@ -377,13 +383,6 @@ const StudentManager = {
                 this.handleBundleSubmit();
             }.bind(this));
 
-            // 배송지 모달
-            this.safeAddEventListener('#shippingCancelBtn', 'click', this.hideShippingModal.bind(this));
-            this.safeAddEventListener('#shippingForm', 'submit', function(e) {
-                e.preventDefault();
-                this.handleShippingSubmit();
-            }.bind(this));
-
             // 영수증 모달
             this.safeAddEventListener('#receiptCancelBtn', 'click', this.hideReceiptModal.bind(this));
             this.safeAddEventListener('#receiptForm', 'submit', function(e) {
@@ -411,7 +410,7 @@ const StudentManager = {
     setupModalInteractionEvents: function() {
         try {
             // 모달 배경 클릭으로 닫기 (개선된 방식)
-            const modals = ['#applicationModal', '#bundleModal', '#shippingModal', '#receiptModal'];
+            const modals = ['#applicationModal', '#bundleModal', '#receiptModal'];
             const self = this;
             
             modals.forEach(function(modalId) {
@@ -455,9 +454,6 @@ const StudentManager = {
                     this.currentEditingItem = null;
                 } else if (modalSelector === '#bundleModal') {
                     this.resetBundleForm();
-                } else if (modalSelector === '#shippingModal') {
-                    const form = document.getElementById('shippingForm');
-                    if (form) form.reset();
                 } else if (modalSelector === '#receiptModal') {
                     this.resetReceiptForm();
                     this.currentReceiptItem = null;
@@ -483,7 +479,6 @@ const StudentManager = {
             // 개별 모달 숨김 함수 호출
             this.hideApplicationModal();
             this.hideBundleModal();
-            this.hideShippingModal();
             this.hideReceiptModal();
         } catch (error) {
             console.error('모달 숨김 오류:', error);
@@ -1415,200 +1410,11 @@ const StudentManager = {
         return div.innerHTML;
     },
 
-    // === 🆕 배송지 설정 모달 및 기능들 ===
-    
-    // 🆕 배송지 설정 모달 표시
-    showShippingModal: function() {
-        try {
-            console.log('📦 배송지 설정 모달 표시');
-            
-            const modal = document.getElementById('shippingModal');
-            if (!modal) {
-                console.error('배송지 모달을 찾을 수 없습니다');
-                alert('배송지 설정 기능을 사용할 수 없습니다.');
-                return;
-            }
-
-            // 현재 사용자 확인
-            const currentUser = this.getCurrentUserSafely();
-            if (!currentUser) {
-                alert('로그인이 필요합니다.');
-                return;
-            }
-
-            // 기존 배송지 정보 로드
-            this.loadShippingInfo(currentUser.id);
-
-            // 모달 표시
-            modal.classList.add('show');
-            document.body.style.overflow = 'hidden';
-
-            // 첫 번째 입력 필드에 포커스
-            const firstInput = modal.querySelector('#shippingName');
-            if (firstInput) {
-                setTimeout(() => firstInput.focus(), 100);
-            }
-
-            console.log('✅ 배송지 설정 모달 표시 완료');
-        } catch (error) {
-            console.error('❌ 배송지 모달 표시 오류:', error);
-            alert('배송지 설정을 여는 중 오류가 발생했습니다.');
-        }
-    },
-
-    // 🆕 기존 배송지 정보 로드
-    loadShippingInfo: function(userId) {
-        try {
-            console.log('📦 기존 배송지 정보 로드:', userId);
-            
-            const self = this;
-            
-            // Supabase에서 배송지 정보 조회
-            this.safeApiCall(function() {
-                return SupabaseAPI.getShippingInfo(userId);
-            }).then(function(shippingInfo) {
-                if (shippingInfo) {
-                    console.log('✅ 기존 배송지 정보 발견:', shippingInfo);
-                    self.fillShippingForm(shippingInfo);
-                } else {
-                    console.log('ℹ️ 기존 배송지 정보 없음 - 빈 폼 표시');
-                    self.clearShippingForm();
-                }
-            }).catch(function(error) {
-                console.error('❌ 배송지 정보 로드 오류:', error);
-                self.clearShippingForm();
-            });
-        } catch (error) {
-            console.error('❌ 배송지 정보 로드 오류:', error);
-            this.clearShippingForm();
-        }
-    },
-
-    // 🆕 배송지 폼 채우기
-    fillShippingForm: function(shippingInfo) {
-        try {
-            const form = document.getElementById('shippingForm');
-            if (!form) return;
-
-            // 폼 필드 채우기
-            const nameField = form.querySelector('#shippingName');
-            const phoneField = form.querySelector('#shippingPhone');
-            const addressField = form.querySelector('#shippingAddress');
-            const postcodeField = form.querySelector('#shippingPostcode');
-            const noteField = form.querySelector('#shippingNote');
-
-            if (nameField) nameField.value = shippingInfo.recipient_name || '';
-            if (phoneField) phoneField.value = shippingInfo.phone || '';
-            if (addressField) addressField.value = shippingInfo.address || '';
-            if (postcodeField) postcodeField.value = shippingInfo.postcode || '';
-            if (noteField) noteField.value = shippingInfo.note || '';
-
-            console.log('✅ 배송지 폼 채우기 완료');
-        } catch (error) {
-            console.error('❌ 배송지 폼 채우기 오류:', error);
-        }
-    },
-
-    // 🆕 배송지 폼 초기화
-    clearShippingForm: function() {
-        try {
-            const form = document.getElementById('shippingForm');
-            if (form) {
-                form.reset();
-            }
-        } catch (error) {
-            console.error('❌ 배송지 폼 초기화 오류:', error);
-        }
-    },
-
-    // 🆕 배송지 정보 저장 처리
-    handleShippingSubmit: function() {
-        try {
-            console.log('📦 배송지 정보 저장 시작');
-            
-            const currentUser = this.getCurrentUserSafely();
-            if (!currentUser) {
-                alert('로그인이 필요합니다.');
-                return;
-            }
-
-            // 폼 데이터 수집
-            const form = document.getElementById('shippingForm');
-            if (!form) {
-                console.error('배송지 폼을 찾을 수 없습니다');
-                return;
-            }
-
-            const formData = new FormData(form);
-            const shippingData = {
-                recipient_name: formData.get('shippingName') || document.getElementById('shippingName').value,
-                phone: formData.get('shippingPhone') || document.getElementById('shippingPhone').value,
-                address: formData.get('shippingAddress') || document.getElementById('shippingAddress').value,
-                postcode: formData.get('shippingPostcode') || document.getElementById('shippingPostcode').value,
-                note: formData.get('shippingNote') || document.getElementById('shippingNote').value
-            };
-
-            // 필수 필드 검증
-            if (!shippingData.recipient_name.trim()) {
-                alert('받는 분 성명을 입력해주세요.');
-                document.getElementById('shippingName').focus();
-                return;
-            }
-
-            if (!shippingData.phone.trim()) {
-                alert('연락처를 입력해주세요.');
-                document.getElementById('shippingPhone').focus();
-                return;
-            }
-
-            if (!shippingData.address.trim()) {
-                alert('주소를 입력해주세요.');
-                document.getElementById('shippingAddress').focus();
-                return;
-            }
-
-            console.log('📦 저장할 배송지 정보:', shippingData);
-
-            const self = this;
-            
-            // Supabase에 저장
-            this.safeApiCall(function() {
-                return SupabaseAPI.saveShippingInfo(currentUser.id, shippingData);
-            }).then(function(result) {
-                if (result && result.success !== false) {
-                    console.log('✅ 배송지 정보 저장 완료');
-                    alert('배송지 정보가 저장되었습니다.');
-                    self.hideShippingModal();
-                } else {
-                    console.error('❌ 배송지 정보 저장 실패:', result);
-                    alert('배송지 정보 저장에 실패했습니다. 다시 시도해주세요.');
-                }
-            }).catch(function(error) {
-                console.error('❌ 배송지 정보 저장 오류:', error);
-                alert('배송지 정보 저장 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류'));
-            });
-
-        } catch (error) {
-            console.error('❌ 배송지 정보 저장 처리 오류:', error);
-            alert('배송지 정보 저장 처리 중 오류가 발생했습니다.');
-        }
-    },
-
-    // 🆕 배송지 모달 숨김
-    hideShippingModal: function() {
-        try {
-            console.log('배송지 설정 모달 숨김');
-            this.hideModal('#shippingModal');
-        } catch (error) {
-            console.error('배송지 모달 숨김 오류:', error);
-        }
-    },
-
-    // === 기타 모달 및 기능들 (기존 로직 유지, 간소화) ===
+    // === 모달 함수들 (student-addon.js에서 구현) ===
     
     showApplicationModal: function() {
-        console.log('🛒 일반 교구 신청 모달 표시');
-        // 기존 로직과 동일
+        console.log('🛒 일반 교구 신청 모달 표시 - student-addon.js에서 처리');
+        // student-addon.js에서 실제 구현
     },
 
     hideApplicationModal: function() {
@@ -1621,8 +1427,8 @@ const StudentManager = {
     },
 
     showBundleModal: function() {
-        console.log('묶음 신청 모달 표시');
-        // 기존 로직과 동일 (간소화를 위해 생략)
+        console.log('묶음 신청 모달 표시 - student-addon.js에서 처리');
+        // student-addon.js에서 실제 구현
     },
 
     hideBundleModal: function() {
@@ -1635,8 +1441,8 @@ const StudentManager = {
     },
 
     showReceiptModal: function(requestId) {
-        console.log('영수증 모달 표시:', requestId);
-        // 기존 로직과 동일 (간소화를 위해 생략)
+        console.log('영수증 모달 표시 - student-addon.js에서 처리:', requestId);
+        // student-addon.js에서 실제 구현
     },
 
     hideReceiptModal: function() {
@@ -1726,36 +1532,30 @@ const StudentManager = {
         }
     },
 
-    // 신청 제출 처리 함수들 (기존과 동일, 간소화를 위해 생략)
+    // 신청 제출 처리 함수들 (student-addon.js에서 구현)
     handleApplicationSubmit: function() {
-        console.log('📝 일반 교구 신청 제출 처리');
-        // 기존 로직과 동일
+        console.log('📝 일반 교구 신청 제출 처리 - student-addon.js에서 처리');
     },
 
     handleBundleSubmit: function() {
-        console.log('📦 묶음 신청 제출 처리');
-        // 기존 로직과 동일
+        console.log('📦 묶음 신청 제출 처리 - student-addon.js에서 처리');
     },
 
     handleReceiptSubmit: function() {
-        console.log('📄 영수증 제출 처리 시작');
-        // 기존 로직과 동일
+        console.log('📄 영수증 제출 처리 - student-addon.js에서 처리');
     },
 
     // 기타 유틸리티 함수들 (간소화를 위해 생략)
     handleReceiptFileChange: function(event) {
-        console.log('영수증 파일 변경 처리');
-        // 기존 로직과 동일
+        console.log('영수증 파일 변경 처리 - student-addon.js에서 처리');
     },
 
     removeReceiptFile: function() {
-        console.log('영수증 파일 제거');
-        // 기존 로직과 동일
+        console.log('영수증 파일 제거 - student-addon.js에서 처리');
     },
 
     setupDragAndDrop: function() {
-        console.log('드래그 앤 드롭 설정');
-        // 기존 로직과 동일
+        console.log('드래그 앤 드롭 설정 - student-addon.js에서 처리');
     },
 
     preventDefaults: function(e) {
@@ -1764,13 +1564,11 @@ const StudentManager = {
     },
 
     editApplication: function(itemId) {
-        console.log('✏️ 신청 수정:', itemId);
-        // 기존 로직과 동일
+        console.log('✏️ 신청 수정 - student-addon.js에서 처리:', itemId);
     },
 
     deleteApplication: function(itemId) {
-        console.log('🗑️ 신청 삭제:', itemId);
-        // 기존 로직과 동일
+        console.log('🗑️ 신청 삭제 - student-addon.js에서 처리:', itemId);
     },
 
     // 대시보드 새로고침
@@ -1831,4 +1629,4 @@ window.initializeStudentPage = function() {
     }
 };
 
-console.log('📚 StudentManager loaded successfully - 배송지 설정 기능 구현 완료 (v1.7.0)');
+console.log('📚 StudentManager loaded successfully - 배송지 기능을 student-addon.js로 이동 (v1.8.0)');
