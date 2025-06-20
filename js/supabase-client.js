@@ -189,7 +189,7 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 🔧 배송지 정보 관리 - 컬럼명 수정
+    // 🔧 배송지 정보 관리 - UPSERT 로직 완전 수정
     // ===================
     
     // 🔧 배송지 정보 조회 - 올바른 컬럼명 사용
@@ -224,9 +224,9 @@ const SupabaseAPI = {
         return result.success ? result.data : null;
     },
 
-    // 🔧 배송지 정보 저장 - 올바른 컬럼명으로 매핑
+    // 🔧 배송지 정보 저장 - 진짜 UPSERT 사용으로 중복 키 오류 해결
     async saveShippingInfo(userId, shippingData) {
-        console.log('📦 배송지 정보 저장:', userId, shippingData);
+        console.log('📦 배송지 정보 저장 (UPSERT 방식):', userId, shippingData);
         
         return await this.safeApiCall('배송지 정보 저장', async () => {
             // 🔧 코드에서 사용하는 컬럼명을 DB 컬럼명으로 매핑
@@ -240,29 +240,16 @@ const SupabaseAPI = {
                 updated_at: new Date().toISOString()
             };
 
-            // 기존 데이터 확인
-            const existingResult = await this.supabase
-                .from('shipping_addresses')
-                .select('id')
-                .eq('user_id', userId);
+            console.log('📦 UPSERT 실행 - 데이터:', dataToSave);
 
-            if (existingResult.data && existingResult.data.length > 0) {
-                // 업데이트
-                console.log('📦 기존 배송지 정보 업데이트');
-                return await this.supabase
-                    .from('shipping_addresses')
-                    .update(dataToSave)
-                    .eq('user_id', userId)
-                    .select();
-            } else {
-                // 새로 생성
-                console.log('📦 새 배송지 정보 생성');
-                dataToSave.created_at = new Date().toISOString();
-                return await this.supabase
-                    .from('shipping_addresses')
-                    .insert([dataToSave])
-                    .select();
-            }
+            // 🔧 진짜 UPSERT 사용 - onConflict로 user_id 중복 시 업데이트
+            return await this.supabase
+                .from('shipping_addresses')
+                .upsert(dataToSave, {
+                    onConflict: 'user_id',           // user_id 중복 시 업데이트
+                    ignoreDuplicates: false          // 중복 시 무시하지 않고 업데이트
+                })
+                .select();
         });
     },
 
@@ -1374,4 +1361,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v2.7 loaded - 배송지 정보 컬럼명 수정 완료');
+console.log('🚀 SupabaseAPI v2.8 loaded - 배송지 UPSERT 로직 수정으로 중복 키 오류 해결 완료');
