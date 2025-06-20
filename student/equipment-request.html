@@ -197,19 +197,19 @@
 
                 <div class="form-group">
                     <label>교구명 *</label>
-                    <input type="text" id="itemName" required placeholder="교구 이름을 입력하세요">
+                    <input type="text" id="itemName" name="itemName" required placeholder="교구 이름을 입력하세요">
                 </div>
                 <div class="form-group">
                     <label>사용 목적 *</label>
-                    <textarea id="itemPurpose" required rows="3" placeholder="교구 사용 목적을 설명하세요"></textarea>
+                    <textarea id="itemPurpose" name="itemPurpose" required rows="3" placeholder="교구 사용 목적을 설명하세요"></textarea>
                 </div>
                 <div class="form-group">
                     <label>가격 (원) *</label>
-                    <input type="number" id="itemPrice" required placeholder="가격을 입력하세요">
+                    <input type="number" id="itemPrice" name="itemPrice" required placeholder="가격을 입력하세요">
                 </div>
                 <div class="form-group" id="itemLinkGroup">
                     <label id="itemLinkLabel">구매 링크 *</label>
-                    <input type="url" id="itemLink" required placeholder="구매 가능한 링크를 입력하세요">
+                    <input type="url" id="itemLink" name="itemLink" required placeholder="구매 가능한 링크를 입력하세요">
                 </div>
                 <div class="modal-actions">
                     <button type="button" id="cancelBtn" class="btn secondary">취소</button>
@@ -219,7 +219,7 @@
         </div>
     </div>
 
-    <!-- 묶음 신청 모달 -->
+    <!-- 📦 묶음 신청 모달 - 완전 재설계 -->
     <div id="bundleModal" class="modal">
         <div class="modal-content">
             <h3>묶음 교구 신청</h3>
@@ -228,10 +228,18 @@
                 <div class="form-group">
                     <label>묶음 제목 *</label>
                     <input type="text" id="bundleTitle" name="bundleTitle" required placeholder="묶음 교구를 대표하는 제목을 입력하세요">
+                    <small class="text-muted">예: 한국 전통문화 체험 교구 세트</small>
                 </div>
+                
                 <div class="form-group">
                     <label>사용 목적 *</label>
                     <textarea id="bundlePurpose" name="bundlePurpose" required rows="3" placeholder="묶음 교구의 사용 목적을 설명하세요"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>구매 총액 (원) *</label>
+                    <input type="number" id="bundleTotalPrice" name="bundleTotalPrice" required min="1" placeholder="예상 총 구매 금액을 입력하세요">
+                    <small class="text-muted">장바구니에 담긴 모든 상품의 예상 총액</small>
                 </div>
                 
                 <!-- 구매 방식 선택 -->
@@ -243,7 +251,7 @@
                             <span class="radio-custom"></span>
                             <div class="radio-content">
                                 <strong>온라인 구매</strong>
-                                <p>관리자가 대신 구매하여 배송</p>
+                                <p>관리자가 학생 계정으로 대신 구매</p>
                             </div>
                         </label>
                         <label class="radio-option">
@@ -257,17 +265,63 @@
                     </div>
                 </div>
 
-                <!-- 묶음 아이템들 -->
-                <div class="bundle-items-section">
-                    <div class="bundle-items-header">
-                        <h4>묶음 아이템</h4>
-                        <button type="button" id="addBundleItemBtn" class="btn small primary">
-                            <i data-lucide="plus"></i>
-                            아이템 추가
-                        </button>
+                <!-- 온라인 구매 정보 -->
+                <div id="onlinePurchaseInfo" class="purchase-info-section">
+                    <div class="form-group">
+                        <label>구매 사이트 *</label>
+                        <select id="purchaseSite" name="purchaseSite" required>
+                            <option value="">구매 사이트를 선택하세요</option>
+                            <option value="coupang">쿠팡 (Coupang)</option>
+                            <option value="11st">11번가</option>
+                            <option value="gmarket">지마켓 (Gmarket)</option>
+                            <option value="auction">옥션 (Auction)</option>
+                            <option value="interpark">인터파크</option>
+                            <option value="lotte">롯데온</option>
+                            <option value="ssg">SSG.COM</option>
+                            <option value="yes24">YES24</option>
+                            <option value="kyobo">교보문고</option>
+                            <option value="other">기타 (직접 입력)</option>
+                        </select>
+                        <input type="text" id="otherSite" name="otherSite" placeholder="기타 사이트 URL을 입력하세요" style="display: none; margin-top: 8px;">
                     </div>
-                    <div id="bundleItemsContainer">
-                        <!-- 동적으로 생성될 아이템들 -->
+                    
+                    <div class="account-info-section">
+                        <div class="account-info-header">
+                            <i data-lucide="shield-check"></i>
+                            <div>
+                                <h4>계정 정보</h4>
+                                <p>관리자가 대신 구매하기 위한 계정 정보입니다</p>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>계정 아이디 *</label>
+                            <input type="text" id="accountId" name="accountId" required placeholder="구매 사이트 로그인 아이디">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>계정 비밀번호 *</label>
+                            <input type="password" id="accountPassword" name="accountPassword" required placeholder="구매 사이트 로그인 비밀번호">
+                            <small class="text-muted">보안을 위해 암호화되어 저장됩니다</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>장바구니 메모</label>
+                            <textarea id="cartNote" name="cartNote" rows="3" placeholder="장바구니에 담긴 상품들에 대한 설명이나 특별 요청사항을 입력하세요"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 오프라인 구매 정보 -->
+                <div id="offlinePurchaseInfo" class="purchase-info-section" style="display: none;">
+                    <div class="form-group">
+                        <label>구매 업체 정보 *</label>
+                        <textarea id="offlineVendor" name="offlineVendor" required rows="3" placeholder="구매 예정 업체명, 주소, 연락처 등을 입력하세요&#10;예: 한국전통문화센터&#10;서울시 종로구 인사동길 123&#10;02-1234-5678"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>구매 계획</label>
+                        <textarea id="purchasePlan" name="purchasePlan" rows="3" placeholder="구매 예정일, 구매 방법 등 구체적인 계획을 입력하세요"></textarea>
                     </div>
                 </div>
 
@@ -735,17 +789,69 @@
                 });
             }
 
-            // 🆕 묶음 아이템 추가 버튼 (묶음 모달용)
-            const addBundleItemBtn = document.getElementById('addBundleItemBtn');
-            if (addBundleItemBtn) {
-                addBundleItemBtn.addEventListener('click', function() {
-                    if (typeof StudentManager !== 'undefined' && typeof StudentManager.addBundleItem === 'function') {
-                        StudentManager.addBundleItem();
-                    }
-                });
-            }
+            // 🆕 묶음 신청 모달 - 구매 방식 선택 이벤트
+            setupBundleModalEvents();
 
             console.log('✅ 네비게이션 설정 완료');
+        }
+
+        // 🆕 묶음 신청 모달 이벤트 설정
+        function setupBundleModalEvents() {
+            // 구매 방식 변경 이벤트
+            const bundleForm = document.getElementById('bundleForm');
+            if (bundleForm) {
+                bundleForm.addEventListener('change', function(e) {
+                    if (e.target.name === 'bundlePurchaseMethod') {
+                        toggleBundlePurchaseInfo(e.target.value);
+                    }
+                });
+                
+                // 구매 사이트 선택 변경 이벤트
+                const purchaseSiteSelect = document.getElementById('purchaseSite');
+                if (purchaseSiteSelect) {
+                    purchaseSiteSelect.addEventListener('change', function(e) {
+                        toggleOtherSiteInput(e.target.value);
+                    });
+                }
+            }
+        }
+
+        // 🆕 묶음 신청 구매 정보 토글
+        function toggleBundlePurchaseInfo(method) {
+            const onlineInfo = document.getElementById('onlinePurchaseInfo');
+            const offlineInfo = document.getElementById('offlinePurchaseInfo');
+            
+            if (method === 'online') {
+                onlineInfo.style.display = 'block';
+                offlineInfo.style.display = 'none';
+                
+                // 필수 필드 설정
+                document.getElementById('purchaseSite').required = true;
+                document.getElementById('accountId').required = true;
+                document.getElementById('accountPassword').required = true;
+                document.getElementById('offlineVendor').required = false;
+            } else {
+                onlineInfo.style.display = 'none';
+                offlineInfo.style.display = 'block';
+                
+                // 필수 필드 설정
+                document.getElementById('purchaseSite').required = false;
+                document.getElementById('accountId').required = false;
+                document.getElementById('accountPassword').required = false;
+                document.getElementById('offlineVendor').required = true;
+            }
+        }
+
+        // 🆕 기타 사이트 입력 토글
+        function toggleOtherSiteInput(siteValue) {
+            const otherSiteInput = document.getElementById('otherSite');
+            if (siteValue === 'other') {
+                otherSiteInput.style.display = 'block';
+                otherSiteInput.required = true;
+            } else {
+                otherSiteInput.style.display = 'none';
+                otherSiteInput.required = false;
+            }
         }
 
         // 🆕 수업계획 수정 모드 표시
@@ -978,7 +1084,7 @@
 
         // 🎯 DOM 로드 완료 시 실행
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 (v1.7.0 - 교구신청 기능 복구)');
+            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 (v1.8.0 - 묶음 신청 재설계)');
             
             // Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
@@ -998,6 +1104,8 @@
         window.initializeEquipmentRequestPage = initializeEquipmentRequestPage;
         window.checkRequiredDependencies = checkRequiredDependencies;
         window.showLessonPlanEditMode = showLessonPlanEditMode;
+        window.toggleBundlePurchaseInfo = toggleBundlePurchaseInfo;
+        window.toggleOtherSiteInput = toggleOtherSiteInput;
 
         // 🎯 호환성 함수 (기존 코드와의 호환성 유지)
         window.initializeStudentPage = function() {
@@ -1005,7 +1113,7 @@
             return initializeEquipmentRequestPage();
         };
 
-        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 - 교구신청 기능 복구 (v1.7.0)');
+        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 - 묶음 신청 재설계 (v1.8.0)');
         console.log('💡 디버깅 명령어: checkRequiredDependencies() - 의존성 상태 확인');
     </script>
     
@@ -1115,49 +1223,62 @@
             color: white !important;
         }
 
-        /* 🆕 묶음 아이템 스타일 */
-        .bundle-items-section {
+        /* 🆕 묶음 신청 스타일 */
+        .purchase-info-section {
             margin-top: 20px;
             border-top: 1px solid #e9ecef;
             padding-top: 20px;
         }
 
-        .bundle-items-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .bundle-items-header h4 {
-            margin: 0;
-            color: #495057;
-        }
-
-        .bundle-item {
+        .account-info-section {
             background: #f8f9fa;
             border: 1px solid #e9ecef;
             border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 20px;
+            margin-top: 15px;
         }
 
-        .bundle-item-header {
+        .account-info-header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
         }
 
-        .bundle-item-header h4 {
-            margin: 0;
+        .account-info-header i {
+            color: #28a745;
+            margin-top: 2px;
+        }
+
+        .account-info-header h4 {
+            margin: 0 0 4px 0;
             color: #495057;
             font-size: 16px;
         }
 
-        .remove-bundle-item {
-            padding: 5px 10px;
-            font-size: 12px;
+        .account-info-header p {
+            margin: 0;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        /* 구매 사이트 선택 스타일 */
+        #purchaseSite {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        #otherSite {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
         }
 
         /* 파일 업로드 스타일 개선 */
@@ -1212,6 +1333,12 @@
             height: auto;
             border-radius: 4px;
         }
+
+        /* 텍스트 스타일 */
+        .text-muted {
+            color: #6c757d !important;
+            font-size: 12px;
+        }
         
         /* 애니메이션 */
         .animate-spin {
@@ -1260,14 +1387,10 @@
                 font-size: 11px;
             }
 
-            .bundle-item-header {
+            .account-info-header {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 10px;
-            }
-
-            .remove-bundle-item {
-                align-self: flex-end;
+                gap: 8px;
             }
         }
     </style>
