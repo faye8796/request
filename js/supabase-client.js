@@ -189,6 +189,71 @@ const SupabaseAPI = {
     },
 
     // ===================
+    // 🆕 배송지 정보 관리
+    // ===================
+    
+    // 🆕 배송지 정보 조회
+    async getShippingInfo(userId) {
+        console.log('📦 배송지 정보 조회:', userId);
+        
+        const result = await this.safeApiCall('배송지 정보 조회', async () => {
+            const { data, error } = await this.supabase
+                .from('shipping_addresses')
+                .select('*')
+                .eq('user_id', userId)
+                .single();
+
+            // PGRST116은 데이터 없음을 의미하므로 정상 처리
+            if (error && error.code === 'PGRST116') {
+                return { data: null, error: null };
+            }
+
+            return { data, error };
+        });
+
+        return result.success ? result.data : null;
+    },
+
+    // 🆕 배송지 정보 저장 (UPSERT 방식)
+    async saveShippingInfo(userId, shippingData) {
+        console.log('📦 배송지 정보 저장:', userId, shippingData);
+        
+        return await this.safeApiCall('배송지 정보 저장', async () => {
+            const dataToSave = {
+                user_id: userId,
+                recipient_name: shippingData.recipient_name,
+                phone: shippingData.phone,
+                address: shippingData.address,
+                postcode: shippingData.postcode || null,
+                note: shippingData.note || null,
+                updated_at: new Date().toISOString()
+            };
+
+            // 기존 데이터 확인
+            const existingResult = await this.supabase
+                .from('shipping_addresses')
+                .select('id')
+                .eq('user_id', userId);
+
+            if (existingResult.data && existingResult.data.length > 0) {
+                // 업데이트
+                return await this.supabase
+                    .from('shipping_addresses')
+                    .update(dataToSave)
+                    .eq('user_id', userId)
+                    .select();
+            } else {
+                // 새로 생성
+                dataToSave.created_at = new Date().toISOString();
+                return await this.supabase
+                    .from('shipping_addresses')
+                    .insert([dataToSave])
+                    .select();
+            }
+        });
+    },
+
+    // ===================
     // 통계 데이터 (admin.js 호환)
     // ===================
     async getStats() {
@@ -1296,4 +1361,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v2.5 loaded - lesson_plans 테이블 구조 변경 반영 완료 (approved_at, approved_by 컬럼 제거)');
+console.log('🚀 SupabaseAPI v2.6 loaded - 배송지 정보 관리 기능 추가 완료');
