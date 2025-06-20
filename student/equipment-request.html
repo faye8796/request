@@ -92,9 +92,9 @@
                             </div>
                         </div>
 
-                        <!-- 제출 버튼 -->
+                        <!-- 제출 버튼 (동적으로 변경됨) -->
                         <div class="form-actions">
-                            <button type="button" id="closeLessonPlanBtn" class="btn secondary">
+                            <button type="button" id="backToDashboardBtn" class="btn secondary">
                                 <i data-lucide="arrow-left"></i>
                                 대시보드로 돌아가기
                             </button>
@@ -102,7 +102,7 @@
                                 <i data-lucide="save"></i>
                                 임시 저장
                             </button>
-                            <button type="submit" class="btn primary">
+                            <button type="submit" id="submitLessonPlanBtn" class="btn primary">
                                 <i data-lucide="check"></i>
                                 수업 계획 완료 및 제출
                             </button>
@@ -364,13 +364,13 @@
     <!-- 학생 관리 (마지막에 로드) -->
     <script src="../js/student.js?v=1.5.1"></script>
     
-    <!-- 교구 신청 페이지 초기화 - 개선된 의존성 로딩 대기 -->
+    <!-- 교구 신청 페이지 초기화 - 수업계획 상태 확인 추가 -->
     <script>
         /**
-         * 🚀 교구 신청 페이지 초기화 로직 - 의존성 로딩 대기 개선
-         * - 모든 필수 의존성이 로드될 때까지 대기
-         * - StudentManager 초기화 안정성 강화
-         * - handleLessonPlanClick 함수 누락 문제 해결
+         * 🚀 교구 신청 페이지 초기화 로직 - 수업계획 상태 확인 추가
+         * - 페이지 로드 시 수업계획 상태 확인
+         * - 미제출자: lessonPlanPage 활성화 (create 모드)
+         * - 제출자: studentPage 활성화 (교구신청 화면)
          */
 
         // 🎯 전역 상태 관리
@@ -380,7 +380,8 @@
             managerInitialized: false,
             retryCount: 0,
             maxRetries: 3,
-            dependenciesLoaded: false
+            dependenciesLoaded: false,
+            lessonPlanChecked: false
         };
 
         // 🔧 의존성 확인 함수 - 강화된 버전
@@ -477,6 +478,106 @@
             } catch (error) {
                 console.error('❌ 사용자 정보 가져오기 오류:', error);
                 return null;
+            }
+        }
+
+        // 🆕 수업계획 상태 확인 및 페이지 분기
+        async function checkLessonPlanStatusAndSetPage() {
+            try {
+                console.log('📋 수업계획 상태 확인 시작');
+                
+                const currentUser = getCurrentUserSafely();
+                if (!currentUser) {
+                    console.error('❌ 사용자 정보 없음 - 로그인 페이지로 이동');
+                    redirectToLogin();
+                    return;
+                }
+
+                // SupabaseAPI를 통한 수업계획 조회
+                const client = await SupabaseAPI.ensureClient();
+                const { data: lessonPlan, error } = await client
+                    .from('lesson_plans')
+                    .select('*')
+                    .eq('student_id', currentUser.id)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') {
+                    console.error('수업계획 조회 오류:', error);
+                    // 오류가 있어도 기본적으로 수업계획 작성 화면 표시
+                    showLessonPlanPage();
+                    return;
+                }
+
+                console.log('📋 수업계획 조회 결과:', lessonPlan);
+
+                if (!lessonPlan) {
+                    // 수업계획 없음 → 작성 모드
+                    console.log('📝 수업계획 없음 → 작성 화면 표시');
+                    showLessonPlanPage();
+                } else {
+                    // 수업계획 있음 → 교구신청 화면 표시
+                    console.log('✅ 수업계획 있음 → 교구신청 화면 표시');
+                    showStudentPage();
+                }
+
+                window.EquipmentRequestManager.lessonPlanChecked = true;
+                console.log('✅ 수업계획 상태 확인 완료');
+
+            } catch (error) {
+                console.error('❌ 수업계획 상태 확인 오류:', error);
+                // 오류 시 기본적으로 수업계획 작성 화면 표시
+                showLessonPlanPage();
+            }
+        }
+
+        // 🆕 수업계획 페이지 표시
+        function showLessonPlanPage() {
+            try {
+                console.log('📋 수업계획 페이지 표시');
+                
+                const studentPage = document.getElementById('studentPage');
+                const lessonPlanPage = document.getElementById('lessonPlanPage');
+                
+                if (studentPage && lessonPlanPage) {
+                    // 페이지 전환
+                    studentPage.classList.remove('active');
+                    lessonPlanPage.classList.add('active');
+                    
+                    // LessonPlanManager 초기화 (create 모드)
+                    setTimeout(() => {
+                        if (window.LessonPlanManager && typeof window.LessonPlanManager.showLessonPlanPage === 'function') {
+                            window.LessonPlanManager.showLessonPlanPage('create');
+                        }
+                    }, 200);
+                    
+                    console.log('✅ 수업계획 페이지 표시 완료');
+                } else {
+                    console.error('❌ 페이지 요소를 찾을 수 없습니다');
+                }
+            } catch (error) {
+                console.error('❌ 수업계획 페이지 표시 오류:', error);
+            }
+        }
+
+        // 🆕 교구신청 페이지 표시
+        function showStudentPage() {
+            try {
+                console.log('🛒 교구신청 페이지 표시');
+                
+                const studentPage = document.getElementById('studentPage');
+                const lessonPlanPage = document.getElementById('lessonPlanPage');
+                
+                if (studentPage && lessonPlanPage) {
+                    // 페이지 전환
+                    lessonPlanPage.classList.remove('active');
+                    studentPage.classList.add('active');
+                    
+                    console.log('✅ 교구신청 페이지 표시 완료');
+                } else {
+                    console.error('❌ 페이지 요소를 찾을 수 없습니다');
+                }
+            } catch (error) {
+                console.error('❌ 교구신청 페이지 표시 오류:', error);
             }
         }
 
@@ -591,30 +692,22 @@
                 });
             }
 
-            // 수업계획 닫기
-            const closePlanBtn = document.getElementById('closeLessonPlanBtn');
-            if (closePlanBtn) {
-                closePlanBtn.addEventListener('click', function() {
-                    document.getElementById('lessonPlanPage').classList.remove('active');
-                    document.getElementById('studentPage').classList.add('active');
-                });
-            }
-
-            // 수업계획 버튼 - 안전한 이벤트 처리
+            // 🆕 수업계획 버튼 - 수정 모드로 모달 표시
             const lessonPlanBtn = document.getElementById('lessonPlanBtn');
             if (lessonPlanBtn) {
                 lessonPlanBtn.addEventListener('click', function() {
-                    console.log('📋 수업계획 버튼 클릭됨');
+                    console.log('📋 수업계획 버튼 클릭됨 (수정 모드)');
                     
                     // StudentManager와 handleLessonPlanClick 함수 확인
                     if (typeof StudentManager !== 'undefined' && 
                         typeof StudentManager.handleLessonPlanClick === 'function') {
                         
                         try {
-                            StudentManager.handleLessonPlanClick();
+                            // 🆕 수정 모드로 수업계획 표시
+                            showLessonPlanEditMode();
                         } catch (error) {
-                            console.error('❌ 수업계획 버튼 클릭 처리 오류:', error);
-                            alert('수업계획 페이지로 이동하는 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+                            console.error('❌ 수업계획 수정 모드 표시 오류:', error);
+                            alert('수업계획 수정 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
                         }
                     } else {
                         console.error('❌ StudentManager 또는 handleLessonPlanClick 함수를 찾을 수 없습니다');
@@ -624,6 +717,54 @@
             }
 
             console.log('✅ 네비게이션 설정 완료');
+        }
+
+        // 🆕 수업계획 수정 모드 표시
+        async function showLessonPlanEditMode() {
+            try {
+                console.log('✏️ 수업계획 수정 모드 표시');
+                
+                const currentUser = getCurrentUserSafely();
+                if (!currentUser) {
+                    alert('로그인이 필요합니다.');
+                    return;
+                }
+
+                // 기존 수업계획 조회
+                const client = await SupabaseAPI.ensureClient();
+                const { data: lessonPlan, error } = await client
+                    .from('lesson_plans')
+                    .select('*')
+                    .eq('student_id', currentUser.id)
+                    .single();
+
+                if (error || !lessonPlan) {
+                    alert('수업계획을 찾을 수 없습니다.');
+                    return;
+                }
+
+                // 페이지 전환
+                const studentPage = document.getElementById('studentPage');
+                const lessonPlanPage = document.getElementById('lessonPlanPage');
+                
+                if (studentPage && lessonPlanPage) {
+                    studentPage.classList.remove('active');
+                    lessonPlanPage.classList.add('active');
+                    
+                    // 수정 모드로 LessonPlanManager 초기화
+                    setTimeout(() => {
+                        if (window.LessonPlanManager && typeof window.LessonPlanManager.showLessonPlanPage === 'function') {
+                            window.LessonPlanManager.showLessonPlanPage('edit', lessonPlan);
+                        }
+                    }, 200);
+                    
+                    console.log('✅ 수업계획 수정 모드 표시 완료');
+                }
+                
+            } catch (error) {
+                console.error('❌ 수업계획 수정 모드 표시 오류:', error);
+                alert('수업계획 수정 모드를 여는 중 오류가 발생했습니다.');
+            }
         }
 
         // 🎯 오류 메시지 표시 함수들
@@ -733,7 +874,7 @@
             }
         }
 
-        // 🚀 메인 초기화 함수 - 개선된 버전
+        // 🚀 메인 초기화 함수 - 수업계획 상태 확인 추가
         function initializeEquipmentRequestPage() {
             console.log('🚀 Equipment Request 페이지 초기화 시작');
             
@@ -754,15 +895,25 @@
                     .then(function(userData) {
                         console.log('✅ 2단계: 사용자 정보 로드 완료');
                         
-                        // 3단계: StudentManager 초기화
-                        return initializeStudentManager();
+                        // 3단계: 수업계획 상태 확인 및 페이지 분기
+                        return checkLessonPlanStatusAndSetPage();
                     })
                     .then(function() {
-                        console.log('✅ 3단계: StudentManager 초기화 완료');
+                        console.log('✅ 3단계: 수업계획 상태 확인 완료');
                         
-                        // 4단계: 네비게이션 설정
+                        // 4단계: StudentManager 초기화 (교구신청 화면인 경우만)
+                        const studentPage = document.getElementById('studentPage');
+                        if (studentPage && studentPage.classList.contains('active')) {
+                            return initializeStudentManager();
+                        }
+                        return Promise.resolve();
+                    })
+                    .then(function() {
+                        console.log('✅ 4단계: StudentManager 초기화 완료');
+                        
+                        // 5단계: 네비게이션 설정
                         setupNavigation();
-                        console.log('✅ 4단계: 네비게이션 설정 완료');
+                        console.log('✅ 5단계: 네비게이션 설정 완료');
                         
                         // 초기화 완료
                         window.EquipmentRequestManager.isInitialized = true;
@@ -798,7 +949,7 @@
 
         // 🎯 DOM 로드 완료 시 실행
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 (v1.5.1)');
+            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 (v1.6.0 - 수업계획 상태 확인)');
             
             // Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
@@ -817,6 +968,7 @@
         window.redirectToLogin = redirectToLogin;
         window.initializeEquipmentRequestPage = initializeEquipmentRequestPage;
         window.checkRequiredDependencies = checkRequiredDependencies;
+        window.showLessonPlanEditMode = showLessonPlanEditMode;
 
         // 🎯 호환성 함수 (기존 코드와의 호환성 유지)
         window.initializeStudentPage = function() {
@@ -824,7 +976,7 @@
             return initializeEquipmentRequestPage();
         };
 
-        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 - 의존성 로딩 대기 개선 (v1.5.1)');
+        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 - 수업계획 상태 확인 추가 (v1.6.0)');
         console.log('💡 디버깅 명령어: checkRequiredDependencies() - 의존성 상태 확인');
     </script>
     
@@ -933,6 +1085,15 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
+        }
+        
+        /* 페이지 전환 스타일 */
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
         }
         
         /* 반응형 조정 */
