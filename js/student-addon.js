@@ -2,12 +2,13 @@
 // StudentManager의 누락된 메서드들을 확장하여 교구 신청 기능을 완전히 복구
 // 🆕 배송지 설정 기능 추가 (v2.3) - 플래그 초기화 문제 해결
 // 🚀 v2.4 - 교구신청 수정/삭제 기능 추가 및 참고링크 UI 개선
+// 🔧 v2.5 - 묶음신청 수정 모달 문제 및 참고링크 표시 버그 수정
 
 // StudentManager 확장 - 누락된 교구 신청 기능들 구현 (실제 SupabaseAPI 메서드 사용)
 (function() {
     'use strict';
     
-    console.log('📚 StudentAddon 로드 시작 - 교구신청 + 배송지 기능 (v2.4 - 수정/삭제 및 UI 개선)');
+    console.log('📚 StudentAddon 로드 시작 - 교구신청 + 배송지 기능 (v2.5 - 묶음신청 수정 및 참고링크 버그 수정)');
 
     // StudentManager가 로드될 때까지 대기
     function waitForStudentManager() {
@@ -87,7 +88,7 @@
         // 🆕 배송지 설정 모달 표시 - 플래그 초기화 추가
         showShippingModal: function() {
             try {
-                console.log('📦 배송지 설정 모달 표시 (v2.4)');
+                console.log('📦 배송지 설정 모달 표시 (v2.5)');
                 
                 // 🔧 플래그 강제 초기화 (모달 열 때마다)
                 this.submitInProgress = false;
@@ -316,7 +317,7 @@
         // 🆕 배송지 정보 저장 처리 - 플래그 관리 개선
         handleShippingSubmit: function() {
             try {
-                console.log('📦 배송지 정보 저장 처리 시작 (v2.4)');
+                console.log('📦 배송지 정보 저장 처리 시작 (v2.5)');
                 console.log('🔍 handleShippingSubmit 진입 시 submitInProgress:', this.submitInProgress);
                 
                 const currentUser = this.getCurrentUserSafely();
@@ -671,17 +672,17 @@
 
     // StudentManager 확장 실행
     waitForStudentManager().then(() => {
-        console.log('✅ StudentManager 감지됨 - 확장 기능 추가 시작 (v2.4)');
+        console.log('✅ StudentManager 감지됨 - 확장 기능 추가 시작 (v2.5)');
         
         // 🚀 SupabaseAPI 확장 먼저 실행
         extendSupabaseAPI();
         
         // === 교구 신청 모달 기능 구현 ===
         
-        // 🛒 일반 교구 신청 모달 표시 - 🚀 v2.4 참고링크 UI 개선 추가
+        // 🛒 일반 교구 신청 모달 표시 - 🚀 v2.5 참고링크 UI 개선 추가
         window.StudentManager.showApplicationModal = function() {
             try {
-                console.log('🛒 일반 교구 신청 모달 표시 (v2.4 - 참고링크 UI 개선)');
+                console.log('🛒 일반 교구 신청 모달 표시 (v2.5 - 참고링크 UI 개선)');
                 
                 const modal = document.getElementById('applicationModal');
                 if (!modal) {
@@ -720,7 +721,7 @@
                         self.handlePurchaseMethodChange('online');
                     }
 
-                    // 🚀 v2.4 - 구매 방식 변경 이벤트 리스너 추가
+                    // 🚀 v2.5 - 구매 방식 변경 이벤트 리스너 추가
                     self.setupPurchaseMethodEventListeners();
 
                     // 모달 표시
@@ -733,7 +734,7 @@
                         setTimeout(() => firstInput.focus(), 100);
                     }
 
-                    console.log('✅ 일반 교구 신청 모달 표시 완료 (v2.4)');
+                    console.log('✅ 일반 교구 신청 모달 표시 완료 (v2.5)');
                 }).catch(function(error) {
                     console.error('❌ 수업계획 확인 오류:', error);
                     alert('수업계획 정보를 확인할 수 없습니다. 다시 시도해주세요.');
@@ -745,7 +746,7 @@
             }
         };
 
-        // 🚀 v2.4 - 구매 방식 변경 이벤트 리스너 설정
+        // 🚀 v2.5 - 구매 방식 변경 이벤트 리스너 설정
         window.StudentManager.setupPurchaseMethodEventListeners = function() {
             try {
                 console.log('🔧 구매 방식 변경 이벤트 리스너 설정');
@@ -771,7 +772,7 @@
             }
         };
 
-        // 🚀 v2.4 - 구매 방식 변경 처리 (참고링크 필드 표시/숨김)
+        // 🚀 v2.5 - 구매 방식 변경 처리 (참고링크 필드 표시/숨김)
         window.StudentManager.handlePurchaseMethodChange = function(method) {
             try {
                 console.log('🔧 구매 방식 변경 처리:', method);
@@ -814,7 +815,7 @@
         // 📦 묶음 신청 모달 표시 - 완전 재설계
         window.StudentManager.showBundleModal = function() {
             try {
-                console.log('📦 묶음 신청 모달 표시 (v2.4 - 참고링크 제거)');
+                console.log('📦 묶음 신청 모달 표시 (v2.5 - 참고링크 제거)');
                 
                 const modal = document.getElementById('bundleModal');
                 if (!modal) {
@@ -863,7 +864,7 @@
                         setTimeout(() => firstInput.focus(), 100);
                     }
 
-                    console.log('✅ 묶음 신청 모달 표시 완료 (v2.4)');
+                    console.log('✅ 묶음 신청 모달 표시 완료 (v2.5)');
                 }).catch(function(error) {
                     console.error('❌ 수업계획 확인 오류:', error);
                     alert('수업계획 정보를 확인할 수 없습니다. 다시 시도해주세요.');
@@ -945,7 +946,7 @@
         // 📝 일반 교구 신청 제출 처리 - 실제 API 기반으로 수정
         window.StudentManager.handleApplicationSubmit = function() {
             try {
-                console.log('📝 일반 교구 신청 제출 처리 (v2.4)');
+                console.log('📝 일반 교구 신청 제출 처리 (v2.5)');
                 
                 const currentUser = this.getCurrentUserSafely();
                 if (!currentUser) {
@@ -989,7 +990,7 @@
                     return;
                 }
 
-                // 🚀 v2.4 - 온라인 구매만 링크 필수
+                // 🚀 v2.5 - 온라인 구매만 링크 필수
                 if (applicationData.purchase_type === 'online' && !applicationData.purchase_link.trim()) {
                     alert('온라인 구매의 경우 구매 링크를 입력해주세요.');
                     form.querySelector('#itemLink').focus();
@@ -1048,7 +1049,7 @@
         // 📦 묶음 신청 제출 처리 - v2.0 쇼핑몰 계정 기반 완전 재설계
         window.StudentManager.handleBundleSubmit = function() {
             try {
-                console.log('📦 묶음 신청 제출 처리 (v2.4 - 쇼핑몰 계정 기반)');
+                console.log('📦 묶음 신청 제출 처리 (v2.5 - 쇼핑몰 계정 기반)');
                 
                 const currentUser = this.getCurrentUserSafely();
                 if (!currentUser) {
@@ -1293,12 +1294,12 @@
             }
         };
 
-        // === 🚀 v2.4 - 교구 신청 수정/삭제 기능 실제 구현 ===
+        // === 🚀 v2.5 - 교구 신청 수정/삭제 기능 개선 (묶음 신청 지원 추가) ===
 
-        // ✏️ 신청 수정 기능 - 실제 동작 구현
+        // ✏️ 신청 수정 기능 - 🔧 v2.5 묶음 신청 지원 추가
         window.StudentManager.editApplication = function(itemId) {
             try {
-                console.log('✏️ 신청 수정 시작:', itemId);
+                console.log('✏️ 신청 수정 시작 (v2.5 - 묶음 신청 지원):', itemId);
                 
                 if (!itemId) {
                     alert('잘못된 요청입니다.');
@@ -1338,8 +1339,14 @@
 
                     console.log('✅ 수정할 신청 정보:', application);
                     
-                    // 수정 모드로 모달 열기
-                    self.openEditApplicationModal(application);
+                    // 🔧 v2.5 - 묶음 신청 여부에 따라 다른 모달 열기
+                    if (application.is_bundle) {
+                        console.log('📦 묶음 신청 수정 모드');
+                        self.openEditBundleModal(application);
+                    } else {
+                        console.log('🛒 일반 신청 수정 모드');
+                        self.openEditApplicationModal(application);
+                    }
 
                 }).catch(function(error) {
                     console.error('❌ 신청 정보 조회 오류:', error);
@@ -1352,10 +1359,10 @@
             }
         };
 
-        // 📝 수정 모달 열기
+        // 📝 일반 신청 수정 모달 열기
         window.StudentManager.openEditApplicationModal = function(application) {
             try {
-                console.log('📝 수정 모달 열기:', application);
+                console.log('📝 일반 신청 수정 모달 열기:', application);
                 
                 const modal = document.getElementById('applicationModal');
                 if (!modal) {
@@ -1384,17 +1391,153 @@
                 // 구매 방식에 따른 UI 설정
                 this.handlePurchaseMethodChange(application.purchase_type);
                 
-                // 🚀 v2.4 - 구매 방식 변경 이벤트 리스너 추가
+                // 🚀 v2.5 - 구매 방식 변경 이벤트 리스너 추가
                 this.setupPurchaseMethodEventListeners();
 
                 // 모달 표시
                 modal.classList.add('show');
                 document.body.style.overflow = 'hidden';
 
-                console.log('✅ 수정 모달 열기 완료');
+                console.log('✅ 일반 신청 수정 모달 열기 완료');
             } catch (error) {
-                console.error('❌ 수정 모달 열기 오류:', error);
+                console.error('❌ 일반 신청 수정 모달 열기 오류:', error);
                 alert('수정 모달을 여는 중 오류가 발생했습니다.');
+            }
+        };
+
+        // 🔧 v2.5 새로 추가 - 묶음 신청 수정 모달 열기
+        window.StudentManager.openEditBundleModal = function(application) {
+            try {
+                console.log('📦 묶음 신청 수정 모달 열기:', application);
+                
+                const modal = document.getElementById('bundleModal');
+                if (!modal) {
+                    alert('묶음 신청 모달을 찾을 수 없습니다.');
+                    return;
+                }
+
+                // 수정 모드로 설정
+                this.currentEditingBundleItem = application.id;
+                
+                // 모달 제목 변경
+                const modalTitle = modal.querySelector('h3');
+                if (modalTitle) {
+                    modalTitle.textContent = '묶음 교구 신청 수정';
+                }
+
+                // 제출 버튼 텍스트 변경
+                const submitBtn = modal.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.textContent = '수정하기';
+                }
+
+                // 폼에 기존 데이터 입력
+                this.fillBundleForm(application);
+
+                // 모달 표시
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+
+                console.log('✅ 묶음 신청 수정 모달 열기 완료');
+            } catch (error) {
+                console.error('❌ 묶음 신청 수정 모달 열기 오류:', error);
+                alert('묶음 수정 모달을 여는 중 오류가 발생했습니다.');
+            }
+        };
+
+        // 🔧 v2.5 새로 추가 - 묶음 신청 폼에 기존 데이터 채우기
+        window.StudentManager.fillBundleForm = function(application) {
+            try {
+                console.log('📦 묶음 신청 폼에 기존 데이터 채우기');
+                
+                const form = document.getElementById('bundleForm');
+                if (!form) return;
+
+                // 기본 정보 입력
+                const bundleTitleField = form.querySelector('#bundleTitle');
+                const bundlePurposeField = form.querySelector('#bundlePurpose');
+                const bundleTotalPriceField = form.querySelector('#bundleTotalPrice');
+
+                if (bundleTitleField) bundleTitleField.value = application.item_name || '';
+                if (bundlePurposeField) bundlePurposeField.value = application.purpose || '';
+                if (bundleTotalPriceField) bundleTotalPriceField.value = application.price || '';
+
+                // 구매 방식 라디오 버튼 설정
+                const bundlePurchaseMethodRadios = form.querySelectorAll('input[name="bundlePurchaseMethod"]');
+                bundlePurchaseMethodRadios.forEach(radio => {
+                    radio.checked = (radio.value === application.purchase_type);
+                });
+
+                // 구매 방식에 따른 UI 업데이트
+                window.toggleBundlePurchaseInfo(application.purchase_type);
+
+                // 추가 정보 파싱 및 입력 (purchase_link에서 정보 추출)
+                if (application.purchase_link) {
+                    this.parseBundlePurchaseDetails(application.purchase_link, form);
+                }
+
+                console.log('✅ 묶음 신청 폼 데이터 채우기 완료');
+            } catch (error) {
+                console.error('❌ 묶음 신청 폼 데이터 채우기 오류:', error);
+            }
+        };
+
+        // 🔧 v2.5 새로 추가 - 묶음 구매 정보 파싱
+        window.StudentManager.parseBundlePurchaseDetails = function(purchaseLink, form) {
+            try {
+                console.log('📦 구매 정보 파싱:', purchaseLink);
+                
+                if (purchaseLink.includes('[온라인 구매]')) {
+                    // 온라인 구매 정보 파싱
+                    const siteMatch = purchaseLink.match(/구매 사이트: (.+)/);
+                    const idMatch = purchaseLink.match(/계정 ID: (.+)/);
+                    const noteMatch = purchaseLink.match(/장바구니 메모: (.+)/);
+                    
+                    if (siteMatch) {
+                        const purchaseSiteField = form.querySelector('#purchaseSite');
+                        if (purchaseSiteField) {
+                            purchaseSiteField.value = siteMatch[1].trim();
+                            // 기타 사이트 처리
+                            if (!['coupang', '11st', 'gmarket', 'auction', 'interpark', 'lotte', 'ssg', 'yes24', 'kyobo'].includes(siteMatch[1].trim())) {
+                                purchaseSiteField.value = 'other';
+                                const otherSiteField = form.querySelector('#otherSite');
+                                if (otherSiteField) {
+                                    otherSiteField.value = siteMatch[1].trim();
+                                    otherSiteField.style.display = 'block';
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (idMatch) {
+                        const accountIdField = form.querySelector('#accountId');
+                        if (accountIdField) accountIdField.value = idMatch[1].trim();
+                    }
+                    
+                    if (noteMatch) {
+                        const cartNoteField = form.querySelector('#cartNote');
+                        if (cartNoteField) cartNoteField.value = noteMatch[1].trim();
+                    }
+                    
+                } else if (purchaseLink.includes('[오프라인 구매]')) {
+                    // 오프라인 구매 정보 파싱
+                    const vendorMatch = purchaseLink.match(/구매 업체: (.+)/);
+                    const planMatch = purchaseLink.match(/구매 계획: (.+)/);
+                    
+                    if (vendorMatch) {
+                        const offlineVendorField = form.querySelector('#offlineVendor');
+                        if (offlineVendorField) offlineVendorField.value = vendorMatch[1].trim();
+                    }
+                    
+                    if (planMatch) {
+                        const purchasePlanField = form.querySelector('#purchasePlan');
+                        if (purchasePlanField) purchasePlanField.value = planMatch[1].trim();
+                    }
+                }
+                
+                console.log('✅ 구매 정보 파싱 완료');
+            } catch (error) {
+                console.error('❌ 구매 정보 파싱 오류:', error);
             }
         };
 
@@ -1641,8 +1784,8 @@
             }
         };
 
-        console.log('✅ StudentManager 확장 완료 - v2.4 교구신청 수정/삭제 및 참고링크 UI 개선');
+        console.log('✅ StudentManager 확장 완료 - v2.5 묶음신청 수정 모달 및 참고링크 표시 버그 수정');
     });
 
-    console.log('📚 StudentAddon 로드 완료 - v2.4 교구신청 수정/삭제 및 참고링크 UI 개선');
+    console.log('📚 StudentAddon 로드 완료 - v2.5 묶음신청 수정 모달 및 참고링크 표시 버그 수정');
 })();
