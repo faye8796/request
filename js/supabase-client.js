@@ -189,10 +189,10 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 🆕 배송지 정보 관리
+    // 🔧 배송지 정보 관리 - 컬럼명 수정
     // ===================
     
-    // 🆕 배송지 정보 조회
+    // 🔧 배송지 정보 조회 - 올바른 컬럼명 사용
     async getShippingInfo(userId) {
         console.log('📦 배송지 정보 조회:', userId);
         
@@ -211,21 +211,32 @@ const SupabaseAPI = {
             return { data, error };
         });
 
+        if (result.success && result.data) {
+            // 🔧 DB 컬럼명을 코드에서 사용하는 형태로 매핑
+            const mappedData = {
+                ...result.data,
+                postcode: result.data.postal_code,  // postal_code → postcode
+                note: result.data.delivery_note     // delivery_note → note
+            };
+            return mappedData;
+        }
+
         return result.success ? result.data : null;
     },
 
-    // 🆕 배송지 정보 저장 (UPSERT 방식)
+    // 🔧 배송지 정보 저장 - 올바른 컬럼명으로 매핑
     async saveShippingInfo(userId, shippingData) {
         console.log('📦 배송지 정보 저장:', userId, shippingData);
         
         return await this.safeApiCall('배송지 정보 저장', async () => {
+            // 🔧 코드에서 사용하는 컬럼명을 DB 컬럼명으로 매핑
             const dataToSave = {
                 user_id: userId,
                 recipient_name: shippingData.recipient_name,
                 phone: shippingData.phone,
                 address: shippingData.address,
-                postcode: shippingData.postcode || null,
-                note: shippingData.note || null,
+                postal_code: shippingData.postcode || null,      // postcode → postal_code
+                delivery_note: shippingData.note || null,        // note → delivery_note
                 updated_at: new Date().toISOString()
             };
 
@@ -237,6 +248,7 @@ const SupabaseAPI = {
 
             if (existingResult.data && existingResult.data.length > 0) {
                 // 업데이트
+                console.log('📦 기존 배송지 정보 업데이트');
                 return await this.supabase
                     .from('shipping_addresses')
                     .update(dataToSave)
@@ -244,6 +256,7 @@ const SupabaseAPI = {
                     .select();
             } else {
                 // 새로 생성
+                console.log('📦 새 배송지 정보 생성');
                 dataToSave.created_at = new Date().toISOString();
                 return await this.supabase
                     .from('shipping_addresses')
@@ -1361,4 +1374,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v2.6 loaded - 배송지 정보 관리 기능 추가 완료');
+console.log('🚀 SupabaseAPI v2.7 loaded - 배송지 정보 컬럼명 수정 완료');
