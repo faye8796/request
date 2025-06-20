@@ -1989,7 +1989,8 @@ const AdminManager = {
             button.addEventListener('click', (e) => {
                 const action = e.target.closest('button').dataset.action;
                 const itemCard = e.target.closest('.admin-item-card');
-                const requestId = parseInt(itemCard.dataset.requestId);
+                // 🔧 UUID 오류 수정: parseInt 제거, 문자열 그대로 사용
+                const requestId = itemCard.dataset.requestId;
                 
                 this.handleItemAction(action, requestId, e.target);
             });
@@ -1999,7 +2000,8 @@ const AdminManager = {
         const receiptButtons = Utils.$$('.view-receipt-btn');
         receiptButtons.forEach(button => {
             button.addEventListener('click', (e) => {
-                const requestId = parseInt(e.target.closest('button').dataset.requestId);
+                // 🔧 UUID 오류 수정: parseInt 제거, 문자열 그대로 사용
+                const requestId = e.target.closest('button').dataset.requestId;
                 this.showViewReceiptModal(requestId);
             });
         });
@@ -2511,44 +2513,12 @@ AdminManager.safeCall = function(functionName, ...args) {
             return null;
         }
     } catch (error) {
-        console.error(`❌ AdminManager.${functionName} 호출 오류:`, error);
+        console.error(`❌ AdminManager.${functionName} 실행 오류:`, error);
         return null;
     }
 };
 
-// 7. 디버깅을 위한 상태 확인 함수
-AdminManager.getStatus = function() {
-    return {
-        initialized: typeof this.init === 'function',
-        currentSearchTerm: this.currentSearchTerm || '',
-        currentViewingLessonPlan: this.currentViewingLessonPlan || null,
-        availableFunctions: Object.getOwnPropertyNames(this).filter(prop => typeof this[prop] === 'function')
-    };
-};
+// 전역 접근을 위해 window 객체에 추가
+window.AdminManager = AdminManager;
 
-// 8. 전역 접근을 위해 window 객체에 추가 (이미 있을 수도 있지만 안전하게)
-if (typeof window !== 'undefined') {
-    window.AdminManager = AdminManager;
-    
-    // 개발자 도구에서 사용할 수 있도록
-    if (window.CONFIG && window.CONFIG.DEV && window.CONFIG.DEV.DEBUG) {
-        console.log('🛠️ AdminManager 패치 적용 완료');
-        console.log('사용 가능한 함수들:', AdminManager.getStatus().availableFunctions);
-    }
-}
-
-// 9. 초기화 함수 자동 실행 (페이지가 완전히 로드된 후)
-document.addEventListener('DOMContentLoaded', function() {
-    // equipment-management.html에서만 자동 초기화
-    if (window.location.pathname.includes('equipment-management.html')) {
-        console.log('🏥 교구 관리 페이지에서 AdminManager 자동 설정');
-        
-        // 약간의 지연 후 초기화 (다른 스크립트들이 로드될 시간 확보)
-        setTimeout(() => {
-            if (typeof AdminManager !== 'undefined' && !AdminManager._autoInitialized) {
-                AdminManager._autoInitialized = true;
-                console.log('🔧 AdminManager 자동 초기화 수행');
-            }
-        }, 100);
-    }
-});
+console.log('🚀 AdminManager v2.5 loaded - UUID 오류 수정 완료');
