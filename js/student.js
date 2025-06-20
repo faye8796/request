@@ -383,6 +383,19 @@ const StudentManager = {
                 this.handleBundleSubmit();
             }.bind(this));
 
+            // 🆕 배송지 모달 이벤트 리스너 추가
+            this.safeAddEventListener('#shippingCancelBtn', 'click', function() {
+                if (window.StudentAddon && window.StudentAddon.hideShippingModal) {
+                    window.StudentAddon.hideShippingModal();
+                }
+            });
+            this.safeAddEventListener('#shippingForm', 'submit', function(e) {
+                e.preventDefault();
+                if (window.StudentAddon && window.StudentAddon.handleShippingSubmit) {
+                    window.StudentAddon.handleShippingSubmit();
+                }
+            });
+
             // 영수증 모달
             this.safeAddEventListener('#receiptCancelBtn', 'click', this.hideReceiptModal.bind(this));
             this.safeAddEventListener('#receiptForm', 'submit', function(e) {
@@ -409,15 +422,19 @@ const StudentManager = {
     // 모달 상호작용 이벤트 설정
     setupModalInteractionEvents: function() {
         try {
-            // 모달 배경 클릭으로 닫기 (개선된 방식)
-            const modals = ['#applicationModal', '#bundleModal', '#receiptModal'];
+            // 모달 배경 클릭으로 닫기 (개선된 방식) - 배송지 모달 추가
+            const modals = ['#applicationModal', '#bundleModal', '#shippingModal', '#receiptModal'];
             const self = this;
             
             modals.forEach(function(modalId) {
                 self.safeAddEventListener(modalId, 'click', function(e) {
                     // 모달 자체를 클릭했을 때만 닫기 (내용 영역 클릭 시에는 닫지 않음)
                     if (e.target === e.currentTarget) {
-                        self.hideModal(modalId);
+                        if (modalId === '#shippingModal' && window.StudentAddon) {
+                            window.StudentAddon.hideShippingModal();
+                        } else {
+                            self.hideModal(modalId);
+                        }
                     }
                 });
             });
@@ -426,6 +443,10 @@ const StudentManager = {
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     self.hideAllModals();
+                    // 배송지 모달도 함께 닫기
+                    if (window.StudentAddon && window.StudentAddon.hideShippingModal) {
+                        window.StudentAddon.hideShippingModal();
+                    }
                 }
             });
 
@@ -1629,4 +1650,4 @@ window.initializeStudentPage = function() {
     }
 };
 
-console.log('📚 StudentManager loaded successfully - 배송지 기능을 student-addon.js로 이동 (v1.8.0)');
+console.log('📚 StudentManager loaded successfully - 배송지 모달 이벤트 리스너 추가 (v1.8.1)');
