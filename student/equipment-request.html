@@ -6,15 +6,15 @@
     <title>문화교구 신청 - 세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files - Updated Cache Busting -->
-    <link rel="stylesheet" href="../css/main.css?v=1.5.1">
-    <link rel="stylesheet" href="../css/student.css?v=1.5.1">
-    <link rel="stylesheet" href="../css/lesson-plan.css?v=1.5.1">
+    <link rel="stylesheet" href="../css/main.css?v=1.5.2">
+    <link rel="stylesheet" href="../css/student.css?v=1.5.2">
+    <link rel="stylesheet" href="../css/lesson-plan.css?v=1.5.2">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <!-- Supabase JavaScript Client - Fixed CDN URL with Cache Busting -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=1.5.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=1.5.2"></script>
 </head>
 <body>
     <!-- Main App Container -->
@@ -421,21 +421,21 @@
         </div>
     </div>
 
-    <!-- JavaScript Files - Updated Cache Busting v1.5.1 -->
+    <!-- JavaScript Files - Updated Cache Busting v1.5.2 -->
     <!-- 설정 파일을 가장 먼저 로드 -->
-    <script src="../js/config.js?v=1.5.1"></script>
+    <script src="../js/config.js?v=1.5.2"></script>
     <!-- Supabase 클라이언트 로드 -->
-    <script src="../js/supabase-client.js?v=1.5.1"></script>
+    <script src="../js/supabase-client.js?v=1.5.2"></script>
     <!-- 유틸리티 함수들 -->
-    <script src="../js/utils.js?v=1.5.1"></script>
+    <script src="../js/utils.js?v=1.5.2"></script>
     <!-- 인증 관리 -->
-    <script src="../js/auth.js?v=1.5.1"></script>
+    <script src="../js/auth.js?v=1.5.2"></script>
     <!-- 수업계획 관리 -->
-    <script src="../js/lesson-plan.js?v=1.5.1"></script>
+    <script src="../js/lesson-plan.js?v=1.5.2"></script>
     <!-- 학생 관리 (마지막에 로드) -->
-    <script src="../js/student.js?v=1.5.1"></script>
+    <script src="../js/student.js?v=1.5.2"></script>
     <!-- 🆕 학생 기능 확장 - 누락된 교구신청 기능들 복구 -->
-    <script src="../js/student-addon.js?v=1.5.1"></script>
+    <script src="../js/student-addon.js?v=1.5.2"></script>
     
     <!-- 교구 신청 페이지 초기화 - 수업계획 상태 확인 추가 -->
     <script>
@@ -755,7 +755,7 @@
             });
         }
 
-        // 🎯 네비게이션 설정
+        // 🎯 네비게이션 설정 - 🔧 배송지 모달 이벤트 추가
         function setupNavigation() {
             // 대시보드로 돌아가기
             const backBtn = document.getElementById('backToDashboard');
@@ -789,10 +789,85 @@
                 });
             }
 
+            // 🔧 배송지 설정 버튼 - StudentAddon과 연결
+            const shippingAddressBtn = document.getElementById('shippingAddressBtn');
+            if (shippingAddressBtn) {
+                shippingAddressBtn.addEventListener('click', function() {
+                    console.log('📦 배송지 설정 버튼 클릭됨');
+                    
+                    // StudentAddon 모듈 확인 및 호출
+                    if (typeof window.StudentAddon !== 'undefined' && 
+                        typeof window.StudentAddon.showShippingModal === 'function') {
+                        window.StudentAddon.showShippingModal();
+                    } else if (typeof StudentManager !== 'undefined' && 
+                               typeof StudentManager.showShippingModal === 'function') {
+                        StudentManager.showShippingModal();
+                    } else {
+                        console.error('❌ 배송지 설정 함수를 찾을 수 없습니다');
+                        alert('배송지 설정 기능을 사용할 수 없습니다. 페이지를 새로고침해주세요.');
+                    }
+                });
+            }
+
+            // 🔧 배송지 설정 모달 이벤트 연결
+            setupShippingModalEvents();
+
             // 🆕 묶음 신청 모달 - 구매 방식 선택 이벤트
             setupBundleModalEvents();
 
             console.log('✅ 네비게이션 설정 완료');
+        }
+
+        // 🔧 배송지 설정 모달 이벤트 설정
+        function setupShippingModalEvents() {
+            try {
+                console.log('📦 배송지 모달 이벤트 설정 시작');
+
+                // 배송지 모달 form submit 이벤트
+                const shippingForm = document.getElementById('shippingForm');
+                if (shippingForm) {
+                    shippingForm.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        console.log('📦 배송지 form submit 이벤트 발생');
+                        
+                        // StudentAddon.handleShippingSubmit 호출
+                        if (typeof window.StudentAddon !== 'undefined' && 
+                            typeof window.StudentAddon.handleShippingSubmit === 'function') {
+                            window.StudentAddon.handleShippingSubmit();
+                        } else {
+                            console.error('❌ StudentAddon.handleShippingSubmit 함수를 찾을 수 없습니다');
+                            alert('배송지 저장 기능을 사용할 수 없습니다.');
+                        }
+                    });
+                    console.log('✅ 배송지 form submit 이벤트 연결 완료');
+                }
+
+                // 배송지 모달 취소 버튼 이벤트
+                const shippingCancelBtn = document.getElementById('shippingCancelBtn');
+                if (shippingCancelBtn) {
+                    shippingCancelBtn.addEventListener('click', function() {
+                        console.log('📦 배송지 모달 취소 버튼 클릭됨');
+                        
+                        // StudentAddon.hideShippingModal 호출
+                        if (typeof window.StudentAddon !== 'undefined' && 
+                            typeof window.StudentAddon.hideShippingModal === 'function') {
+                            window.StudentAddon.hideShippingModal();
+                        } else {
+                            // 폴백: 기본 모달 숨김
+                            const modal = document.getElementById('shippingModal');
+                            if (modal) {
+                                modal.classList.remove('show');
+                                document.body.style.overflow = '';
+                            }
+                        }
+                    });
+                    console.log('✅ 배송지 취소 버튼 이벤트 연결 완료');
+                }
+
+                console.log('✅ 배송지 모달 이벤트 설정 완료');
+            } catch (error) {
+                console.error('❌ 배송지 모달 이벤트 설정 오류:', error);
+            }
         }
 
         // 🆕 묶음 신청 모달 이벤트 설정
@@ -1084,7 +1159,7 @@
 
         // 🎯 DOM 로드 완료 시 실행
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 (v1.8.0 - 묶음 신청 재설계)');
+            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 (v1.8.1 - 배송지 이벤트 수정)');
             
             // Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
@@ -1113,7 +1188,7 @@
             return initializeEquipmentRequestPage();
         };
 
-        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 - 묶음 신청 재설계 (v1.8.0)');
+        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 - 배송지 이벤트 수정 (v1.8.1)');
         console.log('💡 디버깅 명령어: checkRequiredDependencies() - 의존성 상태 확인');
     </script>
     
