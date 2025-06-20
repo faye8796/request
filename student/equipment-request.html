@@ -224,37 +224,53 @@
         <div class="modal-content">
             <h3>묶음 교구 신청</h3>
             <form id="bundleForm">
+                <!-- 기본 정보 -->
                 <div class="form-group">
-                    <label>묶음 교구명 *</label>
-                    <input type="text" id="bundleName" required placeholder="묶음 교구를 대표하는 이름을 입력하세요">
+                    <label>묶음 제목 *</label>
+                    <input type="text" id="bundleTitle" name="bundleTitle" required placeholder="묶음 교구를 대표하는 제목을 입력하세요">
                 </div>
                 <div class="form-group">
                     <label>사용 목적 *</label>
-                    <textarea id="bundlePurpose" required rows="3" placeholder="묶음 교구의 사용 목적을 설명하세요"></textarea>
+                    <textarea id="bundlePurpose" name="bundlePurpose" required rows="3" placeholder="묶음 교구의 사용 목적을 설명하세요"></textarea>
                 </div>
+                
+                <!-- 구매 방식 선택 -->
                 <div class="form-group">
-                    <label>총 가격 (원) *</label>
-                    <input type="number" id="bundlePrice" required placeholder="묶음 구매 총 가격을 입력하세요">
-                </div>
-                <div class="form-group">
-                    <label>구매 링크 *</label>
-                    <input type="url" id="bundleLink" required placeholder="쿠팡 등 온라인 쇼핑몰 링크를 입력하세요">
-                </div>
-                <div class="bundle-credentials">
-                    <h4>온라인 쇼핑몰 계정 정보</h4>
-                    <div class="form-group">
-                        <label>사용자 ID *</label>
-                        <input type="text" id="bundleUserId" required placeholder="쿠팡/아마존 등 계정 ID를 입력하세요">
+                    <label>구매 방식 *</label>
+                    <div class="purchase-method-options">
+                        <label class="radio-option">
+                            <input type="radio" name="bundlePurchaseMethod" value="online" checked>
+                            <span class="radio-custom"></span>
+                            <div class="radio-content">
+                                <strong>온라인 구매</strong>
+                                <p>관리자가 대신 구매하여 배송</p>
+                            </div>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="bundlePurchaseMethod" value="offline">
+                            <span class="radio-custom"></span>
+                            <div class="radio-content">
+                                <strong>오프라인 구매</strong>
+                                <p>직접 구매 후 영수증 제출로 비용 정산</p>
+                            </div>
+                        </label>
                     </div>
-                    <div class="form-group">
-                        <label>비밀번호 *</label>
-                        <input type="password" id="bundlePassword" required placeholder="계정 비밀번호를 입력하세요">
-                    </div>
-                    <p class="security-notice">
-                        <i data-lucide="shield"></i>
-                        계정 정보는 구매 완료 후 즉시 삭제됩니다.
-                    </p>
                 </div>
+
+                <!-- 묶음 아이템들 -->
+                <div class="bundle-items-section">
+                    <div class="bundle-items-header">
+                        <h4>묶음 아이템</h4>
+                        <button type="button" id="addBundleItemBtn" class="btn small primary">
+                            <i data-lucide="plus"></i>
+                            아이템 추가
+                        </button>
+                    </div>
+                    <div id="bundleItemsContainer">
+                        <!-- 동적으로 생성될 아이템들 -->
+                    </div>
+                </div>
+
                 <div class="modal-actions">
                     <button type="button" id="bundleCancelBtn" class="btn secondary">취소</button>
                     <button type="submit" class="btn primary">묶음 신청하기</button>
@@ -311,11 +327,12 @@
                 <div class="form-group">
                     <label>영수증 이미지 *</label>
                     <div class="file-upload-area" id="receiptDropZone">
-                        <input type="file" id="receiptFile" accept="image/*" required>
+                        <input type="file" id="receiptFile" accept="image/*,application/pdf" required>
                         <div class="file-upload-content">
                             <i data-lucide="upload"></i>
                             <p>영수증 이미지를 선택하거나 여기에 드래그하세요</p>
-                            <small>JPG, PNG, GIF 파일 지원 (최대 5MB)</small>
+                            <small>JPG, PNG, PDF 파일 지원 (최대 5MB)</small>
+                            <div id="receiptFileName" class="file-name"></div>
                         </div>
                         <div id="receiptPreview" class="receipt-preview" style="display: none;">
                             <!-- 동적으로 생성됨 -->
@@ -363,6 +380,8 @@
     <script src="../js/lesson-plan.js?v=1.5.1"></script>
     <!-- 학생 관리 (마지막에 로드) -->
     <script src="../js/student.js?v=1.5.1"></script>
+    <!-- 🆕 학생 기능 확장 - 누락된 교구신청 기능들 복구 -->
+    <script src="../js/student-addon.js?v=1.5.1"></script>
     
     <!-- 교구 신청 페이지 초기화 - 수업계획 상태 확인 추가 -->
     <script>
@@ -716,6 +735,16 @@
                 });
             }
 
+            // 🆕 묶음 아이템 추가 버튼 (묶음 모달용)
+            const addBundleItemBtn = document.getElementById('addBundleItemBtn');
+            if (addBundleItemBtn) {
+                addBundleItemBtn.addEventListener('click', function() {
+                    if (typeof StudentManager !== 'undefined' && typeof StudentManager.addBundleItem === 'function') {
+                        StudentManager.addBundleItem();
+                    }
+                });
+            }
+
             console.log('✅ 네비게이션 설정 완료');
         }
 
@@ -949,7 +978,7 @@
 
         // 🎯 DOM 로드 완료 시 실행
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 (v1.6.0 - 수업계획 상태 확인)');
+            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 (v1.7.0 - 교구신청 기능 복구)');
             
             // Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
@@ -976,7 +1005,7 @@
             return initializeEquipmentRequestPage();
         };
 
-        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 - 수업계획 상태 확인 추가 (v1.6.0)');
+        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 - 교구신청 기능 복구 (v1.7.0)');
         console.log('💡 디버깅 명령어: checkRequiredDependencies() - 의존성 상태 확인');
     </script>
     
@@ -1085,6 +1114,104 @@
         .shipping-address-btn:hover i {
             color: white !important;
         }
+
+        /* 🆕 묶음 아이템 스타일 */
+        .bundle-items-section {
+            margin-top: 20px;
+            border-top: 1px solid #e9ecef;
+            padding-top: 20px;
+        }
+
+        .bundle-items-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .bundle-items-header h4 {
+            margin: 0;
+            color: #495057;
+        }
+
+        .bundle-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .bundle-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .bundle-item-header h4 {
+            margin: 0;
+            color: #495057;
+            font-size: 16px;
+        }
+
+        .remove-bundle-item {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        /* 파일 업로드 스타일 개선 */
+        .file-upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-area:hover {
+            border-color: #007bff;
+            background-color: #e7f3ff;
+        }
+
+        .file-upload-area.drag-over {
+            border-color: #007bff;
+            background-color: #e7f3ff;
+        }
+
+        .file-upload-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-upload-content i {
+            font-size: 24px;
+            color: #6c757d;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: #495057;
+            margin-top: 10px;
+        }
+
+        .receipt-preview {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .receipt-preview img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
         
         /* 애니메이션 */
         .animate-spin {
@@ -1131,6 +1258,16 @@
             .btn-sm {
                 padding: 5px 10px;
                 font-size: 11px;
+            }
+
+            .bundle-item-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .remove-bundle-item {
+                align-self: flex-end;
             }
         }
     </style>
