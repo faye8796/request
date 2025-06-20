@@ -3,12 +3,13 @@
 // 🆕 배송지 설정 기능 추가 (v2.3) - 플래그 초기화 문제 해결
 // 🚀 v2.4 - 교구신청 수정/삭제 기능 추가 및 참고링크 UI 개선
 // 🔧 v2.5 - 묶음신청 수정 모달 문제 및 참고링크 표시 버그 수정
+// 🔥 v2.6 - 영수증 제출 기능 완전 구현 (실제 파일 업로드 + 메타데이터 관리)
 
 // StudentManager 확장 - 누락된 교구 신청 기능들 구현 (실제 SupabaseAPI 메서드 사용)
 (function() {
     'use strict';
     
-    console.log('📚 StudentAddon 로드 시작 - 교구신청 + 배송지 기능 (v2.5 - 묶음신청 수정 및 참고링크 버그 수정)');
+    console.log('📚 StudentAddon 로드 시작 - 교구신청 + 배송지 + 영수증 기능 (v2.6 - 영수증 완전 구현)');
 
     // StudentManager가 로드될 때까지 대기
     function waitForStudentManager() {
@@ -88,7 +89,7 @@
         // 🆕 배송지 설정 모달 표시 - 플래그 초기화 추가
         showShippingModal: function() {
             try {
-                console.log('📦 배송지 설정 모달 표시 (v2.5)');
+                console.log('📦 배송지 설정 모달 표시 (v2.6)');\
                 
                 // 🔧 플래그 강제 초기화 (모달 열 때마다)
                 this.submitInProgress = false;
@@ -317,7 +318,7 @@
         // 🆕 배송지 정보 저장 처리 - 플래그 관리 개선
         handleShippingSubmit: function() {
             try {
-                console.log('📦 배송지 정보 저장 처리 시작 (v2.5)');
+                console.log('📦 배송지 정보 저장 처리 시작 (v2.6)');
                 console.log('🔍 handleShippingSubmit 진입 시 submitInProgress:', this.submitInProgress);
                 
                 const currentUser = this.getCurrentUserSafely();
@@ -520,7 +521,7 @@
                 
                 // 010-XXXX-XXXX 형식으로 변환
                 if (numbers.length === 11 && numbers.startsWith('010')) {
-                    return numbers.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+                    return numbers.replace(/(\\d{3})(\\d{4})(\\d{4})/, '$1-$2-$3');
                 }
                 
                 // 기타 형식은 원본 반환
@@ -672,7 +673,7 @@
 
     // StudentManager 확장 실행
     waitForStudentManager().then(() => {
-        console.log('✅ StudentManager 감지됨 - 확장 기능 추가 시작 (v2.5)');
+        console.log('✅ StudentManager 감지됨 - 확장 기능 추가 시작 (v2.6)');
         
         // 🚀 SupabaseAPI 확장 먼저 실행
         extendSupabaseAPI();
@@ -682,7 +683,7 @@
         // 🛒 일반 교구 신청 모달 표시 - 🚀 v2.5 참고링크 UI 개선 추가
         window.StudentManager.showApplicationModal = function() {
             try {
-                console.log('🛒 일반 교구 신청 모달 표시 (v2.5 - 참고링크 UI 개선)');
+                console.log('🛒 일반 교구 신청 모달 표시 (v2.6 - 참고링크 UI 개선)');
                 
                 const modal = document.getElementById('applicationModal');
                 if (!modal) {
@@ -734,7 +735,7 @@
                         setTimeout(() => firstInput.focus(), 100);
                     }
 
-                    console.log('✅ 일반 교구 신청 모달 표시 완료 (v2.5)');
+                    console.log('✅ 일반 교구 신청 모달 표시 완료 (v2.6)');
                 }).catch(function(error) {
                     console.error('❌ 수업계획 확인 오류:', error);
                     alert('수업계획 정보를 확인할 수 없습니다. 다시 시도해주세요.');
@@ -815,7 +816,7 @@
         // 📦 묶음 신청 모달 표시 - 완전 재설계
         window.StudentManager.showBundleModal = function() {
             try {
-                console.log('📦 묶음 신청 모달 표시 (v2.5 - 참고링크 제거)');
+                console.log('📦 묶음 신청 모달 표시 (v2.6 - 참고링크 제거)');
                 
                 const modal = document.getElementById('bundleModal');
                 if (!modal) {
@@ -864,7 +865,7 @@
                         setTimeout(() => firstInput.focus(), 100);
                     }
 
-                    console.log('✅ 묶음 신청 모달 표시 완료 (v2.5)');
+                    console.log('✅ 묶음 신청 모달 표시 완료 (v2.6)');
                 }).catch(function(error) {
                     console.error('❌ 수업계획 확인 오류:', error);
                     alert('수업계획 정보를 확인할 수 없습니다. 다시 시도해주세요.');
@@ -876,10 +877,10 @@
             }
         };
 
-        // 📄 영수증 모달 표시 - 실제 API 기반으로 수정
+        // 🔥 v2.6 - 영수증 모달 표시 - 완전 새로 구현 (실제 API 기반)
         window.StudentManager.showReceiptModal = function(requestId) {
             try {
-                console.log('📄 영수증 모달 표시:', requestId);
+                console.log('📄 영수증 모달 표시 (v2.6 - 완전 구현):', requestId);
                 
                 if (!requestId) {
                     console.error('요청 ID가 필요합니다');
@@ -946,7 +947,7 @@
         // 📝 일반 교구 신청 제출 처리 - 실제 API 기반으로 수정
         window.StudentManager.handleApplicationSubmit = function() {
             try {
-                console.log('📝 일반 교구 신청 제출 처리 (v2.5)');
+                console.log('📝 일반 교구 신청 제출 처리 (v2.6)');
                 
                 const currentUser = this.getCurrentUserSafely();
                 if (!currentUser) {
@@ -1049,7 +1050,7 @@
         // 📦 묶음 신청 제출 처리 - v2.0 쇼핑몰 계정 기반 완전 재설계
         window.StudentManager.handleBundleSubmit = function() {
             try {
-                console.log('📦 묶음 신청 제출 처리 (v2.5 - 쇼핑몰 계정 기반)');
+                console.log('📦 묶음 신청 제출 처리 (v2.6 - 쇼핑몰 계정 기반)');
                 
                 const currentUser = this.getCurrentUserSafely();
                 if (!currentUser) {
@@ -1129,7 +1130,7 @@
                     
                     // 🔒 온라인 구매 정보 구성 (보안 처리 - 실제로는 암호화 필요)
                     const siteInfo = purchaseSite === 'other' ? formData.get('otherSite') : purchaseSite;
-                    purchaseDetails = `[온라인 구매]\n구매 사이트: ${siteInfo}\n계정 ID: ${accountId}\n계정 PW: ${this.encryptPassword(accountPassword)}\n장바구니 메모: ${cartNote}`;
+                    purchaseDetails = `[온라인 구매]\\n구매 사이트: ${siteInfo}\\n계정 ID: ${accountId}\\n계정 PW: ${this.encryptPassword(accountPassword)}\\n장바구니 메모: ${cartNote}`;
                     
                 } else {
                     // 오프라인 구매 정보 검증
@@ -1143,7 +1144,7 @@
                     }
                     
                     // 오프라인 구매 정보 구성
-                    purchaseDetails = `[오프라인 구매]\n구매 업체: ${offlineVendor}\n구매 계획: ${purchasePlan}`;
+                    purchaseDetails = `[오프라인 구매]\\n구매 업체: ${offlineVendor}\\n구매 계획: ${purchasePlan}`;
                 }
 
                 // 🔧 createApplication에 맞는 데이터 구조로 변경
@@ -1206,10 +1207,10 @@
             }
         };
 
-        // 📄 영수증 제출 처리 - 현재 API 구조에 맞게 단순화
+        // 🔥 v2.6 - 영수증 제출 처리 - 완전 새로 구현 (실제 파일 업로드 + 메타데이터 저장)
         window.StudentManager.handleReceiptSubmit = function() {
             try {
-                console.log('📄 영수증 제출 처리 시작');
+                console.log('📄 영수증 제출 처리 시작 (v2.6 - 완전 구현)');
                 
                 if (!this.currentReceiptItem) {
                     alert('영수증을 등록할 신청을 찾을 수 없습니다.');
@@ -1243,6 +1244,21 @@
                     return;
                 }
 
+                // 현재 사용자 확인
+                const currentUser = this.getCurrentUserSafely();
+                if (!currentUser) {
+                    alert('로그인이 필요합니다.');
+                    return;
+                }
+
+                // 폼 데이터 수집
+                const formData = new FormData(form);
+                const receiptData = {
+                    purchaseDate: formData.get('purchaseDateTime') || null,
+                    purchaseStore: formData.get('purchaseStore') || null,
+                    note: formData.get('receiptNote') || null
+                };
+
                 console.log('📄 영수증 파일:', {
                     name: file.name,
                     size: file.size,
@@ -1258,33 +1274,84 @@
                     submitBtn.textContent = '업로드 중...';
                 }
 
-                // 🔧 현재 API에는 영수증 전용 업로드가 없으므로 상태 변경으로 처리
-                // 실제로는 파일 업로드 API가 별도로 필요하지만, 임시로 purchased 상태로 변경
+                // 🔥 v2.6 - 실제 파일 업로드 및 영수증 제출 완료 처리
+                console.log('📄 1단계: 파일 업로드 시작');
+                
                 this.safeApiCall(function() {
-                    return SupabaseAPI.updateApplicationStatus(self.currentReceiptItem, 'purchased');
-                }).then(function(result) {
-                    if (result && result.success !== false) {
-                        console.log('✅ 영수증 제출 완료 (상태 변경)');
-                        alert('영수증이 등록되었습니다.\n※ 파일은 별도로 관리자에게 전달해주세요.');
-                        
-                        self.hideReceiptModal();
-                        
-                        // 대시보드 새로고침
-                        setTimeout(() => {
-                            self.loadApplications();
-                        }, 500);
-                    } else {
-                        console.error('❌ 영수증 제출 실패:', result);
-                        alert('영수증 등록에 실패했습니다: ' + (result.message || result.error || '알 수 없는 오류'));
+                    return SupabaseAPI.uploadReceiptFile(file, self.currentReceiptItem, currentUser.id);
+                }).then(function(uploadResult) {
+                    if (!uploadResult || !uploadResult.success) {
+                        throw new Error('파일 업로드 실패: ' + (uploadResult?.message || '알 수 없는 오류'));
                     }
+                    
+                    console.log('✅ 1단계 완료: 파일 업로드 성공');
+                    console.log('📄 2단계: 영수증 메타데이터 저장 시작');
+                    
+                    // 업로드된 파일 정보와 추가 데이터 합치기
+                    const completeReceiptData = {
+                        ...uploadResult.data,
+                        ...receiptData
+                    };
+                    
+                    // 영수증 메타데이터 저장
+                    return self.safeApiCall(function() {
+                        return SupabaseAPI.saveReceiptInfo(self.currentReceiptItem, completeReceiptData);
+                    });
+                    
+                }).then(function(saveResult) {
+                    if (!saveResult || !saveResult.success) {
+                        throw new Error('영수증 정보 저장 실패: ' + (saveResult?.message || '알 수 없는 오류'));
+                    }
+                    
+                    console.log('✅ 2단계 완료: 영수증 메타데이터 저장 성공');
+                    console.log('📄 3단계: 신청 상태 변경 시작');
+                    
+                    // 신청 상태를 'purchased'로 변경
+                    return self.safeApiCall(function() {
+                        return SupabaseAPI.completeReceiptSubmission(self.currentReceiptItem);
+                    });
+                    
+                }).then(function(statusResult) {
+                    if (!statusResult || !statusResult.success) {
+                        throw new Error('신청 상태 변경 실패: ' + (statusResult?.message || '알 수 없는 오류'));
+                    }
+                    
+                    console.log('✅ 3단계 완료: 신청 상태 변경 성공');
+                    console.log('🎉 영수증 제출 완료 - 모든 단계 성공');
+                    
+                    alert('영수증이 성공적으로 등록되었습니다!\\n신청 상태가 "구매완료"로 변경되었습니다.');
+                    
+                    self.hideReceiptModal();
+                    
+                    // 대시보드 새로고침
+                    setTimeout(() => {
+                        self.loadApplications();
+                    }, 500);
+                    
                 }).catch(function(error) {
                     console.error('❌ 영수증 제출 오류:', error);
-                    alert('영수증 등록 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류'));
+                    
+                    // 구체적인 오류 메시지 생성
+                    let errorMessage = '알 수 없는 오류';
+                    if (error.message) {
+                        if (error.message.includes('파일 업로드')) {
+                            errorMessage = '파일 업로드에 실패했습니다. 파일 크기와 형식을 확인해주세요.';
+                        } else if (error.message.includes('메타데이터')) {
+                            errorMessage = '영수증 정보 저장에 실패했습니다.';
+                        } else if (error.message.includes('상태 변경')) {
+                            errorMessage = '신청 상태 업데이트에 실패했습니다.';
+                        } else {
+                            errorMessage = error.message;
+                        }
+                    }
+                    
+                    alert('영수증 등록 중 오류가 발생했습니다:\\n' + errorMessage);
+                    
                 }).finally(function() {
                     // 제출 버튼 활성화
                     if (submitBtn) {
                         submitBtn.disabled = false;
-                        submitBtn.textContent = '영수증 등록';
+                        submitBtn.textContent = '영수증 제출';
                     }
                 });
 
@@ -1299,7 +1366,7 @@
         // ✏️ 신청 수정 기능 - 🔧 v2.5 묶음 신청 지원 추가
         window.StudentManager.editApplication = function(itemId) {
             try {
-                console.log('✏️ 신청 수정 시작 (v2.5 - 묶음 신청 지원):', itemId);
+                console.log('✏️ 신청 수정 시작 (v2.6 - 묶음 신청 지원):', itemId);
                 
                 if (!itemId) {
                     alert('잘못된 요청입니다.');
@@ -1589,7 +1656,7 @@
                 }
 
                 // 삭제 확인
-                if (!confirm('정말로 이 신청을 삭제하시겠습니까?\n\n삭제된 신청은 복구할 수 없습니다.')) {
+                if (!confirm('정말로 이 신청을 삭제하시겠습니까?\\n\\n삭제된 신청은 복구할 수 없습니다.')) {
                     return;
                 }
 
@@ -1784,8 +1851,8 @@
             }
         };
 
-        console.log('✅ StudentManager 확장 완료 - v2.5 묶음신청 수정 모달 및 참고링크 표시 버그 수정');
+        console.log('✅ StudentManager 확장 완료 - v2.6 영수증 제출 기능 완전 구현 (파일 업로드 + 메타데이터 관리)');
     });
 
-    console.log('📚 StudentAddon 로드 완료 - v2.5 묶음신청 수정 모달 및 참고링크 표시 버그 수정');
+    console.log('📚 StudentAddon 로드 완료 - v2.6 영수증 제출 기능 완전 구현');
 })();
