@@ -1,5 +1,6 @@
 // 간소화된 Supabase API - 관리자 및 학생 시스템용
 // intern-announcement 방식 기반으로 안정성 확보
+// 🚀 v2.9 - 영수증 제출 기능 완전 구현
 
 const SupabaseAPI = {
     // Supabase 클라이언트
@@ -251,6 +252,227 @@ const SupabaseAPI = {
                 })
                 .select();
         });
+    },
+
+    // ===================
+    // 🚀 영수증 관리 시스템 - 완전 새로 구현
+    // ===================
+
+    // 🚀 영수증 파일 업로드 (Supabase Storage 활용)
+    async uploadReceiptFile(file, requestId, userId) {
+        console.log('📄 영수증 파일 업로드 시작:', {
+            fileName: file.name,
+            fileSize: file.size,
+            requestId: requestId,
+            userId: userId
+        });
+
+        try {
+            const client = await this.ensureClient();
+            
+            // 파일 이름 생성 (중복 방지)
+            const timestamp = new Date().getTime();
+            const fileExtension = file.name.split('.').pop();
+            const fileName = `receipt_${userId}_${requestId}_${timestamp}.${fileExtension}`;
+            const filePath = `receipts/${userId}/${fileName}`;
+
+            console.log('📄 업로드 파일 경로:', filePath);
+
+            // Supabase Storage에 파일 업로드
+            const { data: uploadData, error: uploadError } = await client.storage
+                .from('receipt-files')  // 버킷 이름
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: false  // 중복 방지
+                });
+
+            if (uploadError) {
+                console.error('❌ 파일 업로드 실패:', uploadError);
+                throw uploadError;
+            }
+
+            console.log('✅ 파일 업로드 성공:', uploadData);
+
+            // 업로드된 파일의 공개 URL 가져오기
+            const { data: urlData } = client.storage
+                .from('receipt-files')
+                .getPublicUrl(filePath);
+
+            const fileUrl = urlData?.publicUrl;
+            console.log('📄 파일 공개 URL:', fileUrl);
+
+            return {
+                success: true,
+                data: {
+                    filePath: filePath,
+                    fileName: fileName,
+                    fileUrl: fileUrl,
+                    originalName: file.name,
+                    fileSize: file.size,
+                    fileType: file.type
+                }
+            };
+
+        } catch (error) {
+            console.error('❌ 영수증 파일 업로드 오류:', error);
+            return {
+                success: false,
+                message: this.getErrorMessage(error),
+                error: error
+            };
+        }
+    },
+
+    // 🚀 영수증 정보 저장 (파일 업로드 후 메타데이터 저장)
+    async saveReceiptInfo(requestId, receiptData) {
+        console.log('📄 영수증 정보 저장:', { requestId, receiptData });
+
+        return await this.safeApiCall('영수증 정보 저장', async () => {
+            const receiptRecord = {
+                request_id: requestId,
+                file_path: receiptData.filePath,
+                file_name: receiptData.fileName,
+                file_url: receiptData.fileUrl,
+                original_name: receiptData.originalName,
+                file_size: receiptData.fileSize,
+                file_type: receiptData.fileType,
+                purchase_date: receiptData.purchaseDate || null,
+                purchase_store: receiptData.purchaseStore || null,
+                note: receiptData.note || null,
+                uploaded_at: new Date().toISOString()
+            };
+
+            console.log('📄 저장할 영수증 메타데이터:', receiptRecord);
+
+            // receipts 테이블에 메타데이터 저장
+            return await this.supabase
+                .from('receipts')
+                .insert([receiptRecord])
+                .select();
+        });
+    },
+
+    // 🚀 영수증 제출 완료 처리 (신청 상태를 'purchased'로 변경)
+    async completeReceiptSubmission(requestId) {
+        console.log('📄 영수증 제출 완료 처리:', requestId);
+
+        return await this.safeApiCall('영수증 제출 완료', async () => {
+            return await this.supabase
+                .from('requests')
+                .update({
+                    status: 'purchased',
+                    purchased_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', requestId)
+                .select();
+        });
+    },
+
+    // 🚀 영수증 정보 조회 (특정 신청의 영수증)
+    async getReceiptByRequestId(requestId) {
+        console.log('📄 영수증 정보 조회:', requestId);
+
+        const result = await this.safeApiCall('영수증 정보 조회', async () => {
+            const { data, error } = await this.supabase
+                .from('receipts')
+                .select(`
+                    *,
+                    requests:request_id (
+                        item_name,
+                        price,
+                        user_profiles:user_id (
+                            name
+                        )
+                    )
+                `)
+                .eq('request_id', requestId)
+                .single();
+
+            // 영수증이 없는 경우 정상 처리
+            if (error && error.code === 'PGRST116') {
+                return { data: null, error: null };
+            }
+
+            return { data, error };
+        });
+
+        if (result.success && result.data) {
+            const receipt = result.data;
+            return {
+                ...receipt,
+                item_name: receipt.requests?.item_name,
+                item_price: receipt.requests?.price,
+                student_name: receipt.requests?.user_profiles?.name
+            };
+        }
+
+        return result.success ? result.data : null;
+    },
+
+    // 🚀 모든 영수증 조회 (관리자용)
+    async getAllReceipts() {
+        console.log('📄 모든 영수증 조회 (관리자용)');
+
+        const result = await this.safeApiCall('모든 영수증 조회', async () => {
+            return await this.supabase
+                .from('receipts')
+                .select(`
+                    *,
+                    requests:request_id (
+                        item_name,
+                        price,
+                        purchase_type,
+                        status,
+                        user_profiles:user_id (
+                            name,
+                            field,
+                            sejong_institute
+                        )
+                    )
+                `)
+                .order('uploaded_at', { ascending: false });
+        });
+
+        if (result.success && result.data) {
+            return result.data.map(receipt => ({
+                ...receipt,
+                item_name: receipt.requests?.item_name,
+                item_price: receipt.requests?.price,
+                purchase_type: receipt.requests?.purchase_type,
+                request_status: receipt.requests?.status,
+                student_name: receipt.requests?.user_profiles?.name,
+                student_field: receipt.requests?.user_profiles?.field,
+                student_institute: receipt.requests?.user_profiles?.sejong_institute
+            }));
+        }
+
+        return result.success ? (result.data || []) : [];
+    },
+
+    // 🚀 영수증 파일 삭제 (필요 시)
+    async deleteReceiptFile(filePath) {
+        console.log('📄 영수증 파일 삭제:', filePath);
+
+        try {
+            const client = await this.ensureClient();
+            
+            const { error } = await client.storage
+                .from('receipt-files')
+                .remove([filePath]);
+
+            if (error) {
+                console.error('❌ 파일 삭제 실패:', error);
+                return { success: false, message: this.getErrorMessage(error) };
+            }
+
+            console.log('✅ 파일 삭제 성공');
+            return { success: true };
+
+        } catch (error) {
+            console.error('❌ 영수증 파일 삭제 오류:', error);
+            return { success: false, message: this.getErrorMessage(error) };
+        }
     },
 
     // ===================
@@ -982,40 +1204,6 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 영수증 관리 (admin.js 호환)
-    // ===================
-    async getReceiptByRequestId(requestId) {
-        const result = await this.safeApiCall('영수증 조회', async () => {
-            const client = await this.ensureClient();
-            
-            return await client
-                .from('receipts')
-                .select(`
-                    *,
-                    requests:request_id (
-                        item_name,
-                        user_profiles:user_id (
-                            name
-                        )
-                    )
-                `)
-                .eq('request_id', requestId)
-                .single();
-        });
-
-        if (result.success) {
-            const receipt = result.data;
-            return {
-                ...receipt,
-                item_name: receipt.requests?.item_name,
-                student_name: receipt.requests?.user_profiles?.name
-            };
-        }
-
-        return null;
-    },
-
-    // ===================
     // 교구 신청 관리
     // ===================
     async getStudentApplications(studentId) {
@@ -1052,6 +1240,49 @@ const SupabaseAPI = {
         });
     },
 
+    // 🚀 교구 신청 수정 (student-addon.js에서 사용)
+    async updateApplication(applicationId, formData) {
+        return await this.safeApiCall('교구 신청 수정', async () => {
+            const updateData = {
+                item_name: formData.item_name,
+                purpose: formData.purpose,
+                price: formData.price,
+                purchase_type: formData.purchase_type || 'online',
+                purchase_link: formData.purchase_link || null,
+                is_bundle: formData.is_bundle || false,
+                updated_at: new Date().toISOString()
+            };
+
+            return await this.supabase
+                .from('requests')
+                .update(updateData)
+                .eq('id', applicationId)
+                .select();
+        });
+    },
+
+    // 🚀 교구 신청 삭제 (student-addon.js에서 사용)
+    async deleteApplication(applicationId) {
+        return await this.safeApiCall('교구 신청 삭제', async () => {
+            return await this.supabase
+                .from('requests')
+                .delete()
+                .eq('id', applicationId)
+                .select();
+        });
+    },
+
+    // 🚀 특정 신청 조회 (student-addon.js에서 사용)
+    async getApplicationById(applicationId) {
+        return await this.safeApiCall('신청 상세 조회', async () => {
+            return await this.supabase
+                .from('requests')
+                .select('*')
+                .eq('id', applicationId)
+                .single();
+        });
+    },
+
     // 모든 신청 내역 조회 (관리자용)
     async getAllApplications() {
         const result = await this.safeApiCall('모든 신청 내역 조회', async () => {
@@ -1084,6 +1315,8 @@ const SupabaseAPI = {
             } else if (status === 'approved') {
                 updateData.reviewed_at = new Date().toISOString();
                 updateData.reviewed_by = this.currentUser?.id || 'admin';
+            } else if (status === 'purchased') {
+                updateData.purchased_at = new Date().toISOString();
             }
 
             return await this.supabase
@@ -1361,4 +1594,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v2.8 loaded - 배송지 UPSERT 로직 수정으로 중복 키 오류 해결 완료');
+console.log('🚀 SupabaseAPI v2.9 loaded - 영수증 제출 기능 완전 구현 (파일 업로드 + 메타데이터 관리)');
