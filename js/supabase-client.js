@@ -1,6 +1,6 @@
 // 간소화된 Supabase API - 관리자 및 학생 시스템용
 // intern-announcement 방식 기반으로 안정성 확보
-// 🚀 v2.11 - UUID 오류 수정: reviewed_by 필드에 null 사용
+// 🚀 v2.12 - purchased_at 컬럼 참조 제거 (구매완료 버튼 오류 수정)
 
 const SupabaseAPI = {
     // Supabase 클라이언트
@@ -455,7 +455,7 @@ const SupabaseAPI = {
         });
     },
 
-    // 🚀 영수증 제출 완료 처리 (신청 상태를 'purchased'로 변경)
+    // 🚀 영수증 제출 완료 처리 (신청 상태를 'purchased'로 변경) - 🔧 v2.12 purchased_at 제거
     async completeReceiptSubmission(requestId) {
         console.log('📄 영수증 제출 완료 처리:', requestId);
 
@@ -464,7 +464,7 @@ const SupabaseAPI = {
                 .from('requests')
                 .update({
                     status: 'purchased',
-                    purchased_at: new Date().toISOString(),
+                    // 🔧 v2.12 - purchased_at 컬럼 제거 (오류 수정)
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', requestId)
@@ -1208,7 +1208,7 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 🔧 교구 신청 상태 업데이트 (admin.js 호환) - reviewed_by UUID 오류 수정
+    // 🔧 교구 신청 상태 업데이트 (admin.js 호환) - purchased_at 컬럼 제거 🔧 v2.12
     // ===================
     async updateItemStatus(requestId, status, rejectionReason = null) {
         return await this.safeApiCall('교구 신청 상태 업데이트', async () => {
@@ -1227,7 +1227,8 @@ const SupabaseAPI = {
                 updateData.reviewed_by = this.currentUser?.id || null;
                 updateData.rejection_reason = null;
             } else if (status === 'purchased') {
-                updateData.purchased_at = new Date().toISOString();
+                // 🔧 v2.12 - purchased_at 컬럼 제거 (오류 수정)
+                // updateData.purchased_at = new Date().toISOString(); // 제거됨
             }
 
             return await client
@@ -1439,7 +1440,7 @@ const SupabaseAPI = {
         return result.success ? (result.data || []) : [];
     },
 
-    // 신청 승인/반려
+    // 신청 승인/반려 - 🔧 v2.12 purchased_at 컬럼 제거
     async updateApplicationStatus(applicationId, status, rejectionReason = null) {
         return await this.safeApiCall('신청 상태 업데이트', async () => {
             const updateData = {
@@ -1454,7 +1455,8 @@ const SupabaseAPI = {
                 // 🔧 UUID 오류 수정
                 updateData.reviewed_by = this.currentUser?.id || null;
             } else if (status === 'purchased') {
-                updateData.purchased_at = new Date().toISOString();
+                // 🔧 v2.12 - purchased_at 컬럼 제거 (오류 수정)
+                // updateData.purchased_at = new Date().toISOString(); // 제거됨
             }
 
             return await this.supabase
@@ -1732,4 +1734,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v2.11 loaded - UUID 오류 수정: reviewed_by 필드에 null 사용');
+console.log('🚀 SupabaseAPI v2.12 loaded - purchased_at 컬럼 참조 제거 (구매완료 버튼 오류 수정)');
