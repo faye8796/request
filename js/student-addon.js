@@ -1,12 +1,13 @@
 // 학생 기능 확장 모듈 - 누락된 교구 신청 기능들 구현 (실제 API 메서드 기반)
 // StudentManager의 누락된 메서드들을 확장하여 교구 신청 기능을 완전히 복구
 // 🆕 배송지 설정 기능 추가 (v2.3) - 플래그 초기화 문제 해결
+// 🚀 v2.4 - 교구신청 수정/삭제 기능 추가 및 참고링크 UI 개선
 
 // StudentManager 확장 - 누락된 교구 신청 기능들 구현 (실제 SupabaseAPI 메서드 사용)
 (function() {
     'use strict';
     
-    console.log('📚 StudentAddon 로드 시작 - 교구신청 + 배송지 기능 (v2.3)');
+    console.log('📚 StudentAddon 로드 시작 - 교구신청 + 배송지 기능 (v2.4 - 수정/삭제 및 UI 개선)');
 
     // StudentManager가 로드될 때까지 대기
     function waitForStudentManager() {
@@ -24,6 +25,57 @@
         });
     }
 
+    // 🚀 SupabaseAPI 확장 - 교구 신청 수정/삭제 메서드 추가
+    function extendSupabaseAPI() {
+        if (typeof window.SupabaseAPI !== 'undefined') {
+            
+            // 🔧 교구 신청 수정 메서드 추가
+            window.SupabaseAPI.updateApplication = async function(applicationId, formData) {
+                return await this.safeApiCall('교구 신청 수정', async () => {
+                    const updateData = {
+                        item_name: formData.item_name,
+                        purpose: formData.purpose,
+                        price: formData.price,
+                        purchase_type: formData.purchase_type || 'online',
+                        purchase_link: formData.purchase_link || null,
+                        is_bundle: formData.is_bundle || false,
+                        updated_at: new Date().toISOString()
+                    };
+
+                    return await this.supabase
+                        .from('requests')
+                        .update(updateData)
+                        .eq('id', applicationId)
+                        .select();
+                });
+            };
+
+            // 🔧 교구 신청 삭제 메서드 추가
+            window.SupabaseAPI.deleteApplication = async function(applicationId) {
+                return await this.safeApiCall('교구 신청 삭제', async () => {
+                    return await this.supabase
+                        .from('requests')
+                        .delete()
+                        .eq('id', applicationId)
+                        .select();
+                });
+            };
+
+            // 🔧 특정 신청 조회 메서드 추가
+            window.SupabaseAPI.getApplicationById = async function(applicationId) {
+                return await this.safeApiCall('신청 상세 조회', async () => {
+                    return await this.supabase
+                        .from('requests')
+                        .select('*')
+                        .eq('id', applicationId)
+                        .single();
+                });
+            };
+
+            console.log('✅ SupabaseAPI 확장 완료 - 수정/삭제 메서드 추가');
+        }
+    }
+
     // 배송지 전용 네임스페이스 생성
     window.StudentAddon = {
         // 🔧 중복 방지를 위한 플래그들 - 초기화 문제 해결
@@ -35,7 +87,7 @@
         // 🆕 배송지 설정 모달 표시 - 플래그 초기화 추가
         showShippingModal: function() {
             try {
-                console.log('📦 배송지 설정 모달 표시 (v2.3 - 플래그 초기화)');
+                console.log('📦 배송지 설정 모달 표시 (v2.4)');
                 
                 // 🔧 플래그 강제 초기화 (모달 열 때마다)
                 this.submitInProgress = false;
@@ -264,7 +316,7 @@
         // 🆕 배송지 정보 저장 처리 - 플래그 관리 개선
         handleShippingSubmit: function() {
             try {
-                console.log('📦 배송지 정보 저장 처리 시작 (v2.3)');
+                console.log('📦 배송지 정보 저장 처리 시작 (v2.4)');
                 console.log('🔍 handleShippingSubmit 진입 시 submitInProgress:', this.submitInProgress);
                 
                 const currentUser = this.getCurrentUserSafely();
@@ -619,14 +671,17 @@
 
     // StudentManager 확장 실행
     waitForStudentManager().then(() => {
-        console.log('✅ StudentManager 감지됨 - 확장 기능 추가 시작');
+        console.log('✅ StudentManager 감지됨 - 확장 기능 추가 시작 (v2.4)');
+        
+        // 🚀 SupabaseAPI 확장 먼저 실행
+        extendSupabaseAPI();
         
         // === 교구 신청 모달 기능 구현 ===
         
-        // 🛒 일반 교구 신청 모달 표시
+        // 🛒 일반 교구 신청 모달 표시 - 🚀 v2.4 참고링크 UI 개선 추가
         window.StudentManager.showApplicationModal = function() {
             try {
-                console.log('🛒 일반 교구 신청 모달 표시');
+                console.log('🛒 일반 교구 신청 모달 표시 (v2.4 - 참고링크 UI 개선)');
                 
                 const modal = document.getElementById('applicationModal');
                 if (!modal) {
@@ -665,6 +720,9 @@
                         self.handlePurchaseMethodChange('online');
                     }
 
+                    // 🚀 v2.4 - 구매 방식 변경 이벤트 리스너 추가
+                    self.setupPurchaseMethodEventListeners();
+
                     // 모달 표시
                     modal.classList.add('show');
                     document.body.style.overflow = 'hidden';
@@ -675,7 +733,7 @@
                         setTimeout(() => firstInput.focus(), 100);
                     }
 
-                    console.log('✅ 일반 교구 신청 모달 표시 완료');
+                    console.log('✅ 일반 교구 신청 모달 표시 완료 (v2.4)');
                 }).catch(function(error) {
                     console.error('❌ 수업계획 확인 오류:', error);
                     alert('수업계획 정보를 확인할 수 없습니다. 다시 시도해주세요.');
@@ -687,10 +745,76 @@
             }
         };
 
+        // 🚀 v2.4 - 구매 방식 변경 이벤트 리스너 설정
+        window.StudentManager.setupPurchaseMethodEventListeners = function() {
+            try {
+                console.log('🔧 구매 방식 변경 이벤트 리스너 설정');
+                
+                const modal = document.getElementById('applicationModal');
+                if (!modal) return;
+
+                const purchaseMethodRadios = modal.querySelectorAll('input[name="purchaseMethod"]');
+                const self = this;
+
+                purchaseMethodRadios.forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        if (this.checked) {
+                            console.log('📻 구매 방식 변경:', this.value);
+                            self.handlePurchaseMethodChange(this.value);
+                        }
+                    });
+                });
+
+                console.log('✅ 구매 방식 변경 이벤트 리스너 설정 완료');
+            } catch (error) {
+                console.error('❌ 구매 방식 이벤트 리스너 설정 오류:', error);
+            }
+        };
+
+        // 🚀 v2.4 - 구매 방식 변경 처리 (참고링크 필드 표시/숨김)
+        window.StudentManager.handlePurchaseMethodChange = function(method) {
+            try {
+                console.log('🔧 구매 방식 변경 처리:', method);
+                
+                const itemLinkGroup = document.getElementById('itemLinkGroup');
+                const itemLinkInput = document.getElementById('itemLink');
+                const itemLinkLabel = document.getElementById('itemLinkLabel');
+                
+                if (!itemLinkGroup) {
+                    console.warn('⚠️ itemLinkGroup 요소를 찾을 수 없습니다');
+                    return;
+                }
+
+                if (method === 'online') {
+                    // 온라인 구매: 참고링크 필드 표시
+                    itemLinkGroup.style.display = 'block';
+                    if (itemLinkInput) {
+                        itemLinkInput.required = true;
+                        itemLinkInput.placeholder = '구매 가능한 링크를 입력하세요';
+                    }
+                    if (itemLinkLabel) {
+                        itemLinkLabel.textContent = '구매 링크 *';
+                    }
+                    console.log('✅ 온라인 구매 모드: 참고링크 필드 표시');
+                    
+                } else {
+                    // 오프라인 구매: 참고링크 필드 숨김
+                    itemLinkGroup.style.display = 'none';
+                    if (itemLinkInput) {
+                        itemLinkInput.required = false;
+                        itemLinkInput.value = ''; // 값 초기화
+                    }
+                    console.log('✅ 오프라인 구매 모드: 참고링크 필드 숨김');
+                }
+            } catch (error) {
+                console.error('❌ 구매 방식 변경 처리 오류:', error);
+            }
+        };
+
         // 📦 묶음 신청 모달 표시 - 완전 재설계
         window.StudentManager.showBundleModal = function() {
             try {
-                console.log('📦 묶음 신청 모달 표시 (v2.0 - 쇼핑몰 계정 기반)');
+                console.log('📦 묶음 신청 모달 표시 (v2.4 - 참고링크 제거)');
                 
                 const modal = document.getElementById('bundleModal');
                 if (!modal) {
@@ -739,7 +863,7 @@
                         setTimeout(() => firstInput.focus(), 100);
                     }
 
-                    console.log('✅ 묶음 신청 모달 표시 완료 (v2.0)');
+                    console.log('✅ 묶음 신청 모달 표시 완료 (v2.4)');
                 }).catch(function(error) {
                     console.error('❌ 수업계획 확인 오류:', error);
                     alert('수업계획 정보를 확인할 수 없습니다. 다시 시도해주세요.');
@@ -821,7 +945,7 @@
         // 📝 일반 교구 신청 제출 처리 - 실제 API 기반으로 수정
         window.StudentManager.handleApplicationSubmit = function() {
             try {
-                console.log('📝 일반 교구 신청 제출 처리');
+                console.log('📝 일반 교구 신청 제출 처리 (v2.4)');
                 
                 const currentUser = this.getCurrentUserSafely();
                 if (!currentUser) {
@@ -865,6 +989,7 @@
                     return;
                 }
 
+                // 🚀 v2.4 - 온라인 구매만 링크 필수
                 if (applicationData.purchase_type === 'online' && !applicationData.purchase_link.trim()) {
                     alert('온라인 구매의 경우 구매 링크를 입력해주세요.');
                     form.querySelector('#itemLink').focus();
@@ -882,20 +1007,15 @@
                     submitBtn.textContent = '제출 중...';
                 }
 
-                // 🔧 실제 API 호출 - createApplication 사용
-                this.safeApiCall(function() {
-                    if (self.currentEditingItem) {
-                        // 수정 모드는 별도 처리 필요 (현재 API에 update 메서드 없음)
-                        alert('현재 신청 수정은 지원되지 않습니다. 삭제 후 다시 신청해주세요.');
-                        return Promise.reject(new Error('수정 기능 미지원'));
-                    } else {
-                        // 새 신청 - createApplication 사용
-                        return SupabaseAPI.createApplication(currentUser.id, applicationData);
-                    }
-                }).then(function(result) {
+                // 🔧 실제 API 호출 - createApplication 또는 updateApplication 사용
+                const apiCall = this.currentEditingItem ? 
+                    function() { return SupabaseAPI.updateApplication(self.currentEditingItem, applicationData); } :
+                    function() { return SupabaseAPI.createApplication(currentUser.id, applicationData); };
+
+                this.safeApiCall(apiCall).then(function(result) {
                     if (result && result.success !== false) {
                         console.log('✅ 교구 신청 제출 완료');
-                        alert('교구 신청이 제출되었습니다.');
+                        alert(self.currentEditingItem ? '교구 신청이 수정되었습니다.' : '교구 신청이 제출되었습니다.');
                         
                         self.hideApplicationModal();
                         
@@ -928,7 +1048,7 @@
         // 📦 묶음 신청 제출 처리 - v2.0 쇼핑몰 계정 기반 완전 재설계
         window.StudentManager.handleBundleSubmit = function() {
             try {
-                console.log('📦 묶음 신청 제출 처리 (v2.0 - 쇼핑몰 계정 기반)');
+                console.log('📦 묶음 신청 제출 처리 (v2.4 - 쇼핑몰 계정 기반)');
                 
                 const currentUser = this.getCurrentUserSafely();
                 if (!currentUser) {
@@ -1173,6 +1293,218 @@
             }
         };
 
+        // === 🚀 v2.4 - 교구 신청 수정/삭제 기능 실제 구현 ===
+
+        // ✏️ 신청 수정 기능 - 실제 동작 구현
+        window.StudentManager.editApplication = function(itemId) {
+            try {
+                console.log('✏️ 신청 수정 시작:', itemId);
+                
+                if (!itemId) {
+                    alert('잘못된 요청입니다.');
+                    return;
+                }
+
+                const currentUser = this.getCurrentUserSafely();
+                if (!currentUser) {
+                    alert('로그인이 필요합니다.');
+                    return;
+                }
+
+                const self = this;
+
+                // 🔧 신청 상세 정보 조회
+                this.safeApiCall(function() {
+                    return SupabaseAPI.getApplicationById(itemId);
+                }).then(function(result) {
+                    if (!result || !result.success || !result.data) {
+                        alert('신청 정보를 찾을 수 없습니다.');
+                        return;
+                    }
+
+                    const application = result.data;
+                    
+                    // 본인 신청인지 확인
+                    if (application.user_id !== currentUser.id) {
+                        alert('본인의 신청만 수정할 수 있습니다.');
+                        return;
+                    }
+
+                    // 수정 가능한 상태인지 확인 (pending 상태만 수정 가능)
+                    if (application.status !== 'pending') {
+                        alert('검토 중인 신청만 수정할 수 있습니다.');
+                        return;
+                    }
+
+                    console.log('✅ 수정할 신청 정보:', application);
+                    
+                    // 수정 모드로 모달 열기
+                    self.openEditApplicationModal(application);
+
+                }).catch(function(error) {
+                    console.error('❌ 신청 정보 조회 오류:', error);
+                    alert('신청 정보를 불러오는 중 오류가 발생했습니다.');
+                });
+
+            } catch (error) {
+                console.error('❌ 신청 수정 오류:', error);
+                alert('신청 수정 중 오류가 발생했습니다.');
+            }
+        };
+
+        // 📝 수정 모달 열기
+        window.StudentManager.openEditApplicationModal = function(application) {
+            try {
+                console.log('📝 수정 모달 열기:', application);
+                
+                const modal = document.getElementById('applicationModal');
+                if (!modal) {
+                    alert('교구 신청 모달을 찾을 수 없습니다.');
+                    return;
+                }
+
+                // 수정 모드로 설정
+                this.currentEditingItem = application.id;
+                
+                // 모달 제목 변경
+                const modalTitle = document.getElementById('applicationModalTitle');
+                if (modalTitle) {
+                    modalTitle.textContent = '교구 신청 수정';
+                }
+
+                // 제출 버튼 텍스트 변경
+                const submitBtn = modal.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.textContent = '수정하기';
+                }
+
+                // 폼에 기존 데이터 입력
+                this.fillApplicationForm(application);
+
+                // 구매 방식에 따른 UI 설정
+                this.handlePurchaseMethodChange(application.purchase_type);
+                
+                // 🚀 v2.4 - 구매 방식 변경 이벤트 리스너 추가
+                this.setupPurchaseMethodEventListeners();
+
+                // 모달 표시
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+
+                console.log('✅ 수정 모달 열기 완료');
+            } catch (error) {
+                console.error('❌ 수정 모달 열기 오류:', error);
+                alert('수정 모달을 여는 중 오류가 발생했습니다.');
+            }
+        };
+
+        // 📝 폼에 기존 데이터 채우기
+        window.StudentManager.fillApplicationForm = function(application) {
+            try {
+                console.log('📝 폼에 기존 데이터 채우기');
+                
+                const form = document.getElementById('applicationForm');
+                if (!form) return;
+
+                // 기본 정보 입력
+                const itemNameField = form.querySelector('#itemName');
+                const itemPurposeField = form.querySelector('#itemPurpose');
+                const itemPriceField = form.querySelector('#itemPrice');
+                const itemLinkField = form.querySelector('#itemLink');
+
+                if (itemNameField) itemNameField.value = application.item_name || '';
+                if (itemPurposeField) itemPurposeField.value = application.purpose || '';
+                if (itemPriceField) itemPriceField.value = application.price || '';
+                if (itemLinkField) itemLinkField.value = application.purchase_link || '';
+
+                // 구매 방식 라디오 버튼 설정
+                const purchaseMethodRadios = form.querySelectorAll('input[name="purchaseMethod"]');
+                purchaseMethodRadios.forEach(radio => {
+                    radio.checked = (radio.value === application.purchase_type);
+                });
+
+                console.log('✅ 폼 데이터 채우기 완료');
+            } catch (error) {
+                console.error('❌ 폼 데이터 채우기 오류:', error);
+            }
+        };
+
+        // 🗑️ 신청 삭제 기능 - 실제 동작 구현
+        window.StudentManager.deleteApplication = function(itemId) {
+            try {
+                console.log('🗑️ 신청 삭제 시작:', itemId);
+                
+                if (!itemId) {
+                    alert('잘못된 요청입니다.');
+                    return;
+                }
+
+                const currentUser = this.getCurrentUserSafely();
+                if (!currentUser) {
+                    alert('로그인이 필요합니다.');
+                    return;
+                }
+
+                // 삭제 확인
+                if (!confirm('정말로 이 신청을 삭제하시겠습니까?\n\n삭제된 신청은 복구할 수 없습니다.')) {
+                    return;
+                }
+
+                const self = this;
+
+                // 🔧 신청 정보 확인 후 삭제
+                this.safeApiCall(function() {
+                    return SupabaseAPI.getApplicationById(itemId);
+                }).then(function(result) {
+                    if (!result || !result.success || !result.data) {
+                        alert('신청 정보를 찾을 수 없습니다.');
+                        return;
+                    }
+
+                    const application = result.data;
+                    
+                    // 본인 신청인지 확인
+                    if (application.user_id !== currentUser.id) {
+                        alert('본인의 신청만 삭제할 수 있습니다.');
+                        return;
+                    }
+
+                    // 삭제 가능한 상태인지 확인 (pending 상태만 삭제 가능)
+                    if (application.status !== 'pending') {
+                        alert('검토 중인 신청만 삭제할 수 있습니다.');
+                        return;
+                    }
+
+                    console.log('✅ 삭제 가능한 신청 확인됨:', application);
+
+                    // 실제 삭제 실행
+                    return self.safeApiCall(function() {
+                        return SupabaseAPI.deleteApplication(itemId);
+                    });
+
+                }).then(function(deleteResult) {
+                    if (deleteResult && deleteResult.success !== false) {
+                        console.log('✅ 신청 삭제 완료');
+                        alert('신청이 삭제되었습니다.');
+                        
+                        // 대시보드 새로고침
+                        self.loadApplications();
+                        self.updateBudgetStatus();
+                    } else {
+                        console.error('❌ 신청 삭제 실패:', deleteResult);
+                        alert('신청 삭제에 실패했습니다: ' + (deleteResult?.message || deleteResult?.error || '알 수 없는 오류'));
+                    }
+                }).catch(function(error) {
+                    console.error('❌ 신청 삭제 오류:', error);
+                    alert('신청 삭제 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류'));
+                });
+
+            } catch (error) {
+                console.error('❌ 신청 삭제 오류:', error);
+                alert('신청 삭제 중 오류가 발생했습니다.');
+            }
+        };
+
         // === 지원 기능들 구현 ===
 
         // 🔒 간단한 비밀번호 암호화 (실제로는 더 강력한 암호화 필요)
@@ -1299,59 +1631,6 @@
             }
         };
 
-        // 신청 수정 기능 - 현재 API 제약으로 비활성화
-        window.StudentManager.editApplication = function(itemId) {
-            try {
-                console.log('✏️ 신청 수정:', itemId);
-                alert('현재 신청 수정 기능은 지원되지 않습니다.\n삭제 후 다시 신청해주세요.');
-            } catch (error) {
-                console.error('❌ 신청 수정 오류:', error);
-                alert('신청 수정 중 오류가 발생했습니다.');
-            }
-        };
-
-        // 신청 삭제 기능 - 현재 API 제약으로 상태 변경으로 처리
-        window.StudentManager.deleteApplication = function(itemId) {
-            try {
-                console.log('🗑️ 신청 삭제:', itemId);
-                
-                if (!confirm('정말로 이 신청을 삭제하시겠습니까?\n※ 실제로는 취소 상태로 변경됩니다.')) {
-                    return;
-                }
-
-                const self = this;
-                
-                // 🔧 실제 삭제 API가 없으므로 상태를 'cancelled'로 변경하거나 다른 방식으로 처리
-                alert('현재 신청 삭제 기능은 지원되지 않습니다.\n관리자에게 문의해주세요.');
-                
-                // 향후 실제 API가 추가되면 아래 코드 활성화
-                /*
-                this.safeApiCall(function() {
-                    return SupabaseAPI.deleteApplication(itemId);
-                }).then(function(result) {
-                    if (result && result.success !== false) {
-                        console.log('✅ 신청 삭제 완료');
-                        alert('신청이 삭제되었습니다.');
-                        
-                        // 대시보드 새로고침
-                        self.loadApplications();
-                        self.updateBudgetStatus();
-                    } else {
-                        console.error('❌ 신청 삭제 실패:', result);
-                        alert('신청 삭제에 실패했습니다.');
-                    }
-                }).catch(function(error) {
-                    console.error('❌ 신청 삭제 오류:', error);
-                    alert('신청 삭제 중 오류가 발생했습니다.');
-                });
-                */
-
-            } catch (error) {
-                console.error('❌ 신청 삭제 오류:', error);
-                alert('신청 삭제 중 오류가 발생했습니다.');
-            }
-        };
-
         // 🆕 배송지 설정 기능을 StudentManager에 연결
         window.StudentManager.showShippingModal = function() {
             console.log('📦 StudentManager에서 배송지 모달 호출 - StudentAddon으로 위임');
@@ -1362,8 +1641,8 @@
             }
         };
 
-        console.log('✅ StudentManager 확장 완료 - v2.3 배송지 플래그 초기화 문제 해결');
+        console.log('✅ StudentManager 확장 완료 - v2.4 교구신청 수정/삭제 및 참고링크 UI 개선');
     });
 
-    console.log('📚 StudentAddon 로드 완료 - v2.3 배송지 플래그 초기화 문제 해결');
+    console.log('📚 StudentAddon 로드 완료 - v2.4 교구신청 수정/삭제 및 참고링크 UI 개선');
 })();
