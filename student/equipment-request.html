@@ -498,7 +498,7 @@
                 const { data: lessonPlan, error } = await client
                     .from('lesson_plans')
                     .select('*')
-                    .eq('student_id', currentUser.id)
+                    .eq('user_id', currentUser.id)
                     .single();
 
                 if (error && error.code !== 'PGRST116') {
@@ -735,7 +735,7 @@
                 const { data: lessonPlan, error } = await client
                     .from('lesson_plans')
                     .select('*')
-                    .eq('student_id', currentUser.id)
+                    .eq('user_id', currentUser.id)
                     .single();
 
                 if (error || !lessonPlan) {
