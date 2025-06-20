@@ -128,7 +128,7 @@
                             <i data-lucide="calendar"></i>
                             수업 계획
                         </button>
-                        <button id="shippingAddressBtn" class="btn secondary">
+                        <button id="shippingAddressBtn" class="btn secondary shipping-address-btn">
                             <i data-lucide="map-pin"></i>
                             배송지 설정
                         </button>
@@ -270,23 +270,23 @@
             <form id="shippingForm">
                 <div class="form-group">
                     <label>받는 분 *</label>
-                    <input type="text" id="shippingName" required placeholder="받는 분 성명을 입력하세요">
+                    <input type="text" id="shippingName" name="shippingName" required placeholder="받는 분 성명을 입력하세요">
                 </div>
                 <div class="form-group">
                     <label>연락처 *</label>
-                    <input type="tel" id="shippingPhone" required placeholder="연락처를 입력하세요">
+                    <input type="tel" id="shippingPhone" name="shippingPhone" required placeholder="연락처를 입력하세요">
                 </div>
                 <div class="form-group">
                     <label>주소 *</label>
-                    <textarea id="shippingAddress" required rows="3" placeholder="상세 주소를 입력하세요&#10;예: 서울특별시 강남구 테헤란로 123, 456호"></textarea>
+                    <textarea id="shippingAddress" name="shippingAddress" required rows="3" placeholder="상세 주소를 입력하세요&#10;예: 서울특별시 강남구 테헤란로 123, 456호"></textarea>
                 </div>
                 <div class="form-group">
                     <label>우편번호</label>
-                    <input type="text" id="shippingPostcode" placeholder="우편번호 (선택)">
+                    <input type="text" id="shippingPostcode" name="shippingPostcode" placeholder="우편번호 (선택)">
                 </div>
                 <div class="form-group">
                     <label>배송 요청사항</label>
-                    <textarea id="shippingNote" rows="2" placeholder="배송 시 요청사항이 있으면 입력하세요"></textarea>
+                    <textarea id="shippingNote" name="shippingNote" rows="2" placeholder="배송 시 요청사항이 있으면 입력하세요"></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" id="shippingCancelBtn" class="btn secondary">취소</button>
@@ -1067,6 +1067,23 @@
         
         .btn-sm:hover {
             opacity: 0.9;
+        }
+        
+        /* 🆕 배송지 설정 버튼 스타일 - 텍스트와 아이콘 흰색 */
+        .shipping-address-btn {
+            color: white !important;
+        }
+        
+        .shipping-address-btn i {
+            color: white !important;
+        }
+        
+        .shipping-address-btn:hover {
+            color: white !important;
+        }
+        
+        .shipping-address-btn:hover i {
+            color: white !important;
         }
         
         /* 애니메이션 */
