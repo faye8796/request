@@ -1,12 +1,12 @@
 // 학생 기능 확장 모듈 - 누락된 교구 신청 기능들 구현 (실제 API 메서드 기반)
 // StudentManager의 누락된 메서드들을 확장하여 교구 신청 기능을 완전히 복구
-// 🆕 배송지 설정 기능 추가 (v2.1)
+// 🆕 배송지 설정 기능 추가 (v2.2) - 이벤트 리스너 중복 방지
 
 // StudentManager 확장 - 누락된 교구 신청 기능들 구현 (실제 SupabaseAPI 메서드 사용)
 (function() {
     'use strict';
     
-    console.log('📚 StudentAddon 로드 시작 - 교구신청 + 배송지 기능 (v2.1)');
+    console.log('📚 StudentAddon 로드 시작 - 교구신청 + 배송지 기능 (v2.2)');
 
     // StudentManager가 로드될 때까지 대기
     function waitForStudentManager() {
@@ -26,12 +26,16 @@
 
     // 배송지 전용 네임스페이스 생성
     window.StudentAddon = {
+        // 🔧 중복 방지를 위한 플래그들
+        submitInProgress: false,
+        shippingListenersAttached: false,
+
         // === 🆕 배송지 설정 기능 (개선된 버전) ===
         
-        // 🆕 배송지 설정 모달 표시 - 문제 수정 버전
+        // 🆕 배송지 설정 모달 표시 - 이벤트 리스너 중복 방지
         showShippingModal: function() {
             try {
-                console.log('📦 배송지 설정 모달 표시 (수정된 버전)');
+                console.log('📦 배송지 설정 모달 표시 (v2.2 - 중복 방지)');
                 
                 const modal = document.getElementById('shippingModal');
                 if (!modal) {
@@ -45,6 +49,12 @@
                 if (!currentUser) {
                     alert('로그인이 필요합니다.');
                     return;
+                }
+
+                // 🔧 이벤트 리스너 중복 방지 - 한 번만 등록
+                if (!this.shippingListenersAttached) {
+                    this.attachShippingEventListeners();
+                    this.shippingListenersAttached = true;
                 }
 
                 // 기존 배송지 정보 로드
@@ -64,6 +74,108 @@
             } catch (error) {
                 console.error('❌ 배송지 모달 표시 오류:', error);
                 alert('배송지 설정을 여는 중 오류가 발생했습니다.');
+            }
+        },
+
+        // 🔧 배송지 이벤트 리스너 한 번만 등록
+        attachShippingEventListeners: function() {
+            try {
+                console.log('📦 배송지 이벤트 리스너 등록 시작');
+
+                // 기존 리스너 제거 (중복 방지)
+                this.removeShippingEventListeners();
+
+                const form = document.getElementById('shippingForm');
+                const cancelBtn = document.getElementById('shippingCancelBtn');
+
+                if (form) {
+                    // 폼 제출 이벤트 (한 번만 등록)
+                    form.addEventListener('submit', this.handleShippingFormSubmit.bind(this));
+                    console.log('✅ 배송지 폼 제출 이벤트 등록');
+                }
+
+                if (cancelBtn) {
+                    // 취소 버튼 이벤트
+                    cancelBtn.addEventListener('click', this.hideShippingModal.bind(this));
+                    console.log('✅ 배송지 취소 버튼 이벤트 등록');
+                }
+
+                // 모달 배경 클릭으로 닫기
+                const modal = document.getElementById('shippingModal');
+                if (modal) {
+                    modal.addEventListener('click', this.handleModalBackgroundClick.bind(this));
+                    console.log('✅ 배송지 모달 배경 클릭 이벤트 등록');
+                }
+
+                console.log('✅ 배송지 이벤트 리스너 등록 완료');
+            } catch (error) {
+                console.error('❌ 배송지 이벤트 리스너 등록 오류:', error);
+            }
+        },
+
+        // 🔧 기존 이벤트 리스너 제거
+        removeShippingEventListeners: function() {
+            try {
+                const form = document.getElementById('shippingForm');
+                const cancelBtn = document.getElementById('shippingCancelBtn');
+                const modal = document.getElementById('shippingModal');
+
+                // 기존 요소들을 클론으로 교체하여 모든 이벤트 리스너 제거
+                if (form) {
+                    const newForm = form.cloneNode(true);
+                    form.parentNode.replaceChild(newForm, form);
+                }
+
+                if (cancelBtn) {
+                    const newCancelBtn = cancelBtn.cloneNode(true);
+                    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+                }
+
+                console.log('🧹 기존 배송지 이벤트 리스너 제거 완료');
+            } catch (error) {
+                console.error('❌ 배송지 이벤트 리스너 제거 오류:', error);
+            }
+        },
+
+        // 🔧 폼 제출 처리 (중복 방지 강화)
+        handleShippingFormSubmit: function(event) {
+            try {
+                // 🔧 기본 폼 제출 동작 확실히 방지
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+
+                console.log('📦 배송지 폼 제출 이벤트 처리 시작');
+
+                // 🔧 중복 제출 방지
+                if (this.submitInProgress) {
+                    console.warn('⚠️ 배송지 저장이 이미 진행 중입니다');
+                    return false;
+                }
+
+                // 제출 플래그 설정
+                this.submitInProgress = true;
+
+                // 실제 저장 처리
+                this.handleShippingSubmit();
+
+                return false; // 추가 안전장치
+            } catch (error) {
+                console.error('❌ 배송지 폼 제출 처리 오류:', error);
+                this.submitInProgress = false;
+                return false;
+            }
+        },
+
+        // 🔧 모달 배경 클릭 처리
+        handleModalBackgroundClick: function(event) {
+            try {
+                // 모달 자체를 클릭했을 때만 닫기 (내용 영역 클릭 시에는 닫지 않음)
+                if (event.target === event.currentTarget) {
+                    this.hideShippingModal();
+                }
+            } catch (error) {
+                console.error('❌ 모달 배경 클릭 처리 오류:', error);
             }
         },
 
@@ -139,14 +251,21 @@
             }
         },
 
-        // 🆕 배송지 정보 저장 처리 - 문제 수정 버전
+        // 🆕 배송지 정보 저장 처리 - 중복 방지 강화
         handleShippingSubmit: function() {
             try {
-                console.log('📦 배송지 정보 저장 시작 (수정된 버전)');
+                console.log('📦 배송지 정보 저장 시작 (v2.2 - 중복 방지)');
                 
+                // 🔧 중복 제출 체크 (이미 진행 중이면 무시)
+                if (this.submitInProgress) {
+                    console.warn('⚠️ 이미 배송지 저장이 진행 중입니다 - 무시됨');
+                    return;
+                }
+
                 const currentUser = this.getCurrentUserSafely();
                 if (!currentUser) {
                     alert('로그인이 필요합니다.');
+                    this.submitInProgress = false;
                     return;
                 }
 
@@ -154,6 +273,7 @@
                 const form = document.getElementById('shippingForm');
                 if (!form) {
                     console.error('배송지 폼을 찾을 수 없습니다');
+                    this.submitInProgress = false;
                     return;
                 }
 
@@ -170,18 +290,21 @@
                 if (!shippingData.recipient_name.trim()) {
                     alert('받는 분 성명을 입력해주세요.');
                     this.focusField(form, 'shippingName');
+                    this.submitInProgress = false;
                     return;
                 }
 
                 if (!shippingData.phone.trim()) {
                     alert('연락처를 입력해주세요.');
                     this.focusField(form, 'shippingPhone');
+                    this.submitInProgress = false;
                     return;
                 }
 
                 if (!shippingData.address.trim()) {
                     alert('주소를 입력해주세요.');
                     this.focusField(form, 'shippingAddress');
+                    this.submitInProgress = false;
                     return;
                 }
 
@@ -242,7 +365,9 @@
                     alert('배송지 정보 저장 중 오류가 발생했습니다: ' + errorMessage);
                     self.showShippingNotice('danger', '오류: ' + errorMessage);
                 }).finally(function() {
-                    // 제출 버튼 활성화
+                    // 🔧 제출 플래그 해제 및 버튼 활성화
+                    self.submitInProgress = false;
+                    
                     if (submitBtn) {
                         submitBtn.disabled = false;
                         submitBtn.textContent = '저장하기';
@@ -253,10 +378,11 @@
                 console.error('❌ 배송지 정보 저장 처리 오류:', error);
                 alert('배송지 정보 저장 처리 중 오류가 발생했습니다.');
                 this.showShippingNotice('danger', '처리 오류: ' + error.message);
+                this.submitInProgress = false;
             }
         },
 
-        // 🆕 배송지 모달 숨김
+        // 🆕 배송지 모달 숨김 - 플래그 초기화 추가
         hideShippingModal: function() {
             try {
                 console.log('배송지 설정 모달 숨김');
@@ -271,6 +397,9 @@
                     
                     // 알림 제거
                     this.removeShippingNotice();
+                    
+                    // 🔧 플래그 초기화
+                    this.submitInProgress = false;
                 }
             } catch (error) {
                 console.error('배송지 모달 숨김 오류:', error);
@@ -1210,8 +1339,8 @@
             }
         };
 
-        console.log('✅ StudentManager 확장 완료 - v2.1 배송지 설정 기능 추가');
+        console.log('✅ StudentManager 확장 완료 - v2.2 배송지 이벤트 리스너 중복 방지');
     });
 
-    console.log('📚 StudentAddon 로드 완료 - v2.1 배송지 설정 기능 추가');
+    console.log('📚 StudentAddon 로드 완료 - v2.2 배송지 이벤트 리스너 중복 방지');
 })();
