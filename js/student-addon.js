@@ -5,7 +5,7 @@
 (function() {
     'use strict';
     
-    console.log('📚 StudentAddon 로드 시작 - 교구신청 기능 복구 (정확한 API 메서드 사용)');
+    console.log('📚 StudentAddon 로드 시작 - 교구신청 기능 복구 (v2.0 - 묶음 신청 재설계)');
 
     // StudentManager가 로드될 때까지 대기
     function waitForStudentManager() {
@@ -93,10 +93,10 @@
             }
         };
 
-        // 📦 묶음 신청 모달 표시
+        // 📦 묶음 신청 모달 표시 - 완전 재설계
         window.StudentManager.showBundleModal = function() {
             try {
-                console.log('📦 묶음 신청 모달 표시');
+                console.log('📦 묶음 신청 모달 표시 (v2.0 - 쇼핑몰 계정 기반)');
                 
                 const modal = document.getElementById('bundleModal');
                 if (!modal) {
@@ -127,14 +127,13 @@
                     // 모달 초기화 및 표시
                     self.resetBundleForm();
                     
-                    // 구매 방식 기본값 설정
+                    // 구매 방식 기본값 설정 (온라인)
                     const onlineRadio = modal.querySelector('input[name="bundlePurchaseMethod"][value="online"]');
                     if (onlineRadio) {
                         onlineRadio.checked = true;
+                        // 온라인 구매 정보 표시
+                        window.toggleBundlePurchaseInfo('online');
                     }
-
-                    // 묶음 아이템 초기화 (기본 3개)
-                    self.initializeBundleItems();
 
                     // 모달 표시
                     modal.classList.add('show');
@@ -146,7 +145,7 @@
                         setTimeout(() => firstInput.focus(), 100);
                     }
 
-                    console.log('✅ 묶음 신청 모달 표시 완료');
+                    console.log('✅ 묶음 신청 모달 표시 완료 (v2.0)');
                 }).catch(function(error) {
                     console.error('❌ 수업계획 확인 오류:', error);
                     alert('수업계획 정보를 확인할 수 없습니다. 다시 시도해주세요.');
@@ -332,10 +331,10 @@
             }
         };
 
-        // 📦 묶음 신청 제출 처리 - 실제 API 기반으로 수정
+        // 📦 묶음 신청 제출 처리 - v2.0 쇼핑몰 계정 기반 완전 재설계
         window.StudentManager.handleBundleSubmit = function() {
             try {
-                console.log('📦 묶음 신청 제출 처리');
+                console.log('📦 묶음 신청 제출 처리 (v2.0 - 쇼핑몰 계정 기반)');
                 
                 const currentUser = this.getCurrentUserSafely();
                 if (!currentUser) {
@@ -353,9 +352,10 @@
                 const formData = new FormData(form);
                 const bundleTitle = formData.get('bundleTitle') || '';
                 const bundlePurpose = formData.get('bundlePurpose') || '';
+                const bundleTotalPrice = parseInt(formData.get('bundleTotalPrice')) || 0;
                 const bundlePurchaseMethod = formData.get('bundlePurchaseMethod') || 'online';
 
-                // 입력 검증
+                // 기본 정보 검증
                 if (!bundleTitle.trim()) {
                     alert('묶음 제목을 입력해주세요.');
                     form.querySelector('#bundleTitle').focus();
@@ -368,53 +368,89 @@
                     return;
                 }
 
-                // 아이템 정보 수집
-                const bundleItems = [];
-                const itemContainers = form.querySelectorAll('.bundle-item');
-                let totalPrice = 0;
-
-                for (let i = 0; i < itemContainers.length; i++) {
-                    const container = itemContainers[i];
-                    const itemName = container.querySelector('.bundle-item-name').value.trim();
-                    const itemPrice = parseInt(container.querySelector('.bundle-item-price').value) || 0;
-                    const itemLink = container.querySelector('.bundle-item-link').value.trim();
-
-                    if (itemName && itemPrice > 0) {
-                        bundleItems.push({
-                            name: itemName,
-                            price: itemPrice,
-                            link: itemLink
-                        });
-                        totalPrice += itemPrice;
-                    }
-                }
-
-                if (bundleItems.length === 0) {
-                    alert('최소 1개 이상의 유효한 아이템을 입력해주세요.');
+                if (bundleTotalPrice <= 0) {
+                    alert('올바른 구매 총액을 입력해주세요.');
+                    form.querySelector('#bundleTotalPrice').focus();
                     return;
                 }
 
-                // 온라인 구매시 링크 검증
+                // 🆕 구매 방식에 따른 추가 정보 수집 및 검증
+                let purchaseDetails = '';
+                
                 if (bundlePurchaseMethod === 'online') {
-                    const itemsWithoutLink = bundleItems.filter(item => !item.link);
-                    if (itemsWithoutLink.length > 0) {
-                        alert('온라인 구매의 경우 모든 아이템의 구매 링크를 입력해주세요.');
+                    // 온라인 구매 정보 검증
+                    const purchaseSite = formData.get('purchaseSite') || '';
+                    const accountId = formData.get('accountId') || '';
+                    const accountPassword = formData.get('accountPassword') || '';
+                    const cartNote = formData.get('cartNote') || '';
+                    
+                    if (!purchaseSite) {
+                        alert('구매 사이트를 선택해주세요.');
+                        form.querySelector('#purchaseSite').focus();
                         return;
                     }
+                    
+                    if (!accountId.trim()) {
+                        alert('계정 아이디를 입력해주세요.');
+                        form.querySelector('#accountId').focus();
+                        return;
+                    }
+                    
+                    if (!accountPassword.trim()) {
+                        alert('계정 비밀번호를 입력해주세요.');
+                        form.querySelector('#accountPassword').focus();
+                        return;
+                    }
+                    
+                    // 기타 사이트인 경우 URL 확인
+                    if (purchaseSite === 'other') {
+                        const otherSite = formData.get('otherSite') || '';
+                        if (!otherSite.trim()) {
+                            alert('기타 사이트 URL을 입력해주세요.');
+                            form.querySelector('#otherSite').focus();
+                            return;
+                        }
+                    }
+                    
+                    // 🔒 온라인 구매 정보 구성 (보안 처리 - 실제로는 암호화 필요)
+                    const siteInfo = purchaseSite === 'other' ? formData.get('otherSite') : purchaseSite;
+                    purchaseDetails = `[온라인 구매]
+구매 사이트: ${siteInfo}
+계정 ID: ${accountId}
+계정 PW: ${this.encryptPassword(accountPassword)}
+장바구니 메모: ${cartNote}`;
+                    
+                } else {
+                    // 오프라인 구매 정보 검증
+                    const offlineVendor = formData.get('offlineVendor') || '';
+                    const purchasePlan = formData.get('purchasePlan') || '';
+                    
+                    if (!offlineVendor.trim()) {
+                        alert('구매 업체 정보를 입력해주세요.');
+                        form.querySelector('#offlineVendor').focus();
+                        return;
+                    }
+                    
+                    // 오프라인 구매 정보 구성
+                    purchaseDetails = `[오프라인 구매]
+구매 업체: ${offlineVendor}
+구매 계획: ${purchasePlan}`;
                 }
 
                 // 🔧 createApplication에 맞는 데이터 구조로 변경
                 const bundleData = {
                     item_name: bundleTitle,
-                    price: totalPrice,
+                    price: bundleTotalPrice,
                     purpose: bundlePurpose,
                     purchase_type: bundlePurchaseMethod,
-                    purchase_link: bundleItems.map(item => `${item.name}: ${item.link}`).join('\n'),
+                    purchase_link: purchaseDetails, // 구매 방식에 따른 상세 정보
                     is_bundle: true
-                    // bundle_items는 별도 테이블이 없으므로 purchase_link에 포함
                 };
 
-                console.log('📦 제출할 묶음 신청 데이터:', bundleData);
+                console.log('📦 제출할 묶음 신청 데이터:', {
+                    ...bundleData,
+                    purchase_link: bundleData.purchase_link.replace(/계정 PW:.*/, '계정 PW: [암호화됨]') // 로그에서는 비밀번호 숨김
+                });
 
                 const self = this;
                 
@@ -551,98 +587,15 @@
 
         // === 지원 기능들 구현 ===
 
-        // 묶음 아이템 초기화
-        window.StudentManager.initializeBundleItems = function() {
+        // 🔒 간단한 비밀번호 암호화 (실제로는 더 강력한 암호화 필요)
+        window.StudentManager.encryptPassword = function(password) {
             try {
-                const container = document.getElementById('bundleItemsContainer');
-                if (!container) return;
-
-                container.innerHTML = '';
-                
-                // 기본 3개 아이템 추가
-                for (let i = 0; i < 3; i++) {
-                    this.addBundleItem();
-                }
-
-                console.log('✅ 묶음 아이템 초기화 완료');
+                // 실제 운영에서는 더 강력한 암호화가 필요
+                // 여기서는 Base64 인코딩만 사용 (데모용)
+                return btoa(password + '_encrypted_' + Date.now());
             } catch (error) {
-                console.error('❌ 묶음 아이템 초기화 오류:', error);
-            }
-        };
-
-        // 묶음 아이템 추가
-        window.StudentManager.addBundleItem = function() {
-            try {
-                const container = document.getElementById('bundleItemsContainer');
-                if (!container) return;
-
-                const itemCount = container.children.length + 1;
-                
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'bundle-item';
-                itemDiv.innerHTML = `
-                    <div class="bundle-item-header">
-                        <h4>아이템 ${itemCount}</h4>
-                        <button type="button" class="btn small danger remove-bundle-item">
-                            <i data-lucide="x"></i> 제거
-                        </button>
-                    </div>
-                    <div class="form-group">
-                        <label>교구명 *</label>
-                        <input type="text" class="bundle-item-name" required placeholder="교구명을 입력하세요">
-                    </div>
-                    <div class="form-group">
-                        <label>가격 *</label>
-                        <input type="number" class="bundle-item-price" required min="1" placeholder="가격 (원)">
-                    </div>
-                    <div class="form-group">
-                        <label>구매 링크</label>
-                        <input type="url" class="bundle-item-link" placeholder="구매 가능한 링크">
-                    </div>
-                `;
-
-                container.appendChild(itemDiv);
-
-                // 제거 버튼 이벤트 리스너
-                const removeBtn = itemDiv.querySelector('.remove-bundle-item');
-                if (removeBtn) {
-                    const self = this;
-                    removeBtn.addEventListener('click', () => {
-                        if (container.children.length > 1) {
-                            itemDiv.remove();
-                            self.updateBundleItemNumbers();
-                        } else {
-                            alert('최소 1개의 아이템은 필요합니다.');
-                        }
-                    });
-                }
-
-                // 아이콘 재생성
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-
-                console.log('📦 묶음 아이템 추가됨:', itemCount);
-            } catch (error) {
-                console.error('❌ 묶음 아이템 추가 오류:', error);
-            }
-        };
-
-        // 묶음 아이템 번호 업데이트
-        window.StudentManager.updateBundleItemNumbers = function() {
-            try {
-                const container = document.getElementById('bundleItemsContainer');
-                if (!container) return;
-
-                const items = container.querySelectorAll('.bundle-item');
-                for (let i = 0; i < items.length; i++) {
-                    const header = items[i].querySelector('.bundle-item-header h4');
-                    if (header) {
-                        header.textContent = `아이템 ${i + 1}`;
-                    }
-                }
-            } catch (error) {
-                console.error('❌ 묶음 아이템 번호 업데이트 오류:', error);
+                console.error('비밀번호 암호화 오류:', error);
+                return password; // 암호화 실패시 원본 반환 (보안상 위험하므로 실제로는 오류 처리 필요)
             }
         };
 
@@ -811,8 +764,15 @@
             }
         };
 
-        console.log('✅ StudentManager 확장 완료 - 실제 API 메서드 기반으로 교구신청 기능 구현됨');
+        // === 🆕 v2.0에서 제거된 기능들 ===
+        // 기존 개별 아이템 관련 기능들은 v2.0에서 제거됨
+        // - initializeBundleItems() 제거
+        // - addBundleItem() 제거  
+        // - updateBundleItemNumbers() 제거
+        // 새로운 쇼핑몰 계정 기반 묶음 신청으로 대체됨
+
+        console.log('✅ StudentManager 확장 완료 - v2.0 묶음 신청 재설계 (쇼핑몰 계정 기반)');
     });
 
-    console.log('📚 StudentAddon 로드 완료 - 실제 SupabaseAPI 메서드 사용');
+    console.log('📚 StudentAddon 로드 완료 - v2.0 묶음 신청 재설계');
 })();
