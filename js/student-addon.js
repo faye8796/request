@@ -1,12 +1,12 @@
 // 학생 기능 확장 모듈 - 누락된 교구 신청 기능들 구현 (실제 API 메서드 기반)
 // StudentManager의 누락된 메서드들을 확장하여 교구 신청 기능을 완전히 복구
-// 🆕 배송지 설정 기능 추가 (v2.2) - 이벤트 리스너 중복 방지
+// 🆕 배송지 설정 기능 추가 (v2.3) - 플래그 초기화 문제 해결
 
 // StudentManager 확장 - 누락된 교구 신청 기능들 구현 (실제 SupabaseAPI 메서드 사용)
 (function() {
     'use strict';
     
-    console.log('📚 StudentAddon 로드 시작 - 교구신청 + 배송지 기능 (v2.2)');
+    console.log('📚 StudentAddon 로드 시작 - 교구신청 + 배송지 기능 (v2.3)');
 
     // StudentManager가 로드될 때까지 대기
     function waitForStudentManager() {
@@ -26,16 +26,20 @@
 
     // 배송지 전용 네임스페이스 생성
     window.StudentAddon = {
-        // 🔧 중복 방지를 위한 플래그들
+        // 🔧 중복 방지를 위한 플래그들 - 초기화 문제 해결
         submitInProgress: false,
         shippingListenersAttached: false,
 
         // === 🆕 배송지 설정 기능 (개선된 버전) ===
         
-        // 🆕 배송지 설정 모달 표시 - 이벤트 리스너 중복 방지
+        // 🆕 배송지 설정 모달 표시 - 플래그 초기화 추가
         showShippingModal: function() {
             try {
-                console.log('📦 배송지 설정 모달 표시 (v2.2 - 중복 방지)');
+                console.log('📦 배송지 설정 모달 표시 (v2.3 - 플래그 초기화)');
+                
+                // 🔧 플래그 강제 초기화 (모달 열 때마다)
+                this.submitInProgress = false;
+                console.log('🔄 submitInProgress 플래그 초기화:', this.submitInProgress);
                 
                 const modal = document.getElementById('shippingModal');
                 if (!modal) {
@@ -51,10 +55,13 @@
                     return;
                 }
 
-                // 🔧 이벤트 리스너 중복 방지 - 한 번만 등록
+                // 🔧 이벤트 리스너 중복 방지 - 조건부 등록
                 if (!this.shippingListenersAttached) {
+                    console.log('📦 배송지 이벤트 리스너 최초 등록');
                     this.attachShippingEventListeners();
                     this.shippingListenersAttached = true;
+                } else {
+                    console.log('📦 배송지 이벤트 리스너 이미 등록됨 - 건너뜀');
                 }
 
                 // 기존 배송지 정보 로드
@@ -137,7 +144,7 @@
             }
         },
 
-        // 🔧 폼 제출 처리 (중복 방지 강화)
+        // 🔧 폼 제출 처리 (중복 방지 강화 + 디버깅 로그 추가)
         handleShippingFormSubmit: function(event) {
             try {
                 // 🔧 기본 폼 제출 동작 확실히 방지
@@ -146,15 +153,17 @@
                 event.stopImmediatePropagation();
 
                 console.log('📦 배송지 폼 제출 이벤트 처리 시작');
+                console.log('🔍 현재 submitInProgress 상태:', this.submitInProgress);
 
-                // 🔧 중복 제출 방지
+                // 🔧 중복 제출 방지 체크
                 if (this.submitInProgress) {
-                    console.warn('⚠️ 배송지 저장이 이미 진행 중입니다');
+                    console.warn('⚠️ 배송지 저장이 이미 진행 중입니다 - 무시됨');
                     return false;
                 }
 
                 // 제출 플래그 설정
                 this.submitInProgress = true;
+                console.log('🔄 submitInProgress 플래그 설정:', this.submitInProgress);
 
                 // 실제 저장 처리
                 this.handleShippingSubmit();
@@ -163,6 +172,7 @@
             } catch (error) {
                 console.error('❌ 배송지 폼 제출 처리 오류:', error);
                 this.submitInProgress = false;
+                console.log('🔄 오류로 인한 submitInProgress 플래그 초기화:', this.submitInProgress);
                 return false;
             }
         },
@@ -251,21 +261,17 @@
             }
         },
 
-        // 🆕 배송지 정보 저장 처리 - 중복 방지 강화
+        // 🆕 배송지 정보 저장 처리 - 플래그 관리 개선
         handleShippingSubmit: function() {
             try {
-                console.log('📦 배송지 정보 저장 시작 (v2.2 - 중복 방지)');
+                console.log('📦 배송지 정보 저장 처리 시작 (v2.3)');
+                console.log('🔍 handleShippingSubmit 진입 시 submitInProgress:', this.submitInProgress);
                 
-                // 🔧 중복 제출 체크 (이미 진행 중이면 무시)
-                if (this.submitInProgress) {
-                    console.warn('⚠️ 이미 배송지 저장이 진행 중입니다 - 무시됨');
-                    return;
-                }
-
                 const currentUser = this.getCurrentUserSafely();
                 if (!currentUser) {
                     alert('로그인이 필요합니다.');
                     this.submitInProgress = false;
+                    console.log('🔄 사용자 없음으로 인한 플래그 초기화:', this.submitInProgress);
                     return;
                 }
 
@@ -274,6 +280,7 @@
                 if (!form) {
                     console.error('배송지 폼을 찾을 수 없습니다');
                     this.submitInProgress = false;
+                    console.log('🔄 폼 없음으로 인한 플래그 초기화:', this.submitInProgress);
                     return;
                 }
 
@@ -291,6 +298,7 @@
                     alert('받는 분 성명을 입력해주세요.');
                     this.focusField(form, 'shippingName');
                     this.submitInProgress = false;
+                    console.log('🔄 필수 필드 누락으로 인한 플래그 초기화:', this.submitInProgress);
                     return;
                 }
 
@@ -298,6 +306,7 @@
                     alert('연락처를 입력해주세요.');
                     this.focusField(form, 'shippingPhone');
                     this.submitInProgress = false;
+                    console.log('🔄 필수 필드 누락으로 인한 플래그 초기화:', this.submitInProgress);
                     return;
                 }
 
@@ -305,6 +314,7 @@
                     alert('주소를 입력해주세요.');
                     this.focusField(form, 'shippingAddress');
                     this.submitInProgress = false;
+                    console.log('🔄 필수 필드 누락으로 인한 플래그 초기화:', this.submitInProgress);
                     return;
                 }
 
@@ -365,13 +375,20 @@
                     alert('배송지 정보 저장 중 오류가 발생했습니다: ' + errorMessage);
                     self.showShippingNotice('danger', '오류: ' + errorMessage);
                 }).finally(function() {
-                    // 🔧 제출 플래그 해제 및 버튼 활성화
-                    self.submitInProgress = false;
+                    // 🔧 반드시 실행되는 정리 작업
+                    console.log('📦 배송지 저장 완료 - 정리 작업 시작');
                     
+                    // 제출 플래그 해제
+                    self.submitInProgress = false;
+                    console.log('🔄 finally 블록에서 submitInProgress 플래그 초기화:', self.submitInProgress);
+                    
+                    // 버튼 활성화
                     if (submitBtn) {
                         submitBtn.disabled = false;
                         submitBtn.textContent = '저장하기';
                     }
+                    
+                    console.log('✅ 배송지 저장 정리 작업 완료');
                 });
 
             } catch (error) {
@@ -379,13 +396,15 @@
                 alert('배송지 정보 저장 처리 중 오류가 발생했습니다.');
                 this.showShippingNotice('danger', '처리 오류: ' + error.message);
                 this.submitInProgress = false;
+                console.log('🔄 예외 처리로 인한 submitInProgress 플래그 초기화:', this.submitInProgress);
             }
         },
 
-        // 🆕 배송지 모달 숨김 - 플래그 초기화 추가
+        // 🆕 배송지 모달 숨김 - 플래그 초기화 강화
         hideShippingModal: function() {
             try {
-                console.log('배송지 설정 모달 숨김');
+                console.log('📦 배송지 설정 모달 숨김 - 플래그 초기화');
+                
                 const modal = document.getElementById('shippingModal');
                 if (modal) {
                     modal.classList.remove('show');
@@ -398,11 +417,15 @@
                     // 알림 제거
                     this.removeShippingNotice();
                     
-                    // 🔧 플래그 초기화
+                    // 🔧 플래그 확실히 초기화
                     this.submitInProgress = false;
+                    console.log('🔄 모달 닫기 시 submitInProgress 플래그 초기화:', this.submitInProgress);
                 }
             } catch (error) {
                 console.error('배송지 모달 숨김 오류:', error);
+                // 오류가 있어도 플래그는 초기화
+                this.submitInProgress = false;
+                console.log('🔄 오류 발생 시에도 submitInProgress 플래그 초기화:', this.submitInProgress);
             }
         },
 
@@ -1339,8 +1362,8 @@
             }
         };
 
-        console.log('✅ StudentManager 확장 완료 - v2.2 배송지 이벤트 리스너 중복 방지');
+        console.log('✅ StudentManager 확장 완료 - v2.3 배송지 플래그 초기화 문제 해결');
     });
 
-    console.log('📚 StudentAddon 로드 완료 - v2.2 배송지 이벤트 리스너 중복 방지');
+    console.log('📚 StudentAddon 로드 완료 - v2.3 배송지 플래그 초기화 문제 해결');
 })();
