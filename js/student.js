@@ -1,5 +1,6 @@
 // 학생 기능 관리 모듈 (Supabase 연동) - 교구 신청 기능 활성화 버전 - 시스템 초기화 실패 문제 해결
 // 🧹 Placeholder 함수들 제거 완료 - student-addon.js와 충돌 방지 (v1.9.0)
+// 🔧 v1.9.1 - 묶음신청 카드 참고링크 표시 버그 수정
 const StudentManager = {
     currentEditingItem: null,
     currentReceiptItem: null,
@@ -1428,7 +1429,7 @@ const StudentManager = {
         }
     },
 
-    // 신청 카드 생성 (기존 로직 유지하되 안전성 강화)
+    // 🔧 v1.9.1 - 신청 카드 생성 (묶음신청 참고링크 표시 버그 수정)
     createApplicationCard: function(application) {
         const card = document.createElement('div');
         card.className = 'application-card';
@@ -1461,6 +1462,22 @@ const StudentManager = {
             `;
         }
         
+        // 🔧 v1.9.1 - 묶음신청일 때 참고링크 표시하지 않음
+        let linkSection = '';
+        if (application.purchase_link && !application.is_bundle) {
+            // 일반 신청만 참고링크 표시
+            linkSection = `
+                <div class="detail-item">
+                    <span class="detail-label">${application.purchase_type === 'offline' ? '참고 링크' : '구매 링크'}</span>
+                    <span class="detail-value">
+                        <a href="${this.escapeHtml(application.purchase_link)}" target="_blank" rel="noopener noreferrer">
+                            링크 보기 <i data-lucide="external-link"></i>
+                        </a>
+                    </span>
+                </div>
+            `;
+        }
+        
         card.innerHTML = `
             <div class="application-card-header">
                 <div>
@@ -1485,16 +1502,7 @@ const StudentManager = {
                     <span class="detail-label">가격</span>
                     <span class="detail-value price-value">${this.formatPrice(application.price)}</span>
                 </div>
-                ${application.purchase_link ? `
-                    <div class="detail-item">
-                        <span class="detail-label">${application.purchase_type === 'offline' ? '참고 링크' : '구매 링크'}</span>
-                        <span class="detail-value">
-                            <a href="${this.escapeHtml(application.purchase_link)}" target="_blank" rel="noopener noreferrer">
-                                링크 보기 <i data-lucide="external-link"></i>
-                            </a>
-                        </span>
-                    </div>
-                ` : ''}
+                ${linkSection}
             </div>
             
             ${receiptStatus}
@@ -1667,4 +1675,4 @@ window.initializeStudentPage = function() {
     }
 };
 
-console.log('📚 StudentManager loaded successfully - Placeholder 함수들 제거 완료 (v1.9.0)');
+console.log('📚 StudentManager loaded successfully - v1.9.1 묶음신청 참고링크 표시 버그 수정');
