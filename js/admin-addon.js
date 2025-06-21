@@ -1,4 +1,4 @@
-// 관리자 기능 확장 모듈 - 학생별 그룹화 및 배송지 정보 표시
+// 관리자 기능 확장 모듈 - 학생별 그룹화 및 배송지 정보 표시 (충돌 해결 버전)
 // admin.js의 기존 함수들을 확장하여 더 나은 UI 제공
 
 const AdminAddon = {
@@ -8,8 +8,16 @@ const AdminAddon = {
     // 배송지 정보 캐시
     shippingInfoCache: new Map(),
 
+    // 초기화 상태 추적
+    isInitialized: false,
+
     // AdminManager의 기존 함수들을 확장
     init() {
+        if (this.isInitialized) {
+            console.log('⚠️ AdminAddon이 이미 초기화됨');
+            return;
+        }
+
         console.log('🔧 AdminAddon 초기화 시작');
         
         // 기존 AdminManager 함수들을 백업
@@ -17,7 +25,11 @@ const AdminAddon = {
         
         // 확장된 함수들로 교체
         this.overrideAdminFunctions();
+
+        // AdminManager의 이벤트 리스너 설정 무력화
+        this.disableAdminManagerEventListeners();
         
+        this.isInitialized = true;
         console.log('✅ AdminAddon 초기화 완료');
     },
 
@@ -26,6 +38,7 @@ const AdminAddon = {
         if (window.AdminManager) {
             this.originalRenderApplications = AdminManager.renderApplications.bind(AdminManager);
             this.originalLoadApplications = AdminManager.loadApplications.bind(AdminManager);
+            this.originalSetupEventListeners = AdminManager.setupEventListeners.bind(AdminManager);
         }
     },
 
@@ -38,7 +51,183 @@ const AdminAddon = {
             // 신청 내역 로드도 배송지 정보 포함하도록 교체
             AdminManager.loadApplications = this.loadApplicationsWithShipping.bind(this);
             
+            // 이벤트 리스너 설정을 AdminAddon 버전으로 교체
+            AdminManager.setupEventListeners = this.setupEnhancedEventListeners.bind(this);
+            
             console.log('🔄 AdminManager 함수들이 확장 버전으로 교체됨');
+        }
+    },
+
+    // AdminManager의 기존 이벤트 리스너 설정 무력화
+    disableAdminManagerEventListeners() {
+        // AdminManager.init()에서 setupEventListeners가 호출되는 것을 방지
+        if (window.AdminManager && this.originalSetupEventListeners) {
+            // 기존 이벤트 리스너가 이미 설정되었다면 제거
+            this.removeExistingEventListeners();
+        }
+    },
+
+    // 기존 이벤트 리스너 제거
+    removeExistingEventListeners() {
+        console.log('🧹 기존 이벤트 리스너 정리 중...');
+        
+        // 검색 입력 이벤트 리스너 제거
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            const newSearchInput = searchInput.cloneNode(true);
+            searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+        }
+
+        // 버튼 이벤트 리스너 제거
+        const buttons = ['budgetSettingsBtn', 'lessonPlanManagementBtn', 'exportBtn'];
+        buttons.forEach(buttonId => {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+            }
+        });
+
+        console.log('✅ 기존 이벤트 리스너 정리 완료');
+    },
+
+    // 향상된 이벤트 리스너 설정 (AdminManager.setupEventListeners 대체)
+    setupEnhancedEventListeners() {
+        console.log('🔧 향상된 이벤트 리스너 설정 시작');
+
+        // 검색 기능 (debounce 적용)
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', this.debounce((e) => {
+                this.handleEnhancedSearch(e.target.value);
+            }, 300));
+        }
+
+        // Excel 내보내기
+        const exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                if (window.AdminManager && typeof window.AdminManager.handleExport === 'function') {
+                    AdminManager.handleExport();
+                }
+            });
+        }
+
+        // 예산 설정 버튼
+        const budgetBtn = document.getElementById('budgetSettingsBtn');
+        if (budgetBtn) {
+            budgetBtn.addEventListener('click', () => {
+                if (window.AdminManager && typeof window.AdminManager.showBudgetSettingsModal === 'function') {
+                    AdminManager.showBudgetSettingsModal();
+                }
+            });
+        }
+
+        // 수업계획 관리 버튼
+        const lessonPlanBtn = document.getElementById('lessonPlanManagementBtn');
+        if (lessonPlanBtn) {
+            lessonPlanBtn.addEventListener('click', () => {
+                if (window.AdminManager && typeof window.AdminManager.showLessonPlanManagementModal === 'function') {
+                    AdminManager.showLessonPlanManagementModal();
+                }
+            });
+        }
+
+        // 키보드 단축키는 AdminManager 것을 그대로 사용
+        if (this.originalSetupEventListeners) {
+            // 키보드 단축키만 따로 설정
+            this.setupKeyboardShortcuts();
+        }
+
+        console.log('✅ 향상된 이벤트 리스너 설정 완료');
+    },
+
+    // 키보드 단축키 설정
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (event) => {
+            // AdminManager에서 처리하던 키보드 단축키들
+            if (window.AdminManager && window.SupabaseAPI && SupabaseAPI.currentUserType === 'admin') {
+                
+                // Ctrl/Cmd + F: 검색 포커스
+                if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+                    event.preventDefault();
+                    const searchInput = document.getElementById('searchInput');
+                    if (searchInput) {
+                        searchInput.focus();
+                    }
+                }
+
+                // F5: 새로고침
+                if (event.key === 'F5') {
+                    event.preventDefault();
+                    this.refreshData();
+                }
+
+                // Ctrl/Cmd + E: Export
+                if ((event.ctrlKey || event.metaKey) && event.key === 'e') {
+                    event.preventDefault();
+                    if (AdminManager.handleExport) {
+                        AdminManager.handleExport();
+                    }
+                }
+
+                // Ctrl/Cmd + B: 예산 설정 모달
+                if ((event.ctrlKey || event.metaKey) && event.key === 'b') {
+                    event.preventDefault();
+                    if (AdminManager.showBudgetSettingsModal) {
+                        AdminManager.showBudgetSettingsModal();
+                    }
+                }
+
+                // Ctrl/Cmd + L: 수업계획 관리 모달
+                if ((event.ctrlKey || event.metaKey) && event.key === 'l') {
+                    event.preventDefault();
+                    if (AdminManager.showLessonPlanManagementModal) {
+                        AdminManager.showLessonPlanManagementModal();
+                    }
+                }
+            }
+        });
+    },
+
+    // 향상된 검색 처리
+    handleEnhancedSearch(searchTerm) {
+        console.log('🔍 향상된 검색:', searchTerm);
+        
+        // AdminManager의 currentSearchTerm 동기화
+        if (window.AdminManager) {
+            AdminManager.currentSearchTerm = searchTerm.trim();
+        }
+        
+        // 향상된 검색으로 데이터 다시 로드
+        this.loadApplicationsWithShipping();
+    },
+
+    // 데이터 새로고침
+    async refreshData() {
+        console.log('🔄 데이터 새로고침 시작');
+        
+        try {
+            // AdminManager의 기본 데이터들 새로고침
+            if (window.AdminManager) {
+                if (typeof AdminManager.loadStatistics === 'function') {
+                    await AdminManager.loadStatistics();
+                }
+                if (typeof AdminManager.loadBudgetOverview === 'function') {
+                    await AdminManager.loadBudgetOverview();
+                }
+                if (typeof AdminManager.loadLessonPlanManagement === 'function') {
+                    await AdminManager.loadLessonPlanManagement();
+                }
+            }
+            
+            // 향상된 신청 내역 다시 로드
+            await this.loadApplicationsWithShipping();
+            
+            console.log('✅ 데이터 새로고침 완료');
+            
+        } catch (error) {
+            console.error('❌ 데이터 새로고침 실패:', error);
         }
     },
 
@@ -48,7 +237,8 @@ const AdminAddon = {
             console.log('📦 배송지 정보 포함하여 신청 내역 로드 시작');
             
             // 기존 방식으로 신청 내역 가져오기
-            const applications = await SupabaseAPI.searchApplications(AdminManager.currentSearchTerm || '');
+            const searchTerm = (window.AdminManager && AdminManager.currentSearchTerm) || '';
+            const applications = await SupabaseAPI.searchApplications(searchTerm);
             
             // 학생별로 그룹화
             const groupedApplications = this.groupApplicationsByStudent(applications);
@@ -743,12 +933,8 @@ const AdminAddon = {
                 alert(message);
                 
                 // 데이터 새로고침
-                await this.loadApplicationsWithShipping();
+                await this.refreshData();
                 
-                // 전체 통계도 새로고침
-                if (window.AdminManager && typeof window.AdminManager.loadStatistics === 'function') {
-                    await AdminManager.loadStatistics();
-                }
             } else {
                 alert('승인 처리 중 오류가 발생했습니다.');
             }
@@ -786,14 +972,14 @@ const AdminAddon = {
             
             // 액션 완료 후 데이터 새로고침
             setTimeout(() => {
-                this.loadApplicationsWithShipping();
+                this.refreshData();
             }, 1000);
         }
     },
 
     // 결과 없음 HTML 생성
     createNoResultsHTML() {
-        const searchTerm = AdminManager.currentSearchTerm || '';
+        const searchTerm = (window.AdminManager && AdminManager.currentSearchTerm) || '';
         const message = searchTerm ? 
             `'${searchTerm}'에 대한 검색 결과가 없습니다.` : 
             '신청 내역이 없습니다.';
@@ -845,6 +1031,19 @@ const AdminAddon = {
 
     getPurchaseMethodClass(purchaseType) {
         return purchaseType === 'offline' ? 'offline' : 'online';
+    },
+
+    // 디바운스 함수
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
     }
 };
 
@@ -853,8 +1052,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // AdminManager가 로드될 때까지 대기
     const initAddonWhenReady = () => {
         if (window.AdminManager && typeof window.AdminManager.renderApplications === 'function') {
-            AdminAddon.init();
-            console.log('✅ AdminAddon이 AdminManager 로드 후 초기화됨');
+            // AdminManager가 완전히 초기화된 후 AdminAddon 초기화
+            setTimeout(() => {
+                AdminAddon.init();
+                console.log('✅ AdminAddon이 AdminManager 로드 후 초기화됨');
+            }, 100); // 100ms 딜레이로 AdminManager 초기화 완료 보장
         } else {
             // 100ms 후 재시도
             setTimeout(initAddonWhenReady, 100);
