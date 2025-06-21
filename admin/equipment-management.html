@@ -197,8 +197,8 @@
         <div class="ui-improvement-notice">
             <i data-lucide="sparkles"></i>
             <div class="notice-content">
-                <div class="notice-title">🎉 관리 UI가 개선되었습니다!</div>
-                <p class="notice-text">이제 학생별로 교구 신청이 그룹화되어 표시되며, 배송지 정보와 일괄 승인 기능이 추가되었습니다.</p>
+                <div class="notice-title">🎉 관리 UI가 모듈화되어 더욱 안정적으로 개선되었습니다!</div>
+                <p class="notice-text">학생별 교구 신청 그룹화, 배송지 정보, 일괄 승인 기능이 새로운 모듈 구조로 통합되었습니다.</p>
             </div>
         </div>
 
@@ -281,7 +281,7 @@
 
             <!-- 교구 신청 목록 (학생별 그룹화) -->
             <div id="adminApplications" class="admin-applications">
-                <!-- AdminAddon에서 동적으로 생성될 학생별 그룹화된 교구 신청 목록 -->
+                <!-- AdminEnhancedUI에서 동적으로 생성될 학생별 그룹화된 교구 신청 목록 -->
             </div>
         </div>
     </div>
@@ -301,13 +301,13 @@
     <script src="../js/admin/admin-utils.js"></script>
     <script src="../js/admin/admin-modals.js"></script>
     
-    <!-- 교구 관리에 필요한 모듈들만 로드 -->
+    <!-- 교구 관리에 필요한 모듈들 로드 -->
     <script src="../js/admin/admin-applications.js"></script>
     <script src="../js/admin/admin-budget.js"></script>
     <script src="../js/admin/admin-lesson-plans.js"></script>
     
-    <!-- 기존 admin-addon.js도 유지 -->
-    <script src="../js/admin-addon.js"></script>
+    <!-- 🎨 향상된 UI 모듈 (기존 admin-addon.js 대체) -->
+    <script src="../js/admin/admin-enhanced-ui.js"></script>
     
     <!-- 교구 관리 페이지 전용 스크립트 -->
     <script>
@@ -369,8 +369,8 @@
                 // 2. AdminManager 초기화 대기
                 await waitForAdminManager();
 
-                // 3. AdminAddon 초기화 대기
-                await waitForAdminAddon();
+                // 3. AdminEnhancedUI 초기화 대기
+                await waitForAdminEnhancedUI();
 
                 // 4. 데이터 로드
                 await loadAllData();
@@ -434,27 +434,27 @@
             });
         }
 
-        // AdminAddon 초기화 대기 (새로 추가)
-        function waitForAdminAddon() {
+        // AdminEnhancedUI 초기화 대기 (새로 추가)
+        function waitForAdminEnhancedUI() {
             return new Promise((resolve, reject) => {
                 let attempts = 0;
                 const maxAttempts = 30; // 3초 대기
 
-                const checkAdminAddon = () => {
+                const checkAdminEnhancedUI = () => {
                     attempts++;
                     
-                    if (window.AdminAddon && typeof window.AdminAddon.init === 'function') {
-                        console.log('✅ AdminAddon 준비됨');
+                    if (window.AdminEnhancedUI && typeof window.AdminEnhancedUI.init === 'function') {
+                        console.log('✅ AdminEnhancedUI 준비됨');
                         resolve();
                     } else if (attempts >= maxAttempts) {
-                        console.warn('⚠️ AdminAddon을 찾을 수 없음, 기본 UI 사용');
-                        resolve(); // AdminAddon 없어도 계속 진행
+                        console.warn('⚠️ AdminEnhancedUI를 찾을 수 없음, 기본 UI 사용');
+                        resolve(); // AdminEnhancedUI 없어도 계속 진행
                     } else {
-                        setTimeout(checkAdminAddon, 100);
+                        setTimeout(checkAdminEnhancedUI, 100);
                     }
                 };
 
-                checkAdminAddon();
+                checkAdminEnhancedUI();
             });
         }
 
@@ -566,7 +566,7 @@
             }
         }
 
-        // 교구 신청 목록 직접 렌더링 (AdminAddon이 없을 때 폴백)
+        // 교구 신청 목록 직접 렌더링 (AdminEnhancedUI가 없을 때 폴백)
         function renderApplicationsDirectly(applications) {
             const container = document.getElementById('adminApplications');
             if (!container) return;
@@ -589,7 +589,7 @@
             }
         }
 
-        // 간단한 신청 카드 생성 (AdminAddon이 없을 때 폴백)
+        // 간단한 신청 카드 생성 (AdminEnhancedUI가 없을 때 폴백)
         function createSimpleApplicationCard(application) {
             const card = document.createElement('div');
             card.className = 'admin-application-card';
@@ -703,10 +703,12 @@
             const searchTerm = event.target.value.trim();
             console.log('🔍 검색어:', searchTerm);
             
-            if (window.AdminManager && typeof window.AdminManager.handleSearch === 'function') {
+            if (window.AdminEnhancedUI && typeof window.AdminEnhancedUI.handleEnhancedSearch === 'function') {
+                AdminEnhancedUI.handleEnhancedSearch(searchTerm);
+            } else if (window.AdminManager && typeof window.AdminManager.handleSearch === 'function') {
                 AdminManager.handleSearch(searchTerm);
             } else {
-                console.warn('⚠️ AdminManager.handleSearch 함수를 찾을 수 없음');
+                console.warn('⚠️ 검색 기능을 찾을 수 없음');
             }
         }
 
@@ -818,7 +820,7 @@
                 console.log('isDataLoaded:', isDataLoaded);
                 console.log('retryCount:', retryCount);
                 console.log('AdminManager 사용가능:', !!window.AdminManager);
-                console.log('AdminAddon 사용가능:', !!window.AdminAddon);
+                console.log('AdminEnhancedUI 사용가능:', !!window.AdminEnhancedUI);
                 console.log('SupabaseAPI 사용가능:', !!window.SupabaseAPI);
             }
         });
