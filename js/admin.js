@@ -716,7 +716,7 @@ const AdminManager = {
         }
     },
 
-    // 수업계획 모달 버튼 설정 (수정됨 - status 컬럼만 사용)
+    // 수업계획 모달 버튼 설정 (새로 추가)
     setupLessonPlanModalButtons(lessonPlan, studentId) {
         const approveBtn = Utils.$('#approveLessonPlanBtn');
         const rejectBtn = Utils.$('#rejectLessonPlanBtn');
@@ -725,8 +725,9 @@ const AdminManager = {
         if (approveBtn) approveBtn.dataset.studentId = studentId;
         if (rejectBtn) rejectBtn.dataset.studentId = studentId;
 
-        // status가 'submitted'인 경우에만 승인/반려 버튼 표시
-        if (lessonPlan.status === 'submitted') {
+        // 승인 상태에 따라 버튼 표시/숨김
+        if (lessonPlan.status === 'submitted' && lessonPlan.approval_status === 'pending') {
+            // 대기 중인 경우 승인/반려 버튼 표시
             if (approveBtn) approveBtn.style.display = 'inline-flex';
             if (rejectBtn) rejectBtn.style.display = 'inline-flex';
         } else {
@@ -1105,8 +1106,9 @@ const AdminManager = {
                         endDate: '',
                         overallGoals: '목표가 설정되지 않았습니다.'
                     },
-                    // 상태 데이터 안전성 확보 (status 컬럼만 사용)
-                    status: plan.status || 'draft'
+                    // 상태 데이터 안전성 확보
+                    status: plan.status || 'draft',
+                    approval_status: plan.approval_status || 'pending'
                 };
             });
             
@@ -1130,7 +1132,7 @@ const AdminManager = {
         }
     },
 
-    // 대체 수업계획 로드 방식 (관계 문제 시) - 수정됨
+    // 대체 수업계획 로드 방식 (관계 문제 시)
     async fallbackLoadLessonPlans() {
         try {
             console.log('🔄 대체 방식으로 수업계획 로드 중...');
@@ -1170,7 +1172,7 @@ const AdminManager = {
                 }
             }
             
-            // 데이터 병합 (approval_status 제거)
+            // 데이터 병합
             return plans.map(plan => ({
                 ...plan,
                 user_profiles: userProfiles[plan.user_id] || {
@@ -1178,8 +1180,8 @@ const AdminManager = {
                     name: '사용자 정보 없음',
                     field: '미설정',
                     sejong_institute: '미설정'
-                }
-                // approval_status 제거 - status 컬럼만 사용
+                },
+                approval_status: this.calculateApprovalStatus(plan)
             }));
             
         } catch (error) {
@@ -1188,7 +1190,22 @@ const AdminManager = {
         }
     },
 
-    // 수업계획 통계 계산 (수정됨 - status 기반)
+    // 승인 상태 계산 (안전한 방식)
+    calculateApprovalStatus(plan) {
+        if (!plan) return 'pending';
+        
+        if (plan.approved_at && plan.approved_by) {
+            return 'approved';
+        } else if (plan.rejection_reason && plan.rejection_reason.trim() !== '') {
+            return 'rejected';
+        } else if (plan.status === 'submitted') {
+            return 'pending';
+        } else {
+            return 'draft';
+        }
+    },
+
+    // 수업계획 통계 계산
     calculateLessonPlanStats(plans) {
         const stats = {
             pending: 0,
@@ -1197,15 +1214,10 @@ const AdminManager = {
         };
         
         plans.forEach(plan => {
-            const status = plan.status || 'draft';
-            if (status === 'submitted') {
-                stats.pending++;
-            } else if (status === 'approved') {
-                stats.approved++;
-            } else if (status === 'rejected') {
-                stats.rejected++;
+            const status = plan.approval_status || 'pending';
+            if (stats.hasOwnProperty(status)) {
+                stats[status]++;
             }
-            // draft는 통계에 포함하지 않음
         });
         
         return stats;
@@ -1222,7 +1234,7 @@ const AdminManager = {
         if (rejectedElement) rejectedElement.textContent = `반려됨: ${stats.rejected}`;
     },
 
-    // 수업계획 카드 생성 (수정됨 - status 기반으로 수정)
+    // 수업계획 카드 생성 (수정됨 - 승인 상태 표시 버그 수정)
     createLessonPlanCard(plan) {
         const card = Utils.createElement('div', 'lesson-plan-card');
         
@@ -1234,16 +1246,12 @@ const AdminManager = {
         let approvalStatusText = '대기 중';
         let approvalStatusClass = 'pending';
         
-        // status 컬럼 기반으로 승인 상태 표시
-        if (plan.status === 'approved') {
+        if (plan.approval_status === 'approved') {
             approvalStatusText = '승인됨';
             approvalStatusClass = 'approved';
-        } else if (plan.status === 'rejected') {
+        } else if (plan.approval_status === 'rejected') {
             approvalStatusText = '반려됨';
             approvalStatusClass = 'rejected';
-        } else if (plan.status === 'submitted') {
-            approvalStatusText = '대기 중';
-            approvalStatusClass = 'pending';
         }
         
         // 수업 데이터에서 총 수업 횟수 계산 (안전한 방식)
@@ -1300,7 +1308,7 @@ const AdminManager = {
         return card;
     },
 
-    // 수업계획 액션 버튼 생성 (수정됨 - status 기반으로 수정)
+    // 수업계획 액션 버튼 생성 (수정됨 - 승인 상태 표시 버그 수정)
     createLessonPlanActionButtons(plan) {
         const baseButtons = `
             <button class="btn small secondary view-lesson-plan-btn" 
@@ -1311,42 +1319,41 @@ const AdminManager = {
             </button>
         `;
 
-        // status 기반으로 액션 버튼 결정
-        switch(plan.status) {
-            case 'draft':
-                return baseButtons + '<span class="plan-action-note">수업계획이 제출되지 않았습니다.</span>';
-            
-            case 'approved':
-                return baseButtons + `
-                    <span class="plan-approved-info">
-                        승인됨 (${plan.updated_at ? new Date(plan.updated_at).toLocaleDateString('ko-KR') : '-'})
-                    </span>
-                `;
-            
-            case 'rejected':
-                return baseButtons + `
-                    <div class="plan-rejected-actions">
-                        <span class="plan-rejected-info">
-                            반려됨 (${plan.updated_at ? new Date(plan.updated_at).toLocaleDateString('ko-KR') : '-'})
-                        </span>
-                        <button class="btn small approve" data-action="approve" data-student-id="${plan.user_id}">
-                            재승인
-                        </button>
-                    </div>
-                `;
-            
-            case 'submitted':
-            default:
-                // 제출됨 - 승인/반려 대기 중
-                return baseButtons + `
-                    <button class="btn small approve" data-action="approve" data-student-id="${plan.user_id}">
-                        <i data-lucide="check"></i> 승인
-                    </button>
-                    <button class="btn small reject" data-action="reject" data-student-id="${plan.user_id}">
-                        <i data-lucide="x"></i> 반려
-                    </button>
-                `;
+        // 제출되지 않은 경우 (draft 상태)
+        if (plan.status === 'draft') {
+            return baseButtons + '<span class="plan-action-note">수업계획이 제출되지 않았습니다.</span>';
         }
+        
+        if (plan.approval_status === 'approved') {
+            return baseButtons + `
+                <span class="plan-approved-info">
+                    승인일: ${plan.approved_at ? new Date(plan.approved_at).toLocaleDateString('ko-KR') : '-'}
+                </span>
+            `;
+        }
+        
+        if (plan.approval_status === 'rejected') {
+            return baseButtons + `
+                <div class="plan-rejected-actions">
+                    <span class="plan-rejected-info">
+                        반려일: ${plan.updated_at ? new Date(plan.updated_at).toLocaleDateString('ko-KR') : '-'}
+                    </span>
+                    <button class="btn small approve" data-action="approve" data-student-id="${plan.user_id}">
+                        재승인
+                    </button>
+                </div>
+            `;
+        }
+        
+        // 대기 중인 경우 (submitted 상태이면서 아직 승인/반려 안됨)
+        return baseButtons + `
+            <button class="btn small approve" data-action="approve" data-student-id="${plan.user_id}">
+                <i data-lucide="check"></i> 승인
+            </button>
+            <button class="btn small reject" data-action="reject" data-student-id="${plan.user_id}">
+                <i data-lucide="x"></i> 반려
+            </button>
+        `;
     },
 
     // 수업계획 액션 이벤트 리스너 설정 (수정됨 - 상세보기 버튼 포함)
@@ -2506,7 +2513,12 @@ AdminManager.safeCall = function(functionName, ...args) {
             return null;
         }
     } catch (error) {
-        console.error(`❌ AdminManager.${functionName} 호출 중 오류:`, error);
+        console.error(`❌ AdminManager.${functionName} 실행 오류:`, error);
         return null;
     }
 };
+
+// 전역 접근을 위해 window 객체에 추가
+window.AdminManager = AdminManager;
+
+console.log('🚀 AdminManager v2.5 loaded - UUID 오류 수정 완료');
