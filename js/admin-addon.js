@@ -379,19 +379,20 @@ const AdminAddon = {
             
             const client = await SupabaseAPI.ensureClient();
             
-            // user_profiles에서 배송지 정보 조회
-            const { data: profiles, error } = await client
-                .from('user_profiles')
+            // shipping_addresses 테이블에서 올바른 컬럼들을 조회
+            const { data: shippingData, error } = await client
+                .from('shipping_addresses')
                 .select(`
-                    id,
-                    shipping_address,
-                    shipping_zipcode,
-                    shipping_recipient,
-                    shipping_phone,
+                    user_id,
+                    recipient_name,        
+                    phone,                 
+                    address,               
+                    postal_code,           
+                    delivery_note,
                     created_at,
                     updated_at
                 `)
-                .in('id', studentIds);
+                .in('user_id', studentIds);
             
             if (error) {
                 throw new Error(`배송지 정보 조회 실패: ${error.message}`);
@@ -400,18 +401,19 @@ const AdminAddon = {
             // Map으로 변환하여 캐시
             const shippingMap = new Map();
             
-            if (profiles && profiles.length > 0) {
-                profiles.forEach(profile => {
+            if (shippingData && shippingData.length > 0) {
+                shippingData.forEach(shipping => {
                     const shippingInfo = {
-                        address: profile.shipping_address || '',
-                        zipcode: profile.shipping_zipcode || '',
-                        recipient: profile.shipping_recipient || '',
-                        phone: profile.shipping_phone || '',
-                        lastUpdated: profile.updated_at || profile.created_at
+                        address: shipping.address || '',
+                        zipcode: shipping.postal_code || '',
+                        recipient: shipping.recipient_name || '',
+                        phone: shipping.phone || '',
+                        deliveryNote: shipping.delivery_note || '',
+                        lastUpdated: shipping.updated_at || shipping.created_at
                     };
                     
-                    shippingMap.set(profile.id, shippingInfo);
-                    this.shippingInfoCache.set(profile.id, shippingInfo);
+                    shippingMap.set(shipping.user_id, shippingInfo);
+                    this.shippingInfoCache.set(shipping.user_id, shippingInfo);
                 });
             }
             
