@@ -27,7 +27,7 @@ const AdminManager = {
             
             // 키보드 단축키 설정
             this.setupKeyboardShortcuts();
-            
+
             this.initialized = true;
             console.log('✅ AdminManager 초기화 완료');
             
@@ -365,6 +365,38 @@ const AdminManager = {
         return `${year}${month}${day}`;
     },
 
+    // 🆕 호환성 함수들 (equipment-management.html과의 호환성을 위해)
+    
+    // 예산 설정 모달 표시 (호환성 함수)
+    showBudgetSettingsModal() {
+        console.log('💰 예산 설정 모달 호출 (호환성 함수)');
+        return this.safeCall('Budget', 'showBudgetSettingsModal');
+    },
+
+    // 수업계획 관리 모달 표시 (호환성 함수)
+    showLessonPlanManagementModal() {
+        console.log('📚 수업계획 관리 모달 호출 (호환성 함수)');
+        return this.safeCall('LessonPlans', 'showLessonPlanManagementModal');
+    },
+
+    // 수업계획 상세보기 모달 표시 (호환성 함수)
+    showViewLessonPlanModal(studentId, lessonPlan) {
+        console.log('👁️ 수업계획 상세보기 모달 호출 (호환성 함수)');
+        return this.safeCall('LessonPlans', 'showViewLessonPlanModal', studentId, lessonPlan);
+    },
+
+    // 수업계획 승인 (호환성 함수)
+    approveLessonPlan(studentId, buttonElement) {
+        console.log('✅ 수업계획 승인 호출 (호환성 함수)');
+        return this.safeCall('LessonPlans', 'approveLessonPlan', studentId, buttonElement);
+    },
+
+    // 수업계획 반려 (호환성 함수)
+    rejectLessonPlan(studentId, buttonElement) {
+        console.log('❌ 수업계획 반려 호출 (호환성 함수)');
+        return this.safeCall('LessonPlans', 'rejectLessonPlan', studentId, buttonElement);
+    },
+
     // 디버그 정보 출력
     debug() {
         console.group('🔍 AdminManager 디버그 정보');
@@ -398,7 +430,7 @@ AdminManager.loadAdminApplications = function() {
 // 전역 접근을 위해 window 객체에 추가
 window.AdminManager = AdminManager;
 
-console.log('🚀 AdminManager Core v3.0 loaded');
+console.log('🚀 AdminManager Core v3.1 loaded (with compatibility functions)');
 
 // DOM이 준비되면 자동 초기화
 if (document.readyState === 'loading') {
