@@ -13,7 +13,7 @@
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <!-- Supabase JavaScript Client - Fixed CDN URL -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
     <style>
         .institute-management-container {
@@ -168,6 +168,15 @@
     <!-- JavaScript Files -->
     <script src="../js/config.js?v=1.4.0"></script>
     <script src="../js/supabase-client.js?v=1.4.0"></script>
+    
+    <!-- 🆕 모듈화된 Admin 파일들 (기본 모듈들만) -->
+    <!-- 핵심 파일들 먼저 로드 -->
+    <script src="../js/admin/admin-core.js"></script>
+    <script src="../js/admin/admin-utils.js"></script>
+    <script src="../js/admin/admin-modals.js"></script>
+    
+    <!-- 학당 관리에 필요한 모듈들 (추후 확장 시) -->
+    <script src="../js/admin/admin-features.js"></script>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
