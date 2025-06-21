@@ -109,12 +109,12 @@ AdminManager.Modals = {
         }
     },
 
-    // 세부 수업계획 보기 모달 생성
+    // 세부 수업계획 보기 모달 생성 (크기 확대 버전)
     createViewLessonPlanModal() {
         if (!document.getElementById('viewLessonPlanModal')) {
             const modalHTML = `
                 <div id="viewLessonPlanModal" class="modal">
-                    <div class="modal-content large">
+                    <div class="modal-content fullscreen-large">
                         <div class="modal-header">
                             <h3>수업계획 상세보기</h3>
                             <button class="close-btn" onclick="AdminManager.LessonPlans.hideViewLessonPlanModal()">&times;</button>
@@ -194,7 +194,7 @@ AdminManager.Modals = {
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHTML);
-            console.log('✅ 세부 수업계획 보기 모달 생성 완료');
+            console.log('✅ 세부 수업계획 보기 모달 생성 완료 (확대 버전)');
         }
     },
 
@@ -516,3 +516,87 @@ AdminManager.Modals = {
 window.AdminModals = AdminManager.Modals;
 
 console.log('🪟 AdminManager.Modals 모듈 로드 완료');
+
+// 🆕 fullscreen-large 모달 스타일 추가
+if (!document.querySelector('#fullscreen-modal-styles')) {
+    const style = document.createElement('style');
+    style.id = 'fullscreen-modal-styles';
+    style.textContent = `
+        /* 90%×90% 크기의 수업계획 상세보기 모달 */
+        .modal-content.fullscreen-large {
+            width: 90vw !important;
+            height: 90vh !important;
+            max-width: 90vw !important;
+            max-height: 90vh !important;
+            margin: 5vh auto !important;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .modal-content.fullscreen-large .modal-header {
+            flex-shrink: 0;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1.5rem 2rem;
+        }
+        
+        .modal-content.fullscreen-large .lesson-plan-detail {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem 2rem;
+        }
+        
+        .modal-content.fullscreen-large .modal-actions {
+            flex-shrink: 0;
+            border-top: 1px solid #e2e8f0;
+            padding: 1.5rem 2rem;
+            background: #f8fafc;
+        }
+        
+        /* 수업 일정표 컨테이너 크기 조정 */
+        .modal-content.fullscreen-large .lesson-schedule-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            background: white;
+        }
+        
+        .modal-content.fullscreen-large .schedule-table {
+            width: 100%;
+            margin: 0;
+        }
+        
+        .modal-content.fullscreen-large .schedule-table th,
+        .modal-content.fullscreen-large .schedule-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .modal-content.fullscreen-large .schedule-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #374151;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .modal-content.fullscreen-large {
+                width: 95vw !important;
+                height: 95vh !important;
+                margin: 2.5vh auto !important;
+            }
+            
+            .modal-content.fullscreen-large .modal-header,
+            .modal-content.fullscreen-large .lesson-plan-detail,
+            .modal-content.fullscreen-large .modal-actions {
+                padding: 1rem;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    console.log('🎨 fullscreen-large 모달 스타일 추가 완료');
+}
