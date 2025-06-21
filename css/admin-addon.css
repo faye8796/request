@@ -1,0 +1,731 @@
+/* 학생별 그룹화 UI 스타일 - admin-addon.js 전용 */
+
+/* 학생 그룹 카드 */
+.student-group-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 24px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+}
+
+.student-group-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+/* 학생 헤더 */
+.student-group-header {
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.student-main-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.student-basic-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.student-name {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.student-name i {
+    width: 20px;
+    height: 20px;
+}
+
+.student-institute {
+    margin: 0;
+    font-size: 1rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.student-submission-date {
+    margin: 0;
+    font-size: 0.875rem;
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.student-contact-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.contact-item {
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.9;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+/* 학생 통계 */
+.student-statistics {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-end;
+    min-width: 200px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.stat-item.total {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.stat-item.amount .stat-value {
+    font-size: 1.1rem;
+    color: #ffd700;
+}
+
+.stat-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.stat-badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.stat-badge.pending {
+    background: rgba(251, 191, 36, 0.2);
+    color: #f59e0b;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.stat-badge.approved {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.stat-badge.rejected {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.stat-badge.purchased {
+    background: rgba(168, 85, 247, 0.2);
+    color: #a855f7;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+/* 배송지 정보 섹션 */
+.shipping-info-section {
+    padding: 20px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+
+.shipping-info-section.missing {
+    background: #fef7f7;
+    border-bottom-color: #fed7d7;
+}
+
+.shipping-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.shipping-info-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.shipping-status {
+    font-size: 0.875rem;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.shipping-status.registered {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.shipping-status.missing {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.shipping-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.shipping-address .address-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+}
+
+.address-zipcode {
+    background: #e5e7eb;
+    color: #374151;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.address-main {
+    color: #374151;
+    font-weight: 500;
+}
+
+.recipient-info {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.recipient-name,
+.recipient-phone {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.shipping-updated {
+    margin-top: 8px;
+}
+
+.shipping-updated small {
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.shipping-missing-notice {
+    background: white;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.shipping-missing-notice p {
+    margin: 0 0 8px 0;
+    color: #dc2626;
+    font-weight: 500;
+}
+
+.shipping-missing-notice small {
+    color: #7f1d1d;
+    display: block;
+}
+
+/* 신청 교구 목록 섹션 */
+.student-applications-section {
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.applications-header {
+    padding: 16px 24px;
+    background: #f9fafb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.applications-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toggle-applications-btn {
+    background: #e5e7eb;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.toggle-applications-btn:hover {
+    background: #d1d5db;
+}
+
+.applications-list {
+    transition: all 0.3s ease;
+}
+
+.applications-list.expanded {
+    max-height: none;
+    opacity: 1;
+}
+
+.applications-list.collapsed {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
+/* 개별 신청 아이템 */
+.application-item {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background-color 0.2s ease;
+}
+
+.application-item:hover {
+    background: #f9fafb;
+}
+
+.application-item:last-child {
+    border-bottom: none;
+}
+
+.item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.item-main-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.item-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.item-name {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.3;
+}
+
+.item-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.purchase-method-badge,
+.type-badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.purchase-method-badge.online {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.purchase-method-badge.offline {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.type-badge.single {
+    background: #e0e7ff;
+    color: #5b21b6;
+}
+
+.type-badge.bundle {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.item-purpose {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.item-details {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.item-price {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #059669;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.item-link {
+    color: #3b82f6;
+    text-decoration: none;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+}
+
+.item-link:hover {
+    text-decoration: underline;
+}
+
+/* 영수증 정보 */
+.receipt-info {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.receipt-info.submitted {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
+
+.receipt-info.pending {
+    background: #fffbeb;
+    border: 1px solid #fed7aa;
+}
+
+.receipt-status,
+.receipt-pending {
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.receipt-status {
+    color: #059669;
+}
+
+.receipt-pending {
+    color: #d97706;
+}
+
+/* 아이템 액션 */
+.item-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+    min-width: 140px;
+}
+
+.item-actions .btn.small {
+    font-size: 0.875rem;
+    padding: 6px 12px;
+    min-width: 80px;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    text-align: center;
+}
+
+.status-badge.pending {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.status-badge.approved {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.status-badge.rejected {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.status-badge.purchased {
+    background: #ede9fe;
+    color: #7c3aed;
+}
+
+.offline-notice {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-align: center;
+    padding: 8px;
+    background: #f9fafb;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 반려 사유 */
+.item-rejection-reason {
+    margin-top: 12px;
+    padding: 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+}
+
+.reason-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #dc2626;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.reason-text {
+    font-size: 0.875rem;
+    color: #7f1d1d;
+    line-height: 1.4;
+}
+
+/* 학생 액션 섹션 */
+.student-actions-section {
+    padding: 16px 24px;
+    background: #f8fafc;
+}
+
+.bulk-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.bulk-approve-btn {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.bulk-approve-btn:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.bulk-approve-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.action-note {
+    font-size: 0.875rem;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+}
+
+.action-note.completed {
+    color: #059669;
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+/* 애니메이션 */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .student-group-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    .student-statistics {
+        align-items: flex-start;
+        min-width: auto;
+    }
+
+    .stat-badges {
+        justify-content: flex-start;
+    }
+
+    .item-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .item-actions {
+        align-items: stretch;
+        min-width: auto;
+    }
+
+    .bulk-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .applications-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+
+    .toggle-applications-btn {
+        align-self: flex-end;
+    }
+}
+
+@media (max-width: 480px) {
+    .student-group-card {
+        margin-bottom: 16px;
+    }
+
+    .shipping-info-section,
+    .applications-header,
+    .application-item,
+    .student-actions-section {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .student-group-header {
+        padding: 16px;
+    }
+
+    .item-title-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .item-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .student-contact-info {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
