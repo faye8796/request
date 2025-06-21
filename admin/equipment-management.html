@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/admin.css">
     <link rel="stylesheet" href="../css/lesson-plan.css">
+    <link rel="stylesheet" href="../css/admin-addon.css">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -126,6 +127,40 @@
                 justify-content: center;
             }
         }
+
+        /* 개선된 UI 노티스 */
+        .ui-improvement-notice {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .ui-improvement-notice i {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .ui-improvement-notice .notice-content {
+            flex: 1;
+        }
+
+        .ui-improvement-notice .notice-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .ui-improvement-notice .notice-text {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin: 0;
+        }
     </style>
 </head>
 <body>
@@ -155,6 +190,15 @@
                         Excel 내보내기
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- UI 개선 알림 -->
+        <div class="ui-improvement-notice">
+            <i data-lucide="sparkles"></i>
+            <div class="notice-content">
+                <div class="notice-title">🎉 관리 UI가 개선되었습니다!</div>
+                <p class="notice-text">이제 학생별로 교구 신청이 그룹화되어 표시되며, 배송지 정보와 일괄 승인 기능이 추가되었습니다.</p>
             </div>
         </div>
 
@@ -235,14 +279,14 @@
                 </div>
             </div>
 
-            <!-- 교구 신청 목록 -->
+            <!-- 교구 신청 목록 (학생별 그룹화) -->
             <div id="adminApplications" class="admin-applications">
-                <!-- 동적으로 생성될 관리자용 교구 신청 목록 -->
+                <!-- AdminAddon에서 동적으로 생성될 학생별 그룹화된 교구 신청 목록 -->
             </div>
         </div>
     </div>
 
-    <!-- 모달들은 admin.js에서 동적으로 생성됨 -->
+    <!-- 모달들은 admin.js와 admin-addon.js에서 동적으로 생성됨 -->
 
     <!-- JavaScript Files -->
     <script src="../js/config.js"></script>
@@ -251,6 +295,7 @@
     <script src="../js/auth.js"></script>
     <script src="../js/lesson-plan.js"></script>
     <script src="../js/admin.js"></script>
+    <script src="../js/admin-addon.js"></script>
     
     <!-- 교구 관리 페이지 전용 스크립트 -->
     <script>
@@ -312,10 +357,13 @@
                 // 2. AdminManager 초기화 대기
                 await waitForAdminManager();
 
-                // 3. 데이터 로드
+                // 3. AdminAddon 초기화 대기
+                await waitForAdminAddon();
+
+                // 4. 데이터 로드
                 await loadAllData();
 
-                // 4. 성공시 메인 콘텐츠 표시
+                // 5. 성공시 메인 콘텐츠 표시
                 showMainContent();
                 isDataLoaded = true;
                 
@@ -371,6 +419,30 @@
                 };
 
                 checkAdminManager();
+            });
+        }
+
+        // AdminAddon 초기화 대기 (새로 추가)
+        function waitForAdminAddon() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 30; // 3초 대기
+
+                const checkAdminAddon = () => {
+                    attempts++;
+                    
+                    if (window.AdminAddon && typeof window.AdminAddon.init === 'function') {
+                        console.log('✅ AdminAddon 준비됨');
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        console.warn('⚠️ AdminAddon을 찾을 수 없음, 기본 UI 사용');
+                        resolve(); // AdminAddon 없어도 계속 진행
+                    } else {
+                        setTimeout(checkAdminAddon, 100);
+                    }
+                };
+
+                checkAdminAddon();
             });
         }
 
@@ -482,7 +554,7 @@
             }
         }
 
-        // 교구 신청 목록 직접 렌더링
+        // 교구 신청 목록 직접 렌더링 (AdminAddon이 없을 때 폴백)
         function renderApplicationsDirectly(applications) {
             const container = document.getElementById('adminApplications');
             if (!container) return;
@@ -505,7 +577,7 @@
             }
         }
 
-        // 간단한 신청 카드 생성
+        // 간단한 신청 카드 생성 (AdminAddon이 없을 때 폴백)
         function createSimpleApplicationCard(application) {
             const card = document.createElement('div');
             card.className = 'admin-application-card';
@@ -734,6 +806,7 @@
                 console.log('isDataLoaded:', isDataLoaded);
                 console.log('retryCount:', retryCount);
                 console.log('AdminManager 사용가능:', !!window.AdminManager);
+                console.log('AdminAddon 사용가능:', !!window.AdminAddon);
                 console.log('SupabaseAPI 사용가능:', !!window.SupabaseAPI);
             }
         });
