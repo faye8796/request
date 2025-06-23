@@ -7,22 +7,13 @@ AdminManager.Budget = {
         this.loadBudgetOverview();
     },
 
-    // 이벤트 리스너 설정
+    // 🛠️ 이벤트 리스너 설정 (모달 관련 제거)
     setupEventListeners() {
-        // 예산 설정 버튼
+        // 예산 설정 버튼 (모달 호출만)
         Utils.on('#budgetSettingsBtn', 'click', () => this.showBudgetSettingsModal());
 
-        // 예산 설정 모달 이벤트
-        Utils.on('#budgetSettingsCancelBtn', 'click', () => this.hideBudgetSettingsModal());
-        Utils.on('#budgetSettingsModal', 'click', (e) => {
-            if (e.target.id === 'budgetSettingsModal') {
-                this.hideBudgetSettingsModal();
-            }
-        });
-        Utils.on('#budgetSettingsForm', 'submit', (e) => {
-            e.preventDefault();
-            this.handleBudgetSettingsSubmit();
-        });
+        // 🛠️ 모달 내부 이벤트는 모달 생성 시점에 설정됨 (admin-modals.js에서 처리)
+        // 기존의 모달 이벤트 리스너 설정 코드 제거
     },
 
     // 예산 현황 로드
@@ -87,9 +78,17 @@ AdminManager.Budget = {
         }
     },
 
-    // 예산 설정 저장
+    // 🛠️ 예산 설정 저장 (폼 제출 핸들러)
     async handleBudgetSettingsSubmit() {
+        console.log('💰 예산 설정 저장 시작');
+        
         const form = Utils.$('#budgetSettingsForm');
+        if (!form) {
+            console.error('❌ 예산 설정 폼을 찾을 수 없습니다');
+            Utils.showToast('폼을 찾을 수 없습니다.', 'error');
+            return;
+        }
+
         const inputs = form.querySelectorAll('.amount-input');
         const updates = {};
         
@@ -399,4 +398,4 @@ AdminManager.Budget = {
 // 전역 접근을 위한 별명
 window.AdminBudget = AdminManager.Budget;
 
-console.log('💰 AdminManager.Budget 모듈 로드 완료');
+console.log('💰 AdminManager.Budget 모듈 로드 완료 (이벤트 리스너 문제 수정)');
