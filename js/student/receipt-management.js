@@ -1,12 +1,13 @@
-// 영수증 관리 모듈 v3.2.1 - UX 개선 및 버그 수정
+// 영수증 관리 모듈 v3.2.2 - 파일 선택 이벤트 핸들러 추가
 // 📄 책임: 영수증 업로드, 제출, 파일 관리, 모달 처리
 // 🔗 의존성: StudentManager, SupabaseAPI
 // 🎯 목표: student-addon.js 완전 대체 + 사용자 경험 개선
+// 🔧 v3.2.2: 파일 선택 이벤트 핸들러 누락 문제 해결
 
 (function() {
     'use strict';
     
-    console.log('📄 ReceiptManagement v3.2.1 로드 시작 - UX 개선 및 버그 수정');
+    console.log('📄 ReceiptManagement v3.2.2 로드 시작 - 파일 선택 이벤트 핸들러 추가');
 
     // StudentManager가 로드될 때까지 대기
     function waitForStudentManager() {
@@ -27,7 +28,7 @@
     // 영수증 관리 모듈 정의
     const ReceiptManagementModule = {
         name: 'ReceiptManagement',
-        version: '3.2.1',
+        version: '3.2.2',
         studentManager: null,
         currentReceiptItem: null,
         isDragActive: false,
@@ -35,10 +36,10 @@
         // === 초기화 ===
         init: function(studentManager) {
             try {
-                console.log('📄 ReceiptManagement 모듈 초기화 시작 v3.2.1');
+                console.log('📄 ReceiptManagement 모듈 초기화 시작 v3.2.2');
                 this.studentManager = studentManager;
                 this.setupDragAndDrop();
-                console.log('✅ ReceiptManagement 모듈 초기화 완료 v3.2.1');
+                console.log('✅ ReceiptManagement 모듈 초기화 완료 v3.2.2');
                 return true;
             } catch (error) {
                 console.error('❌ ReceiptManagement 모듈 초기화 실패:', error);
@@ -51,7 +52,7 @@
         // 영수증 모달 표시
         showReceiptModal: function(requestId) {
             try {
-                console.log('📄 영수증 모달 표시 (v3.2.1):', requestId);
+                console.log('📄 영수증 모달 표시 (v3.2.2):', requestId);
                 
                 if (!requestId) {
                     console.error('요청 ID가 필요합니다');
@@ -130,7 +131,7 @@
 
         // === 📄 영수증 제출 처리 ===
 
-        // 영수증 제출 처리 - v3.2.1 개선
+        // 영수증 제출 처리 - v3.2.2 개선
         handleReceiptSubmit: function(event) {
             try {
                 // 🚨 중요: Form 기본 제출 동작 방지
@@ -138,7 +139,7 @@
                     event.preventDefault();
                 }
                 
-                console.log('📄 영수증 제출 처리 시작 (v3.2.1)');
+                console.log('📄 영수증 제출 처리 시작 (v3.2.2)');
                 
                 if (!this.currentReceiptItem) {
                     alert('영수증을 등록할 신청을 찾을 수 없습니다.');
@@ -170,7 +171,7 @@
                     return false;
                 }
 
-                // 폼 데이터 수집 - v3.2.1 필드명 수정
+                // 폼 데이터 수집 - v3.2.2 필드명 수정
                 const formData = new FormData(form);
                 const receiptData = {
                     purchaseDate: formData.get('purchaseDate') || null, // datetime-local → date로 변경
@@ -178,7 +179,7 @@
                     note: formData.get('receiptNote') || null
                 };
 
-                console.log('📄 영수증 데이터 (v3.2.1):', {
+                console.log('📄 영수증 데이터 (v3.2.2):', {
                     file: {
                         name: file.name,
                         size: file.size,
@@ -239,13 +240,13 @@
                     }
                     
                     console.log('✅ 3단계 완료: 신청 상태 변경 성공');
-                    console.log('🎉 영수증 제출 완료 - 모든 단계 성공 (v3.2.1)');
+                    console.log('🎉 영수증 제출 완료 - 모든 단계 성공 (v3.2.2)');
                     
                     alert('영수증이 성공적으로 등록되었습니다!\n신청 상태가 "구매완료"로 변경되었습니다.');
                     
                     self.hideReceiptModal();
                     
-                    // 🆕 v3.2.1: 대시보드 즉시 새로고침 및 강제 캐시 무효화
+                    // 🆕 v3.2.2: 대시보드 즉시 새로고침 및 강제 캐시 무효화
                     setTimeout(() => {
                         self.forceRefreshApplications();
                     }, 500);
@@ -283,10 +284,10 @@
             }
         },
 
-        // 🆕 v3.2.1: 강제 대시보드 새로고침
+        // 🆕 v3.2.2: 강제 대시보드 새로고침
         forceRefreshApplications: function() {
             try {
-                console.log('🔄 강제 대시보드 새로고침 시작 (v3.2.1)');
+                console.log('🔄 강제 대시보드 새로고침 시작 (v3.2.2)');
                 
                 // StudentManager의 loadApplications 호출
                 if (window.StudentManager && window.StudentManager.loadApplications) {
@@ -298,7 +299,7 @@
                     window.ApiHelper.refreshDashboardData();
                 }
                 
-                console.log('✅ 강제 대시보드 새로고침 완료 (v3.2.1)');
+                console.log('✅ 강제 대시보드 새로고침 완료 (v3.2.2)');
             } catch (error) {
                 console.error('❌ 강제 대시보드 새로고침 오류:', error);
             }
@@ -306,7 +307,7 @@
 
         // === 📄 영수증 폼 관리 ===
 
-        // 영수증 폼 초기화 - v3.2.1 개선
+        // 영수증 폼 초기화 - v3.2.2 개선
         resetReceiptForm: function() {
             try {
                 const form = document.getElementById('receiptForm');
@@ -315,13 +316,13 @@
                 }
                 
                 this.clearFileSelection();
-                console.log('📄 영수증 폼 초기화 완료 (v3.2.1)');
+                console.log('📄 영수증 폼 초기화 완료 (v3.2.2)');
             } catch (error) {
                 console.error('❌ 영수증 폼 초기화 오류:', error);
             }
         },
 
-        // === 📄 파일 관리 - v3.2.1 대폭 개선 ===
+        // === 📄 파일 관리 - v3.2.2 대폭 개선 ===
 
         // 📁 드래그 앤 드롭 설정
         setupDragAndDrop: function() {
@@ -356,7 +357,7 @@
                     self.handleFileDrop(e);
                 });
 
-                console.log('✅ 드래그 앤 드롭 설정 완료 (v3.2.1)');
+                console.log('✅ 드래그 앤 드롭 설정 완료 (v3.2.2)');
             } catch (error) {
                 console.error('❌ 드래그 앤 드롭 설정 오류:', error);
             }
@@ -436,13 +437,13 @@
             }
         },
 
-        // 영수증 파일 변경 처리 - v3.2.1 대폭 개선
+        // 영수증 파일 변경 처리 - v3.2.2 대폭 개선
         handleReceiptFileChange: function(event) {
             try {
                 const file = event.target.files[0];
                 
                 if (file) {
-                    console.log('📄 파일 선택됨 (v3.2.1):', {
+                    console.log('📄 파일 선택됨 (v3.2.2):', {
                         name: file.name,
                         size: file.size,
                         type: file.type
@@ -463,7 +464,7 @@
             }
         },
 
-        // 🆕 선택된 파일 표시 - v3.2.1
+        // 🆕 선택된 파일 표시 - v3.2.2
         displaySelectedFile: function(file) {
             try {
                 // 업로드 영역 숨기기
@@ -490,7 +491,7 @@
                     this.hideImagePreview();
                 }
 
-                console.log('✅ 선택된 파일 표시 완료 (v3.2.1)');
+                console.log('✅ 선택된 파일 표시 완료 (v3.2.2)');
             } catch (error) {
                 console.error('❌ 선택된 파일 표시 오류:', error);
             }
@@ -526,7 +527,7 @@
             }
         },
 
-        // 영수증 파일 제거 - v3.2.1 개선
+        // 영수증 파일 제거 - v3.2.2 개선
         removeReceiptFile: function() {
             try {
                 const fileInput = document.getElementById('receiptFile');
@@ -535,13 +536,13 @@
                 }
                 
                 this.clearFileSelection();
-                console.log('📄 영수증 파일 제거됨 (v3.2.1)');
+                console.log('📄 영수증 파일 제거됨 (v3.2.2)');
             } catch (error) {
                 console.error('❌ 영수증 파일 제거 오류:', error);
             }
         },
 
-        // 🆕 파일 선택 초기화 - v3.2.1
+        // 🆕 파일 선택 초기화 - v3.2.2
         clearFileSelection: function() {
             try {
                 // UI 요소들 복원
@@ -564,7 +565,7 @@
                 // 미리보기 숨김
                 this.hideImagePreview();
 
-                console.log('✅ 파일 선택 초기화 완료 (v3.2.1)');
+                console.log('✅ 파일 선택 초기화 완료 (v3.2.2)');
             } catch (error) {
                 console.error('❌ 파일 선택 초기화 오류:', error);
             }
@@ -711,7 +712,7 @@
 
     // StudentManager와 연동
     waitForStudentManager().then(() => {
-        console.log('✅ StudentManager 감지됨 - ReceiptManagement 모듈 연동 시작 v3.2.1');
+        console.log('✅ StudentManager 감지됨 - ReceiptManagement 모듈 연동 시작 v3.2.2');
         
         // ReceiptManagement 모듈 초기화
         const initResult = ReceiptManagementModule.init(window.StudentManager);
@@ -762,16 +763,16 @@
             }
         };
 
-        // 🆕 v3.2.1: Form 제출 이벤트 핸들러 설정
+        // 🆕 v3.2.2: Form 제출 이벤트 핸들러 설정
         const receiptForm = document.getElementById('receiptForm');
         if (receiptForm) {
             receiptForm.addEventListener('submit', function(event) {
-                console.log('📄 영수증 폼 제출 이벤트 감지 (v3.2.1)');
+                console.log('📄 영수증 폼 제출 이벤트 감지 (v3.2.2)');
                 window.ReceiptManagementModule.handleReceiptSubmit(event);
             });
         }
 
-        // 🆕 v3.2.1: 파일 제거 버튼 이벤트 핸들러
+        // 🆕 v3.2.2: 파일 제거 버튼 이벤트 핸들러
         const removeBtn = document.getElementById('removeReceiptBtn');
         if (removeBtn) {
             removeBtn.addEventListener('click', function() {
@@ -779,10 +780,22 @@
             });
         }
 
-        console.log('✅ StudentManager 확장 완료 - ReceiptManagement v3.2.1 (UX 개선 및 버그 수정)');
+        // 🔧 v3.2.2: 파일 선택 이벤트 핸들러 추가 (누락된 기능 해결)
+        const receiptFileInput = document.getElementById('receiptFile');
+        if (receiptFileInput) {
+            receiptFileInput.addEventListener('change', function(event) {
+                console.log('📄 파일 선택 이벤트 감지 (v3.2.2) - 클릭으로 파일 선택');
+                window.ReceiptManagementModule.handleReceiptFileChange(event);
+            });
+            console.log('✅ 파일 선택 이벤트 핸들러 추가 완료 (v3.2.2)');
+        } else {
+            console.warn('⚠️ receiptFile input을 찾을 수 없습니다 (v3.2.2)');
+        }
+
+        console.log('✅ StudentManager 확장 완료 - ReceiptManagement v3.2.2 (파일 선택 이벤트 핸들러 추가)');
     }).catch((error) => {
         console.error('❌ StudentManager 연동 실패:', error);
     });
 
-    console.log('📄 ReceiptManagement v3.2.1 로드 완료 - UX 개선 및 버그 수정');
+    console.log('📄 ReceiptManagement v3.2.2 로드 완료 - 파일 선택 이벤트 핸들러 추가');
 })();
