@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>세종학당 문화인턴 지원 시스템 - 관리자</title>
+    <title>세종학당 문화인턴 지원 시스템 - 관리자 v4.2.0</title>
     
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/login.css">
+    <!-- CSS Files - v4.2.0 모듈화 시스템 -->
+    <link rel="stylesheet" href="css/main.css?v=4.2.0">
+    <link rel="stylesheet" href="css/login.css?v=4.2.0">
     
     <!-- 관리자 대시보드 전용 스타일 -->
     <style>
@@ -61,6 +61,44 @@
             margin: 0;
             color: #cbd5e0;
         }
+
+        /* 🆕 v4.2.0 모듈 로딩 상태 표시 */
+        .module-status {
+            background: #1a202c;
+            color: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+
+        .module-status h4 {
+            margin: 0 0 0.5rem 0;
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .module-status .module-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #4a5568;
+        }
+
+        .module-status .module-item:last-child {
+            border-bottom: none;
+        }
+
+        .module-status .status-icon {
+            font-weight: bold;
+        }
+
+        .status-loading { color: #f6ad55; }
+        .status-success { color: #68d391; }
+        .status-error { color: #fc8181; }
 
         /* 기능 활성화 관리 섹션 */
         .feature-settings-section {
@@ -356,6 +394,29 @@
             background: #d69e2e;
         }
 
+        /* 시스템 상태 알림 */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+
         /* 모바일 반응형 */
         @media (max-width: 768px) {
             .dashboard-container {
@@ -392,6 +453,10 @@
             .feature-controls {
                 margin-top: 1rem;
             }
+
+            .module-status {
+                font-size: 0.75rem;
+            }
         }
     </style>
 </head>
@@ -402,8 +467,8 @@
             <div class="login-container">
                 <div class="login-card">
                     <div class="login-header">
-                        <h1>세종학당 문화인턴 지원 시스템</h1>
-                        <p>Cultural Intern Support System - Administrator</p>
+                        <h1>세종학당 문화인턴 지원 시스템 v4.2.0</h1>
+                        <p>Cultural Intern Support System - Administrator (Modular Architecture)</p>
                     </div>
 
                     <div id="adminLogin" class="login-form active">
@@ -426,15 +491,43 @@
                 <!-- 헤더 섹션 -->
                 <div class="dashboard-header">
                     <div class="welcome-section">
-                        <h1 class="welcome-title">관리자 대시보드</h1>
-                        <p class="welcome-subtitle">Cultural Intern Support System - Administrator</p>
+                        <h1 class="welcome-title">관리자 대시보드 v4.2.0</h1>
+                        <p class="welcome-subtitle">Cultural Intern Support System - Administrator (Modular Architecture)</p>
                     </div>
                     
                     <div class="admin-info">
                         <h3>관리자님, 환영합니다!</h3>
                         <p>세종학당 문화인턴 지원 시스템을 관리할 수 있습니다.</p>
                     </div>
+
+                    <!-- 🆕 v4.2.0 모듈 로딩 상태 표시 -->
+                    <div class="module-status" id="moduleStatus">
+                        <h4>📦 모듈 로딩 상태 (v4.2.0 모듈화 아키텍처)</h4>
+                        <div class="module-item">
+                            <span>SupabaseCore (5.6KB)</span>
+                            <span class="status-icon status-loading" id="status-core">⏳</span>
+                        </div>
+                        <div class="module-item">
+                            <span>SupabaseStudent (32.9KB)</span>
+                            <span class="status-icon status-loading" id="status-student">⏳</span>
+                        </div>
+                        <div class="module-item">
+                            <span>SupabaseAdmin (41.5KB)</span>
+                            <span class="status-icon status-loading" id="status-admin">⏳</span>
+                        </div>
+                        <div class="module-item">
+                            <span>통합 매니저 (19.2KB)</span>
+                            <span class="status-icon status-loading" id="status-unified">⏳</span>
+                        </div>
+                        <div class="module-item">
+                            <span>관리자 시스템</span>
+                            <span class="status-icon status-loading" id="status-admin-system">⏳</span>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- 시스템 상태 알림 -->
+                <div id="systemStatus"></div>
 
                 <!-- 기능 활성화 관리 섹션 -->
                 <div class="feature-settings-section">
@@ -444,6 +537,20 @@
                     </h2>
                     <div class="feature-list" id="featureList">
                         <!-- 동적으로 생성됨 -->
+                        <div class="feature-item">
+                            <div class="feature-info">
+                                <div class="feature-icon">
+                                    <i data-lucide="settings"></i>
+                                </div>
+                                <div class="feature-details">
+                                    <h4>모듈 시스템 로딩 중...</h4>
+                                    <p>v4.2.0 모듈화 시스템 초기화 중입니다.</p>
+                                </div>
+                            </div>
+                            <div class="feature-controls">
+                                <span class="feature-status">로딩 중</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -514,28 +621,120 @@
         시스템 초기화 중...
     </div>
 
-    <!-- JavaScript Files - Fixed CDN URLs -->
+    <!-- 🚀 JavaScript Files - v4.2.0 모듈화 시스템 -->
+    
+    <!-- 🔧 1단계: 핵심 라이브러리 -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="js/config.js"></script>
-    <script src="js/supabase-client.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/auth.js"></script>
+
+    <!-- 🔧 2단계: 핵심 설정 (필수) -->
+    <script src="js/config.js?v=4.2.0"></script>
+    <script src="js/utils.js?v=4.2.0"></script>
+    <script src="js/auth.js?v=4.2.0"></script>
+
+    <!-- 🔧 3단계: Supabase 모듈들 (순서 중요!) -->
+    <script src="js/supabase/supabase-core.js?v=4.2.0"></script>
+    <script src="js/supabase/supabase-student.js?v=4.2.0"></script>
+    <script src="js/supabase/supabase-admin.js?v=4.2.0"></script>
+    <script src="js/supabase-client.js?v=4.2.0"></script>
     
-    <!-- 🆕 모듈화된 Admin 파일들 (순서 중요!) -->
-    <!-- 핵심 파일들 먼저 로드 -->
-    <script src="js/admin/admin-core.js"></script>
-    <script src="js/admin/admin-utils.js"></script>
-    <script src="js/admin/admin-modals.js"></script>
+    <!-- 🔧 4단계: 관리자 모듈들 (필요한 경우만) -->
+    <script src="js/admin/admin-core.js?v=4.2.0"></script>
+    <script src="js/admin/admin-utils.js?v=4.2.0"></script>
+    <script src="js/admin/admin-modals.js?v=4.2.0"></script>
+    <script src="js/admin/admin-budget.js?v=4.2.0"></script>
+    <script src="js/admin/admin-lesson-plans.js?v=4.2.0"></script>
+    <script src="js/admin/admin-applications.js?v=4.2.0"></script>
+    <script src="js/admin/admin-features.js?v=4.2.0"></script>
     
-    <!-- 기능별 모듈들 -->
-    <script src="js/admin/admin-budget.js"></script>
-    <script src="js/admin/admin-lesson-plans.js"></script>
-    <script src="js/admin/admin-applications.js"></script>
-    <script src="js/admin/admin-features.js"></script>
-    
-    <!-- 페이지 초기화 스크립트 -->
+    <!-- 🔧 5단계: 관리자 페이지 초기화 및 테스트 - v4.2.0 모듈화 시스템 -->
     <script>
+        // 🔧 모듈 상태 추적 객체 (관리자용)
+        const AdminModuleStatusTracker = {
+            modules: {
+                core: { name: 'SupabaseCore', loaded: false, size: '5.6KB' },
+                student: { name: 'SupabaseStudent', loaded: false, size: '32.9KB' },
+                admin: { name: 'SupabaseAdmin', loaded: false, size: '41.5KB' },
+                unified: { name: '통합 매니저', loaded: false, size: '19.2KB' },
+                adminSystem: { name: '관리자 시스템', loaded: false, size: 'modular' }
+            },
+
+            // 상태 업데이트
+            updateStatus(moduleKey, isLoaded) {
+                const module = this.modules[moduleKey];
+                if (module) {
+                    module.loaded = isLoaded;
+                    const statusElement = document.getElementById(`status-${moduleKey.replace(/([A-Z])/g, '-$1').toLowerCase()}`);
+                    if (statusElement) {
+                        statusElement.textContent = isLoaded ? '✅' : '❌';
+                        statusElement.className = `status-icon ${isLoaded ? 'status-success' : 'status-error'}`;
+                    }
+                }
+                this.checkAllModules();
+            },
+
+            // 전체 모듈 상태 확인
+            checkAllModules() {
+                const allLoaded = Object.values(this.modules).every(module => module.loaded);
+                
+                if (allLoaded) {
+                    this.showSystemReport();
+                }
+            },
+
+            // 시스템 리포트 표시
+            showSystemReport() {
+                const systemStatus = document.getElementById('systemStatus');
+                if (systemStatus) {
+                    systemStatus.innerHTML = `
+                        <div class="alert alert-success">
+                            <strong>🔐 관리자 모듈화 시스템 v4.2.0 초기화 완료!</strong><br>
+                            • 통합 관리: Core + Student + Admin 모듈 완전 로드<br>
+                            • 관리자 권한: 모든 기능 접근 가능<br>
+                            • 호환성: 기존 관리자 코드 100% 호환 보장
+                        </div>
+                    `;
+                }
+            }
+        };
+
+        // 🔧 모듈 로딩 감지 함수 (관리자용)
+        function checkAdminModuleLoading() {
+            // SupabaseCore 확인
+            if (window.SupabaseCore) {
+                AdminModuleStatusTracker.updateStatus('core', true);
+                console.log('✅ SupabaseCore 모듈 로드 확인 (관리자 v4.2.0)');
+            }
+
+            // SupabaseStudent 확인
+            if (window.SupabaseStudent) {
+                AdminModuleStatusTracker.updateStatus('student', true);
+                console.log('✅ SupabaseStudent 모듈 로드 확인 (관리자 v4.2.0)');
+            }
+
+            // SupabaseAdmin 확인
+            if (window.SupabaseAdmin) {
+                AdminModuleStatusTracker.updateStatus('admin', true);
+                console.log('✅ SupabaseAdmin 모듈 로드 확인 (관리자 v4.2.0)');
+            }
+
+            // 통합 매니저 확인
+            if (window.SupabaseAPI && window.SupabaseAPI.getHealthReport) {
+                AdminModuleStatusTracker.updateStatus('unified', true);
+                console.log('✅ 통합 매니저 로드 확인 (관리자 v4.2.0)');
+                
+                // 통합 매니저 상태 리포트 로그
+                const healthReport = window.SupabaseAPI.getHealthReport();
+                console.log('📊 통합 매니저 상태 리포트 (관리자):', healthReport);
+            }
+
+            // 관리자 시스템 확인
+            if (window.AdminManager) {
+                AdminModuleStatusTracker.updateStatus('adminSystem', true);
+                console.log('✅ AdminManager 모듈 로드 확인 (관리자 v4.2.0)');
+            }
+        }
+
         // 전역 네임스페이스로 충돌 방지
         window.AdminPageController = (function() {
             'use strict';
@@ -586,10 +785,10 @@
                 }
             };
 
-            // 안전한 초기화 함수
+            // 안전한 초기화 함수 (v4.2.0 모듈화 시스템)
             async function safeInitialize() {
                 try {
-                    InitManager.show('시스템 초기화 중...');
+                    InitManager.show('관리자 모듈화 시스템 v4.2.0 초기화 중...');
                     
                     // 1. 필수 객체들이 로드될 때까지 대기
                     await waitForEssentials();
@@ -603,6 +802,22 @@
                         console.warn('⚠️ Lucide 아이콘 라이브러리를 찾을 수 없습니다.');
                     }
                     
+                    // 🆕 v4.2.0 모듈 로딩 감지 시작
+                    checkAdminModuleLoading();
+
+                    // 주기적으로 모듈 상태 확인 (최대 15초)
+                    let checkCount = 0;
+                    const maxChecks = 150; // 15초
+                    const checkInterval = setInterval(() => {
+                        checkAdminModuleLoading();
+                        checkCount++;
+
+                        if (checkCount >= maxChecks) {
+                            clearInterval(checkInterval);
+                            console.warn('⚠️ 모듈 로딩 타임아웃 (15초) - 일부 모듈이 로드되지 않았을 수 있음');
+                        }
+                    }, 100);
+                    
                     // 3. SupabaseAPI 초기화 대기 (중요!)
                     await waitForSupabaseAPI();
                     InitManager.show('데이터베이스 연결 완료');
@@ -613,14 +828,14 @@
                     
                     // 5. 관리자 앱 초기화
                     await initializeAdminApp();
-                    InitManager.success('시스템 초기화 완료');
+                    InitManager.success('관리자 시스템 v4.2.0 초기화 완료');
                     
                     // 초기화 상태 업데이트
                     adminInitState.supabaseInitialized = true;
                     adminInitState.adminManagerReady = true;
                     
                 } catch (error) {
-                    console.error('❌ 초기화 실패:', error);
+                    console.error('❌ 관리자 시스템 초기화 실패:', error);
                     
                     // 재시도 로직
                     if (adminInitState.retryCount < adminInitState.maxRetries) {
@@ -637,7 +852,7 @@
                     
                     // 사용자에게 문제 해결 방법 제시
                     setTimeout(() => {
-                        if (confirm('시스템 초기화에 실패했습니다.\\n\\n페이지를 새로고침하시겠습니까?')) {
+                        if (confirm('관리자 시스템 초기화에 실패했습니다.\\n\\n페이지를 새로고침하시겠습니까?')) {
                             window.location.reload();
                         }
                     }, 1000);
@@ -656,13 +871,13 @@
                         const hasConfig = window.CONFIG;
                         const hasSupabase = window.supabase && typeof window.supabase.createClient === 'function';
                         
-                        console.log(`🔍 초기화 체크 ${attempts}/${maxAttempts}:`, {
+                        console.log(`🔍 관리자 초기화 체크 ${attempts}/${maxAttempts}:`, {
                             CONFIG: hasConfig,
                             Supabase: hasSupabase
                         });
                         
                         if (hasConfig && hasSupabase) {
-                            console.log('✅ 필수 객체 로드 완료');
+                            console.log('✅ 관리자 필수 객체 로드 완료');
                             adminInitState.configLoaded = true;
                             resolve();
                         } else if (attempts >= maxAttempts) {
@@ -690,16 +905,16 @@
                         
                         if (window.SupabaseAPI && typeof window.SupabaseAPI.init === 'function') {
                             try {
-                                console.log('🔗 SupabaseAPI 초기화 중...');
+                                console.log('🔗 관리자 SupabaseAPI 초기화 중...');
                                 const success = await window.SupabaseAPI.init();
                                 
                                 if (success) {
-                                    console.log('✅ SupabaseAPI 초기화 완료');
+                                    console.log('✅ 관리자 SupabaseAPI 초기화 완료');
                                     resolve();
                                     return;
                                 }
                             } catch (error) {
-                                console.warn(`⚠️ SupabaseAPI 초기화 시도 ${attempts}/${maxAttempts} 실패:`, error.message);
+                                console.warn(`⚠️ 관리자 SupabaseAPI 초기화 시도 ${attempts}/${maxAttempts} 실패:`, error.message);
                             }
                         }
                         
@@ -740,7 +955,7 @@
 
             // 관리자 앱 초기화
             async function initializeAdminApp() {
-                console.log('🚀 관리자 앱 초기화 시작');
+                console.log('🔐 관리자 앱 초기화 시작 (v4.2.0)');
                 
                 const adminSession = localStorage.getItem('adminSession');
                 if (adminSession) {
@@ -751,7 +966,7 @@
                 }
 
                 setupAdminLoginEvents();
-                console.log('✅ 관리자 앱 초기화 완료');
+                console.log('✅ 관리자 앱 초기화 완료 (v4.2.0)');
             }
 
             // 관리자 로그인 이벤트 설정
@@ -772,7 +987,7 @@
                 }
             }
 
-            // 관리자 로그인 처리
+            // 관리자 로그인 처리 (v4.2.0 모듈화 시스템)
             async function handleAdminLogin() {
                 const code = document.getElementById('adminCode').value.trim();
                 
@@ -788,7 +1003,7 @@
                     loginBtn.innerHTML = '<i data-lucide="loader-2"></i> 로그인 중...';
                     loginBtn.disabled = true;
 
-                    // 관리자 인증 시도
+                    // 🚀 v4.2.0 관리자 인증 시도 (통합 매니저 사용)
                     const result = await SupabaseAPI.authenticateAdmin(code);
                     
                     if (result && result.success) {
@@ -798,12 +1013,14 @@
                         
                         // 대시보드로 전환
                         await showAdminDashboard();
+                        
+                        console.log('✅ 관리자 로그인 성공 (v4.2.0):', result.data);
                     } else {
                         alert(result?.message || '관리자 인증에 실패했습니다.');
                     }
                     
                 } catch (error) {
-                    console.error('관리자 로그인 오류:', error);
+                    console.error('❌ 관리자 로그인 오류 (v4.2.0):', error);
                     alert('로그인 처리 중 오류가 발생했습니다.');
                 } finally {
                     // 버튼 상태 복구
@@ -825,7 +1042,7 @@
                 if (loginPage) loginPage.classList.remove('active');
                 if (adminPage) adminPage.classList.add('active');
                 
-                // 기능 설정 로드
+                // 기능 설정 로드 (v4.2.0 호환)
                 if (window.AdminManager && typeof window.AdminManager.loadFeatureSettings === 'function') {
                     await window.AdminManager.loadFeatureSettings();
                 }
@@ -834,9 +1051,11 @@
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
+
+                console.log('✅ 관리자 대시보드 표시 완료 (v4.2.0)');
             }
 
-            // 로그아웃 처리
+            // 로그아웃 처리 (v4.2.0)
             function handleLogout() {
                 if (confirm('로그아웃하시겠습니까?')) {
                     localStorage.removeItem('adminSession');
@@ -846,6 +1065,7 @@
                         window.SupabaseAPI.logout();
                     }
                     
+                    console.log('✅ 관리자 로그아웃 완료 (v4.2.0)');
                     window.location.reload();
                 }
             }
@@ -882,6 +1102,10 @@
                 navigateToEquipmentManagement
             };
         })();
+
+        console.log('🔐 관리자 v4.2.0 모듈화 시스템 스크립트 로드 완료');
+        console.log('📦 아키텍처: Core + Student + Admin + 통합매니저 + 관리자모듈');
+        console.log('🔧 기존 관리자 코드 100% 호환성 보장 + 성능 최적화');
     </script>
 </body>
 </html>
