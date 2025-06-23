@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>세종학당 문화인턴 지원 시스템 - 대시보드</title>
     
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css">
-    <link rel="stylesheet" href="../css/student.css">
+    <!-- CSS Files - v4.0 업데이트 -->
+    <link rel="stylesheet" href="../css/main.css?v=4.0.0">
+    <link rel="stylesheet" href="../css/student.css?v=4.0.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <!-- Supabase JavaScript Client - Fixed CDN URL -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=4.0.0"></script>
 
     <!-- Dashboard 전용 스타일 -->
     <style>
@@ -316,32 +316,113 @@
         </div>
     </div>
 
-    <!-- JavaScript Files -->
-    <script src="../js/config.js"></script>
-    <script src="../js/supabase-client.js"></script>
-    <script src="../js/utils.js"></script>
-    <script src="../js/auth.js"></script>
-    <script src="../js/student/dashboard.js"></script>
+    <!-- JavaScript Files - v4.0 모듈 시스템 -->
     
-    <!-- 간단한 초기화만 처리 -->
+    <!-- 🔧 1단계: 핵심 설정 및 의존성 -->
+    <script src="../js/config.js?v=4.0.0"></script>
+    <script src="../js/supabase-client.js?v=4.0.0"></script>
+    <script src="../js/utils.js?v=4.0.0"></script>
+    <script src="../js/auth.js?v=4.0.0"></script>
+
+    <!-- 🔧 2단계: 기본 모듈들 (대시보드에서 필요한 것들만) -->
+    <!-- API 도우미 -->
+    <script src="../js/student/api-helper.js?v=4.0.0"></script>
+    <!-- 알림 시스템 -->
+    <script src="../js/student/notification-system.js?v=4.0.0"></script>
+    
+    <!-- 🔧 3단계: 대시보드 전용 스크립트 -->
+    <script src="../js/student/dashboard.js?v=4.0.0"></script>
+    
+    <!-- 대시보드 초기화 - v4.0 업데이트 -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             try {
-                console.log('📋 대시보드 페이지 로드 시작');
+                console.log('📋 대시보드 페이지 로드 시작 (v4.0)');
                 
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
-                    console.log('✅ Lucide 아이콘 초기화 완료');
+                    console.log('✅ Lucide 아이콘 초기화 완료 (v4.0)');
                 }
 
+                // 🆕 v4.0 모듈 시스템 지원 확인
+                setTimeout(function() {
+                    // NotificationSystem 모듈 사용 가능 확인
+                    if (typeof window.NotificationSystem !== 'undefined') {
+                        console.log('✅ NotificationSystem 모듈 사용 가능 (v4.0)');
+                        window.NotificationSystem.showBasicNotice('시스템이 정상적으로 로드되었습니다.', 'success');
+                    }
+
+                    // ApiHelper 모듈 사용 가능 확인
+                    if (typeof window.ApiHelper !== 'undefined') {
+                        console.log('✅ ApiHelper 모듈 사용 가능 (v4.0)');
+                    }
+                }, 1000);
+
                 // 나머지 초기화는 dashboard.js에서 처리
-                console.log('✅ 기본 페이지 초기화 완료');
+                console.log('✅ 기본 페이지 초기화 완료 (v4.0)');
 
             } catch (error) {
-                console.error('❌ 페이지 초기화 오류:', error);
+                console.error('❌ 페이지 초기화 오류 (v4.0):', error);
             }
         });
+
+        // 🎯 전역 로그아웃 함수 (v4.0 호환)
+        window.handleLogout = function() {
+            try {
+                console.log('🚪 로그아웃 처리 시작 (v4.0)');
+                
+                // NotificationSystem 사용 가능하면 확인 알림
+                if (typeof window.NotificationSystem !== 'undefined') {
+                    window.NotificationSystem.showConfirmationNotice(
+                        '로그아웃 확인',
+                        '정말로 로그아웃하시겠습니까?',
+                        function() {
+                            // 확인 시 실제 로그아웃 실행
+                            executeLogout();
+                        },
+                        function() {
+                            // 취소 시 아무것도 하지 않음
+                            console.log('로그아웃 취소됨');
+                        }
+                    );
+                } else {
+                    // 폴백: 기본 confirm
+                    if (confirm('정말로 로그아웃하시겠습니까?')) {
+                        executeLogout();
+                    }
+                }
+            } catch (error) {
+                console.error('❌ 로그아웃 처리 오류 (v4.0):', error);
+                // 오류 시에도 로그아웃 실행
+                executeLogout();
+            }
+        };
+
+        // 실제 로그아웃 실행
+        function executeLogout() {
+            try {
+                console.log('🚪 로그아웃 실행 중 (v4.0)');
+                
+                // 로컬 저장소 정리
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // AuthManager 로그아웃 (있는 경우)
+                if (typeof window.AuthManager !== 'undefined' && window.AuthManager.logout) {
+                    window.AuthManager.logout();
+                }
+                
+                // 로그인 페이지로 이동
+                window.location.href = '../index.html';
+            } catch (error) {
+                console.error('❌ 로그아웃 실행 오류 (v4.0):', error);
+                // 오류 시에도 페이지 이동
+                window.location.href = '../index.html';
+            }
+        }
+
+        console.log('✅ 대시보드 v4.0 스크립트 로드 완료');
     </script>
 </body>
 </html>
