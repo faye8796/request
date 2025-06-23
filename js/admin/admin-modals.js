@@ -34,7 +34,7 @@ AdminManager.Modals = {
                     <div class="modal-content large">
                         <div class="modal-header">
                             <h3>분야별 예산 설정</h3>
-                            <button class="close-btn" onclick="AdminManager.Budget.hideBudgetSettingsModal()">&times;</button>
+                            <button class="close-btn" id="budgetSettingsCloseBtn">&times;</button>
                         </div>
                         <form id="budgetSettingsForm">
                             <div class="budget-settings-info">
@@ -77,6 +77,7 @@ AdminManager.Modals = {
     setupBudgetSettingsEventListeners() {
         const form = document.getElementById('budgetSettingsForm');
         const cancelBtn = document.getElementById('budgetSettingsCancelBtn');
+        const closeBtn = document.getElementById('budgetSettingsCloseBtn');
         const modal = document.getElementById('budgetSettingsModal');
 
         if (form) {
@@ -111,6 +112,22 @@ AdminManager.Modals = {
             });
         }
 
+        if (closeBtn) {
+            // 🔧 닫기 버튼 이벤트 (onclick 제거)
+            closeBtn.addEventListener('click', () => {
+                console.log('💰 예산 설정 닫기 버튼 클릭');
+                if (window.AdminManager && window.AdminManager.Budget && 
+                    typeof window.AdminManager.Budget.hideBudgetSettingsModal === 'function') {
+                    window.AdminManager.Budget.hideBudgetSettingsModal();
+                } else {
+                    // 폴백: 직접 모달 숨기기
+                    if (modal) {
+                        modal.classList.remove('active');
+                    }
+                }
+            });
+        }
+
         if (modal) {
             // 모달 배경 클릭 시 닫기
             modal.addEventListener('click', (e) => {
@@ -129,7 +146,7 @@ AdminManager.Modals = {
         console.log('🛠️ 예산 설정 모달 이벤트 리스너 설정 완료');
     },
 
-    // 수업계획 관리 모달 생성
+    // 🔧 수업계획 관리 모달 생성 (닫기 버튼 onclick 제거)
     createLessonPlanManagementModal() {
         if (!document.getElementById('lessonPlanManagementModal')) {
             const modalHTML = `
@@ -137,7 +154,7 @@ AdminManager.Modals = {
                     <div class="modal-content expanded">
                         <div class="modal-header">
                             <h3>수업계획 승인 관리</h3>
-                            <button class="close-btn" onclick="AdminManager.LessonPlans.hideLessonPlanManagementModal()">&times;</button>
+                            <button class="close-btn" id="lessonPlanManagementCloseHeaderBtn">&times;</button>
                         </div>
                         <div class="lesson-plan-management-container">
                             <div class="management-header">
@@ -165,11 +182,62 @@ AdminManager.Modals = {
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // 🔧 모달 생성 직후 이벤트 리스너 설정
+            this.setupLessonPlanManagementEventListeners();
+            
             console.log('✅ 수업계획 관리 모달 생성 완료');
         }
     },
 
-    // 세부 수업계획 보기 모달 생성 (크기 확대 버전)
+    // 🔧 수업계획 관리 모달 이벤트 리스너 설정 (새로 추가)
+    setupLessonPlanManagementEventListeners() {
+        const closeHeaderBtn = document.getElementById('lessonPlanManagementCloseHeaderBtn');
+        const closeBtn = document.getElementById('lessonPlanManagementCloseBtn');
+        const modal = document.getElementById('lessonPlanManagementModal');
+
+        if (closeHeaderBtn) {
+            closeHeaderBtn.addEventListener('click', () => {
+                console.log('📚 수업계획 관리 모달 헤더 닫기 버튼 클릭');
+                if (window.AdminManager && window.AdminManager.LessonPlans && 
+                    typeof window.AdminManager.LessonPlans.hideLessonPlanManagementModal === 'function') {
+                    window.AdminManager.LessonPlans.hideLessonPlanManagementModal();
+                } else {
+                    if (modal) modal.classList.remove('active');
+                }
+            });
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                console.log('📚 수업계획 관리 모달 하단 닫기 버튼 클릭');
+                if (window.AdminManager && window.AdminManager.LessonPlans && 
+                    typeof window.AdminManager.LessonPlans.hideLessonPlanManagementModal === 'function') {
+                    window.AdminManager.LessonPlans.hideLessonPlanManagementModal();
+                } else {
+                    if (modal) modal.classList.remove('active');
+                }
+            });
+        }
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === 'lessonPlanManagementModal') {
+                    console.log('📚 수업계획 관리 모달 배경 클릭으로 닫기');
+                    if (window.AdminManager && window.AdminManager.LessonPlans && 
+                        typeof window.AdminManager.LessonPlans.hideLessonPlanManagementModal === 'function') {
+                        window.AdminManager.LessonPlans.hideLessonPlanManagementModal();
+                    } else {
+                        modal.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        console.log('🔧 수업계획 관리 모달 이벤트 리스너 설정 완료');
+    },
+
+    // 🔧 세부 수업계획 보기 모달 생성 (크기 확대 버전, onclick 제거)
     createViewLessonPlanModal() {
         if (!document.getElementById('viewLessonPlanModal')) {
             const modalHTML = `
@@ -177,7 +245,7 @@ AdminManager.Modals = {
                     <div class="modal-content fullscreen-large">
                         <div class="modal-header">
                             <h3>수업계획 상세보기</h3>
-                            <button class="close-btn" onclick="AdminManager.LessonPlans.hideViewLessonPlanModal()">&times;</button>
+                            <button class="close-btn" id="viewLessonPlanCloseHeaderBtn">&times;</button>
                         </div>
                         <div class="lesson-plan-detail">
                             <div class="student-info-section">
@@ -254,11 +322,62 @@ AdminManager.Modals = {
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // 🔧 모달 생성 직후 이벤트 리스너 설정
+            this.setupViewLessonPlanEventListeners();
+            
             console.log('✅ 세부 수업계획 보기 모달 생성 완료 (확대 버전)');
         }
     },
 
-    // 수업계획 설정 모달 생성
+    // 🔧 세부 수업계획 보기 모달 이벤트 리스너 설정 (새로 추가)
+    setupViewLessonPlanEventListeners() {
+        const closeHeaderBtn = document.getElementById('viewLessonPlanCloseHeaderBtn');
+        const closeBtn = document.getElementById('viewLessonPlanCloseBtn');
+        const modal = document.getElementById('viewLessonPlanModal');
+
+        if (closeHeaderBtn) {
+            closeHeaderBtn.addEventListener('click', () => {
+                console.log('👁️ 수업계획 상세보기 모달 헤더 닫기 버튼 클릭');
+                if (window.AdminManager && window.AdminManager.LessonPlans && 
+                    typeof window.AdminManager.LessonPlans.hideViewLessonPlanModal === 'function') {
+                    window.AdminManager.LessonPlans.hideViewLessonPlanModal();
+                } else {
+                    if (modal) modal.classList.remove('active');
+                }
+            });
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                console.log('👁️ 수업계획 상세보기 모달 하단 닫기 버튼 클릭');
+                if (window.AdminManager && window.AdminManager.LessonPlans && 
+                    typeof window.AdminManager.LessonPlans.hideViewLessonPlanModal === 'function') {
+                    window.AdminManager.LessonPlans.hideViewLessonPlanModal();
+                } else {
+                    if (modal) modal.classList.remove('active');
+                }
+            });
+        }
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === 'viewLessonPlanModal') {
+                    console.log('👁️ 수업계획 상세보기 모달 배경 클릭으로 닫기');
+                    if (window.AdminManager && window.AdminManager.LessonPlans && 
+                        typeof window.AdminManager.LessonPlans.hideViewLessonPlanModal === 'function') {
+                        window.AdminManager.LessonPlans.hideViewLessonPlanModal();
+                    } else {
+                        modal.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        console.log('🔧 세부 수업계획 보기 모달 이벤트 리스너 설정 완료');
+    },
+
+    // 🔧 수업계획 설정 모달 생성 (onclick 제거)
     createLessonPlanSettingsModal() {
         if (!document.getElementById('lessonPlanSettingsModal')) {
             const modalHTML = `
@@ -266,7 +385,7 @@ AdminManager.Modals = {
                     <div class="modal-content">
                         <div class="modal-header">
                             <h3>수업계획 편집 설정</h3>
-                            <button class="close-btn" onclick="AdminManager.LessonPlans.hideLessonPlanSettingsModal()">&times;</button>
+                            <button class="close-btn" id="lessonPlanSettingsCloseBtn">&times;</button>
                         </div>
                         <form id="lessonPlanSettingsForm">
                             <div class="form-section">
@@ -322,11 +441,62 @@ AdminManager.Modals = {
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // 🔧 모달 생성 직후 이벤트 리스너 설정
+            this.setupLessonPlanSettingsEventListeners();
+            
             console.log('✅ 수업계획 설정 모달 생성 완료');
         }
     },
 
-    // 기능 설정 모달 생성
+    // 🔧 수업계획 설정 모달 이벤트 리스너 설정 (새로 추가)
+    setupLessonPlanSettingsEventListeners() {
+        const closeBtn = document.getElementById('lessonPlanSettingsCloseBtn');
+        const cancelBtn = document.getElementById('planSettingsCancelBtn');
+        const modal = document.getElementById('lessonPlanSettingsModal');
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                console.log('⚙️ 수업계획 설정 모달 닫기 버튼 클릭');
+                if (window.AdminManager && window.AdminManager.LessonPlans && 
+                    typeof window.AdminManager.LessonPlans.hideLessonPlanSettingsModal === 'function') {
+                    window.AdminManager.LessonPlans.hideLessonPlanSettingsModal();
+                } else {
+                    if (modal) modal.classList.remove('active');
+                }
+            });
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                console.log('⚙️ 수업계획 설정 모달 취소 버튼 클릭');
+                if (window.AdminManager && window.AdminManager.LessonPlans && 
+                    typeof window.AdminManager.LessonPlans.hideLessonPlanSettingsModal === 'function') {
+                    window.AdminManager.LessonPlans.hideLessonPlanSettingsModal();
+                } else {
+                    if (modal) modal.classList.remove('active');
+                }
+            });
+        }
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === 'lessonPlanSettingsModal') {
+                    console.log('⚙️ 수업계획 설정 모달 배경 클릭으로 닫기');
+                    if (window.AdminManager && window.AdminManager.LessonPlans && 
+                        typeof window.AdminManager.LessonPlans.hideLessonPlanSettingsModal === 'function') {
+                        window.AdminManager.LessonPlans.hideLessonPlanSettingsModal();
+                    } else {
+                        modal.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        console.log('🔧 수업계획 설정 모달 이벤트 리스너 설정 완료');
+    },
+
+    // 🔧 기능 설정 모달 생성 (onclick 제거)
     createFeatureSettingsModal() {
         if (!document.getElementById('featureSettingsModal')) {
             const modalHTML = `
@@ -334,7 +504,7 @@ AdminManager.Modals = {
                     <div class="modal-content">
                         <div class="modal-header">
                             <h3>시스템 기능 관리</h3>
-                            <button class="close-btn" onclick="AdminManager.Features.hideFeatureSettingsModal()">&times;</button>
+                            <button class="close-btn" id="featureSettingsCloseBtn">&times;</button>
                         </div>
                         <div class="feature-management-container">
                             <div class="feature-management-header">
@@ -347,14 +517,65 @@ AdminManager.Modals = {
                         </div>
                         
                         <div class="modal-actions">
-                            <button type="button" class="btn secondary" onclick="AdminManager.Features.hideFeatureSettingsModal()">닫기</button>
+                            <button type="button" id="featureSettingsModalCloseBtn" class="btn secondary">닫기</button>
                         </div>
                     </div>
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // 🔧 모달 생성 직후 이벤트 리스너 설정
+            this.setupFeatureSettingsEventListeners();
+            
             console.log('✅ 기능 설정 모달 생성 완료');
         }
+    },
+
+    // 🔧 기능 설정 모달 이벤트 리스너 설정 (새로 추가)
+    setupFeatureSettingsEventListeners() {
+        const closeBtn = document.getElementById('featureSettingsCloseBtn');
+        const modalCloseBtn = document.getElementById('featureSettingsModalCloseBtn');
+        const modal = document.getElementById('featureSettingsModal');
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                console.log('🔧 기능 설정 모달 헤더 닫기 버튼 클릭');
+                if (window.AdminManager && window.AdminManager.Features && 
+                    typeof window.AdminManager.Features.hideFeatureSettingsModal === 'function') {
+                    window.AdminManager.Features.hideFeatureSettingsModal();
+                } else {
+                    if (modal) modal.classList.remove('active');
+                }
+            });
+        }
+
+        if (modalCloseBtn) {
+            modalCloseBtn.addEventListener('click', () => {
+                console.log('🔧 기능 설정 모달 하단 닫기 버튼 클릭');
+                if (window.AdminManager && window.AdminManager.Features && 
+                    typeof window.AdminManager.Features.hideFeatureSettingsModal === 'function') {
+                    window.AdminManager.Features.hideFeatureSettingsModal();
+                } else {
+                    if (modal) modal.classList.remove('active');
+                }
+            });
+        }
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === 'featureSettingsModal') {
+                    console.log('🔧 기능 설정 모달 배경 클릭으로 닫기');
+                    if (window.AdminManager && window.AdminManager.Features && 
+                        typeof window.AdminManager.Features.hideFeatureSettingsModal === 'function') {
+                        window.AdminManager.Features.hideFeatureSettingsModal();
+                    } else {
+                        modal.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        console.log('🔧 기능 설정 모달 이벤트 리스너 설정 완료');
     },
 
     // 확인 다이얼로그 생성
@@ -575,7 +796,7 @@ AdminManager.Modals = {
 // 전역 접근을 위한 별명
 window.AdminModals = AdminManager.Modals;
 
-console.log('🪟 AdminManager.Modals 모듈 로드 완료');
+console.log('🪟 AdminManager.Modals 모듈 로드 완료 (v2.13 - 모달 닫기 버튼 이벤트 리스너 방식으로 수정)');
 
 // 🆕 fullscreen-large 모달 스타일 추가
 if (!document.querySelector('#fullscreen-modal-styles')) {
