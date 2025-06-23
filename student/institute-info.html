@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>파견 학당 정보 - 세종학당 문화인턴 지원 시스템</title>
     
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=1.3.0">
-    <link rel="stylesheet" href="../css/student.css?v=1.3.0">
+    <!-- CSS Files - Updated to v4.0.0 -->
+    <link rel="stylesheet" href="../css/main.css?v=4.0.0">
+    <link rel="stylesheet" href="../css/student.css?v=4.0.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
-    <!-- Supabase JavaScript Client - Fixed CDN URL -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+    <!-- Supabase JavaScript Client - Updated CDN URL -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
     <style>
         .institute-container {
@@ -489,44 +489,218 @@
         </div>
     </div>
 
-    <!-- JavaScript Files -->
-    <script src="../js/config.js?v=1.3.0"></script>
-    <script src="../js/supabase-client.js?v=1.3.0"></script>
-    <script src="../js/utils.js?v=1.3.0"></script>
-    <script src="../js/auth.js?v=1.3.0"></script>
-    <script src="../js/student/institute-info.js?v=1.3.0"></script>
+    <!-- JavaScript Files - Updated to v4.0 Module System -->
+    <!-- 핵심 설정 파일들 -->
+    <script src="../js/config.js?v=4.0.0"></script>
+    <script src="../js/supabase-client.js?v=4.0.0"></script>
+    <script src="../js/utils.js?v=4.0.0"></script>
+    <script src="../js/auth.js?v=4.0.0"></script>
     
+    <!-- 필요한 학생 모듈들 (의존성 순서대로) -->
+    <script src="../js/student/api-helper.js?v=4.0.0"></script>
+    <script src="../js/student/notification-system.js?v=4.0.0"></script>
+    <script src="../js/student/institute-info.js?v=4.0.0"></script>
+    
+    <!-- Page Initialization Script - Enhanced for v4.0 -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            try {
-                // Lucide 아이콘 초기화
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
+        // 전역 네임스페이스로 충돌 방지
+        window.InstituteInfoPageController = (function() {
+            'use strict';
+            
+            // 초기화 상태 관리
+            const initState = {
+                configLoaded: false,
+                supabaseInitialized: false,
+                modulesReady: false,
+                retryCount: 0,
+                maxRetries: 3
+            };
+
+            // 안전한 초기화 함수
+            async function safeInitialize() {
+                try {
+                    console.log('🏛️ 학당 정보 페이지 초기화 시작 (v4.0)');
+                    
+                    // 1. 필수 객체들이 로드될 때까지 대기
+                    await waitForEssentials();
+                    console.log('✅ 필수 라이브러리 로드 완료');
+                    
+                    // 2. Lucide 아이콘 초기화
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                        console.log('✅ Lucide 아이콘 초기화 완료');
+                    } else {
+                        console.warn('⚠️ Lucide 아이콘 라이브러리를 찾을 수 없습니다.');
+                    }
+                    
+                    // 3. SupabaseAPI 초기화 대기 (중요!)
+                    await waitForSupabaseAPI();
+                    console.log('✅ 데이터베이스 연결 완료');
+                    
+                    // 4. 필요한 모듈들 대기
+                    await waitForRequiredModules();
+                    console.log('✅ 필요한 모듈 로드 완료');
+                    
+                    // 5. 학생 인증 확인
+                    checkStudentAuthentication();
+                    
+                    // 6. 학당 정보 로드
+                    await loadInstituteInfo();
+                    
+                    console.log('🎉 학당 정보 페이지 초기화 완료');
+                    
+                } catch (error) {
+                    console.error('❌ 초기화 실패:', error);
+                    
+                    // 재시도 로직
+                    if (initState.retryCount < initState.maxRetries) {
+                        initState.retryCount++;
+                        console.log(`🔄 초기화 재시도 중... (${initState.retryCount}/${initState.maxRetries})`);
+                        
+                        setTimeout(() => {
+                            safeInitialize();
+                        }, 2000 * initState.retryCount); // 점진적 지연
+                        return;
+                    }
+                    
+                    showError(`초기화 실패: ${error.message}`);
                 }
-
-                // 학생 인증 확인
-                checkStudentAuthentication();
-                
-                // 학당 정보 로드
-                loadInstituteInfo();
-
-            } catch (error) {
-                console.error('페이지 초기화 오류:', error);
-                showError('페이지 로드 중 오류가 발생했습니다.');
             }
-        });
 
-        // 학생 인증 확인
+            // 필수 객체들이 로드될 때까지 대기
+            function waitForEssentials() {
+                return new Promise((resolve, reject) => {
+                    let attempts = 0;
+                    const maxAttempts = 50; // 5초
+                    
+                    const check = () => {
+                        attempts++;
+                        
+                        const hasConfig = window.CONFIG;
+                        const hasSupabase = window.supabase && typeof window.supabase.createClient === 'function';
+                        
+                        if (hasConfig && hasSupabase) {
+                            console.log('✅ 필수 객체 로드 완료');
+                            initState.configLoaded = true;
+                            resolve();
+                        } else if (attempts >= maxAttempts) {
+                            const missing = [];
+                            if (!hasConfig) missing.push('CONFIG');
+                            if (!hasSupabase) missing.push('Supabase');
+                            reject(new Error(`필수 라이브러리 로드 실패: ${missing.join(', ')}`));
+                        } else {
+                            setTimeout(check, 100);
+                        }
+                    };
+                    
+                    check();
+                });
+            }
+
+            // SupabaseAPI 초기화 대기
+            function waitForSupabaseAPI() {
+                return new Promise((resolve, reject) => {
+                    let attempts = 0;
+                    const maxAttempts = 30; // 3초
+                    
+                    const check = async () => {
+                        attempts++;
+                        
+                        if (window.SupabaseAPI && typeof window.SupabaseAPI.init === 'function') {
+                            try {
+                                console.log('🔗 SupabaseAPI 초기화 중...');
+                                const success = await window.SupabaseAPI.init();
+                                
+                                if (success) {
+                                    console.log('✅ SupabaseAPI 초기화 완료');
+                                    initState.supabaseInitialized = true;
+                                    resolve();
+                                    return;
+                                }
+                            } catch (error) {
+                                console.warn(`⚠️ SupabaseAPI 초기화 시도 ${attempts}/${maxAttempts} 실패:`, error.message);
+                            }
+                        }
+                        
+                        if (attempts >= maxAttempts) {
+                            reject(new Error('SupabaseAPI 초기화에 실패했습니다. 페이지를 새로고침해주세요.'));
+                        } else {
+                            setTimeout(check, 100);
+                        }
+                    };
+                    
+                    check();
+                });
+            }
+
+            // 필요한 모듈들 대기
+            function waitForRequiredModules() {
+                return new Promise((resolve, reject) => {
+                    let attempts = 0;
+                    const maxAttempts = 50; // 5초
+                    
+                    const check = () => {
+                        attempts++;
+                        
+                        // 이 페이지에서 필요한 모듈들 확인
+                        const hasApiHelper = window.ApiHelper;
+                        const hasNotificationSystem = window.NotificationSystem;
+                        const hasInstituteInfoModule = window.InstituteInfoModule;
+                        
+                        console.log(`🔍 모듈 체크 ${attempts}/${maxAttempts}:`, {
+                            ApiHelper: hasApiHelper,
+                            NotificationSystem: hasNotificationSystem,
+                            InstituteInfoModule: hasInstituteInfoModule
+                        });
+                        
+                        if (hasApiHelper && hasNotificationSystem && hasInstituteInfoModule) {
+                            console.log('✅ 필요한 모듈 로드 완료');
+                            initState.modulesReady = true;
+                            resolve();
+                        } else if (attempts >= maxAttempts) {
+                            const missing = [];
+                            if (!hasApiHelper) missing.push('ApiHelper');
+                            if (!hasNotificationSystem) missing.push('NotificationSystem');
+                            if (!hasInstituteInfoModule) missing.push('InstituteInfoModule');
+                            
+                            // 모듈이 없어도 기본 기능은 동작하도록 경고만 표시
+                            console.warn(`⚠️ 일부 모듈 로드 실패: ${missing.join(', ')}`);
+                            resolve(); // reject 대신 resolve로 계속 진행
+                        } else {
+                            setTimeout(check, 100);
+                        }
+                    };
+                    
+                    check();
+                });
+            }
+
+            // DOMContentLoaded 이벤트 리스너
+            document.addEventListener('DOMContentLoaded', safeInitialize);
+
+            return {
+                initialize: safeInitialize
+            };
+        })();
+
+        // 학생 인증 확인 (기존 함수를 전역으로 유지)
         function checkStudentAuthentication() {
             const studentData = localStorage.getItem('currentStudent');
             if (!studentData) {
-                alert('로그인이 필요합니다.');
-                window.location.href = '../index.html';
-                return;
+                if (window.NotificationSystem && typeof window.NotificationSystem.showError === 'function') {
+                    window.NotificationSystem.showError('로그인이 필요합니다.');
+                } else {
+                    alert('로그인이 필요합니다.');
+                }
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1500);
+                return false;
             }
+            return true;
         }
 
-        // 에러 표시
+        // 에러 표시 (기존 함수를 전역으로 유지)
         function showError(message) {
             document.getElementById('loadingSpinner').style.display = 'none';
             document.getElementById('instituteCard').style.display = 'none';
@@ -535,17 +709,27 @@
             const errorElement = document.getElementById('errorMessage');
             errorElement.textContent = message;
             errorElement.style.display = 'block';
+            
+            // 아이콘 재렌더링
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         }
 
-        // 빈 상태 표시
+        // 빈 상태 표시 (기존 함수를 전역으로 유지)
         function showEmptyState() {
             document.getElementById('loadingSpinner').style.display = 'none';
             document.getElementById('instituteCard').style.display = 'none';
             document.getElementById('errorMessage').style.display = 'none';
             document.getElementById('emptyState').style.display = 'block';
+            
+            // 아이콘 재렌더링
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         }
 
-        // 학당 정보 표시
+        // 학당 정보 표시 (기존 함수를 전역으로 유지)
         function showInstituteInfo(institute, programs) {
             document.getElementById('loadingSpinner').style.display = 'none';
             document.getElementById('errorMessage').style.display = 'none';
@@ -597,9 +781,14 @@
             displayPrograms(programs);
 
             document.getElementById('instituteCard').style.display = 'block';
+            
+            // 아이콘 재렌더링
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         }
 
-        // 문화 프로그램 표시
+        // 문화 프로그램 표시 (기존 함수를 전역으로 유지)
         function displayPrograms(programs) {
             const programsGrid = document.getElementById('programsGrid');
             programsGrid.innerHTML = '';
@@ -611,6 +800,10 @@
                         <p>등록된 문화 프로그램이 없습니다.</p>
                     </div>
                 `;
+                // 아이콘 재렌더링
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
                 return;
             }
 
@@ -655,6 +848,21 @@
             // 아이콘 다시 렌더링
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
+            }
+        }
+
+        // loadInstituteInfo 함수는 InstituteInfoModule에서 제공됨
+        async function loadInstituteInfo() {
+            if (window.InstituteInfoModule && typeof window.InstituteInfoModule.loadInstituteInfo === 'function') {
+                try {
+                    await window.InstituteInfoModule.loadInstituteInfo();
+                } catch (error) {
+                    console.error('학당 정보 로드 실패:', error);
+                    showError('학당 정보를 불러오는 중 오류가 발생했습니다.');
+                }
+            } else {
+                console.warn('⚠️ InstituteInfoModule을 찾을 수 없습니다. 기본 동작을 시도합니다.');
+                showError('학당 정보 모듈을 로드할 수 없습니다.');
             }
         }
     </script>
