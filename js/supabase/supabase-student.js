@@ -1,6 +1,7 @@
-// 🚀 Supabase 학생 전용 기능 모듈 v4.2.0
+// 🚀 Supabase 학생 전용 기능 모듈 v4.3.0
 // 학생 인증, 교구 신청, 영수증 관리, 수업계획, 배송지 관리 등
 // SupabaseCore에 의존하는 학생 전용 모듈
+// 🔧 v4.3.0 - requests 테이블 구조 호환성 업데이트
 
 const SupabaseStudent = {
     // SupabaseCore 의존성 확인
@@ -471,7 +472,7 @@ const SupabaseStudent = {
     },
 
     // ===================
-    // 교구 신청 관리
+    // 📦 교구 신청 관리 - v4.3.0 호환성 업데이트
     // ===================
     async getStudentApplications(studentId) {
         const result = await this.core.safeApiCall('학생 신청 내역 조회', async () => {
@@ -486,6 +487,7 @@ const SupabaseStudent = {
         return result.success ? (result.data || []) : [];
     },
 
+    // 🔧 v4.3.0 호환성 - purchase_link → link 컬럼명 변경
     async createApplication(studentId, formData) {
         return await this.core.safeApiCall('교구 신청 생성', async () => {
             const client = await this.core.ensureClient();
@@ -495,7 +497,7 @@ const SupabaseStudent = {
                 purpose: formData.purpose,
                 price: formData.price,
                 purchase_type: formData.purchase_type || 'online',
-                purchase_link: formData.purchase_link || null,
+                link: formData.purchase_link || null,  // 🔧 v4.3.0: purchase_link → link
                 is_bundle: formData.is_bundle || false,
                 status: 'pending',
                 created_at: new Date().toISOString(),
@@ -509,7 +511,7 @@ const SupabaseStudent = {
         });
     },
 
-    // 🚀 교구 신청 수정 (student-addon.js에서 사용)
+    // 🔧 v4.3.0 호환성 - purchase_link → link 컬럼명 변경
     async updateApplication(applicationId, formData) {
         return await this.core.safeApiCall('교구 신청 수정', async () => {
             const client = await this.core.ensureClient();
@@ -518,7 +520,7 @@ const SupabaseStudent = {
                 purpose: formData.purpose,
                 price: formData.price,
                 purchase_type: formData.purchase_type || 'online',
-                purchase_link: formData.purchase_link || null,
+                link: formData.purchase_link || null,  // 🔧 v4.3.0: purchase_link → link
                 is_bundle: formData.is_bundle || false,
                 updated_at: new Date().toISOString()
             };
@@ -860,4 +862,4 @@ const SupabaseStudent = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseStudent = SupabaseStudent;
 
-console.log('🚀 SupabaseStudent v4.2.0 loaded - 학생 전용 기능 모듈 (영수증, 교구신청, 수업계획 등)');
+console.log('🚀 SupabaseStudent v4.3.0 loaded - v4.3 requests 테이블 호환성 업데이트 (purchase_link → link)');
