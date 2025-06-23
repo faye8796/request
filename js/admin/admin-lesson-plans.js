@@ -214,7 +214,7 @@ AdminManager.LessonPlans = {
                         overallGoals: '목표가 설정되지 않았습니다.'
                     },
                     status: plan.status || 'draft',
-                    approval_status: plan.approval_status || 'pending'
+                    approval_status: plan.approval_status || this.calculateApprovalStatus(plan)
                 };
             });
             
@@ -289,18 +289,21 @@ AdminManager.LessonPlans = {
         }
     },
 
-    // 승인 상태 계산
+    // 🔧 v2.14 - 승인 상태 계산 (status 필드 기반으로 수정)
     calculateApprovalStatus(plan) {
         if (!plan) return 'pending';
         
-        if (plan.approved_at && plan.approved_by) {
-            return 'approved';
-        } else if (plan.rejection_reason && plan.rejection_reason.trim() !== '') {
-            return 'rejected';
-        } else if (plan.status === 'submitted') {
-            return 'pending';
-        } else {
-            return 'draft';
+        // 🔧 status 필드만을 기준으로 상태 판단 (approved_at, approved_by 컬럼 제거됨)
+        switch (plan.status) {
+            case 'approved':
+                return 'approved';
+            case 'rejected':
+                return 'rejected';
+            case 'submitted':
+                return 'pending';
+            case 'draft':
+            default:
+                return 'draft';
         }
     },
 
@@ -313,7 +316,7 @@ AdminManager.LessonPlans = {
         };
         
         plans.forEach(plan => {
-            const status = plan.approval_status || 'pending';
+            const status = plan.approval_status || this.calculateApprovalStatus(plan);
             if (stats.hasOwnProperty(status)) {
                 stats[status]++;
             }
@@ -333,11 +336,11 @@ AdminManager.LessonPlans = {
         if (rejectedElement) rejectedElement.textContent = `반려됨: ${stats.rejected}`;
     },
 
-    // 🔧 v2.13 - 수업계획 카드 생성 (상태 표시 로직 개선)
+    // 🔧 v2.14 - 수업계획 카드 생성 (상태 표시 로직 개선)
     createLessonPlanCard(plan) {
         const card = Utils.createElement('div', 'lesson-plan-card');
         
-        // 🔧 v2.13 - 상태 판단 로직 개선 (rejected 상태 고려)
+        // 🔧 v2.14 - 상태 판단 로직 개선 (status 필드 기반)
         let statusText = '임시저장';
         let statusClass = 'draft';
         
@@ -359,16 +362,18 @@ AdminManager.LessonPlans = {
         let approvalStatusText = '대기 중';
         let approvalStatusClass = 'pending';
         
-        if (plan.approval_status === 'approved') {
+        const approvalStatus = plan.approval_status || this.calculateApprovalStatus(plan);
+        
+        if (approvalStatus === 'approved') {
             approvalStatusText = '승인됨';
             approvalStatusClass = 'approved';
-        } else if (plan.approval_status === 'rejected') {
+        } else if (approvalStatus === 'rejected') {
             approvalStatusText = '반려됨';
             approvalStatusClass = 'rejected';
-        } else if (plan.approval_status === 'pending') {
+        } else if (approvalStatus === 'pending') {
             approvalStatusText = '검토 중';
             approvalStatusClass = 'pending';
-        } else if (plan.approval_status === 'draft') {
+        } else if (approvalStatus === 'draft') {
             approvalStatusText = '미제출';
             approvalStatusClass = 'draft';
         }
@@ -427,7 +432,7 @@ AdminManager.LessonPlans = {
         return card;
     },
 
-    // 🔧 v2.13 - 수업계획 액션 버튼 생성 (재승인 버튼 제거)
+    // 🔧 v2.14 - 수업계획 액션 버튼 생성 (승인일 표시 수정)
     createLessonPlanActionButtons(plan) {
         const baseButtons = `
             <button class="btn small secondary view-lesson-plan-btn" 
@@ -442,17 +447,17 @@ AdminManager.LessonPlans = {
             return baseButtons + '<span class="plan-action-note">수업계획이 제출되지 않았습니다.</span>';
         }
         
-        if (plan.approval_status === 'approved') {
+        if (plan.status === 'approved') {
             return baseButtons + `
                 <span class="plan-approved-info">
-                    승인일: ${plan.approved_at ? new Date(plan.approved_at).toLocaleDateString('ko-KR') : '-'}
+                    승인일: ${plan.updated_at ? new Date(plan.updated_at).toLocaleDateString('ko-KR') : '-'}
                 </span>
             `;
         }
         
-        // 🔧 v2.13 - 반려된 수업계획에서 재승인 버튼 완전 제거
+        // 🔧 v2.14 - 반려된 수업계획에서 재승인 버튼 완전 제거
         // 정상적인 프로세스: 학생이 수정 후 재제출 → 관리자가 다시 승인
-        if (plan.approval_status === 'rejected') {
+        if (plan.status === 'rejected') {
             return baseButtons + `
                 <div class="plan-rejected-info">
                     <span class="plan-rejected-date">
@@ -465,8 +470,8 @@ AdminManager.LessonPlans = {
             `;
         }
         
-        // 제출됨(pending) 상태일 때만 승인/반려 버튼 표시
-        if (plan.status === 'submitted' && plan.approval_status === 'pending') {
+        // 제출됨(submitted) 상태일 때만 승인/반려 버튼 표시
+        if (plan.status === 'submitted') {
             return baseButtons + `
                 <button class="btn small approve" data-action="approve" data-student-id="${plan.user_id}">
                     <i data-lucide="check"></i> 승인
@@ -796,7 +801,7 @@ AdminManager.LessonPlans = {
         }
     },
 
-    // 수업계획 모달 버튼 설정
+    // 🔧 v2.14 - 수업계획 모달 버튼 설정 (상태 기반 개선)
     setupLessonPlanModalButtons(lessonPlan, studentId) {
         const approveBtn = Utils.$('#approveLessonPlanBtn');
         const rejectBtn = Utils.$('#rejectLessonPlanBtn');
@@ -804,7 +809,8 @@ AdminManager.LessonPlans = {
         if (approveBtn) approveBtn.dataset.studentId = studentId;
         if (rejectBtn) rejectBtn.dataset.studentId = studentId;
 
-        if (lessonPlan.status === 'submitted' && lessonPlan.approval_status === 'pending') {
+        // submitted 상태일 때만 승인/반려 버튼 표시
+        if (lessonPlan.status === 'submitted') {
             if (approveBtn) approveBtn.style.display = 'inline-flex';
             if (rejectBtn) rejectBtn.style.display = 'inline-flex';
         } else {
@@ -994,4 +1000,4 @@ AdminManager.LessonPlans = {
 // 전역 접근을 위한 별명
 window.AdminLessonPlans = AdminManager.LessonPlans;
 
-console.log('📚 AdminManager.LessonPlans 모듈 로드 완료 (v2.13 - 재승인 버튼 제거 및 상태 표시 로직 개선)');
+console.log('📚 AdminManager.LessonPlans 모듈 로드 완료 (v2.14 - approved_at/approved_by 컬럼 참조 제거 및 상태 로직 개선)');
