@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>문화교구 신청 - 세종학당 문화인턴 지원 시스템</title>
     
-    <!-- CSS Files - Updated Cache Busting -->
-    <link rel="stylesheet" href="../css/main.css?v=4.0.0">
-    <link rel="stylesheet" href="../css/student.css?v=4.0.0">
-    <link rel="stylesheet" href="../css/lesson-plan.css?v=4.0.0">
+    <!-- CSS Files - Updated Cache Busting ---->
+    <link rel="stylesheet" href="../css/main.css?v=4.1.0">
+    <link rel="stylesheet" href="../css/student.css?v=4.1.0">
+    <link rel="stylesheet" href="../css/lesson-plan.css?v=4.1.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <!-- Supabase JavaScript Client - Fixed CDN URL with Cache Busting -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=4.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=4.1.0"></script>
 </head>
 <body>
     <!-- Main App Container -->
@@ -421,44 +421,135 @@
         </div>
     </div>
 
-    <!-- JavaScript Files - v4.0 모듈 시스템 완전 업데이트 -->
-    
-    <!-- 🔧 1단계: 핵심 설정 및 의존성 -->
-    <script src="../js/config.js?v=4.0.0"></script>
-    <script src="../js/supabase-client.js?v=4.0.0"></script>
-    <script src="../js/utils.js?v=4.0.0"></script>
-    <script src="../js/auth.js?v=4.0.0"></script>
-    <script src="../js/lesson-plan.js?v=4.0.0"></script>
+    <!-- 시스템 오류 알림 모달 -->
+    <div id="systemErrorModal" class="modal">
+        <div class="modal-content">
+            <h3>시스템 오류</h3>
+            <div id="systemErrorContent">
+                <div class="error-info">
+                    <i data-lucide="alert-triangle" style="width: 48px; height: 48px; color: #ef4444;"></i>
+                    <div>
+                        <h4>페이지를 정상적으로 로드할 수 없습니다</h4>
+                        <p id="systemErrorMessage">시스템 초기화 중 오류가 발생했습니다.</p>
+                    </div>
+                </div>
+                <div class="error-actions">
+                    <button id="refreshPageBtn" class="btn primary">
+                        <i data-lucide="refresh-cw"></i>
+                        페이지 새로고침
+                    </button>
+                    <button id="clearCacheBtn" class="btn secondary">
+                        <i data-lucide="trash-2"></i>
+                        캐시 지우고 다시 시도
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <!-- 🔧 2단계: 학생 모듈 시스템 (순서 중요) -->
+    <!-- JavaScript Files - v4.1 캐시 무효화 및 안정성 강화 -->
+    
+    <!-- 🔧 1단계: 핵심 설정 및 의존성 (순서 중요) -->
+    <script src="../js/config.js?v=4.1.0"></script>
+    <script src="../js/supabase-client.js?v=4.1.0"></script>
+    <script src="../js/utils.js?v=4.1.0"></script>
+    <script src="../js/auth.js?v=4.1.0"></script>
+    <script src="../js/lesson-plan.js?v=4.1.0"></script>
+
+    <!-- 🔧 2단계: 학생 모듈 시스템 (의존성 순서대로) -->
+    <script>
+        // 🛡️ 모듈 로딩 안전장치 - v4.1
+        window.moduleLoadTracker = {
+            loaded: [],
+            errors: [],
+            startTime: Date.now(),
+            
+            track: function(moduleName, success) {
+                if (success) {
+                    this.loaded.push(moduleName);
+                    console.log('✅ ' + moduleName + ' 로드 성공');
+                } else {
+                    this.errors.push(moduleName);
+                    console.error('❌ ' + moduleName + ' 로드 실패');
+                }
+            },
+            
+            getStatus: function() {
+                return {
+                    loaded: this.loaded,
+                    errors: this.errors,
+                    loadTime: Date.now() - this.startTime
+                };
+            }
+        };
+        
+        // 🔧 에러 캐치용 전역 핸들러
+        window.addEventListener('error', function(event) {
+            console.error('전역 스크립트 오류:', {
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno
+            });
+            
+            // 시스템 오류 모달 표시
+            if (typeof showSystemErrorModal === 'function') {
+                showSystemErrorModal(event.message);
+            }
+        });
+    </script>
+
     <!-- API 도우미 (가장 먼저) -->
-    <script src="../js/student/api-helper.js?v=4.0.0"></script>
+    <script src="../js/student/api-helper.js?v=4.1.0" 
+            onload="window.moduleLoadTracker.track('api-helper', true)" 
+            onerror="window.moduleLoadTracker.track('api-helper', false)"></script>
+    
     <!-- 알림 시스템 -->
-    <script src="../js/student/notification-system.js?v=4.0.0"></script>
+    <script src="../js/student/notification-system.js?v=4.1.0"
+            onload="window.moduleLoadTracker.track('notification-system', true)" 
+            onerror="window.moduleLoadTracker.track('notification-system', false)"></script>
+    
     <!-- 수업계획 도우미 -->
-    <script src="../js/student/lesson-plan-helper.js?v=4.0.0"></script>
+    <script src="../js/student/lesson-plan-helper.js?v=4.1.0"
+            onload="window.moduleLoadTracker.track('lesson-plan-helper', true)" 
+            onerror="window.moduleLoadTracker.track('lesson-plan-helper', false)"></script>
+    
     <!-- 교구 신청 모듈 -->
-    <script src="../js/student/equipment-request.js?v=4.0.0"></script>
+    <script src="../js/student/equipment-request.js?v=4.1.0"
+            onload="window.moduleLoadTracker.track('equipment-request', true)" 
+            onerror="window.moduleLoadTracker.track('equipment-request', false)"></script>
+    
     <!-- 배송지 관리 -->
-    <script src="../js/student/shipping-management.js?v=4.0.0"></script>
+    <script src="../js/student/shipping-management.js?v=4.1.0"
+            onload="window.moduleLoadTracker.track('shipping-management', true)" 
+            onerror="window.moduleLoadTracker.track('shipping-management', false)"></script>
+    
     <!-- 영수증 관리 -->
-    <script src="../js/student/receipt-management.js?v=4.0.0"></script>
+    <script src="../js/student/receipt-management.js?v=4.1.0"
+            onload="window.moduleLoadTracker.track('receipt-management', true)" 
+            onerror="window.moduleLoadTracker.track('receipt-management', false)"></script>
+    
     <!-- 항공권 신청 -->
-    <script src="../js/student/flight-request.js?v=4.0.0"></script>
+    <script src="../js/student/flight-request.js?v=4.1.0"
+            onload="window.moduleLoadTracker.track('flight-request', true)" 
+            onerror="window.moduleLoadTracker.track('flight-request', false)"></script>
 
     <!-- 🔧 3단계: 핵심 매니저 (모든 모듈 로드 후) -->
-    <script src="../js/student.js?v=4.0.0"></script>
+    <script src="../js/student.js?v=4.1.0"
+            onload="window.moduleLoadTracker.track('student-manager', true)" 
+            onerror="window.moduleLoadTracker.track('student-manager', false)"></script>
     
-    <!-- 교구 신청 페이지 초기화 - v4.0 모듈 시스템 업데이트 -->
+    <!-- 교구 신청 페이지 초기화 - v4.1 안정성 강화 -->
     <script>
         /**
-         * 🚀 교구 신청 페이지 초기화 로직 v4.0 - 완전 모듈 시스템
-         * - 새로운 모듈 시스템 지원
-         * - 향상된 의존성 관리
-         * - 안정성 강화
+         * 🚀 교구 신청 페이지 초기화 로직 v4.1 - 캐시 문제 해결 및 안정성 강화
+         * - 개선된 모듈 로딩 추적
+         * - 강화된 오류 처리
+         * - 캐시 무효화 메커니즘
+         * - 사용자 친화적 오류 복구
          */
 
-        // 🎯 전역 상태 관리 v4.0
+        // 🎯 전역 상태 관리 v4.1 - 개선됨
         window.EquipmentRequestManager = {
             isInitialized: false,
             userDataLoaded: false,
@@ -467,17 +558,102 @@
             maxRetries: 3,
             dependenciesLoaded: false,
             lessonPlanChecked: false,
-            version: '4.0.0'
+            version: '4.1.0',
+            loadStartTime: Date.now()
         };
 
-        // 🔧 의존성 확인 함수 - v4.0 업데이트
+        // 🆕 시스템 오류 모달 표시 함수
+        function showSystemErrorModal(errorMessage) {
+            try {
+                const modal = document.getElementById('systemErrorModal');
+                const messageEl = document.getElementById('systemErrorMessage');
+                
+                if (modal && messageEl) {
+                    messageEl.textContent = errorMessage || '알 수 없는 오류가 발생했습니다.';
+                    modal.style.display = 'flex';
+                    
+                    // 새로고침 버튼
+                    const refreshBtn = document.getElementById('refreshPageBtn');
+                    if (refreshBtn) {
+                        refreshBtn.onclick = function() {
+                            window.location.reload(true);
+                        };
+                    }
+                    
+                    // 캐시 지우기 버튼
+                    const clearCacheBtn = document.getElementById('clearCacheBtn');
+                    if (clearCacheBtn) {
+                        clearCacheBtn.onclick = function() {
+                            if ('caches' in window) {
+                                caches.keys().then(function(names) {
+                                    names.forEach(function(name) {
+                                        caches.delete(name);
+                                    });
+                                }).finally(function() {
+                                    localStorage.clear();
+                                    sessionStorage.clear();
+                                    window.location.reload(true);
+                                });
+                            } else {
+                                localStorage.clear();
+                                sessionStorage.clear();
+                                window.location.reload(true);
+                            }
+                        };
+                    }
+                }
+            } catch (error) {
+                console.error('시스템 오류 모달 표시 실패:', error);
+                alert('페이지를 새로고침해주세요: ' + (errorMessage || '시스템 오류'));
+            }
+        }
+
+        // 🔧 모듈 로딩 상태 확인 - v4.1 개선
+        function checkModulesLoaded() {
+            const status = window.moduleLoadTracker.getStatus();
+            console.log('📊 모듈 로딩 상태 (v4.1):', status);
+            
+            // 필수 모듈 목록
+            const requiredModules = [
+                'api-helper',
+                'notification-system', 
+                'lesson-plan-helper',
+                'equipment-request',
+                'shipping-management',
+                'receipt-management',
+                'student-manager'
+            ];
+            
+            const missingModules = requiredModules.filter(module => 
+                !status.loaded.includes(module)
+            );
+            
+            if (missingModules.length > 0) {
+                console.warn('⚠️ 누락된 모듈 (v4.1):', missingModules);
+                
+                if (status.errors.length > 0) {
+                    console.error('❌ 로딩 실패한 모듈:', status.errors);
+                    showSystemErrorModal(
+                        '일부 시스템 모듈을 불러올 수 없습니다. 페이지를 새로고침해주세요.'
+                    );
+                    return false;
+                }
+                
+                return false;
+            }
+            
+            console.log('✅ 모든 필수 모듈 로드 완료 (v4.1)');
+            return true;
+        }
+
+        // 🔧 의존성 확인 함수 - v4.1 업데이트
         function checkRequiredDependencies() {
             const requiredObjects = [
                 'SupabaseAPI',
                 'AuthManager', 
                 'StudentManager',
                 'LessonPlanManager',
-                // 🆕 새로운 모듈들
+                // 🆕 v4.1 모듈들
                 'ApiHelper',
                 'NotificationSystem',
                 'LessonPlanHelper'
@@ -492,25 +668,26 @@
             }
             
             if (missingDependencies.length > 0) {
-                console.warn('⚠️ 누락된 의존성:', missingDependencies);
+                console.warn('⚠️ 누락된 의존성 (v4.1):', missingDependencies);
                 return false;
             }
             
-            console.log('✅ 모든 의존성 로드 완료 (v4.0)');
+            console.log('✅ 모든 의존성 로드 완료 (v4.1)');
             return true;
         }
 
-        // 🔧 의존성 로딩 대기 함수 - v4.0 개선
-        function waitForDependencies(maxWaitTime = 15000) {
+        // 🔧 의존성 로딩 대기 함수 - v4.1 개선
+        function waitForDependencies(maxWaitTime = 20000) {
             return new Promise(function(resolve, reject) {
                 const startTime = Date.now();
-                const checkInterval = 300; // 300ms마다 확인
+                const checkInterval = 500; // 500ms마다 확인 (더 자주)
                 
                 function checkDependencies() {
-                    console.log('🔍 의존성 로딩 상태 확인 중... v4.0');
+                    console.log('🔍 의존성 로딩 상태 확인 중... v4.1');
                     
-                    if (checkRequiredDependencies()) {
-                        console.log('✅ 모든 의존성 로드 완료 (v4.0)');
+                    // 모듈 로딩 완료 확인
+                    if (checkModulesLoaded() && checkRequiredDependencies()) {
+                        console.log('✅ 모든 의존성 로드 완료 (v4.1)');
                         window.EquipmentRequestManager.dependenciesLoaded = true;
                         resolve();
                         return;
@@ -518,8 +695,17 @@
                     
                     const elapsedTime = Date.now() - startTime;
                     if (elapsedTime >= maxWaitTime) {
-                        const error = new Error('의존성 로딩 시간 초과 (v4.0)');
-                        console.error('❌ 의존성 로딩 시간 초과 (v4.0)');
+                        const error = new Error('의존성 로딩 시간 초과 (v4.1)');
+                        console.error('❌ 의존성 로딩 시간 초과 (v4.1)');
+                        
+                        // 로딩 상태 분석
+                        const status = window.moduleLoadTracker.getStatus();
+                        console.error('❌ 최종 로딩 상태:', status);
+                        
+                        showSystemErrorModal(
+                            '시스템 로딩이 너무 오래 걸리고 있습니다. 네트워크 연결을 확인하고 페이지를 새로고침해주세요.'
+                        );
+                        
                         reject(error);
                         return;
                     }
@@ -535,7 +721,7 @@
         // 🎯 안전한 사용자 정보 가져오기 - API 도우미 사용
         function getCurrentUserSafely() {
             try {
-                console.log('👤 getCurrentUserSafely 호출됨 (v4.0)');
+                console.log('👤 getCurrentUserSafely 호출됨 (v4.1)');
                 
                 // ApiHelper 모듈 사용
                 if (typeof window.ApiHelper !== 'undefined' && window.ApiHelper.getCurrentUserSafely) {
@@ -556,22 +742,22 @@
                     }
                 }
 
-                console.warn('⚠️ 사용자 정보를 찾을 수 없습니다 (v4.0)');
+                console.warn('⚠️ 사용자 정보를 찾을 수 없습니다 (v4.1)');
                 return null;
             } catch (error) {
-                console.error('❌ 사용자 정보 가져오기 오류 (v4.0):', error);
+                console.error('❌ 사용자 정보 가져오기 오류 (v4.1):', error);
                 return null;
             }
         }
 
-        // 🆕 수업계획 상태 확인 및 페이지 분기 - v4.0
+        // 🆕 수업계획 상태 확인 및 페이지 분기 - v4.1
         async function checkLessonPlanStatusAndSetPage() {
             try {
-                console.log('📋 수업계획 상태 확인 시작 (v4.0)');
+                console.log('📋 수업계획 상태 확인 시작 (v4.1)');
                 
                 const currentUser = getCurrentUserSafely();
                 if (!currentUser) {
-                    console.error('❌ 사용자 정보 없음 - 로그인 페이지로 이동 (v4.0)');
+                    console.error('❌ 사용자 정보 없음 - 로그인 페이지로 이동 (v4.1)');
                     redirectToLogin();
                     return;
                 }
@@ -585,26 +771,26 @@
                     .single();
 
                 if (error && error.code !== 'PGRST116') {
-                    console.error('수업계획 조회 오류 (v4.0):', error);
+                    console.error('수업계획 조회 오류 (v4.1):', error);
                     showLessonPlanPage();
                     return;
                 }
 
-                console.log('📋 수업계획 조회 결과 (v4.0):', lessonPlan);
+                console.log('📋 수업계획 조회 결과 (v4.1):', lessonPlan);
 
                 if (!lessonPlan) {
-                    console.log('📝 수업계획 없음 → 작성 화면 표시 (v4.0)');
+                    console.log('📝 수업계획 없음 → 작성 화면 표시 (v4.1)');
                     showLessonPlanPage();
                 } else {
-                    console.log('✅ 수업계획 있음 → 교구신청 화면 표시 (v4.0)');
+                    console.log('✅ 수업계획 있음 → 교구신청 화면 표시 (v4.1)');
                     showStudentPage();
                 }
 
                 window.EquipmentRequestManager.lessonPlanChecked = true;
-                console.log('✅ 수업계획 상태 확인 완료 (v4.0)');
+                console.log('✅ 수업계획 상태 확인 완료 (v4.1)');
 
             } catch (error) {
-                console.error('❌ 수업계획 상태 확인 오류 (v4.0):', error);
+                console.error('❌ 수업계획 상태 확인 오류 (v4.1):', error);
                 showLessonPlanPage();
             }
         }
@@ -612,7 +798,7 @@
         // 🆕 수업계획 페이지 표시
         function showLessonPlanPage() {
             try {
-                console.log('📋 수업계획 페이지 표시 (v4.0)');
+                console.log('📋 수업계획 페이지 표시 (v4.1)');
                 
                 const studentPage = document.getElementById('studentPage');
                 const lessonPlanPage = document.getElementById('lessonPlanPage');
@@ -627,19 +813,19 @@
                         }
                     }, 200);
                     
-                    console.log('✅ 수업계획 페이지 표시 완료 (v4.0)');
+                    console.log('✅ 수업계획 페이지 표시 완료 (v4.1)');
                 } else {
-                    console.error('❌ 페이지 요소를 찾을 수 없습니다 (v4.0)');
+                    console.error('❌ 페이지 요소를 찾을 수 없습니다 (v4.1)');
                 }
             } catch (error) {
-                console.error('❌ 수업계획 페이지 표시 오류 (v4.0):', error);
+                console.error('❌ 수업계획 페이지 표시 오류 (v4.1):', error);
             }
         }
 
         // 🆕 교구신청 페이지 표시
         function showStudentPage() {
             try {
-                console.log('🛒 교구신청 페이지 표시 (v4.0)');
+                console.log('🛒 교구신청 페이지 표시 (v4.1)');
                 
                 const studentPage = document.getElementById('studentPage');
                 const lessonPlanPage = document.getElementById('lessonPlanPage');
@@ -648,18 +834,18 @@
                     lessonPlanPage.classList.remove('active');
                     studentPage.classList.add('active');
                     
-                    console.log('✅ 교구신청 페이지 표시 완료 (v4.0)');
+                    console.log('✅ 교구신청 페이지 표시 완료 (v4.1)');
                 } else {
-                    console.error('❌ 페이지 요소를 찾을 수 없습니다 (v4.0)');
+                    console.error('❌ 페이지 요소를 찾을 수 없습니다 (v4.1)');
                 }
             } catch (error) {
-                console.error('❌ 교구신청 페이지 표시 오류 (v4.0):', error);
+                console.error('❌ 교구신청 페이지 표시 오류 (v4.1):', error);
             }
         }
 
-        // 🎯 사용자 정보 로드 및 UI 업데이트 - v4.0
+        // 🎯 사용자 정보 로드 및 UI 업데이트 - v4.1
         function loadAndDisplayUserInfo() {
-            console.log('👤 사용자 정보 로드 시작 (v4.0)');
+            console.log('👤 사용자 정보 로드 시작 (v4.1)');
             
             try {
                 // ApiHelper 모듈 사용
@@ -667,25 +853,25 @@
                     return window.ApiHelper.updateUserDisplay()
                         .then(function() {
                             window.EquipmentRequestManager.userDataLoaded = true;
-                            console.log('✅ 사용자 정보 로드 완료 (v4.0 - ApiHelper)');
+                            console.log('✅ 사용자 정보 로드 완료 (v4.1 - ApiHelper)');
                         });
                 }
 
                 // 폴백: 직접 처리
                 const currentUser = getCurrentUserSafely();
                 if (!currentUser) {
-                    throw new Error('로그인 세션이 없습니다 (v4.0)');
+                    throw new Error('로그인 세션이 없습니다 (v4.1)');
                 }
 
                 updateUserInterface(currentUser);
                 
                 window.EquipmentRequestManager.userDataLoaded = true;
-                console.log('✅ 사용자 정보 로드 완료 (v4.0 - 폴백)');
+                console.log('✅ 사용자 정보 로드 완료 (v4.1 - 폴백)');
                 
                 return Promise.resolve(currentUser);
 
             } catch (error) {
-                console.error('❌ 사용자 정보 로드 오류 (v4.0):', error);
+                console.error('❌ 사용자 정보 로드 오류 (v4.1):', error);
                 showUserDataError(error.message);
                 return Promise.reject(error);
             }
@@ -706,27 +892,27 @@
                     detailsEl.textContent = field ? `${institute} - ${field}` : institute;
                 }
                 
-                console.log('✅ 사용자 인터페이스 업데이트 완료 (v4.0)');
+                console.log('✅ 사용자 인터페이스 업데이트 완료 (v4.1)');
             } catch (error) {
-                console.error('❌ UI 업데이트 오류 (v4.0):', error);
+                console.error('❌ UI 업데이트 오류 (v4.1):', error);
             }
         }
 
-        // 🔧 StudentManager 초기화 - v4.0 모듈 시스템
+        // 🔧 StudentManager 초기화 - v4.1 모듈 시스템
         function initializeStudentManager() {
-            console.log('🎓 StudentManager 초기화 시작 (v4.0)');
+            console.log('🎓 StudentManager 초기화 시작 (v4.1)');
             
             if (window.EquipmentRequestManager.managerInitialized) {
-                console.log('⚠️ StudentManager 이미 초기화됨 (v4.0)');
+                console.log('⚠️ StudentManager 이미 초기화됨 (v4.1)');
                 return Promise.resolve();
             }
 
             if (typeof StudentManager === 'undefined') {
-                console.error('❌ StudentManager를 찾을 수 없습니다 (v4.0)');
+                console.error('❌ StudentManager를 찾을 수 없습니다 (v4.1)');
                 return Promise.reject(new Error('StudentManager를 찾을 수 없습니다'));
             }
 
-            console.log('✅ StudentManager 확인됨 (v4.0)');
+            console.log('✅ StudentManager 확인됨 (v4.1)');
 
             return new Promise(function(resolve, reject) {
                 try {
@@ -736,26 +922,26 @@
                         initPromise
                             .then(function() {
                                 window.EquipmentRequestManager.managerInitialized = true;
-                                console.log('✅ StudentManager 초기화 완료 (v4.0)');
+                                console.log('✅ StudentManager 초기화 완료 (v4.1)');
                                 resolve();
                             })
                             .catch(function(error) {
-                                console.error('❌ StudentManager 초기화 실패 (v4.0):', error);
+                                console.error('❌ StudentManager 초기화 실패 (v4.1):', error);
                                 reject(error);
                             });
                     } else {
                         window.EquipmentRequestManager.managerInitialized = true;
-                        console.log('✅ StudentManager 초기화 완료 (v4.0 - 동기)');
+                        console.log('✅ StudentManager 초기화 완료 (v4.1 - 동기)');
                         resolve();
                     }
                 } catch (error) {
-                    console.error('❌ StudentManager 초기화 실패 (v4.0):', error);
+                    console.error('❌ StudentManager 초기화 실패 (v4.1):', error);
                     reject(error);
                 }
             });
         }
 
-        // 🎯 네비게이션 설정 - v4.0
+        // 🎯 네비게이션 설정 - v4.1
         function setupNavigation() {
             // 대시보드로 돌아가기
             const backBtn = document.getElementById('backToDashboard');
@@ -769,18 +955,18 @@
             const lessonPlanBtn = document.getElementById('lessonPlanBtn');
             if (lessonPlanBtn) {
                 lessonPlanBtn.addEventListener('click', function() {
-                    console.log('📋 수업계획 버튼 클릭됨 (v4.0)');
+                    console.log('📋 수업계획 버튼 클릭됨 (v4.1)');
                     
                     if (typeof StudentManager !== 'undefined' && 
                         typeof StudentManager.handleLessonPlanClick === 'function') {
                         try {
                             StudentManager.handleLessonPlanClick();
                         } catch (error) {
-                            console.error('❌ 수업계획 처리 오류 (v4.0):', error);
+                            console.error('❌ 수업계획 처리 오류 (v4.1):', error);
                             alert('수업계획 처리 중 오류가 발생했습니다.');
                         }
                     } else {
-                        console.error('❌ StudentManager.handleLessonPlanClick 함수를 찾을 수 없습니다 (v4.0)');
+                        console.error('❌ StudentManager.handleLessonPlanClick 함수를 찾을 수 없습니다 (v4.1)');
                         alert('시스템이 아직 로딩 중입니다. 잠시 후 다시 시도해주세요.');
                     }
                 });
@@ -790,19 +976,19 @@
             const shippingAddressBtn = document.getElementById('shippingAddressBtn');
             if (shippingAddressBtn) {
                 shippingAddressBtn.addEventListener('click', function() {
-                    console.log('📦 배송지 설정 버튼 클릭됨 (v4.0)');
+                    console.log('📦 배송지 설정 버튼 클릭됨 (v4.1)');
                     
                     if (typeof StudentManager !== 'undefined' && 
                         typeof StudentManager.handleShippingClick === 'function') {
                         StudentManager.handleShippingClick();
                     } else {
-                        console.error('❌ 배송지 설정 함수를 찾을 수 없습니다 (v4.0)');
+                        console.error('❌ 배송지 설정 함수를 찾을 수 없습니다 (v4.1)');
                         alert('배송지 설정 기능을 사용할 수 없습니다.');
                     }
                 });
             }
 
-            console.log('✅ 네비게이션 설정 완료 (v4.0)');
+            console.log('✅ 네비게이션 설정 완료 (v4.1)');
         }
 
         // 🎯 오류 메시지 표시 함수들
@@ -836,7 +1022,7 @@
             }
 
             // 폴백: 간단한 로딩 표시
-            console.log('⏳ 시스템 로딩 중... (v4.0)');
+            console.log('⏳ 시스템 로딩 중... (v4.1)');
         }
 
         function hideLoadingIndicator() {
@@ -846,12 +1032,12 @@
                 return;
             }
 
-            console.log('✅ 로딩 완료 (v4.0)');
+            console.log('✅ 로딩 완료 (v4.1)');
         }
 
         // 🎯 재시도 함수들
         function retryUserDataLoad() {
-            console.log('🔄 사용자 데이터 로드 재시도 (v4.0)');
+            console.log('🔄 사용자 데이터 로드 재시도 (v4.1)');
             
             loadAndDisplayUserInfo()
                 .then(function() {
@@ -860,7 +1046,7 @@
                     }
                 })
                 .catch(function() {
-                    console.error('❌ 재시도 실패 (v4.0)');
+                    console.error('❌ 재시도 실패 (v4.1)');
                 });
         }
 
@@ -872,9 +1058,9 @@
             }
         }
 
-        // 🚀 메인 초기화 함수 - v4.0 완전 업데이트
+        // 🚀 메인 초기화 함수 - v4.1 완전 업데이트
         function initializeEquipmentRequestPage() {
-            console.log('🚀 Equipment Request 페이지 초기화 시작 (v4.0)');
+            console.log('🚀 Equipment Request 페이지 초기화 시작 (v4.1)');
             
             try {
                 window.EquipmentRequestManager.isInitialized = false;
@@ -883,15 +1069,15 @@
                 
                 return waitForDependencies()
                     .then(function() {
-                        console.log('✅ 1단계: 의존성 로딩 완료 (v4.0)');
+                        console.log('✅ 1단계: 의존성 로딩 완료 (v4.1)');
                         return loadAndDisplayUserInfo();
                     })
                     .then(function() {
-                        console.log('✅ 2단계: 사용자 정보 로드 완료 (v4.0)');
+                        console.log('✅ 2단계: 사용자 정보 로드 완료 (v4.1)');
                         return checkLessonPlanStatusAndSetPage();
                     })
                     .then(function() {
-                        console.log('✅ 3단계: 수업계획 상태 확인 완료 (v4.0)');
+                        console.log('✅ 3단계: 수업계획 상태 확인 완료 (v4.1)');
                         
                         const studentPage = document.getElementById('studentPage');
                         if (studentPage && studentPage.classList.contains('active')) {
@@ -900,16 +1086,17 @@
                         return Promise.resolve();
                     })
                     .then(function() {
-                        console.log('✅ 4단계: StudentManager 초기화 완료 (v4.0)');
+                        console.log('✅ 4단계: StudentManager 초기화 완료 (v4.1)');
                         
                         setupNavigation();
-                        console.log('✅ 5단계: 네비게이션 설정 완료 (v4.0)');
+                        console.log('✅ 5단계: 네비게이션 설정 완료 (v4.1)');
                         
                         window.EquipmentRequestManager.isInitialized = true;
-                        console.log('🎉 Equipment Request 페이지 초기화 완료 (v4.0)');
+                        const loadTime = Date.now() - window.EquipmentRequestManager.loadStartTime;
+                        console.log('🎉 Equipment Request 페이지 초기화 완료 (v4.1) - ' + loadTime + 'ms');
                     })
                     .catch(function(error) {
-                        console.error('❌ 페이지 초기화 실패 (v4.0):', error);
+                        console.error('❌ 페이지 초기화 실패 (v4.1):', error);
                         
                         if (error.message.includes('로그인 세션')) {
                             setTimeout(function() {
@@ -917,7 +1104,7 @@
                                 window.location.href = '../index.html';
                             }, 1000);
                         } else {
-                            showManagerError('페이지 초기화에 실패했습니다: ' + error.message);
+                            showSystemErrorModal('페이지 초기화에 실패했습니다: ' + error.message);
                         }
                     })
                     .finally(function() {
@@ -925,26 +1112,26 @@
                     });
                     
             } catch (error) {
-                console.error('❌ 초기화 중 예외 발생 (v4.0):', error);
+                console.error('❌ 초기화 중 예외 발생 (v4.1):', error);
                 hideLoadingIndicator();
-                showManagerError('페이지 초기화 중 오류가 발생했습니다');
+                showSystemErrorModal('페이지 초기화 중 오류가 발생했습니다');
             }
         }
 
         // 🎯 DOM 로드 완료 시 실행
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 v4.0 (완전 모듈 시스템)');
+            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 v4.1 (캐시 문제 해결)');
             
             // Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
-                console.log('✅ Lucide 아이콘 초기화 완료 (v4.0)');
+                console.log('✅ Lucide 아이콘 초기화 완료 (v4.1)');
             }
             
-            // 페이지 초기화 시작
+            // 모든 스크립트 로딩 완료까지 잠시 대기 후 초기화
             setTimeout(function() {
                 initializeEquipmentRequestPage();
-            }, 200);
+            }, 1000); // 1초 대기로 증가 (안전성 확보)
         });
 
         // 🎯 전역 함수 등록
@@ -952,17 +1139,18 @@
         window.redirectToLogin = redirectToLogin;
         window.initializeEquipmentRequestPage = initializeEquipmentRequestPage;
         window.checkRequiredDependencies = checkRequiredDependencies;
+        window.showSystemErrorModal = showSystemErrorModal;
 
         // 🎯 호환성 함수
         window.initializeStudentPage = function() {
-            console.log('🔄 initializeStudentPage 호출됨 (v4.0 호환성 함수)');
+            console.log('🔄 initializeStudentPage 호출됨 (v4.1 호환성 함수)');
             return initializeEquipmentRequestPage();
         };
 
-        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 (v4.0 - 완전 모듈 시스템)');
+        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 (v4.1 - 캐시 문제 해결 및 안정성 강화)');
     </script>
     
-    <!-- v4.0 업데이트된 CSS 스타일 -->
+    <!-- v4.1 업데이트된 CSS 스타일 -->
     <style>
         /* 페이지 전환 스타일 */
         .page {
@@ -971,6 +1159,31 @@
         
         .page.active {
             display: block;
+        }
+        
+        /* 시스템 오류 모달 스타일 */
+        #systemErrorModal .modal-content {
+            max-width: 500px;
+            text-align: center;
+        }
+        
+        #systemErrorModal .error-info {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+        
+        #systemErrorModal .error-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        
+        #systemErrorModal .error-actions .btn {
+            flex: 1;
+            max-width: 200px;
         }
         
         /* 반응형 조정 */
@@ -983,6 +1196,14 @@
             .header-actions .btn {
                 width: 100%;
                 justify-content: center;
+            }
+            
+            #systemErrorModal .error-actions {
+                flex-direction: column;
+            }
+            
+            #systemErrorModal .error-actions .btn {
+                max-width: none;
             }
         }
     </style>
