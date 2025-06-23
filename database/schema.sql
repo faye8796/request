@@ -17,15 +17,15 @@ CREATE TABLE user_profiles (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. 수업계획 테이블
+-- 2. 수업계획 테이블 (🔧 approved_at, approved_by 컬럼 제거)
 CREATE TABLE lesson_plans (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
     status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'approved', 'rejected')),
     lessons JSONB, -- 수업 계획 데이터 (JSON 형태)
     submitted_at TIMESTAMP WITH TIME ZONE,
-    approved_at TIMESTAMP WITH TIME ZONE,
-    approved_by UUID REFERENCES user_profiles(id),
+    -- 🔧 approved_at TIMESTAMP WITH TIME ZONE, -- 제거됨
+    -- 🔧 approved_by UUID REFERENCES user_profiles(id), -- 제거됨
     rejection_reason TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -75,25 +75,42 @@ CREATE TABLE requests (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 6. 영수증 테이블
+-- 6. 영수증 테이블 (v2.10 - 개선된 구조)
 CREATE TABLE receipts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     request_id UUID NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
-    receipt_number VARCHAR(50) NOT NULL UNIQUE, -- 영수증 번호
-    image_path TEXT NOT NULL, -- 영수증 이미지 (Base64 또는 URL)
-    purchase_date TIMESTAMP WITH TIME ZONE, -- 구매 일시
-    store_name VARCHAR(255), -- 구매처
-    total_amount INTEGER DEFAULT 0, -- 총 금액
-    notes TEXT, -- 비고
-    verified BOOLEAN DEFAULT false, -- 검증 여부
-    verified_at TIMESTAMP WITH TIME ZONE,
-    verified_by UUID REFERENCES user_profiles(id),
+    file_path TEXT NOT NULL, -- 파일 경로
+    file_name TEXT NOT NULL, -- 파일명
+    file_url TEXT, -- 공개 URL
+    original_name TEXT, -- 원본 파일명
+    file_size BIGINT, -- 파일 크기
+    file_type TEXT, -- 파일 타입
+    student_name TEXT, -- 학생명 (검색용)
+    receipt_number INTEGER, -- 영수증 순번
+    purchase_date DATE, -- 구매일
+    purchase_store TEXT, -- 구매처
+    note TEXT, -- 비고
+    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 7. 시스템 설정 테이블
+-- 7. 배송지 정보 테이블 (v2.10 - 새로 추가)
+CREATE TABLE shipping_addresses (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+    recipient_name VARCHAR(100) NOT NULL, -- 수령인
+    phone VARCHAR(20) NOT NULL, -- 연락처
+    address TEXT NOT NULL, -- 주소
+    postal_code VARCHAR(10), -- 우편번호
+    delivery_note TEXT, -- 배송 메모
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id)
+);
+
+-- 8. 시스템 설정 테이블
 CREATE TABLE system_settings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     setting_key VARCHAR(100) NOT NULL UNIQUE, -- 설정 키
@@ -113,8 +130,9 @@ CREATE INDEX idx_requests_user_id ON requests(user_id);
 CREATE INDEX idx_requests_status ON requests(status);
 CREATE INDEX idx_requests_purchase_type ON requests(purchase_type);
 CREATE INDEX idx_receipts_request_id ON receipts(request_id);
-CREATE INDEX idx_receipts_verified ON receipts(verified);
+CREATE INDEX idx_receipts_user_id ON receipts(user_id);
 CREATE INDEX idx_student_budgets_user_id ON student_budgets(user_id);
+CREATE INDEX idx_shipping_addresses_user_id ON shipping_addresses(user_id);
 
 -- Row Level Security (RLS) 정책 설정
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
@@ -123,6 +141,7 @@ ALTER TABLE budget_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE student_budgets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE receipts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shipping_addresses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
 
 -- 사용자 프로필 RLS 정책
@@ -142,6 +161,10 @@ CREATE POLICY "Students can manage own requests" ON requests
 
 -- 영수증 RLS 정책
 CREATE POLICY "Students can manage own receipts" ON receipts
+    FOR ALL USING (user_id = auth.uid());
+
+-- 배송지 RLS 정책
+CREATE POLICY "Students can manage own shipping address" ON shipping_addresses
     FOR ALL USING (user_id = auth.uid());
 
 -- 학생 예산 RLS 정책
@@ -204,6 +227,9 @@ CREATE TRIGGER update_requests_updated_at BEFORE UPDATE ON requests
 CREATE TRIGGER update_receipts_updated_at BEFORE UPDATE ON receipts 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_shipping_addresses_updated_at BEFORE UPDATE ON shipping_addresses 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_system_settings_updated_at BEFORE UPDATE ON system_settings 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -223,16 +249,17 @@ GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 
--- 스토리지 버킷 생성 (영수증 이미지용 - Supabase 대시보드에서 수동 생성)
--- 버킷명: receipts
--- 공개 액세스: false
--- 파일 크기 제한: 5MB
+-- 스토리지 버킷 생성 정보
+-- 버킷명: receipt-files
+-- 공개 액세스: true (공개 URL 사용)
+-- 파일 크기 제한: 10MB
 -- 허용 파일 타입: image/*
 
 COMMENT ON TABLE user_profiles IS '사용자 프로필 정보';
-COMMENT ON TABLE lesson_plans IS '수업 계획 및 승인 정보';
+COMMENT ON TABLE lesson_plans IS '수업 계획 및 승인 정보 (approved_at, approved_by 컬럼 제거됨)';
 COMMENT ON TABLE budget_settings IS '분야별 예산 설정';
 COMMENT ON TABLE student_budgets IS '학생별 예산 배정 및 사용 현황';
 COMMENT ON TABLE requests IS '교구 신청 내역';
-COMMENT ON TABLE receipts IS '영수증 정보';
+COMMENT ON TABLE receipts IS '영수증 정보 (v2.10 개선됨)';
+COMMENT ON TABLE shipping_addresses IS '배송지 정보 (v2.10 추가)';
 COMMENT ON TABLE system_settings IS '시스템 설정 정보';
