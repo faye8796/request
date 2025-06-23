@@ -140,7 +140,7 @@ AdminManager.LessonPlans = {
             
             // 통계 업데이트
             this.updateLessonPlanStats(stats);
-            
+
             // 수업계획 목록 생성
             const container = Utils.$('#lessonPlansList');
             if (!container) {
@@ -175,7 +175,7 @@ AdminManager.LessonPlans = {
             this.setupLessonPlanActionListeners();
             
             console.log('✅ 수업계획 관리 데이터 로드 완료');
-            
+
         } catch (error) {
             console.error('❌ Error loading lesson plans for management:', error);
             Utils.showToast('수업계획 목록을 불러오는 중 오류가 발생했습니다.', 'error');
@@ -222,7 +222,7 @@ AdminManager.LessonPlans = {
             
         } catch (error) {
             console.error('❌ 수업계획 데이터 로드 실패:', error);
-            
+
             if (error.message?.includes('relationship') || error.message?.includes('embed')) {
                 console.warn('⚠️ 관계 쿼리 오류 발생, 대체 방식으로 재시도...');
                 return await this.fallbackLoadLessonPlans();
@@ -248,7 +248,7 @@ AdminManager.LessonPlans = {
             if (!basicPlans.success) {
                 throw new Error(basicPlans.message || '수업계획 데이터를 가져올 수 없습니다.');
             }
-            
+
             const plans = basicPlans.data || [];
             
             // 사용자 정보를 별도로 가져와서 병합
@@ -333,14 +333,29 @@ AdminManager.LessonPlans = {
         if (rejectedElement) rejectedElement.textContent = `반려됨: ${stats.rejected}`;
     },
 
-    // 수업계획 카드 생성
+    // 🔧 v2.13 - 수업계획 카드 생성 (상태 표시 로직 개선)
     createLessonPlanCard(plan) {
         const card = Utils.createElement('div', 'lesson-plan-card');
         
-        const isSubmitted = plan.status === 'submitted' || plan.status === 'approved';
-        const statusText = isSubmitted ? '제출완료' : '임시저장';
-        const statusClass = isSubmitted ? 'completed' : 'draft';
+        // 🔧 v2.13 - 상태 판단 로직 개선 (rejected 상태 고려)
+        let statusText = '임시저장';
+        let statusClass = 'draft';
         
+        if (plan.status === 'submitted') {
+            statusText = '제출완료';
+            statusClass = 'completed';
+        } else if (plan.status === 'approved') {
+            statusText = '승인됨';
+            statusClass = 'approved';
+        } else if (plan.status === 'rejected') {
+            statusText = '반려됨';
+            statusClass = 'rejected';
+        } else if (plan.status === 'draft') {
+            statusText = '임시저장';
+            statusClass = 'draft';
+        }
+        
+        // 🔧 승인 상태는 별도로 처리
         let approvalStatusText = '대기 중';
         let approvalStatusClass = 'pending';
         
@@ -350,6 +365,12 @@ AdminManager.LessonPlans = {
         } else if (plan.approval_status === 'rejected') {
             approvalStatusText = '반려됨';
             approvalStatusClass = 'rejected';
+        } else if (plan.approval_status === 'pending') {
+            approvalStatusText = '검토 중';
+            approvalStatusClass = 'pending';
+        } else if (plan.approval_status === 'draft') {
+            approvalStatusText = '미제출';
+            approvalStatusClass = 'draft';
         }
         
         // 수업 데이터에서 총 수업 횟수 계산
@@ -374,7 +395,7 @@ AdminManager.LessonPlans = {
                 </div>
                 <div class="plan-status-info">
                     <span class="plan-status ${statusClass}">${statusText}</span>
-                    <span class="approval-status ${approvalStatusClass}">${approvalStatusText}</span>
+                    ${plan.status !== 'draft' ? `<span class="approval-status ${approvalStatusClass}">${approvalStatusText}</span>` : ''}
                 </div>
             </div>
             
@@ -406,7 +427,7 @@ AdminManager.LessonPlans = {
         return card;
     },
 
-    // 수업계획 액션 버튼 생성
+    // 🔧 v2.13 - 수업계획 액션 버튼 생성 (재승인 버튼 제거)
     createLessonPlanActionButtons(plan) {
         const baseButtons = `
             <button class="btn small secondary view-lesson-plan-btn" 
@@ -429,27 +450,34 @@ AdminManager.LessonPlans = {
             `;
         }
         
+        // 🔧 v2.13 - 반려된 수업계획에서 재승인 버튼 완전 제거
+        // 정상적인 프로세스: 학생이 수정 후 재제출 → 관리자가 다시 승인
         if (plan.approval_status === 'rejected') {
             return baseButtons + `
-                <div class="plan-rejected-actions">
-                    <span class="plan-rejected-info">
+                <div class="plan-rejected-info">
+                    <span class="plan-rejected-date">
                         반려일: ${plan.updated_at ? new Date(plan.updated_at).toLocaleDateString('ko-KR') : '-'}
                     </span>
-                    <button class="btn small approve" data-action="approve" data-student-id="${plan.user_id}">
-                        재승인
-                    </button>
+                    <span class="plan-action-note rejection-note">
+                        학생이 수정 후 재제출하면 다시 검토할 수 있습니다.
+                    </span>
                 </div>
             `;
         }
         
-        return baseButtons + `
-            <button class="btn small approve" data-action="approve" data-student-id="${plan.user_id}">
-                <i data-lucide="check"></i> 승인
-            </button>
-            <button class="btn small reject" data-action="reject" data-student-id="${plan.user_id}">
-                <i data-lucide="x"></i> 반려
-            </button>
-        `;
+        // 제출됨(pending) 상태일 때만 승인/반려 버튼 표시
+        if (plan.status === 'submitted' && plan.approval_status === 'pending') {
+            return baseButtons + `
+                <button class="btn small approve" data-action="approve" data-student-id="${plan.user_id}">
+                    <i data-lucide="check"></i> 승인
+                </button>
+                <button class="btn small reject" data-action="reject" data-student-id="${plan.user_id}">
+                    <i data-lucide="x"></i> 반려
+                </button>
+            `;
+        }
+        
+        return baseButtons;
     },
 
     // 수업계획 액션 이벤트 리스너 설정
@@ -966,4 +994,4 @@ AdminManager.LessonPlans = {
 // 전역 접근을 위한 별명
 window.AdminLessonPlans = AdminManager.LessonPlans;
 
-console.log('📚 AdminManager.LessonPlans 모듈 로드 완료');
+console.log('📚 AdminManager.LessonPlans 모듈 로드 완료 (v2.13 - 재승인 버튼 제거 및 상태 표시 로직 개선)');
