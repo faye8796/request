@@ -366,7 +366,7 @@
         </div>
     </div>
 
-    <!-- 영수증 등록 모달 -->
+    <!-- 영수증 등록 모달 - UX 개선 v4.1.1 -->
     <div id="receiptModal" class="modal">
         <div class="modal-content">
             <h3>영수증 등록</h3>
@@ -378,39 +378,54 @@
                     </div>
                 </div>
                 
+                <!-- 📸 영수증 파일 업로드 영역 - 개선된 UI -->
                 <div class="form-group">
                     <label>영수증 이미지 *</label>
                     <div class="file-upload-area" id="receiptDropZone">
                         <input type="file" id="receiptFile" accept="image/*,application/pdf" required>
-                        <div class="file-upload-content">
+                        <div class="file-upload-content" id="uploadContent">
                             <i data-lucide="upload"></i>
                             <p>영수증 이미지를 선택하거나 여기에 드래그하세요</p>
                             <small>JPG, PNG, PDF 파일 지원 (최대 5MB)</small>
-                            <div id="receiptFileName" class="file-name"></div>
                         </div>
+                        
+                        <!-- 📄 파일 선택됨 상태 표시 -->
+                        <div id="fileSelectedContent" class="file-selected-content" style="display: none;">
+                            <div class="file-info">
+                                <i data-lucide="file-check" class="file-icon"></i>
+                                <div class="file-details">
+                                    <div id="receiptFileName" class="file-name"></div>
+                                    <div id="receiptFileSize" class="file-size"></div>
+                                </div>
+                                <button type="button" id="removeReceiptBtn" class="btn small danger">
+                                    <i data-lucide="x"></i>
+                                    제거
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 🖼️ 이미지 미리보기 -->
                         <div id="receiptPreview" class="receipt-preview" style="display: none;">
                             <!-- 동적으로 생성됨 -->
                         </div>
                     </div>
-                    <button type="button" id="removeReceiptBtn" class="btn small danger" style="display: none;">
-                        <i data-lucide="x"></i>
-                        파일 제거
-                    </button>
                 </div>
                 
+                <!-- 📅 구매 날짜 (시간 정보 제거) -->
                 <div class="form-group">
-                    <label>구매일시</label>
-                    <input type="datetime-local" id="purchaseDateTime" required>
+                    <label>구매 날짜 *</label>
+                    <input type="date" id="purchaseDate" name="purchaseDate" required>
+                    <small class="text-muted">영수증에 표시된 구매 날짜를 선택하세요</small>
                 </div>
                 
                 <div class="form-group">
                     <label>구매처</label>
-                    <input type="text" id="purchaseStore" placeholder="구매한 상점명을 입력하세요">
+                    <input type="text" id="purchaseStore" name="purchaseStore" placeholder="구매한 상점명을 입력하세요">
                 </div>
                 
                 <div class="form-group">
                     <label>비고</label>
-                    <textarea id="receiptNote" rows="2" placeholder="추가 설명이 있으면 입력하세요"></textarea>
+                    <textarea id="receiptNote" name="receiptNote" rows="2" placeholder="추가 설명이 있으면 입력하세요"></textarea>
                 </div>
 
                 <div class="modal-actions">
@@ -525,7 +540,7 @@
             onerror="window.moduleLoadTracker.track('shipping-management', false)"></script>
     
     <!-- 영수증 관리 -->
-    <script src="../js/student/receipt-management.js?v=4.1.0"
+    <script src="../js/student/receipt-management.js?v=4.1.1"
             onload="window.moduleLoadTracker.track('receipt-management', true)" 
             onerror="window.moduleLoadTracker.track('receipt-management', false)"></script>
     
@@ -1150,7 +1165,7 @@
         console.log('✅ Equipment Request 페이지 스크립트 로드 완료 (v4.1 - 캐시 문제 해결 및 안정성 강화)');
     </script>
     
-    <!-- v4.1 업데이트된 CSS 스타일 -->
+    <!-- v4.1.1 영수증 UX 개선 스타일 -->
     <style>
         /* 페이지 전환 스타일 */
         .page {
@@ -1186,6 +1201,122 @@
             max-width: 200px;
         }
         
+        /* 🆕 영수증 파일 업로드 개선 스타일 */
+        .file-upload-area {
+            position: relative;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .file-upload-area:hover {
+            border-color: #3b82f6;
+            background-color: #f8fafc;
+        }
+        
+        .file-upload-area.drag-over {
+            border-color: #10b981;
+            background-color: #ecfdf5;
+        }
+        
+        .file-upload-area input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .file-upload-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .file-upload-content i {
+            width: 3rem;
+            height: 3rem;
+            color: #6b7280;
+        }
+        
+        .file-upload-content p {
+            color: #374151;
+            margin: 0;
+        }
+        
+        .file-upload-content small {
+            color: #6b7280;
+        }
+        
+        /* 📄 파일 선택됨 상태 스타일 */
+        .file-selected-content {
+            display: none;
+        }
+        
+        .file-selected-content.active {
+            display: block;
+        }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background-color: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 6px;
+        }
+        
+        .file-icon {
+            width: 2rem;
+            height: 2rem;
+            color: #0ea5e9;
+            flex-shrink: 0;
+        }
+        
+        .file-details {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .file-name {
+            font-weight: 500;
+            color: #0f172a;
+            word-break: break-all;
+        }
+        
+        .file-size {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+        }
+        
+        /* 🖼️ 이미지 미리보기 스타일 */
+        .receipt-preview {
+            margin-top: 1rem;
+            text-align: center;
+        }
+        
+        .receipt-preview img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .receipt-preview .file-info {
+            display: inline-block;
+            background-color: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 0.75rem 1rem;
+        }
+        
         /* 반응형 조정 */
         @media (max-width: 768px) {
             .header-actions {
@@ -1204,6 +1335,16 @@
             
             #systemErrorModal .error-actions .btn {
                 max-width: none;
+            }
+            
+            .file-info {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.5rem;
+            }
+            
+            .file-details {
+                order: -1;
             }
         }
     </style>
