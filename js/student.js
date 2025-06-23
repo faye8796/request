@@ -94,9 +94,12 @@ const StudentManager = {
                 this.registerModule('shipping', window.ShippingManagement);
             }
 
-            // 영수증 관리 모듈
-            if (typeof window.ReceiptManagement !== 'undefined') {
-                this.registerModule('receipt', window.ReceiptManagement);
+            // 🔧 영수증 관리 모듈 - 올바른 모듈명으로 수정
+            if (typeof window.ReceiptManagementModule !== 'undefined') {
+                console.log('📄 ReceiptManagementModule 발견 - 등록 시작');
+                this.registerModule('receipt', window.ReceiptManagementModule);
+            } else {
+                console.warn('⚠️ ReceiptManagementModule을 찾을 수 없습니다');
             }
 
             // 수업계획 도우미 모듈
@@ -300,15 +303,34 @@ const StudentManager = {
         }
     },
 
-    // === 영수증 관리 프록시 함수들 ===
+    // === 🔧 영수증 관리 프록시 함수들 - 로깅 강화 ===
 
     openReceiptModal: function(requestId) {
+        console.log('📄 openReceiptModal 호출됨. requestId:', requestId);
+        
         const receiptModule = this.getModule('receipt');
-        if (receiptModule && receiptModule.showReceiptModal) {
-            return receiptModule.showReceiptModal(requestId);
+        console.log('📄 영수증 모듈 상태:', receiptModule ? '✅ 발견됨' : '❌ 없음');
+        
+        if (receiptModule) {
+            console.log('📄 영수증 모듈 메서드들:', Object.keys(receiptModule));
+            
+            if (receiptModule.showReceiptModal) {
+                console.log('📄 showReceiptModal 메서드 호출 시작');
+                return receiptModule.showReceiptModal(requestId);
+            } else {
+                console.error('❌ showReceiptModal 메서드를 찾을 수 없습니다');
+                alert('영수증 등록 모듈에서 showReceiptModal 함수를 찾을 수 없습니다.');
+            }
         } else {
+            console.error('❌ 영수증 모듈을 찾을 수 없습니다. 등록된 모듈들:', Object.keys(this.modules));
             alert('영수증 등록 기능을 준비 중입니다.');
         }
+    },
+
+    // 추가 영수증 관련 프록시 함수들
+    showReceiptModal: function(requestId) {
+        console.log('📄 showReceiptModal 직접 호출됨 (호환성)');
+        return this.openReceiptModal(requestId);
     },
 
     // === API 호출 프록시 함수들 ===
@@ -535,4 +557,4 @@ window.initializeStudentPage = function() {
     }
 };
 
-console.log('📚 StudentManager v4.1 로드 완료 - 구문 오류 수정 및 완전 모듈화된 슬림 핵심 매니저');
+console.log('📚 StudentManager v4.1 로드 완료 - 구문 오류 수정 및 완전 모듈화된 슬림 핵심 매니저 (영수증 모듈 연결 수정)');
