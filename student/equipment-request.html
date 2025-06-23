@@ -6,15 +6,15 @@
     <title>문화교구 신청 - 세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files - Updated Cache Busting -->
-    <link rel="stylesheet" href="../css/main.css?v=1.5.2">
-    <link rel="stylesheet" href="../css/student.css?v=1.5.2">
-    <link rel="stylesheet" href="../css/lesson-plan.css?v=1.5.2">
+    <link rel="stylesheet" href="../css/main.css?v=4.0.0">
+    <link rel="stylesheet" href="../css/student.css?v=4.0.0">
+    <link rel="stylesheet" href="../css/lesson-plan.css?v=4.0.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <!-- Supabase JavaScript Client - Fixed CDN URL with Cache Busting -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=1.5.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=4.0.0"></script>
 </head>
 <body>
     <!-- Main App Container -->
@@ -421,32 +421,44 @@
         </div>
     </div>
 
-    <!-- JavaScript Files - Updated Cache Busting v1.5.2 -->
-    <!-- 설정 파일을 가장 먼저 로드 -->
-    <script src="../js/config.js?v=1.5.2"></script>
-    <!-- Supabase 클라이언트 로드 -->
-    <script src="../js/supabase-client.js?v=1.5.2"></script>
-    <!-- 유틸리티 함수들 -->
-    <script src="../js/utils.js?v=1.5.2"></script>
-    <!-- 인증 관리 -->
-    <script src="../js/auth.js?v=1.5.2"></script>
-    <!-- 수업계획 관리 -->
-    <script src="../js/lesson-plan.js?v=1.5.2"></script>
-    <!-- 학생 관리 (마지막에 로드) -->
-    <script src="../js/student.js?v=1.5.2"></script>
-    <!-- 🆕 학생 기능 확장 - 누락된 교구신청 기능들 복구 -->
-    <script src="../js/student-addon.js?v=1.5.2"></script>
+    <!-- JavaScript Files - v4.0 모듈 시스템 완전 업데이트 -->
     
-    <!-- 교구 신청 페이지 초기화 - 수업계획 상태 확인 추가 -->
+    <!-- 🔧 1단계: 핵심 설정 및 의존성 -->
+    <script src="../js/config.js?v=4.0.0"></script>
+    <script src="../js/supabase-client.js?v=4.0.0"></script>
+    <script src="../js/utils.js?v=4.0.0"></script>
+    <script src="../js/auth.js?v=4.0.0"></script>
+    <script src="../js/lesson-plan.js?v=4.0.0"></script>
+
+    <!-- 🔧 2단계: 학생 모듈 시스템 (순서 중요) -->
+    <!-- API 도우미 (가장 먼저) -->
+    <script src="../js/student/api-helper.js?v=4.0.0"></script>
+    <!-- 알림 시스템 -->
+    <script src="../js/student/notification-system.js?v=4.0.0"></script>
+    <!-- 수업계획 도우미 -->
+    <script src="../js/student/lesson-plan-helper.js?v=4.0.0"></script>
+    <!-- 교구 신청 모듈 -->
+    <script src="../js/student/equipment-request.js?v=4.0.0"></script>
+    <!-- 배송지 관리 -->
+    <script src="../js/student/shipping-management.js?v=4.0.0"></script>
+    <!-- 영수증 관리 -->
+    <script src="../js/student/receipt-management.js?v=4.0.0"></script>
+    <!-- 항공권 신청 -->
+    <script src="../js/student/flight-request.js?v=4.0.0"></script>
+
+    <!-- 🔧 3단계: 핵심 매니저 (모든 모듈 로드 후) -->
+    <script src="../js/student.js?v=4.0.0"></script>
+    
+    <!-- 교구 신청 페이지 초기화 - v4.0 모듈 시스템 업데이트 -->
     <script>
         /**
-         * 🚀 교구 신청 페이지 초기화 로직 - 수업계획 상태 확인 추가
-         * - 페이지 로드 시 수업계획 상태 확인
-         * - 미제출자: lessonPlanPage 활성화 (create 모드)
-         * - 제출자: studentPage 활성화 (교구신청 화면)
+         * 🚀 교구 신청 페이지 초기화 로직 v4.0 - 완전 모듈 시스템
+         * - 새로운 모듈 시스템 지원
+         * - 향상된 의존성 관리
+         * - 안정성 강화
          */
 
-        // 🎯 전역 상태 관리
+        // 🎯 전역 상태 관리 v4.0
         window.EquipmentRequestManager = {
             isInitialized: false,
             userDataLoaded: false,
@@ -454,16 +466,21 @@
             retryCount: 0,
             maxRetries: 3,
             dependenciesLoaded: false,
-            lessonPlanChecked: false
+            lessonPlanChecked: false,
+            version: '4.0.0'
         };
 
-        // 🔧 의존성 확인 함수 - 강화된 버전
+        // 🔧 의존성 확인 함수 - v4.0 업데이트
         function checkRequiredDependencies() {
             const requiredObjects = [
                 'SupabaseAPI',
                 'AuthManager', 
                 'StudentManager',
-                'LessonPlanManager'
+                'LessonPlanManager',
+                // 🆕 새로운 모듈들
+                'ApiHelper',
+                'NotificationSystem',
+                'LessonPlanHelper'
             ];
             
             const missingDependencies = [];
@@ -479,21 +496,21 @@
                 return false;
             }
             
-            console.log('✅ 모든 의존성 로드 완료');
+            console.log('✅ 모든 의존성 로드 완료 (v4.0)');
             return true;
         }
 
-        // 🔧 의존성 로딩 대기 함수 - 개선된 버전
-        function waitForDependencies(maxWaitTime = 10000) {
+        // 🔧 의존성 로딩 대기 함수 - v4.0 개선
+        function waitForDependencies(maxWaitTime = 15000) {
             return new Promise(function(resolve, reject) {
                 const startTime = Date.now();
-                const checkInterval = 200; // 200ms마다 확인
+                const checkInterval = 300; // 300ms마다 확인
                 
                 function checkDependencies() {
-                    console.log('🔍 의존성 로딩 상태 확인 중...');
+                    console.log('🔍 의존성 로딩 상태 확인 중... v4.0');
                     
                     if (checkRequiredDependencies()) {
-                        console.log('✅ 모든 의존성 로드 완료');
+                        console.log('✅ 모든 의존성 로드 완료 (v4.0)');
                         window.EquipmentRequestManager.dependenciesLoaded = true;
                         resolve();
                         return;
@@ -501,8 +518,8 @@
                     
                     const elapsedTime = Date.now() - startTime;
                     if (elapsedTime >= maxWaitTime) {
-                        const error = new Error('의존성 로딩 시간 초과');
-                        console.error('❌ 의존성 로딩 시간 초과');
+                        const error = new Error('의존성 로딩 시간 초과 (v4.0)');
+                        console.error('❌ 의존성 로딩 시간 초과 (v4.0)');
                         reject(error);
                         return;
                     }
@@ -515,21 +532,23 @@
             });
         }
 
-        // 🎯 안전한 사용자 정보 가져오기
+        // 🎯 안전한 사용자 정보 가져오기 - API 도우미 사용
         function getCurrentUserSafely() {
             try {
-                console.log('👤 getCurrentUserSafely 호출됨');
+                console.log('👤 getCurrentUserSafely 호출됨 (v4.0)');
                 
-                // localStorage에서 직접 가져오기
+                // ApiHelper 모듈 사용
+                if (typeof window.ApiHelper !== 'undefined' && window.ApiHelper.getCurrentUserSafely) {
+                    return window.ApiHelper.getCurrentUserSafely();
+                }
+
+                // 폴백: 직접 구현
                 const currentStudentData = localStorage.getItem('currentStudent');
                 if (currentStudentData) {
                     try {
                         const studentData = JSON.parse(currentStudentData);
                         if (studentData && studentData.id) {
-                            console.log('✅ localStorage에서 사용자 데이터 가져옴:', {
-                                id: studentData.id,
-                                name: studentData.name
-                            });
+                            console.log('✅ localStorage에서 사용자 데이터 가져옴 (폴백)');
                             return studentData;
                         }
                     } catch (parseError) {
@@ -537,31 +556,22 @@
                     }
                 }
 
-                // AuthManager에서 시도
-                if (typeof AuthManager !== 'undefined' && AuthManager.getCurrentUser) {
-                    const authUser = AuthManager.getCurrentUser();
-                    if (authUser) {
-                        console.log('✅ AuthManager에서 사용자 데이터 가져옴');
-                        return authUser;
-                    }
-                }
-
-                console.warn('⚠️ 사용자 정보를 찾을 수 없습니다');
+                console.warn('⚠️ 사용자 정보를 찾을 수 없습니다 (v4.0)');
                 return null;
             } catch (error) {
-                console.error('❌ 사용자 정보 가져오기 오류:', error);
+                console.error('❌ 사용자 정보 가져오기 오류 (v4.0):', error);
                 return null;
             }
         }
 
-        // 🆕 수업계획 상태 확인 및 페이지 분기
+        // 🆕 수업계획 상태 확인 및 페이지 분기 - v4.0
         async function checkLessonPlanStatusAndSetPage() {
             try {
-                console.log('📋 수업계획 상태 확인 시작');
+                console.log('📋 수업계획 상태 확인 시작 (v4.0)');
                 
                 const currentUser = getCurrentUserSafely();
                 if (!currentUser) {
-                    console.error('❌ 사용자 정보 없음 - 로그인 페이지로 이동');
+                    console.error('❌ 사용자 정보 없음 - 로그인 페이지로 이동 (v4.0)');
                     redirectToLogin();
                     return;
                 }
@@ -575,30 +585,26 @@
                     .single();
 
                 if (error && error.code !== 'PGRST116') {
-                    console.error('수업계획 조회 오류:', error);
-                    // 오류가 있어도 기본적으로 수업계획 작성 화면 표시
+                    console.error('수업계획 조회 오류 (v4.0):', error);
                     showLessonPlanPage();
                     return;
                 }
 
-                console.log('📋 수업계획 조회 결과:', lessonPlan);
+                console.log('📋 수업계획 조회 결과 (v4.0):', lessonPlan);
 
                 if (!lessonPlan) {
-                    // 수업계획 없음 → 작성 모드
-                    console.log('📝 수업계획 없음 → 작성 화면 표시');
+                    console.log('📝 수업계획 없음 → 작성 화면 표시 (v4.0)');
                     showLessonPlanPage();
                 } else {
-                    // 수업계획 있음 → 교구신청 화면 표시
-                    console.log('✅ 수업계획 있음 → 교구신청 화면 표시');
+                    console.log('✅ 수업계획 있음 → 교구신청 화면 표시 (v4.0)');
                     showStudentPage();
                 }
 
                 window.EquipmentRequestManager.lessonPlanChecked = true;
-                console.log('✅ 수업계획 상태 확인 완료');
+                console.log('✅ 수업계획 상태 확인 완료 (v4.0)');
 
             } catch (error) {
-                console.error('❌ 수업계획 상태 확인 오류:', error);
-                // 오류 시 기본적으로 수업계획 작성 화면 표시
+                console.error('❌ 수업계획 상태 확인 오류 (v4.0):', error);
                 showLessonPlanPage();
             }
         }
@@ -606,74 +612,80 @@
         // 🆕 수업계획 페이지 표시
         function showLessonPlanPage() {
             try {
-                console.log('📋 수업계획 페이지 표시');
+                console.log('📋 수업계획 페이지 표시 (v4.0)');
                 
                 const studentPage = document.getElementById('studentPage');
                 const lessonPlanPage = document.getElementById('lessonPlanPage');
                 
                 if (studentPage && lessonPlanPage) {
-                    // 페이지 전환
                     studentPage.classList.remove('active');
                     lessonPlanPage.classList.add('active');
                     
-                    // LessonPlanManager 초기화 (create 모드)
                     setTimeout(() => {
                         if (window.LessonPlanManager && typeof window.LessonPlanManager.showLessonPlanPage === 'function') {
                             window.LessonPlanManager.showLessonPlanPage('create');
                         }
                     }, 200);
                     
-                    console.log('✅ 수업계획 페이지 표시 완료');
+                    console.log('✅ 수업계획 페이지 표시 완료 (v4.0)');
                 } else {
-                    console.error('❌ 페이지 요소를 찾을 수 없습니다');
+                    console.error('❌ 페이지 요소를 찾을 수 없습니다 (v4.0)');
                 }
             } catch (error) {
-                console.error('❌ 수업계획 페이지 표시 오류:', error);
+                console.error('❌ 수업계획 페이지 표시 오류 (v4.0):', error);
             }
         }
 
         // 🆕 교구신청 페이지 표시
         function showStudentPage() {
             try {
-                console.log('🛒 교구신청 페이지 표시');
+                console.log('🛒 교구신청 페이지 표시 (v4.0)');
                 
                 const studentPage = document.getElementById('studentPage');
                 const lessonPlanPage = document.getElementById('lessonPlanPage');
                 
                 if (studentPage && lessonPlanPage) {
-                    // 페이지 전환
                     lessonPlanPage.classList.remove('active');
                     studentPage.classList.add('active');
                     
-                    console.log('✅ 교구신청 페이지 표시 완료');
+                    console.log('✅ 교구신청 페이지 표시 완료 (v4.0)');
                 } else {
-                    console.error('❌ 페이지 요소를 찾을 수 없습니다');
+                    console.error('❌ 페이지 요소를 찾을 수 없습니다 (v4.0)');
                 }
             } catch (error) {
-                console.error('❌ 교구신청 페이지 표시 오류:', error);
+                console.error('❌ 교구신청 페이지 표시 오류 (v4.0):', error);
             }
         }
 
-        // 🎯 사용자 정보 로드 및 UI 업데이트
+        // 🎯 사용자 정보 로드 및 UI 업데이트 - v4.0
         function loadAndDisplayUserInfo() {
-            console.log('👤 사용자 정보 로드 시작');
+            console.log('👤 사용자 정보 로드 시작 (v4.0)');
             
             try {
-                const currentUser = getCurrentUserSafely();
-                if (!currentUser) {
-                    throw new Error('로그인 세션이 없습니다');
+                // ApiHelper 모듈 사용
+                if (typeof window.ApiHelper !== 'undefined' && window.ApiHelper.updateUserDisplay) {
+                    return window.ApiHelper.updateUserDisplay()
+                        .then(function() {
+                            window.EquipmentRequestManager.userDataLoaded = true;
+                            console.log('✅ 사용자 정보 로드 완료 (v4.0 - ApiHelper)');
+                        });
                 }
 
-                // UI 업데이트
+                // 폴백: 직접 처리
+                const currentUser = getCurrentUserSafely();
+                if (!currentUser) {
+                    throw new Error('로그인 세션이 없습니다 (v4.0)');
+                }
+
                 updateUserInterface(currentUser);
                 
                 window.EquipmentRequestManager.userDataLoaded = true;
-                console.log('✅ 사용자 정보 로드 완료');
+                console.log('✅ 사용자 정보 로드 완료 (v4.0 - 폴백)');
                 
                 return Promise.resolve(currentUser);
 
             } catch (error) {
-                console.error('❌ 사용자 정보 로드 오류:', error);
+                console.error('❌ 사용자 정보 로드 오류 (v4.0):', error);
                 showUserDataError(error.message);
                 return Promise.reject(error);
             }
@@ -682,13 +694,11 @@
         // 🎯 사용자 인터페이스 업데이트
         function updateUserInterface(studentData) {
             try {
-                // 환영 메시지
                 const welcomeEl = document.getElementById('studentWelcome');
                 if (welcomeEl) {
                     welcomeEl.textContent = `${studentData.name}님의 교구 신청`;
                 }
                 
-                // 상세 정보
                 const detailsEl = document.getElementById('studentDetails');
                 if (detailsEl) {
                     const institute = studentData.sejong_institute || '세종학당';
@@ -696,66 +706,56 @@
                     detailsEl.textContent = field ? `${institute} - ${field}` : institute;
                 }
                 
-                console.log('✅ 사용자 인터페이스 업데이트 완료');
+                console.log('✅ 사용자 인터페이스 업데이트 완료 (v4.0)');
             } catch (error) {
-                console.error('❌ UI 업데이트 오류:', error);
+                console.error('❌ UI 업데이트 오류 (v4.0):', error);
             }
         }
 
-        // 🔧 StudentManager 초기화 - 안전성 강화
+        // 🔧 StudentManager 초기화 - v4.0 모듈 시스템
         function initializeStudentManager() {
-            console.log('🎓 StudentManager 초기화 시작');
+            console.log('🎓 StudentManager 초기화 시작 (v4.0)');
             
             if (window.EquipmentRequestManager.managerInitialized) {
-                console.log('⚠️ StudentManager 이미 초기화됨');
+                console.log('⚠️ StudentManager 이미 초기화됨 (v4.0)');
                 return Promise.resolve();
             }
 
-            // StudentManager 존재 확인
             if (typeof StudentManager === 'undefined') {
-                console.error('❌ StudentManager를 찾을 수 없습니다');
+                console.error('❌ StudentManager를 찾을 수 없습니다 (v4.0)');
                 return Promise.reject(new Error('StudentManager를 찾을 수 없습니다'));
             }
 
-            // handleLessonPlanClick 함수 존재 확인
-            if (typeof StudentManager.handleLessonPlanClick !== 'function') {
-                console.error('❌ handleLessonPlanClick 함수를 찾을 수 없습니다');
-                return Promise.reject(new Error('handleLessonPlanClick 함수를 찾을 수 없습니다'));
-            }
+            console.log('✅ StudentManager 확인됨 (v4.0)');
 
-            console.log('✅ StudentManager 및 handleLessonPlanClick 함수 확인됨');
-
-            // 초기화 실행
             return new Promise(function(resolve, reject) {
                 try {
                     const initPromise = StudentManager.init();
                     
                     if (initPromise && typeof initPromise.then === 'function') {
-                        // Promise가 반환된 경우
                         initPromise
                             .then(function() {
                                 window.EquipmentRequestManager.managerInitialized = true;
-                                console.log('✅ StudentManager 초기화 완료');
+                                console.log('✅ StudentManager 초기화 완료 (v4.0)');
                                 resolve();
                             })
                             .catch(function(error) {
-                                console.error('❌ StudentManager 초기화 실패:', error);
+                                console.error('❌ StudentManager 초기화 실패 (v4.0):', error);
                                 reject(error);
                             });
                     } else {
-                        // 즉시 완료
                         window.EquipmentRequestManager.managerInitialized = true;
-                        console.log('✅ StudentManager 초기화 완료 (동기)');
+                        console.log('✅ StudentManager 초기화 완료 (v4.0 - 동기)');
                         resolve();
                     }
                 } catch (error) {
-                    console.error('❌ StudentManager 초기화 실패:', error);
+                    console.error('❌ StudentManager 초기화 실패 (v4.0):', error);
                     reject(error);
                 }
             });
         }
 
-        // 🎯 네비게이션 설정 - 🔧 배송지 모달 이벤트 추가
+        // 🎯 네비게이션 설정 - v4.0
         function setupNavigation() {
             // 대시보드로 돌아가기
             const backBtn = document.getElementById('backToDashboard');
@@ -765,305 +765,93 @@
                 });
             }
 
-            // 🆕 수업계획 버튼 - 수정 모드로 모달 표시
+            // 수업계획 버튼 - 모듈 시스템 사용
             const lessonPlanBtn = document.getElementById('lessonPlanBtn');
             if (lessonPlanBtn) {
                 lessonPlanBtn.addEventListener('click', function() {
-                    console.log('📋 수업계획 버튼 클릭됨 (수정 모드)');
+                    console.log('📋 수업계획 버튼 클릭됨 (v4.0)');
                     
-                    // StudentManager와 handleLessonPlanClick 함수 확인
                     if (typeof StudentManager !== 'undefined' && 
                         typeof StudentManager.handleLessonPlanClick === 'function') {
-                        
                         try {
-                            // 🆕 수정 모드로 수업계획 표시
-                            showLessonPlanEditMode();
+                            StudentManager.handleLessonPlanClick();
                         } catch (error) {
-                            console.error('❌ 수업계획 수정 모드 표시 오류:', error);
-                            alert('수업계획 수정 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+                            console.error('❌ 수업계획 처리 오류 (v4.0):', error);
+                            alert('수업계획 처리 중 오류가 발생했습니다.');
                         }
                     } else {
-                        console.error('❌ StudentManager 또는 handleLessonPlanClick 함수를 찾을 수 없습니다');
+                        console.error('❌ StudentManager.handleLessonPlanClick 함수를 찾을 수 없습니다 (v4.0)');
                         alert('시스템이 아직 로딩 중입니다. 잠시 후 다시 시도해주세요.');
                     }
                 });
             }
 
-            // 🔧 배송지 설정 버튼 - StudentAddon과 연결
+            // 배송지 설정 버튼 - 모듈 시스템 사용
             const shippingAddressBtn = document.getElementById('shippingAddressBtn');
             if (shippingAddressBtn) {
                 shippingAddressBtn.addEventListener('click', function() {
-                    console.log('📦 배송지 설정 버튼 클릭됨');
+                    console.log('📦 배송지 설정 버튼 클릭됨 (v4.0)');
                     
-                    // StudentAddon 모듈 확인 및 호출
-                    if (typeof window.StudentAddon !== 'undefined' && 
-                        typeof window.StudentAddon.showShippingModal === 'function') {
-                        window.StudentAddon.showShippingModal();
-                    } else if (typeof StudentManager !== 'undefined' && 
-                               typeof StudentManager.showShippingModal === 'function') {
-                        StudentManager.showShippingModal();
+                    if (typeof StudentManager !== 'undefined' && 
+                        typeof StudentManager.handleShippingClick === 'function') {
+                        StudentManager.handleShippingClick();
                     } else {
-                        console.error('❌ 배송지 설정 함수를 찾을 수 없습니다');
-                        alert('배송지 설정 기능을 사용할 수 없습니다. 페이지를 새로고침해주세요.');
+                        console.error('❌ 배송지 설정 함수를 찾을 수 없습니다 (v4.0)');
+                        alert('배송지 설정 기능을 사용할 수 없습니다.');
                     }
                 });
             }
 
-            // 🔧 배송지 설정 모달 이벤트 연결
-            setupShippingModalEvents();
-
-            // 🆕 묶음 신청 모달 - 구매 방식 선택 이벤트
-            setupBundleModalEvents();
-
-            console.log('✅ 네비게이션 설정 완료');
-        }
-
-        // 🔧 배송지 설정 모달 이벤트 설정
-        function setupShippingModalEvents() {
-            try {
-                console.log('📦 배송지 모달 이벤트 설정 시작');
-
-                // 배송지 모달 form submit 이벤트
-                const shippingForm = document.getElementById('shippingForm');
-                if (shippingForm) {
-                    shippingForm.addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        console.log('📦 배송지 form submit 이벤트 발생');
-                        
-                        // StudentAddon.handleShippingSubmit 호출
-                        if (typeof window.StudentAddon !== 'undefined' && 
-                            typeof window.StudentAddon.handleShippingSubmit === 'function') {
-                            window.StudentAddon.handleShippingSubmit();
-                        } else {
-                            console.error('❌ StudentAddon.handleShippingSubmit 함수를 찾을 수 없습니다');
-                            alert('배송지 저장 기능을 사용할 수 없습니다.');
-                        }
-                    });
-                    console.log('✅ 배송지 form submit 이벤트 연결 완료');
-                }
-
-                // 배송지 모달 취소 버튼 이벤트
-                const shippingCancelBtn = document.getElementById('shippingCancelBtn');
-                if (shippingCancelBtn) {
-                    shippingCancelBtn.addEventListener('click', function() {
-                        console.log('📦 배송지 모달 취소 버튼 클릭됨');
-                        
-                        // StudentAddon.hideShippingModal 호출
-                        if (typeof window.StudentAddon !== 'undefined' && 
-                            typeof window.StudentAddon.hideShippingModal === 'function') {
-                            window.StudentAddon.hideShippingModal();
-                        } else {
-                            // 폴백: 기본 모달 숨김
-                            const modal = document.getElementById('shippingModal');
-                            if (modal) {
-                                modal.classList.remove('show');
-                                document.body.style.overflow = '';
-                            }
-                        }
-                    });
-                    console.log('✅ 배송지 취소 버튼 이벤트 연결 완료');
-                }
-
-                console.log('✅ 배송지 모달 이벤트 설정 완료');
-            } catch (error) {
-                console.error('❌ 배송지 모달 이벤트 설정 오류:', error);
-            }
-        }
-
-        // 🆕 묶음 신청 모달 이벤트 설정
-        function setupBundleModalEvents() {
-            // 구매 방식 변경 이벤트
-            const bundleForm = document.getElementById('bundleForm');
-            if (bundleForm) {
-                bundleForm.addEventListener('change', function(e) {
-                    if (e.target.name === 'bundlePurchaseMethod') {
-                        toggleBundlePurchaseInfo(e.target.value);
-                    }
-                });
-                
-                // 구매 사이트 선택 변경 이벤트
-                const purchaseSiteSelect = document.getElementById('purchaseSite');
-                if (purchaseSiteSelect) {
-                    purchaseSiteSelect.addEventListener('change', function(e) {
-                        toggleOtherSiteInput(e.target.value);
-                    });
-                }
-            }
-        }
-
-        // 🆕 묶음 신청 구매 정보 토글
-        function toggleBundlePurchaseInfo(method) {
-            const onlineInfo = document.getElementById('onlinePurchaseInfo');
-            const offlineInfo = document.getElementById('offlinePurchaseInfo');
-            
-            if (method === 'online') {
-                onlineInfo.style.display = 'block';
-                offlineInfo.style.display = 'none';
-                
-                // 필수 필드 설정
-                document.getElementById('purchaseSite').required = true;
-                document.getElementById('accountId').required = true;
-                document.getElementById('accountPassword').required = true;
-                document.getElementById('offlineVendor').required = false;
-            } else {
-                onlineInfo.style.display = 'none';
-                offlineInfo.style.display = 'block';
-                
-                // 필수 필드 설정
-                document.getElementById('purchaseSite').required = false;
-                document.getElementById('accountId').required = false;
-                document.getElementById('accountPassword').required = false;
-                document.getElementById('offlineVendor').required = true;
-            }
-        }
-
-        // 🆕 기타 사이트 입력 토글
-        function toggleOtherSiteInput(siteValue) {
-            const otherSiteInput = document.getElementById('otherSite');
-            if (siteValue === 'other') {
-                otherSiteInput.style.display = 'block';
-                otherSiteInput.required = true;
-            } else {
-                otherSiteInput.style.display = 'none';
-                otherSiteInput.required = false;
-            }
-        }
-
-        // 🆕 수업계획 수정 모드 표시
-        async function showLessonPlanEditMode() {
-            try {
-                console.log('✏️ 수업계획 수정 모드 표시');
-                
-                const currentUser = getCurrentUserSafely();
-                if (!currentUser) {
-                    alert('로그인이 필요합니다.');
-                    return;
-                }
-
-                // 기존 수업계획 조회
-                const client = await SupabaseAPI.ensureClient();
-                const { data: lessonPlan, error } = await client
-                    .from('lesson_plans')
-                    .select('*')
-                    .eq('user_id', currentUser.id)
-                    .single();
-
-                if (error || !lessonPlan) {
-                    alert('수업계획을 찾을 수 없습니다.');
-                    return;
-                }
-
-                // 페이지 전환
-                const studentPage = document.getElementById('studentPage');
-                const lessonPlanPage = document.getElementById('lessonPlanPage');
-                
-                if (studentPage && lessonPlanPage) {
-                    studentPage.classList.remove('active');
-                    lessonPlanPage.classList.add('active');
-                    
-                    // 수정 모드로 LessonPlanManager 초기화
-                    setTimeout(() => {
-                        if (window.LessonPlanManager && typeof window.LessonPlanManager.showLessonPlanPage === 'function') {
-                            window.LessonPlanManager.showLessonPlanPage('edit', lessonPlan);
-                        }
-                    }, 200);
-                    
-                    console.log('✅ 수업계획 수정 모드 표시 완료');
-                }
-                
-            } catch (error) {
-                console.error('❌ 수업계획 수정 모드 표시 오류:', error);
-                alert('수업계획 수정 모드를 여는 중 오류가 발생했습니다.');
-            }
+            console.log('✅ 네비게이션 설정 완료 (v4.0)');
         }
 
         // 🎯 오류 메시지 표시 함수들
         function showUserDataError(message) {
-            const errorHtml = `
-                <div class="alert alert-warning" id="userDataError">
-                    <i data-lucide="alert-triangle"></i>
-                    <div>
-                        <h4>⚠️ 사용자 정보 로드 실패</h4>
-                        <p>${message}</p>
-                        <div style="margin-top: 10px;">
-                            <button onclick="retryUserDataLoad()" class="btn btn-sm primary">
-                                <i data-lucide="refresh-cw"></i> 다시 시도
-                            </button>
-                            <button onclick="redirectToLogin()" class="btn btn-sm secondary">
-                                <i data-lucide="log-in"></i> 로그인 페이지로
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            const headerContent = document.querySelector('.header-content');
-            if (headerContent) {
-                headerContent.insertAdjacentHTML('afterbegin', errorHtml);
-                
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
+            // NotificationSystem 모듈 사용
+            if (typeof window.NotificationSystem !== 'undefined') {
+                window.NotificationSystem.showErrorNotice('사용자 정보 오류', message);
+                return;
             }
+
+            // 폴백
+            alert('사용자 정보 오류: ' + message);
         }
 
         function showManagerError(message) {
-            const errorHtml = `
-                <div class="alert alert-danger" id="managerError">
-                    <i data-lucide="x-circle"></i>
-                    <div>
-                        <h4>❌ 시스템 초기화 실패</h4>
-                        <p>${message}</p>
-                        <div style="margin-top: 10px;">
-                            <button onclick="location.reload()" class="btn btn-sm primary">
-                                <i data-lucide="rotate-ccw"></i> 페이지 새로고침
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            const mainContent = document.querySelector('.main-content');
-            if (mainContent) {
-                mainContent.insertAdjacentHTML('afterbegin', errorHtml);
-                
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
+            // NotificationSystem 모듈 사용
+            if (typeof window.NotificationSystem !== 'undefined') {
+                window.NotificationSystem.showErrorNotice('시스템 오류', message);
+                return;
             }
+
+            // 폴백
+            alert('시스템 오류: ' + message);
         }
 
         function showLoadingIndicator() {
-            const loadingHtml = `
-                <div class="loading-indicator" id="systemLoading">
-                    <div class="alert alert-info">
-                        <i data-lucide="loader-2" class="animate-spin"></i>
-                        <span>시스템 초기화 중...</span>
-                    </div>
-                </div>
-            `;
-            
-            const mainContent = document.querySelector('.main-content');
-            if (mainContent) {
-                mainContent.insertAdjacentHTML('afterbegin', loadingHtml);
-                
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
+            // NotificationSystem 모듈 사용
+            if (typeof window.NotificationSystem !== 'undefined') {
+                window.NotificationSystem.showLoadingNotice('시스템 초기화 중...');
+                return;
             }
+
+            // 폴백: 간단한 로딩 표시
+            console.log('⏳ 시스템 로딩 중... (v4.0)');
         }
 
         function hideLoadingIndicator() {
-            const loadingEl = document.getElementById('systemLoading');
-            if (loadingEl) loadingEl.remove();
+            // NotificationSystem 모듈 사용
+            if (typeof window.NotificationSystem !== 'undefined') {
+                window.NotificationSystem.hideAllNotices();
+                return;
+            }
+
+            console.log('✅ 로딩 완료 (v4.0)');
         }
 
         // 🎯 재시도 함수들
         function retryUserDataLoad() {
-            console.log('🔄 사용자 데이터 로드 재시도');
-            
-            const errorEl = document.getElementById('userDataError');
-            if (errorEl) errorEl.remove();
+            console.log('🔄 사용자 데이터 로드 재시도 (v4.0)');
             
             loadAndDisplayUserInfo()
                 .then(function() {
@@ -1072,7 +860,7 @@
                     }
                 })
                 .catch(function() {
-                    console.error('❌ 재시도 실패');
+                    console.error('❌ 재시도 실패 (v4.0)');
                 });
         }
 
@@ -1084,34 +872,27 @@
             }
         }
 
-        // 🚀 메인 초기화 함수 - 수업계획 상태 확인 추가
+        // 🚀 메인 초기화 함수 - v4.0 완전 업데이트
         function initializeEquipmentRequestPage() {
-            console.log('🚀 Equipment Request 페이지 초기화 시작');
+            console.log('🚀 Equipment Request 페이지 초기화 시작 (v4.0)');
             
             try {
                 window.EquipmentRequestManager.isInitialized = false;
                 
-                // 로딩 표시
                 showLoadingIndicator();
                 
-                // 1단계: 의존성 로딩 대기
                 return waitForDependencies()
                     .then(function() {
-                        console.log('✅ 1단계: 의존성 로딩 완료');
-                        
-                        // 2단계: 사용자 정보 로드
+                        console.log('✅ 1단계: 의존성 로딩 완료 (v4.0)');
                         return loadAndDisplayUserInfo();
                     })
-                    .then(function(userData) {
-                        console.log('✅ 2단계: 사용자 정보 로드 완료');
-                        
-                        // 3단계: 수업계획 상태 확인 및 페이지 분기
+                    .then(function() {
+                        console.log('✅ 2단계: 사용자 정보 로드 완료 (v4.0)');
                         return checkLessonPlanStatusAndSetPage();
                     })
                     .then(function() {
-                        console.log('✅ 3단계: 수업계획 상태 확인 완료');
+                        console.log('✅ 3단계: 수업계획 상태 확인 완료 (v4.0)');
                         
-                        // 4단계: StudentManager 초기화 (교구신청 화면인 경우만)
                         const studentPage = document.getElementById('studentPage');
                         if (studentPage && studentPage.classList.contains('active')) {
                             return initializeStudentManager();
@@ -1119,39 +900,32 @@
                         return Promise.resolve();
                     })
                     .then(function() {
-                        console.log('✅ 4단계: StudentManager 초기화 완료');
+                        console.log('✅ 4단계: StudentManager 초기화 완료 (v4.0)');
                         
-                        // 5단계: 네비게이션 설정
                         setupNavigation();
-                        console.log('✅ 5단계: 네비게이션 설정 완료');
+                        console.log('✅ 5단계: 네비게이션 설정 완료 (v4.0)');
                         
-                        // 초기화 완료
                         window.EquipmentRequestManager.isInitialized = true;
-                        console.log('🎉 Equipment Request 페이지 초기화 완료');
-                        
+                        console.log('🎉 Equipment Request 페이지 초기화 완료 (v4.0)');
                     })
                     .catch(function(error) {
-                        console.error('❌ 페이지 초기화 실패:', error);
+                        console.error('❌ 페이지 초기화 실패 (v4.0):', error);
                         
-                        // 특정 오류에 대한 처리
                         if (error.message.includes('로그인 세션')) {
                             setTimeout(function() {
                                 alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
                                 window.location.href = '../index.html';
                             }, 1000);
-                        } else if (error.message.includes('의존성')) {
-                            showManagerError('시스템 의존성 로딩에 실패했습니다. 페이지를 새로고침해주세요.');
                         } else {
                             showManagerError('페이지 초기화에 실패했습니다: ' + error.message);
                         }
                     })
                     .finally(function() {
-                        // 로딩 표시 제거
                         hideLoadingIndicator();
                     });
                     
             } catch (error) {
-                console.error('❌ 초기화 중 예외 발생:', error);
+                console.error('❌ 초기화 중 예외 발생 (v4.0):', error);
                 hideLoadingIndicator();
                 showManagerError('페이지 초기화 중 오류가 발생했습니다');
             }
@@ -1159,280 +933,37 @@
 
         // 🎯 DOM 로드 완료 시 실행
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 (v1.8.1 - 배송지 이벤트 수정)');
+            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 v4.0 (완전 모듈 시스템)');
             
             // Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
-                console.log('✅ Lucide 아이콘 초기화 완료');
+                console.log('✅ Lucide 아이콘 초기화 완료 (v4.0)');
             }
             
-            // 페이지 초기화 시작 (약간의 지연 후)
+            // 페이지 초기화 시작
             setTimeout(function() {
                 initializeEquipmentRequestPage();
-            }, 100);
+            }, 200);
         });
 
-        // 🎯 전역 함수 등록 (디버깅용)
+        // 🎯 전역 함수 등록
         window.retryUserDataLoad = retryUserDataLoad;
         window.redirectToLogin = redirectToLogin;
         window.initializeEquipmentRequestPage = initializeEquipmentRequestPage;
         window.checkRequiredDependencies = checkRequiredDependencies;
-        window.showLessonPlanEditMode = showLessonPlanEditMode;
-        window.toggleBundlePurchaseInfo = toggleBundlePurchaseInfo;
-        window.toggleOtherSiteInput = toggleOtherSiteInput;
 
-        // 🎯 호환성 함수 (기존 코드와의 호환성 유지)
+        // 🎯 호환성 함수
         window.initializeStudentPage = function() {
-            console.log('🔄 initializeStudentPage 호출됨 (호환성 함수)');
+            console.log('🔄 initializeStudentPage 호출됨 (v4.0 호환성 함수)');
             return initializeEquipmentRequestPage();
         };
 
-        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 - 배송지 이벤트 수정 (v1.8.1)');
-        console.log('💡 디버깅 명령어: checkRequiredDependencies() - 의존성 상태 확인');
+        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 (v4.0 - 완전 모듈 시스템)');
     </script>
     
-    <!-- 개선된 CSS 스타일 -->
+    <!-- v4.0 업데이트된 CSS 스타일 -->
     <style>
-        /* 알림 스타일 */
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 1px solid;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            margin: 16px 0;
-        }
-        
-        .alert-warning {
-            background-color: #fef3cd;
-            border-color: #ffeaa7;
-            color: #856404;
-        }
-        
-        .alert-danger {
-            background-color: #f8d7da;
-            border-color: #f5c6cb;
-            color: #721c24;
-        }
-        
-        .alert-info {
-            background-color: #d1ecf1;
-            border-color: #bee5eb;
-            color: #0c5460;
-        }
-        
-        .alert-success {
-            background-color: #d4edda;
-            border-color: #c3e6cb;
-            color: #155724;
-        }
-        
-        .alert i {
-            margin-top: 2px;
-            flex-shrink: 0;
-        }
-        
-        .alert div {
-            flex: 1;
-        }
-        
-        .alert h4 {
-            margin: 0 0 4px 0;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        
-        .alert p {
-            margin: 0 0 8px 0;
-            font-size: 13px;
-            line-height: 1.4;
-        }
-        
-        .alert p:last-child {
-            margin-bottom: 0;
-        }
-        
-        /* 버튼 스타일 */
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 12px;
-            border-radius: 4px;
-            margin-right: 8px;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        .btn-sm.primary {
-            background-color: #007bff;
-            color: white;
-        }
-        
-        .btn-sm.secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-        
-        .btn-sm:hover {
-            opacity: 0.9;
-        }
-        
-        /* 🆕 배송지 설정 버튼 스타일 - 텍스트와 아이콘 흰색 */
-        .shipping-address-btn {
-            color: white !important;
-        }
-        
-        .shipping-address-btn i {
-            color: white !important;
-        }
-        
-        .shipping-address-btn:hover {
-            color: white !important;
-        }
-        
-        .shipping-address-btn:hover i {
-            color: white !important;
-        }
-
-        /* 🆕 묶음 신청 스타일 */
-        .purchase-info-section {
-            margin-top: 20px;
-            border-top: 1px solid #e9ecef;
-            padding-top: 20px;
-        }
-
-        .account-info-section {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 15px;
-        }
-
-        .account-info-header {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #dee2e6;
-        }
-
-        .account-info-header i {
-            color: #28a745;
-            margin-top: 2px;
-        }
-
-        .account-info-header h4 {
-            margin: 0 0 4px 0;
-            color: #495057;
-            font-size: 16px;
-        }
-
-        .account-info-header p {
-            margin: 0;
-            color: #6c757d;
-            font-size: 14px;
-        }
-
-        /* 구매 사이트 선택 스타일 */
-        #purchaseSite {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        #otherSite {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        /* 파일 업로드 스타일 개선 */
-        .file-upload-area {
-            border: 2px dashed #dee2e6;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            background-color: #f8f9fa;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .file-upload-area:hover {
-            border-color: #007bff;
-            background-color: #e7f3ff;
-        }
-
-        .file-upload-area.drag-over {
-            border-color: #007bff;
-            background-color: #e7f3ff;
-        }
-
-        .file-upload-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .file-upload-content i {
-            font-size: 24px;
-            color: #6c757d;
-        }
-
-        .file-name {
-            font-weight: 500;
-            color: #495057;
-            margin-top: 10px;
-        }
-
-        .receipt-preview {
-            margin-top: 15px;
-            padding: 15px;
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-        }
-
-        .receipt-preview img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 4px;
-        }
-
-        /* 텍스트 스타일 */
-        .text-muted {
-            color: #6c757d !important;
-            font-size: 12px;
-        }
-        
-        /* 애니메이션 */
-        .animate-spin {
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        /* 로딩 표시 */
-        .loading-indicator {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        
         /* 페이지 전환 스타일 */
         .page {
             display: none;
@@ -1444,28 +975,14 @@
         
         /* 반응형 조정 */
         @media (max-width: 768px) {
-            .alert {
-                padding: 10px 12px;
-                gap: 8px;
-            }
-            
-            .alert h4 {
-                font-size: 13px;
-            }
-            
-            .alert p {
-                font-size: 12px;
-            }
-            
-            .btn-sm {
-                padding: 5px 10px;
-                font-size: 11px;
-            }
-
-            .account-info-header {
+            .header-actions {
                 flex-direction: column;
-                align-items: flex-start;
                 gap: 8px;
+            }
+            
+            .header-actions .btn {
+                width: 100%;
+                justify-content: center;
             }
         }
     </style>
