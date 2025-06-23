@@ -1,12 +1,13 @@
-// 교구 신청 전담 모듈 - v3.0 (student.js와 student-addon.js에서 분리)
+// 교구 신청 전담 모듈 - v4.3.0 (student.js와 student-addon.js에서 분리)
 // 일반신청, 묶음신청, 수정/삭제, 카드렌더링, API 확장 등 교구 관련 모든 기능 통합
 // 🎯 책임: 교구 신청의 전체 라이프사이클 관리
+// 🔧 v4.3.0 - requests 테이블 구조 호환성 업데이트
 
 // SupabaseAPI 확장 (student-addon.js에서 이동)
 function extendSupabaseAPI() {
     if (typeof window.SupabaseAPI !== 'undefined') {
         
-        // 🔧 교구 신청 수정 메서드
+        // 🔧 교구 신청 수정 메서드 - v4.3.0 호환성
         window.SupabaseAPI.updateApplication = async function(applicationId, formData) {
             return await this.safeApiCall('교구 신청 수정', async () => {
                 const updateData = {
@@ -14,7 +15,7 @@ function extendSupabaseAPI() {
                     purpose: formData.purpose,
                     price: formData.price,
                     purchase_type: formData.purchase_type || 'online',
-                    purchase_link: formData.purchase_link || null,
+                    link: formData.purchase_link || null,  // 🔧 v4.3.0: purchase_link → link
                     is_bundle: formData.is_bundle || false,
                     updated_at: new Date().toISOString()
                 };
@@ -57,7 +58,7 @@ function extendSupabaseAPI() {
 const EquipmentRequestModule = {
     // 모듈 정보
     name: 'EquipmentRequest',
-    version: '3.0.0',
+    version: '4.3.0',
     
     // 상태 관리
     currentEditingItem: null,
@@ -71,7 +72,7 @@ const EquipmentRequestModule = {
     
     init: function(studentManager) {
         try {
-            console.log('🛒 EquipmentRequestModule 초기화 v3.0');
+            console.log('🛒 EquipmentRequestModule 초기화 v4.3.0 - v4.3 테이블 호환성');
             
             this.studentManager = studentManager;
             
@@ -290,10 +291,10 @@ const EquipmentRequestModule = {
 
     // === 폼 처리 ===
 
-    // 📝 일반 교구 신청 제출 처리
+    // 📝 일반 교구 신청 제출 처리 - v4.3.0 호환성
     handleApplicationSubmit: function() {
         try {
-            console.log('📝 일반 교구 신청 제출 처리');
+            console.log('📝 일반 교구 신청 제출 처리 v4.3.0');
             
             if (this.submitInProgress) {
                 console.warn('⚠️ 제출이 이미 진행 중입니다');
@@ -323,7 +324,7 @@ const EquipmentRequestModule = {
                 price: parseInt(formData.get('itemPrice')) || 0,
                 purpose: formData.get('itemPurpose') || '',
                 purchase_type: formData.get('purchaseMethod') || 'online',
-                purchase_link: formData.get('itemLink') || '',
+                purchase_link: formData.get('itemLink') || '', // 🔧 UI는 그대로, API 매핑에서 변환
                 is_bundle: false
             };
 
@@ -436,7 +437,7 @@ const EquipmentRequestModule = {
                 price: bundleTotalPrice,
                 purpose: bundlePurpose,
                 purchase_type: bundlePurchaseMethod,
-                purchase_link: purchaseDetails,
+                purchase_link: purchaseDetails, // 🔧 UI는 그대로, API 매핑에서 변환
                 is_bundle: true
             };
 
@@ -565,7 +566,7 @@ const EquipmentRequestModule = {
             }
 
             // 삭제 확인
-            if (!confirm('정말로 이 신청을 삭제하시겠습니까?\n\n삭제된 신청은 복구할 수 없습니다.')) {
+            if (!confirm('정말로 이 신청을 삭제하시겠습니까?\\n\\n삭제된 신청은 복구할 수 없습니다.')) {
                 return;
             }
 
@@ -655,7 +656,7 @@ const EquipmentRequestModule = {
         }
     },
 
-    // 신청 카드 생성
+    // 신청 카드 생성 - v4.3.0 호환성 (DB 컬럼 매핑)
     createApplicationCard: function(application) {
         try {
             const card = document.createElement('div');
@@ -689,14 +690,15 @@ const EquipmentRequestModule = {
                 `;
             }
             
-            // 일반 신청만 참고링크 표시
+            // 일반 신청만 참고링크 표시 - v4.3.0 호환성 (link 컬럼 사용)
             let linkSection = '';
-            if (application.purchase_link && !application.is_bundle) {
+            const linkValue = application.link || application.purchase_link; // 🔧 DB 변경 과도기 호환성
+            if (linkValue && !application.is_bundle) {
                 linkSection = `
                     <div class="detail-item">
                         <span class="detail-label">${application.purchase_type === 'offline' ? '참고 링크' : '구매 링크'}</span>
                         <span class="detail-value">
-                            <a href="${this.escapeHtml(application.purchase_link)}" target="_blank" rel="noopener noreferrer">
+                            <a href="${this.escapeHtml(linkValue)}" target="_blank" rel="noopener noreferrer">
                                 링크 보기 <i data-lucide="external-link"></i>
                             </a>
                         </span>
@@ -966,7 +968,7 @@ const EquipmentRequestModule = {
         return true;
     },
 
-    // 수정 모달 열기 함수들
+    // 수정 모달 열기 함수들 - v4.3.0 호환성
     openEditApplicationModal: function(application) {
         try {
             const modal = document.getElementById('applicationModal');
@@ -1047,7 +1049,7 @@ const EquipmentRequestModule = {
         }
     },
 
-    // 폼 데이터 채우기 함수들
+    // 폼 데이터 채우기 함수들 - v4.3.0 호환성
     fillApplicationForm: function(application) {
         try {
             const form = document.getElementById('applicationForm');
@@ -1062,7 +1064,10 @@ const EquipmentRequestModule = {
             if (itemNameField) itemNameField.value = application.item_name || '';
             if (itemPurposeField) itemPurposeField.value = application.purpose || '';
             if (itemPriceField) itemPriceField.value = application.price || '';
-            if (itemLinkField) itemLinkField.value = application.purchase_link || '';
+            
+            // v4.3.0 호환성 - link 또는 purchase_link 컬럼 처리
+            const linkValue = application.link || application.purchase_link || '';
+            if (itemLinkField) itemLinkField.value = linkValue;
 
             // 구매 방식 라디오 버튼 설정
             const purchaseMethodRadios = form.querySelectorAll('input[name="purchaseMethod"]');
@@ -1101,9 +1106,10 @@ const EquipmentRequestModule = {
                 window.toggleBundlePurchaseInfo(application.purchase_type);
             }
 
-            // 추가 정보 파싱 및 입력
-            if (application.purchase_link) {
-                this.parseBundlePurchaseDetails(application.purchase_link, form);
+            // 추가 정보 파싱 및 입력 - v4.3.0 호환성
+            const linkValue = application.link || application.purchase_link || '';
+            if (linkValue) {
+                this.parseBundlePurchaseDetails(linkValue, form);
             }
 
             console.log('✅ 묶음 신청 폼 데이터 채우기 완료');
@@ -1152,7 +1158,7 @@ const EquipmentRequestModule = {
                 
                 // 온라인 구매 정보 구성
                 const siteInfo = purchaseSite === 'other' ? formData.get('otherSite') : purchaseSite;
-                return `[온라인 구매]\n구매 사이트: ${siteInfo}\n계정 ID: ${accountId}\n계정 PW: ${this.encryptPassword(accountPassword)}\n장바구니 메모: ${cartNote}`;
+                return `[온라인 구매]\\n구매 사이트: ${siteInfo}\\n계정 ID: ${accountId}\\n계정 PW: ${this.encryptPassword(accountPassword)}\\n장바구니 메모: ${cartNote}`;
                 
             } else {
                 // 오프라인 구매 정보 검증
@@ -1166,7 +1172,7 @@ const EquipmentRequestModule = {
                 }
                 
                 // 오프라인 구매 정보 구성
-                return `[오프라인 구매]\n구매 업체: ${offlineVendor}\n구매 계획: ${purchasePlan}`;
+                return `[오프라인 구매]\\n구매 업체: ${offlineVendor}\\n구매 계획: ${purchasePlan}`;
             }
         } catch (error) {
             console.error('❌ 묶음 구매 정보 수집 오류:', error);
@@ -1354,4 +1360,4 @@ if (typeof window !== 'undefined') {
     window.EquipmentRequestModule = EquipmentRequestModule;
 }
 
-console.log('🛒 EquipmentRequestModule v3.0 로드 완료 - 교구 신청 전담 모듈');
+console.log('🛒 EquipmentRequestModule v4.3.0 로드 완료 - v4.3 테이블 호환성 (purchase_link → link)');
