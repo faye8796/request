@@ -1,6 +1,6 @@
 // 간소화된 Supabase API - 관리자 및 학생 시스템용
 // intern-announcement 방식 기반으로 안정성 확보
-// 🚀 v2.12 - purchased_at 컬럼 참조 제거 (구매완료 버튼 오류 수정)
+// 🚀 v2.13 - 수업계획 승인 로직 에러 처리 강화
 
 const SupabaseAPI = {
     // Supabase 클라이언트
@@ -77,13 +77,17 @@ const SupabaseAPI = {
         }
     },
 
-    // 에러 메시지 처리
+    // 🔧 v2.13 - 에러 메시지 처리 강화
     getErrorMessage(error) {
         if (typeof error === 'string') {
             return error;
         }
         
         if (error?.message) {
+            // 컬럼 존재하지 않음 오류 처리
+            if (error.message.includes('has no field') || error.code === '42703') {
+                return '데이터베이스 구조 오류: 존재하지 않는 컬럼을 참조했습니다.';
+            }
             if (error.message.includes('PGRST116')) {
                 return '요청하신 데이터를 찾을 수 없습니다.';
             }
@@ -1165,45 +1169,108 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 🔧 수업계획 승인/반려 (admin.js 호환) - 단순화된 승인 로직
+    // 🔧 v2.13 - 수업계획 승인/반려 (강화된 에러 처리)
     // ===================
     async approveLessonPlan(studentId) {
+        console.log('📚 수업계획 승인 시작:', studentId);
+        
         return await this.safeApiCall('수업계획 승인', async () => {
             const client = await this.ensureClient();
             
-            // 🔧 단순화된 승인 처리 - status만 변경
-            const approveResult = await client
-                .from('lesson_plans')
-                .update({
-                    status: 'approved',  // 🔧 status만 변경
+            try {
+                // 🔧 v2.13 - 단순화된 승인 처리, approved_at 등 모든 추가 컬럼 제거
+                const updateData = {
+                    status: 'approved',
                     rejection_reason: null,
                     updated_at: new Date().toISOString()
-                })
-                .eq('user_id', studentId)
-                .eq('status', 'submitted')  // submitted 상태인 것만 승인
-                .select();
+                };
 
-            if (approveResult.error) throw approveResult.error;
+                console.log('📚 수업계획 승인 데이터:', updateData);
 
-            console.log('✅ 수업계획 승인 완료:', approveResult.data);
-            return approveResult;
+                const approveResult = await client
+                    .from('lesson_plans')
+                    .update(updateData)
+                    .eq('user_id', studentId)
+                    .eq('status', 'submitted')  // submitted 상태인 것만 승인
+                    .select();
+
+                if (approveResult.error) {
+                    console.error('❌ 수업계획 승인 DB 오류:', approveResult.error);
+                    throw approveResult.error;
+                }
+
+                console.log('✅ 수업계획 승인 완료:', approveResult.data);
+                
+                // 🔧 v2.13 - 승인 결과 검증
+                if (!approveResult.data || approveResult.data.length === 0) {
+                    console.warn('⚠️ 승인할 수업계획을 찾을 수 없습니다 (이미 승인되었거나 상태가 변경됨)');
+                    return {
+                        data: null,
+                        error: { message: '승인할 수업계획이 없습니다. 이미 처리되었거나 상태가 변경되었을 수 있습니다.' }
+                    };
+                }
+
+                return approveResult;
+
+            } catch (error) {
+                console.error('❌ 수업계획 승인 처리 중 예외:', error);
+                
+                // 🔧 v2.13 - 컬럼 관련 오류 특별 처리
+                if (error.message && (error.message.includes('has no field') || error.code === '42703')) {
+                    console.error('❌ 데이터베이스 컬럼 참조 오류 감지 - approved_at 등의 컬럼이 존재하지 않음');
+                    throw new Error('데이터베이스 구조 오류: 수업계획 테이블의 컬럼 구조를 확인해주세요.');
+                }
+                
+                throw error;
+            }
         });
     },
 
     async rejectLessonPlan(studentId, reason) {
+        console.log('📚 수업계획 반려 시작:', studentId, reason);
+        
         return await this.safeApiCall('수업계획 반려', async () => {
             const client = await this.ensureClient();
             
-            return await client
-                .from('lesson_plans')
-                .update({
-                    status: 'rejected',  // 🔧 status를 rejected로 변경
+            try {
+                // 🔧 v2.13 - 단순화된 반려 처리
+                const updateData = {
+                    status: 'rejected',
                     rejection_reason: reason,
                     updated_at: new Date().toISOString()
-                })
-                .eq('user_id', studentId)
-                .eq('status', 'submitted')  // submitted 상태인 것만 반려
-                .select();
+                };
+
+                console.log('📚 수업계획 반려 데이터:', updateData);
+
+                const rejectResult = await client
+                    .from('lesson_plans')
+                    .update(updateData)
+                    .eq('user_id', studentId)
+                    .eq('status', 'submitted')  // submitted 상태인 것만 반려
+                    .select();
+
+                if (rejectResult.error) {
+                    console.error('❌ 수업계획 반려 DB 오류:', rejectResult.error);
+                    throw rejectResult.error;
+                }
+
+                console.log('✅ 수업계획 반려 완료:', rejectResult.data);
+                
+                // 🔧 v2.13 - 반려 결과 검증
+                if (!rejectResult.data || rejectResult.data.length === 0) {
+                    console.warn('⚠️ 반려할 수업계획을 찾을 수 없습니다');
+                    return {
+                        data: null,
+                        error: { message: '반려할 수업계획이 없습니다. 이미 처리되었거나 상태가 변경되었을 수 있습니다.' }
+                    };
+                }
+
+                return rejectResult;
+
+            } catch (error) {
+                console.error('❌ 수업계획 반려 처리 중 예외:', error);
+                throw error;
+            }
         });
     },
 
@@ -1734,4 +1801,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v2.12 loaded - purchased_at 컬럼 참조 제거 (구매완료 버튼 오류 수정)');
+console.log('🚀 SupabaseAPI v2.13 loaded - 수업계획 승인 로직 에러 처리 강화');
