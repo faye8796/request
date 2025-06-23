@@ -1,4 +1,4 @@
-// 학생 기능 핵심 매니저 - v4.0 대폭 슬림화 버전 (완전 모듈 시스템)
+// 학생 기능 핵심 매니저 - v4.1 구문 오류 수정 버전 (완전 모듈 시스템)
 // 🎯 책임: 모듈 관리, 페이지 전환, 간단한 조정자 역할
 // 📦 분리 완료: 교구신청, 배송지, 영수증, 수업계획, API, 알림 → 각각 독립 모듈
 
@@ -44,7 +44,7 @@ const StudentManager = {
         }
 
         try {
-            console.log('🎓 StudentManager v4.0 초기화 시작 (완전 모듈 시스템)');
+            console.log('🎓 StudentManager v4.1 초기화 시작 (완전 모듈 시스템)');
             
             // 1. 모듈 로드
             this.loadAllModules();
@@ -57,7 +57,7 @@ const StudentManager = {
             return this.initializeModulesData()
                 .then(function() {
                     self.isInitialized = true;
-                    console.log('✅ StudentManager v4.0 초기화 완료');
+                    console.log('✅ StudentManager v4.1 초기화 완료');
                     
                     // 시스템 준비 완료 알림
                     const notificationSystem = self.getModule('notification');
@@ -357,18 +357,20 @@ const StudentManager = {
                 lessonPlanPage.classList.remove('active');
                 studentPage.classList.add('active');
                 
-                setTimeout(() => {
-                    if (this.refreshDashboard) {
-                        this.refreshDashboard();
+                const self = this;
+                setTimeout(function() {
+                    if (self.refreshDashboard) {
+                        self.refreshDashboard();
                     }
                 }, 200);
                 
                 return true;
             }
             
-            // 3차: 직접 URL 이동 (폴백)
+            // 3차: 직접 URL 이동 (폴백) - 정규표현식 수정
             console.warn('⚠️ 페이지 요소를 찾을 수 없음 - URL 이동 시도');
-            const studentDashboardPath = window.location.origin + window.location.pathname.replace(/\\/[^\\/]*$/, '/student/dashboard.html');
+            const currentPath = window.location.pathname;
+            const studentDashboardPath = window.location.origin + currentPath.replace(/\/[^\/]*$/, '/student/dashboard.html');
             window.location.href = studentDashboardPath;
             
             return false;
@@ -474,13 +476,14 @@ const StudentManager = {
         }
     },
 
-    // 모달 상호작용 이벤트 설정
+    // 모달 상호작용 이벤트 설정 - 화살표 함수 제거
     setupModalInteractionEvents: function() {
         try {
-            // ESC 키로 모달 닫기
-            document.addEventListener('keydown', (e) => {
+            // ESC 키로 모달 닫기 - 일반 함수로 변경
+            const self = this;
+            document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
-                    this.hideAllModals();
+                    self.hideAllModals();
                 }
             });
         } catch (error) {
@@ -532,4 +535,4 @@ window.initializeStudentPage = function() {
     }
 };
 
-console.log('📚 StudentManager v4.0 로드 완료 - 완전 모듈화된 슬림 핵심 매니저');
+console.log('📚 StudentManager v4.1 로드 완료 - 구문 오류 수정 및 완전 모듈화된 슬림 핵심 매니저');
