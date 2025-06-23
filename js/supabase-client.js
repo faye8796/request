@@ -1,6 +1,6 @@
 // 간소화된 Supabase API - 관리자 및 학생 시스템용
 // intern-announcement 방식 기반으로 안정성 확보
-// 🚀 v4.1.2 - 영수증 image_path 필드 추가 (NOT NULL constraint 해결)
+// 🚀 v4.1.3 - 영수증 store_name 컬럼명 수정 및 기본값 제공
 
 const SupabaseAPI = {
     // Supabase 클라이언트
@@ -259,7 +259,7 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 🚀 영수증 관리 시스템 - v4.1.2 image_path 필드 추가
+    // 🚀 영수증 관리 시스템 - v4.1.3 store_name 컬럼명 수정
     // ===================
 
     // 🔧 v4.1.1 - 학생의 다음 영수증 순번 가져오기
@@ -442,9 +442,9 @@ const SupabaseAPI = {
         }
     },
 
-    // 🚀 v4.1.2 - 영수증 정보 저장 (image_path 필드 추가)
+    // 🔧 v4.1.3 - 영수증 정보 저장 (store_name 컬럼명 수정 및 기본값 제공)
     async saveReceiptInfo(requestId, receiptData) {
-        console.log('📄 영수증 정보 저장 (v4.1.2 - image_path 추가):', { requestId, receiptData });
+        console.log('📄 영수증 정보 저장 (v4.1.3 - store_name 컬럼명 수정):', { requestId, receiptData });
 
         return await this.safeApiCall('영수증 정보 저장', async () => {
             const receiptRecord = {
@@ -460,12 +460,12 @@ const SupabaseAPI = {
                 student_name: receiptData.studentName,     
                 receipt_number: receiptData.receiptNumber, 
                 purchase_date: receiptData.purchaseDate || null,
-                purchase_store: receiptData.purchaseStore || null,
+                store_name: receiptData.purchaseStore || '미입력',  // 🔧 v4.1.3 - purchase_store → store_name, null → '미입력'
                 note: receiptData.note || null,
                 uploaded_at: new Date().toISOString()
             };
 
-            console.log('📄 저장할 영수증 메타데이터 (v4.1.2 - image_path 포함):', receiptRecord);
+            console.log('📄 저장할 영수증 메타데이터 (v4.1.3 - store_name 수정):', receiptRecord);
 
             // receipts 테이블에 메타데이터 저장
             return await this.supabase
@@ -1817,4 +1817,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v4.1.2 loaded - 영수증 image_path 필드 추가 (NOT NULL constraint 해결)');
+console.log('🚀 SupabaseAPI v4.1.3 loaded - 영수증 store_name 컬럼명 수정 및 기본값 제공');
