@@ -1,6 +1,6 @@
 // 간소화된 Supabase API - 관리자 및 학생 시스템용
 // intern-announcement 방식 기반으로 안정성 확보
-// 🚀 v2.13 - 수업계획 승인 로직 에러 처리 강화
+// 🚀 v4.1.1 - 영수증 파일명 시스템 완전 변경: 순번_가격.확장자
 
 const SupabaseAPI = {
     // Supabase 클라이언트
@@ -259,10 +259,10 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 🚀 영수증 관리 시스템 - 완전 새로 구현 (v2.10 - 파일명 생성 로직 수정)
+    // 🚀 영수증 관리 시스템 - v4.1.1 완전 새로운 파일명 시스템
     // ===================
 
-    // 🔧 v2.10 - 학생의 다음 영수증 순번 가져오기
+    // 🔧 v4.1.1 - 학생의 다음 영수증 순번 가져오기
     async getNextReceiptNumber(userId) {
         try {
             console.log('📄 다음 영수증 순번 조회:', userId);
@@ -294,7 +294,38 @@ const SupabaseAPI = {
         }
     },
 
-    // 🔧 v2.10 - 학생명 조회 (파일명 생성용)
+    // 🚀 v4.1.1 - 교구 신청 가격 조회 (파일명 생성용)
+    async getRequestPrice(requestId) {
+        try {
+            console.log('💰 교구 신청 가격 조회:', requestId);
+            
+            const client = await this.ensureClient();
+            
+            const { data, error } = await client
+                .from('requests')
+                .select('price')
+                .eq('id', requestId)
+                .single();
+
+            if (error) {
+                console.error('❌ 교구 가격 조회 실패:', error);
+                // 오류 발생 시 기본값 0 반환
+                return 0;
+            }
+
+            const price = data?.price || 0;
+            console.log('✅ 교구 가격 조회 완료:', price);
+            
+            return price;
+            
+        } catch (error) {
+            console.error('❌ 교구 가격 조회 오류:', error);
+            // 오류 발생 시 기본값 0 반환
+            return 0;
+        }
+    },
+
+    // 🔧 v4.1.1 - 학생명 조회 (메타데이터 저장용)
     async getStudentName(userId) {
         try {
             console.log('👤 학생명 조회:', userId);
@@ -325,24 +356,9 @@ const SupabaseAPI = {
         }
     },
 
-    // 🔧 v2.10 - 파일명 정제 (파일시스템 호환)
-    sanitizeFileName(name) {
-        try {
-            // 파일시스템에서 허용되지 않는 문자 제거/변경
-            return name
-                .replace(/[<>:"/\\|?*]/g, '_')  // 특수문자 → 언더스코어
-                .replace(/\s+/g, '_')          // 공백 → 언더스코어
-                .replace(/\.+$/, '')           // 끝의 점 제거
-                .substring(0, 50);             // 길이 제한 (50자)
-        } catch (error) {
-            console.error('❌ 파일명 정제 오류:', error);
-            return name;
-        }
-    },
-
-    // 🚀 v2.10 - 영수증 파일 업로드 (수정된 파일명 생성 로직)
+    // 🚀 v4.1.1 - 영수증 파일 업로드 (완전 새로운 파일명 시스템)
     async uploadReceiptFile(file, requestId, userId) {
-        console.log('📄 영수증 파일 업로드 시작 (v2.10 - 파일명 로직 수정):', {
+        console.log('📄 영수증 파일 업로드 시작 (v4.1.1 - 순번_가격.확장자 시스템):', {
             fileName: file.name,
             fileSize: file.size,
             requestId: requestId,
@@ -352,34 +368,32 @@ const SupabaseAPI = {
         try {
             const client = await this.ensureClient();
             
-            // 🔧 v2.10 - 학생명 조회
-            const studentName = await this.getStudentName(userId);
-            console.log('👤 파일 업로드를 위한 학생명:', studentName);
-            
-            // 🔧 v2.10 - 다음 영수증 순번 조회
+            // 1. 🔧 v4.1.1 - 기본 정보 수집
             const receiptNumber = await this.getNextReceiptNumber(userId);
-            console.log('📄 다음 영수증 순번:', receiptNumber);
+            const requestPrice = await this.getRequestPrice(requestId);
+            const studentName = await this.getStudentName(userId);
             
-            // 🔧 v2.10 - 파일 확장자 추출
+            // 2. 🔧 v4.1.1 - 파일 확장자 추출
             const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
             
-            // 🔧 v2.10 - 새로운 파일명 생성: [학생명]_001 형태
-            const sanitizedName = this.sanitizeFileName(studentName);
+            // 3. 🚀 v4.1.1 - 새로운 파일명 생성: 순번_가격.확장자
             const paddedNumber = receiptNumber.toString().padStart(3, '0'); // 001, 002, 003...
-            const newFileName = `${sanitizedName}_${paddedNumber}.${fileExtension}`;
+            const fileName = `${paddedNumber}_${requestPrice}.${fileExtension}`;
             
-            // Storage 경로 생성
-            const filePath = `receipts/${userId}/${newFileName}`;
+            // 4. Storage 경로 생성 (기존 폴더 구조 유지)
+            const filePath = `receipts/${userId}/${fileName}`;
             
-            console.log('📄 생성된 파일 정보:', {
-                originalName: file.name,
-                newFileName: newFileName,
-                filePath: filePath,
-                studentName: studentName,
-                receiptNumber: receiptNumber
+            console.log('📄 v4.1.1 새로운 파일명 시스템:', {
+                originalName: file.name,        // '영수증사진.jpg'
+                optimizedName: fileName,        // '001_15000.jpg'
+                filePath: filePath,            // 'receipts/uuid/001_15000.jpg'
+                receiptNumber: receiptNumber,   // 1
+                requestPrice: requestPrice,     // 15000
+                studentName: studentName,       // '홍길동'
+                info: `${receiptNumber}번째 영수증, ${requestPrice}원 교구용`
             });
 
-            // Supabase Storage에 파일 업로드
+            // 5. Supabase Storage에 파일 업로드
             const { data: uploadData, error: uploadError } = await client.storage
                 .from('receipt-files')  // 버킷 이름
                 .upload(filePath, file, {
@@ -394,7 +408,7 @@ const SupabaseAPI = {
 
             console.log('✅ 파일 업로드 성공:', uploadData);
 
-            // 업로드된 파일의 공개 URL 가져오기
+            // 6. 업로드된 파일의 공개 URL 가져오기
             const { data: urlData } = client.storage
                 .from('receipt-files')
                 .getPublicUrl(filePath);
@@ -406,14 +420,15 @@ const SupabaseAPI = {
                 success: true,
                 data: {
                     filePath: filePath,
-                    fileName: newFileName,           // 🔧 v2.10 - 새로운 파일명
+                    fileName: fileName,              // 🚀 v4.1.1 - 새로운 파일명 (001_15000.jpg)
                     fileUrl: fileUrl,
-                    originalName: file.name,
+                    originalName: file.name,         // 원본 파일명
                     fileSize: file.size,
                     fileType: file.type,
-                    studentName: studentName,        // 🔧 v2.10 - 학생명 추가
-                    receiptNumber: receiptNumber,    // 🔧 v2.10 - 순번 추가
-                    userId: userId                   // 🔧 v2.10 - 사용자 ID 추가
+                    studentName: studentName,        // 학생명 (한글)
+                    receiptNumber: receiptNumber,    // 영수증 순번
+                    requestPrice: requestPrice,      // 🚀 v4.1.1 - 교구 가격 추가
+                    userId: userId
                 }
             };
 
@@ -427,29 +442,29 @@ const SupabaseAPI = {
         }
     },
 
-    // 🚀 v2.10 - 영수증 정보 저장 (파일 업로드 후 메타데이터 저장) - user_id 추가
+    // 🚀 v4.1.1 - 영수증 정보 저장 (새로운 메타데이터 포함)
     async saveReceiptInfo(requestId, receiptData) {
-        console.log('📄 영수증 정보 저장 (v2.10):', { requestId, receiptData });
+        console.log('📄 영수증 정보 저장 (v4.1.1):', { requestId, receiptData });
 
         return await this.safeApiCall('영수증 정보 저장', async () => {
             const receiptRecord = {
                 request_id: requestId,
-                user_id: receiptData.userId,          // 🔧 v2.10 - user_id 추가
+                user_id: receiptData.userId,
                 file_path: receiptData.filePath,
-                file_name: receiptData.fileName,
+                file_name: receiptData.fileName,           // 🚀 v4.1.1 - 새로운 파일명 (001_15000.jpg)
                 file_url: receiptData.fileUrl,
                 original_name: receiptData.originalName,
                 file_size: receiptData.fileSize,
                 file_type: receiptData.fileType,
-                student_name: receiptData.studentName,     // 🔧 v2.10 - 학생명 저장
-                receipt_number: receiptData.receiptNumber, // 🔧 v2.10 - 순번 저장
+                student_name: receiptData.studentName,     
+                receipt_number: receiptData.receiptNumber, 
                 purchase_date: receiptData.purchaseDate || null,
                 purchase_store: receiptData.purchaseStore || null,
                 note: receiptData.note || null,
                 uploaded_at: new Date().toISOString()
             };
 
-            console.log('📄 저장할 영수증 메타데이터 (v2.10):', receiptRecord);
+            console.log('📄 저장할 영수증 메타데이터 (v4.1.1):', receiptRecord);
 
             // receipts 테이블에 메타데이터 저장
             return await this.supabase
@@ -1801,4 +1816,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v2.13 loaded - 수업계획 승인 로직 에러 처리 강화');
+console.log('🚀 SupabaseAPI v4.1.1 loaded - 영수증 파일명 시스템 완전 변경: 순번_가격.확장자');
