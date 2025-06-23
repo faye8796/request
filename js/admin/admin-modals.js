@@ -26,7 +26,7 @@ AdminManager.Modals = {
         }
     },
 
-    // 예산 설정 모달 생성
+    // 🛠️ 예산 설정 모달 생성 (이벤트 리스너 추가)
     createBudgetSettingsModal() {
         if (!document.getElementById('budgetSettingsModal')) {
             const modalHTML = `
@@ -65,8 +65,68 @@ AdminManager.Modals = {
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', modalHTML);
-            console.log('✅ 예산 설정 모달 생성 완료');
+            
+            // 🛠️ 모달 생성 직후 이벤트 리스너 설정
+            this.setupBudgetSettingsEventListeners();
+            
+            console.log('✅ 예산 설정 모달 생성 및 이벤트 리스너 설정 완료');
         }
+    },
+
+    // 🛠️ 예산 설정 모달 이벤트 리스너 설정 (새로 추가)
+    setupBudgetSettingsEventListeners() {
+        const form = document.getElementById('budgetSettingsForm');
+        const cancelBtn = document.getElementById('budgetSettingsCancelBtn');
+        const modal = document.getElementById('budgetSettingsModal');
+
+        if (form) {
+            // 폼 제출 이벤트
+            form.addEventListener('submit', (e) => {
+                e.preventDefault(); // 🛠️ 페이지 새로고침 방지
+                console.log('💰 예산 설정 폼 제출 이벤트 실행');
+                
+                if (window.AdminManager && window.AdminManager.Budget && 
+                    typeof window.AdminManager.Budget.handleBudgetSettingsSubmit === 'function') {
+                    window.AdminManager.Budget.handleBudgetSettingsSubmit();
+                } else {
+                    console.error('❌ AdminManager.Budget.handleBudgetSettingsSubmit 함수를 찾을 수 없습니다');
+                    Utils.showToast('예산 설정 저장 기능을 불러올 수 없습니다.', 'error');
+                }
+            });
+        }
+
+        if (cancelBtn) {
+            // 취소 버튼 이벤트
+            cancelBtn.addEventListener('click', () => {
+                console.log('💰 예산 설정 취소 버튼 클릭');
+                if (window.AdminManager && window.AdminManager.Budget && 
+                    typeof window.AdminManager.Budget.hideBudgetSettingsModal === 'function') {
+                    window.AdminManager.Budget.hideBudgetSettingsModal();
+                } else {
+                    // 폴백: 직접 모달 숨기기
+                    if (modal) {
+                        modal.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        if (modal) {
+            // 모달 배경 클릭 시 닫기
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === 'budgetSettingsModal') {
+                    console.log('💰 예산 설정 모달 배경 클릭으로 닫기');
+                    if (window.AdminManager && window.AdminManager.Budget && 
+                        typeof window.AdminManager.Budget.hideBudgetSettingsModal === 'function') {
+                        window.AdminManager.Budget.hideBudgetSettingsModal();
+                    } else {
+                        modal.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        console.log('🛠️ 예산 설정 모달 이벤트 리스너 설정 완료');
     },
 
     // 수업계획 관리 모달 생성
