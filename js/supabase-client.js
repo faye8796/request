@@ -1,6 +1,6 @@
 // 간소화된 Supabase API - 관리자 및 학생 시스템용
 // intern-announcement 방식 기반으로 안정성 확보
-// 🚀 v4.1.1 - 영수증 파일명 시스템 완전 변경: 순번_가격.확장자
+// 🚀 v4.1.2 - 영수증 image_path 필드 추가 (NOT NULL constraint 해결)
 
 const SupabaseAPI = {
     // Supabase 클라이언트
@@ -259,7 +259,7 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 🚀 영수증 관리 시스템 - v4.1.1 완전 새로운 파일명 시스템
+    // 🚀 영수증 관리 시스템 - v4.1.2 image_path 필드 추가
     // ===================
 
     // 🔧 v4.1.1 - 학생의 다음 영수증 순번 가져오기
@@ -442,9 +442,9 @@ const SupabaseAPI = {
         }
     },
 
-    // 🚀 v4.1.1 - 영수증 정보 저장 (새로운 메타데이터 포함)
+    // 🚀 v4.1.2 - 영수증 정보 저장 (image_path 필드 추가)
     async saveReceiptInfo(requestId, receiptData) {
-        console.log('📄 영수증 정보 저장 (v4.1.1):', { requestId, receiptData });
+        console.log('📄 영수증 정보 저장 (v4.1.2 - image_path 추가):', { requestId, receiptData });
 
         return await this.safeApiCall('영수증 정보 저장', async () => {
             const receiptRecord = {
@@ -453,6 +453,7 @@ const SupabaseAPI = {
                 file_path: receiptData.filePath,
                 file_name: receiptData.fileName,           // 🚀 v4.1.1 - 새로운 파일명 (001_15000.jpg)
                 file_url: receiptData.fileUrl,
+                image_path: receiptData.filePath,          // 🔧 v4.1.2 - image_path 필드 추가 (file_path와 동일값)
                 original_name: receiptData.originalName,
                 file_size: receiptData.fileSize,
                 file_type: receiptData.fileType,
@@ -464,7 +465,7 @@ const SupabaseAPI = {
                 uploaded_at: new Date().toISOString()
             };
 
-            console.log('📄 저장할 영수증 메타데이터 (v4.1.1):', receiptRecord);
+            console.log('📄 저장할 영수증 메타데이터 (v4.1.2 - image_path 포함):', receiptRecord);
 
             // receipts 테이블에 메타데이터 저장
             return await this.supabase
@@ -1816,4 +1817,4 @@ const SupabaseAPI = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAPI = SupabaseAPI;
 
-console.log('🚀 SupabaseAPI v4.1.1 loaded - 영수증 파일명 시스템 완전 변경: 순번_가격.확장자');
+console.log('🚀 SupabaseAPI v4.1.2 loaded - 영수증 image_path 필드 추가 (NOT NULL constraint 해결)');
