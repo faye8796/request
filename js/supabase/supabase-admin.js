@@ -1,6 +1,6 @@
 // 🔐 SupabaseAdmin - 관리자 전용 기능 모듈
 // 세종학당 문화인턴 지원 시스템 - 관리자 시스템용 API
-// v4.1.6 - 모듈화 시스템 3단계: 관리자 전용 기능 분리
+// v4.3.0 - requests 테이블 구조 호환성 업데이트
 
 /**
  * 관리자 전용 Supabase API 모듈
@@ -14,6 +14,8 @@
  * - 📦 교구신청 관리 시스템
  * - 📄 영수증 관리 시스템
  * - ⚙️ 시스템 설정 관리
+ * 
+ * 🔧 v4.3.0 - requests 테이블 purchase_link → link 컬럼명 변경 호환
  */
 
 const SupabaseAdmin = {
@@ -777,7 +779,7 @@ const SupabaseAdmin = {
     },
 
     // ===================
-    // 📦 교구신청 관리
+    // 📦 교구신청 관리 - v4.3.0 호환성 (컬럼명 변경 대응)
     // ===================
     
     /**
@@ -1021,7 +1023,7 @@ const SupabaseAdmin = {
     },
 
     /**
-     * Excel 내보내기용 데이터 준비
+     * Excel 내보내기용 데이터 준비 - v4.3.0 호환성
      * @returns {Promise<Array>} CSV 형태 데이터
      */
     async prepareExportData() {
@@ -1045,7 +1047,7 @@ const SupabaseAdmin = {
         });
 
         if (result.success && result.data) {
-            // CSV 형태로 변환
+            // CSV 형태로 변환 - v4.3.0 호환성 (link 컬럼 사용)
             return result.data.map(item => ({
                 '신청일': new Date(item.created_at).toLocaleDateString('ko-KR'),
                 '학생명': item.user_profiles?.name || '알 수 없음',
@@ -1055,7 +1057,7 @@ const SupabaseAdmin = {
                 '사용목적': item.purpose || '',
                 '가격': item.price || 0,
                 '구매방식': item.purchase_type === 'offline' ? '오프라인' : '온라인',
-                '구매링크': item.purchase_link || '',
+                '구매링크': item.link || item.purchase_link || '', // 🔧 v4.3.0 호환성
                 '묶음여부': item.is_bundle ? '묶음' : '단일',
                 '상태': this.getStatusText(item.status),
                 '승인일': item.reviewed_at ? new Date(item.reviewed_at).toLocaleDateString('ko-KR') : '',
@@ -1124,4 +1126,4 @@ const SupabaseAdmin = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAdmin = SupabaseAdmin;
 
-console.log('🔐 SupabaseAdmin v4.1.6 모듈 로드 완료 - 관리자 전용 기능');
+console.log('🔐 SupabaseAdmin v4.3.0 모듈 로드 완료 - v4.3 requests 테이블 호환성 업데이트');
