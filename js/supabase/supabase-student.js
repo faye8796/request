@@ -1,7 +1,7 @@
 // 🚀 Supabase 학생 전용 기능 모듈 v4.3.0
 // 학생 인증, 교구 신청, 영수증 관리, 수업계획, 배송지 관리 등
 // SupabaseCore에 의존하는 학생 전용 모듈
-// 🔧 v4.3.0 - requests 테이블 구조 호환성 업데이트
+// 🔧 v4.3.0 - requests 테이블 구조 호환성 업데이트 및 4가지 타입별 최적화
 
 const SupabaseStudent = {
     // SupabaseCore 의존성 확인
@@ -472,8 +472,10 @@ const SupabaseStudent = {
     },
 
     // ===================
-    // 📦 교구 신청 관리 - v4.3.0 호환성 업데이트
+    // 📦 교구 신청 관리 - 🆕 v4.3.0 4가지 타입별 최적화
     // ===================
+    
+    // 🔧 기존 호환성 함수들 - v4.3.0 호환성
     async getStudentApplications(studentId) {
         const result = await this.core.safeApiCall('학생 신청 내역 조회', async () => {
             const client = await this.core.ensureClient();
@@ -487,7 +489,6 @@ const SupabaseStudent = {
         return result.success ? (result.data || []) : [];
     },
 
-    // 🔧 v4.3.0 호환성 - purchase_link → link 컬럼명 변경
     async createApplication(studentId, formData) {
         return await this.core.safeApiCall('교구 신청 생성', async () => {
             const client = await this.core.ensureClient();
@@ -511,7 +512,6 @@ const SupabaseStudent = {
         });
     },
 
-    // 🔧 v4.3.0 호환성 - purchase_link → link 컬럼명 변경
     async updateApplication(applicationId, formData) {
         return await this.core.safeApiCall('교구 신청 수정', async () => {
             const client = await this.core.ensureClient();
@@ -533,7 +533,6 @@ const SupabaseStudent = {
         });
     },
 
-    // 🚀 교구 신청 삭제 (student-addon.js에서 사용)
     async deleteApplication(applicationId) {
         return await this.core.safeApiCall('교구 신청 삭제', async () => {
             const client = await this.core.ensureClient();
@@ -545,7 +544,6 @@ const SupabaseStudent = {
         });
     },
 
-    // 🚀 특정 신청 조회 (student-addon.js에서 사용)
     async getApplicationById(applicationId) {
         return await this.core.safeApiCall('신청 상세 조회', async () => {
             const client = await this.core.ensureClient();
@@ -555,6 +553,306 @@ const SupabaseStudent = {
                 .eq('id', applicationId)
                 .single();
         });
+    },
+
+    // === 🆕 v4.3.0 일반 교구 신청 API ===
+    async createV43Application(studentId, formData) {
+        console.log('📝 v4.3.0 일반 신청 생성:', formData);
+        
+        return await this.core.safeApiCall('v4.3.0 교구 신청 생성', async () => {
+            const client = await this.core.ensureClient();
+            
+            const requestData = {
+                user_id: studentId,
+                item_name: formData.item_name,
+                purpose: formData.purpose,
+                price: formData.price,
+                purchase_type: formData.purchase_type || 'online',
+                is_bundle: formData.is_bundle || false,
+                
+                // 🆕 v4.3.0 새로운 컬럼들
+                link: formData.link || null,
+                store_info: formData.store_info || null,
+                account_id: formData.account_id || null,
+                account_pw: formData.account_pw || null,
+                
+                // 시스템 컬럼들
+                status: 'pending',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            console.log('📝 v4.3.0 저장할 데이터:', {
+                ...requestData,
+                account_pw: requestData.account_pw ? '[암호화됨]' : null
+            });
+
+            return await client
+                .from('requests')
+                .insert([requestData])
+                .select();
+        });
+    },
+
+    // === 🆕 v4.3.0 묶음 교구 신청 API ===
+    async createV43BundleApplication(studentId, bundleData) {
+        console.log('📦 v4.3.0 묶음 신청 생성:', bundleData);
+        
+        return await this.core.safeApiCall('v4.3.0 묶음 신청 생성', async () => {
+            const client = await this.core.ensureClient();
+            
+            // 4가지 타입별 검증
+            const validationResult = this.validateV43BundleData(bundleData);
+            if (!validationResult.valid) {
+                throw new Error(validationResult.message);
+            }
+            
+            const requestData = {
+                user_id: studentId,
+                item_name: bundleData.item_name,
+                purpose: bundleData.purpose,
+                price: bundleData.price,
+                purchase_type: bundleData.purchase_type,
+                is_bundle: true, // 묶음 신청 고정
+                
+                // 🆕 v4.3.0 4가지 타입별 컬럼들
+                link: bundleData.link,
+                store_info: bundleData.store_info,
+                account_id: bundleData.account_id,
+                account_pw: bundleData.account_pw,
+                
+                // 시스템 컬럼들
+                status: 'pending',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            console.log('📦 v4.3.0 묶음 신청 저장 데이터:', {
+                ...requestData,
+                account_pw: requestData.account_pw ? '[암호화됨]' : null,
+                타입: this.getV43ApplicationType(requestData)
+            });
+
+            return await client
+                .from('requests')
+                .insert([requestData])
+                .select();
+        });
+    },
+
+    // === 🆕 v4.3.0 신청 수정 API ===
+    async updateV43Application(applicationId, formData) {
+        console.log('✏️ v4.3.0 신청 수정:', applicationId, formData);
+        
+        return await this.core.safeApiCall('v4.3.0 교구 신청 수정', async () => {
+            const client = await this.core.ensureClient();
+            
+            const updateData = {
+                item_name: formData.item_name,
+                purpose: formData.purpose,
+                price: formData.price,
+                purchase_type: formData.purchase_type || 'online',
+                is_bundle: formData.is_bundle || false,
+                
+                // 🆕 v4.3.0 새로운 컬럼들
+                link: formData.link || null,
+                store_info: formData.store_info || null,
+                account_id: formData.account_id || null,
+                account_pw: formData.account_pw || null,
+                
+                updated_at: new Date().toISOString()
+            };
+
+            console.log('✏️ v4.3.0 수정할 데이터:', {
+                ...updateData,
+                account_pw: updateData.account_pw ? '[암호화됨]' : null
+            });
+
+            return await client
+                .from('requests')
+                .update(updateData)
+                .eq('id', applicationId)
+                .select();
+        });
+    },
+
+    // === 🆕 v4.3.0 묶음 신청 데이터 검증 ===
+    validateV43BundleData(bundleData) {
+        try {
+            const { purchase_type, is_bundle, link, store_info, account_id, account_pw } = bundleData;
+            
+            // 묶음 신청 확인
+            if (!is_bundle) {
+                return { valid: false, message: '묶음 신청 데이터가 아닙니다.' };
+            }
+            
+            if (purchase_type === 'online') {
+                // 온라인 묶음: link + account_id + account_pw 필수
+                if (!link || !link.trim()) {
+                    return { valid: false, message: '온라인 묶음 구매는 구매 링크가 필수입니다.' };
+                }
+                if (!account_id || !account_id.trim()) {
+                    return { valid: false, message: '온라인 묶음 구매는 계정 아이디가 필수입니다.' };
+                }
+                if (!account_pw || !account_pw.trim()) {
+                    return { valid: false, message: '온라인 묶음 구매는 계정 비밀번호가 필수입니다.' };
+                }
+                
+                console.log('✅ 온라인 묶음 구매 검증 통과');
+                
+            } else if (purchase_type === 'offline') {
+                // 오프라인 묶음: store_info는 선택적
+                // 계정 정보는 null이어야 함
+                if (account_id || account_pw) {
+                    console.warn('⚠️ 오프라인 구매에서 계정 정보가 제공됨 - 제거함');
+                    bundleData.account_id = null;
+                    bundleData.account_pw = null;
+                }
+                
+                console.log('✅ 오프라인 묶음 구매 검증 통과');
+                
+            } else {
+                return { valid: false, message: '알 수 없는 구매 방식입니다.' };
+            }
+            
+            return { valid: true, message: 'v4.3.0 묶음 신청 검증 완료' };
+            
+        } catch (error) {
+            console.error('❌ v4.3.0 묶음 신청 검증 오류:', error);
+            return { valid: false, message: '검증 중 오류가 발생했습니다: ' + error.message };
+        }
+    },
+
+    // === 🆕 v4.3.0 신청 타입 분류 헬퍼 ===
+    getV43ApplicationType(requestData) {
+        const { purchase_type, is_bundle } = requestData;
+        
+        if (is_bundle) {
+            return purchase_type === 'online' ? '온라인 묶음' : '오프라인 묶음';
+        } else {
+            return purchase_type === 'online' ? '온라인 단일' : '오프라인 단일';
+        }
+    },
+
+    // === 🆕 v4.3.0 호환성 조회 함수 ===
+    async getStudentApplicationsV43(studentId) {
+        console.log('📋 v4.3.0 호환성 신청 내역 조회:', studentId);
+        
+        const result = await this.core.safeApiCall('v4.3.0 학생 신청 내역 조회', async () => {
+            const client = await this.core.ensureClient();
+            return await client
+                .from('requests')
+                .select('*')
+                .eq('user_id', studentId)
+                .order('created_at', { ascending: false });
+        });
+
+        if (result.success && result.data) {
+            // 기존 코드 호환성을 위해 purchase_link 필드 매핑
+            return result.data.map(request => {
+                const mappedRequest = { ...request };
+                
+                // v4.3.0 호환성: link → purchase_link 매핑 (기존 코드용)
+                if (request.link && !request.purchase_link) {
+                    mappedRequest.purchase_link = request.link;
+                }
+                
+                // v4.3.0 추가 정보 포함
+                mappedRequest.v43_type = this.getV43ApplicationType(request);
+                mappedRequest.has_account_info = !!(request.account_id && request.account_pw);
+                mappedRequest.has_store_info = !!request.store_info;
+                
+                return mappedRequest;
+            });
+        }
+
+        return result.success ? (result.data || []) : [];
+    },
+
+    // === 🆕 v4.3.0 계정 정보 복호화 (관리자용) ===
+    async decryptV43AccountInfo(encryptedPassword) {
+        try {
+            console.log('🔓 v4.3.0 계정 정보 복호화 (관리자 전용)');
+            
+            // v4.3.0 암호화 해제 (실제 운영에서는 더 강력한 복호화 필요)
+            const decoded = atob(encryptedPassword);
+            const parts = decoded.split(':');
+            
+            if (parts.length >= 2) {
+                return {
+                    success: true,
+                    password: parts.slice(1).join(':'), // salt 이후 부분이 실제 비밀번호
+                    timestamp: parts[0].replace('sejong_v43_', '')
+                };
+            }
+            
+            return {
+                success: false,
+                message: '잘못된 암호화 형식입니다.'
+            };
+            
+        } catch (error) {
+            console.error('❌ v4.3.0 계정 정보 복호화 오류:', error);
+            return {
+                success: false,
+                message: '복호화 중 오류가 발생했습니다.'
+            };
+        }
+    },
+
+    // === 🆕 v4.3.0 통계 조회 (관리자용) ===
+    async getV43ApplicationStats() {
+        console.log('📊 v4.3.0 신청 타입별 통계 조회');
+        
+        const result = await this.core.safeApiCall('v4.3.0 신청 통계', async () => {
+            const client = await this.core.ensureClient();
+            return await client
+                .from('requests')
+                .select('purchase_type, is_bundle, status, account_id, account_pw, store_info, link');
+        });
+
+        if (result.success && result.data) {
+            const stats = {
+                total: result.data.length,
+                by_type: {
+                    '온라인 단일': 0,
+                    '온라인 묶음': 0,
+                    '오프라인 단일': 0,
+                    '오프라인 묶음': 0
+                },
+                by_status: {},
+                account_info_count: 0,
+                store_info_count: 0
+            };
+            
+            result.data.forEach(request => {
+                // 타입별 분류
+                const type = this.getV43ApplicationType(request);
+                stats.by_type[type]++;
+                
+                // 상태별 분류
+                stats.by_status[request.status] = (stats.by_status[request.status] || 0) + 1;
+                
+                // 추가 정보 카운트
+                if (request.account_id && request.account_pw) {
+                    stats.account_info_count++;
+                }
+                if (request.store_info) {
+                    stats.store_info_count++;
+                }
+            });
+            
+            console.log('📊 v4.3.0 통계 결과:', stats);
+            return stats;
+        }
+
+        return {
+            total: 0,
+            by_type: { '온라인 단일': 0, '온라인 묶음': 0, '오프라인 단일': 0, '오프라인 묶음': 0 },
+            by_status: {},
+            account_info_count: 0,
+            store_info_count: 0
+        };
     },
 
     // ===================
@@ -862,4 +1160,4 @@ const SupabaseStudent = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseStudent = SupabaseStudent;
 
-console.log('🚀 SupabaseStudent v4.3.0 loaded - v4.3 requests 테이블 호환성 업데이트 (purchase_link → link)');
+console.log('🚀 SupabaseStudent v4.3.0 loaded - 4가지 타입별 최적화 (온라인 묶음: link+account_id+account_pw / 오프라인 묶음: store_info)');
