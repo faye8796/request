@@ -1,5 +1,6 @@
-// 관리자 향상된 UI 모듈 - 학생별 그룹화 및 배송지 정보 표시
+// 관리자 향상된 UI 모듈 v4.3 - 학생별 그룹화 및 배송지 정보 표시
 // admin-addon.js 기능을 새로운 모듈 구조로 통합
+// v4.3 requests 테이블 구조 변경 완전 호환
 
 const AdminEnhancedUI = {
     // 캐시 및 상태 관리
@@ -15,14 +16,14 @@ const AdminEnhancedUI = {
             return;
         }
 
-        console.log('🎨 AdminEnhancedUI 초기화 시작');
+        console.log('🎨 AdminEnhancedUI v4.3 초기화 시작');
         
         // 기존 AdminManager와 협업하는 방식으로 초기화
         this.enhanceExistingFunctions();
         this.setupEnhancedEventListeners();
         
         this.isInitialized = true;
-        console.log('✅ AdminEnhancedUI 초기화 완료');
+        console.log('✅ AdminEnhancedUI v4.3 초기화 완료');
     },
 
     // 기존 함수들을 확장하는 방식 (오버라이드 대신)
@@ -91,7 +92,7 @@ const AdminEnhancedUI = {
     // 배송지 정보 포함하여 신청 내역 로드
     async loadApplicationsWithShipping() {
         try {
-            console.log('📦 배송지 정보 포함하여 신청 내역 로드 시작');
+            console.log('📦 배송지 정보 포함하여 신청 내역 로드 시작 (v4.3)');
             
             if (!window.SupabaseAPI || typeof window.SupabaseAPI.searchApplications !== 'function') {
                 console.warn('⚠️ SupabaseAPI.searchApplications를 찾을 수 없음');
@@ -113,7 +114,7 @@ const AdminEnhancedUI = {
             // 학생별 그룹화 렌더링
             this.renderGroupedApplications(groupedApplications);
             
-            console.log('✅ 배송지 정보 포함 신청 내역 로드 완료');
+            console.log('✅ 배송지 정보 포함 신청 내역 로드 완료 (v4.3)');
             
         } catch (error) {
             console.error('❌ 배송지 정보 포함 신청 내역 로드 실패:', error);
@@ -127,9 +128,9 @@ const AdminEnhancedUI = {
         }
     },
 
-    // 학생별로 신청 내역 그룹화
+    // 학생별로 신청 내역 그룹화 (v4.3 최적화)
     groupApplicationsByStudent(applications) {
-        console.log('👥 학생별 신청 내역 그룹화 시작:', applications.length, '건');
+        console.log('👥 학생별 신청 내역 그룹화 시작 (v4.3):', applications.length, '건');
         
         const groupedData = new Map();
         
@@ -158,7 +159,12 @@ const AdminEnhancedUI = {
                         pendingCount: 0,
                         approvedCount: 0,
                         rejectedCount: 0,
-                        purchasedCount: 0
+                        purchasedCount: 0,
+                        // v4.3 신청 타입별 통계 추가
+                        onlineSingleCount: 0,
+                        onlineBundleCount: 0,
+                        offlineSingleCount: 0,
+                        offlineBundleCount: 0
                     }
                 });
             }
@@ -170,6 +176,7 @@ const AdminEnhancedUI = {
             studentGroup.statistics.totalItems++;
             studentGroup.statistics.totalAmount += (application.price || 0);
             
+            // 상태별 통계
             switch (application.status) {
                 case 'pending':
                     studentGroup.statistics.pendingCount++;
@@ -184,18 +191,44 @@ const AdminEnhancedUI = {
                     studentGroup.statistics.purchasedCount++;
                     break;
             }
+            
+            // v4.3 신청 타입별 통계
+            const isBundle = application.is_bundle;
+            const purchaseType = application.purchase_type;
+            
+            if (purchaseType === 'online') {
+                if (isBundle) {
+                    studentGroup.statistics.onlineBundleCount++;
+                } else {
+                    studentGroup.statistics.onlineSingleCount++;
+                }
+            } else if (purchaseType === 'offline') {
+                if (isBundle) {
+                    studentGroup.statistics.offlineBundleCount++;
+                } else {
+                    studentGroup.statistics.offlineSingleCount++;
+                }
+            }
         });
         
         const groupedArray = Array.from(groupedData.values());
         
-        // 신청 순서대로 정렬 (최신순)
+        // 신청 순서대로 정렬 (최신순), v4.3에서는 온라인 우선 정렬 추가
         groupedArray.sort((a, b) => {
+            // 먼저 온라인 신청을 우선으로 정렬 (대리구매 효율성)
+            const aOnlineCount = a.statistics.onlineSingleCount + a.statistics.onlineBundleCount;
+            const bOnlineCount = b.statistics.onlineSingleCount + b.statistics.onlineBundleCount;
+            
+            if (aOnlineCount > 0 && bOnlineCount === 0) return -1;
+            if (aOnlineCount === 0 && bOnlineCount > 0) return 1;
+            
+            // 온라인 신청이 같으면 최신순으로 정렬
             const aLatest = Math.max(...a.applications.map(app => new Date(app.created_at).getTime()));
             const bLatest = Math.max(...b.applications.map(app => new Date(app.created_at).getTime()));
             return bLatest - aLatest;
         });
         
-        console.log('✅ 그룹화 완료:', groupedArray.length, '명의 학생');
+        console.log('✅ v4.3 그룹화 완료:', groupedArray.length, '명의 학생');
         return groupedArray;
     },
 
@@ -287,9 +320,9 @@ const AdminEnhancedUI = {
         }
     },
 
-    // 학생별 그룹화된 신청 내역 렌더링
+    // 학생별 그룹화된 신청 내역 렌더링 (v4.3 개선)
     renderGroupedApplications(groupedApplications) {
-        console.log('🎨 학생별 그룹화 렌더링 시작:', groupedApplications?.length || 0, '개 그룹');
+        console.log('🎨 학생별 그룹화 렌더링 시작 (v4.3):', groupedApplications?.length || 0, '개 그룹');
         
         const container = document.getElementById('adminApplications');
         if (!container) {
@@ -322,7 +355,7 @@ const AdminEnhancedUI = {
         // 이벤트 리스너 재설정
         this.setupGroupedActionListeners();
         
-        console.log('✅ 학생별 그룹화 렌더링 완료');
+        console.log('✅ 학생별 그룹화 렌더링 완료 (v4.3)');
     },
 
     // 기본 신청 내역 렌더링 (폴백용)
@@ -350,7 +383,7 @@ const AdminEnhancedUI = {
         }
     },
 
-    // 학생 그룹 카드 생성
+    // 학생 그룹 카드 생성 (v4.3 개선)
     createStudentGroupCard(studentGroup) {
         const card = document.createElement('div');
         card.className = 'student-group-card';
@@ -372,8 +405,23 @@ const AdminEnhancedUI = {
         return card;
     },
 
-    // 학생 헤더 HTML 생성
+    // 학생 헤더 HTML 생성 (v4.3 통계 개선)
     createStudentHeaderHTML(studentInfo, shippingInfo, statistics, submittedDate) {
+        // v4.3 신청 타입별 요약 배지 생성
+        const typeBadges = [];
+        if (statistics.onlineSingleCount > 0) {
+            typeBadges.push(`<span class="type-summary-badge online-single">온라인 단일 ${statistics.onlineSingleCount}개</span>`);
+        }
+        if (statistics.onlineBundleCount > 0) {
+            typeBadges.push(`<span class="type-summary-badge online-bundle">온라인 묶음 ${statistics.onlineBundleCount}개</span>`);
+        }
+        if (statistics.offlineSingleCount > 0) {
+            typeBadges.push(`<span class="type-summary-badge offline-single">오프라인 단일 ${statistics.offlineSingleCount}개</span>`);
+        }
+        if (statistics.offlineBundleCount > 0) {
+            typeBadges.push(`<span class="type-summary-badge offline-bundle">오프라인 묶음 ${statistics.offlineBundleCount}개</span>`);
+        }
+
         return `
             <div class="student-group-header">
                 <div class="student-main-info">
@@ -405,6 +453,12 @@ const AdminEnhancedUI = {
                             </span>
                         ` : ''}
                     </div>
+
+                    ${typeBadges.length > 0 ? `
+                        <div class="student-type-summary">
+                            ${typeBadges.join('')}
+                        </div>
+                    ` : ''}
                 </div>
                 
                 <div class="student-statistics">
@@ -502,9 +556,25 @@ const AdminEnhancedUI = {
         `;
     },
 
-    // 신청 목록 HTML 생성
+    // 신청 목록 HTML 생성 (v4.3 정렬 개선)
     createApplicationsListHTML(applications) {
-        const applicationsHTML = applications.map(application => {
+        // v4.3: 온라인 구매를 먼저, 그 다음 오프라인 구매로 정렬
+        const sortedApplications = [...applications].sort((a, b) => {
+            // 온라인 우선 정렬
+            if (a.purchase_type === 'online' && b.purchase_type === 'offline') return -1;
+            if (a.purchase_type === 'offline' && b.purchase_type === 'online') return 1;
+            
+            // 같은 타입이면 묶음 구매 우선
+            if (a.purchase_type === b.purchase_type) {
+                if (a.is_bundle && !b.is_bundle) return -1;
+                if (!a.is_bundle && b.is_bundle) return 1;
+            }
+            
+            // 모든 조건이 같으면 신청일 순
+            return new Date(b.created_at) - new Date(a.created_at);
+        });
+
+        const applicationsHTML = sortedApplications.map(application => {
             return this.createApplicationItemHTML(application);
         }).join('');
         
@@ -528,12 +598,14 @@ const AdminEnhancedUI = {
         `;
     },
 
-    // 개별 신청 아이템 HTML 생성
+    // 개별 신청 아이템 HTML 생성 (v4.3 완전 개선)
     createApplicationItemHTML(application) {
         const statusClass = this.getStatusClass(application.status);
         const statusText = this.getStatusText(application.status);
-        const purchaseMethodText = this.getPurchaseMethodText(application.purchase_type);
-        const purchaseMethodClass = this.getPurchaseMethodClass(application.purchase_type);
+        const purchaseMethodInfo = this.getPurchaseMethodInfo(application);
+        
+        // v4.3 구매 관련 정보 표시
+        const purchaseInfoHTML = this.createPurchaseInfoHTML(application);
         
         // 영수증 관련 표시
         let receiptInfo = '';
@@ -570,9 +642,9 @@ const AdminEnhancedUI = {
                         <div class="item-title-row">
                             <h5 class="item-name">${this.escapeHtml(application.item_name)}</h5>
                             <div class="item-badges">
-                                <span class="purchase-method-badge ${purchaseMethodClass}">
-                                    <i data-lucide="${application.purchase_type === 'offline' ? 'store' : 'shopping-cart'}"></i>
-                                    ${purchaseMethodText}
+                                <span class="purchase-method-badge ${purchaseMethodInfo.class}">
+                                    <i data-lucide="${purchaseMethodInfo.icon}"></i>
+                                    ${purchaseMethodInfo.text}
                                 </span>
                                 <span class="type-badge ${application.is_bundle ? 'bundle' : 'single'}">
                                     ${application.is_bundle ? '묶음' : '단일'}
@@ -587,16 +659,9 @@ const AdminEnhancedUI = {
                                 <i data-lucide="tag"></i>
                                 <strong>${this.formatPrice(application.price)}</strong>
                             </span>
-                            ${application.purchase_link ? `
-                                <a href="${this.escapeHtml(application.purchase_link)}" 
-                                   target="_blank" rel="noopener noreferrer" 
-                                   class="item-link">
-                                    <i data-lucide="external-link"></i>
-                                    ${application.purchase_type === 'offline' ? '참고 링크' : '구매 링크'}
-                                </a>
-                            ` : ''}
                         </div>
                         
+                        ${purchaseInfoHTML}
                         ${receiptInfo}
                     </div>
                     
@@ -617,6 +682,132 @@ const AdminEnhancedUI = {
                 ` : ''}
             </div>
         `;
+    },
+
+    // v4.3 구매 정보 HTML 생성 (새로운 컬럼들 활용)
+    createPurchaseInfoHTML(application) {
+        const purchaseType = application.purchase_type;
+        const isBundle = application.is_bundle;
+        
+        let purchaseInfoHTML = '';
+        
+        if (purchaseType === 'online') {
+            // 온라인 구매 - link 컬럼 활용
+            if (application.link) {
+                purchaseInfoHTML += `
+                    <div class="purchase-link-info">
+                        <a href="${this.escapeHtml(application.link)}" 
+                           target="_blank" rel="noopener noreferrer" 
+                           class="item-link online-link">
+                            <i data-lucide="external-link"></i>
+                            구매 링크 바로가기
+                        </a>
+                    </div>
+                `;
+            }
+            
+            // 온라인 묶음 구매 - 새로운 account_id, account_pw 컬럼 활용
+            if (isBundle && (application.account_id || application.account_pw)) {
+                purchaseInfoHTML += `
+                    <div class="bundle-account-info">
+                        <div class="account-info-header">
+                            <i data-lucide="key"></i>
+                            <strong>대리구매 계정 정보</strong>
+                        </div>
+                        <div class="account-details">
+                            ${application.account_id ? `
+                                <div class="account-item">
+                                    <span class="account-label">아이디:</span>
+                                    <span class="account-value">${this.escapeHtml(application.account_id)}</span>
+                                    <button class="copy-btn" data-copy="${this.escapeHtml(application.account_id)}" title="복사">
+                                        <i data-lucide="copy"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
+                            ${application.account_pw ? `
+                                <div class="account-item">
+                                    <span class="account-label">비밀번호:</span>
+                                    <span class="account-value password-field">••••••••</span>
+                                    <button class="toggle-password-btn" data-password="${this.escapeHtml(application.account_pw)}" title="비밀번호 보기/숨기기">
+                                        <i data-lucide="eye"></i>
+                                    </button>
+                                    <button class="copy-btn" data-copy="${this.escapeHtml(application.account_pw)}" title="복사">
+                                        <i data-lucide="copy"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+        } else if (purchaseType === 'offline') {
+            // 오프라인 구매 - 새로운 store_info 컬럼 활용
+            if (application.store_info) {
+                purchaseInfoHTML += `
+                    <div class="store-info">
+                        <div class="store-info-header">
+                            <i data-lucide="store"></i>
+                            <strong>구매처 정보</strong>
+                        </div>
+                        <div class="store-details">
+                            ${this.escapeHtml(application.store_info)}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 오프라인이어도 참고 링크가 있는 경우 표시
+            if (application.link) {
+                purchaseInfoHTML += `
+                    <div class="reference-link-info">
+                        <a href="${this.escapeHtml(application.link)}" 
+                           target="_blank" rel="noopener noreferrer" 
+                           class="item-link reference-link">
+                            <i data-lucide="external-link"></i>
+                            참고 링크
+                        </a>
+                    </div>
+                `;
+            }
+        }
+        
+        return purchaseInfoHTML ? `<div class="purchase-info-section">${purchaseInfoHTML}</div>` : '';
+    },
+
+    // v4.3 구매 방식 정보 생성
+    getPurchaseMethodInfo(application) {
+        const purchaseType = application.purchase_type;
+        const isBundle = application.is_bundle;
+        
+        if (purchaseType === 'online') {
+            if (isBundle) {
+                return {
+                    text: '온라인 묶음구매',
+                    class: 'online-bundle',
+                    icon: 'shopping-basket'
+                };
+            } else {
+                return {
+                    text: '온라인 단일구매',
+                    class: 'online-single', 
+                    icon: 'shopping-cart'
+                };
+            }
+        } else {
+            if (isBundle) {
+                return {
+                    text: '오프라인 묶음구매',
+                    class: 'offline-bundle',
+                    icon: 'store'
+                };
+            } else {
+                return {
+                    text: '오프라인 단일구매',
+                    class: 'offline-single',
+                    icon: 'store'
+                };
+            }
+        }
     },
 
     // 학생 액션 HTML 생성 (일괄 처리 버튼들)
@@ -734,9 +925,9 @@ const AdminEnhancedUI = {
         return card;
     },
 
-    // 그룹화된 UI의 이벤트 리스너 설정
+    // 그룹화된 UI의 이벤트 리스너 설정 (v4.3 기능 추가)
     setupGroupedActionListeners() {
-        console.log('🔧 그룹화 UI 이벤트 리스너 설정');
+        console.log('🔧 그룹화 UI 이벤트 리스너 설정 (v4.3)');
         
         // 토글 버튼들
         const toggleBtns = document.querySelectorAll('.toggle-applications-btn');
@@ -777,8 +968,71 @@ const AdminEnhancedUI = {
                 }
             });
         });
+
+        // v4.3 새로운 기능: 복사 버튼들
+        const copyButtons = document.querySelectorAll('.copy-btn');
+        copyButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const textToCopy = e.target.closest('button').dataset.copy;
+                this.copyToClipboard(textToCopy, e.target);
+            });
+        });
+
+        // v4.3 새로운 기능: 비밀번호 토글 버튼들
+        const passwordToggleBtns = document.querySelectorAll('.toggle-password-btn');
+        passwordToggleBtns.forEach(button => {
+            button.addEventListener('click', (e) => {
+                this.togglePasswordVisibility(e.target.closest('button'));
+            });
+        });
         
-        console.log('✅ 그룹화 UI 이벤트 리스너 설정 완료');
+        console.log('✅ 그룹화 UI 이벤트 리스너 설정 완료 (v4.3)');
+    },
+
+    // v4.3 새로운 기능: 클립보드 복사
+    async copyToClipboard(text, buttonElement) {
+        try {
+            await navigator.clipboard.writeText(text);
+            
+            // 버튼 피드백
+            const originalHTML = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i data-lucide="check"></i>';
+            buttonElement.style.color = '#10b981';
+            
+            setTimeout(() => {
+                buttonElement.innerHTML = originalHTML;
+                buttonElement.style.color = '';
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 1500);
+            
+        } catch (error) {
+            console.error('복사 실패:', error);
+            alert('복사에 실패했습니다. 수동으로 복사해주세요.');
+        }
+    },
+
+    // v4.3 새로운 기능: 비밀번호 표시/숨기기
+    togglePasswordVisibility(button) {
+        const password = button.dataset.password;
+        const passwordField = button.parentElement.querySelector('.password-field');
+        const icon = button.querySelector('i');
+        
+        if (passwordField.textContent === '••••••••') {
+            // 비밀번호 표시
+            passwordField.textContent = password;
+            icon.setAttribute('data-lucide', 'eye-off');
+        } else {
+            // 비밀번호 숨기기
+            passwordField.textContent = '••••••••';
+            icon.setAttribute('data-lucide', 'eye');
+        }
+        
+        // 아이콘 재생성
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     },
 
     // 신청 목록 토글
@@ -919,7 +1173,7 @@ const AdminEnhancedUI = {
 
     // 데이터 새로고침
     async refreshData() {
-        console.log('🔄 데이터 새로고침 시작');
+        console.log('🔄 데이터 새로고침 시작 (v4.3)');
         
         try {
             // AdminManager의 기본 데이터들 새로고침
@@ -938,7 +1192,7 @@ const AdminEnhancedUI = {
             // 향상된 신청 내역 다시 로드
             await this.loadApplicationsWithShipping();
             
-            console.log('✅ 데이터 새로고침 완료');
+            console.log('✅ 데이터 새로고침 완료 (v4.3)');
             
         } catch (error) {
             console.error('❌ 데이터 새로고침 실패:', error);
