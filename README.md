@@ -1,114 +1,283 @@
-# 세종학당 문화인턴 지원 시스템
+# 📋 세종학당 문화인턴 지원 시스템 - 프로젝트 지식 v4.3.0 (Updated 2025-06-24)
 
-## 📋 개요
-세종학당 문화인턴들을 위한 포괄적인 지원 플랫폼입니다. 파견 학당 정보, 항공권 구매 신청, 문화교구 신청 등 다양한 서비스를 제공합니다.
+## 🏷️ 기본 정보
 
-## 🚀 최근 업데이트 (2025-06-18)
+**레포지토리**: `faye8796/request`  
+**현재 버전**: v4.3.0 (Complete 4-Type Equipment Request Optimization)  
+**개발 상태**: 🎉 **v4.3.0 업데이트 완료** - 4가지 교구 신청 타입별 최적화  
+**최근 업데이트**: 2025-06-24 09:37 (v4.3.0 UI+백엔드 완전 연동)  
+**라이브 URL**: 세종학당 문화인턴 지원 시스템
 
-### 🎯 시스템 확장 및 구조 개선
-- **페이지 분리 완료**: 학생용/관리자용 진입점 분리
-- **모듈화된 구조**: 기능별 독립적인 페이지 구성
-- **새로운 대시보드**: 직관적인 메뉴 선택 시스템
-- **확장 가능한 아키텍처**: 새로운 기능 추가 준비 완료
+---
 
-### 🔗 새로운 URL 구조
-```
-학생용 진입점:    culturing.org/intern-system/
-관리자용 진입점:  culturing.org/intern-system/admin.html
-학생 대시보드:    culturing.org/intern-system/student/dashboard.html
-문화교구 신청:    culturing.org/intern-system/student/equipment-request.html
-파견 학당 정보:   culturing.org/intern-system/student/institute-info.html
-항공권 신청:      culturing.org/intern-system/student/flight-request.html (준비 중)
-```
-
-### 🆕 새로운 기능 (개발 중)
-- **파견 학당 정보**: 배정된 학당의 상세 정보 확인
-- **항공권 구매 신청**: 항공권 구매 대행 신청 시스템
-- **통합 관리 시스템**: 모든 신청 현황을 한 눈에 관리
-
-## 📁 새로운 파일 구조
+## ✅ 파일 구조 (최신 v4.3.0)
 
 ```
 request/
-├── index.html                    # 학생용 진입점 (로그인)
-├── admin.html                    # 관리자용 진입점 (로그인)
-├── student/                      # 학생용 페이지
-│   ├── dashboard.html           # 메뉴 선택 대시보드
-│   ├── equipment-request.html   # 문화교구 신청 (기존 기능)
-│   ├── institute-info.html      # 파견 학당 정보 (준비 중)
-│   └── flight-request.html      # 항공권 구매 신청 (준비 중)
-├── css/                         # 스타일시트 (기존 유지)
-│   ├── main.css                # 공통 스타일
-│   ├── login.css               # 로그인 페이지
-│   ├── student.css             # 학생 대시보드
-│   ├── admin.css               # 관리자 대시보드
-│   └── lesson-plan.css         # 수업계획 페이지
-├── js/                         # JavaScript 모듈
-│   ├── config.js               # 설정 파일 (공통)
-│   ├── supabase-client.js      # Supabase API 클라이언트 (공통)
-│   ├── utils.js                # 공통 유틸리티 (공통)
-│   ├── auth.js                 # 인증 관리 (공통)
-│   ├── app.js                  # 메인 애플리케이션 (기존)
-│   ├── student.js              # 학생 기능 (교구신청용)
-│   ├── admin.js                # 관리자 기능 (기존)
-│   ├── lesson-plan.js          # 수업계획 관리 (기존)
-│   └── student/                # 새로운 학생 기능 모듈
-│       ├── dashboard.js        # 대시보드 관리
-│       ├── institute-info.js   # 학당 정보 (준비 중)
-│       └── flight-request.js   # 항공권 신청 (준비 중)
-└── database/                   # 데이터베이스 스키마 (기존)
+├── index.html (학생 로그인) ✅
+├── admin.html (관리자 대시보드) ✅ 🆕v4.2  
+├── admin/
+│   ├── equipment-management.html (교구신청 관리) ✅ 🔧
+│   ├── flight-management.html (항공권 관리) ✅
+│   └── institute-management.html (학당정보 관리) ✅
+├── student/
+│   ├── dashboard.html (메뉴 선택) ✅ 🆕v4.2
+│   ├── equipment-request.html (교구신청) ✅ 🎨v4.3.0 4가지 타입별 최적화
+│   ├── institute-info.html (학당정보 조회) ✅
+│   └── flight-request.html (항공권신청, 미구현)
+├── js/
+│   ├── admin-institute.js (관리자 학당 관리) ✅
+│   ├── app.js (앱 초기화) ✅
+│   ├── auth.js (인증 관리) ✅
+│   ├── config.js (환경설정) ✅
+│   ├── lesson-plan.js (수업계획) ✅
+│   ├── student.js (학생 통합 매니저 - 축소됨) ✅ 🔧
+│   ├── student-addon.js (학생 확장기능, 빈파일)
+│   ├── supabase-client.js (DB 연동 - 통합 매니저) ✅ 🆕v4.2
+│   └── utils.js (공통 유틸) ✅
+├── js/supabase/ (모듈화된 Supabase 파일들) 🆕v4.2
+│   ├── supabase-core.js (핵심 공통 기능, 5KB) ✅
+│   ├── supabase-student.js (학생 전용 기능, 33KB) ✅
+│   └── supabase-admin.js (관리자 전용 기능, 41KB) ✅
+├── js/student/ (모듈 분할 시스템)
+│   ├── api-helper.js (API 관리) ✅
+│   ├── dashboard.js (대시보드 전용) ✅
+│   ├── equipment-request.js (교구신청 전용) ✅ 🎯v4.3.0 4가지 타입별 완전 최적화
+│   ├── flight-request.js (항공권신청 전용) ✅
+│   ├── institute-info.js (학당정보 전용) ✅
+│   ├── lesson-plan-helper.js (수업계획 도우미) ✅
+│   ├── notification-system.js (알림 시스템) ✅
+│   ├── receipt-management.js (영수증 관리) ✅
+│   └── shipping-management.js (배송지 관리) ✅
+├── js/admin/
+│   └── (관리자 전용 모듈들)
+├── css/ (스타일시트)
+├── database/
+│   ├── schema.sql (DB 스키마 v2.11) ✅
+│   ├── requests_table_update_v4.3.sql (v4.3 테이블 업데이트) ✅ 🎯v4.3.0
+│   ├── lesson_plan_required_migration.sql ✅
+│   └── fix_rls_policies.sql ✅
+└── docs/ (문서화)
+    ├── CONTRIBUTING.md, DEPLOYMENT.md ✅
+    ├── MIGRATION.md, TESTING.md ✅
+    └── SECURITY.md ✅
 ```
 
-## 🎯 시스템 구성
+---
 
-### 👤 학생용 시스템
-1. **진입점**: `index.html`
-   - 학생 로그인 (이름 + 생년월일)
-   - 로그인 후 자동으로 대시보드 이동
+## 🎉 v4.3.0 완료된 변경사항 (2025-06-24 최신)
 
-2. **대시보드**: `student/dashboard.html`
-   - 3가지 주요 기능 선택
-   - 현대적이고 직관적인 카드 UI
-   - 사용 가능/준비 중 기능 구분
+### 🎯 **4가지 교구 신청 타입별 완전 최적화**
 
-3. **기능별 페이지**:
-   - **문화교구 신청**: 기존 기능 그대로 유지
-   - **파견 학당 정보**: 배정된 학당 상세 정보
-   - **항공권 구매 신청**: 구매 대행 신청 시스템
+**✅ 1단계: 데이터베이스 구조 설계 완료**
+- `requests_table_update_v4.3.sql` 완성
+- 불필요한 컬럼 제거: `bundle_info`, `shipping_address`, `notes`
+- 컬럼명 변경: `purchase_link` → `link`
+- 새 컬럼 추가: `store_info`, `account_id`, `account_pw`
 
-### 👑 관리자용 시스템
-1. **진입점**: `admin.html`
-   - 관리자 코드 로그인
-   - 학생 시스템과 완전 분리
+**✅ 2단계: JavaScript 백엔드 로직 완료**
+- `equipment-request.js` v4.3.0 완전 구현
+- 새로운 API 함수들:
+  - `createV43Application` (단일 신청)
+  - `createV43BundleApplication` (묶음 신청)  
+  - `updateV43Application` (신청 수정)
+- 4가지 타입별 데이터 구성 로직 완성
 
-2. **통합 관리 대시보드**:
-   - 교구 신청 관리 (기존)
-   - 항공권 신청 관리 (준비 중)
-   - 학당 관리 (준비 중)
-   - 탭 시스템으로 기능 구분
+**✅ 3단계: UI 완전 최적화 완료**
+- `equipment-request.html` v4.3.0 재설계
+- 묶음 신청 모달 4가지 타입별 전문화:
+  - 온라인 묶음: 별도 `account_id`, `account_pw` 필드
+  - 오프라인 묶음: `store_info` 전용 필드
+  - 구매 방식별 동적 UI 변경
+  - 사용자 친화적 도움말 및 안내사항
 
-## 🔧 주요 기능
+**✅ 4단계: 이벤트 핸들러 완전 연동 완료**
+- `handleBundlePurchaseMethodChange` 함수 구현
+- 구매 사이트 선택 시 동적 필드 제어
+- 필수/선택 필드 자동 설정
+- v4.3.0 컬럼 구조와 100% 호환
 
-### ✅ 현재 사용 가능한 기능
-- **학생 인증 시스템**: 이름 + 생년월일 기반 인증
-- **수업계획 작성**: 필수 제출 사항으로 교구 신청 전 완료 필요
-- **교구 신청 관리**: 온라인/오프라인 구매 방식 지원
-- **예산 관리**: 분야별 자동 예산 배정 및 사용량 추적
-- **관리자 대시보드**: 승인/반려, Excel 내보내기, 통계 조회
-- **새로운 대시보드**: 메뉴 선택 시스템
+### 🔥 **4가지 신청 타입별 전문화**
 
-### 🚧 준비 중인 기능
-- **파견 학당 정보**: 배정된 학당의 상세 정보 표시
-- **항공권 구매 신청**: 항공권 구매 대행 신청 시스템
-- **학당 관리**: 관리자용 학당 정보 관리 시스템
+| 타입 | 필수 컬럼 | 선택 컬럼 | 특징 |
+|------|----------|----------|------|
+| **온라인 단일** | `link` | - | 구매 링크만 필요 |
+| **온라인 묶음** | `link`, `account_id`, `account_pw` | - | 계정 정보로 대리 구매 |
+| **오프라인 단일** | - | `store_info` | 직접 구매 |
+| **오프라인 묶음** | - | `store_info` | 업체 정보 + 구매 계획 |
 
-## 🛠 기술 스택
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+---
+
+## 🗄️ Supabase 데이터베이스 구조 (v2.11 + v4.3.0)
+
+### 📊 핵심 테이블들
+
+**🔹 사용자 관리**:
+- `user_profiles` - 학생/관리자 프로필 (59명)
+- `foundation_managers` - 재단 관리자 (13명)
+- `institute_managers` - 학당 관리자 (13명)
+
+**🔹 학당 정보**:
+- `institutes` - 세종학당 정보 (1개)
+- `cultural_programs` - 문화프로그램 (3개)
+
+**🔹 교구 신청 시스템**:
+- `lesson_plans` - 수업계획 (1개) ⚠️ approved_at/approved_by 컬럼 제거됨
+- `requests` - 교구신청 내역 (7개) 🎯v4.3.0 구조 완전 최적화
+- `receipts` - 영수증 관리 (v2.11 최적화)
+- `shipping_addresses` - 배송지 정보 (1개)
+
+**🔹 예산 관리**:
+- `budget_settings` - 예산 설정 (26개)
+- `student_budgets` - 학생별 예산 (1개)
+
+**🔹 시스템 설정**:
+- `system_settings` - 시스템 설정 (13개)
+- `feature_settings` - 기능 활성화 (3개)
+
+### 🔑 주요 테이블 상세
+
+#### requests (교구신청) v4.3.0 🎯 완전 최적화
+```sql
+- id (int, PK)
+- user_id (uuid, FK → user_profiles)
+- item_name, purpose, price
+- purchase_type ('online' | 'offline')
+- is_bundle (boolean)
+- 🎯 link (TEXT) - 온라인 구매 링크 (단일: 필수, 묶음: 사이트+메모)
+- 🎯 store_info (TEXT) - 오프라인 구매처 정보 (업체정보+구매계획)
+- 🎯 account_id (VARCHAR(255)) - 온라인 묶음구매 계정 아이디
+- 🎯 account_pw (VARCHAR(255)) - 온라인 묶음구매 계정 비밀번호 (암호화)
+- status, reviewed_at, reviewed_by, rejection_reason
+- 🗑️ bundle_info, shipping_address, notes (v4.3.0에서 제거)
+```
+
+---
+
+## 🎯 다음 구현 대상
+
+### 🔜 관리자 시스템 v4.3.0 호환성
+- **equipment-management.html**: v4.3.0 새 컬럼 구조 반영
+- **신청 상세 보기**: 4가지 타입별 데이터 표시 최적화
+- **관리자 워크플로우**: 온라인 묶음 구매 프로세스 지원
+
+### 🔜 학생 시스템 완성
+- **flight-request.html**: 항공권 신청 페이지 UI 구현
+- **모듈 연동**: 기 구현된 flight-request.js 연동
+- **워크플로우**: 항공권 신청 → 관리자 승인 플로우
+
+### 🔜 시스템 최적화
+- **모바일 최적화**: 반응형 디자인 개선
+- **성능 최적화**: 모듈 번들링 및 최적화
+- **사용자 경험**: 인터랙션 및 애니메이션 개선
+
+---
+
+## 💾 기술스택 및 아키텍처 v4.3.0
+
+### 🛠️ Frontend
+- **HTML5/CSS3**: 시맨틱 마크업 및 반응형 디자인
+- **Vanilla JavaScript**: ES6+ 모듈 시스템
 - **Icons**: Lucide Icons
-- **Database**: Supabase (PostgreSQL)
-- **Deployment**: GitHub Pages
-- **CSS Layout**: CSS Grid, Flexbox
-- **Architecture**: Modular Page Structure
+- **Architecture**: 완전 모듈화된 JavaScript 구조
+
+### 🗄️ Backend
+- **Supabase**: PostgreSQL 17.4.1
+- **Authentication**: 통합 인증 시스템
+- **Storage**: 파일 업로드 및 관리
+- **Real-time**: 실시간 데이터 동기화
+
+### 🔧 개발 도구
+- **GitHub**: 소스코드 관리 및 배포
+- **GitHub MCP**: 개발 자동화
+- **Supabase MCP**: 데이터베이스 관리
+
+### 📱 배포 환경
+- **Production**: GitHub Pages
+- **Database**: Supabase Cloud (ap-northeast-2)
+- **CDN**: jsDelivr (Supabase JS v2)
+
+---
+
+## 📝 최신 커밋 히스토리 (2025-06-24 v4.3.0 완료)
+
+1. **🔧 JavaScript 이벤트 핸들러 업데이트 v4.3.0** - 완전 연동 (09:37)
+2. **🎨 v4.3.0 UI 최적화** - 4가지 교구 신청 타입별 전문화된 사용자 경험 (09:32)
+3. **🔧 requests 테이블 구조 업데이트 v4.3** - 교구 신청 타입별 최적화
+4. **🔐 admin.html v4.2.0 모듈화 시스템 업데이트** - 관리자용 테스트 페이지
+5. **📋 dashboard.html v4.2.0 모듈화 시스템 업데이트** - 학생용 테스트 페이지
+6. **🚀 supabase-client.js 모듈화 시스템 v4.2.0 완료** - 통합 매니저 배포
+7. **🔐 SupabaseAdmin 모듈 생성** - v4.1.6 관리자 전용 기능 분리 완료
+8. **🚀 supabase-student.js 모듈 생성** - 학생 전용 기능들 추출 및 모듈화
+9. **v4.2.0 - Supabase 모듈화 1단계: supabase-core.js 생성**
+10. **🔧 영수증 관련 함수 수정 v4.1.5** - 최적화된 receipts 테이블 호환
+
+---
+
+## 🎯 활용 가이드
+
+### 🔍 코드 분석 시 v4.3.0
+- **모듈별 접근**: Supabase 기능은 js/supabase/ 디렉토리에서 확인
+- **의존성 체크**: SupabaseCore → Student/Admin → Client 순서
+- **v4.3.0 호환성**: requests 테이블 새 구조 확인 필수
+- **4가지 타입**: 온라인/오프라인 × 단일/묶음 조합 이해
+
+### 🛠️ 개발 진행 시
+- **모듈 우선**: 새로운 기능은 해당 전용 모듈에 추가
+- **기존 기능 보호**: 교구신청 기능 최우선 보호
+- **점진적 개선**: 모듈별 독립적 개선
+- **테스트 필수**: 모든 변경사항은 실제 환경 테스트
+
+### 📊 데이터베이스 작업 시
+- **스키마 확인**: database/schema.sql v2.11 + v4.3.0 참조
+- **마이그레이션**: database/requests_table_update_v4.3.sql 사용
+- **모듈 활용**: SupabaseAdmin/Student 모듈 사용
+- **RLS 정책**: 보안 정책 준수
+- **백업 필수**: 모든 변경 전 백업 수행
+
+### 🔧 v4.3.0 requests 테이블 활용
+- **온라인 단일**: `link` 필드만 활용
+- **온라인 묶음**: `link` + `account_id` + `account_pw` 활용  
+- **오프라인 단일**: 기본 정보만 (store_info 선택적)
+- **오프라인 묶음**: `store_info` 필드로 업체정보+구매계획 저장
+- **타입 구분**: `is_bundle` + `purchase_type` 조합으로 판단
+
+---
+
+## 🚨 중요 경로 정보
+
+**✅ 정확한 파일 경로**:
+```
+js/supabase/supabase-core.js
+js/supabase/supabase-student.js
+js/supabase/supabase-admin.js
+js/student/equipment-request.js (v4.3.0 완전 최적화)
+student/equipment-request.html (v4.3.0 UI 재설계)
+database/requests_table_update_v4.3.sql (DB 마이그레이션)
+```
+
+---
+
+## 🎉 v4.3.0 업데이트 완료 요약
+
+### ✅ **완료된 작업**
+1. **📊 데이터베이스 설계**: requests 테이블 v4.3.0 구조 완성
+2. **⚙️ JavaScript 백엔드**: 4가지 타입별 API 및 로직 완성
+3. **🎨 UI/UX 설계**: 묶음 신청 모달 완전 재설계
+4. **🔗 이벤트 연동**: HTML-JavaScript 100% 연동 완료
+
+### 🎯 **핵심 성과**
+- **4가지 교구 신청 타입별 완전 전문화** 달성
+- **온라인 묶음 구매**: 계정 정보 분리로 보안 강화
+- **오프라인 묶음 구매**: 구조화된 업체 정보 관리
+- **사용자 경험**: 타입별 최적화된 UI/UX 제공
+
+### 📋 **남은 작업**
+1. **데이터베이스 마이그레이션**: `requests_table_update_v4.3.sql` 실행
+2. **관리자 시스템**: v4.3.0 새 컬럼 구조 반영
+3. **최종 테스트**: 4가지 타입별 전체 워크플로우 검증
+
+---
 
 ## 🚀 시작하기
 
@@ -118,11 +287,13 @@ request/
 1. `culturing.org/intern-system/` 접속
 2. 이름과 생년월일로 로그인
 3. 대시보드에서 원하는 기능 선택
+4. **🆕 v4.3.0**: 4가지 교구 신청 타입별 최적화된 UI 경험
 
 #### 관리자 사용자
 1. `culturing.org/intern-system/admin.html` 접속
 2. 관리자 코드로 로그인
 3. 통합 관리 대시보드 사용
+4. **v4.3.0**: 새로운 컬럼 구조 데이터 확인 가능
 
 ### 개발자 설정
 
@@ -135,7 +306,13 @@ cd request
 #### 2. Supabase 설정
 `js/config.js` 파일에서 Supabase 연결 정보를 설정하세요.
 
-#### 3. 로컬 테스트
+#### 3. 데이터베이스 마이그레이션 (v4.3.0)
+```sql
+-- Supabase Dashboard → SQL Editor에서 실행
+-- database/requests_table_update_v4.3.sql 내용 실행
+```
+
+#### 4. 로컬 테스트
 ```bash
 # 간단한 HTTP 서버로 테스트
 python -m http.server 8000
@@ -143,150 +320,28 @@ python -m http.server 8000
 npx serve
 ```
 
-## 🎨 UI/UX 특징
+---
+
+## 🎨 UI/UX 특징 v4.3.0
 
 ### 학생 대시보드
 - **현대적 카드 UI**: 직관적인 메뉴 선택
 - **상태 구분**: 사용 가능/준비 중 기능 명확 표시
 - **반응형 디자인**: 모바일/데스크톱 최적화
-- **브레드크럼 네비게이션**: 쉬운 페이지 이동
+- **🆕 v4.3.0**: 4가지 교구 신청 타입별 전문화된 UI
+
+### 묶음 신청 모달 v4.3.0
+- **타입별 최적화**: 온라인/오프라인 × 단일/묶음 4가지 조합
+- **동적 UI**: 구매 방식 선택에 따른 실시간 필드 변경
+- **보안 강화**: 계정 정보 암호화 및 안전한 저장
+- **사용자 가이드**: 각 필드별 상세한 도움말 제공
 
 ### 관리자 대시보드
 - **탭 시스템**: 기능별 명확한 구분
 - **통합 통계**: 모든 신청 현황 한 눈에 보기
 - **기존 기능 유지**: 안정성 보장
-
-## 🔍 디버깅 및 모니터링
-
-### 개발자 도구
-브라우저 콘솔에서 다음 명령어를 사용할 수 있습니다:
-
-```javascript
-// 학생 대시보드에서
-showDebugInfo()           // 디버그 정보 표시
-
-// 기존 시스템 명령어들
-showAppInfo()             // 앱 정보 확인
-checkSystemHealth()       // 시스템 상태 확인
-```
-
-### 키보드 단축키
-- **학생 대시보드**:
-  - `Ctrl + D`: 디버그 정보
-  - `Ctrl + 1`: 파견 학당 정보
-  - `Ctrl + 2`: 항공권 신청
-  - `Ctrl + 3`: 문화교구 신청
-  - `ESC`: 로그아웃 확인
-
-- **관리자 페이지**:
-  - `Ctrl + T`: 테스트 모드 토글 (기존)
-
-## 📊 이전 업데이트 내역
-
-### 🎨 UI/UX 개선 (v1.3.0 - 2025-06-17)
-- **모달 시스템 완전 재설계**: CSS Grid의 `place-items: center` 사용
-- **반응형 최적화**: 데스크톱에서 중앙, 모바일에서 상단 정렬
-- **성능 최적화**: GPU 가속 애니메이션 및 `will-change` 속성 활용
-- **접근성 강화**: 고대비 모드, 애니메이션 감소 모드 지원
-
-### 🛡 안정성 강화 (v1.2.1 - 2025-06-13)
-- **406 에러 해결**: Supabase API 연결 안정성 대폭 향상
-- **학생 대시보드 에러 수정**: 메서드명 불일치 문제 해결
-- **에러 핸들링 강화**: 네트워크 오류 및 API 에러에 대한 안전한 처리
-- **안전성 개선**: 모든 API 호출에 재시도 로직 및 폴백 메커니즘 추가
-
-## 🔄 마이그레이션 가이드
-
-### 기존 사용자를 위한 변경사항
-1. **URL 변경**: 
-   - 학생은 기존과 동일한 `index.html` 사용
-   - 관리자는 `admin.html`로 접속 필요
-
-2. **기능 위치 변경**:
-   - 교구 신청: 대시보드 → 문화교구 신청 메뉴
-   - 기존 기능은 모두 그대로 유지
-
-3. **새로운 기능**:
-   - 파견 학당 정보 (준비 중)
-   - 항공권 구매 신청 (준비 중)
-
-### 개발자를 위한 변경사항
-1. **기존 JS 파일**: 그대로 유지 및 사용
-2. **새로운 JS 파일**: `js/student/` 폴더에 추가
-3. **CSS**: 기존 파일 그대로 사용
-
-## 🧪 테스트 가이드
-
-### 기능 테스트
-1. **페이지 분리 테스트**:
-   - 학생 로그인 → 대시보드 이동 확인
-   - 관리자 로그인 → 관리자 페이지 이동 확인
-
-2. **네비게이션 테스트**:
-   - 대시보드 메뉴 카드 클릭 테스트
-   - 브레드크럼 네비게이션 테스트
-   - 뒤로 가기 버튼 테스트
-
-3. **기존 기능 호환성**:
-   - 교구 신청 기능 정상 작동 확인
-   - 관리자 기능 정상 작동 확인
-
-### 브라우저 호환성
-- **Chrome 90+**: 완전 지원
-- **Firefox 88+**: 완전 지원
-- **Safari 14+**: 완전 지원
-- **Edge 90+**: 완전 지원
-
-## 🛣️ 향후 개발 계획
-
-### Phase 1 (완료) ✅
-- [x] 페이지 분리 및 URL 구조 개선
-- [x] 학생 대시보드 구현
-- [x] 기존 기능 이전 및 호환성 확보
-
-### Phase 2 (진행 중) 🚧
-- [ ] 파견 학당 정보 시스템 구현
-- [ ] 데이터베이스 스키마 확장
-- [ ] 학당 관리 시스템 (관리자용)
-
-### Phase 3 (계획 중) 📅
-- [ ] 항공권 구매 신청 시스템
-- [ ] 항공권 관리 시스템 (관리자용)
-- [ ] 통합 알림 시스템
-
-### Phase 4 (미래) 🔮
-- [ ] 모바일 앱 개발
-- [ ] 실시간 채팅 지원
-- [ ] 다국어 지원
-
-## 🤝 기여 방법
-
-1. **이슈 리포트**: 버그나 개선사항 발견 시 GitHub Issues 사용
-2. **풀 리퀘스트**: 기능 개선이나 버그 수정 시 PR 생성
-3. **문서 개선**: README나 코멘트 개선 제안
-4. **UI/UX 피드백**: 사용자 경험 개선 제안
-
-## 📞 지원 및 문의
-
-- **기술적 문제**: GitHub Issues 활용
-- **사용법 문의**: 관리자에게 직접 문의
-- **긴급한 문제**: 시스템 관리자 연락
-- **새로운 기능 제안**: Issues에 Enhancement 라벨로 등록
-
-## 📄 라이선스
-
-이 프로젝트는 교육 목적으로 개발되었습니다.
+- **v4.3.0 준비**: 새로운 컬럼 구조 지원 준비
 
 ---
 
-**마지막 업데이트**: 2025년 6월 18일  
-**버전**: 2.0.0 (Cultural Intern Support System)  
-**개발**: Claude AI Assistant
-
-### 🔄 변경 이력
-- **v2.0.0** (2025-06-18): 시스템 확장 및 페이지 분리, 대시보드 시스템 도입
-- **v1.3.0** (2025-06-17): 모달 시스템 완전 재설계, CSS Grid 도입
-- **v1.2.1** (2025-06-13): 406 에러 해결, 안정성 강화
-- **v1.2.0** (2025-06-10): 수업계획 시스템 개선
-- **v1.1.0** (2025-06-05): 예산 관리 시스템 도입
-- **v1.0.0** (2025-06-01): 초기 릴리스 (문화교구 신청 플랫폼)
+이 프로젝트는 **세종학당 문화인턴들의 교구신청과 파견 지원을 위한 종합 관리 시스템**으로, **v4.3.0에서 4가지 교구 신청 타입별 완전 전문화**를 달성했습니다. 온라인/오프라인 × 단일/묶음의 모든 조합에 대해 최적화된 사용자 경험을 제공하며, 모듈화된 아키텍처를 통해 지속적인 발전이 가능한 시스템입니다.
