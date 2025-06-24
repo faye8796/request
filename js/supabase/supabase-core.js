@@ -1,6 +1,7 @@
-// 🚀 Supabase 핵심 공통 기능 모듈 v4.2.0
+// 🚀 Supabase 핵심 공통 기능 모듈 v4.2.1
 // 초기화, 에러 처리, 유틸리티 함수들
 // 모든 Supabase 모듈의 기반이 되는 핵심 기능들
+// 🔧 v4.2.1: 모듈 로딩 안정성 강화 및 타이밍 오류 방지
 
 const SupabaseCore = {
     // Supabase 클라이언트
@@ -10,24 +11,80 @@ const SupabaseCore = {
     currentUser: null,
     currentUserType: null,
 
-    // 초기화
+    // 🆕 v4.2.1 초기화 상태 추적
+    _initialized: false,
+    _initializing: false,
+
+    // 🔧 v4.2.1 강화된 초기화
     async init() {
+        if (this._initialized) {
+            console.log('✅ SupabaseCore 이미 초기화됨');
+            return true;
+        }
+        
+        if (this._initializing) {
+            console.log('⏳ SupabaseCore 초기화 진행 중, 대기...');
+            // 최대 5초 대기
+            for (let i = 0; i < 50; i++) {
+                if (this._initialized) return true;
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            console.warn('⚠️ SupabaseCore 초기화 대기 타임아웃');
+            return false;
+        }
+
+        this._initializing = true;
+
         try {
             console.log('🚀 SupabaseCore 초기화 중...');
             
-            if (!window.supabase || !CONFIG.SUPABASE.URL || !CONFIG.SUPABASE.ANON_KEY) {
+            // CONFIG 로드 대기 (더 안전하게)
+            if (!window.CONFIG) {
+                console.log('⏳ CONFIG 로드 대기 중...');
+                let configWaitCount = 0;
+                while (!window.CONFIG && configWaitCount < 30) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    configWaitCount++;
+                }
+                
+                if (!window.CONFIG) {
+                    throw new Error('CONFIG 로드 타임아웃');
+                }
+            }
+            
+            // Supabase 라이브러리 로드 대기
+            if (!window.supabase) {
+                console.log('⏳ Supabase 라이브러리 로드 대기 중...');
+                let supabaseWaitCount = 0;
+                while (!window.supabase && supabaseWaitCount < 30) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    supabaseWaitCount++;
+                }
+                
+                if (!window.supabase) {
+                    throw new Error('Supabase 라이브러리 로드 타임아웃');
+                }
+            }
+            
+            // 설정 검증
+            if (!CONFIG.SUPABASE.URL || !CONFIG.SUPABASE.ANON_KEY) {
                 throw new Error('Supabase 설정이 올바르지 않습니다.');
             }
             
+            // Supabase 클라이언트 생성
             this.supabase = window.supabase.createClient(
                 CONFIG.SUPABASE.URL,
                 CONFIG.SUPABASE.ANON_KEY
             );
             
+            this._initialized = true;
+            this._initializing = false;
+            
             console.log('✅ SupabaseCore 초기화 완료');
             return true;
             
         } catch (error) {
+            this._initializing = false;
             console.error('❌ SupabaseCore 초기화 실패:', error);
             return false;
         }
@@ -38,20 +95,23 @@ const SupabaseCore = {
         return this.supabase;
     },
 
-    // 클라이언트 확보 함수
+    // 🔧 v4.2.1 강화된 클라이언트 확보 함수
     async ensureClient() {
-        if (!this.supabase) {
-            await this.init();
+        if (!this.supabase || !this._initialized) {
+            console.log('🔄 SupabaseCore 클라이언트 확보 중...');
+            const initSuccess = await this.init();
+            if (!initSuccess) {
+                throw new Error('SupabaseCore 초기화 실패');
+            }
         }
         return this.supabase;
     },
 
-    // 안전한 API 호출 래퍼
+    // 🔧 v4.2.1 강화된 안전한 API 호출 래퍼
     async safeApiCall(operation, apiFunction, context = {}) {
         try {
-            if (!this.supabase) {
-                await this.init();
-            }
+            // 클라이언트 확보
+            await this.ensureClient();
             
             const result = await apiFunction();
             
@@ -77,7 +137,7 @@ const SupabaseCore = {
         }
     },
 
-    // 🔧 v2.13 - 에러 메시지 처리 강화
+    // 🔧 v4.2.1 - 에러 메시지 처리 강화
     getErrorMessage(error) {
         if (typeof error === 'string') {
             return error;
@@ -99,6 +159,9 @@ const SupabaseCore = {
             }
             if (error.message.includes('not null')) {
                 return '필수 정보가 누락되었습니다.';
+            }
+            if (error.message.includes('timeout') || error.message.includes('타임아웃')) {
+                return '요청 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.';
             }
             
             return error.message;
@@ -154,28 +217,55 @@ const SupabaseCore = {
         console.log('✅ 로그아웃 완료');
     },
 
-    // 연결 테스트
+    // 🔧 v4.2.1 강화된 연결 테스트
     async testConnection() {
+        console.log('🔗 SupabaseCore 연결 테스트 시작...');
+        
         return await this.safeApiCall('연결 테스트', async () => {
             return await this.supabase
                 .from('system_settings')
                 .select('setting_key')
                 .limit(1);
         });
+    },
+
+    // 🆕 v4.2.1 상태 확인 함수
+    getStatus() {
+        return {
+            initialized: this._initialized,
+            initializing: this._initializing,
+            hasClient: !!this.supabase,
+            hasUser: !!this.currentUser,
+            userType: this.currentUserType
+        };
     }
 };
 
-// 자동 초기화
+// 🔧 v4.2.1 개선된 자동 초기화
 (async () => {
-    // CONFIG 로드 대기
+    console.log('🚀 SupabaseCore v4.2.1 자동 초기화 시작...');
+    
+    // CONFIG 로드 대기 (더 여유있게)
     let waitCount = 0;
-    while (!window.CONFIG && waitCount < 50) {
+    const maxWaitCount = 60; // 6초
+    
+    while (!window.CONFIG && waitCount < maxWaitCount) {
         await new Promise(resolve => setTimeout(resolve, 100));
         waitCount++;
+        
+        // 2초마다 진행 상황 로그
+        if (waitCount % 20 === 0) {
+            console.log(`⏳ CONFIG 로드 대기 중... ${waitCount}/${maxWaitCount}`);
+        }
     }
     
     if (window.CONFIG) {
-        await SupabaseCore.init();
+        const initSuccess = await SupabaseCore.init();
+        if (initSuccess) {
+            console.log('✅ SupabaseCore v4.2.1 자동 초기화 완료');
+        } else {
+            console.warn('⚠️ SupabaseCore v4.2.1 자동 초기화 실패');
+        }
     } else {
         console.warn('⚠️ CONFIG 로드 타임아웃 - SupabaseCore 수동 초기화 필요');
     }
@@ -184,4 +274,13 @@ const SupabaseCore = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseCore = SupabaseCore;
 
-console.log('🚀 SupabaseCore v4.2.0 loaded - 핵심 공통 기능 모듈');
+// 🆕 개발자 도구 지원
+if (typeof window !== 'undefined') {
+    window.SupabaseCoreDebug = {
+        getStatus: () => SupabaseCore.getStatus(),
+        forceInit: () => SupabaseCore.init(),
+        testConnection: () => SupabaseCore.testConnection()
+    };
+}
+
+console.log('🚀 SupabaseCore v4.2.1 loaded - 핵심 공통 기능 모듈 (안정성 강화)');
