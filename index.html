@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>세종학당 문화인턴 지원 시스템 v4.2.0</title>
+    <title>세종학당 문화인턴 지원 시스템 v4.2.1</title>
     
-    <!-- CSS Files - v4.2.0 호환 -->
-    <link rel="stylesheet" href="css/main.css?v=4.2.0">
-    <link rel="stylesheet" href="css/login.css?v=4.2.0">
+    <!-- CSS Files - v4.2.1 호환 -->
+    <link rel="stylesheet" href="css/main.css?v=4.2.1">
+    <link rel="stylesheet" href="css/login.css?v=4.2.1">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
-    <!-- Supabase JavaScript Client - v4.2.0 모듈화 시스템 -->
+    <!-- Supabase JavaScript Client - v4.2.1 모듈화 시스템 -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -23,16 +23,19 @@
             <div class="login-container">
                 <div class="login-card">
                     <div class="login-header">
-                        <h1>세종학당 문화인턴 지원 시스템 v4.2.0</h1>
-                        <p>King Sejong Institute Cultural Intern Support System (Modular Architecture)</p>
+                        <h1>세종학당 문화인턴 지원 시스템 v4.2.1</h1>
+                        <p>King Sejong Institute Cultural Intern Support System (Stable Module Architecture)</p>
                     </div>
 
-                    <!-- 🆕 v4.2.0 모듈 로딩 상태 표시 -->
+                    <!-- 🆕 v4.2.1 모듈 로딩 상태 표시 -->
                     <div id="moduleStatus" style="background: #f7fafc; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; font-family: monospace; font-size: 0.875rem;">
-                        <h4 style="margin: 0 0 0.5rem 0; color: #2d3748;">📦 모듈 시스템 v4.2.0</h4>
+                        <h4 style="margin: 0 0 0.5rem 0; color: #2d3748;">📦 모듈 시스템 v4.2.1</h4>
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0;">
                             <span>시스템 상태</span>
                             <span id="system-status" style="font-weight: bold; color: #f6ad55;">⏳ 초기화 중...</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #718096; margin-top: 0.5rem;">
+                            모듈 로딩 타이밍 오류 수정 및 안정성 강화
                         </div>
                     </div>
 
@@ -56,50 +59,50 @@
         </div>
     </div>
 
-    <!-- 🚀 JavaScript Files - v4.2.0 모듈화 시스템 -->
+    <!-- 🚀 JavaScript Files - v4.2.1 안정화된 모듈화 시스템 -->
     
     <!-- 🔧 1단계: 핵심 설정 (필수) -->
-    <script src="js/config.js?v=4.2.0"></script>
-    <script src="js/utils.js?v=4.2.0"></script>
-    <script src="js/auth.js?v=4.2.0"></script>
+    <script src="js/config.js?v=4.2.1"></script>
+    <script src="js/utils.js?v=4.2.1"></script>
+    <script src="js/auth.js?v=4.2.1"></script>
 
     <!-- 🔧 2단계: Supabase 모듈들 (순서 중요!) -->
-    <script src="js/supabase/supabase-core.js?v=4.2.0"></script>
-    <script src="js/supabase/supabase-student.js?v=4.2.0"></script>
-    <script src="js/supabase/supabase-admin.js?v=4.2.0"></script>
-    <script src="js/supabase-client.js?v=4.2.0"></script>
+    <script src="js/supabase/supabase-core.js?v=4.2.1"></script>
+    <script src="js/supabase/supabase-student.js?v=4.2.1"></script>
+    <script src="js/supabase/supabase-admin.js?v=4.2.1"></script>
+    <script src="js/supabase-client.js?v=4.2.1"></script>
     
-    <!-- 🔧 3단계: 페이지 초기화 스크립트 - v4.2.0 모듈화 시스템 -->
+    <!-- 🔧 3단계: 페이지 초기화 스크립트 - v4.2.1 안정화된 모듈화 시스템 -->
     <script>
-        // 🔧 v4.2.0 모듈화 시스템 초기화
+        // 🔧 v4.2.1 안정화된 모듈화 시스템 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📋 Index.html v4.2.0 모듈화 시스템 초기화 시작...');
+            console.log('📋 Index.html v4.2.1 모듈화 시스템 초기화 시작...');
             
             try {
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
-                    console.log('✅ Lucide icons initialized (v4.2.0)');
+                    console.log('✅ Lucide icons initialized (v4.2.1)');
                 } else {
                     console.error('❌ Lucide library not loaded');
                 }
 
-                // 🆕 v4.2.0 모듈 로딩 대기 및 초기화
+                // 🆕 v4.2.1 안정화된 모듈 로딩 대기 및 초기화
                 initializeModuleSystem();
                 
             } catch (error) {
-                console.error('❌ 페이지 초기화 오류 (v4.2.0):', error);
+                console.error('❌ 페이지 초기화 오류 (v4.2.1):', error);
                 updateSystemStatus('❌ 초기화 실패', '#f56565');
             }
         });
 
-        // 🔧 v4.2.0 모듈 시스템 초기화
+        // 🔧 v4.2.1 안정화된 모듈 시스템 초기화
         async function initializeModuleSystem() {
-            console.log('🔄 v4.2.0 모듈 시스템 초기화...');
+            console.log('🔄 v4.2.1 안정화된 모듈 시스템 초기화...');
             updateSystemStatus('⏳ 모듈 로딩 중...', '#f6ad55');
             
             try {
-                // 1단계: 모듈 로딩 대기 (최대 10초)
+                // 1단계: 모듈 로딩 대기 (최대 12초, 더 여유있게)
                 const modulesLoaded = await waitForModules();
                 
                 if (!modulesLoaded) {
@@ -113,18 +116,30 @@
                 // 2단계: AuthManager 초기화
                 if (window.AuthManager && typeof window.AuthManager.init === 'function') {
                     window.AuthManager.init();
-                    console.log('✅ AuthManager 초기화 완료 (v4.2.0)');
+                    console.log('✅ AuthManager 초기화 완료 (v4.2.1)');
                 } else {
                     console.warn('⚠️ AuthManager를 찾을 수 없습니다 - 기본 인증 사용');
                 }
 
-                // 3단계: SupabaseAPI 초기화 확인
-                if (window.SupabaseAPI && typeof window.SupabaseAPI.init === 'function') {
-                    const apiSuccess = await window.SupabaseAPI.init();
-                    console.log('🔗 SupabaseAPI 초기화:', apiSuccess ? '성공' : '실패');
+                // 3단계: SupabaseAPI 초기화 확인 (더 안전하게)
+                if (window.SupabaseAPI) {
+                    // SupabaseAPI가 이미 자동 초기화를 시도했는지 확인
+                    if (window.SupabaseAPI._moduleStatus && window.SupabaseAPI._moduleStatus.initialized) {
+                        console.log('✅ SupabaseAPI 이미 초기화됨');
+                    } else {
+                        console.log('⏳ SupabaseAPI 수동 초기화 시도...');
+                        try {
+                            const apiSuccess = await window.SupabaseAPI.init();
+                            console.log('🔗 SupabaseAPI 초기화:', apiSuccess ? '성공' : '실패');
+                        } catch (apiError) {
+                            console.warn('⚠️ SupabaseAPI 초기화 실패:', apiError.message);
+                        }
+                    }
+                } else {
+                    console.warn('⚠️ SupabaseAPI 로드되지 않음');
                 }
                 
-                console.log('🎉 Index.html v4.2.0 모듈화 시스템 초기화 완료!');
+                console.log('🎉 Index.html v4.2.1 안정화된 모듈화 시스템 초기화 완료!');
                 
             } catch (error) {
                 console.error('❌ 모듈 시스템 초기화 실패:', error);
@@ -132,11 +147,11 @@
             }
         }
 
-        // 🔧 모듈 로딩 대기 함수
+        // 🔧 v4.2.1 강화된 모듈 로딩 대기 함수
         function waitForModules() {
             return new Promise((resolve) => {
                 let attempts = 0;
-                const maxAttempts = 100; // 10초
+                const maxAttempts = 120; // 12초 (100ms * 120)
                 
                 const checkModules = () => {
                     attempts++;
@@ -145,18 +160,36 @@
                     const studentLoaded = !!window.SupabaseStudent;
                     const adminLoaded = !!window.SupabaseAdmin;
                     const apiLoaded = !!window.SupabaseAPI;
+                    const configLoaded = !!window.CONFIG;
                     
-                    console.log(`📦 모듈 로딩 체크 ${attempts}/${maxAttempts}:`, {
-                        Core: coreLoaded ? '✅' : '❌',
-                        Student: studentLoaded ? '✅' : '❌',
-                        Admin: adminLoaded ? '✅' : '❌',
-                        API: apiLoaded ? '✅' : '❌'
-                    });
+                    // 진행 상황 로그 (3초마다)
+                    if (attempts % 30 === 0) {
+                        console.log(`📦 모듈 로딩 체크 ${attempts}/${maxAttempts} (${(attempts/maxAttempts*100).toFixed(1)}%):`, {
+                            CONFIG: configLoaded ? '✅' : '❌',
+                            Core: coreLoaded ? '✅' : '❌',
+                            Student: studentLoaded ? '✅' : '❌',
+                            Admin: adminLoaded ? '✅' : '❌',
+                            API: apiLoaded ? '✅' : '❌'
+                        });
+                    }
                     
-                    // 최소 요구사항: Core + API
-                    if (coreLoaded && apiLoaded) {
-                        console.log('✅ 최소 모듈 로딩 완료');
-                        resolve(true);
+                    // 최소 요구사항: CONFIG + Core + API
+                    if (configLoaded && coreLoaded && apiLoaded) {
+                        console.log('✅ 필수 모듈 로딩 완료');
+                        
+                        // 추가로 Student/Admin 모듈 확인
+                        if (studentLoaded && adminLoaded) {
+                            console.log('✅ 모든 모듈 로딩 완료');
+                            resolve(true);
+                        } else {
+                            // 필수 모듈은 로드됨, 선택적 모듈 추가 대기 (최대 3초)
+                            if (attempts >= 90) { // 9초 후에는 부분 완료로 처리
+                                console.log('✅ 필수 모듈 로딩 완료 (일부 선택적 모듈 누락)');
+                                resolve(true);
+                            }
+                        }
+                        
+                        setTimeout(checkModules, 100);
                         return;
                     }
                     
@@ -182,9 +215,10 @@
             }
         }
 
-        console.log('🎯 Index.html v4.2.0 모듈화 시스템 스크립트 로드 완료');
-        console.log('📦 아키텍처: 기존 단순 구조 → v4.2.0 모듈화 구조로 업그레이드');
+        console.log('🎯 Index.html v4.2.1 안정화된 모듈화 시스템 스크립트 로드 완료');
+        console.log('📦 아키텍처: v4.2.0 모듈화 구조 → v4.2.1 안정화 완료');
         console.log('🔧 호환성: AuthManager + SupabaseAPI 통합 매니저 사용');
+        console.log('🚀 개선사항: 모듈 로딩 타이밍 오류 수정 및 안정성 강화');
     </script>
 </body>
 </html>
