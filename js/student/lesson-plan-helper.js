@@ -1,6 +1,7 @@
-// 수업계획 도우미 모듈 - C단계 (v4.0)
+// 수업계획 도우미 모듈 - C단계 (v4.0.1) - 콘솔 로그 정리
 // 🎯 책임: 수업계획 상태 관리, 버튼 제어, 알림 시스템
 // 📦 분리 출처: student.js → lesson-plan-helper.js
+// 🧹 v4.0.1: 학생 사용 환경을 위한 콘솔 로그 정리 (오류/경고만 유지)
 
 const LessonPlanHelper = {
     // === 모듈 초기화 ===
@@ -10,10 +11,8 @@ const LessonPlanHelper = {
     // 모듈 초기화 (StudentManager 참조 받기)
     init: function(managerInstance) {
         try {
-            console.log('📋 LessonPlanHelper 초기화 시작');
             this.studentManager = managerInstance;
             this.isInitialized = true;
-            console.log('✅ LessonPlanHelper 초기화 완료');
             return true;
         } catch (error) {
             console.error('❌ LessonPlanHelper 초기화 오류:', error);
@@ -30,8 +29,6 @@ const LessonPlanHelper = {
                 console.error('❌ StudentManager 참조가 없습니다');
                 return Promise.resolve();
             }
-
-            console.log('📋 수업계획 상태 확인 시작');
             
             const currentUser = this.studentManager.getCurrentUserSafely();
             if (!currentUser) {
@@ -50,7 +47,7 @@ const LessonPlanHelper = {
                 return self.updateApplicationButtonsState(lessonPlan).then(function() {
                     return self.showLessonPlanStatusNotice(lessonPlan);
                 }).then(function() {
-                    console.log('✅ 수업계획 상태 확인 완료');
+                    // 성공 로그 제거
                 }).catch(function(error) {
                     console.warn('수업계획 상태 처리 중 일부 오류 발생:', error);
                     return Promise.resolve();
@@ -121,8 +118,6 @@ const LessonPlanHelper = {
     // 교구 신청 버튼 상태 업데이트
     updateApplicationButtonsState: function(lessonPlan) {
         try {
-            console.log('🔘 교구 신청 버튼 상태 업데이트');
-            
             if (!this.studentManager) {
                 this.disableApplicationButtons('시스템 오류');
                 return Promise.resolve();
@@ -162,9 +157,9 @@ const LessonPlanHelper = {
                     self.disableApplicationButtons('예산 배정 처리 중입니다. 잠시만 기다려주세요.');
                 } else {
                     self.enableApplicationButtons();
-                    console.log('✅ 교구 신청 버튼 활성화됨');
+                    // 성공 로그 제거
                 }
-                console.log('✅ 교구 신청 버튼 상태 업데이트 완료');
+                // 상태 업데이트 완료 로그 제거
             }).catch(function(error) {
                 console.error('예산 상태 조회 오류:', error);
                 self.disableApplicationButtons('예산 정보를 불러올 수 없습니다');
@@ -242,8 +237,6 @@ const LessonPlanHelper = {
     // 수업계획 버튼 클릭 처리
     handleLessonPlanClick: function() {
         try {
-            console.log('📋 수업계획 버튼 클릭 - edit 모드로 표시');
-            
             if (!this.studentManager) {
                 alert('시스템 오류가 발생했습니다.');
                 return;
@@ -267,7 +260,7 @@ const LessonPlanHelper = {
                     studentPage.classList.remove('active');
                     lessonPlanPage.classList.add('active');
                     
-                    console.log('✅ 수업계획 페이지 활성화 완료');
+                    // 페이지 활성화 완료 로그 제거
                 } else {
                     console.error('❌ 페이지 요소를 찾을 수 없습니다');
                     alert('수업계획 페이지를 찾을 수 없습니다. 페이지를 새로고침해주세요.');
@@ -279,7 +272,7 @@ const LessonPlanHelper = {
                         try {
                             if (typeof LessonPlanManager.showLessonPlanPage === 'function') {
                                 LessonPlanManager.showLessonPlanPage('edit', existingPlan);
-                                console.log('✅ LessonPlanManager edit 모드 초기화 완료');
+                                // 초기화 완료 로그 제거
                             } else {
                                 console.warn('⚠️ LessonPlanManager.showLessonPlanPage 함수를 찾을 수 없습니다');
                                 alert('수업계획 기능을 사용할 수 없습니다. 페이지를 새로고침해주세요.');
@@ -421,7 +414,7 @@ const LessonPlanHelper = {
                     lucide.createIcons();
                 }
                 
-                console.log('✅ 수업계획 상태 알림 표시됨:', type);
+                // 알림 표시 완료 로그 제거
             }
         } catch (error) {
             console.error('알림 표시 오류:', error);
@@ -466,4 +459,4 @@ const LessonPlanHelper = {
 // 전역 접근을 위한 window 객체에 추가
 window.LessonPlanHelper = LessonPlanHelper;
 
-console.log('📋 LessonPlanHelper v4.0 로드 완료 - 수업계획 전담 모듈');
+console.log('📋 LessonPlanHelper v4.0.1 로드 완료 - 콘솔 로그 정리');
