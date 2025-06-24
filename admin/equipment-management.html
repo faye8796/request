@@ -128,9 +128,9 @@
             }
         }
 
-        /* 모듈 수정 완료 알림 */
+        /* v4.3 업데이트 완료 알림 */
         .module-fix-notice {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
             padding: 1rem 1.5rem;
             border-radius: 0.75rem;
@@ -193,12 +193,12 @@
             </div>
         </div>
 
-        <!-- 모듈 수정 완료 알림 -->
+        <!-- v4.3 업데이트 완료 알림 -->
         <div class="module-fix-notice">
-            <i data-lucide="check-circle"></i>
+            <i data-lucide="sparkles"></i>
             <div class="notice-content">
-                <div class="notice-title">✅ v4.2 모듈화 시스템 호환성 수정 완료!</div>
-                <p class="notice-text">Supabase 모듈 로딩 순서가 수정되어 교구신청 관리 기능이 정상 동작합니다.</p>
+                <div class="notice-title">✨ v4.3 UI 업그레이드 완료!</div>
+                <p class="notice-text">requests 테이블 구조 최적화 반영 • 4가지 신청 타입별 전용 UI • 온라인 묶음구매 계정정보 표시 • 배송지 정보 통합 관리</p>
             </div>
         </div>
 
@@ -281,41 +281,41 @@
 
             <!-- 교구 신청 목록 (학생별 그룹화) -->
             <div id="adminApplications" class="admin-applications">
-                <!-- AdminEnhancedUI에서 동적으로 생성될 학생별 그룹화된 교구 신청 목록 -->
+                <!-- AdminEnhancedUI v4.3에서 동적으로 생성될 학생별 그룹화된 교구 신청 목록 -->
             </div>
         </div>
     </div>
 
     <!-- 모달들은 admin 모듈들에서 동적으로 생성됨 -->
 
-    <!-- 🔧 v4.2 모듈화 시스템 호환 JavaScript Files -->
+    <!-- 🔧 v4.3 모듈화 시스템 호환 JavaScript Files -->
     <!-- 1. 기본 설정 모듈 -->
-    <script src="../js/config.js?v=4.2.0"></script>
-    <script src="../js/auth.js?v=4.2.0"></script>
-    <script src="../js/utils.js?v=4.2.0"></script>
+    <script src="../js/config.js?v=4.3.0"></script>
+    <script src="../js/auth.js?v=4.3.0"></script>
+    <script src="../js/utils.js?v=4.3.0"></script>
     
     <!-- 2. Supabase 모듈들 (의존성 순서 중요!) -->
-    <script src="../js/supabase/supabase-core.js?v=4.2.0"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.2.0"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.2.0"></script>
-    <script src="../js/supabase-client.js?v=4.2.0"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.3.0"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.3.0"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.3.0"></script>
+    <script src="../js/supabase-client.js?v=4.3.0"></script>
     
     <!-- 3. 추가 모듈들 -->
-    <script src="../js/lesson-plan.js?v=4.2.0"></script>
+    <script src="../js/lesson-plan.js?v=4.3.0"></script>
     
     <!-- 🆕 모듈화된 Admin 파일들 (교구 관리에 필요한 모듈들만) -->
     <!-- 핵심 파일들 먼저 로드 -->
-    <script src="../js/admin/admin-core.js?v=4.2.0"></script>
-    <script src="../js/admin/admin-utils.js?v=4.2.0"></script>
-    <script src="../js/admin/admin-modals.js?v=4.2.0"></script>
+    <script src="../js/admin/admin-core.js?v=4.3.0"></script>
+    <script src="../js/admin/admin-utils.js?v=4.3.0"></script>
+    <script src="../js/admin/admin-modals.js?v=4.3.0"></script>
     
     <!-- 교구 관리에 필요한 모듈들 로드 -->
-    <script src="../js/admin/admin-applications.js?v=4.2.0"></script>
-    <script src="../js/admin/admin-budget.js?v=4.2.0"></script>
-    <script src="../js/admin/admin-lesson-plans.js?v=4.2.0"></script>
+    <script src="../js/admin/admin-applications.js?v=4.3.0"></script>
+    <script src="../js/admin/admin-budget.js?v=4.3.0"></script>
+    <script src="../js/admin/admin-lesson-plans.js?v=4.3.0"></script>
     
-    <!-- 🎨 향상된 UI 모듈 (기존 admin-addon.js 대체) -->
-    <script src="../js/admin/admin-enhanced-ui.js?v=4.2.0"></script>
+    <!-- 🎨 향상된 UI 모듈 v4.3 (기존 admin-addon.js 대체) -->
+    <script src="../js/admin/admin-enhanced-ui.js?v=4.3.0"></script>
     
     <!-- 교구 관리 페이지 전용 스크립트 -->
     <script>
@@ -326,7 +326,7 @@
 
         // 페이지 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 교구 관리 페이지 초기화 시작 (v4.2 호환)');
+            console.log('🔧 교구 관리 페이지 초기화 시작 (v4.3 호환)');
             
             try {
                 // Lucide 아이콘 초기화
@@ -364,9 +364,9 @@
             return true;
         }
 
-        // 교구 관리 초기화 (v4.2 호환 버전)
+        // 교구 관리 초기화 (v4.3 호환 버전)
         async function initializeEquipmentManagement() {
-            console.log('🚀 교구 관리 시스템 초기화 중... (v4.2 호환)');
+            console.log('🚀 교구 관리 시스템 초기화 중... (v4.3 호환)');
             
             try {
                 showLoadingState();
@@ -387,7 +387,7 @@
                 showMainContent();
                 isDataLoaded = true;
                 
-                console.log('✅ 교구 관리 시스템 초기화 완료 (v4.2)');
+                console.log('✅ 교구 관리 시스템 초기화 완료 (v4.3)');
 
             } catch (error) {
                 console.error('❌ 교구 관리 초기화 실패:', error);
@@ -395,22 +395,22 @@
             }
         }
 
-        // v4.2 호환 Supabase 클라이언트 초기화 대기
+        // v4.3 호환 Supabase 클라이언트 초기화 대기
         function waitForSupabaseClient() {
             return new Promise((resolve, reject) => {
                 let attempts = 0;
-                const maxAttempts = 100; // 10초 대기 (v4.2에서 더 여유있게)
+                const maxAttempts = 100; // 10초 대기 (v4.3에서 더 여유있게)
 
                 const checkSupabase = () => {
                     attempts++;
                     
-                    // v4.2 모듈들 체크
+                    // v4.3 모듈들 체크
                     const coreReady = !!(window.SupabaseCore);
                     const adminReady = !!(window.SupabaseAdmin);
                     const clientReady = !!(window.SupabaseAPI);
                     
                     if (coreReady && adminReady && clientReady) {
-                        console.log('✅ v4.2 Supabase 모듈들 준비됨');
+                        console.log('✅ v4.3 Supabase 모듈들 준비됨');
                         console.log('📦 로드된 모듈:', {
                             core: coreReady,
                             admin: adminReady,
@@ -418,11 +418,11 @@
                         });
                         resolve();
                     } else if (attempts >= maxAttempts) {
-                        reject(new Error(`v4.2 Supabase 모듈 초기화 시간 초과 (${attempts}회 시도)`));
+                        reject(new Error(`v4.3 Supabase 모듈 초기화 시간 초과 (${attempts}회 시도)`));
                     } else {
                         // 진행 상황 로그 (매 2초마다)
                         if (attempts % 20 === 0) {
-                            console.log(`⏳ v4.2 모듈 로딩 대기 중... ${attempts}/${maxAttempts}`, {
+                            console.log(`⏳ v4.3 모듈 로딩 대기 중... ${attempts}/${maxAttempts}`, {
                                 core: coreReady ? '✅' : '⏳',
                                 admin: adminReady ? '✅' : '⏳',
                                 client: clientReady ? '✅' : '⏳'
@@ -460,7 +460,7 @@
             });
         }
 
-        // AdminEnhancedUI 초기화 대기 (새로 추가)
+        // AdminEnhancedUI 초기화 대기 (v4.3 업데이트)
         function waitForAdminEnhancedUI() {
             return new Promise((resolve, reject) => {
                 let attempts = 0;
@@ -470,10 +470,10 @@
                     attempts++;
                     
                     if (window.AdminEnhancedUI && typeof window.AdminEnhancedUI.init === 'function') {
-                        console.log('✅ AdminEnhancedUI 준비됨');
+                        console.log('✅ AdminEnhancedUI v4.3 준비됨');
                         resolve();
                     } else if (attempts >= maxAttempts) {
-                        console.warn('⚠️ AdminEnhancedUI를 찾을 수 없음, 기본 UI 사용');
+                        console.warn('⚠️ AdminEnhancedUI v4.3를 찾을 수 없음, 기본 UI 사용');
                         resolve(); // AdminEnhancedUI 없어도 계속 진행
                     } else {
                         setTimeout(checkAdminEnhancedUI, 100);
@@ -842,7 +842,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'd') {
                 e.preventDefault();
-                console.log('🛠️ 교구 관리 페이지 - v4.2 디버그 정보');
+                console.log('🛠️ 교구 관리 페이지 - v4.3 디버그 정보');
                 console.log('isDataLoaded:', isDataLoaded);
                 console.log('retryCount:', retryCount);
                 console.log('모듈 상태:', {
@@ -862,7 +862,7 @@
             showLoadingState,
             showErrorState,
             showMainContent,
-            // v4.2 디버그 정보 추가
+            // v4.3 디버그 정보 추가
             getModuleStatus: () => ({
                 SupabaseCore: !!window.SupabaseCore,
                 SupabaseAdmin: !!window.SupabaseAdmin,
