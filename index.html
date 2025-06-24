@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>세종학당 문화인턴 지원 시스템</title>
+    <title>세종학당 문화인턴 지원 시스템 v4.2.0</title>
     
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/login.css">
+    <!-- CSS Files - v4.2.0 호환 -->
+    <link rel="stylesheet" href="css/main.css?v=4.2.0">
+    <link rel="stylesheet" href="css/login.css?v=4.2.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
-    <!-- Supabase JavaScript Client - Fixed to use unpkg like intern-announcement -->
+    <!-- Supabase JavaScript Client - v4.2.0 모듈화 시스템 -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -23,8 +23,17 @@
             <div class="login-container">
                 <div class="login-card">
                     <div class="login-header">
-                        <h1>세종학당 문화인턴 지원 시스템</h1>
-                        <p>King Sejong Institute Cultural Intern Support System</p>
+                        <h1>세종학당 문화인턴 지원 시스템 v4.2.0</h1>
+                        <p>King Sejong Institute Cultural Intern Support System (Modular Architecture)</p>
+                    </div>
+
+                    <!-- 🆕 v4.2.0 모듈 로딩 상태 표시 -->
+                    <div id="moduleStatus" style="background: #f7fafc; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; font-family: monospace; font-size: 0.875rem;">
+                        <h4 style="margin: 0 0 0.5rem 0; color: #2d3748;">📦 모듈 시스템 v4.2.0</h4>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0;">
+                            <span>시스템 상태</span>
+                            <span id="system-status" style="font-weight: bold; color: #f6ad55;">⏳ 초기화 중...</span>
+                        </div>
                     </div>
 
                     <!-- 학생 로그인 폼 -->
@@ -47,37 +56,135 @@
         </div>
     </div>
 
-    <!-- JavaScript Files - Using existing auth.js instead of simple-auth.js -->
-    <script src="js/config.js"></script>
-    <script src="js/supabase-client.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/auth.js"></script>
+    <!-- 🚀 JavaScript Files - v4.2.0 모듈화 시스템 -->
     
-    <!-- Page initialization script -->
+    <!-- 🔧 1단계: 핵심 설정 (필수) -->
+    <script src="js/config.js?v=4.2.0"></script>
+    <script src="js/utils.js?v=4.2.0"></script>
+    <script src="js/auth.js?v=4.2.0"></script>
+
+    <!-- 🔧 2단계: Supabase 모듈들 (순서 중요!) -->
+    <script src="js/supabase/supabase-core.js?v=4.2.0"></script>
+    <script src="js/supabase/supabase-student.js?v=4.2.0"></script>
+    <script src="js/supabase/supabase-admin.js?v=4.2.0"></script>
+    <script src="js/supabase-client.js?v=4.2.0"></script>
+    
+    <!-- 🔧 3단계: 페이지 초기화 스크립트 - v4.2.0 모듈화 시스템 -->
     <script>
-        // 페이지 초기화
+        // 🔧 v4.2.0 모듈화 시스템 초기화
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('📋 Index.html v4.2.0 모듈화 시스템 초기화 시작...');
+            
             try {
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
-                    console.log('✅ Lucide icons initialized');
+                    console.log('✅ Lucide icons initialized (v4.2.0)');
                 } else {
                     console.error('❌ Lucide library not loaded');
                 }
 
-                // AuthManager 초기화
-                if (window.AuthManager && typeof window.AuthManager.init === 'function') {
-                    window.AuthManager.init();
-                    console.log('✅ AuthManager 초기화 완료');
-                } else {
-                    console.error('❌ AuthManager를 찾을 수 없습니다');
-                }
+                // 🆕 v4.2.0 모듈 로딩 대기 및 초기화
+                initializeModuleSystem();
                 
             } catch (error) {
-                console.error('❌ 페이지 초기화 오류:', error);
+                console.error('❌ 페이지 초기화 오류 (v4.2.0):', error);
+                updateSystemStatus('❌ 초기화 실패', '#f56565');
             }
         });
+
+        // 🔧 v4.2.0 모듈 시스템 초기화
+        async function initializeModuleSystem() {
+            console.log('🔄 v4.2.0 모듈 시스템 초기화...');
+            updateSystemStatus('⏳ 모듈 로딩 중...', '#f6ad55');
+            
+            try {
+                // 1단계: 모듈 로딩 대기 (최대 10초)
+                const modulesLoaded = await waitForModules();
+                
+                if (!modulesLoaded) {
+                    console.warn('⚠️ 일부 모듈 로딩 실패 - 기본 기능만 사용');
+                    updateSystemStatus('⚠️ 부분 로딩', '#ed8936');
+                } else {
+                    console.log('✅ 모든 모듈 로딩 완료');
+                    updateSystemStatus('✅ 준비 완료', '#48bb78');
+                }
+
+                // 2단계: AuthManager 초기화
+                if (window.AuthManager && typeof window.AuthManager.init === 'function') {
+                    window.AuthManager.init();
+                    console.log('✅ AuthManager 초기화 완료 (v4.2.0)');
+                } else {
+                    console.warn('⚠️ AuthManager를 찾을 수 없습니다 - 기본 인증 사용');
+                }
+
+                // 3단계: SupabaseAPI 초기화 확인
+                if (window.SupabaseAPI && typeof window.SupabaseAPI.init === 'function') {
+                    const apiSuccess = await window.SupabaseAPI.init();
+                    console.log('🔗 SupabaseAPI 초기화:', apiSuccess ? '성공' : '실패');
+                }
+                
+                console.log('🎉 Index.html v4.2.0 모듈화 시스템 초기화 완료!');
+                
+            } catch (error) {
+                console.error('❌ 모듈 시스템 초기화 실패:', error);
+                updateSystemStatus('❌ 시스템 오류', '#f56565');
+            }
+        }
+
+        // 🔧 모듈 로딩 대기 함수
+        function waitForModules() {
+            return new Promise((resolve) => {
+                let attempts = 0;
+                const maxAttempts = 100; // 10초
+                
+                const checkModules = () => {
+                    attempts++;
+                    
+                    const coreLoaded = !!window.SupabaseCore;
+                    const studentLoaded = !!window.SupabaseStudent;
+                    const adminLoaded = !!window.SupabaseAdmin;
+                    const apiLoaded = !!window.SupabaseAPI;
+                    
+                    console.log(`📦 모듈 로딩 체크 ${attempts}/${maxAttempts}:`, {
+                        Core: coreLoaded ? '✅' : '❌',
+                        Student: studentLoaded ? '✅' : '❌',
+                        Admin: adminLoaded ? '✅' : '❌',
+                        API: apiLoaded ? '✅' : '❌'
+                    });
+                    
+                    // 최소 요구사항: Core + API
+                    if (coreLoaded && apiLoaded) {
+                        console.log('✅ 최소 모듈 로딩 완료');
+                        resolve(true);
+                        return;
+                    }
+                    
+                    if (attempts >= maxAttempts) {
+                        console.warn('⚠️ 모듈 로딩 타임아웃');
+                        resolve(false);
+                        return;
+                    }
+                    
+                    setTimeout(checkModules, 100);
+                };
+                
+                checkModules();
+            });
+        }
+
+        // 🔧 시스템 상태 업데이트 함수
+        function updateSystemStatus(message, color) {
+            const statusElement = document.getElementById('system-status');
+            if (statusElement) {
+                statusElement.textContent = message;
+                statusElement.style.color = color;
+            }
+        }
+
+        console.log('🎯 Index.html v4.2.0 모듈화 시스템 스크립트 로드 완료');
+        console.log('📦 아키텍처: 기존 단순 구조 → v4.2.0 모듈화 구조로 업그레이드');
+        console.log('🔧 호환성: AuthManager + SupabaseAPI 통합 매니저 사용');
     </script>
 </body>
 </html>
