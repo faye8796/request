@@ -1,6 +1,7 @@
-// API 도우미 모듈 - D단계 (v4.0)
+// API 도우미 모듈 - D단계 (v4.0.1) - 콘솔 로그 정리
 // 🎯 책임: 공통 API 호출, 사용자 관리, 안전한 요청 처리
 // 📦 분리 출처: student.js → api-helper.js
+// 🧹 v4.0.1: 학생 사용 환경을 위한 콘솔 로그 정리 (오류/경고만 유지)
 
 const ApiHelper = {
     // === 모듈 초기화 ===
@@ -9,9 +10,7 @@ const ApiHelper = {
     // 모듈 초기화
     init: function(managerInstance) {
         try {
-            console.log('🔗 ApiHelper 초기화 시작');
             this.isInitialized = true;
-            console.log('✅ ApiHelper 초기화 완료');
             return true;
         } catch (error) {
             console.error('❌ ApiHelper 초기화 오류:', error);
@@ -24,17 +23,11 @@ const ApiHelper = {
     // 안전한 사용자 정보 가져오기
     getCurrentUserSafely: function() {
         try {
-            console.log('👤 getCurrentUserSafely 호출됨');
-            
             const currentStudentData = localStorage.getItem('currentStudent');
             if (currentStudentData) {
                 try {
                     const studentData = JSON.parse(currentStudentData);
                     if (studentData && studentData.id) {
-                        console.log('✅ localStorage에서 사용자 데이터 가져옴:', {
-                            id: studentData.id,
-                            name: studentData.name
-                        });
                         return studentData;
                     }
                 } catch (parseError) {
@@ -45,7 +38,6 @@ const ApiHelper = {
             if (typeof AuthManager !== 'undefined' && AuthManager.getCurrentUser) {
                 const authUser = AuthManager.getCurrentUser();
                 if (authUser) {
-                    console.log('✅ AuthManager에서 사용자 데이터 가져옴');
                     return authUser;
                 }
             }
@@ -116,8 +108,6 @@ const ApiHelper = {
     // 사용자 정보 표시 업데이트
     updateUserDisplay: function() {
         try {
-            console.log('👤 사용자 정보 표시 업데이트 시작');
-            
             if (typeof AuthManager === 'undefined' || !AuthManager.updateUserDisplay) {
                 console.error('AuthManager 또는 updateUserDisplay 메서드를 찾을 수 없습니다');
                 this.showFallbackUserInfo();
@@ -126,7 +116,7 @@ const ApiHelper = {
 
             const self = this;
             return AuthManager.updateUserDisplay().then(function() {
-                console.log('✅ 사용자 정보 표시 업데이트 완료');
+                // 성공 시 로그 제거
             }).catch(function(error) {
                 console.error('❌ 사용자 정보 표시 업데이트 오류:', error);
                 self.showFallbackUserInfo();
@@ -161,8 +151,6 @@ const ApiHelper = {
     // 예산 현황 업데이트
     updateBudgetStatus: function() {
         try {
-            console.log('💰 예산 현황 업데이트 시작');
-            
             const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 console.warn('현재 사용자 정보가 없음');
@@ -175,7 +163,7 @@ const ApiHelper = {
                 return SupabaseAPI.getStudentBudgetStatus(currentUser.id);
             }).then(function(budgetStatus) {
                 self.displayBudgetStatus(budgetStatus);
-                console.log('✅ 예산 현황 업데이트 완료');
+                // 성공 로그 제거
             }).catch(function(error) {
                 console.error('예산 상태 조회 API 오류:', error);
                 self.showBudgetError();
@@ -300,8 +288,6 @@ const ApiHelper = {
     // 신청 내역 로드
     loadApplications: function() {
         try {
-            console.log('📑 신청 내역 로드 시작');
-            
             const currentUser = this.getCurrentUserSafely();
             if (!currentUser) {
                 console.warn('현재 사용자 정보가 없습니다');
@@ -329,7 +315,7 @@ const ApiHelper = {
                 
                 return self.updateBudgetStatus();
             }).then(function() {
-                console.log('✅ 신청 내역 로드 완료');
+                // 성공 로그 제거
             }).catch(function(error) {
                 console.error('신청 내역 조회 API 오류:', error);
                 self.showApplicationsError();
@@ -410,7 +396,7 @@ const ApiHelper = {
             const element = document.querySelector(selector);
             if (element) {
                 element.addEventListener(event, handler);
-                console.log('이벤트 리스너 추가: ' + selector);
+                // 로그 제거 - 학생 사용 시 불필요
             } else {
                 console.warn('요소를 찾을 수 없음: ' + selector);
             }
@@ -475,8 +461,6 @@ const ApiHelper = {
     // 대시보드 데이터 새로고침
     refreshDashboardData: function() {
         try {
-            console.log('🔄 대시보드 데이터 새로고침');
-            
             const self = this;
             
             return this.loadApplications()
@@ -491,7 +475,7 @@ const ApiHelper = {
                     return Promise.resolve();
                 })
                 .then(function() {
-                    console.log('✅ 대시보드 데이터 새로고침 완료');
+                    // 성공 로그 제거
                 })
                 .catch(function(error) {
                     console.error('❌ 대시보드 데이터 새로고침 오류:', error);
@@ -520,7 +504,7 @@ const ApiHelper = {
             // 간단한 API 호출로 서버 상태 확인
             return SupabaseAPI.checkConnection ? SupabaseAPI.checkConnection() : Promise.resolve(true);
         }).then(function(result) {
-            console.log('서버 연결 상태:', result ? '정상' : '오류');
+            // 연결 상태 로그 제거 - 학생 사용 시 불필요
             return result;
         }).catch(function(error) {
             console.error('서버 연결 확인 오류:', error);
@@ -532,4 +516,4 @@ const ApiHelper = {
 // 전역 접근을 위한 window 객체에 추가
 window.ApiHelper = ApiHelper;
 
-console.log('🔗 ApiHelper v4.0 로드 완료 - 공통 API 도우미 모듈');
+console.log('🔗 ApiHelper v4.0.1 로드 완료 - 콘솔 로그 정리');
