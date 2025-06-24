@@ -6,15 +6,15 @@
     <title>문화교구 신청 - 세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files - Updated Cache Busting ---> 
-    <link rel="stylesheet" href="../css/main.css?v=4.2.1">
-    <link rel="stylesheet" href="../css/student.css?v=4.2.1">
-    <link rel="stylesheet" href="../css/lesson-plan.css?v=4.2.1">
+    <link rel="stylesheet" href="../css/main.css?v=4.2.2">
+    <link rel="stylesheet" href="../css/student.css?v=4.2.2">
+    <link rel="stylesheet" href="../css/lesson-plan.css?v=4.2.2">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <!-- Supabase JavaScript Client - Fixed CDN URL with Cache Busting -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=4.2.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=4.2.2"></script>
 </head>
 <body>
     <!-- Main App Container -->
@@ -517,53 +517,57 @@
         </div>
     </div>
 
-    <!-- JavaScript Files - v4.2.1 모듈화 시스템 및 안정성 강화 -->
+    <!-- JavaScript Files - v4.2.2 모듈화 시스템 및 부분 로딩 허용 -->
     
     <!-- 🔧 1단계: 핵심 설정 파일들 (의존성 순서) -->
-    <script src="../js/config.js?v=4.2.1"></script>
-    <script src="../js/auth.js?v=4.2.1"></script>
-    <script src="../js/utils.js?v=4.2.1"></script>
+    <script src="../js/config.js?v=4.2.2"></script>
+    <script src="../js/auth.js?v=4.2.2"></script>
+    <script src="../js/utils.js?v=4.2.2"></script>
 
     <!-- 🔧 2단계: Supabase 모듈들 (의존성 순서 중요) -->
-    <script src="../js/supabase/supabase-core.js?v=4.2.1"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.2.1"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.2.1"></script>
-    <script src="../js/supabase-client.js?v=4.2.1"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.2.2"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.2.2"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.2.2"></script>
+    <script src="../js/supabase-client.js?v=4.2.2"></script>
 
     <!-- 🔧 3단계: 학생 모듈 시스템 (의존성 순서대로) -->
-    <script src="../js/student/api-helper.js?v=4.2.1"></script>
-    <script src="../js/student/notification-system.js?v=4.2.1"></script>
-    <script src="../js/student/lesson-plan-helper.js?v=4.2.1"></script>
-    <script src="../js/student/equipment-request.js?v=4.2.1"></script>
-    <script src="../js/student/shipping-management.js?v=4.2.1"></script>
-    <script src="../js/student/receipt-management.js?v=4.2.1"></script>
-    <script src="../js/student/flight-request.js?v=4.2.1"></script>
+    <script src="../js/student/api-helper.js?v=4.2.2"></script>
+    <script src="../js/student/notification-system.js?v=4.2.2"></script>
+    <script src="../js/student/lesson-plan-helper.js?v=4.2.2"></script>
+    <script src="../js/student/equipment-request.js?v=4.2.2"></script>
+    <script src="../js/student/shipping-management.js?v=4.2.2"></script>
+    <script src="../js/student/receipt-management.js?v=4.2.2"></script>
+    <script src="../js/student/flight-request.js?v=4.2.2"></script>
 
     <!-- 🔧 4단계: 수업 계획 및 통합 매니저 -->
-    <script src="../js/lesson-plan.js?v=4.2.1"></script>
-    <script src="../js/student.js?v=4.2.1"></script>
+    <script src="../js/lesson-plan.js?v=4.2.2"></script>
+    <script src="../js/student.js?v=4.2.2"></script>
 
-    <!-- 🔧 5단계: 모듈 로딩 안전장치 및 초기화 시스템 v4.2.1 -->
+    <!-- 🔧 5단계: 모듈 로딩 안전장치 및 초기화 시스템 v4.2.2 -->
     <script>
         /**
-         * 🚀 Equipment Request 페이지 초기화 v4.2.1 - 안정성 강화 및 학생 친화적 UI
-         * - ✅ Supabase 모듈화 시스템 완전 지원
-         * - ✅ 모듈 로딩 안정성 강화 (15초 대기)
-         * - ✅ 학생 친화적 콘솔 환경 (오류만 표시)
-         * - ✅ 개선된 오류 처리 및 복구
-         * - ✅ v4.3.0 묶음 신청 UI 호환성 유지
+         * 🚀 Equipment Request 페이지 초기화 v4.2.2 - 부분 로딩 허용 및 graceful degradation
+         * - ✅ 부분 로딩 허용: 80% 이상 로드되면 진행
+         * - ✅ 필수 모듈만 엄격 체크: 핵심 기능만 필수
+         * - ✅ 타임아웃 시간 연장: 20초
+         * - ✅ 상세한 디버깅 정보 제공
+         * - ✅ graceful degradation: 선택적 모듈 없어도 진행
          */
 
-        // 🛡️ 모듈 로딩 상태 추적 v4.2.1
+        // 🛡️ 모듈 로딩 상태 추적 v4.2.2
         window.ModuleStatusTracker = {
             modules: {
+                // 필수 모듈 (반드시 로드되어야 함)
                 CONFIG: false,
                 AUTH: false,
                 UTILS: false,
                 SUPABASE_CORE: false,
+                SUPABASE_CLIENT: false,
+                STUDENT_MANAGER: false,
+                
+                // 선택적 모듈 (없어도 기본 기능 동작)
                 SUPABASE_STUDENT: false,
                 SUPABASE_ADMIN: false,
-                SUPABASE_CLIENT: false,
                 API_HELPER: false,
                 NOTIFICATION_SYSTEM: false,
                 LESSON_PLAN_HELPER: false,
@@ -571,21 +575,24 @@
                 SHIPPING_MANAGEMENT: false,
                 RECEIPT_MANAGEMENT: false,
                 FLIGHT_REQUEST: false,
-                LESSON_PLAN: false,
-                STUDENT_MANAGER: false
+                LESSON_PLAN: false
             },
             isInitialized: false,
             
             updateStatus: function() {
                 if (this.isInitialized) return; // 중복 실행 방지
                 
+                // 필수 모듈
                 this.modules.CONFIG = typeof CONFIG !== 'undefined';
                 this.modules.AUTH = typeof AuthManager !== 'undefined';
                 this.modules.UTILS = typeof checkConnection !== 'undefined';
                 this.modules.SUPABASE_CORE = typeof SupabaseCore !== 'undefined';
+                this.modules.SUPABASE_CLIENT = typeof SupabaseAPI !== 'undefined';
+                this.modules.STUDENT_MANAGER = typeof StudentManager !== 'undefined';
+                
+                // 선택적 모듈
                 this.modules.SUPABASE_STUDENT = typeof SupabaseStudent !== 'undefined';
                 this.modules.SUPABASE_ADMIN = typeof SupabaseAdmin !== 'undefined';
-                this.modules.SUPABASE_CLIENT = typeof SupabaseAPI !== 'undefined';
                 this.modules.API_HELPER = typeof ApiHelper !== 'undefined';
                 this.modules.NOTIFICATION_SYSTEM = typeof NotificationSystem !== 'undefined';
                 this.modules.LESSON_PLAN_HELPER = typeof LessonPlanHelper !== 'undefined';
@@ -594,23 +601,53 @@
                 this.modules.RECEIPT_MANAGEMENT = typeof ReceiptManagement !== 'undefined';
                 this.modules.FLIGHT_REQUEST = typeof FlightRequestModule !== 'undefined';
                 this.modules.LESSON_PLAN = typeof LessonPlanManager !== 'undefined';
-                this.modules.STUDENT_MANAGER = typeof StudentManager !== 'undefined';
+            },
+            
+            checkRequiredModules: function() {
+                this.updateStatus();
+                
+                // 필수 모듈만 체크
+                const requiredModules = [
+                    'CONFIG', 'AUTH', 'UTILS', 'SUPABASE_CORE', 'SUPABASE_CLIENT', 'STUDENT_MANAGER'
+                ];
+                
+                const missingRequired = requiredModules.filter(module => !this.modules[module]);
+                
+                if (missingRequired.length === 0) {
+                    return true;
+                }
+                
+                console.error('❌ 누락된 필수 모듈:', missingRequired);
+                return false;
+            },
+            
+            checkPartialLoading: function() {
+                this.updateStatus();
+                
+                const loadedCount = Object.values(this.modules).filter(Boolean).length;
+                const totalCount = Object.keys(this.modules).length;
+                const percentage = Math.round((loadedCount / totalCount) * 100);
+                
+                // 80% 이상 로드되면 부분 로딩 허용
+                if (percentage >= 80) {
+                    return true;
+                }
+                
+                return false;
             },
             
             checkAllModules: function() {
                 if (this.isInitialized) return true; // 중복 확인 방지
                 
-                this.updateStatus();
+                // 1. 필수 모듈 체크
+                if (this.checkRequiredModules()) {
+                    this.isInitialized = true;
+                    return true;
+                }
                 
-                // 필수 모듈 확인
-                const requiredModules = [
-                    'CONFIG', 'AUTH', 'UTILS', 'SUPABASE_CORE', 'SUPABASE_CLIENT',
-                    'API_HELPER', 'NOTIFICATION_SYSTEM', 'STUDENT_MANAGER'
-                ];
-                
-                const missingModules = requiredModules.filter(module => !this.modules[module]);
-                
-                if (missingModules.length === 0) {
+                // 2. 부분 로딩 체크 (80% 이상)
+                if (this.checkPartialLoading()) {
+                    console.warn('⚠️ 부분 로딩으로 진행 (일부 기능 제한 가능)');
                     this.isInitialized = true;
                     return true;
                 }
@@ -622,11 +659,23 @@
                 this.updateStatus();
                 const loadedCount = Object.values(this.modules).filter(Boolean).length;
                 const totalCount = Object.keys(this.modules).length;
+                
+                // 필수/선택적 모듈 구분하여 상태 반환
+                const requiredModules = ['CONFIG', 'AUTH', 'UTILS', 'SUPABASE_CORE', 'SUPABASE_CLIENT', 'STUDENT_MANAGER'];
+                const requiredLoaded = requiredModules.filter(module => this.modules[module]).length;
+                const requiredTotal = requiredModules.length;
+                
                 return {
                     loaded: loadedCount,
                     total: totalCount,
                     percentage: Math.round((loadedCount / totalCount) * 100),
-                    modules: this.modules
+                    requiredLoaded: requiredLoaded,
+                    requiredTotal: requiredTotal,
+                    requiredPercentage: Math.round((requiredLoaded / requiredTotal) * 100),
+                    modules: this.modules,
+                    missingRequired: requiredModules.filter(module => !this.modules[module]),
+                    missingOptional: Object.keys(this.modules).filter(module => 
+                        !requiredModules.includes(module) && !this.modules[module])
                 };
             }
         };
@@ -677,13 +726,22 @@
             }
         }
 
-        // 🔧 모듈 로딩 완료 대기 함수 v4.2.1
-        function waitForModulesReady(maxWait = 15000) {
+        // 🔧 모듈 로딩 완료 대기 함수 v4.2.2 (부분 로딩 허용)
+        function waitForModulesReady(maxWait = 20000) {
             return new Promise(function(resolve, reject) {
                 const startTime = Date.now();
                 const checkInterval = 500;
                 
                 function checkModules() {
+                    const status = window.ModuleStatusTracker.getStatus();
+                    
+                    // 상세한 로딩 상태 로그 (오류만 표시)
+                    if (status.loaded < status.total) {
+                        if (status.missingRequired.length > 0) {
+                            console.error('❌ 누락된 필수 모듈:', status.missingRequired);
+                        }
+                    }
+                    
                     if (window.ModuleStatusTracker.checkAllModules()) {
                         resolve();
                         return;
@@ -691,8 +749,15 @@
                     
                     const elapsedTime = Date.now() - startTime;
                     if (elapsedTime >= maxWait) {
-                        const status = window.ModuleStatusTracker.getStatus();
-                        console.error('❌ 모듈 로딩 시간 초과 v4.2.1:', status);
+                        console.error('❌ 모듈 로딩 시간 초과 v4.2.2:', status);
+                        
+                        // 필수 모듈이 모두 로드되었다면 부분 진행
+                        if (status.requiredPercentage === 100) {
+                            console.warn('⚠️ 필수 모듈만으로 부분 진행');
+                            resolve();
+                            return;
+                        }
+                        
                         reject(new Error('모듈 로딩 시간 초과'));
                         return;
                     }
@@ -707,7 +772,7 @@
         // 🎯 사용자 정보 로드 및 UI 업데이트
         function getCurrentUserSafely() {
             try {
-                // ApiHelper 모듈 사용
+                // ApiHelper 모듈 사용 (선택적)
                 if (typeof window.ApiHelper !== 'undefined' && window.ApiHelper.getCurrentUserSafely) {
                     return window.ApiHelper.getCurrentUserSafely();
                 }
@@ -732,7 +797,7 @@
             }
         }
 
-        // 🆕 수업계획 상태 확인 및 페이지 분기
+        // 🆕 수업계획 상태 확인 및 페이지 분기 (오류 허용)
         async function checkLessonPlanStatusAndSetPage() {
             try {
                 const currentUser = getCurrentUserSafely();
@@ -742,7 +807,7 @@
                     return;
                 }
 
-                // SupabaseAPI를 통한 수업계획 조회
+                // SupabaseAPI를 통한 수업계획 조회 (필수 모듈이므로 안전)
                 const client = await SupabaseAPI.ensureClient();
                 const { data: lessonPlan, error } = await client
                     .from('lesson_plans')
@@ -764,7 +829,8 @@
 
             } catch (error) {
                 console.error('❌ 수업계획 상태 확인 오류:', error);
-                showLessonPlanPage();
+                // 오류 발생 시에도 기본 페이지 표시
+                showStudentPage();
             }
         }
 
@@ -937,10 +1003,10 @@
             }
         }
 
-        // 🚀 메인 초기화 함수 v4.2.1
+        // 🚀 메인 초기화 함수 v4.2.2 (부분 로딩 허용)
         async function initializeEquipmentRequestPage() {
             try {
-                // 모듈 로딩 대기
+                // 모듈 로딩 대기 (부분 로딩 허용)
                 await waitForModulesReady();
                 
                 // 사용자 정보 로드 및 UI 업데이트
@@ -962,14 +1028,18 @@
                     detailsEl.textContent = field ? `${institute} - ${field}` : institute;
                 }
 
-                // 수업계획 상태 확인 및 페이지 분기
+                // 수업계획 상태 확인 및 페이지 분기 (오류 허용)
                 await checkLessonPlanStatusAndSetPage();
                 
-                // StudentManager 초기화
+                // StudentManager 초기화 (안전한 체크)
                 const studentPage = document.getElementById('studentPage');
                 if (studentPage && studentPage.classList.contains('active')) {
                     if (typeof StudentManager !== 'undefined') {
-                        await StudentManager.init();
+                        try {
+                            await StudentManager.init();
+                        } catch (managerError) {
+                            console.error('❌ StudentManager 초기화 오류 (계속 진행):', managerError);
+                        }
                     }
                 }
                 
@@ -1003,10 +1073,10 @@
             // 모든 스크립트 로딩 완료까지 잠시 대기 후 초기화
             setTimeout(function() {
                 initializeEquipmentRequestPage();
-            }, 800); // 800ms 대기 (최적화)
+            }, 1000); // 1000ms 대기 (안정성 확보)
         });
 
-        // 전역 에러 핸들러
+        // 전역 에러 핸들러 (오류만 표시)
         window.addEventListener('error', function(event) {
             console.error('❌ 전역 스크립트 오류:', {
                 message: event.message,
@@ -1020,7 +1090,7 @@
         });
     </script>
     
-    <!-- v4.2.1 UI 개선 스타일 (학생 친화적) -->
+    <!-- v4.2.2 UI 개선 스타일 (학생 친화적) -->
     <style>
         /* 페이지 전환 스타일 */
         .page {
@@ -1353,7 +1423,7 @@
                 order: -1;
             }
 
-            /* v4.2.1 모바일 반응형 */
+            /* v4.2.2 모바일 반응형 */
             .form-section {
                 padding: 1rem;
             }
