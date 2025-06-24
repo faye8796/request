@@ -1,6 +1,7 @@
-// 🚀 Supabase Client 통합 매니저 v4.2.0
+// 🚀 Supabase Client 통합 매니저 v4.2.1
 // 세종학당 문화인턴 지원 시스템 - 모듈화된 Supabase API 통합 관리자
 // 3개 모듈(Core, Student, Admin)을 하나로 통합하여 기존 코드와 100% 호환성 보장
+// 🔧 v4.2.1: 모듈 로딩 타이밍 오류 수정 및 안정성 강화
 
 /**
  * 모듈화된 Supabase API 통합 매니저
@@ -20,6 +21,11 @@
  * - 지연 로딩: 사용할 때만 모듈 활성화
  * - 메모리 효율성: 모듈별 독립적 관리
  * - 개발 편의성: 기능별 모듈 분리로 유지보수 향상
+ * 
+ * 🔧 v4.2.1 개선사항:
+ * - 모듈 로딩 타이밍 오류 수정
+ * - getSystemSettings 안정성 강화
+ * - 초기화 대기 로직 개선
  */
 
 const SupabaseAPI = {
@@ -62,7 +68,7 @@ const SupabaseAPI = {
         }
 
         this._isInitializing = true;
-        console.log('🚀 SupabaseAPI 통합 매니저 초기화 시작 v4.2.0...');
+        console.log('🚀 SupabaseAPI 통합 매니저 초기화 시작 v4.2.1...');
 
         try {
             // 1. 모듈 의존성 확인 및 준비
@@ -167,7 +173,7 @@ const SupabaseAPI = {
     },
 
     /**
-     * 안전한 모듈 호출 래퍼
+     * 🔧 v4.2.1 안전한 모듈 호출 래퍼 - 강화된 버전
      * @param {string} moduleName - 모듈명 (core, student, admin)
      * @param {string} methodName - 메소드명
      * @param {Array} args - 인수 배열
@@ -175,7 +181,11 @@ const SupabaseAPI = {
     async _callModule(moduleName, methodName, ...args) {
         // 초기화 확인
         if (!this._moduleStatus.initialized) {
-            await this.init();
+            console.log(`⏳ ${moduleName}.${methodName} 호출 전 초기화 대기...`);
+            const initSuccess = await this.init();
+            if (!initSuccess) {
+                throw new Error(`${moduleName}.${methodName} 호출 실패: 초기화 실패`);
+            }
         }
 
         const module = this._modules[moduleName];
@@ -188,6 +198,37 @@ const SupabaseAPI = {
         }
 
         return await module[methodName](...args);
+    },
+
+    /**
+     * 🆕 v4.2.1 안전한 모듈 대기 함수
+     * 특정 모듈이 로드될 때까지 대기
+     */
+    async _waitForSpecificModules(moduleNames, maxWaitSeconds = 5) {
+        console.log(`⏳ 특정 모듈 로딩 대기: [${moduleNames.join(', ')}]`);
+        
+        const maxWaitTime = maxWaitSeconds * 1000;
+        const checkInterval = 200;
+        let waitTime = 0;
+
+        while (waitTime < maxWaitTime) {
+            const allReady = moduleNames.every(moduleName => {
+                return !!(this._modules[moduleName] || window[`Supabase${moduleName.charAt(0).toUpperCase() + moduleName.slice(1)}`]);
+            });
+
+            if (allReady) {
+                // 모듈 참조 업데이트
+                this._setupModuleReferences();
+                console.log(`✅ 요청된 모듈 로딩 완료: [${moduleNames.join(', ')}]`);
+                return true;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
+            waitTime += checkInterval;
+        }
+
+        console.warn(`⚠️ 모듈 로딩 타임아웃: [${moduleNames.join(', ')}]`);
+        return false;
     },
 
     // ===================
@@ -367,6 +408,17 @@ const SupabaseAPI = {
         } else if (this._modules.admin) {
             return await this._callModule('admin', 'getAllFieldBudgetSettings');
         }
+        
+        // 모듈 로딩 대기 시도
+        const modulesReady = await this._waitForSpecificModules(['student', 'admin'], 3);
+        if (modulesReady) {
+            if (this._modules.student) {
+                return await this._callModule('student', 'getAllFieldBudgetSettings');
+            } else if (this._modules.admin) {
+                return await this._callModule('admin', 'getAllFieldBudgetSettings');
+            }
+        }
+        
         throw new Error('예산 설정 조회 모듈이 로드되지 않았습니다.');
     },
 
@@ -375,14 +427,87 @@ const SupabaseAPI = {
         return await this._callModule('student', 'canEditLessonPlan');
     },
 
+    /**
+     * 🔧 v4.2.1 강화된 시스템 설정 조회
+     * 모듈 로딩 대기 및 안전한 에러 처리 추가
+     */
     async getSystemSettings() {
-        // Student와 Admin 모듈 모두에 있는 함수 - Student 우선 시도
+        console.log('🔍 시스템 설정 조회 시작...');
+        
+        // 1단계: 기본 초기화 확인
+        if (!this._moduleStatus.initialized) {
+            console.log('⏳ SupabaseAPI 초기화 대기 중...');
+            const initSuccess = await this.init();
+            if (!initSuccess) {
+                throw new Error('SupabaseAPI 초기화 실패');
+            }
+        }
+
+        // 2단계: 이미 로드된 모듈 확인
         if (this._modules.student) {
+            console.log('✅ Student 모듈 사용하여 시스템 설정 조회');
             return await this._callModule('student', 'getSystemSettings');
         } else if (this._modules.admin) {
+            console.log('✅ Admin 모듈 사용하여 시스템 설정 조회');
             return await this._callModule('admin', 'getSystemSettings');
         }
-        throw new Error('시스템 설정 조회 모듈이 로드되지 않았습니다.');
+        
+        // 3단계: 모듈 로딩 대기 시도 (5초)
+        console.log('⏳ Student/Admin 모듈 로딩 대기 중...');
+        const modulesReady = await this._waitForSpecificModules(['student', 'admin'], 5);
+        
+        if (modulesReady) {
+            if (this._modules.student) {
+                console.log('✅ Student 모듈 로드 완료 - 시스템 설정 조회');
+                return await this._callModule('student', 'getSystemSettings');
+            } else if (this._modules.admin) {
+                console.log('✅ Admin 모듈 로드 완료 - 시스템 설정 조회');
+                return await this._callModule('admin', 'getSystemSettings');
+            }
+        }
+        
+        // 4단계: Core 모듈을 통한 직접 조회 시도 (fallback)
+        console.warn('⚠️ Student/Admin 모듈 로딩 실패 - Core 모듈 직접 조회 시도');
+        
+        if (this._modules.core && this._modules.core.supabase) {
+            try {
+                const result = await this._modules.core.safeApiCall('시스템 설정 조회 (fallback)', async () => {
+                    return await this._modules.core.supabase
+                        .from('system_settings')
+                        .select('setting_key, setting_value');
+                });
+                
+                if (result.success && result.data) {
+                    console.log('✅ Core 모듈 직접 조회 성공');
+                    // 설정 데이터를 객체로 변환
+                    const settings = {};
+                    result.data.forEach(setting => {
+                        settings[setting.setting_key] = setting.setting_value;
+                    });
+                    return settings;
+                }
+            } catch (coreError) {
+                console.warn('⚠️ Core 모듈 직접 조회 실패:', coreError.message);
+            }
+        }
+        
+        // 5단계: 최종 실패 - 기본값 반환
+        console.error('❌ 모든 시스템 설정 조회 방법 실패 - 기본값 사용');
+        
+        // CONFIG에서 기본값 반환
+        if (window.CONFIG && window.CONFIG.APP && window.CONFIG.APP.DEFAULT_SYSTEM_SETTINGS) {
+            console.log('🔄 CONFIG 기본 시스템 설정 사용');
+            return window.CONFIG.APP.DEFAULT_SYSTEM_SETTINGS;
+        }
+        
+        // 마지막 fallback
+        return {
+            test_mode: false,
+            ignore_deadline: false,
+            lesson_plan_deadline: '2025-12-31',
+            lesson_plan_time: '23:59',
+            notice_message: ''
+        };
     },
 
     // ===================
@@ -520,7 +645,7 @@ const SupabaseAPI = {
         
         return {
             status: this._moduleStatus.initialized ? 'healthy' : 'initializing',
-            version: 'v4.2.0',
+            version: 'v4.2.1',
             architecture: 'modular',
             compatibility: '100% legacy compatible',
             modules: stats.moduleStatus,
@@ -528,7 +653,12 @@ const SupabaseAPI = {
                 totalSize: 'optimized',
                 loadingStrategy: 'lazy',
                 memoryEfficiency: 'high'
-            }
+            },
+            fixes: [
+                'Module loading timing issues resolved',
+                'getSystemSettings robustness enhanced',
+                'Graceful degradation for module failures'
+            ]
         };
     }
 };
@@ -539,7 +669,7 @@ const SupabaseAPI = {
 
 // 자동 초기화 (기존 코드와 호환성 유지)
 (async () => {
-    console.log('🚀 SupabaseAPI 통합 매니저 v4.2.0 시작...');
+    console.log('🚀 SupabaseAPI 통합 매니저 v4.2.1 시작...');
     
     // CONFIG 로드 대기 (기존 코드와 동일한 패턴)
     let waitCount = 0;
@@ -574,11 +704,13 @@ if (typeof window !== 'undefined') {
         modules: SupabaseAPI._modules,
         status: SupabaseAPI._moduleStatus,
         getStats: () => SupabaseAPI.getModuleStats(),
-        getHealth: () => SupabaseAPI.getHealthReport()
+        getHealth: () => SupabaseAPI.getHealthReport(),
+        testModuleLoading: () => SupabaseAPI._waitForSpecificModules(['student', 'admin'], 5)
     };
 }
 
-console.log('🎯 SupabaseAPI 통합 매니저 v4.2.0 로드 완료');
+console.log('🎯 SupabaseAPI 통합 매니저 v4.2.1 로드 완료');
 console.log('📦 모듈화 아키텍처: Core(5.6KB) + Student(32.9KB) + Admin(41.5KB)');
 console.log('🔧 기존 코드 100% 호환성 보장 - 수정 불필요');
 console.log('🚀 성능 최적화: 지연 로딩 + 메모리 효율성 + 모듈별 관리');
+console.log('🔧 v4.2.1 개선: 모듈 로딩 타이밍 오류 수정 및 안정성 강화');
