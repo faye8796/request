@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>문화교구 신청 - 세종학당 문화인턴 지원 시스템</title>
     
-    <!-- CSS Files - Updated Cache Busting ---> 
-    <link rel="stylesheet" href="../css/main.css?v=4.2.2">
-    <link rel="stylesheet" href="../css/student.css?v=4.2.2">
-    <link rel="stylesheet" href="../css/lesson-plan.css?v=4.2.2">
+    <!-- CSS Files - Updated Cache Busting --> 
+    <link rel="stylesheet" href="../css/main.css?v=4.3.1">
+    <link rel="stylesheet" href="../css/student.css?v=4.3.1">
+    <link rel="stylesheet" href="../css/lesson-plan.css?v=4.3.1">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <!-- Supabase JavaScript Client - Fixed CDN URL with Cache Busting -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=4.2.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=4.3.1"></script>
 </head>
 <body>
     <!-- Main App Container -->
@@ -112,7 +112,7 @@
             </div>
         </div>
 
-        <!-- 학생 대시보드 (교구 신청) -->
+        <!-- 🎨 학생 대시보드 (교구 신청) - 개선된 UI -->
         <div id="studentPage" class="page active">
             <header class="header">
                 <div class="header-content">
@@ -155,13 +155,86 @@
                     </div>
                 </div>
 
-                <div id="studentApplications" class="applications-grid">
-                    <!-- 동적으로 생성될 신청 내역 -->
+                <!-- 🆕 개선된 UI: 온라인/오프라인 분리 표시 -->
+                <div id="applicationsContainer" class="applications-container">
+                    
+                    <!-- 🌐 온라인 대리구매 섹션 -->
+                    <div class="applications-section" id="onlineSection">
+                        <div class="section-header">
+                            <div class="section-title">
+                                <i data-lucide="shopping-cart" class="section-icon online"></i>
+                                <h3>온라인 대리구매</h3>
+                                <span class="section-subtitle">관리자가 대신 구매하여 배송</span>
+                            </div>
+                            <div class="section-stats" id="onlineStats">
+                                <span class="stat-item">
+                                    <span class="stat-number" id="onlineCount">0</span>
+                                    <span class="stat-label">건</span>
+                                </span>
+                                <span class="stat-item">
+                                    <span class="stat-number" id="onlineTotalPrice">0원</span>
+                                    <span class="stat-label">총액</span>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div id="onlineApplications" class="applications-grid">
+                            <!-- 동적으로 생성될 온라인 신청 내역 -->
+                        </div>
+                        
+                        <div id="noOnlineApplications" class="empty-state-mini" style="display: none;">
+                            <i data-lucide="shopping-cart" class="empty-icon-small"></i>
+                            <p>온라인 구매 신청이 없습니다</p>
+                            <small>관리자가 대신 구매해드리는 방식입니다</small>
+                        </div>
+                    </div>
+
+                    <!-- 🏪 오프라인 직접구매 섹션 -->
+                    <div class="applications-section" id="offlineSection">
+                        <div class="section-header">
+                            <div class="section-title">
+                                <i data-lucide="store" class="section-icon offline"></i>
+                                <h3>오프라인 직접구매</h3>
+                                <span class="section-subtitle">직접 구매 후 영수증 제출로 정산</span>
+                            </div>
+                            <div class="section-stats" id="offlineStats">
+                                <span class="stat-item">
+                                    <span class="stat-number" id="offlineCount">0</span>
+                                    <span class="stat-label">건</span>
+                                </span>
+                                <span class="stat-item">
+                                    <span class="stat-number" id="offlineTotalPrice">0원</span>
+                                    <span class="stat-label">총액</span>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div id="offlineApplications" class="applications-grid">
+                            <!-- 동적으로 생성될 오프라인 신청 내역 -->
+                        </div>
+                        
+                        <div id="noOfflineApplications" class="empty-state-mini" style="display: none;">
+                            <i data-lucide="store" class="empty-icon-small"></i>
+                            <p>오프라인 구매 신청이 없습니다</p>
+                            <small>본인이 직접 구매하는 방식입니다</small>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- 전체 빈 상태 (둘 다 없을 때) -->
                 <div id="noApplications" class="empty-state" style="display: none;">
                     <i data-lucide="package" class="empty-icon"></i>
-                    <p>아직 신청한 교구가 없습니다.</p>
+                    <h3>아직 신청한 교구가 없습니다</h3>
+                    <p>새 교구 신청 버튼을 클릭하여 첫 번째 교구를 신청해보세요</p>
+                    <button class="btn primary empty-state-btn" id="emptyStateNewBtn">
+                        <i data-lucide="plus"></i>
+                        첫 교구 신청하기
+                    </button>
+                </div>
+
+                <!-- 🆕 숨겨진 기존 컨테이너 (하위 호환성) -->
+                <div id="studentApplications" class="applications-grid" style="display: none;">
+                    <!-- 기존 코드와의 호환성을 위해 유지 -->
                 </div>
             </main>
         </div>
@@ -517,44 +590,45 @@
         </div>
     </div>
 
-    <!-- JavaScript Files - v4.2.2 모듈화 시스템 및 부분 로딩 허용 -->
+    <!-- JavaScript Files - v4.3.1 모듈화 시스템 및 부분 로딩 허용 -->
     
     <!-- 🔧 1단계: 핵심 설정 파일들 (의존성 순서) -->
-    <script src="../js/config.js?v=4.2.2"></script>
-    <script src="../js/auth.js?v=4.2.2"></script>
-    <script src="../js/utils.js?v=4.2.2"></script>
+    <script src="../js/config.js?v=4.3.1"></script>
+    <script src="../js/auth.js?v=4.3.1"></script>
+    <script src="../js/utils.js?v=4.3.1"></script>
 
     <!-- 🔧 2단계: Supabase 모듈들 (의존성 순서 중요) -->
-    <script src="../js/supabase/supabase-core.js?v=4.2.2"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.2.2"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.2.2"></script>
-    <script src="../js/supabase-client.js?v=4.2.2"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.3.1"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.3.1"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.3.1"></script>
+    <script src="../js/supabase-client.js?v=4.3.1"></script>
 
     <!-- 🔧 3단계: 학생 모듈 시스템 (의존성 순서대로) -->
-    <script src="../js/student/api-helper.js?v=4.2.2"></script>
-    <script src="../js/student/notification-system.js?v=4.2.2"></script>
-    <script src="../js/student/lesson-plan-helper.js?v=4.2.2"></script>
-    <script src="../js/student/equipment-request.js?v=4.2.2"></script>
-    <script src="../js/student/shipping-management.js?v=4.2.2"></script>
-    <script src="../js/student/receipt-management.js?v=4.2.2"></script>
-    <script src="../js/student/flight-request.js?v=4.2.2"></script>
+    <script src="../js/student/api-helper.js?v=4.3.1"></script>
+    <script src="../js/student/notification-system.js?v=4.3.1"></script>
+    <script src="../js/student/lesson-plan-helper.js?v=4.3.1"></script>
+    <script src="../js/student/equipment-request.js?v=4.3.1"></script>
+    <script src="../js/student/shipping-management.js?v=4.3.1"></script>
+    <script src="../js/student/receipt-management.js?v=4.3.1"></script>
+    <script src="../js/student/flight-request.js?v=4.3.1"></script>
 
     <!-- 🔧 4단계: 수업 계획 및 통합 매니저 -->
-    <script src="../js/lesson-plan.js?v=4.2.2"></script>
-    <script src="../js/student.js?v=4.2.2"></script>
+    <script src="../js/lesson-plan.js?v=4.3.1"></script>
+    <script src="../js/student.js?v=4.3.1"></script>
 
-    <!-- 🔧 5단계: 모듈 로딩 안전장치 및 초기화 시스템 v4.2.2 -->
+    <!-- 🔧 5단계: 모듈 로딩 안전장치 및 초기화 시스템 v4.3.1 -->
     <script>
         /**
-         * 🚀 Equipment Request 페이지 초기화 v4.2.2 - 부분 로딩 허용 및 graceful degradation
+         * 🚀 Equipment Request 페이지 초기화 v4.3.1 - 개선된 UI 적용
          * - ✅ 부분 로딩 허용: 80% 이상 로드되면 진행
          * - ✅ 필수 모듈만 엄격 체크: 핵심 기능만 필수
          * - ✅ 타임아웃 시간 연장: 20초
          * - ✅ 상세한 디버깅 정보 제공
          * - ✅ graceful degradation: 선택적 모듈 없어도 진행
+         * - 🆕 온라인/오프라인 분리 UI 적용
          */
 
-        // 🛡️ 모듈 로딩 상태 추적 v4.2.2
+        // 🛡️ 모듈 로딩 상태 추적 v4.3.1
         window.ModuleStatusTracker = {
             modules: {
                 // 필수 모듈 (반드시 로드되어야 함)
@@ -726,7 +800,7 @@
             }
         }
 
-        // 🔧 모듈 로딩 완료 대기 함수 v4.2.2 (부분 로딩 허용)
+        // 🔧 모듈 로딩 완료 대기 함수 v4.3.1 (부분 로딩 허용)
         function waitForModulesReady(maxWait = 20000) {
             return new Promise(function(resolve, reject) {
                 const startTime = Date.now();
@@ -749,7 +823,7 @@
                     
                     const elapsedTime = Date.now() - startTime;
                     if (elapsedTime >= maxWait) {
-                        console.error('❌ 모듈 로딩 시간 초과 v4.2.2:', status);
+                        console.error('❌ 모듈 로딩 시간 초과 v4.3.1:', status);
                         
                         // 필수 모듈이 모두 로드되었다면 부분 진행
                         if (status.requiredPercentage === 100) {
@@ -910,9 +984,20 @@
                     }
                 });
             }
+
+            // 🆕 v4.3.1 전체 빈 상태에서 신청 버튼
+            const emptyStateNewBtn = document.getElementById('emptyStateNewBtn');
+            if (emptyStateNewBtn) {
+                emptyStateNewBtn.addEventListener('click', function() {
+                    const newApplicationBtn = document.getElementById('newApplicationBtn');
+                    if (newApplicationBtn) {
+                        newApplicationBtn.click();
+                    }
+                });
+            }
         }
 
-        // 🆕 v4.3.0 묶음 신청 UI 이벤트 설정 (호환성 유지)
+        // 🆕 v4.3.1 묶음 신청 UI 이벤트 설정 (호환성 유지)
         function setupBundleModalEvents() {
             try {
                 // 구매 방식 라디오 버튼 이벤트
@@ -940,7 +1025,7 @@
             }
         }
 
-        // v4.3.0 호환성 함수들
+        // v4.3.1 호환성 함수들
         window.toggleBundlePurchaseInfo = function(method) {
             const onlineInfo = document.getElementById('onlinePurchaseInfo');
             const offlineInfo = document.getElementById('offlinePurchaseInfo');
@@ -1003,9 +1088,11 @@
             }
         }
 
-        // 🚀 메인 초기화 함수 v4.2.2 (부분 로딩 허용)
+        // 🚀 메인 초기화 함수 v4.3.1 (부분 로딩 허용)
         async function initializeEquipmentRequestPage() {
             try {
+                console.log('🎨 v4.3.1 개선된 UI 초기화 시작');
+                
                 // 모듈 로딩 대기 (부분 로딩 허용)
                 await waitForModulesReady();
                 
@@ -1031,6 +1118,9 @@
                 // 수업계획 상태 확인 및 페이지 분기 (오류 허용)
                 await checkLessonPlanStatusAndSetPage();
                 
+                // 🆕 v4.3.1 개선된 UI용 렌더링 함수 오버라이드
+                setupImprovedUI();
+                
                 // StudentManager 초기화 (안전한 체크)
                 const studentPage = document.getElementById('studentPage');
                 if (studentPage && studentPage.classList.contains('active')) {
@@ -1046,8 +1136,10 @@
                 // 네비게이션 설정
                 setupNavigation();
                 
-                // v4.3.0 묶음 신청 UI 이벤트 설정
+                // v4.3.1 묶음 신청 UI 이벤트 설정
                 setupBundleModalEvents();
+                
+                console.log('✅ v4.3.1 개선된 UI 초기화 완료');
                 
             } catch (error) {
                 console.error('❌ 페이지 초기화 실패:', error);
@@ -1063,8 +1155,119 @@
             }
         }
 
+        // 🎨 v4.3.1 개선된 UI 설정 함수
+        function setupImprovedUI() {
+            try {
+                console.log('🎨 v4.3.1 개선된 UI 렌더링 함수 설정');
+                
+                // EquipmentRequestModule이 로드되었다면 렌더링 함수 오버라이드
+                if (typeof window.EquipmentRequestModule !== 'undefined') {
+                    
+                    // 기존 renderApplications 함수를 새로운 버전으로 교체
+                    window.EquipmentRequestModule.renderApplicationsGrouped = function(applications) {
+                        try {
+                            console.log('🎨 개선된 UI로 교구신청 렌더링:', applications);
+                            
+                            const onlineContainer = document.getElementById('onlineApplications');
+                            const offlineContainer = document.getElementById('offlineApplications');
+                            const noOnlineState = document.getElementById('noOnlineApplications');
+                            const noOfflineState = document.getElementById('noOfflineApplications');
+                            const noApplicationsState = document.getElementById('noApplications');
+                            const applicationsContainer = document.getElementById('applicationsContainer');
+                            
+                            // 온라인/오프라인으로 분류
+                            const onlineApplications = applications.filter(app => app.purchase_type === 'online');
+                            const offlineApplications = applications.filter(app => app.purchase_type === 'offline');
+                            
+                            // 전체 빈 상태 처리
+                            if (!applications || applications.length === 0) {
+                                if (applicationsContainer) applicationsContainer.style.display = 'none';
+                                if (noApplicationsState) noApplicationsState.style.display = 'block';
+                                return;
+                            }
+
+                            if (applicationsContainer) applicationsContainer.style.display = 'block';
+                            if (noApplicationsState) noApplicationsState.style.display = 'none';
+                            
+                            // 온라인 신청 렌더링
+                            this.renderSectionApplications('온라인', onlineApplications, onlineContainer, noOnlineState);
+                            
+                            // 오프라인 신청 렌더링
+                            this.renderSectionApplications('오프라인', offlineApplications, offlineContainer, noOfflineState);
+                            
+                            // 통계 업데이트
+                            this.updateSectionStats(onlineApplications, offlineApplications);
+                            
+                            // 아이콘 생성
+                            if (typeof lucide !== 'undefined') {
+                                lucide.createIcons();
+                            }
+
+                            // 카드 이벤트 리스너 설정
+                            this.setupCardEventListeners();
+                            
+                            console.log('✅ 개선된 UI 렌더링 완료');
+                        } catch (error) {
+                            console.error('❌ 개선된 UI 렌더링 오류:', error);
+                        }
+                    };
+
+                    // 섹션별 신청 렌더링
+                    window.EquipmentRequestModule.renderSectionApplications = function(sectionType, applications, container, emptyState) {
+                        if (!container || !emptyState) return;
+                        
+                        if (!applications || applications.length === 0) {
+                            container.innerHTML = '';
+                            emptyState.style.display = 'block';
+                            return;
+                        }
+
+                        emptyState.style.display = 'none';
+                        container.innerHTML = '';
+                        
+                        applications.forEach((application) => {
+                            const applicationCard = this.createApplicationCard(application);
+                            container.appendChild(applicationCard);
+                        });
+                    };
+
+                    // 섹션 통계 업데이트
+                    window.EquipmentRequestModule.updateSectionStats = function(onlineApplications, offlineApplications) {
+                        // 온라인 통계
+                        const onlineCount = document.getElementById('onlineCount');
+                        const onlineTotalPrice = document.getElementById('onlineTotalPrice');
+                        
+                        if (onlineCount) onlineCount.textContent = onlineApplications.length;
+                        if (onlineTotalPrice) {
+                            const total = onlineApplications.reduce((sum, app) => sum + (app.price || 0), 0);
+                            onlineTotalPrice.textContent = this.formatPrice(total);
+                        }
+                        
+                        // 오프라인 통계
+                        const offlineCount = document.getElementById('offlineCount');
+                        const offlineTotalPrice = document.getElementById('offlineTotalPrice');
+                        
+                        if (offlineCount) offlineCount.textContent = offlineApplications.length;
+                        if (offlineTotalPrice) {
+                            const total = offlineApplications.reduce((sum, app) => sum + (app.price || 0), 0);
+                            offlineTotalPrice.textContent = this.formatPrice(total);
+                        }
+                    };
+
+                    // 기존 renderApplications 함수를 새로운 버전으로 교체
+                    window.EquipmentRequestModule.renderApplications = window.EquipmentRequestModule.renderApplicationsGrouped;
+                    
+                    console.log('✅ v4.3.1 개선된 UI 렌더링 함수 설정 완료');
+                }
+            } catch (error) {
+                console.error('❌ v4.3.1 개선된 UI 설정 오류:', error);
+            }
+        }
+
         // 🎯 DOM 로드 완료 시 실행
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎨 v4.3.1 DOM 로드 완료 - 개선된 UI 적용');
+            
             // Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
@@ -1090,7 +1293,7 @@
         });
     </script>
     
-    <!-- v4.2.2 UI 개선 스타일 (학생 친화적) -->
+    <!-- 🎨 v4.3.1 개선된 UI 스타일 -->
     <style>
         /* 페이지 전환 스타일 */
         .page {
@@ -1101,7 +1304,194 @@
             display: block;
         }
         
-        /* 🆕 v4.3.0 버전 배지 (호환성 유지) */
+        /* 🎨 개선된 UI 스타일 */
+        
+        /* 전체 컨테이너 */
+        .applications-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        /* 섹션 스타일 */
+        .applications-section {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .applications-section:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 섹션 헤더 */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .section-icon.online {
+            color: #3b82f6;
+        }
+
+        .section-icon.offline {
+            color: #f59e0b;
+        }
+
+        .section-title h3 {
+            margin: 0;
+            color: #1e293b;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .section-subtitle {
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-left: 0.5rem;
+        }
+
+        /* 섹션 통계 */
+        .section-stats {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+        }
+
+        /* 미니 빈 상태 */
+        .empty-state-mini {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #64748b;
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+        }
+
+        .empty-icon-small {
+            width: 3rem;
+            height: 3rem;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state-mini p {
+            margin: 0.5rem 0;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .empty-state-mini small {
+            color: #64748b;
+        }
+
+        /* 개선된 전체 빈 상태 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #64748b;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            margin-top: 2rem;
+        }
+
+        .empty-icon {
+            width: 4rem;
+            height: 4rem;
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-state h3 {
+            margin: 1rem 0 0.5rem 0;
+            color: #475569;
+            font-size: 1.25rem;
+        }
+
+        .empty-state p {
+            margin-bottom: 2rem;
+            color: #64748b;
+        }
+
+        .empty-state-btn {
+            margin-top: 1rem;
+        }
+
+        /* 기존 카드 스타일 개선 */
+        .applications-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .application-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .application-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* 구매 방식 배지 개선 */
+        .purchase-method-badge.online {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .purchase-method-badge.offline {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: #92400e;
+            border: 1px solid #fbbf24;
+        }
+        
+        /* 🆕 v4.3.1 버전 배지 (호환성 유지) */
         .version-badge {
             display: inline-block;
             background: linear-gradient(135deg, #3b82f6, #10b981);
@@ -1114,7 +1504,7 @@
             vertical-align: middle;
         }
 
-        /* 🆕 v4.3.0 묶음 신청 모달 스타일 개선 (호환성 유지) */
+        /* 🆕 v4.3.1 묶음 신청 모달 스타일 개선 (호환성 유지) */
         .bundle-intro {
             background: linear-gradient(135deg, #f0f9ff, #ecfdf5);
             border: 1px solid #0ea5e9;
@@ -1393,8 +1783,32 @@
             padding: 0.75rem 1rem;
         }
         
-        /* 반응형 조정 */
+        /* 반응형 디자인 */
         @media (max-width: 768px) {
+            .applications-container {
+                gap: 1.5rem;
+            }
+
+            .applications-section {
+                padding: 1rem;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .section-stats {
+                align-self: stretch;
+                justify-content: space-around;
+            }
+
+            .applications-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
             .header-actions {
                 flex-direction: column;
                 gap: 8px;
@@ -1423,7 +1837,7 @@
                 order: -1;
             }
 
-            /* v4.2.2 모바일 반응형 */
+            /* v4.3.1 모바일 반응형 */
             .form-section {
                 padding: 1rem;
             }
@@ -1439,6 +1853,22 @@
 
             .feature-tag {
                 align-self: flex-start;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-title {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .section-subtitle {
+                margin-left: 0;
+            }
+
+            .stat-item {
+                align-items: flex-start;
             }
         }
     </style>
