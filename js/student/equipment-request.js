@@ -255,9 +255,131 @@ const EquipmentRequestModule = {
                 this.handleBundleSubmit();
             });
 
+            // 🆕 v4.3.0 묶음 신청 구매 방식 변경 이벤트
+            this.setupBundlePurchaseMethodEvents();
+
             console.log('✅ 교구신청 이벤트 리스너 설정 완료');
         } catch (error) {
             console.error('❌ 교구신청 이벤트 리스너 설정 오류:', error);
+        }
+    },
+
+    // 🆕 v4.3.0 묶음 신청 구매 방식 이벤트 설정
+    setupBundlePurchaseMethodEvents: function() {
+        try {
+            console.log('🔧 v4.3.0 묶음 신청 구매 방식 이벤트 설정');
+
+            // 구매 방식 라디오 버튼 변경 이벤트
+            const bundlePurchaseMethodRadios = document.querySelectorAll('input[name="bundlePurchaseMethod"]');
+            bundlePurchaseMethodRadios.forEach((radio) => {
+                radio.addEventListener('change', () => {
+                    if (radio.checked) {
+                        this.handleBundlePurchaseMethodChange(radio.value);
+                    }
+                });
+            });
+
+            // 구매 사이트 선택 변경 이벤트
+            this.safeAddEventListener('#purchaseSite', 'change', () => {
+                this.handlePurchaseSiteChange();
+            });
+
+            console.log('✅ v4.3.0 묶음 신청 구매 방식 이벤트 설정 완료');
+        } catch (error) {
+            console.error('❌ v4.3.0 묶음 신청 구매 방식 이벤트 설정 오류:', error);
+        }
+    },
+
+    // 🆕 v4.3.0 묶음 신청 구매 방식 변경 처리
+    handleBundlePurchaseMethodChange: function(method) {
+        try {
+            console.log('🔄 v4.3.0 묶음 구매 방식 변경:', method);
+            
+            const onlineInfo = document.getElementById('onlinePurchaseInfo');
+            const offlineInfo = document.getElementById('offlinePurchaseInfo');
+            
+            if (method === 'online') {
+                if (onlineInfo) onlineInfo.style.display = 'block';
+                if (offlineInfo) offlineInfo.style.display = 'none';
+                
+                // 온라인 필수 필드 설정
+                this.setFieldRequired('purchaseSite', true);
+                this.setFieldRequired('accountId', true);
+                this.setFieldRequired('accountPassword', true);
+                this.setFieldRequired('offlineVendor', false);
+                
+            } else if (method === 'offline') {
+                if (onlineInfo) onlineInfo.style.display = 'none';
+                if (offlineInfo) offlineInfo.style.display = 'block';
+                
+                // 오프라인 필수 필드 설정
+                this.setFieldRequired('purchaseSite', false);
+                this.setFieldRequired('accountId', false);
+                this.setFieldRequired('accountPassword', false);
+                this.setFieldRequired('offlineVendor', true);
+            }
+            
+            console.log('✅ v4.3.0 구매 방식 UI 변경 완료');
+        } catch (error) {
+            console.error('❌ v4.3.0 구매 방식 변경 처리 오류:', error);
+        }
+    },
+
+    // 🆕 v4.3.0 구매 사이트 선택 변경 처리
+    handlePurchaseSiteChange: function() {
+        try {
+            const siteSelect = document.getElementById('purchaseSite');
+            const otherSiteInput = document.getElementById('otherSite');
+            
+            if (siteSelect && otherSiteInput) {
+                if (siteSelect.value === 'other') {
+                    otherSiteInput.style.display = 'block';
+                    otherSiteInput.required = true;
+                    this.updateFieldLabel('otherSite', '기타 사이트 URL *');
+                } else {
+                    otherSiteInput.style.display = 'none';
+                    otherSiteInput.required = false;
+                    otherSiteInput.value = '';
+                }
+            }
+        } catch (error) {
+            console.error('❌ 구매 사이트 선택 변경 처리 오류:', error);
+        }
+    },
+
+    // 필드 필수 여부 설정 헬퍼 함수
+    setFieldRequired: function(fieldId, required) {
+        try {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.required = required;
+                
+                // 라벨에 * 표시 추가/제거
+                const label = document.querySelector(`label[for="${fieldId}"]`) || 
+                            field.closest('.form-group')?.querySelector('label');
+                if (label) {
+                    const text = label.textContent.replace(' *', '');
+                    label.textContent = required ? text + ' *' : text;
+                }
+            }
+        } catch (error) {
+            console.error('❌ 필드 필수 여부 설정 오류:', error);
+        }
+    },
+
+    // 필드 라벨 업데이트 헬퍼 함수
+    updateFieldLabel: function(fieldId, newLabel) {
+        try {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                const label = document.querySelector(`label[for="${fieldId}"]`) || 
+                            field.closest('.form-group')?.querySelector('label');
+                if (label) {
+                    label.textContent = newLabel;
+                }
+            }
+        } catch (error) {
+            console.error('❌ 필드 라벨 업데이트 오류:', error);
         }
     },
     
@@ -329,10 +451,10 @@ const EquipmentRequestModule = {
         }
     },
 
-    // 📦 묶음 신청 모달 표시
+    // 📦 묶음 신청 모달 표시 - v4.3.0 최적화
     showBundleModal: function() {
         try {
-            console.log('📦 묶음 신청 모달 표시');
+            console.log('📦 묶음 신청 모달 표시 v4.3.0');
             
             const modal = document.getElementById('bundleModal');
             if (!modal) {
@@ -361,15 +483,13 @@ const EquipmentRequestModule = {
 
                 // 모달 초기화 및 표시
                 this.resetBundleForm();
+                this.currentEditingBundleItem = null;
                 
-                // 구매 방식 기본값 설정 (온라인)
+                // 🆕 v4.3.0 구매 방식 기본값 설정 (온라인)
                 const onlineRadio = modal.querySelector('input[name="bundlePurchaseMethod"][value="online"]');
                 if (onlineRadio) {
                     onlineRadio.checked = true;
-                    // 온라인 구매 정보 표시
-                    if (typeof window.toggleBundlePurchaseInfo === 'function') {
-                        window.toggleBundlePurchaseInfo('online');
-                    }
+                    this.handleBundlePurchaseMethodChange('online');
                 }
 
                 // 모달 표시
@@ -382,7 +502,7 @@ const EquipmentRequestModule = {
                     setTimeout(() => firstInput.focus(), 100);
                 }
 
-                console.log('✅ 묶음 신청 모달 표시 완료');
+                console.log('✅ 묶음 신청 모달 표시 완료 v4.3.0');
             }).catch((error) => {
                 console.error('❌ 수업계획 확인 오류:', error);
                 alert('수업계획 정보를 확인할 수 없습니다. 다시 시도해주세요.');
@@ -662,23 +782,23 @@ const EquipmentRequestModule = {
 
             if (purchaseMethod === 'online') {
                 // 🔥 온라인 묶음 구매 - v4.3.0 최적화
-                const onlineData = this.collectOnlineBundleData(formData, form);
+                const onlineData = this.collectOnlineBundleDataV43(formData, form);
                 if (!onlineData) return null;
                 
                 bundleData.link = onlineData.purchaseUrl;
                 bundleData.account_id = onlineData.accountId;
                 bundleData.account_pw = onlineData.accountPassword;
                 
-                console.log('✅ 온라인 묶음 데이터 구성 완료');
+                console.log('✅ 온라인 묶음 데이터 구성 완료 v4.3.0');
                 
             } else {
                 // 🏪 오프라인 묶음 구매 - v4.3.0 최적화
-                const offlineData = this.collectOfflineBundleData(formData, form);
+                const offlineData = this.collectOfflineBundleDataV43(formData, form);
                 if (!offlineData) return null;
                 
                 bundleData.store_info = offlineData.storeInfo;
                 
-                console.log('✅ 오프라인 묶음 데이터 구성 완료');
+                console.log('✅ 오프라인 묶음 데이터 구성 완료 v4.3.0');
             }
 
             return bundleData;
@@ -691,7 +811,7 @@ const EquipmentRequestModule = {
     },
 
     // === 🆕 온라인 묶음 구매 데이터 수집 - v4.3.0 ===
-    collectOnlineBundleData: function(formData, form) {
+    collectOnlineBundleDataV43: function(formData, form) {
         try {
             const purchaseSite = formData.get('purchaseSite') || '';
             const accountId = formData.get('accountId') || '';
@@ -763,7 +883,7 @@ const EquipmentRequestModule = {
     },
 
     // === 🆕 오프라인 묶음 구매 데이터 수집 - v4.3.0 ===
-    collectOfflineBundleData: function(formData, form) {
+    collectOfflineBundleDataV43: function(formData, form) {
         try {
             const offlineVendor = formData.get('offlineVendor') || '';
             const purchasePlan = formData.get('purchasePlan') || '';
@@ -908,7 +1028,7 @@ const EquipmentRequestModule = {
             }
 
             // 삭제 확인
-            if (!confirm('정말로 이 신청을 삭제하시겠습니까?\\n\\n삭제된 신청은 복구할 수 없습니다.')) {
+            if (!confirm('정말로 이 신청을 삭제하시겠습니까?\n\n삭제된 신청은 복구할 수 없습니다.')) {
                 return;
             }
 
@@ -1221,6 +1341,13 @@ const EquipmentRequestModule = {
             const form = document.getElementById('bundleForm');
             if (form) {
                 form.reset();
+                
+                // v4.3.0 기본값 설정
+                const onlineRadio = form.querySelector('input[name="bundlePurchaseMethod"][value="online"]');
+                if (onlineRadio) {
+                    onlineRadio.checked = true;
+                    this.handleBundlePurchaseMethodChange('online');
+                }
             }
         } catch (error) {
             console.error('❌ 묶음 신청 폼 초기화 오류:', error);
@@ -1368,23 +1495,23 @@ const EquipmentRequestModule = {
             // 모달 제목 변경
             const modalTitle = modal.querySelector('h3');
             if (modalTitle) {
-                modalTitle.textContent = '묶음 교구 신청 수정';
+                modalTitle.innerHTML = '묶음 교구 신청 수정 <span class="version-badge">v4.3.0</span>';
             }
 
             // 제출 버튼 텍스트 변경
             const submitBtn = modal.querySelector('button[type="submit"]');
             if (submitBtn) {
-                submitBtn.textContent = '수정하기';
+                submitBtn.innerHTML = '<i data-lucide="edit-2"></i> 수정하기';
             }
 
-            // 폼에 기존 데이터 입력
-            this.fillBundleForm(application);
+            // 폼에 기존 데이터 입력 - v4.3.0 호환성
+            this.fillBundleFormV43(application);
 
             // 모달 표시
             modal.classList.add('show');
             document.body.style.overflow = 'hidden';
 
-            console.log('✅ 묶음 신청 수정 모달 열기 완료');
+            console.log('✅ 묶음 신청 수정 모달 열기 완료 v4.3.0');
         } catch (error) {
             console.error('❌ 묶음 신청 수정 모달 열기 오류:', error);
             alert('묶음 수정 모달을 여는 중 오류가 발생했습니다.');
@@ -1423,7 +1550,8 @@ const EquipmentRequestModule = {
         }
     },
 
-    fillBundleForm: function(application) {
+    // 🆕 v4.3.0 묶음 신청 폼 데이터 채우기
+    fillBundleFormV43: function(application) {
         try {
             const form = document.getElementById('bundleForm');
             if (!form) return;
@@ -1444,138 +1572,106 @@ const EquipmentRequestModule = {
             });
 
             // 구매 방식에 따른 UI 업데이트
-            if (typeof window.toggleBundlePurchaseInfo === 'function') {
-                window.toggleBundlePurchaseInfo(application.purchase_type);
-            }
+            this.handleBundlePurchaseMethodChange(application.purchase_type);
 
-            // 추가 정보 파싱 및 입력 - v4.3.0 호환성
-            const linkValue = application.link || application.purchase_link || '';
-            if (linkValue) {
-                this.parseBundlePurchaseDetails(linkValue, form);
-            }
-
-            console.log('✅ 묶음 신청 폼 데이터 채우기 완료');
-        } catch (error) {
-            console.error('❌ 묶음 신청 폼 데이터 채우기 오류:', error);
-        }
-    },
-
-    // 묶음 구매 정보 수집 (기존 방식 - 호환성 유지)
-    collectBundlePurchaseDetails: function(method, formData, form) {
-        try {
-            if (method === 'online') {
-                // 온라인 구매 정보 검증
-                const purchaseSite = formData.get('purchaseSite') || '';
-                const accountId = formData.get('accountId') || '';
-                const accountPassword = formData.get('accountPassword') || '';
-                const cartNote = formData.get('cartNote') || '';
-                
-                if (!purchaseSite) {
-                    alert('구매 사이트를 선택해주세요.');
-                    form.querySelector('#purchaseSite').focus();
-                    return null;
-                }
-                
-                if (!accountId.trim()) {
-                    alert('계정 아이디를 입력해주세요.');
-                    form.querySelector('#accountId').focus();
-                    return null;
-                }
-                
-                if (!accountPassword.trim()) {
-                    alert('계정 비밀번호를 입력해주세요.');
-                    form.querySelector('#accountPassword').focus();
-                    return null;
-                }
-                
-                // 기타 사이트인 경우 URL 확인
-                if (purchaseSite === 'other') {
-                    const otherSite = formData.get('otherSite') || '';
-                    if (!otherSite.trim()) {
-                        alert('기타 사이트 URL을 입력해주세요.');
-                        form.querySelector('#otherSite').focus();
-                        return null;
-                    }
-                }
-                
-                // 온라인 구매 정보 구성
-                const siteInfo = purchaseSite === 'other' ? formData.get('otherSite') : purchaseSite;
-                return `[온라인 구매]\\n구매 사이트: ${siteInfo}\\n계정 ID: ${accountId}\\n계정 PW: ${this.encryptPassword(accountPassword)}\\n장바구니 메모: ${cartNote}`;
-                
+            // v4.3.0 새로운 컬럼 데이터 파싱 및 입력
+            if (application.purchase_type === 'online') {
+                this.fillOnlineBundleDataV43(application, form);
             } else {
-                // 오프라인 구매 정보 검증
-                const offlineVendor = formData.get('offlineVendor') || '';
-                const purchasePlan = formData.get('purchasePlan') || '';
-                
-                if (!offlineVendor.trim()) {
-                    alert('구매 업체 정보를 입력해주세요.');
-                    form.querySelector('#offlineVendor').focus();
-                    return null;
-                }
-                
-                // 오프라인 구매 정보 구성
-                return `[오프라인 구매]\\n구매 업체: ${offlineVendor}\\n구매 계획: ${purchasePlan}`;
+                this.fillOfflineBundleDataV43(application, form);
             }
+
+            console.log('✅ v4.3.0 묶음 신청 폼 데이터 채우기 완료');
         } catch (error) {
-            console.error('❌ 묶음 구매 정보 수집 오류:', error);
-            return null;
+            console.error('❌ v4.3.0 묶음 신청 폼 데이터 채우기 오류:', error);
         }
     },
 
-    // 묶음 구매 정보 파싱
-    parseBundlePurchaseDetails: function(purchaseLink, form) {
+    // v4.3.0 온라인 묶음 데이터 채우기
+    fillOnlineBundleDataV43: function(application, form) {
         try {
-            if (purchaseLink.includes('[온라인 구매]')) {
-                // 온라인 구매 정보 파싱
-                const siteMatch = purchaseLink.match(/구매 사이트: (.+)/);
-                const idMatch = purchaseLink.match(/계정 ID: (.+)/);
-                const noteMatch = purchaseLink.match(/장바구니 메모: (.+)/);
+            // account_id, account_pw는 직접 필드에 입력
+            if (application.account_id) {
+                const accountIdField = form.querySelector('#accountId');
+                if (accountIdField) accountIdField.value = application.account_id;
+            }
+
+            // 비밀번호는 보안상 표시하지 않음
+            // link에서 사이트 정보와 메모 파싱
+            if (application.link) {
+                this.parseLinkForSiteAndNote(application.link, form);
+            }
+
+        } catch (error) {
+            console.error('❌ v4.3.0 온라인 묶음 데이터 채우기 오류:', error);
+        }
+    },
+
+    // v4.3.0 오프라인 묶음 데이터 채우기
+    fillOfflineBundleDataV43: function(application, form) {
+        try {
+            if (application.store_info) {
+                // store_info를 업체 정보와 구매 계획으로 분리
+                const storeInfoParts = application.store_info.split('\n\n[구매 계획]\n');
                 
-                if (siteMatch) {
-                    const purchaseSiteField = form.querySelector('#purchaseSite');
-                    if (purchaseSiteField) {
-                        purchaseSiteField.value = siteMatch[1].trim();
-                        // 기타 사이트 처리
-                        if (!['coupang', '11st', 'gmarket', 'auction', 'interpark', 'lotte', 'ssg', 'yes24', 'kyobo'].includes(siteMatch[1].trim())) {
-                            purchaseSiteField.value = 'other';
-                            const otherSiteField = form.querySelector('#otherSite');
-                            if (otherSiteField) {
-                                otherSiteField.value = siteMatch[1].trim();
-                                otherSiteField.style.display = 'block';
-                            }
-                        }
-                    }
+                const offlineVendorField = form.querySelector('#offlineVendor');
+                if (offlineVendorField && storeInfoParts[0]) {
+                    offlineVendorField.value = storeInfoParts[0];
                 }
-                
-                if (idMatch) {
-                    const accountIdField = form.querySelector('#accountId');
-                    if (accountIdField) accountIdField.value = idMatch[1].trim();
-                }
-                
-                if (noteMatch) {
-                    const cartNoteField = form.querySelector('#cartNote');
-                    if (cartNoteField) cartNoteField.value = noteMatch[1].trim();
-                }
-                
-            } else if (purchaseLink.includes('[오프라인 구매]')) {
-                // 오프라인 구매 정보 파싱
-                const vendorMatch = purchaseLink.match(/구매 업체: (.+)/);
-                const planMatch = purchaseLink.match(/구매 계획: (.+)/);
-                
-                if (vendorMatch) {
-                    const offlineVendorField = form.querySelector('#offlineVendor');
-                    if (offlineVendorField) offlineVendorField.value = vendorMatch[1].trim();
-                }
-                
-                if (planMatch) {
-                    const purchasePlanField = form.querySelector('#purchasePlan');
-                    if (purchasePlanField) purchasePlanField.value = planMatch[1].trim();
+
+                const purchasePlanField = form.querySelector('#purchasePlan');
+                if (purchasePlanField && storeInfoParts[1]) {
+                    purchasePlanField.value = storeInfoParts[1];
                 }
             }
-            
-            console.log('✅ 구매 정보 파싱 완료');
+
         } catch (error) {
-            console.error('❌ 구매 정보 파싱 오류:', error);
+            console.error('❌ v4.3.0 오프라인 묶음 데이터 채우기 오류:', error);
+        }
+    },
+
+    // 링크에서 사이트 정보와 메모 파싱
+    parseLinkForSiteAndNote: function(link, form) {
+        try {
+            // 장바구니 메모가 있는지 확인
+            const noteMatch = link.match(/\(장바구니 메모: (.+)\)$/);
+            let siteUrl = link;
+            
+            if (noteMatch) {
+                const cartNoteField = form.querySelector('#cartNote');
+                if (cartNoteField) cartNoteField.value = noteMatch[1];
+                siteUrl = link.replace(noteMatch[0], '').trim();
+            }
+
+            // 사이트 매핑
+            const siteMapping = {
+                'https://www.coupang.com': 'coupang',
+                'https://www.11st.co.kr': '11st',
+                'https://www.gmarket.co.kr': 'gmarket',
+                'https://www.auction.co.kr': 'auction',
+                'https://shop.interpark.com': 'interpark',
+                'https://www.lotte.com': 'lotte',
+                'https://www.ssg.com': 'ssg',
+                'https://www.yes24.com': 'yes24',
+                'https://www.kyobobook.co.kr': 'kyobo'
+            };
+
+            const purchaseSiteField = form.querySelector('#purchaseSite');
+            if (purchaseSiteField) {
+                const siteValue = siteMapping[siteUrl] || 'other';
+                purchaseSiteField.value = siteValue;
+
+                if (siteValue === 'other') {
+                    const otherSiteField = form.querySelector('#otherSite');
+                    if (otherSiteField) {
+                        otherSiteField.value = siteUrl;
+                        otherSiteField.style.display = 'block';
+                    }
+                }
+            }
+
+        } catch (error) {
+            console.error('❌ 링크 파싱 오류:', error);
         }
     },
 
@@ -1684,16 +1780,6 @@ const EquipmentRequestModule = {
 
     getPurchaseMethodText: function(method) {
         return method === 'offline' ? '오프라인' : '온라인';
-    },
-
-    encryptPassword: function(password) {
-        try {
-            // 실제 운영에서는 더 강력한 암호화가 필요
-            return btoa(password + '_encrypted_' + Date.now());
-        } catch (error) {
-            console.error('비밀번호 암호화 오류:', error);
-            return password;
-        }
     }
 };
 
