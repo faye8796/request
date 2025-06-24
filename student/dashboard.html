@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>세종학당 문화인턴 지원 시스템 - 대시보드 v4.2.0</title>
+    <title>세종학당 문화인턴 지원 시스템</title>
     
-    <!-- CSS Files - v4.2.0 모듈화 시스템 -->
-    <link rel="stylesheet" href="../css/main.css?v=4.2.0">
-    <link rel="stylesheet" href="../css/student.css?v=4.2.0">
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="../css/main.css?v=4.2.1">
+    <link rel="stylesheet" href="../css/student.css?v=4.2.1">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
-    <!-- Supabase JavaScript Client - v4.2.0 모듈화 시스템 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=4.2.0"></script>
+    <!-- Supabase JavaScript Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=4.2.1"></script>
 
     <!-- Dashboard 전용 스타일 -->
     <style>
@@ -65,43 +65,6 @@
             margin: 0;
             color: #4a5568;
         }
-
-        /* 🆕 v4.2.0 모듈 로딩 상태 표시 */
-        .module-status {
-            background: #edf2f7;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            font-family: monospace;
-            font-size: 0.875rem;
-        }
-
-        .module-status h4 {
-            margin: 0 0 0.5rem 0;
-            color: #2d3748;
-            font-size: 1rem;
-            font-family: inherit;
-        }
-
-        .module-status .module-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.25rem 0;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .module-status .module-item:last-child {
-            border-bottom: none;
-        }
-
-        .module-status .status-icon {
-            font-weight: bold;
-        }
-
-        .status-loading { color: #f6ad55; }
-        .status-success { color: #48bb78; }
-        .status-error { color: #f56565; }
 
         .menu-grid {
             display: grid;
@@ -320,10 +283,6 @@
             .menu-card {
                 padding: 1.5rem;
             }
-
-            .module-status {
-                font-size: 0.75rem;
-            }
         }
     </style>
 </head>
@@ -332,38 +291,13 @@
         <!-- 헤더 섹션 -->
         <div class="dashboard-header">
             <div class="welcome-section">
-                <h1 class="welcome-title">문화인턴 지원 시스템 v4.2.0</h1>
-                <p class="welcome-subtitle">King Sejong Institute Cultural Intern Support System (Modular Architecture)</p>
+                <h1 class="welcome-title">문화인턴 지원 시스템</h1>
+                <p class="welcome-subtitle">King Sejong Institute Cultural Intern Support System</p>
             </div>
             
             <div class="student-info" id="studentInfo">
                 <h3 id="studentName">학생 정보를 불러오는 중...</h3>
                 <p id="studentDetails">세종학당 • 문화 분야</p>
-            </div>
-
-            <!-- 🆕 v4.2.0 모듈 로딩 상태 표시 -->
-            <div class="module-status" id="moduleStatus">
-                <h4>📦 모듈 로딩 상태 (v4.2.0 모듈화 아키텍처)</h4>
-                <div class="module-item">
-                    <span>SupabaseCore (5.6KB)</span>
-                    <span class="status-icon status-loading" id="status-core">⏳</span>
-                </div>
-                <div class="module-item">
-                    <span>SupabaseStudent (32.9KB)</span>
-                    <span class="status-icon status-loading" id="status-student">⏳</span>
-                </div>
-                <div class="module-item">
-                    <span>SupabaseAdmin (41.5KB)</span>
-                    <span class="status-icon status-loading" id="status-admin">⏳</span>
-                </div>
-                <div class="module-item">
-                    <span>통합 매니저 (19.2KB)</span>
-                    <span class="status-icon status-loading" id="status-unified">⏳</span>
-                </div>
-                <div class="module-item">
-                    <span>총 성능</span>
-                    <span class="status-icon status-loading" id="status-performance">⏳</span>
-                </div>
             </div>
         </div>
 
@@ -375,7 +309,7 @@
             <!-- 로딩 상태 -->
             <div class="loading-state">
                 <div class="loading-spinner"></div>
-                <p>모듈화 시스템 초기화 중... (v4.2.0)</p>
+                <p>시스템을 초기화하는 중입니다...</p>
             </div>
         </div>
 
@@ -388,210 +322,235 @@
         </div>
     </div>
 
-    <!-- 🚀 JavaScript Files - v4.2.0 모듈화 시스템 -->
+    <!-- JavaScript Files -->
     
-    <!-- 🔧 1단계: 핵심 설정 (필수) -->
-    <script src="../js/config.js?v=4.2.0"></script>
-    <script src="../js/utils.js?v=4.2.0"></script>
-    <script src="../js/auth.js?v=4.2.0"></script>
+    <!-- 핵심 설정 -->
+    <script src="../js/config.js?v=4.2.1"></script>
+    <script src="../js/utils.js?v=4.2.1"></script>
+    <script src="../js/auth.js?v=4.2.1"></script>
 
-    <!-- 🔧 2단계: Supabase 모듈들 (순서 중요!) -->
-    <script src="../js/supabase/supabase-core.js?v=4.2.0"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.2.0"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.2.0"></script>
-    <script src="../js/supabase-client.js?v=4.2.0"></script>
+    <!-- Supabase 모듈들 -->
+    <script src="../js/supabase/supabase-core.js?v=4.2.1"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.2.1"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.2.1"></script>
+    <script src="../js/supabase-client.js?v=4.2.1"></script>
 
-    <!-- 🔧 3단계: 학생 기능 모듈들 (대시보드에서 필요한 것들만) -->
-    <script src="../js/student/api-helper.js?v=4.2.0"></script>
-    <script src="../js/student/notification-system.js?v=4.2.0"></script>
-    <script src="../js/student/dashboard.js?v=4.2.0"></script>
+    <!-- 학생 기능 모듈들 -->
+    <script src="../js/student/api-helper.js?v=4.2.1"></script>
+    <script src="../js/student/notification-system.js?v=4.2.1"></script>
+    <script src="../js/student/dashboard.js?v=4.2.1"></script>
     
-    <!-- 🔧 4단계: 대시보드 초기화 및 테스트 - v4.2.0 모듈화 시스템 -->
+    <!-- 대시보드 초기화 -->
     <script>
-        // 🔧 모듈 상태 추적 객체
+        // 모듈 상태 추적 - 무한루프 해결
         const ModuleStatusTracker = {
             modules: {
-                core: { name: 'SupabaseCore', loaded: false, size: '5.6KB' },
-                student: { name: 'SupabaseStudent', loaded: false, size: '32.9KB' },
-                admin: { name: 'SupabaseAdmin', loaded: false, size: '41.5KB' },
-                unified: { name: '통합 매니저', loaded: false, size: '19.2KB' },
-                performance: { name: '총 성능', loaded: false, size: 'optimized' }
+                core: { name: 'SupabaseCore', loaded: false },
+                student: { name: 'SupabaseStudent', loaded: false },
+                admin: { name: 'SupabaseAdmin', loaded: false },
+                unified: { name: '통합 매니저', loaded: false }
             },
+            
+            isInitialized: false, // 무한루프 방지 플래그
 
-            // 상태 업데이트
+            // 상태 업데이트 (무한루프 해결)
             updateStatus(moduleKey, isLoaded) {
                 const module = this.modules[moduleKey];
                 if (module) {
                     module.loaded = isLoaded;
-                    const statusElement = document.getElementById(`status-${moduleKey}`);
-                    if (statusElement) {
-                        statusElement.textContent = isLoaded ? '✅' : '❌';
-                        statusElement.className = `status-icon ${isLoaded ? 'status-success' : 'status-error'}`;
-                    }
                 }
-                this.checkAllModules();
+                
+                // 무한루프 방지: 이미 초기화되었으면 checkAllModules 호출하지 않음
+                if (!this.isInitialized) {
+                    this.checkAllModules();
+                }
             },
 
-            // 전체 모듈 상태 확인
+            // 전체 모듈 상태 확인 (무한루프 해결)
             checkAllModules() {
+                // 무한루프 방지: 이미 초기화된 경우 중복 실행 방지
+                if (this.isInitialized) {
+                    return;
+                }
+
                 const allLoaded = Object.values(this.modules)
-                    .slice(0, -1) // performance 제외
                     .every(module => module.loaded);
                 
                 if (allLoaded) {
-                    this.updateStatus('performance', true);
-                    this.showSystemReport();
+                    this.isInitialized = true; // 플래그 설정
+                    this.showSystemReady();
                 }
             },
 
-            // 시스템 리포트 표시
-            showSystemReport() {
+            // 시스템 준비 완료 표시
+            showSystemReady() {
                 const systemStatus = document.getElementById('systemStatus');
                 if (systemStatus) {
                     systemStatus.innerHTML = `
                         <div class="alert alert-success">
-                            <strong>🚀 모듈화 시스템 v4.2.0 초기화 완료!</strong><br>
-                            • 기존 70KB → 현재 약 100KB (모듈별 지연 로딩)<br>
-                            • 메모리 효율성: 높음 | 로딩 전략: 지연 로딩<br>
-                            • 호환성: 기존 코드 100% 호환 보장
+                            <strong>🚀 시스템이 정상적으로 초기화되었습니다!</strong><br>
+                            모든 기능을 사용할 수 있습니다.
                         </div>
                     `;
+                }
+                
+                // 메뉴 로딩 상태 제거하고 실제 메뉴 표시
+                this.loadMenuItems();
+            },
+
+            // 메뉴 항목 로드
+            loadMenuItems() {
+                const menuGrid = document.getElementById('menuGrid');
+                if (menuGrid) {
+                    menuGrid.innerHTML = `
+                        <div class="menu-card available" onclick="navigateToPage('./equipment-request.html')">
+                            <div class="menu-icon">
+                                <i data-lucide="package"></i>
+                            </div>
+                            <h3 class="menu-title">교구 신청</h3>
+                            <p class="menu-description">
+                                문화 수업에 필요한 교구를 신청하고 관리할 수 있습니다.
+                            </p>
+                            <button class="menu-button">
+                                <i data-lucide="arrow-right"></i>
+                                신청하기
+                            </button>
+                        </div>
+
+                        <div class="menu-card available" onclick="navigateToPage('./institute-info.html')">
+                            <div class="menu-icon">
+                                <i data-lucide="building"></i>
+                            </div>
+                            <h3 class="menu-title">학당 정보</h3>
+                            <p class="menu-description">
+                                세종학당 정보와 담당자 연락처를 확인할 수 있습니다.
+                            </p>
+                            <button class="menu-button">
+                                <i data-lucide="arrow-right"></i>
+                                확인하기
+                            </button>
+                        </div>
+
+                        <div class="menu-card coming-soon">
+                            <div class="menu-icon">
+                                <i data-lucide="plane"></i>
+                            </div>
+                            <h3 class="menu-title">항공권 신청</h3>
+                            <p class="menu-description">
+                                파견을 위한 항공권 신청 및 여행 일정을 관리할 수 있습니다.
+                            </p>
+                            <button class="menu-button" disabled>
+                                <i data-lucide="clock"></i>
+                                개발 중
+                            </button>
+                        </div>
+                    `;
+                    
+                    // 아이콘 다시 초기화
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
                 }
             }
         };
 
-        // 🔧 모듈 로딩 감지 함수
+        // 모듈 로딩 감지 함수 (콘솔 로그 최소화)
         function checkModuleLoading() {
-            // SupabaseCore 확인
-            if (window.SupabaseCore) {
-                ModuleStatusTracker.updateStatus('core', true);
-                console.log('✅ SupabaseCore 모듈 로드 확인 (v4.2.0)');
-            }
+            try {
+                // SupabaseCore 확인
+                if (window.SupabaseCore) {
+                    ModuleStatusTracker.updateStatus('core', true);
+                }
 
-            // SupabaseStudent 확인
-            if (window.SupabaseStudent) {
-                ModuleStatusTracker.updateStatus('student', true);
-                console.log('✅ SupabaseStudent 모듈 로드 확인 (v4.2.0)');
-            }
+                // SupabaseStudent 확인
+                if (window.SupabaseStudent) {
+                    ModuleStatusTracker.updateStatus('student', true);
+                }
 
-            // SupabaseAdmin 확인
-            if (window.SupabaseAdmin) {
-                ModuleStatusTracker.updateStatus('admin', true);
-                console.log('✅ SupabaseAdmin 모듈 로드 확인 (v4.2.0)');
-            }
+                // SupabaseAdmin 확인
+                if (window.SupabaseAdmin) {
+                    ModuleStatusTracker.updateStatus('admin', true);
+                }
 
-            // 통합 매니저 확인
-            if (window.SupabaseAPI && window.SupabaseAPI.getHealthReport) {
-                ModuleStatusTracker.updateStatus('unified', true);
-                console.log('✅ 통합 매니저 로드 확인 (v4.2.0)');
-                
-                // 통합 매니저 상태 리포트 로그
-                const healthReport = window.SupabaseAPI.getHealthReport();
-                console.log('📊 통합 매니저 상태 리포트:', healthReport);
+                // 통합 매니저 확인
+                if (window.SupabaseAPI && window.SupabaseAPI.getHealthReport) {
+                    ModuleStatusTracker.updateStatus('unified', true);
+                }
+            } catch (error) {
+                console.error('❌ 모듈 로딩 확인 오류:', error);
             }
         }
 
-        // 🔧 DOMContentLoaded 이벤트 핸들러
+        // 페이지 네비게이션 함수
+        function navigateToPage(url) {
+            try {
+                window.location.href = url;
+            } catch (error) {
+                console.error('❌ 페이지 이동 오류:', error);
+            }
+        }
+
+        // DOMContentLoaded 이벤트 핸들러
         document.addEventListener('DOMContentLoaded', function() {
             try {
-                console.log('📋 대시보드 페이지 로드 시작 (v4.2.0 모듈화 시스템)');
-                
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
-                    console.log('✅ Lucide 아이콘 초기화 완료 (v4.2.0)');
                 }
 
-                // 🆕 v4.2.0 모듈 로딩 감지 시작
+                // 모듈 로딩 감지 시작
                 checkModuleLoading();
 
-                // 주기적으로 모듈 상태 확인 (최대 15초)
+                // 주기적으로 모듈 상태 확인 (최대 10초)
                 let checkCount = 0;
-                const maxChecks = 150; // 15초
+                const maxChecks = 100; // 10초
                 const checkInterval = setInterval(() => {
                     checkModuleLoading();
                     checkCount++;
 
-                    if (checkCount >= maxChecks) {
+                    if (checkCount >= maxChecks || ModuleStatusTracker.isInitialized) {
                         clearInterval(checkInterval);
-                        console.warn('⚠️ 모듈 로딩 타임아웃 (15초) - 일부 모듈이 로드되지 않았을 수 있음');
                         
-                        // 타임아웃 시 오류 상태 표시
-                        Object.keys(ModuleStatusTracker.modules).forEach(key => {
-                            if (!ModuleStatusTracker.modules[key].loaded && key !== 'performance') {
-                                ModuleStatusTracker.updateStatus(key, false);
-                            }
-                        });
+                        if (!ModuleStatusTracker.isInitialized) {
+                            console.error('❌ 모듈 로딩 타임아웃 - 일부 기능이 제한될 수 있습니다.');
+                            
+                            // 타임아웃 시에도 기본 메뉴는 표시
+                            ModuleStatusTracker.loadMenuItems();
+                        }
                     }
                 }, 100);
 
-                // 🆕 v4.2.0 모듈 시스템 호환성 테스트
+                // 학생 정보 로드 시도
                 setTimeout(function() {
                     try {
-                        // NotificationSystem 모듈 테스트
-                        if (typeof window.NotificationSystem !== 'undefined') {
-                            console.log('✅ NotificationSystem 모듈 사용 가능 (v4.2.0)');
-                            window.NotificationSystem.showBasicNotice('모듈화 시스템 v4.2.0이 정상적으로 로드되었습니다.', 'success');
+                        // 학생 정보 표시 시도
+                        const studentName = document.getElementById('studentName');
+                        const studentDetails = document.getElementById('studentDetails');
+                        
+                        if (studentName) {
+                            studentName.textContent = '환영합니다!';
                         }
-
-                        // ApiHelper 모듈 테스트
-                        if (typeof window.ApiHelper !== 'undefined') {
-                            console.log('✅ ApiHelper 모듈 사용 가능 (v4.2.0)');
+                        if (studentDetails) {
+                            studentDetails.textContent = '세종학당 • 문화 분야';
                         }
-
-                        // SupabaseAPI 통합 매니저 테스트
-                        if (typeof window.SupabaseAPI !== 'undefined') {
-                            console.log('✅ SupabaseAPI 통합 매니저 사용 가능 (v4.2.0)');
-                            
-                            // 연결 테스트
-                            window.SupabaseAPI.testConnection().then(result => {
-                                if (result.success) {
-                                    console.log('✅ Supabase 연결 테스트 성공 (v4.2.0)');
-                                } else {
-                                    console.warn('⚠️ Supabase 연결 테스트 실패 (v4.2.0):', result.message);
-                                }
-                            }).catch(error => {
-                                console.error('❌ Supabase 연결 테스트 오류 (v4.2.0):', error);
-                            });
-                        }
-
                     } catch (error) {
-                        console.error('❌ 모듈 호환성 테스트 오류 (v4.2.0):', error);
+                        console.error('❌ 학생 정보 로드 오류:', error);
                     }
-                }, 2000);
-
-                console.log('✅ 기본 페이지 초기화 완료 (v4.2.0 모듈화 시스템)');
+                }, 1000);
 
             } catch (error) {
-                console.error('❌ 페이지 초기화 오류 (v4.2.0):', error);
+                console.error('❌ 페이지 초기화 오류:', error);
             }
         });
 
-        // 🎯 전역 로그아웃 함수 (v4.2.0 호환)
+        // 전역 로그아웃 함수
         window.handleLogout = function() {
             try {
-                console.log('🚪 로그아웃 처리 시작 (v4.2.0)');
-                
-                // NotificationSystem 사용 가능하면 확인 알림
-                if (typeof window.NotificationSystem !== 'undefined') {
-                    window.NotificationSystem.showConfirmationNotice(
-                        '로그아웃 확인',
-                        '정말로 로그아웃하시겠습니까?',
-                        function() {
-                            executeLogout();
-                        },
-                        function() {
-                            console.log('로그아웃 취소됨');
-                        }
-                    );
-                } else {
-                    // 폴백: 기본 confirm
-                    if (confirm('정말로 로그아웃하시겠습니까?')) {
-                        executeLogout();
-                    }
+                if (confirm('정말로 로그아웃하시겠습니까?')) {
+                    executeLogout();
                 }
             } catch (error) {
-                console.error('❌ 로그아웃 처리 오류 (v4.2.0):', error);
+                console.error('❌ 로그아웃 처리 오류:', error);
                 executeLogout();
             }
         };
@@ -599,8 +558,6 @@
         // 실제 로그아웃 실행
         function executeLogout() {
             try {
-                console.log('🚪 로그아웃 실행 중 (v4.2.0)');
-                
                 // 로컬 저장소 정리
                 localStorage.clear();
                 sessionStorage.clear();
@@ -618,14 +575,10 @@
                 // 로그인 페이지로 이동
                 window.location.href = '../index.html';
             } catch (error) {
-                console.error('❌ 로그아웃 실행 오류 (v4.2.0):', error);
+                console.error('❌ 로그아웃 실행 오류:', error);
                 window.location.href = '../index.html';
             }
         }
-
-        console.log('🎯 대시보드 v4.2.0 모듈화 시스템 스크립트 로드 완료');
-        console.log('📦 아키텍처: Core(5.6KB) + Student(32.9KB) + Admin(41.5KB) + 통합매니저(19.2KB)');
-        console.log('🔧 기존 코드 100% 호환성 보장 + 성능 최적화 + 모듈별 관리');
     </script>
 </body>
 </html>
