@@ -6,15 +6,15 @@
     <title>문화교구 신청 - 세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files - Updated Cache Busting ----> 
-    <link rel="stylesheet" href="../css/main.css?v=4.1.0">
-    <link rel="stylesheet" href="../css/student.css?v=4.1.0">
-    <link rel="stylesheet" href="../css/lesson-plan.css?v=4.1.0">
+    <link rel="stylesheet" href="../css/main.css?v=4.3.0">
+    <link rel="stylesheet" href="../css/student.css?v=4.3.0">
+    <link rel="stylesheet" href="../css/lesson-plan.css?v=4.3.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <!-- Supabase JavaScript Client - Fixed CDN URL with Cache Busting -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=4.1.4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=4.3.0"></script>
 </head>
 <body>
     <!-- Main App Container -->
@@ -219,115 +219,170 @@
         </div>
     </div>
 
-    <!-- 📦 묶음 신청 모달 - 완전 재설계 -->
+    <!-- 📦 묶음 신청 모달 - v4.3.0 완전 재설계 (4가지 타입별 최적화) -->
     <div id="bundleModal" class="modal">
         <div class="modal-content">
-            <h3>묶음 교구 신청</h3>
+            <h3>묶음 교구 신청 <span class="version-badge">v4.3.0</span></h3>
+            <div class="bundle-intro">
+                <p>여러 교구를 한 번에 신청할 때 사용하세요. 구매 방식에 따라 필요한 정보가 다릅니다.</p>
+            </div>
+            
             <form id="bundleForm">
                 <!-- 기본 정보 -->
-                <div class="form-group">
-                    <label>묶음 제목 *</label>
-                    <input type="text" id="bundleTitle" name="bundleTitle" required placeholder="묶음 교구를 대표하는 제목을 입력하세요">
-                    <small class="text-muted">예: 한국 전통문화 체험 교구 세트</small>
+                <div class="form-section">
+                    <h4><i data-lucide="info"></i> 기본 정보</h4>
+                    
+                    <div class="form-group">
+                        <label>묶음 제목 *</label>
+                        <input type="text" id="bundleTitle" name="bundleTitle" required placeholder="묶음 교구를 대표하는 제목을 입력하세요">
+                        <small class="text-muted">예: 한국 전통문화 체험 교구 세트, K-POP 댄스 수업용 도구 묶음</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>사용 목적 *</label>
+                        <textarea id="bundlePurpose" name="bundlePurpose" required rows="3" placeholder="이 묶음 교구들을 어떤 목적으로 사용할 예정인지 구체적으로 설명해주세요"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>구매 총액 (원) *</label>
+                        <input type="number" id="bundleTotalPrice" name="bundleTotalPrice" required min="1" placeholder="예상 총 구매 금액을 입력하세요">
+                        <small class="text-muted">모든 교구의 예상 총액 (배송비 포함)</small>
+                    </div>
                 </div>
                 
-                <div class="form-group">
-                    <label>사용 목적 *</label>
-                    <textarea id="bundlePurpose" name="bundlePurpose" required rows="3" placeholder="묶음 교구의 사용 목적을 설명하세요"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label>구매 총액 (원) *</label>
-                    <input type="number" id="bundleTotalPrice" name="bundleTotalPrice" required min="1" placeholder="예상 총 구매 금액을 입력하세요">
-                    <small class="text-muted">장바구니에 담긴 모든 상품의 예상 총액</small>
-                </div>
-                
-                <!-- 구매 방식 선택 -->
-                <div class="form-group">
-                    <label>구매 방식 *</label>
+                <!-- 🎯 v4.3.0 구매 방식 선택 - 4가지 타입별 최적화 -->
+                <div class="form-section">
+                    <h4><i data-lucide="shopping-cart"></i> 구매 방식 선택</h4>
                     <div class="purchase-method-options">
-                        <label class="radio-option">
+                        <label class="radio-option enhanced">
                             <input type="radio" name="bundlePurchaseMethod" value="online" checked>
                             <span class="radio-custom"></span>
                             <div class="radio-content">
                                 <strong>온라인 구매</strong>
                                 <p>관리자가 학생 계정으로 대신 구매</p>
+                                <div class="method-features">
+                                    <span class="feature-tag">계정 정보 필요</span>
+                                    <span class="feature-tag">장바구니 준비</span>
+                                </div>
                             </div>
                         </label>
-                        <label class="radio-option">
+                        <label class="radio-option enhanced">
                             <input type="radio" name="bundlePurchaseMethod" value="offline">
                             <span class="radio-custom"></span>
                             <div class="radio-content">
                                 <strong>오프라인 구매</strong>
                                 <p>직접 구매 후 영수증 제출로 비용 정산</p>
+                                <div class="method-features">
+                                    <span class="feature-tag">구매처 정보 필요</span>
+                                    <span class="feature-tag">영수증 제출</span>
+                                </div>
                             </div>
                         </label>
                     </div>
                 </div>
 
-                <!-- 온라인 구매 정보 -->
+                <!-- 🆕 v4.3.0 온라인 구매 정보 (account_id, account_pw 활용) -->
                 <div id="onlinePurchaseInfo" class="purchase-info-section">
-                    <div class="form-group">
-                        <label>구매 사이트 *</label>
-                        <select id="purchaseSite" name="purchaseSite" required>
-                            <option value="">구매 사이트를 선택하세요</option>
-                            <option value="coupang">쿠팡 (Coupang)</option>
-                            <option value="11st">11번가</option>
-                            <option value="gmarket">지마켓 (Gmarket)</option>
-                            <option value="auction">옥션 (Auction)</option>
-                            <option value="interpark">인터파크</option>
-                            <option value="lotte">롯데온</option>
-                            <option value="ssg">SSG.COM</option>
-                            <option value="yes24">YES24</option>
-                            <option value="kyobo">교보문고</option>
-                            <option value="other">기타 (직접 입력)</option>
-                        </select>
-                        <input type="text" id="otherSite" name="otherSite" placeholder="기타 사이트 URL을 입력하세요" style="display: none; margin-top: 8px;">
-                    </div>
-                    
-                    <div class="account-info-section">
-                        <div class="account-info-header">
-                            <i data-lucide="shield-check"></i>
-                            <div>
-                                <h4>계정 정보</h4>
-                                <p>관리자가 대신 구매하기 위한 계정 정보입니다</p>
+                    <div class="form-section">
+                        <h4><i data-lucide="globe"></i> 온라인 구매 정보</h4>
+                        
+                        <div class="form-group">
+                            <label>구매 사이트 *</label>
+                            <select id="purchaseSite" name="purchaseSite" required>
+                                <option value="">구매 사이트를 선택하세요</option>
+                                <option value="coupang">쿠팡 (Coupang)</option>
+                                <option value="11st">11번가</option>
+                                <option value="gmarket">지마켓 (Gmarket)</option>
+                                <option value="auction">옥션 (Auction)</option>
+                                <option value="interpark">인터파크</option>
+                                <option value="lotte">롯데온</option>
+                                <option value="ssg">SSG.COM</option>
+                                <option value="yes24">YES24</option>
+                                <option value="kyobo">교보문고</option>
+                                <option value="other">기타 (직접 입력)</option>
+                            </select>
+                            <input type="url" id="otherSite" name="otherSite" placeholder="기타 사이트 URL을 입력하세요 (예: https://example.com)" style="display: none; margin-top: 8px;">
+                        </div>
+                        
+                        <!-- 🔐 v4.3.0 계정 정보 (별도 컬럼으로 저장) -->
+                        <div class="account-info-section">
+                            <div class="account-info-header">
+                                <i data-lucide="shield-check"></i>
+                                <div>
+                                    <h5>계정 정보 (v4.3.0 보안 강화)</h5>
+                                    <p>관리자가 대신 구매하기 위한 계정 정보입니다. 암호화되어 안전하게 저장됩니다.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>계정 아이디 *</label>
+                                <input type="text" id="accountId" name="accountId" required placeholder="구매 사이트 로그인 아이디">
+                                <small class="text-muted">관리자가 대신 주문하기 위한 계정 아이디</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>계정 비밀번호 *</label>
+                                <input type="password" id="accountPassword" name="accountPassword" required placeholder="구매 사이트 로그인 비밀번호">
+                                <small class="text-muted">⚠️ 보안을 위해 암호화되어 저장되며, 구매 완료 후 즉시 삭제됩니다</small>
                             </div>
                         </div>
                         
                         <div class="form-group">
-                            <label>계정 아이디 *</label>
-                            <input type="text" id="accountId" name="accountId" required placeholder="구매 사이트 로그인 아이디">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>계정 비밀번호 *</label>
-                            <input type="password" id="accountPassword" name="accountPassword" required placeholder="구매 사이트 로그인 비밀번호">
-                            <small class="text-muted">보안을 위해 암호화되어 저장됩니다</small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>장바구니 메모</label>
-                            <textarea id="cartNote" name="cartNote" rows="3" placeholder="장바구니에 담긴 상품들에 대한 설명이나 특별 요청사항을 입력하세요"></textarea>
+                            <label>장바구니 메모 (선택)</label>
+                            <textarea id="cartNote" name="cartNote" rows="3" placeholder="장바구니에 담은 상품들에 대한 설명이나 특별 요청사항이 있으면 입력하세요&#10;&#10;예: 
+- 한복 재료: 성인용 한복 원단 5세트
+- 전통 악기: 소고 10개, 장구 3개  
+- 포장 요청: 개별 포장 필요"></textarea>
+                            <small class="text-muted">관리자가 장바구니를 찾기 쉽도록 구체적으로 작성해주세요</small>
                         </div>
                     </div>
                 </div>
 
-                <!-- 오프라인 구매 정보 -->
+                <!-- 🆕 v4.3.0 오프라인 구매 정보 (store_info 활용) -->
                 <div id="offlinePurchaseInfo" class="purchase-info-section" style="display: none;">
-                    <div class="form-group">
-                        <label>구매 업체 정보 *</label>
-                        <textarea id="offlineVendor" name="offlineVendor" required rows="3" placeholder="구매 예정 업체명, 주소, 연락처 등을 입력하세요&#10;예: 한국전통문화센터&#10;서울시 종로구 인사동길 123&#10;02-1234-5678"></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>구매 계획</label>
-                        <textarea id="purchasePlan" name="purchasePlan" rows="3" placeholder="구매 예정일, 구매 방법 등 구체적인 계획을 입력하세요"></textarea>
+                    <div class="form-section">
+                        <h4><i data-lucide="store"></i> 오프라인 구매 정보</h4>
+                        
+                        <div class="form-group">
+                            <label>구매 업체 정보 *</label>
+                            <textarea id="offlineVendor" name="offlineVendor" required rows="4" placeholder="구매 예정 업체의 상세 정보를 입력하세요&#10;&#10;예:
+업체명: 한국전통문화센터
+주소: 서울시 종로구 인사동길 123
+연락처: 02-1234-5678
+홈페이지: www.example.com"></textarea>
+                            <small class="text-muted">영수증 확인을 위해 정확한 업체 정보가 필요합니다</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>구매 계획 (선택)</label>
+                            <textarea id="purchasePlan" name="purchasePlan" rows="3" placeholder="구매 일정이나 방법에 대한 구체적인 계획을 입력하세요&#10;&#10;예:
+- 구매 예정일: 2025년 1월 15일
+- 구매 방법: 업체 방문 또는 전화 주문
+- 배송 방법: 업체 직접 배송"></textarea>
+                            <small class="text-muted">관리자가 승인 여부를 판단하는데 도움이 됩니다</small>
+                        </div>
+
+                        <!-- 📋 오프라인 구매 안내사항 -->
+                        <div class="offline-notice">
+                            <i data-lucide="info"></i>
+                            <div>
+                                <strong>오프라인 구매 안내</strong>
+                                <ul>
+                                    <li>구매 후 <strong>7일 이내</strong>에 영수증을 제출해주세요</li>
+                                    <li>영수증은 구매처명, 구매일, 금액이 명확히 표시되어야 합니다</li>
+                                    <li>분할 구매 시 모든 영수증을 각각 제출해주세요</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="modal-actions">
                     <button type="button" id="bundleCancelBtn" class="btn secondary">취소</button>
-                    <button type="submit" class="btn primary">묶음 신청하기</button>
+                    <button type="submit" class="btn primary">
+                        <i data-lucide="shopping-cart"></i>
+                        묶음 신청하기
+                    </button>
                 </div>
             </form>
         </div>
@@ -366,7 +421,7 @@
         </div>
     </div>
 
-    <!-- 영수증 등록 모달 - UX 개선 v4.1.2 -->
+    <!-- 영수증 등록 모달 - UX 개선 v4.3.0 -->
     <div id="receiptModal" class="modal">
         <div class="modal-content">
             <h3>영수증 등록</h3>
@@ -462,18 +517,18 @@
         </div>
     </div>
 
-    <!-- JavaScript Files - v4.1.4 캐시 무효화 및 안정성 강화 -->
+    <!-- JavaScript Files - v4.3.0 캐시 무효화 및 안정성 강화 -->
     
     <!-- 🔧 1단계: 핵심 설정 및 의존성 (순서 중요) -->
-    <script src="../js/config.js?v=4.1.4"></script>
-    <script src="../js/supabase-client.js?v=4.1.4"></script>
-    <script src="../js/utils.js?v=4.1.4"></script>
-    <script src="../js/auth.js?v=4.1.4"></script>
-    <script src="../js/lesson-plan.js?v=4.1.4"></script>
+    <script src="../js/config.js?v=4.3.0"></script>
+    <script src="../js/supabase-client.js?v=4.3.0"></script>
+    <script src="../js/utils.js?v=4.3.0"></script>
+    <script src="../js/auth.js?v=4.3.0"></script>
+    <script src="../js/lesson-plan.js?v=4.3.0"></script>
 
     <!-- 🔧 2단계: 학생 모듈 시스템 (의존성 순서대로) -->
     <script>
-        // 🛡️ 모듈 로딩 안전장치 - v4.1.4
+        // 🛡️ 모듈 로딩 안전장치 - v4.3.0
         window.moduleLoadTracker = {
             loaded: [],
             errors: [],
@@ -512,60 +567,125 @@
                 showSystemErrorModal(event.message);
             }
         });
+
+        // 🆕 v4.3.0 묶음 신청 구매 방식 전환 함수 (전역)
+        window.toggleBundlePurchaseInfo = function(method) {
+            console.log('🔄 v4.3.0 묶음 구매 방식 전환:', method);
+            
+            const onlineInfo = document.getElementById('onlinePurchaseInfo');
+            const offlineInfo = document.getElementById('offlinePurchaseInfo');
+            
+            if (method === 'online') {
+                if (onlineInfo) onlineInfo.style.display = 'block';
+                if (offlineInfo) offlineInfo.style.display = 'none';
+                
+                // 온라인 필수 필드 설정
+                setFieldRequired('purchaseSite', true);
+                setFieldRequired('accountId', true);
+                setFieldRequired('accountPassword', true);
+                setFieldRequired('offlineVendor', false);
+                
+            } else if (method === 'offline') {
+                if (onlineInfo) onlineInfo.style.display = 'none';
+                if (offlineInfo) offlineInfo.style.display = 'block';
+                
+                // 오프라인 필수 필드 설정
+                setFieldRequired('purchaseSite', false);
+                setFieldRequired('accountId', false);
+                setFieldRequired('accountPassword', false);
+                setFieldRequired('offlineVendor', true);
+            }
+            
+            console.log('✅ v4.3.0 구매 방식 UI 전환 완료');
+        };
+        
+        // 필드 필수 여부 설정 헬퍼 함수
+        function setFieldRequired(fieldId, required) {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.required = required;
+                
+                // 라벨에 * 표시 추가/제거
+                const label = document.querySelector(`label[for="${fieldId}"]`) || 
+                            field.closest('.form-group')?.querySelector('label');
+                if (label) {
+                    const text = label.textContent.replace(' *', '');
+                    label.textContent = required ? text + ' *' : text;
+                }
+            }
+        }
+
+        // 🆕 v4.3.0 구매 사이트 선택 변경 처리
+        window.handlePurchaseSiteChange = function() {
+            const siteSelect = document.getElementById('purchaseSite');
+            const otherSiteInput = document.getElementById('otherSite');
+            
+            if (siteSelect && otherSiteInput) {
+                if (siteSelect.value === 'other') {
+                    otherSiteInput.style.display = 'block';
+                    otherSiteInput.required = true;
+                } else {
+                    otherSiteInput.style.display = 'none';
+                    otherSiteInput.required = false;
+                    otherSiteInput.value = '';
+                }
+            }
+        };
     </script>
 
     <!-- API 도우미 (가장 먼저) -->
-    <script src="../js/student/api-helper.js?v=4.1.4" 
+    <script src="../js/student/api-helper.js?v=4.3.0" 
             onload="window.moduleLoadTracker.track('api-helper', true)" 
             onerror="window.moduleLoadTracker.track('api-helper', false)"></script>
     
     <!-- 알림 시스템 -->
-    <script src="../js/student/notification-system.js?v=4.1.4"
+    <script src="../js/student/notification-system.js?v=4.3.0"
             onload="window.moduleLoadTracker.track('notification-system', true)" 
             onerror="window.moduleLoadTracker.track('notification-system', false)"></script>
     
     <!-- 수업계획 도우미 -->
-    <script src="../js/student/lesson-plan-helper.js?v=4.1.4"
+    <script src="../js/student/lesson-plan-helper.js?v=4.3.0"
             onload="window.moduleLoadTracker.track('lesson-plan-helper', true)" 
             onerror="window.moduleLoadTracker.track('lesson-plan-helper', false)"></script>
     
     <!-- 교구 신청 모듈 -->
-    <script src="../js/student/equipment-request.js?v=4.1.4"
+    <script src="../js/student/equipment-request.js?v=4.3.0"
             onload="window.moduleLoadTracker.track('equipment-request', true)" 
             onerror="window.moduleLoadTracker.track('equipment-request', false)"></script>
     
     <!-- 배송지 관리 -->
-    <script src="../js/student/shipping-management.js?v=4.1.4"
+    <script src="../js/student/shipping-management.js?v=4.3.0"
             onload="window.moduleLoadTracker.track('shipping-management', true)" 
             onerror="window.moduleLoadTracker.track('shipping-management', false)"></script>
     
-    <!-- 🔧 영수증 관리 - v4.1.4 업데이트 (total_amount 필드 지원) -->
-    <script src="../js/student/receipt-management.js?v=4.1.4"
+    <!-- 🔧 영수증 관리 - v4.3.0 업데이트 -->
+    <script src="../js/student/receipt-management.js?v=4.3.0"
             onload="window.moduleLoadTracker.track('receipt-management', true)" 
             onerror="window.moduleLoadTracker.track('receipt-management', false)"></script>
     
     <!-- 항공권 신청 -->
-    <script src="../js/student/flight-request.js?v=4.1.4"
+    <script src="../js/student/flight-request.js?v=4.3.0"
             onload="window.moduleLoadTracker.track('flight-request', true)" 
             onerror="window.moduleLoadTracker.track('flight-request', false)"></script>
 
     <!-- 🔧 3단계: 핵심 매니저 (모든 모듈 로드 후) -->
-    <script src="../js/student.js?v=4.1.4"
+    <script src="../js/student.js?v=4.3.0"
             onload="window.moduleLoadTracker.track('student-manager', true)" 
             onerror="window.moduleLoadTracker.track('student-manager', false)"></script>
     
-    <!-- 교구 신청 페이지 초기화 - v4.1.4 안정성 강화 -->
+    <!-- 교구 신청 페이지 초기화 - v4.3.0 안정성 강화 -->
     <script>
         /**
-         * 🚀 교구 신청 페이지 초기화 로직 v4.1.4 - 영수증 저장 오류 수정
-         * - total_amount 필드 지원
+         * 🚀 교구 신청 페이지 초기화 로직 v4.3.0 - 4가지 타입별 최적화 완료
+         * - v4.3.0 새로운 컬럼 구조 완전 지원
+         * - 온라인/오프라인 × 단일/묶음 4가지 타입별 전문화
          * - 개선된 모듈 로딩 추적
          * - 강화된 오류 처리
          * - 캐시 무효화 메커니즘
          * - 사용자 친화적 오류 복구
          */
 
-        // 🎯 전역 상태 관리 v4.1.4 - 개선됨
+        // 🎯 전역 상태 관리 v4.3.0 - 4가지 타입별 지원
         window.EquipmentRequestManager = {
             isInitialized: false,
             userDataLoaded: false,
@@ -574,8 +694,9 @@
             maxRetries: 3,
             dependenciesLoaded: false,
             lessonPlanChecked: false,
-            version: '4.1.4',
-            loadStartTime: Date.now()
+            version: '4.3.0',
+            loadStartTime: Date.now(),
+            supportedTypes: ['online-single', 'online-bundle', 'offline-single', 'offline-bundle']
         };
 
         // 🆕 시스템 오류 모달 표시 함수
@@ -624,10 +745,10 @@
             }
         }
 
-        // 🔧 모듈 로딩 상태 확인 - v4.1.4 개선
+        // 🔧 모듈 로딩 상태 확인 - v4.3.0 개선
         function checkModulesLoaded() {
             const status = window.moduleLoadTracker.getStatus();
-            console.log('📊 모듈 로딩 상태 (v4.1.4):', status);
+            console.log('📊 모듈 로딩 상태 (v4.3.0):', status);
             
             // 필수 모듈 목록
             const requiredModules = [
@@ -645,7 +766,7 @@
             );
             
             if (missingModules.length > 0) {
-                console.warn('⚠️ 누락된 모듈 (v4.1.4):', missingModules);
+                console.warn('⚠️ 누락된 모듈 (v4.3.0):', missingModules);
                 
                 if (status.errors.length > 0) {
                     console.error('❌ 로딩 실패한 모듈:', status.errors);
@@ -658,18 +779,18 @@
                 return false;
             }
             
-            console.log('✅ 모든 필수 모듈 로드 완료 (v4.1.4)');
+            console.log('✅ 모든 필수 모듈 로드 완료 (v4.3.0)');
             return true;
         }
 
-        // 🔧 의존성 확인 함수 - v4.1.4 업데이트
+        // 🔧 의존성 확인 함수 - v4.3.0 업데이트
         function checkRequiredDependencies() {
             const requiredObjects = [
                 'SupabaseAPI',
                 'AuthManager', 
                 'StudentManager',
                 'LessonPlanManager',
-                // 🆕 v4.1.4 모듈들
+                // 🆕 v4.3.0 모듈들
                 'ApiHelper',
                 'NotificationSystem',
                 'LessonPlanHelper'
@@ -684,26 +805,26 @@
             }
             
             if (missingDependencies.length > 0) {
-                console.warn('⚠️ 누락된 의존성 (v4.1.4):', missingDependencies);
+                console.warn('⚠️ 누락된 의존성 (v4.3.0):', missingDependencies);
                 return false;
             }
             
-            console.log('✅ 모든 의존성 로드 완료 (v4.1.4)');
+            console.log('✅ 모든 의존성 로드 완료 (v4.3.0)');
             return true;
         }
 
-        // 🔧 의존성 로딩 대기 함수 - v4.1.4 개선
+        // 🔧 의존성 로딩 대기 함수 - v4.3.0 개선
         function waitForDependencies(maxWaitTime = 20000) {
             return new Promise(function(resolve, reject) {
                 const startTime = Date.now();
                 const checkInterval = 500; // 500ms마다 확인 (더 자주)
                 
                 function checkDependencies() {
-                    console.log('🔍 의존성 로딩 상태 확인 중... v4.1.4');
+                    console.log('🔍 의존성 로딩 상태 확인 중... v4.3.0');
                     
                     // 모듈 로딩 완료 확인
                     if (checkModulesLoaded() && checkRequiredDependencies()) {
-                        console.log('✅ 모든 의존성 로드 완료 (v4.1.4)');
+                        console.log('✅ 모든 의존성 로드 완료 (v4.3.0)');
                         window.EquipmentRequestManager.dependenciesLoaded = true;
                         resolve();
                         return;
@@ -711,8 +832,8 @@
                     
                     const elapsedTime = Date.now() - startTime;
                     if (elapsedTime >= maxWaitTime) {
-                        const error = new Error('의존성 로딩 시간 초과 (v4.1.4)');
-                        console.error('❌ 의존성 로딩 시간 초과 (v4.1.4)');
+                        const error = new Error('의존성 로딩 시간 초과 (v4.3.0)');
+                        console.error('❌ 의존성 로딩 시간 초과 (v4.3.0)');
                         
                         // 로딩 상태 분석
                         const status = window.moduleLoadTracker.getStatus();
@@ -737,7 +858,7 @@
         // 🎯 안전한 사용자 정보 가져오기 - API 도우미 사용
         function getCurrentUserSafely() {
             try {
-                console.log('👤 getCurrentUserSafely 호출됨 (v4.1.4)');
+                console.log('👤 getCurrentUserSafely 호출됨 (v4.3.0)');
                 
                 // ApiHelper 모듈 사용
                 if (typeof window.ApiHelper !== 'undefined' && window.ApiHelper.getCurrentUserSafely) {
@@ -758,22 +879,22 @@
                     }
                 }
 
-                console.warn('⚠️ 사용자 정보를 찾을 수 없습니다 (v4.1.4)');
+                console.warn('⚠️ 사용자 정보를 찾을 수 없습니다 (v4.3.0)');
                 return null;
             } catch (error) {
-                console.error('❌ 사용자 정보 가져오기 오류 (v4.1.4):', error);
+                console.error('❌ 사용자 정보 가져오기 오류 (v4.3.0):', error);
                 return null;
             }
         }
 
-        // 🆕 수업계획 상태 확인 및 페이지 분기 - v4.1.4
+        // 🆕 수업계획 상태 확인 및 페이지 분기 - v4.3.0
         async function checkLessonPlanStatusAndSetPage() {
             try {
-                console.log('📋 수업계획 상태 확인 시작 (v4.1.4)');
+                console.log('📋 수업계획 상태 확인 시작 (v4.3.0)');
                 
                 const currentUser = getCurrentUserSafely();
                 if (!currentUser) {
-                    console.error('❌ 사용자 정보 없음 - 로그인 페이지로 이동 (v4.1.4)');
+                    console.error('❌ 사용자 정보 없음 - 로그인 페이지로 이동 (v4.3.0)');
                     redirectToLogin();
                     return;
                 }
@@ -787,26 +908,26 @@
                     .single();
 
                 if (error && error.code !== 'PGRST116') {
-                    console.error('수업계획 조회 오류 (v4.1.4):', error);
+                    console.error('수업계획 조회 오류 (v4.3.0):', error);
                     showLessonPlanPage();
                     return;
                 }
 
-                console.log('📋 수업계획 조회 결과 (v4.1.4):', lessonPlan);
+                console.log('📋 수업계획 조회 결과 (v4.3.0):', lessonPlan);
 
                 if (!lessonPlan) {
-                    console.log('📝 수업계획 없음 → 작성 화면 표시 (v4.1.4)');
+                    console.log('📝 수업계획 없음 → 작성 화면 표시 (v4.3.0)');
                     showLessonPlanPage();
                 } else {
-                    console.log('✅ 수업계획 있음 → 교구신청 화면 표시 (v4.1.4)');
+                    console.log('✅ 수업계획 있음 → 교구신청 화면 표시 (v4.3.0)');
                     showStudentPage();
                 }
 
                 window.EquipmentRequestManager.lessonPlanChecked = true;
-                console.log('✅ 수업계획 상태 확인 완료 (v4.1.4)');
+                console.log('✅ 수업계획 상태 확인 완료 (v4.3.0)');
 
             } catch (error) {
-                console.error('❌ 수업계획 상태 확인 오류 (v4.1.4):', error);
+                console.error('❌ 수업계획 상태 확인 오류 (v4.3.0):', error);
                 showLessonPlanPage();
             }
         }
@@ -814,7 +935,7 @@
         // 🆕 수업계획 페이지 표시
         function showLessonPlanPage() {
             try {
-                console.log('📋 수업계획 페이지 표시 (v4.1.4)');
+                console.log('📋 수업계획 페이지 표시 (v4.3.0)');
                 
                 const studentPage = document.getElementById('studentPage');
                 const lessonPlanPage = document.getElementById('lessonPlanPage');
@@ -829,19 +950,19 @@
                         }
                     }, 200);
                     
-                    console.log('✅ 수업계획 페이지 표시 완료 (v4.1.4)');
+                    console.log('✅ 수업계획 페이지 표시 완료 (v4.3.0)');
                 } else {
-                    console.error('❌ 페이지 요소를 찾을 수 없습니다 (v4.1.4)');
+                    console.error('❌ 페이지 요소를 찾을 수 없습니다 (v4.3.0)');
                 }
             } catch (error) {
-                console.error('❌ 수업계획 페이지 표시 오류 (v4.1.4):', error);
+                console.error('❌ 수업계획 페이지 표시 오류 (v4.3.0):', error);
             }
         }
 
         // 🆕 교구신청 페이지 표시
         function showStudentPage() {
             try {
-                console.log('🛒 교구신청 페이지 표시 (v4.1.4)');
+                console.log('🛒 교구신청 페이지 표시 (v4.3.0)');
                 
                 const studentPage = document.getElementById('studentPage');
                 const lessonPlanPage = document.getElementById('lessonPlanPage');
@@ -850,18 +971,18 @@
                     lessonPlanPage.classList.remove('active');
                     studentPage.classList.add('active');
                     
-                    console.log('✅ 교구신청 페이지 표시 완료 (v4.1.4)');
+                    console.log('✅ 교구신청 페이지 표시 완료 (v4.3.0)');
                 } else {
-                    console.error('❌ 페이지 요소를 찾을 수 없습니다 (v4.1.4)');
+                    console.error('❌ 페이지 요소를 찾을 수 없습니다 (v4.3.0)');
                 }
             } catch (error) {
-                console.error('❌ 교구신청 페이지 표시 오류 (v4.1.4):', error);
+                console.error('❌ 교구신청 페이지 표시 오류 (v4.3.0):', error);
             }
         }
 
-        // 🎯 사용자 정보 로드 및 UI 업데이트 - v4.1.4
+        // 🎯 사용자 정보 로드 및 UI 업데이트 - v4.3.0
         function loadAndDisplayUserInfo() {
-            console.log('👤 사용자 정보 로드 시작 (v4.1.4)');
+            console.log('👤 사용자 정보 로드 시작 (v4.3.0)');
             
             try {
                 // ApiHelper 모듈 사용
@@ -869,25 +990,25 @@
                     return window.ApiHelper.updateUserDisplay()
                         .then(function() {
                             window.EquipmentRequestManager.userDataLoaded = true;
-                            console.log('✅ 사용자 정보 로드 완료 (v4.1.4 - ApiHelper)');
+                            console.log('✅ 사용자 정보 로드 완료 (v4.3.0 - ApiHelper)');
                         });
                 }
 
                 // 폴백: 직접 처리
                 const currentUser = getCurrentUserSafely();
                 if (!currentUser) {
-                    throw new Error('로그인 세션이 없습니다 (v4.1.4)');
+                    throw new Error('로그인 세션이 없습니다 (v4.3.0)');
                 }
 
                 updateUserInterface(currentUser);
                 
                 window.EquipmentRequestManager.userDataLoaded = true;
-                console.log('✅ 사용자 정보 로드 완료 (v4.1.4 - 폴백)');
+                console.log('✅ 사용자 정보 로드 완료 (v4.3.0 - 폴백)');
                 
                 return Promise.resolve(currentUser);
 
             } catch (error) {
-                console.error('❌ 사용자 정보 로드 오류 (v4.1.4):', error);
+                console.error('❌ 사용자 정보 로드 오류 (v4.3.0):', error);
                 showUserDataError(error.message);
                 return Promise.reject(error);
             }
@@ -908,27 +1029,27 @@
                     detailsEl.textContent = field ? `${institute} - ${field}` : institute;
                 }
                 
-                console.log('✅ 사용자 인터페이스 업데이트 완료 (v4.1.4)');
+                console.log('✅ 사용자 인터페이스 업데이트 완료 (v4.3.0)');
             } catch (error) {
-                console.error('❌ UI 업데이트 오류 (v4.1.4):', error);
+                console.error('❌ UI 업데이트 오류 (v4.3.0):', error);
             }
         }
 
-        // 🔧 StudentManager 초기화 - v4.1.4 모듈 시스템
+        // 🔧 StudentManager 초기화 - v4.3.0 모듈 시스템
         function initializeStudentManager() {
-            console.log('🎓 StudentManager 초기화 시작 (v4.1.4)');
+            console.log('🎓 StudentManager 초기화 시작 (v4.3.0)');
             
             if (window.EquipmentRequestManager.managerInitialized) {
-                console.log('⚠️ StudentManager 이미 초기화됨 (v4.1.4)');
+                console.log('⚠️ StudentManager 이미 초기화됨 (v4.3.0)');
                 return Promise.resolve();
             }
 
             if (typeof StudentManager === 'undefined') {
-                console.error('❌ StudentManager를 찾을 수 없습니다 (v4.1.4)');
+                console.error('❌ StudentManager를 찾을 수 없습니다 (v4.3.0)');
                 return Promise.reject(new Error('StudentManager를 찾을 수 없습니다'));
             }
 
-            console.log('✅ StudentManager 확인됨 (v4.1.4)');
+            console.log('✅ StudentManager 확인됨 (v4.3.0)');
 
             return new Promise(function(resolve, reject) {
                 try {
@@ -938,26 +1059,26 @@
                         initPromise
                             .then(function() {
                                 window.EquipmentRequestManager.managerInitialized = true;
-                                console.log('✅ StudentManager 초기화 완료 (v4.1.4)');
+                                console.log('✅ StudentManager 초기화 완료 (v4.3.0)');
                                 resolve();
                             })
                             .catch(function(error) {
-                                console.error('❌ StudentManager 초기화 실패 (v4.1.4):', error);
+                                console.error('❌ StudentManager 초기화 실패 (v4.3.0):', error);
                                 reject(error);
                             });
                     } else {
                         window.EquipmentRequestManager.managerInitialized = true;
-                        console.log('✅ StudentManager 초기화 완료 (v4.1.4 - 동기)');
+                        console.log('✅ StudentManager 초기화 완료 (v4.3.0 - 동기)');
                         resolve();
                     }
                 } catch (error) {
-                    console.error('❌ StudentManager 초기화 실패 (v4.1.4):', error);
+                    console.error('❌ StudentManager 초기화 실패 (v4.3.0):', error);
                     reject(error);
                 }
             });
         }
 
-        // 🎯 네비게이션 설정 - v4.1.4
+        // 🎯 네비게이션 설정 - v4.3.0
         function setupNavigation() {
             // 대시보드로 돌아가기
             const backBtn = document.getElementById('backToDashboard');
@@ -971,18 +1092,18 @@
             const lessonPlanBtn = document.getElementById('lessonPlanBtn');
             if (lessonPlanBtn) {
                 lessonPlanBtn.addEventListener('click', function() {
-                    console.log('📋 수업계획 버튼 클릭됨 (v4.1.4)');
+                    console.log('📋 수업계획 버튼 클릭됨 (v4.3.0)');
                     
                     if (typeof StudentManager !== 'undefined' && 
                         typeof StudentManager.handleLessonPlanClick === 'function') {
                         try {
                             StudentManager.handleLessonPlanClick();
                         } catch (error) {
-                            console.error('❌ 수업계획 처리 오류 (v4.1.4):', error);
+                            console.error('❌ 수업계획 처리 오류 (v4.3.0):', error);
                             alert('수업계획 처리 중 오류가 발생했습니다.');
                         }
                     } else {
-                        console.error('❌ StudentManager.handleLessonPlanClick 함수를 찾을 수 없습니다 (v4.1.4)');
+                        console.error('❌ StudentManager.handleLessonPlanClick 함수를 찾을 수 없습니다 (v4.3.0)');
                         alert('시스템이 아직 로딩 중입니다. 잠시 후 다시 시도해주세요.');
                     }
                 });
@@ -992,19 +1113,51 @@
             const shippingAddressBtn = document.getElementById('shippingAddressBtn');
             if (shippingAddressBtn) {
                 shippingAddressBtn.addEventListener('click', function() {
-                    console.log('📦 배송지 설정 버튼 클릭됨 (v4.1.4)');
+                    console.log('📦 배송지 설정 버튼 클릭됨 (v4.3.0)');
                     
                     if (typeof StudentManager !== 'undefined' && 
                         typeof StudentManager.handleShippingClick === 'function') {
                         StudentManager.handleShippingClick();
                     } else {
-                        console.error('❌ 배송지 설정 함수를 찾을 수 없습니다 (v4.1.4)');
+                        console.error('❌ 배송지 설정 함수를 찾을 수 없습니다 (v4.3.0)');
                         alert('배송지 설정 기능을 사용할 수 없습니다.');
                     }
                 });
             }
 
-            console.log('✅ 네비게이션 설정 완료 (v4.1.4)');
+            console.log('✅ 네비게이션 설정 완료 (v4.3.0)');
+        }
+
+        // 🆕 v4.3.0 묶음 신청 UI 이벤트 설정
+        function setupBundleModalEvents() {
+            try {
+                console.log('🔧 v4.3.0 묶음 신청 UI 이벤트 설정');
+
+                // 구매 방식 라디오 버튼 이벤트
+                const bundlePurchaseMethodRadios = document.querySelectorAll('input[name="bundlePurchaseMethod"]');
+                bundlePurchaseMethodRadios.forEach(function(radio) {
+                    radio.addEventListener('change', function() {
+                        if (radio.checked && typeof window.toggleBundlePurchaseInfo === 'function') {
+                            window.toggleBundlePurchaseInfo(radio.value);
+                        }
+                    });
+                });
+
+                // 구매 사이트 선택 변경 이벤트
+                const purchaseSiteSelect = document.getElementById('purchaseSite');
+                if (purchaseSiteSelect && typeof window.handlePurchaseSiteChange === 'function') {
+                    purchaseSiteSelect.addEventListener('change', window.handlePurchaseSiteChange);
+                }
+
+                // 초기 상태 설정
+                if (typeof window.toggleBundlePurchaseInfo === 'function') {
+                    window.toggleBundlePurchaseInfo('online');
+                }
+
+                console.log('✅ v4.3.0 묶음 신청 UI 이벤트 설정 완료');
+            } catch (error) {
+                console.error('❌ v4.3.0 묶음 신청 UI 이벤트 설정 오류:', error);
+            }
         }
 
         // 🎯 오류 메시지 표시 함수들
@@ -1038,7 +1191,7 @@
             }
 
             // 폴백: 간단한 로딩 표시
-            console.log('⏳ 시스템 로딩 중... (v4.1.4)');
+            console.log('⏳ 시스템 로딩 중... (v4.3.0)');
         }
 
         function hideLoadingIndicator() {
@@ -1048,12 +1201,12 @@
                 return;
             }
 
-            console.log('✅ 로딩 완료 (v4.1.4)');
+            console.log('✅ 로딩 완료 (v4.3.0)');
         }
 
         // 🎯 재시도 함수들
         function retryUserDataLoad() {
-            console.log('🔄 사용자 데이터 로드 재시도 (v4.1.4)');
+            console.log('🔄 사용자 데이터 로드 재시도 (v4.3.0)');
             
             loadAndDisplayUserInfo()
                 .then(function() {
@@ -1062,7 +1215,7 @@
                     }
                 })
                 .catch(function() {
-                    console.error('❌ 재시도 실패 (v4.1.4)');
+                    console.error('❌ 재시도 실패 (v4.3.0)');
                 });
         }
 
@@ -1074,9 +1227,9 @@
             }
         }
 
-        // 🚀 메인 초기화 함수 - v4.1.4 완전 업데이트
+        // 🚀 메인 초기화 함수 - v4.3.0 완전 업데이트
         function initializeEquipmentRequestPage() {
-            console.log('🚀 Equipment Request 페이지 초기화 시작 (v4.1.4)');
+            console.log('🚀 Equipment Request 페이지 초기화 시작 (v4.3.0 - 4가지 타입별 최적화)');
             
             try {
                 window.EquipmentRequestManager.isInitialized = false;
@@ -1085,15 +1238,15 @@
                 
                 return waitForDependencies()
                     .then(function() {
-                        console.log('✅ 1단계: 의존성 로딩 완료 (v4.1.4)');
+                        console.log('✅ 1단계: 의존성 로딩 완료 (v4.3.0)');
                         return loadAndDisplayUserInfo();
                     })
                     .then(function() {
-                        console.log('✅ 2단계: 사용자 정보 로드 완료 (v4.1.4)');
+                        console.log('✅ 2단계: 사용자 정보 로드 완료 (v4.3.0)');
                         return checkLessonPlanStatusAndSetPage();
                     })
                     .then(function() {
-                        console.log('✅ 3단계: 수업계획 상태 확인 완료 (v4.1.4)');
+                        console.log('✅ 3단계: 수업계획 상태 확인 완료 (v4.3.0)');
                         
                         const studentPage = document.getElementById('studentPage');
                         if (studentPage && studentPage.classList.contains('active')) {
@@ -1102,17 +1255,21 @@
                         return Promise.resolve();
                     })
                     .then(function() {
-                        console.log('✅ 4단계: StudentManager 초기화 완료 (v4.1.4)');
+                        console.log('✅ 4단계: StudentManager 초기화 완료 (v4.3.0)');
                         
                         setupNavigation();
-                        console.log('✅ 5단계: 네비게이션 설정 완료 (v4.1.4)');
+                        console.log('✅ 5단계: 네비게이션 설정 완료 (v4.3.0)');
+
+                        // 🆕 v4.3.0 묶음 신청 UI 이벤트 설정
+                        setupBundleModalEvents();
+                        console.log('✅ 6단계: v4.3.0 UI 이벤트 설정 완료');
                         
                         window.EquipmentRequestManager.isInitialized = true;
                         const loadTime = Date.now() - window.EquipmentRequestManager.loadStartTime;
-                        console.log('🎉 Equipment Request 페이지 초기화 완료 (v4.1.4) - ' + loadTime + 'ms');
+                        console.log('🎉 Equipment Request 페이지 초기화 완료 (v4.3.0 - 4가지 타입별 최적화) - ' + loadTime + 'ms');
                     })
                     .catch(function(error) {
-                        console.error('❌ 페이지 초기화 실패 (v4.1.4):', error);
+                        console.error('❌ 페이지 초기화 실패 (v4.3.0):', error);
                         
                         if (error.message.includes('로그인 세션')) {
                             setTimeout(function() {
@@ -1128,7 +1285,7 @@
                     });
                     
             } catch (error) {
-                console.error('❌ 초기화 중 예외 발생 (v4.1.4):', error);
+                console.error('❌ 초기화 중 예외 발생 (v4.3.0):', error);
                 hideLoadingIndicator();
                 showSystemErrorModal('페이지 초기화 중 오류가 발생했습니다');
             }
@@ -1136,12 +1293,12 @@
 
         // 🎯 DOM 로드 완료 시 실행
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 v4.1.4 (영수증 저장 오류 수정)');
+            console.log('📋 DOM 로드 완료 - Equipment Request 페이지 v4.3.0 (4가지 타입별 최적화 완료)');
             
             // Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
-                console.log('✅ Lucide 아이콘 초기화 완료 (v4.1.4)');
+                console.log('✅ Lucide 아이콘 초기화 완료 (v4.3.0)');
             }
             
             // 모든 스크립트 로딩 완료까지 잠시 대기 후 초기화
@@ -1159,14 +1316,14 @@
 
         // 🎯 호환성 함수
         window.initializeStudentPage = function() {
-            console.log('🔄 initializeStudentPage 호출됨 (v4.1.4 호환성 함수)');
+            console.log('🔄 initializeStudentPage 호출됨 (v4.3.0 호환성 함수)');
             return initializeEquipmentRequestPage();
         };
 
-        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 (v4.1.4 - 영수증 저장 오류 수정)');
+        console.log('✅ Equipment Request 페이지 스크립트 로드 완료 (v4.3.0 - 4가지 타입별 최적화)');
     </script>
     
-    <!-- v4.1.4 영수증 UX 개선 스타일 -->
+    <!-- v4.3.0 UI 개선 스타일 -->
     <style>
         /* 페이지 전환 스타일 */
         .page {
@@ -1177,6 +1334,157 @@
             display: block;
         }
         
+        /* 🆕 v4.3.0 버전 배지 */
+        .version-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6, #10b981);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        /* 🆕 v4.3.0 묶음 신청 모달 스타일 개선 */
+        .bundle-intro {
+            background: linear-gradient(135deg, #f0f9ff, #ecfdf5);
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .bundle-intro p {
+            margin: 0;
+            color: #0f172a;
+            font-size: 0.875rem;
+        }
+
+        /* 폼 섹션 스타일 */
+        .form-section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-section h4 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0 0 1rem 0;
+            color: #1e293b;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .form-section h4 i {
+            width: 1.25rem;
+            height: 1.25rem;
+            color: #3b82f6;
+        }
+
+        .form-section h5 {
+            margin: 0 0 0.5rem 0;
+            color: #1e293b;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        /* 🔐 계정 정보 섹션 스타일 */
+        .account-info-section {
+            background: #fff7ed;
+            border: 1px solid #fb923c;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .account-info-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .account-info-header i {
+            width: 1.5rem;
+            height: 1.5rem;
+            color: #ea580c;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        /* 🏪 오프라인 구매 안내 스타일 */
+        .offline-notice {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .offline-notice i {
+            width: 1.25rem;
+            height: 1.25rem;
+            color: #0284c7;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .offline-notice ul {
+            margin: 0.5rem 0 0 0;
+            padding-left: 1.25rem;
+        }
+
+        .offline-notice li {
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+            color: #0f172a;
+        }
+
+        /* 🎯 구매 방식 옵션 개선 스타일 */
+        .radio-option.enhanced {
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .radio-option.enhanced:hover {
+            border-color: #3b82f6;
+            background-color: #f8fafc;
+        }
+
+        .radio-option.enhanced:has(input:checked) {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        .method-features {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .feature-tag {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #3730a3;
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
         /* 시스템 오류 모달 스타일 */
         #systemErrorModal .modal-content {
             max-width: 500px;
@@ -1346,6 +1654,24 @@
             
             .file-details {
                 order: -1;
+            }
+
+            /* v4.3.0 모바일 반응형 */
+            .form-section {
+                padding: 1rem;
+            }
+
+            .account-info-header {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .method-features {
+                flex-direction: column;
+            }
+
+            .feature-tag {
+                align-self: flex-start;
             }
         }
     </style>
