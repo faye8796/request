@@ -1,31 +1,160 @@
 // 교구 신청 전담 모듈 - v4.3.0 (student.js와 student-addon.js에서 분리)
 // 일반신청, 묶음신청, 수정/삭제, 카드렌더링, API 확장 등 교구 관련 모든 기능 통합
 // 🎯 책임: 교구 신청의 전체 라이프사이클 관리
-// 🔧 v4.3.0 - requests 테이블 구조 호환성 업데이트
+// 🔧 v4.3.0 - requests 테이블 구조 호환성 업데이트 및 4가지 타입별 최적화
 
-// SupabaseAPI 확장 (student-addon.js에서 이동)
+// SupabaseAPI 확장 (student-addon.js에서 이동) - 🆕 v4.3.0 API 추가
 function extendSupabaseAPI() {
     if (typeof window.SupabaseAPI !== 'undefined') {
         
-        // 🔧 교구 신청 수정 메서드 - v4.3.0 호환성
-        window.SupabaseAPI.updateApplication = async function(applicationId, formData) {
-            return await this.safeApiCall('교구 신청 수정', async () => {
+        // === 🆕 v4.3.0 일반 교구 신청 API ===
+        window.SupabaseAPI.createV43Application = async function(studentId, formData) {
+            console.log('📝 SupabaseAPI.createV43Application 호출');
+            
+            return await this.safeApiCall('v4.3.0 교구 신청 생성', async () => {
+                // SupabaseStudent 모듈 사용
+                if (window.SupabaseStudent && window.SupabaseStudent.createV43Application) {
+                    return await window.SupabaseStudent.createV43Application(studentId, formData);
+                }
+                
+                // 폴백: 직접 구현
+                const client = await this.ensureClient();
+                const requestData = {
+                    user_id: studentId,
+                    item_name: formData.item_name,
+                    purpose: formData.purpose,
+                    price: formData.price,
+                    purchase_type: formData.purchase_type || 'online',
+                    is_bundle: formData.is_bundle || false,
+                    
+                    // v4.3.0 새로운 컬럼들
+                    link: formData.link || null,
+                    store_info: formData.store_info || null,
+                    account_id: formData.account_id || null,
+                    account_pw: formData.account_pw || null,
+                    
+                    status: 'pending',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                return await client
+                    .from('requests')
+                    .insert([requestData])
+                    .select();
+            });
+        };
+
+        // === 🆕 v4.3.0 묶음 교구 신청 API ===
+        window.SupabaseAPI.createV43BundleApplication = async function(studentId, bundleData) {
+            console.log('📦 SupabaseAPI.createV43BundleApplication 호출');
+            
+            return await this.safeApiCall('v4.3.0 묶음 신청 생성', async () => {
+                // SupabaseStudent 모듈 사용
+                if (window.SupabaseStudent && window.SupabaseStudent.createV43BundleApplication) {
+                    return await window.SupabaseStudent.createV43BundleApplication(studentId, bundleData);
+                }
+                
+                // 폴백: 직접 구현
+                const client = await this.ensureClient();
+                const requestData = {
+                    user_id: studentId,
+                    item_name: bundleData.item_name,
+                    purpose: bundleData.purpose,
+                    price: bundleData.price,
+                    purchase_type: bundleData.purchase_type,
+                    is_bundle: true,
+                    
+                    // v4.3.0 4가지 타입별 컬럼들
+                    link: bundleData.link,
+                    store_info: bundleData.store_info,
+                    account_id: bundleData.account_id,
+                    account_pw: bundleData.account_pw,
+                    
+                    status: 'pending',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                return await client
+                    .from('requests')
+                    .insert([requestData])
+                    .select();
+            });
+        };
+
+        // === 🆕 v4.3.0 신청 수정 API ===
+        window.SupabaseAPI.updateV43Application = async function(applicationId, formData) {
+            console.log('✏️ SupabaseAPI.updateV43Application 호출');
+            
+            return await this.safeApiCall('v4.3.0 교구 신청 수정', async () => {
+                // SupabaseStudent 모듈 사용
+                if (window.SupabaseStudent && window.SupabaseStudent.updateV43Application) {
+                    return await window.SupabaseStudent.updateV43Application(applicationId, formData);
+                }
+                
+                // 폴백: 직접 구현
+                const client = await this.ensureClient();
                 const updateData = {
                     item_name: formData.item_name,
                     purpose: formData.purpose,
                     price: formData.price,
                     purchase_type: formData.purchase_type || 'online',
-                    link: formData.purchase_link || null,  // 🔧 v4.3.0: purchase_link → link
                     is_bundle: formData.is_bundle || false,
+                    
+                    // v4.3.0 새로운 컬럼들
+                    link: formData.link || null,
+                    store_info: formData.store_info || null,
+                    account_id: formData.account_id || null,
+                    account_pw: formData.account_pw || null,
+                    
                     updated_at: new Date().toISOString()
                 };
 
-                return await this.supabase
+                return await client
                     .from('requests')
                     .update(updateData)
                     .eq('id', applicationId)
                     .select();
             });
+        };
+
+        // 🔄 기존 API 함수들 v4.3.0 호환성 업데이트
+        
+        // 기존 updateApplication 함수를 v4.3.0 호환으로 업데이트
+        window.SupabaseAPI.updateApplication = async function(applicationId, formData) {
+            console.log('🔄 기존 updateApplication → v4.3.0 호환 모드');
+            
+            // v4.3.0 구조로 변환
+            const v43FormData = {
+                ...formData,
+                link: formData.purchase_link || formData.link,
+                store_info: formData.store_info || null,
+                account_id: formData.account_id || null,
+                account_pw: formData.account_pw || null
+            };
+            
+            return await this.updateV43Application(applicationId, v43FormData);
+        };
+
+        // 기존 createApplication 함수를 v4.3.0 호환으로 업데이트
+        window.SupabaseAPI.createApplication = async function(studentId, formData) {
+            console.log('🔄 기존 createApplication → v4.3.0 호환 모드');
+            
+            // v4.3.0 구조로 변환
+            const v43FormData = {
+                ...formData,
+                link: formData.purchase_link || formData.link,
+                store_info: null,
+                account_id: null,
+                account_pw: null
+            };
+            
+            if (formData.is_bundle) {
+                return await this.createV43BundleApplication(studentId, v43FormData);
+            } else {
+                return await this.createV43Application(studentId, v43FormData);
+            }
         };
 
         // 🔧 교구 신청 삭제 메서드
@@ -50,7 +179,12 @@ function extendSupabaseAPI() {
             });
         };
 
-        console.log('✅ SupabaseAPI 교구신청 확장 완료');
+        console.log('✅ SupabaseAPI v4.3.0 확장 완료 - 4가지 신청 타입별 최적화');
+        console.log('📋 새로 추가된 API 함수들:', [
+            'createV43Application',
+            'createV43BundleApplication', 
+            'updateV43Application'
+        ]);
     }
 }
 
@@ -72,7 +206,7 @@ const EquipmentRequestModule = {
     
     init: function(studentManager) {
         try {
-            console.log('🛒 EquipmentRequestModule 초기화 v4.3.0 - v4.3 테이블 호환성');
+            console.log('🛒 EquipmentRequestModule 초기화 v4.3.0 - 4가지 타입별 최적화');
             
             this.studentManager = studentManager;
             
@@ -289,7 +423,7 @@ const EquipmentRequestModule = {
         }
     },
 
-    // === 폼 처리 ===
+    // === 🚀 v4.3.0 폼 처리 - 4가지 타입별 최적화 ===
 
     // 📝 일반 교구 신청 제출 처리 - v4.3.0 호환성
     handleApplicationSubmit: function() {
@@ -319,22 +453,45 @@ const EquipmentRequestModule = {
 
             // 폼 데이터 수집
             const formData = new FormData(form);
+            const purchaseMethod = formData.get('purchaseMethod') || 'online';
+            
+            // 🆕 v4.3.0 - 4가지 타입별 단일 신청 데이터 구성
             const applicationData = {
                 item_name: formData.get('itemName') || '',
                 price: parseInt(formData.get('itemPrice')) || 0,
                 purpose: formData.get('itemPurpose') || '',
-                purchase_type: formData.get('purchaseMethod') || 'online',
-                purchase_link: formData.get('itemLink') || '', // 🔧 UI는 그대로, API 매핑에서 변환
-                is_bundle: false
+                purchase_type: purchaseMethod,
+                is_bundle: false,
+                // v4.3.0 새로운 컬럼들
+                link: null,
+                store_info: null,
+                account_id: null,
+                account_pw: null
             };
 
+            // 타입별 데이터 설정
+            if (purchaseMethod === 'online') {
+                // 온라인 단일 구매 - link만 사용
+                const purchaseLink = formData.get('itemLink') || '';
+                if (!purchaseLink.trim()) {
+                    alert('온라인 구매의 경우 구매 링크를 입력해주세요.');
+                    form.querySelector('#itemLink').focus();
+                    this.submitInProgress = false;
+                    return;
+                }
+                applicationData.link = purchaseLink.trim();
+            } else {
+                // 오프라인 단일 구매 - store_info는 선택적
+                applicationData.store_info = null;
+            }
+
             // 입력 검증
-            if (!this.validateApplicationData(applicationData, form)) {
+            if (!this.validateApplicationDataV43(applicationData, form)) {
                 this.submitInProgress = false;
                 return;
             }
 
-            console.log('📝 제출할 신청 데이터:', applicationData);
+            console.log('📝 v4.3.0 단일 신청 데이터:', applicationData);
             
             // 제출 버튼 비활성화
             const submitBtn = form.querySelector('button[type="submit"]');
@@ -343,14 +500,14 @@ const EquipmentRequestModule = {
                 submitBtn.textContent = '제출 중...';
             }
 
-            // API 호출
+            // v4.3.0 API 호출
             const apiCall = this.currentEditingItem ? 
-                () => SupabaseAPI.updateApplication(this.currentEditingItem, applicationData) :
-                () => SupabaseAPI.createApplication(currentUser.id, applicationData);
+                () => SupabaseAPI.updateV43Application(this.currentEditingItem, applicationData) :
+                () => SupabaseAPI.createV43Application(currentUser.id, applicationData);
 
             this.safeApiCall(apiCall).then((result) => {
                 if (result && result.success !== false) {
-                    console.log('✅ 교구 신청 제출 완료');
+                    console.log('✅ v4.3.0 교구 신청 제출 완료');
                     alert(this.currentEditingItem ? '교구 신청이 수정되었습니다.' : '교구 신청이 제출되었습니다.');
                     
                     this.hideApplicationModal();
@@ -385,10 +542,10 @@ const EquipmentRequestModule = {
         }
     },
 
-    // 📦 묶음 신청 제출 처리
+    // 📦 묶음 신청 제출 처리 - 🆕 v4.3.0 최적화
     handleBundleSubmit: function() {
         try {
-            console.log('📦 묶음 신청 제출 처리');
+            console.log('📦 묶음 신청 제출 처리 v4.3.0 - 4가지 타입별 최적화');
             
             if (this.submitInProgress) {
                 console.warn('⚠️ 제출이 이미 진행 중입니다');
@@ -424,27 +581,18 @@ const EquipmentRequestModule = {
                 return;
             }
 
-            // 구매 방식에 따른 추가 정보 수집
-            const purchaseDetails = this.collectBundlePurchaseDetails(bundlePurchaseMethod, formData, form);
-            if (!purchaseDetails) {
+            // 🆕 v4.3.0 - 4가지 타입별 데이터 구성
+            const bundleData = this.buildV43BundleData(
+                bundleTitle, bundlePurpose, bundleTotalPrice, 
+                bundlePurchaseMethod, formData, form
+            );
+            
+            if (!bundleData) {
                 this.submitInProgress = false;
                 return;
             }
 
-            // API 전송용 데이터 구성
-            const bundleData = {
-                item_name: bundleTitle,
-                price: bundleTotalPrice,
-                purpose: bundlePurpose,
-                purchase_type: bundlePurchaseMethod,
-                purchase_link: purchaseDetails, // 🔧 UI는 그대로, API 매핑에서 변환
-                is_bundle: true
-            };
-
-            console.log('📦 제출할 묶음 신청 데이터:', {
-                ...bundleData,
-                purchase_link: bundleData.purchase_link.replace(/계정 PW:.*/, '계정 PW: [암호화됨]')
-            });
+            console.log('📦 v4.3.0 최적화된 묶음 신청 데이터:', bundleData);
             
             // 제출 버튼 비활성화
             const submitBtn = form.querySelector('button[type="submit"]');
@@ -453,12 +601,12 @@ const EquipmentRequestModule = {
                 submitBtn.textContent = '제출 중...';
             }
 
-            // API 호출
+            // 🆕 v4.3.0 API 호출
             this.safeApiCall(() => {
-                return SupabaseAPI.createApplication(currentUser.id, bundleData);
+                return SupabaseAPI.createV43BundleApplication(currentUser.id, bundleData);
             }).then((result) => {
                 if (result && result.success !== false) {
-                    console.log('✅ 묶음 신청 제출 완료');
+                    console.log('✅ v4.3.0 묶음 신청 제출 완료');
                     alert('묶음 신청이 제출되었습니다.');
                     
                     this.hideBundleModal();
@@ -491,6 +639,200 @@ const EquipmentRequestModule = {
             alert('묶음 신청 제출 처리 중 오류가 발생했습니다.');
             this.submitInProgress = false;
         }
+    },
+
+    // === 🆕 v4.3.0 - 4가지 타입별 데이터 구성 함수 ===
+    buildV43BundleData: function(title, purpose, price, purchaseMethod, formData, form) {
+        try {
+            console.log('🎯 v4.3.0 - 4가지 타입별 데이터 구성:', { purchaseMethod });
+            
+            // 기본 신청 데이터
+            const bundleData = {
+                item_name: title,
+                price: price,
+                purpose: purpose,
+                purchase_type: purchaseMethod,
+                is_bundle: true,
+                // v4.3.0 새로운 컬럼들 초기화
+                link: null,
+                store_info: null,
+                account_id: null,
+                account_pw: null
+            };
+
+            if (purchaseMethod === 'online') {
+                // 🔥 온라인 묶음 구매 - v4.3.0 최적화
+                const onlineData = this.collectOnlineBundleData(formData, form);
+                if (!onlineData) return null;
+                
+                bundleData.link = onlineData.purchaseUrl;
+                bundleData.account_id = onlineData.accountId;
+                bundleData.account_pw = onlineData.accountPassword;
+                
+                console.log('✅ 온라인 묶음 데이터 구성 완료');
+                
+            } else {
+                // 🏪 오프라인 묶음 구매 - v4.3.0 최적화
+                const offlineData = this.collectOfflineBundleData(formData, form);
+                if (!offlineData) return null;
+                
+                bundleData.store_info = offlineData.storeInfo;
+                
+                console.log('✅ 오프라인 묶음 데이터 구성 완료');
+            }
+
+            return bundleData;
+
+        } catch (error) {
+            console.error('❌ v4.3.0 데이터 구성 오류:', error);
+            alert('신청 데이터 구성 중 오류가 발생했습니다.');
+            return null;
+        }
+    },
+
+    // === 🆕 온라인 묶음 구매 데이터 수집 - v4.3.0 ===
+    collectOnlineBundleData: function(formData, form) {
+        try {
+            const purchaseSite = formData.get('purchaseSite') || '';
+            const accountId = formData.get('accountId') || '';
+            const accountPassword = formData.get('accountPassword') || '';
+            const cartNote = formData.get('cartNote') || '';
+            
+            // 필수 필드 검증
+            if (!purchaseSite) {
+                alert('구매 사이트를 선택해주세요.');
+                form.querySelector('#purchaseSite').focus();
+                return null;
+            }
+            
+            if (!accountId.trim()) {
+                alert('계정 아이디를 입력해주세요.');
+                form.querySelector('#accountId').focus();
+                return null;
+            }
+            
+            if (!accountPassword.trim()) {
+                alert('계정 비밀번호를 입력해주세요.');
+                form.querySelector('#accountPassword').focus();
+                return null;
+            }
+            
+            // 기타 사이트 URL 확인
+            let siteUrl = '';
+            if (purchaseSite === 'other') {
+                const otherSite = formData.get('otherSite') || '';
+                if (!otherSite.trim()) {
+                    alert('기타 사이트 URL을 입력해주세요.');
+                    form.querySelector('#otherSite').focus();
+                    return null;
+                }
+                siteUrl = otherSite.trim();
+            } else {
+                // 주요 쇼핑몰 URL 매핑
+                const siteUrls = {
+                    'coupang': 'https://www.coupang.com',
+                    '11st': 'https://www.11st.co.kr',
+                    'gmarket': 'https://www.gmarket.co.kr',
+                    'auction': 'https://www.auction.co.kr',
+                    'interpark': 'https://shop.interpark.com',
+                    'lotte': 'https://www.lotte.com',
+                    'ssg': 'https://www.ssg.com',
+                    'yes24': 'https://www.yes24.com',
+                    'kyobo': 'https://www.kyobobook.co.kr'
+                };
+                siteUrl = siteUrls[purchaseSite] || purchaseSite;
+            }
+            
+            // 장바구니 메모가 있으면 구매 URL에 추가 정보로 포함
+            let purchaseUrl = siteUrl;
+            if (cartNote.trim()) {
+                purchaseUrl += ` (장바구니 메모: ${cartNote.trim()})`;
+            }
+            
+            return {
+                purchaseUrl: purchaseUrl,
+                accountId: accountId.trim(),
+                accountPassword: this.encryptPasswordV43(accountPassword.trim())
+            };
+            
+        } catch (error) {
+            console.error('❌ 온라인 묶음 데이터 수집 오류:', error);
+            alert('온라인 구매 정보 처리 중 오류가 발생했습니다.');
+            return null;
+        }
+    },
+
+    // === 🆕 오프라인 묶음 구매 데이터 수집 - v4.3.0 ===
+    collectOfflineBundleData: function(formData, form) {
+        try {
+            const offlineVendor = formData.get('offlineVendor') || '';
+            const purchasePlan = formData.get('purchasePlan') || '';
+            
+            // 필수 필드 검증
+            if (!offlineVendor.trim()) {
+                alert('구매 업체 정보를 입력해주세요.');
+                form.querySelector('#offlineVendor').focus();
+                return null;
+            }
+            
+            // 업체 정보와 구매 계획을 store_info에 구조적으로 저장
+            let storeInfo = offlineVendor.trim();
+            if (purchasePlan.trim()) {
+                storeInfo += `\n\n[구매 계획]\n${purchasePlan.trim()}`;
+            }
+            
+            return {
+                storeInfo: storeInfo
+            };
+            
+        } catch (error) {
+            console.error('❌ 오프라인 묶음 데이터 수집 오류:', error);
+            alert('오프라인 구매 정보 처리 중 오류가 발생했습니다.');
+            return null;
+        }
+    },
+
+    // === 🆕 v4.3.0 전용 비밀번호 암호화 ===
+    encryptPasswordV43: function(password) {
+        try {
+            // v4.3.0 전용 암호화 (실제 운영에서는 더 강력한 암호화 필요)
+            const timestamp = Date.now();
+            const salt = 'sejong_v43_' + timestamp;
+            return btoa(salt + ':' + password);
+        } catch (error) {
+            console.error('v4.3.0 비밀번호 암호화 오류:', error);
+            return password; // 암호화 실패 시 원본 반환
+        }
+    },
+
+    // === 🆕 v4.3.0 검증 함수 ===
+    validateApplicationDataV43: function(data, form) {
+        if (!data.item_name.trim()) {
+            alert('교구명을 입력해주세요.');
+            form.querySelector('#itemName').focus();
+            return false;
+        }
+
+        if (data.price <= 0) {
+            alert('올바른 가격을 입력해주세요.');
+            form.querySelector('#itemPrice').focus();
+            return false;
+        }
+
+        if (!data.purpose.trim()) {
+            alert('사용 목적을 입력해주세요.');
+            form.querySelector('#itemPurpose').focus();
+            return false;
+        }
+
+        // v4.3.0 - 온라인 단일 구매는 link 필수
+        if (data.purchase_type === 'online' && !data.link) {
+            alert('온라인 구매의 경우 구매 링크를 입력해주세요.');
+            form.querySelector('#itemLink').focus();
+            return false;
+        }
+
+        return true;
     },
 
     // === 수정/삭제 기능 ===
@@ -1118,7 +1460,7 @@ const EquipmentRequestModule = {
         }
     },
 
-    // 묶음 구매 정보 수집
+    // 묶음 구매 정보 수집 (기존 방식 - 호환성 유지)
     collectBundlePurchaseDetails: function(method, formData, form) {
         try {
             if (method === 'online') {
@@ -1360,4 +1702,4 @@ if (typeof window !== 'undefined') {
     window.EquipmentRequestModule = EquipmentRequestModule;
 }
 
-console.log('🛒 EquipmentRequestModule v4.3.0 로드 완료 - v4.3 테이블 호환성 (purchase_link → link)');
+console.log('🛒 EquipmentRequestModule v4.3.0 로드 완료 - 4가지 타입별 최적화 (온라인 묶음: link+account_id+account_pw / 오프라인 묶음: store_info)');
