@@ -1,4 +1,4 @@
-/* 학생별 그룹화 UI 스타일 - admin-addon.js 전용 */
+/* 학생별 그룹화 UI 스타일 v4.3 - admin-enhanced-ui.js 전용 */
 
 /* 학생 그룹 카드 */
 .student-group-card {
@@ -86,6 +86,48 @@
     background: rgba(255, 255, 255, 0.1);
     padding: 4px 8px;
     border-radius: 6px;
+}
+
+/* v4.3 신청 타입별 요약 배지 */
+.student-type-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.type-summary-badge {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.type-summary-badge.online-single {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.type-summary-badge.online-bundle {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+.type-summary-badge.offline-single {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+.type-summary-badge.offline-bundle {
+    background: rgba(168, 85, 247, 0.2);
+    color: #c4b5fd;
+    border-color: rgba(168, 85, 247, 0.4);
 }
 
 /* 학생 통계 */
@@ -407,6 +449,28 @@
     letter-spacing: 0.3px;
 }
 
+/* v4.3 개선된 구매 방식 배지 */
+.purchase-method-badge.online-single {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.purchase-method-badge.online-bundle {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.purchase-method-badge.offline-single {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.purchase-method-badge.offline-bundle {
+    background: #ede9fe;
+    color: #7c3aed;
+}
+
+/* 기존 온라인/오프라인 배지 호환성 유지 */
 .purchase-method-badge.online {
     background: #dbeafe;
     color: #1e40af;
@@ -462,6 +526,129 @@
 
 .item-link:hover {
     text-decoration: underline;
+}
+
+.item-link.online-link {
+    color: #1e40af;
+}
+
+.item-link.reference-link {
+    color: #6b7280;
+}
+
+/* v4.3 구매 정보 섹션 */
+.purchase-info-section {
+    margin-top: 12px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+/* v4.3 묶음 구매 계정 정보 */
+.bundle-account-info {
+    margin-top: 8px;
+}
+
+.account-info-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #059669;
+    margin-bottom: 8px;
+}
+
+.account-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.account-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.875rem;
+}
+
+.account-label {
+    font-weight: 500;
+    color: #6b7280;
+    min-width: 60px;
+}
+
+.account-value {
+    flex: 1;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #374151;
+}
+
+.password-field {
+    letter-spacing: 2px;
+}
+
+.copy-btn,
+.toggle-password-btn {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 4px 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+}
+
+.copy-btn:hover,
+.toggle-password-btn:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+.copy-btn i,
+.toggle-password-btn i {
+    width: 14px;
+    height: 14px;
+}
+
+/* v4.3 오프라인 구매처 정보 */
+.store-info {
+    margin-top: 8px;
+}
+
+.store-info-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #d97706;
+    margin-bottom: 8px;
+}
+
+.store-details {
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #fed7aa;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #92400e;
+    line-height: 1.4;
+}
+
+/* 참고 링크 정보 */
+.reference-link-info {
+    margin-top: 8px;
 }
 
 /* 영수증 정보 */
@@ -653,6 +840,26 @@
     animation: spin 1s linear infinite;
 }
 
+/* v4.3 클립보드 복사 피드백 애니메이션 */
+@keyframes copySuccess {
+    0% {
+        transform: scale(1);
+        background: #f3f4f6;
+    }
+    50% {
+        transform: scale(1.1);
+        background: #dcfce7;
+    }
+    100% {
+        transform: scale(1);
+        background: #f3f4f6;
+    }
+}
+
+.copy-btn.copying {
+    animation: copySuccess 0.3s ease;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 768px) {
     .student-group-header {
@@ -667,6 +874,10 @@
     }
 
     .stat-badges {
+        justify-content: flex-start;
+    }
+
+    .student-type-summary {
         justify-content: flex-start;
     }
 
@@ -693,6 +904,20 @@
 
     .toggle-applications-btn {
         align-self: flex-end;
+    }
+
+    .account-item {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .account-label {
+        min-width: 50px;
+        font-size: 0.8rem;
+    }
+
+    .account-value {
+        min-width: 120px;
     }
 }
 
@@ -727,5 +952,31 @@
     .student-contact-info {
         flex-direction: column;
         gap: 8px;
+    }
+
+    .purchase-info-section {
+        padding: 8px;
+    }
+
+    .account-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .account-label {
+        min-width: auto;
+    }
+
+    .account-value {
+        min-width: auto;
+        word-break: break-all;
+    }
+
+    .copy-btn,
+    .toggle-password-btn {
+        min-width: 24px;
+        height: 24px;
+        align-self: flex-end;
     }
 }
