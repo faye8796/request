@@ -1,6 +1,7 @@
-// 학생 기능 핵심 매니저 - v4.1 구문 오류 수정 버전 (완전 모듈 시스템)
+// 학생 기능 핵심 매니저 - v4.1.1 배송지 모듈 연결 수정
 // 🎯 책임: 모듈 관리, 페이지 전환, 간단한 조정자 역할
 // 📦 분리 완료: 교구신청, 배송지, 영수증, 수업계획, API, 알림 → 각각 독립 모듈
+// 🔧 v4.1.1: 배송지 모듈 연결 수정 (ShippingManagement → ShippingManagementModule)
 
 const StudentManager = {
     // === 모듈 시스템 ===
@@ -44,7 +45,7 @@ const StudentManager = {
         }
 
         try {
-            console.log('🎓 StudentManager v4.1 초기화 시작 (완전 모듈 시스템)');
+            console.log('🎓 StudentManager v4.1.1 초기화 시작 (배송지 모듈 연결 수정)');
             
             // 1. 모듈 로드
             this.loadAllModules();
@@ -57,7 +58,7 @@ const StudentManager = {
             return this.initializeModulesData()
                 .then(function() {
                     self.isInitialized = true;
-                    console.log('✅ StudentManager v4.1 초기화 완료');
+                    console.log('✅ StudentManager v4.1.1 초기화 완료');
                     
                     // 시스템 준비 완료 알림
                     const notificationSystem = self.getModule('notification');
@@ -89,9 +90,17 @@ const StudentManager = {
                 this.registerModule('equipment', window.EquipmentRequestModule);
             }
 
-            // 배송지 관리 모듈
-            if (typeof window.ShippingManagement !== 'undefined') {
-                this.registerModule('shipping', window.ShippingManagement);
+            // 🔧 배송지 관리 모듈 - 올바른 모듈명으로 수정
+            if (typeof window.ShippingManagementModule !== 'undefined') {
+                console.log('📦 ShippingManagementModule 발견 - 등록 시작');
+                this.registerModule('shipping', window.ShippingManagementModule);
+            } else {
+                console.warn('⚠️ ShippingManagementModule을 찾을 수 없습니다');
+                // 폴백: 이전 이름도 확인
+                if (typeof window.ShippingManagement !== 'undefined') {
+                    console.log('📦 폴백: ShippingManagement 발견 - 등록');
+                    this.registerModule('shipping', window.ShippingManagement);
+                }
             }
 
             // 🔧 영수증 관리 모듈 - 올바른 모듈명으로 수정
@@ -196,12 +205,25 @@ const StudentManager = {
         }
     },
 
-    // 배송지 버튼 클릭
+    // 🔧 배송지 버튼 클릭 - 개선된 오류 처리
     handleShippingClick: function() {
+        console.log('📦 배송지 설정 버튼 클릭됨');
+        
         const shippingModule = this.getModule('shipping');
-        if (shippingModule && shippingModule.showShippingModal) {
-            return shippingModule.showShippingModal();
+        console.log('📦 배송지 모듈 상태:', shippingModule ? '✅ 발견됨' : '❌ 없음');
+        
+        if (shippingModule) {
+            console.log('📦 배송지 모듈 메서드들:', Object.keys(shippingModule));
+            
+            if (shippingModule.showShippingModal) {
+                console.log('📦 showShippingModal 메서드 호출 시작');
+                return shippingModule.showShippingModal();
+            } else {
+                console.error('❌ showShippingModal 메서드를 찾을 수 없습니다');
+                alert('배송지 설정 모듈에서 showShippingModal 함수를 찾을 수 없습니다.');
+            }
         } else {
+            console.error('❌ 배송지 모듈을 찾을 수 없습니다. 등록된 모듈들:', Object.keys(this.modules));
             alert('배송지 설정 기능을 준비 중입니다.');
         }
     },
@@ -557,4 +579,4 @@ window.initializeStudentPage = function() {
     }
 };
 
-console.log('📚 StudentManager v4.1 로드 완료 - 구문 오류 수정 및 완전 모듈화된 슬림 핵심 매니저 (영수증 모듈 연결 수정)');
+console.log('📚 StudentManager v4.1.1 로드 완료 - 배송지 모듈 연결 수정 및 완전 모듈화된 슬림 핵심 매니저');
