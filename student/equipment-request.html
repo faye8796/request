@@ -616,19 +616,18 @@
     <script src="../js/lesson-plan.js?v=4.3.1"></script>
     <script src="../js/student.js?v=4.3.1"></script>
 
-    <!-- 🔧 5단계: 모듈 로딩 안전장치 및 초기화 시스템 v4.3.1 -->
+    <!-- 🔧 5단계: 모듈 로딩 안전장치 및 초기화 시스템 v4.3.2 -->
     <script>
         /**
-         * 🚀 Equipment Request 페이지 초기화 v4.3.1 - 개선된 UI 적용
-         * - ✅ 부분 로딩 허용: 80% 이상 로드되면 진행
-         * - ✅ 필수 모듈만 엄격 체크: 핵심 기능만 필수
-         * - ✅ 타임아웃 시간 연장: 20초
-         * - ✅ 상세한 디버깅 정보 제공
-         * - ✅ graceful degradation: 선택적 모듈 없어도 진행
-         * - 🆕 온라인/오프라인 분리 UI 적용
+         * 🚀 Equipment Request 페이지 초기화 v4.3.2 - 근본적인 타이밍 문제 완전 해결
+         * - ✅ 모듈 체크 로직 수정: typeof checkConnection → typeof Utils
+         * - ✅ 로딩 대기 시간 연장: 20초 → 25초
+         * - ✅ 초기화 대기 시간 연장: 1초 → 2.5초
+         * - ✅ Utils 객체와 checkConnection 메서드 둘 다 확인
+         * - ✅ 안전장치 강화: graceful degradation
          */
 
-        // 🛡️ 모듈 로딩 상태 추적 v4.3.1
+        // 🛡️ 모듈 로딩 상태 추적 v4.3.2 - UTILS 체크 로직 수정
         window.ModuleStatusTracker = {
             modules: {
                 // 필수 모듈 (반드시 로드되어야 함)
@@ -656,10 +655,10 @@
             updateStatus: function() {
                 if (this.isInitialized) return; // 중복 실행 방지
                 
-                // 필수 모듈
+                // 필수 모듈 - 🔧 UTILS 체크 로직 수정
                 this.modules.CONFIG = typeof CONFIG !== 'undefined';
                 this.modules.AUTH = typeof AuthManager !== 'undefined';
-                this.modules.UTILS = typeof checkConnection !== 'undefined';
+                this.modules.UTILS = typeof Utils !== 'undefined' && typeof Utils.checkConnection === 'function';
                 this.modules.SUPABASE_CORE = typeof SupabaseCore !== 'undefined';
                 this.modules.SUPABASE_CLIENT = typeof SupabaseAPI !== 'undefined';
                 this.modules.STUDENT_MANAGER = typeof StudentManager !== 'undefined';
@@ -800,8 +799,8 @@
             }
         }
 
-        // 🔧 모듈 로딩 완료 대기 함수 v4.3.1 (부분 로딩 허용)
-        function waitForModulesReady(maxWait = 20000) {
+        // 🔧 모듈 로딩 완료 대기 함수 v4.3.2 - 대기 시간 연장
+        function waitForModulesReady(maxWait = 25000) { // 20초 → 25초
             return new Promise(function(resolve, reject) {
                 const startTime = Date.now();
                 const checkInterval = 500;
@@ -823,7 +822,7 @@
                     
                     const elapsedTime = Date.now() - startTime;
                     if (elapsedTime >= maxWait) {
-                        console.error('❌ 모듈 로딩 시간 초과 v4.3.1:', status);
+                        console.error('❌ 모듈 로딩 시간 초과 v4.3.2:', status);
                         
                         // 필수 모듈이 모두 로드되었다면 부분 진행
                         if (status.requiredPercentage === 100) {
@@ -1088,12 +1087,12 @@
             }
         }
 
-        // 🚀 메인 초기화 함수 v4.3.1 (부분 로딩 허용)
+        // 🚀 메인 초기화 함수 v4.3.2 - 부분 로딩 허용
         async function initializeEquipmentRequestPage() {
             try {
-                console.log('🎨 v4.3.1 개선된 UI 초기화 시작');
+                console.log('🎨 v4.3.2 개선된 UI 초기화 시작 - 근본적인 타이밍 문제 해결');
                 
-                // 모듈 로딩 대기 (부분 로딩 허용)
+                // 모듈 로딩 대기 (부분 로딩 허용, 25초 대기)
                 await waitForModulesReady();
                 
                 // 사용자 정보 로드 및 UI 업데이트
@@ -1139,7 +1138,7 @@
                 // v4.3.1 묶음 신청 UI 이벤트 설정
                 setupBundleModalEvents();
                 
-                console.log('✅ v4.3.1 개선된 UI 초기화 완료');
+                console.log('✅ v4.3.2 개선된 UI 초기화 완료 - 타이밍 문제 해결');
                 
             } catch (error) {
                 console.error('❌ 페이지 초기화 실패:', error);
@@ -1264,19 +1263,19 @@
             }
         }
 
-        // 🎯 DOM 로드 완료 시 실행
+        // 🎯 DOM 로드 완료 시 실행 - v4.3.2 초기화 대기 시간 연장
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎨 v4.3.1 DOM 로드 완료 - 개선된 UI 적용');
+            console.log('🎨 v4.3.2 DOM 로드 완료 - 근본적인 타이밍 문제 해결');
             
             // Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
             
-            // 모든 스크립트 로딩 완료까지 잠시 대기 후 초기화
+            // 🔧 모든 스크립트 로딩 완료까지 충분한 대기 후 초기화 (1초 → 2.5초)
             setTimeout(function() {
                 initializeEquipmentRequestPage();
-            }, 1000); // 1000ms 대기 (안정성 확보)
+            }, 2500); // 2500ms 대기 (안정성 확보)
         });
 
         // 전역 에러 핸들러 (오류만 표시)
