@@ -1,7 +1,8 @@
-// 🚀 Supabase 학생 전용 기능 모듈 v4.3.0
+// 🚀 Supabase 학생 전용 기능 모듈 v4.3.1 - 콘솔 로그 정리
 // 학생 인증, 교구 신청, 영수증 관리, 수업계획, 배송지 관리 등
 // SupabaseCore에 의존하는 학생 전용 모듈
 // 🔧 v4.3.0 - requests 테이블 구조 호환성 업데이트 및 4가지 타입별 최적화
+// 🧹 v4.3.1 - 학생 사용 환경을 위한 콘솔 로그 정리 (오류/경고만 유지)
 
 const SupabaseStudent = {
     // SupabaseCore 의존성 확인
@@ -47,8 +48,6 @@ const SupabaseStudent = {
     
     // 🔧 배송지 정보 조회 - 올바른 컬럼명 사용
     async getShippingInfo(userId) {
-        console.log('📦 배송지 정보 조회:', userId);
-        
         const result = await this.core.safeApiCall('배송지 정보 조회', async () => {
             const client = await this.core.ensureClient();
             const { data, error } = await client
@@ -80,8 +79,6 @@ const SupabaseStudent = {
 
     // 🔧 배송지 정보 저장 - 진짜 UPSERT 사용으로 중복 키 오류 해결
     async saveShippingInfo(userId, shippingData) {
-        console.log('📦 배송지 정보 저장 (UPSERT 방식):', userId, shippingData);
-        
         return await this.core.safeApiCall('배송지 정보 저장', async () => {
             const client = await this.core.ensureClient();
             // 🔧 코드에서 사용하는 컬럼명을 DB 컬럼명으로 매핑
@@ -94,8 +91,6 @@ const SupabaseStudent = {
                 delivery_note: shippingData.note || null,        // note → delivery_note
                 updated_at: new Date().toISOString()
             };
-
-            console.log('📦 UPSERT 실행 - 데이터:', dataToSave);
 
             // 🔧 진짜 UPSERT 사용 - onConflict로 user_id 중복 시 업데이트
             return await client
@@ -115,8 +110,6 @@ const SupabaseStudent = {
     // 🔧 v4.1.1 - 학생의 다음 영수증 순번 가져오기
     async getNextReceiptNumber(userId) {
         try {
-            console.log('📄 다음 영수증 순번 조회:', userId);
-            
             const client = await this.core.ensureClient();
             
             // 해당 학생의 영수증 개수 조회 (receipts 테이블에서)
@@ -133,7 +126,6 @@ const SupabaseStudent = {
 
             // 기존 영수증 개수 + 1이 다음 순번
             const nextNumber = (data?.length || 0) + 1;
-            console.log('📄 다음 영수증 순번:', nextNumber);
             
             return nextNumber;
             
@@ -147,8 +139,6 @@ const SupabaseStudent = {
     // 🚀 v4.1.1 - 교구 신청 가격 조회 (파일명 생성용)
     async getRequestPrice(requestId) {
         try {
-            console.log('💰 교구 신청 가격 조회:', requestId);
-            
             const client = await this.core.ensureClient();
             
             const { data, error } = await client
@@ -164,7 +154,6 @@ const SupabaseStudent = {
             }
 
             const price = data?.price || 0;
-            console.log('✅ 교구 가격 조회 완료:', price);
             
             return price;
             
@@ -177,13 +166,6 @@ const SupabaseStudent = {
 
     // 🚀 v4.1.5 - 영수증 파일 업로드 (receipt-management.js 호환)
     async uploadReceiptFile(file, requestId, userId) {
-        console.log('📄 영수증 파일 업로드 시작 (v4.1.5 - 최적화된 테이블 호환):', {
-            fileName: file.name,
-            fileSize: file.size,
-            requestId: requestId,
-            userId: userId
-        });
-
         try {
             const client = await this.core.ensureClient();
             
@@ -200,14 +182,6 @@ const SupabaseStudent = {
             
             // 4. Storage 경로 생성
             const filePath = `receipts/${userId}/${fileName}`;
-            
-            console.log('📄 v4.1.5 파일명 시스템:', {
-                originalName: file.name,
-                optimizedName: fileName,
-                filePath: filePath,
-                receiptNumber: receiptNumber,
-                requestPrice: requestPrice
-            });
 
             // 5. Supabase Storage에 파일 업로드
             const { data: uploadData, error: uploadError } = await client.storage
@@ -222,15 +196,12 @@ const SupabaseStudent = {
                 throw uploadError;
             }
 
-            console.log('✅ 파일 업로드 성공:', uploadData);
-
             // 6. 업로드된 파일의 공개 URL 가져오기
             const { data: urlData } = client.storage
                 .from('receipt-files')
                 .getPublicUrl(filePath);
 
             const fileUrl = urlData?.publicUrl;
-            console.log('📄 파일 공개 URL:', fileUrl);
 
             // 🔧 v4.1.5 - receipt-management.js와 호환되는 데이터 구조 반환
             return {
@@ -264,8 +235,6 @@ const SupabaseStudent = {
 
     // 🔧 v4.1.5 - 영수증 정보 저장 (최적화된 테이블 구조 호환)
     async saveReceiptInfo(requestId, receiptData) {
-        console.log('📄 영수증 정보 저장 (v4.1.5 - 최적화된 테이블 호환):', { requestId, receiptData });
-
         return await this.core.safeApiCall('영수증 정보 저장', async () => {
             const client = await this.core.ensureClient();
             // 🔧 v4.1.5 - 최적화된 receipts 테이블 구조에 맞는 데이터 준비
@@ -300,8 +269,6 @@ const SupabaseStudent = {
                 updated_at: new Date().toISOString()
             };
 
-            console.log('📄 저장할 영수증 메타데이터 (v4.1.5 - 최적화된 구조):', receiptRecord);
-
             // 🔧 제거된 컬럼들 완전 배제:
             // ❌ image_path (제거됨)
             // ❌ file_path (제거됨) 
@@ -320,8 +287,6 @@ const SupabaseStudent = {
 
     // 🚀 영수증 제출 완료 처리 (신청 상태를 'purchased'로 변경) - 🔧 v2.12 purchased_at 제거
     async completeReceiptSubmission(requestId) {
-        console.log('📄 영수증 제출 완료 처리:', requestId);
-
         return await this.core.safeApiCall('영수증 제출 완료', async () => {
             const client = await this.core.ensureClient();
             return await client
@@ -338,8 +303,6 @@ const SupabaseStudent = {
 
     // 🔧 v4.1.5 - 영수증 정보 조회 (최적화된 테이블 호환)
     async getReceiptByRequestId(requestId) {
-        console.log('📄 영수증 정보 조회 (v4.1.5):', requestId);
-
         const result = await this.core.safeApiCall('영수증 정보 조회', async () => {
             const client = await this.core.ensureClient();
             const { data, error } = await client
@@ -397,8 +360,6 @@ const SupabaseStudent = {
 
     // 🔧 v4.1.5 - 학생별 영수증 목록 조회 (최적화된 테이블 호환)
     async getReceiptsByStudent(userId) {
-        console.log('📄 학생별 영수증 목록 조회 (v4.1.5):', userId);
-
         const result = await this.core.safeApiCall('학생별 영수증 조회', async () => {
             const client = await this.core.ensureClient();
             return await client
@@ -448,8 +409,6 @@ const SupabaseStudent = {
 
     // 🚀 영수증 파일 삭제 (필요 시)
     async deleteReceiptFile(filePath) {
-        console.log('📄 영수증 파일 삭제:', filePath);
-
         try {
             const client = await this.core.ensureClient();
             
@@ -462,7 +421,6 @@ const SupabaseStudent = {
                 return { success: false, message: this.core.getErrorMessage(error) };
             }
 
-            console.log('✅ 파일 삭제 성공');
             return { success: true };
 
         } catch (error) {
@@ -557,8 +515,6 @@ const SupabaseStudent = {
 
     // === 🆕 v4.3.0 일반 교구 신청 API ===
     async createV43Application(studentId, formData) {
-        console.log('📝 v4.3.0 일반 신청 생성:', formData);
-        
         return await this.core.safeApiCall('v4.3.0 교구 신청 생성', async () => {
             const client = await this.core.ensureClient();
             
@@ -582,11 +538,6 @@ const SupabaseStudent = {
                 updated_at: new Date().toISOString()
             };
 
-            console.log('📝 v4.3.0 저장할 데이터:', {
-                ...requestData,
-                account_pw: requestData.account_pw ? '[암호화됨]' : null
-            });
-
             return await client
                 .from('requests')
                 .insert([requestData])
@@ -596,8 +547,6 @@ const SupabaseStudent = {
 
     // === 🆕 v4.3.0 묶음 교구 신청 API ===
     async createV43BundleApplication(studentId, bundleData) {
-        console.log('📦 v4.3.0 묶음 신청 생성:', bundleData);
-        
         return await this.core.safeApiCall('v4.3.0 묶음 신청 생성', async () => {
             const client = await this.core.ensureClient();
             
@@ -627,12 +576,6 @@ const SupabaseStudent = {
                 updated_at: new Date().toISOString()
             };
 
-            console.log('📦 v4.3.0 묶음 신청 저장 데이터:', {
-                ...requestData,
-                account_pw: requestData.account_pw ? '[암호화됨]' : null,
-                타입: this.getV43ApplicationType(requestData)
-            });
-
             return await client
                 .from('requests')
                 .insert([requestData])
@@ -642,8 +585,6 @@ const SupabaseStudent = {
 
     // === 🆕 v4.3.0 신청 수정 API ===
     async updateV43Application(applicationId, formData) {
-        console.log('✏️ v4.3.0 신청 수정:', applicationId, formData);
-        
         return await this.core.safeApiCall('v4.3.0 교구 신청 수정', async () => {
             const client = await this.core.ensureClient();
             
@@ -662,11 +603,6 @@ const SupabaseStudent = {
                 
                 updated_at: new Date().toISOString()
             };
-
-            console.log('✏️ v4.3.0 수정할 데이터:', {
-                ...updateData,
-                account_pw: updateData.account_pw ? '[암호화됨]' : null
-            });
 
             return await client
                 .from('requests')
@@ -698,8 +634,6 @@ const SupabaseStudent = {
                     return { valid: false, message: '온라인 묶음 구매는 계정 비밀번호가 필수입니다.' };
                 }
                 
-                console.log('✅ 온라인 묶음 구매 검증 통과');
-                
             } else if (purchase_type === 'offline') {
                 // 오프라인 묶음: store_info는 선택적
                 // 계정 정보는 null이어야 함
@@ -708,8 +642,6 @@ const SupabaseStudent = {
                     bundleData.account_id = null;
                     bundleData.account_pw = null;
                 }
-                
-                console.log('✅ 오프라인 묶음 구매 검증 통과');
                 
             } else {
                 return { valid: false, message: '알 수 없는 구매 방식입니다.' };
@@ -736,8 +668,6 @@ const SupabaseStudent = {
 
     // === 🆕 v4.3.0 호환성 조회 함수 ===
     async getStudentApplicationsV43(studentId) {
-        console.log('📋 v4.3.0 호환성 신청 내역 조회:', studentId);
-        
         const result = await this.core.safeApiCall('v4.3.0 학생 신청 내역 조회', async () => {
             const client = await this.core.ensureClient();
             return await client
@@ -772,8 +702,6 @@ const SupabaseStudent = {
     // === 🆕 v4.3.0 계정 정보 복호화 (관리자용) ===
     async decryptV43AccountInfo(encryptedPassword) {
         try {
-            console.log('🔓 v4.3.0 계정 정보 복호화 (관리자 전용)');
-            
             // v4.3.0 암호화 해제 (실제 운영에서는 더 강력한 복호화 필요)
             const decoded = atob(encryptedPassword);
             const parts = decoded.split(':');
@@ -802,8 +730,6 @@ const SupabaseStudent = {
 
     // === 🆕 v4.3.0 통계 조회 (관리자용) ===
     async getV43ApplicationStats() {
-        console.log('📊 v4.3.0 신청 타입별 통계 조회');
-        
         const result = await this.core.safeApiCall('v4.3.0 신청 통계', async () => {
             const client = await this.core.ensureClient();
             return await client
@@ -842,7 +768,6 @@ const SupabaseStudent = {
                 }
             });
             
-            console.log('📊 v4.3.0 통계 결과:', stats);
             return stats;
         }
 
@@ -918,8 +843,6 @@ const SupabaseStudent = {
     // 🔧 학생 예산 상태 조회 함수 수정 (approved_at, approved_by 컬럼 제거 반영)
     // ===================
     async getStudentBudgetStatus(studentId) {
-        console.log('💰 학생 예산 상태 조회:', studentId);
-        
         try {
             const client = await this.core.ensureClient();
             
@@ -1034,7 +957,6 @@ const SupabaseStudent = {
                 lessonPlanStatus: lessonPlanStatus
             };
 
-            console.log('✅ 학생 예산 상태 조회 완료:', result);
             return result;
 
         } catch (error) {
@@ -1151,7 +1073,7 @@ const SupabaseStudent = {
     }
     
     if (window.SupabaseCore) {
-        console.log('✅ SupabaseStudent 초기화 완료 - SupabaseCore 의존성 확인됨');
+        // 초기화 완료 로그 제거 - 학생 사용 시 불필요
     } else {
         console.warn('⚠️ SupabaseCore 로드 타임아웃 - SupabaseStudent 수동 초기화 필요');
     }
@@ -1160,4 +1082,4 @@ const SupabaseStudent = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseStudent = SupabaseStudent;
 
-console.log('🚀 SupabaseStudent v4.3.0 loaded - 4가지 타입별 최적화 (온라인 묶음: link+account_id+account_pw / 오프라인 묶음: store_info)');
+console.log('🚀 SupabaseStudent v4.3.1 loaded - 콘솔 로그 정리 완료');
