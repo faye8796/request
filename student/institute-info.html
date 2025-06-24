@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>파견 학당 정보 - 세종학당 문화인턴 지원 시스템</title>
     
-    <!-- CSS Files - Updated to v4.0.0 -->
-    <link rel="stylesheet" href="../css/main.css?v=4.0.0">
-    <link rel="stylesheet" href="../css/student.css?v=4.0.0">
+    <!-- CSS Files - Updated to v4.2.0 -->
+    <link rel="stylesheet" href="../css/main.css?v=4.2.0">
+    <link rel="stylesheet" href="../css/student.css?v=4.2.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -263,6 +263,40 @@
             color: #cbd5e0;
         }
 
+        /* v4.2 호환성 수정 알림 */
+        .module-fix-notice {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .module-fix-notice i {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .module-fix-notice .notice-content {
+            flex: 1;
+        }
+
+        .module-fix-notice .notice-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .module-fix-notice .notice-text {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin: 0;
+        }
+
         /* 모바일 반응형 */
         @media (max-width: 768px) {
             .institute-container {
@@ -305,6 +339,15 @@
                 <i data-lucide="arrow-left"></i>
                 대시보드로 돌아가기
             </a>
+        </div>
+
+        <!-- v4.2 호환성 수정 알림 -->
+        <div class="module-fix-notice">
+            <i data-lucide="check-circle"></i>
+            <div class="notice-content">
+                <div class="notice-title">✅ v4.2 모듈화 시스템 호환성 수정 완료!</div>
+                <p class="notice-text">Supabase 모듈 로딩 순서가 수정되어 학당 정보 페이지가 정상 동작합니다.</p>
+            </div>
         </div>
 
         <div class="institute-content">
@@ -489,19 +532,24 @@
         </div>
     </div>
 
-    <!-- JavaScript Files - Updated to v4.0 Module System -->
-    <!-- 핵심 설정 파일들 -->
-    <script src="../js/config.js?v=4.0.0"></script>
-    <script src="../js/supabase-client.js?v=4.0.0"></script>
-    <script src="../js/utils.js?v=4.0.0"></script>
-    <script src="../js/auth.js?v=4.0.0"></script>
+    <!-- 🔧 v4.2 모듈화 시스템 호환 JavaScript Files -->
+    <!-- 1. 기본 설정 모듈 -->
+    <script src="../js/config.js?v=4.2.0"></script>
+    <script src="../js/auth.js?v=4.2.0"></script>
+    <script src="../js/utils.js?v=4.2.0"></script>
     
-    <!-- 필요한 학생 모듈들 (의존성 순서대로) -->
-    <script src="../js/student/api-helper.js?v=4.0.0"></script>
-    <script src="../js/student/notification-system.js?v=4.0.0"></script>
-    <script src="../js/student/institute-info.js?v=4.0.0"></script>
+    <!-- 2. Supabase 모듈들 (의존성 순서 중요!) -->
+    <script src="../js/supabase/supabase-core.js?v=4.2.0"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.2.0"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.2.0"></script>
+    <script src="../js/supabase-client.js?v=4.2.0"></script>
     
-    <!-- Page Initialization Script - Enhanced for v4.0 -->
+    <!-- 3. 필요한 학생 모듈들 (의존성 순서대로) -->
+    <script src="../js/student/api-helper.js?v=4.2.0"></script>
+    <script src="../js/student/notification-system.js?v=4.2.0"></script>
+    <script src="../js/student/institute-info.js?v=4.2.0"></script>
+    
+    <!-- Page Initialization Script - Enhanced for v4.2 -->
     <script>
         // 전역 네임스페이스로 충돌 방지
         window.InstituteInfoPageController = (function() {
@@ -516,10 +564,10 @@
                 maxRetries: 3
             };
 
-            // 안전한 초기화 함수
+            // 안전한 초기화 함수 (v4.2 호환)
             async function safeInitialize() {
                 try {
-                    console.log('🏛️ 학당 정보 페이지 초기화 시작 (v4.0)');
+                    console.log('🏛️ 학당 정보 페이지 초기화 시작 (v4.2 호환)');
                     
                     // 1. 필수 객체들이 로드될 때까지 대기
                     await waitForEssentials();
@@ -547,7 +595,7 @@
                     // 6. 학당 정보 로드
                     await loadInstituteInfo();
                     
-                    console.log('🎉 학당 정보 페이지 초기화 완료');
+                    console.log('🎉 학당 정보 페이지 초기화 완료 (v4.2)');
                     
                 } catch (error) {
                     console.error('❌ 초기화 실패:', error);
@@ -647,11 +695,13 @@
                         const hasNotificationSystem = window.NotificationSystem;
                         const hasInstituteInfoModule = window.InstituteInfoModule;
                         
-                        console.log(`🔍 모듈 체크 ${attempts}/${maxAttempts}:`, {
-                            ApiHelper: hasApiHelper,
-                            NotificationSystem: hasNotificationSystem,
-                            InstituteInfoModule: hasInstituteInfoModule
-                        });
+                        if (attempts % 10 === 0) { // 1초마다 로그
+                            console.log(`🔍 모듈 체크 ${attempts}/${maxAttempts}:`, {
+                                ApiHelper: hasApiHelper,
+                                NotificationSystem: hasNotificationSystem,
+                                InstituteInfoModule: hasInstituteInfoModule
+                            });
+                        }
                         
                         if (hasApiHelper && hasNotificationSystem && hasInstituteInfoModule) {
                             console.log('✅ 필요한 모듈 로드 완료');
@@ -685,8 +735,11 @@
 
         // 학생 인증 확인 (기존 함수를 전역으로 유지)
         function checkStudentAuthentication() {
+            console.log('🔐 학생 인증 확인 중...');
+            
             const studentData = localStorage.getItem('currentStudent');
             if (!studentData) {
+                console.warn('⚠️ 학생 세션이 없습니다');
                 if (window.NotificationSystem && typeof window.NotificationSystem.showError === 'function') {
                     window.NotificationSystem.showError('로그인이 필요합니다.');
                 } else {
@@ -697,6 +750,8 @@
                 }, 1500);
                 return false;
             }
+            
+            console.log('✅ 학생 인증 확인됨');
             return true;
         }
 
@@ -865,6 +920,24 @@
                 showError('학당 정보 모듈을 로드할 수 없습니다.');
             }
         }
+
+        // 키보드 단축키 (개발자용)
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'd') {
+                e.preventDefault();
+                console.log('🛠️ 학당 정보 페이지 - v4.2 디버그 정보');
+                console.log('모듈 상태:', {
+                    SupabaseCore: !!window.SupabaseCore,
+                    SupabaseStudent: !!window.SupabaseStudent,
+                    SupabaseAPI: !!window.SupabaseAPI,
+                    ApiHelper: !!window.ApiHelper,
+                    NotificationSystem: !!window.NotificationSystem,
+                    InstituteInfoModule: !!window.InstituteInfoModule
+                });
+            }
+        });
+
+        console.log('🏛️ 학당 정보 v4.2 호환 스크립트 로드 완료');
     </script>
 </body>
 </html>
