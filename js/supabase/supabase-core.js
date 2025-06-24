@@ -1,7 +1,7 @@
-// 🚀 Supabase 핵심 공통 기능 모듈 v4.2.1
+// 🚀 Supabase 핵심 공통 기능 모듈 v4.2.2
 // 초기화, 에러 처리, 유틸리티 함수들
 // 모든 Supabase 모듈의 기반이 되는 핵심 기능들
-// 🔧 v4.2.1: 모듈 로딩 안정성 강화 및 타이밍 오류 방지
+// 🔧 v4.2.2: setCurrentUser 함수 추가 (admin.html 인증 오류 수정)
 
 const SupabaseCore = {
     // Supabase 클라이언트
@@ -203,12 +203,64 @@ const SupabaseCore = {
         return method === 'offline' ? 'offline' : 'online';
     },
 
+    // ===================
+    // 🆕 v4.2.2 사용자 관리 함수들
+    // ===================
+    
+    /**
+     * 현재 사용자 설정
+     * @param {Object} user - 사용자 객체
+     * @param {string} userType - 사용자 타입 ('admin', 'student', etc.)
+     */
+    setCurrentUser(user, userType) {
+        this.currentUser = user;
+        this.currentUserType = userType;
+        
+        // 세션 저장
+        if (user && userType) {
+            try {
+                const sessionData = {
+                    user: user,
+                    userType: userType,
+                    timestamp: new Date().toISOString()
+                };
+                
+                if (userType === 'admin') {
+                    sessionStorage.setItem('adminSession', JSON.stringify(sessionData));
+                } else {
+                    sessionStorage.setItem('userSession', JSON.stringify(sessionData));
+                }
+                
+                console.log(`✅ ${userType} 사용자 설정 완료:`, user.name || user.email);
+            } catch (error) {
+                console.warn('세션 저장 실패:', error);
+            }
+        }
+    },
+
+    /**
+     * 현재 사용자 정보 반환
+     * @returns {Object|null} 현재 사용자 객체
+     */
+    getCurrentUser() {
+        return this.currentUser;
+    },
+
+    /**
+     * 현재 사용자 타입 반환
+     * @returns {string|null} 현재 사용자 타입
+     */
+    getCurrentUserType() {
+        return this.currentUserType;
+    },
+
     // 로그아웃
     logout() {
         this.currentUser = null;
         this.currentUserType = null;
         try {
             sessionStorage.removeItem('userSession');
+            sessionStorage.removeItem('adminSession');
             localStorage.removeItem('currentStudent');
             localStorage.removeItem('studentSession');
         } catch (error) {
@@ -243,7 +295,7 @@ const SupabaseCore = {
 
 // 🔧 v4.2.1 개선된 자동 초기화
 (async () => {
-    console.log('🚀 SupabaseCore v4.2.1 자동 초기화 시작...');
+    console.log('🚀 SupabaseCore v4.2.2 자동 초기화 시작...');
     
     // CONFIG 로드 대기 (더 여유있게)
     let waitCount = 0;
@@ -262,9 +314,9 @@ const SupabaseCore = {
     if (window.CONFIG) {
         const initSuccess = await SupabaseCore.init();
         if (initSuccess) {
-            console.log('✅ SupabaseCore v4.2.1 자동 초기화 완료');
+            console.log('✅ SupabaseCore v4.2.2 자동 초기화 완료');
         } else {
-            console.warn('⚠️ SupabaseCore v4.2.1 자동 초기화 실패');
+            console.warn('⚠️ SupabaseCore v4.2.2 자동 초기화 실패');
         }
     } else {
         console.warn('⚠️ CONFIG 로드 타임아웃 - SupabaseCore 수동 초기화 필요');
@@ -279,8 +331,10 @@ if (typeof window !== 'undefined') {
     window.SupabaseCoreDebug = {
         getStatus: () => SupabaseCore.getStatus(),
         forceInit: () => SupabaseCore.init(),
-        testConnection: () => SupabaseCore.testConnection()
+        testConnection: () => SupabaseCore.testConnection(),
+        getCurrentUser: () => SupabaseCore.getCurrentUser(),
+        getCurrentUserType: () => SupabaseCore.getCurrentUserType()
     };
 }
 
-console.log('🚀 SupabaseCore v4.2.1 loaded - 핵심 공통 기능 모듈 (안정성 강화)');
+console.log('🚀 SupabaseCore v4.2.2 loaded - 사용자 관리 함수 추가 완료');
