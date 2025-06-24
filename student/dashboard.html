@@ -291,7 +291,7 @@
         <!-- 헤더 섹션 -->
         <div class="dashboard-header">
             <div class="welcome-section">
-                <h1 class="welcome-title">문화인턴 지원 시스템</h1>
+                <h1 class="welcome-title">세종학당 문화인턴 지원 시스템</h1>
                 <p class="welcome-subtitle">King Sejong Institute Cultural Intern Support System</p>
             </div>
             
@@ -398,32 +398,18 @@
                 this.loadMenuItems();
             },
 
-            // 메뉴 항목 로드
+            // 메뉴 항목 로드 - 순서 변경: 학당 정보 > 항공권 신청 > 교구 신청
             loadMenuItems() {
                 const menuGrid = document.getElementById('menuGrid');
                 if (menuGrid) {
                     menuGrid.innerHTML = `
-                        <div class="menu-card available" onclick="navigateToPage('./equipment-request.html')">
-                            <div class="menu-icon">
-                                <i data-lucide="package"></i>
-                            </div>
-                            <h3 class="menu-title">교구 신청</h3>
-                            <p class="menu-description">
-                                문화 수업에 필요한 교구를 신청하고 관리할 수 있습니다.
-                            </p>
-                            <button class="menu-button">
-                                <i data-lucide="arrow-right"></i>
-                                신청하기
-                            </button>
-                        </div>
-
                         <div class="menu-card available" onclick="navigateToPage('./institute-info.html')">
                             <div class="menu-icon">
                                 <i data-lucide="building"></i>
                             </div>
                             <h3 class="menu-title">학당 정보</h3>
                             <p class="menu-description">
-                                세종학당 정보와 담당자 연락처를 확인할 수 있습니다.
+                                파견되는 세종학당의 정보를 확인할 수 있습니다.
                             </p>
                             <button class="menu-button">
                                 <i data-lucide="arrow-right"></i>
@@ -442,6 +428,20 @@
                             <button class="menu-button" disabled>
                                 <i data-lucide="clock"></i>
                                 개발 중
+                            </button>
+                        </div>
+
+                        <div class="menu-card available" onclick="navigateToPage('./equipment-request.html')">
+                            <div class="menu-icon">
+                                <i data-lucide="package"></i>
+                            </div>
+                            <h3 class="menu-title">교구 신청</h3>
+                            <p class="menu-description">
+                                문화 수업에 필요한 교구를 신청하고 관리할 수 있습니다.
+                            </p>
+                            <button class="menu-button">
+                                <i data-lucide="arrow-right"></i>
+                                신청하기
                             </button>
                         </div>
                     `;
