@@ -1,7 +1,7 @@
-// 🚀 Supabase Client 통합 매니저 v4.2.1
+// 🚀 Supabase Client 통합 매니저 v4.3.2
 // 세종학당 문화인턴 지원 시스템 - 모듈화된 Supabase API 통합 관리자
 // 3개 모듈(Core, Student, Admin)을 하나로 통합하여 기존 코드와 100% 호환성 보장
-// 🔧 v4.2.1: 모듈 로딩 타이밍 오류 수정 및 안정성 강화
+// 🔧 v4.3.2: 영수증 보기 기능 연결 (getReceiptByRequestId 관리자 지원)
 
 /**
  * 모듈화된 Supabase API 통합 매니저
@@ -9,23 +9,23 @@
  * 📦 아키텍처:
  * - SupabaseCore: 핵심 공통 기능 (5.6KB)
  * - SupabaseStudent: 학생 전용 기능 (32.9KB) 
- * - SupabaseAdmin: 관리자 전용 기능 (41.5KB)
+ * - SupabaseAdmin: 관리자 전용 기능 (44.4KB)
  * - SupabaseClient: 통합 매니저 (얇은 래퍼)
  * 
  * 🔧 호환성:
  * - 기존 SupabaseAPI 인터페이스 100% 유지
  * - 코드 수정 없이 기존 시스템과 완전 호환
- * - 성능 최적화: 필요한 모듈만 로드 (70KB → 최대 80KB, 실제로는 적은 메모리 사용)
+ * - 성능 최적화: 필요한 모듈만 로드 (70KB → 최대 83KB, 실제로는 적은 메모리 사용)
  * 
  * 🚀 성능 개선:
  * - 지연 로딩: 사용할 때만 모듈 활성화
  * - 메모리 효율성: 모듈별 독립적 관리
  * - 개발 편의성: 기능별 모듈 분리로 유지보수 향상
  * 
- * 🔧 v4.2.1 개선사항:
- * - 모듈 로딩 타이밍 오류 수정
- * - getSystemSettings 안정성 강화
- * - 초기화 대기 로직 개선
+ * 🔧 v4.3.2 개선사항:
+ * - getReceiptByRequestId 관리자 지원 추가
+ * - 영수증 보기 기능 Admin 모듈 연결
+ * - 모듈 간 영수증 조회 통합 지원
  */
 
 const SupabaseAPI = {
@@ -68,7 +68,7 @@ const SupabaseAPI = {
         }
 
         this._isInitializing = true;
-        console.log('🚀 SupabaseAPI 통합 매니저 초기화 시작 v4.2.1...');
+        console.log('🚀 SupabaseAPI 통합 매니저 초기화 시작 v4.3.2...');
 
         try {
             // 1. 모듈 의존성 확인 및 준비
@@ -173,7 +173,7 @@ const SupabaseAPI = {
     },
 
     /**
-     * 🔧 v4.2.1 안전한 모듈 호출 래퍼 - 강화된 버전
+     * 🔧 v4.3.2 안전한 모듈 호출 래퍼 - 강화된 버전
      * @param {string} moduleName - 모듈명 (core, student, admin)
      * @param {string} methodName - 메소드명
      * @param {Array} args - 인수 배열
@@ -201,7 +201,7 @@ const SupabaseAPI = {
     },
 
     /**
-     * 🆕 v4.2.1 안전한 모듈 대기 함수
+     * 🆕 v4.3.2 안전한 모듈 대기 함수
      * 특정 모듈이 로드될 때까지 대기
      */
     async _waitForSpecificModules(moduleNames, maxWaitSeconds = 5) {
@@ -354,8 +354,49 @@ const SupabaseAPI = {
         return await this._callModule('student', 'completeReceiptSubmission', requestId);
     },
 
+    /**
+     * 🔧 v4.3.2 영수증 조회 - 관리자/학생 모듈 통합 지원
+     * 관리자 페이지에서 호출시 Admin 모듈 사용, 학생 페이지에서 호출시 Student 모듈 사용
+     */
     async getReceiptByRequestId(requestId) {
-        return await this._callModule('student', 'getReceiptByRequestId', requestId);
+        console.log('📄 영수증 조회 요청:', requestId);
+        
+        // 현재 사용자 타입에 따라 적절한 모듈 선택
+        const userType = this.currentUserType;
+        console.log('👤 현재 사용자 타입:', userType);
+        
+        if (userType === 'admin' && this._modules.admin) {
+            console.log('🔐 관리자 모듈로 영수증 조회');
+            return await this._callModule('admin', 'getReceiptByRequestId', requestId);
+        } else if (userType === 'student' && this._modules.student) {
+            console.log('👤 학생 모듈로 영수증 조회');
+            return await this._callModule('student', 'getReceiptByRequestId', requestId);
+        }
+        
+        // 사용자 타입이 명확하지 않은 경우: Admin 우선, Student 폴백
+        if (this._modules.admin) {
+            console.log('🔐 기본값으로 관리자 모듈 사용');
+            return await this._callModule('admin', 'getReceiptByRequestId', requestId);
+        } else if (this._modules.student) {
+            console.log('👤 폴백으로 학생 모듈 사용');
+            return await this._callModule('student', 'getReceiptByRequestId', requestId);
+        }
+        
+        // 모듈 로딩 대기 후 재시도
+        console.log('⏳ 모듈 로딩 대기 후 영수증 조회 재시도');
+        const modulesReady = await this._waitForSpecificModules(['admin', 'student'], 3);
+        
+        if (modulesReady) {
+            if (this._modules.admin) {
+                console.log('✅ Admin 모듈 로딩 완료 - 영수증 조회');
+                return await this._callModule('admin', 'getReceiptByRequestId', requestId);
+            } else if (this._modules.student) {
+                console.log('✅ Student 모듈 로딩 완료 - 영수증 조회');
+                return await this._callModule('student', 'getReceiptByRequestId', requestId);
+            }
+        }
+        
+        throw new Error('영수증 조회 모듈이 로드되지 않았습니다.');
     },
 
     async getReceiptsByStudent(userId) {
@@ -428,7 +469,7 @@ const SupabaseAPI = {
     },
 
     /**
-     * 🔧 v4.2.1 강화된 시스템 설정 조회
+     * 🔧 v4.3.2 강화된 시스템 설정 조회
      * 모듈 로딩 대기 및 안전한 에러 처리 추가
      */
     async getSystemSettings() {
@@ -645,7 +686,7 @@ const SupabaseAPI = {
         
         return {
             status: this._moduleStatus.initialized ? 'healthy' : 'initializing',
-            version: 'v4.2.1',
+            version: 'v4.3.2',
             architecture: 'modular',
             compatibility: '100% legacy compatible',
             modules: stats.moduleStatus,
@@ -655,6 +696,7 @@ const SupabaseAPI = {
                 memoryEfficiency: 'high'
             },
             fixes: [
+                'getReceiptByRequestId Admin module support added',
                 'Module loading timing issues resolved',
                 'getSystemSettings robustness enhanced',
                 'Graceful degradation for module failures'
@@ -669,7 +711,7 @@ const SupabaseAPI = {
 
 // 자동 초기화 (기존 코드와 호환성 유지)
 (async () => {
-    console.log('🚀 SupabaseAPI 통합 매니저 v4.2.1 시작...');
+    console.log('🚀 SupabaseAPI 통합 매니저 v4.3.2 시작...');
     
     // CONFIG 로드 대기 (기존 코드와 동일한 패턴)
     let waitCount = 0;
@@ -709,8 +751,8 @@ if (typeof window !== 'undefined') {
     };
 }
 
-console.log('🎯 SupabaseAPI 통합 매니저 v4.2.1 로드 완료');
-console.log('📦 모듈화 아키텍처: Core(5.6KB) + Student(32.9KB) + Admin(41.5KB)');
+console.log('🎯 SupabaseAPI 통합 매니저 v4.3.2 로드 완료');
+console.log('📦 모듈화 아키텍처: Core(5.6KB) + Student(32.9KB) + Admin(44.4KB)');
 console.log('🔧 기존 코드 100% 호환성 보장 - 수정 불필요');
 console.log('🚀 성능 최적화: 지연 로딩 + 메모리 효율성 + 모듈별 관리');
-console.log('🔧 v4.2.1 개선: 모듈 로딩 타이밍 오류 수정 및 안정성 강화');
+console.log('🔧 v4.3.2 개선: getReceiptByRequestId 관리자 지원 추가');
