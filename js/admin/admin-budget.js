@@ -1,8 +1,9 @@
 // 예산 관리 전용 모듈 (admin-budget.js)
+// 🔧 v4.3.1 - 하드코딩 제거, 100% DB 기반 예산 설정 시스템
 AdminManager.Budget = {
     // 초기화
     init() {
-        console.log('💰 예산 관리 모듈 초기화');
+        console.log('💰 예산 관리 모듈 초기화 (v4.3.1 DB 전용)');
         this.setupEventListeners();
         this.loadBudgetOverview();
     },
@@ -40,7 +41,7 @@ AdminManager.Budget = {
 
     // 예산 설정 모달 표시
     async showBudgetSettingsModal() {
-        console.log('💰 예산 설정 모달 표시 요청');
+        console.log('💰 예산 설정 모달 표시 요청 (v4.3.1 DB 전용)');
         
         try {
             // 모달이 없으면 생성
@@ -51,7 +52,7 @@ AdminManager.Budget = {
                 throw new Error('예산 설정 모달을 생성할 수 없습니다.');
             }
 
-            // 현재 설정값으로 폼 채우기
+            // 현재 설정값으로 폼 채우기 (DB 데이터만 사용)
             const settings = await SupabaseAPI.getAllFieldBudgetSettings();
             this.populateBudgetSettingsForm(settings);
             
@@ -62,7 +63,7 @@ AdminManager.Budget = {
                 lucide.createIcons();
             }
             
-            console.log('✅ 예산 설정 모달 표시 완료');
+            console.log('✅ 예산 설정 모달 표시 완료 (DB 데이터:', Object.keys(settings).length, '개 분야)');
             
         } catch (error) {
             console.error('❌ 예산 설정 모달 표시 실패:', error);
@@ -80,7 +81,7 @@ AdminManager.Budget = {
 
     // 🛠️ 예산 설정 저장 (폼 제출 핸들러)
     async handleBudgetSettingsSubmit() {
-        console.log('💰 예산 설정 저장 시작');
+        console.log('💰 예산 설정 저장 시작 (v4.3.1 DB 전용)');
         
         const form = Utils.$('#budgetSettingsForm');
         if (!form) {
@@ -195,7 +196,7 @@ AdminManager.Budget = {
     // 예산 배정 정보 표시 (수업계획 상세보기에서 사용)
     async displayBudgetAllocationInfo(field, totalLessons) {
         try {
-            // 분야별 예산 설정 가져오기
+            // 분야별 예산 설정 가져오기 (DB 전용)
             const budgetSettings = await SupabaseAPI.getAllFieldBudgetSettings();
             const fieldSetting = budgetSettings[field] || { perLessonAmount: 0, maxBudget: 0 };
 
@@ -242,9 +243,9 @@ AdminManager.Budget = {
             const detailTotalBudget = Utils.$('#detailTotalBudget');
 
             if (detailField) detailField.textContent = field || '미설정';
-            if (detailPerLessonAmount) detailPerLessonAmount.textContent = '0원';
+            if (detailPerLessonAmount) detailPerLessonAmount.textContent = '설정 없음';
             if (detailLessonCount) detailLessonCount.textContent = `${totalLessons}회`;
-            if (detailTotalBudget) detailTotalBudget.textContent = '계산 중...';
+            if (detailTotalBudget) detailTotalBudget.textContent = '설정 필요';
         }
     },
 
@@ -325,56 +326,101 @@ AdminManager.Budget = {
         modal.classList.add('active');
     },
 
-    // 예산 설정 폼 채우기
+    // 🔧 v4.3.1 예산 설정 폼 채우기 - 100% DB 기반으로 변경
     populateBudgetSettingsForm(settings) {
         const tbody = document.querySelector('#budgetSettingsTable tbody');
-        if (!tbody) return;
+        if (!tbody) {
+            console.error('❌ 예산 설정 테이블을 찾을 수 없습니다');
+            return;
+        }
         
         tbody.innerHTML = '';
         
-        // 기본 분야들
-        const defaultFields = {
-            '한국어교육': { perLessonAmount: 15000, maxBudget: 400000 },
-            '전통문화예술': { perLessonAmount: 25000, maxBudget: 600000 },
-            'K-Pop 문화': { perLessonAmount: 10000, maxBudget: 300000 },
-            '한국현대문화': { perLessonAmount: 18000, maxBudget: 450000 },
-            '전통음악': { perLessonAmount: 30000, maxBudget: 750000 },
-            '한국미술': { perLessonAmount: 22000, maxBudget: 550000 },
-            '한국요리문화': { perLessonAmount: 35000, maxBudget: 800000 }
-        };
+        console.log('🔧 v4.3.1 예산 설정 폼 채우기 - DB 전용:', settings);
         
-        // settings와 기본값 병합
-        const finalSettings = { ...defaultFields, ...settings };
+        // ❌ 하드코딩된 defaultFields 완전 제거
+        // ✅ 오직 DB에서 조회한 settings만 사용
         
-        Object.entries(finalSettings).forEach(([field, setting]) => {
+        if (!settings || Object.keys(settings).length === 0) {
+            // DB에 설정이 없으면 안내 메시지와 새 분야 추가 옵션 제공
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 2rem;">
+                        <div class="empty-settings-notice">
+                            <i data-lucide="info" style="color: #3182ce; margin-bottom: 1rem;"></i>
+                            <h4 style="margin: 0.5rem 0; color: #2d3748;">예산 설정이 없습니다</h4>
+                            <p style="color: #718096; margin: 0.5rem 0;">
+                                분야별 예산 설정을 추가하려면 새 분야 추가 버튼을 사용하세요.
+                            </p>
+                            <button class="btn primary" onclick="AdminManager.Budget.showAddNewFieldDialog()" style="margin-top: 1rem;">
+                                <i data-lucide="plus"></i>
+                                새 분야 추가
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+            console.log('📋 예산 설정이 비어있음 - 새 분야 추가 안내 표시');
+            return;
+        }
+        
+        // DB에서 조회한 분야들만 표시
+        Object.entries(settings).forEach(([field, setting]) => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>
-                    ${field}
-                    <button class="btn small secondary field-status-btn" 
-                            data-field="${field}" 
-                            title="분야별 예산 현황 보기"
-                            style="margin-left: 8px;">
-                        <i data-lucide="eye"></i>
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span>${field}</span>
+                        <button class="btn small secondary field-status-btn" 
+                                data-field="${field}" 
+                                title="분야별 예산 현황 보기">
+                            <i data-lucide="eye"></i>
+                        </button>
+                        <button class="btn small danger delete-field-btn" 
+                                data-field="${field}" 
+                                title="분야 삭제"
+                                onclick="AdminManager.Budget.confirmDeleteField('${field}')">
+                            <i data-lucide="trash-2"></i>
+                        </button>
+                    </div>
                 </td>
                 <td>
                     <input type="number" 
                            data-field="${field}" 
                            data-type="perLessonAmount" 
                            value="${setting.perLessonAmount || 0}" 
-                           min="0" step="1000" class="amount-input">
+                           min="0" step="1000" class="amount-input"
+                           placeholder="수업당 금액">
                 </td>
                 <td>
                     <input type="number" 
                            data-field="${field}" 
                            data-type="maxBudget" 
                            value="${setting.maxBudget || 0}" 
-                           min="0" step="10000" class="amount-input">
+                           min="0" step="10000" class="amount-input"
+                           placeholder="최대 예산 상한">
                 </td>
             `;
             tbody.appendChild(row);
         });
+
+        // 새 분야 추가 행
+        const addRow = document.createElement('tr');
+        addRow.innerHTML = `
+            <td colspan="3" style="text-align: center; padding: 1rem;">
+                <button class="btn secondary" onclick="AdminManager.Budget.showAddNewFieldDialog()">
+                    <i data-lucide="plus"></i>
+                    새 분야 추가
+                </button>
+            </td>
+        `;
+        tbody.appendChild(addRow);
 
         // 분야별 예산 현황 보기 버튼 이벤트 리스너 추가
         const fieldStatusButtons = document.querySelectorAll('.field-status-btn');
@@ -385,11 +431,125 @@ AdminManager.Budget = {
                 this.showFieldBudgetStatus(field);
             });
         });
+
+        // 아이콘 재생성
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        console.log('✅ v4.3.1 예산 설정 폼 채우기 완료 - DB 전용 (', Object.keys(settings).length, '개 분야)');
+    },
+
+    // 🆕 새 분야 추가 대화상자
+    showAddNewFieldDialog() {
+        const fieldName = prompt('새로 추가할 분야명을 입력하세요:', '');
+        
+        if (!fieldName || !fieldName.trim()) {
+            return;
+        }
+        
+        const cleanFieldName = fieldName.trim();
+        
+        // 기존 분야인지 확인
+        const tbody = document.querySelector('#budgetSettingsTable tbody');
+        const existingFields = Array.from(tbody.querySelectorAll('input[data-field]'))
+            .map(input => input.dataset.field);
+        
+        if (existingFields.includes(cleanFieldName)) {
+            Utils.showToast('이미 존재하는 분야입니다.', 'warning');
+            return;
+        }
+        
+        // 새 분야 행 추가
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>${cleanFieldName}</span>
+                    <button class="btn small secondary field-status-btn" 
+                            data-field="${cleanFieldName}" 
+                            title="분야별 예산 현황 보기">
+                        <i data-lucide="eye"></i>
+                    </button>
+                    <button class="btn small danger delete-field-btn" 
+                            data-field="${cleanFieldName}" 
+                            title="분야 삭제"
+                            onclick="AdminManager.Budget.confirmDeleteField('${cleanFieldName}')">
+                        <i data-lucide="trash-2"></i>
+                    </button>
+                </div>
+            </td>
+            <td>
+                <input type="number" 
+                       data-field="${cleanFieldName}" 
+                       data-type="perLessonAmount" 
+                       value="0" 
+                       min="0" step="1000" class="amount-input"
+                       placeholder="수업당 금액">
+            </td>
+            <td>
+                <input type="number" 
+                       data-field="${cleanFieldName}" 
+                       data-type="maxBudget" 
+                       value="0" 
+                       min="0" step="10000" class="amount-input"
+                       placeholder="최대 예산 상한">
+            </td>
+        `;
+        
+        // 마지막 행(새 분야 추가 버튼) 앞에 삽입
+        const addButtonRow = tbody.querySelector('tr:last-child');
+        tbody.insertBefore(newRow, addButtonRow);
+        
+        // 이벤트 리스너 추가
+        const statusButton = newRow.querySelector('.field-status-btn');
+        statusButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.showFieldBudgetStatus(cleanFieldName);
+        });
+        
+        // 아이콘 재생성
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        Utils.showToast(`"${cleanFieldName}" 분야가 추가되었습니다. 설정을 저장해주세요.`, 'success');
+    },
+
+    // 🆕 분야 삭제 확인
+    confirmDeleteField(field) {
+        const shouldDelete = confirm(`"${field}" 분야를 삭제하시겠습니까?\n\n⚠️ 이 분야의 모든 예산 설정이 삭제됩니다.`);
+        
+        if (shouldDelete) {
+            this.deleteField(field);
+        }
+    },
+
+    // 🆕 분야 삭제 처리
+    async deleteField(field) {
+        try {
+            // UI에서 해당 행 제거
+            const tbody = document.querySelector('#budgetSettingsTable tbody');
+            const rows = tbody.querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                const fieldInput = row.querySelector(`input[data-field="${field}"]`);
+                if (fieldInput) {
+                    row.remove();
+                }
+            });
+            
+            Utils.showToast(`"${field}" 분야가 삭제되었습니다. 설정을 저장해주세요.`, 'success');
+            
+        } catch (error) {
+            console.error('❌ 분야 삭제 처리 오류:', error);
+            Utils.showToast('분야 삭제 중 오류가 발생했습니다.', 'error');
+        }
     },
 
     // 새로고침 함수
     async refresh() {
-        console.log('🔄 Budget 모듈 새로고침');
+        console.log('🔄 Budget 모듈 새로고침 (v4.3.1 DB 전용)');
         await this.loadBudgetOverview();
         return true;
     }
@@ -398,4 +558,4 @@ AdminManager.Budget = {
 // 전역 접근을 위한 별명
 window.AdminBudget = AdminManager.Budget;
 
-console.log('💰 AdminManager.Budget 모듈 로드 완료 (이벤트 리스너 문제 수정)');
+console.log('💰 AdminManager.Budget v4.3.1 모듈 로드 완료 - 하드코딩 제거, 100% DB 기반 예산 설정');
