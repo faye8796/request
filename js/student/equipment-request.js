@@ -1,7 +1,7 @@
-// 교구 신청 전담 모듈 - v4.3.0 (student.js와 student-addon.js에서 분리)
+// 교구 신청 전담 모듈 - v4.3.1 (setTimeout 컨텍스트 오류 해결)
 // 일반신청, 묶음신청, 수정/삭제, 카드렌더링, API 확장 등 교구 관련 모든 기능 통합
 // 🎯 책임: 교구 신청의 전체 라이프사이클 관리
-// 🔧 v4.3.0 - requests 테이블 구조 호환성 업데이트 및 4가지 타입별 최적화
+// 🔧 v4.3.1 - setTimeout 내부 this 바인딩 오류 해결 및 API 호출 최적화
 
 // SupabaseAPI 확장 (student-addon.js에서 이동) - 🆕 v4.3.0 API 추가
 function extendSupabaseAPI() {
@@ -192,7 +192,7 @@ function extendSupabaseAPI() {
 const EquipmentRequestModule = {
     // 모듈 정보
     name: 'EquipmentRequest',
-    version: '4.3.0',
+    version: '4.3.1',
     
     // 상태 관리
     currentEditingItem: null,
@@ -202,11 +202,44 @@ const EquipmentRequestModule = {
     // 상위 매니저 참조
     studentManager: null,
     
+    // === 🆕 v4.3.1 안전한 대시보드 새로고침 함수 ===
+    safeRefreshDashboard: function() {
+        try {
+            console.log('🔄 v4.3.1 안전한 대시보드 새로고침 시작');
+            
+            if (this.studentManager) {
+                // API 헬퍼를 통한 안전한 호출
+                const apiHelper = this.studentManager.getModule('api');
+                if (apiHelper && typeof apiHelper.loadApplications === 'function') {
+                    console.log('📊 신청 내역 새로고침 시작');
+                    apiHelper.loadApplications().catch(error => {
+                        console.error('❌ 신청 내역 새로고침 오류:', error);
+                    });
+                } else {
+                    console.warn('⚠️ ApiHelper.loadApplications 함수를 찾을 수 없음');
+                }
+                
+                if (apiHelper && typeof apiHelper.updateBudgetStatus === 'function') {
+                    console.log('💰 예산 상태 새로고침 시작');
+                    apiHelper.updateBudgetStatus().catch(error => {
+                        console.error('❌ 예산 상태 새로고침 오류:', error);
+                    });
+                } else {
+                    console.warn('⚠️ ApiHelper.updateBudgetStatus 함수를 찾을 수 없음');
+                }
+            } else {
+                console.error('❌ studentManager 참조를 찾을 수 없음');
+            }
+        } catch (error) {
+            console.error('❌ v4.3.1 대시보드 새로고침 오류:', error);
+        }
+    },
+    
     // === 모듈 초기화 ===
     
     init: function(studentManager) {
         try {
-            console.log('🛒 EquipmentRequestModule 초기화 v4.3.0 - 4가지 타입별 최적화');
+            console.log('🛒 EquipmentRequestModule 초기화 v4.3.1 - setTimeout 컨텍스트 오류 해결');
             
             this.studentManager = studentManager;
             
@@ -216,7 +249,7 @@ const EquipmentRequestModule = {
             // 이벤트 리스너 설정
             this.setupEventListeners();
             
-            console.log('✅ EquipmentRequestModule 초기화 완료');
+            console.log('✅ EquipmentRequestModule v4.3.1 초기화 완료');
             return true;
         } catch (error) {
             console.error('❌ EquipmentRequestModule 초기화 오류:', error);
@@ -543,12 +576,12 @@ const EquipmentRequestModule = {
         }
     },
 
-    // === 🚀 v4.3.0 폼 처리 - 4가지 타입별 최적화 ===
+    // === 🚀 v4.3.1 폼 처리 - 컨텍스트 오류 해결 ===
 
-    // 📝 일반 교구 신청 제출 처리 - v4.3.0 호환성
+    // 📝 일반 교구 신청 제출 처리 - 🔧 v4.3.1 컨텍스트 오류 해결
     handleApplicationSubmit: function() {
         try {
-            console.log('📝 일반 교구 신청 제출 처리 v4.3.0');
+            console.log('📝 일반 교구 신청 제출 처리 v4.3.1');
             
             if (this.submitInProgress) {
                 console.warn('⚠️ 제출이 이미 진행 중입니다');
@@ -611,7 +644,7 @@ const EquipmentRequestModule = {
                 return;
             }
 
-            console.log('📝 v4.3.0 단일 신청 데이터:', applicationData);
+            console.log('📝 v4.3.1 단일 신청 데이터:', applicationData);
             
             // 제출 버튼 비활성화
             const submitBtn = form.querySelector('button[type="submit"]');
@@ -620,24 +653,21 @@ const EquipmentRequestModule = {
                 submitBtn.textContent = '제출 중...';
             }
 
-            // v4.3.0 API 호출
+            // v4.3.1 API 호출
             const apiCall = this.currentEditingItem ? 
                 () => SupabaseAPI.updateV43Application(this.currentEditingItem, applicationData) :
                 () => SupabaseAPI.createV43Application(currentUser.id, applicationData);
 
             this.safeApiCall(apiCall).then((result) => {
                 if (result && result.success !== false) {
-                    console.log('✅ v4.3.0 교구 신청 제출 완료');
+                    console.log('✅ v4.3.1 교구 신청 제출 완료');
                     alert(this.currentEditingItem ? '교구 신청이 수정되었습니다.' : '교구 신청이 제출되었습니다.');
                     
                     this.hideApplicationModal();
                     
-                    // 대시보드 새로고침
+                    // 🔧 v4.3.1 대시보드 새로고침 - 컨텍스트 안전 호출
                     setTimeout(() => {
-                        if (this.studentManager) {
-                            this.studentManager.loadApplications();
-                            this.studentManager.updateBudgetStatus();
-                        }
+                        this.safeRefreshDashboard();
                     }, 500);
                 } else {
                     console.error('❌ 교구 신청 제출 실패:', result);
@@ -662,10 +692,10 @@ const EquipmentRequestModule = {
         }
     },
 
-    // 📦 묶음 신청 제출 처리 - 🆕 v4.3.0 최적화
+    // 📦 묶음 신청 제출 처리 - 🔧 v4.3.1 컨텍스트 오류 해결
     handleBundleSubmit: function() {
         try {
-            console.log('📦 묶음 신청 제출 처리 v4.3.0 - 4가지 타입별 최적화');
+            console.log('📦 묶음 신청 제출 처리 v4.3.1 - 컨텍스트 오류 해결');
             
             if (this.submitInProgress) {
                 console.warn('⚠️ 제출이 이미 진행 중입니다');
@@ -712,7 +742,7 @@ const EquipmentRequestModule = {
                 return;
             }
 
-            console.log('📦 v4.3.0 최적화된 묶음 신청 데이터:', bundleData);
+            console.log('📦 v4.3.1 최적화된 묶음 신청 데이터:', bundleData);
             
             // 제출 버튼 비활성화
             const submitBtn = form.querySelector('button[type="submit"]');
@@ -721,22 +751,19 @@ const EquipmentRequestModule = {
                 submitBtn.textContent = '제출 중...';
             }
 
-            // 🆕 v4.3.0 API 호출
+            // 🆕 v4.3.1 API 호출
             this.safeApiCall(() => {
                 return SupabaseAPI.createV43BundleApplication(currentUser.id, bundleData);
             }).then((result) => {
                 if (result && result.success !== false) {
-                    console.log('✅ v4.3.0 묶음 신청 제출 완료');
+                    console.log('✅ v4.3.1 묶음 신청 제출 완료');
                     alert('묶음 신청이 제출되었습니다.');
                     
                     this.hideBundleModal();
                     
-                    // 대시보드 새로고침
+                    // 🔧 v4.3.1 대시보드 새로고침 - 컨텍스트 안전 호출
                     setTimeout(() => {
-                        if (this.studentManager) {
-                            this.studentManager.loadApplications();
-                            this.studentManager.updateBudgetStatus();
-                        }
+                        this.safeRefreshDashboard();
                     }, 500);
                 } else {
                     console.error('❌ 묶음 신청 제출 실패:', result);
@@ -1060,11 +1087,8 @@ const EquipmentRequestModule = {
                     console.log('✅ 신청 삭제 완료');
                     alert('신청이 삭제되었습니다.');
                     
-                    // 대시보드 새로고침
-                    if (this.studentManager) {
-                        this.studentManager.loadApplications();
-                        this.studentManager.updateBudgetStatus();
-                    }
+                    // 🔧 v4.3.1 대시보드 새로고침 - 컨텍스트 안전 호출
+                    this.safeRefreshDashboard();
                 } else {
                     console.error('❌ 신청 삭제 실패:', deleteResult);
                     alert('신청 삭제에 실패했습니다: ' + (deleteResult?.message || deleteResult?.error || '알 수 없는 오류'));
@@ -1495,7 +1519,7 @@ const EquipmentRequestModule = {
             // 모달 제목 변경
             const modalTitle = modal.querySelector('h3');
             if (modalTitle) {
-                modalTitle.innerHTML = '묶음 교구 신청 수정 <span class="version-badge">v4.3.0</span>';
+                modalTitle.innerHTML = '묶음 교구 신청 수정 <span class="version-badge">v4.3.1</span>';
             }
 
             // 제출 버튼 텍스트 변경
@@ -1511,7 +1535,7 @@ const EquipmentRequestModule = {
             modal.classList.add('show');
             document.body.style.overflow = 'hidden';
 
-            console.log('✅ 묶음 신청 수정 모달 열기 완료 v4.3.0');
+            console.log('✅ 묶음 신청 수정 모달 열기 완료 v4.3.1');
         } catch (error) {
             console.error('❌ 묶음 신청 수정 모달 열기 오류:', error);
             alert('묶음 수정 모달을 여는 중 오류가 발생했습니다.');
@@ -1581,9 +1605,9 @@ const EquipmentRequestModule = {
                 this.fillOfflineBundleDataV43(application, form);
             }
 
-            console.log('✅ v4.3.0 묶음 신청 폼 데이터 채우기 완료');
+            console.log('✅ v4.3.1 묶음 신청 폼 데이터 채우기 완료');
         } catch (error) {
-            console.error('❌ v4.3.0 묶음 신청 폼 데이터 채우기 오류:', error);
+            console.error('❌ v4.3.1 묶음 신청 폼 데이터 채우기 오류:', error);
         }
     },
 
@@ -1788,4 +1812,4 @@ if (typeof window !== 'undefined') {
     window.EquipmentRequestModule = EquipmentRequestModule;
 }
 
-console.log('🛒 EquipmentRequestModule v4.3.0 로드 완료 - 4가지 타입별 최적화 (온라인 묶음: link+account_id+account_pw / 오프라인 묶음: store_info)');
+console.log('🛒 EquipmentRequestModule v4.3.1 로드 완료 - setTimeout 컨텍스트 오류 해결 및 안전한 대시보드 새로고침');
