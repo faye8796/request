@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>교구 구매 신청 관리 - 세종학당 문화인턴 지원 시스템</title>
     
-    <!-- 🔧 v4.3.1 CSS Files (캐시 버스팅 적용) -->
-    <link rel="stylesheet" href="../css/main.css?v=4.3.1">
-    <link rel="stylesheet" href="../css/admin.css?v=4.3.1">
-    <link rel="stylesheet" href="../css/lesson-plan.css?v=4.3.1">
-    <link rel="stylesheet" href="../css/admin-addon.css?v=4.3.1">
+    <!-- 🔧 v4.3.2 CSS Files (강화된 캐시 버스팅) -->
+    <link rel="stylesheet" href="../css/main.css?v=4.3.2">
+    <link rel="stylesheet" href="../css/admin.css?v=4.3.2">
+    <link rel="stylesheet" href="../css/lesson-plan.css?v=4.3.2">
+    <link rel="stylesheet" href="../css/admin-addon.css?v=4.3.2">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -128,7 +128,7 @@
             }
         }
 
-        /* v4.3.1 비동기 처리 안정화 완료 알림 */
+        /* v4.3.2 자동 초기화 완료 알림 */
         .module-fix-notice {
             background: linear-gradient(135deg, #059669 0%, #047857 100%);
             color: white;
@@ -193,12 +193,12 @@
             </div>
         </div>
 
-        <!-- v4.3.1 비동기 처리 안정화 완료 알림 -->
+        <!-- v4.3.2 자동 초기화 완료 알림 -->
         <div class="module-fix-notice">
             <i data-lucide="shield-check"></i>
             <div class="notice-content">
-                <div class="notice-title">🛡️ v4.3.1 비동기 처리 안정화 완료!</div>
-                <p class="notice-text">메시지 채널 에러 해결 • Promise 타임아웃 설정 • 클립보드 API 폴백 • 연쇄 작업 안정화 • 브라우저 확장 프로그램 충돌 방지</p>
+                <div class="notice-title">🛡️ v4.3.2 자동 초기화 완료!</div>
+                <p class="notice-text">AdminEnhancedUI 자동 실행 • 학생별 그룹화 UI • 4가지 신청 타입별 최적화 • 캐시 무효화 강화</p>
             </div>
         </div>
 
@@ -281,41 +281,41 @@
 
             <!-- 교구 신청 목록 (학생별 그룹화) -->
             <div id="adminApplications" class="admin-applications">
-                <!-- AdminEnhancedUI v4.3.1에서 동적으로 생성될 학생별 그룹화된 교구 신청 목록 -->
+                <!-- AdminEnhancedUI v4.3.2에서 동적으로 생성될 학생별 그룹화된 교구 신청 목록 -->
             </div>
         </div>
     </div>
 
     <!-- 모달들은 admin 모듈들에서 동적으로 생성됨 -->
 
-    <!-- 🔧 v4.3.1 비동기 처리 안정화 JavaScript Files -->
+    <!-- 🔧 v4.3.2 자동 초기화 JavaScript Files -->
     <!-- 1. 기본 설정 모듈 -->
-    <script src="../js/config.js?v=4.3.1"></script>
-    <script src="../js/auth.js?v=4.3.1"></script>
-    <script src="../js/utils.js?v=4.3.1"></script>
+    <script src="../js/config.js?v=4.3.2"></script>
+    <script src="../js/auth.js?v=4.3.2"></script>
+    <script src="../js/utils.js?v=4.3.2"></script>
     
     <!-- 2. Supabase 모듈들 (의존성 순서 중요!) -->
-    <script src="../js/supabase/supabase-core.js?v=4.3.1"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.3.1"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.3.1"></script>
-    <script src="../js/supabase-client.js?v=4.3.1"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.3.2"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.3.2"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.3.2"></script>
+    <script src="../js/supabase-client.js?v=4.3.2"></script>
     
     <!-- 3. 추가 모듈들 -->
-    <script src="../js/lesson-plan.js?v=4.3.1"></script>
+    <script src="../js/lesson-plan.js?v=4.3.2"></script>
     
     <!-- 🆕 모듈화된 Admin 파일들 (교구 관리에 필요한 모듈들만) -->
     <!-- 핵심 파일들 먼저 로드 -->
-    <script src="../js/admin/admin-core.js?v=4.3.1"></script>
-    <script src="../js/admin/admin-utils.js?v=4.3.1"></script>
-    <script src="../js/admin/admin-modals.js?v=4.3.1"></script>
+    <script src="../js/admin/admin-core.js?v=4.3.2"></script>
+    <script src="../js/admin/admin-utils.js?v=4.3.2"></script>
+    <script src="../js/admin/admin-modals.js?v=4.3.2"></script>
     
     <!-- 교구 관리에 필요한 모듈들 로드 -->
-    <script src="../js/admin/admin-applications.js?v=4.3.1"></script>
-    <script src="../js/admin/admin-budget.js?v=4.3.1"></script>
-    <script src="../js/admin/admin-lesson-plans.js?v=4.3.1"></script>
+    <script src="../js/admin/admin-applications.js?v=4.3.2"></script>
+    <script src="../js/admin/admin-budget.js?v=4.3.2"></script>
+    <script src="../js/admin/admin-lesson-plans.js?v=4.3.2"></script>
     
-    <!-- 🎨 향상된 UI 모듈 v4.3.1 (비동기 처리 안정화) -->
-    <script src="../js/admin/admin-enhanced-ui.js?v=4.3.1"></script>
+    <!-- 🎨 향상된 UI 모듈 v4.3.2 (자동 초기화) -->
+    <script src="../js/admin/admin-enhanced-ui.js?v=4.3.2"></script>
     
     <!-- 교구 관리 페이지 전용 스크립트 -->
     <script>
@@ -326,7 +326,7 @@
 
         // 페이지 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 교구 관리 페이지 초기화 시작 (v4.3.1 비동기 처리 안정화)');
+            console.log('🔧 교구 관리 페이지 초기화 시작 (v4.3.2 자동 초기화)');
             
             try {
                 // Lucide 아이콘 초기화
@@ -364,9 +364,9 @@
             return true;
         }
 
-        // 교구 관리 초기화 (v4.3.1 비동기 처리 안정화)
+        // 교구 관리 초기화 (v4.3.2 자동 초기화)
         async function initializeEquipmentManagement() {
-            console.log('🚀 교구 관리 시스템 초기화 중... (v4.3.1 비동기 처리 안정화)');
+            console.log('🚀 교구 관리 시스템 초기화 중... (v4.3.2 자동 초기화)');
             
             try {
                 showLoadingState();
@@ -387,7 +387,10 @@
                 showMainContent();
                 isDataLoaded = true;
                 
-                console.log('✅ 교구 관리 시스템 초기화 완료 (v4.3.1)');
+                console.log('✅ 교구 관리 시스템 초기화 완료 (v4.3.2)');
+
+                // 🚀 v4.3.2 새로운 기능: AdminEnhancedUI 자동 실행
+                scheduleEnhancedUIActivation();
 
             } catch (error) {
                 console.error('❌ 교구 관리 초기화 실패:', error);
@@ -395,7 +398,77 @@
             }
         }
 
-        // v4.3.1 호환 Supabase 클라이언트 초기화 대기
+        // 🚀 v4.3.2 새로운 기능: AdminEnhancedUI 자동 활성화 스케줄링
+        function scheduleEnhancedUIActivation() {
+            console.log('🎯 AdminEnhancedUI 자동 활성화 스케줄링 (v4.3.2)');
+            
+            // 15초 후 강제 활성화 (기본 데이터 로드 완료 후)
+            setTimeout(() => {
+                activateAdminEnhancedUI();
+            }, 15000);
+            
+            // 5초 후에도 시도 (빠른 활성화)
+            setTimeout(() => {
+                if (window.AdminEnhancedUI && window.AdminEnhancedUI.isInitialized) {
+                    console.log('🚀 빠른 AdminEnhancedUI 활성화 시도 (v4.3.2)');
+                    activateAdminEnhancedUI();
+                }
+            }, 5000);
+        }
+
+        // 🎨 AdminEnhancedUI 활성화 함수
+        async function activateAdminEnhancedUI() {
+            console.log('🎨 AdminEnhancedUI 활성화 시작 (v4.3.2)');
+            
+            try {
+                if (!window.AdminEnhancedUI) {
+                    console.warn('⚠️ AdminEnhancedUI 모듈을 찾을 수 없음');
+                    return;
+                }
+
+                // AdminEnhancedUI 초기화 (아직 안된 경우)
+                if (!window.AdminEnhancedUI.isInitialized) {
+                    console.log('🔧 AdminEnhancedUI 초기화 실행');
+                    window.AdminEnhancedUI.init();
+                }
+
+                // 캐시된 데이터가 없으면 강제 로드
+                if (!window.AdminEnhancedUI.groupedApplicationsCache) {
+                    console.log('📊 AdminEnhancedUI 데이터 강제 로드');
+                    
+                    await window.AdminEnhancedUI.loadApplicationsWithShipping()
+                        .then(() => {
+                            console.log('✅ AdminEnhancedUI 활성화 성공 (v4.3.2)');
+                        })
+                        .catch(async (error) => {
+                            console.warn('⚠️ 향상된 UI 로드 실패, 기본 방식으로 재시도:', error);
+                            
+                            // 폴백: 기본 데이터로 강제 렌더링
+                            if (window.SupabaseAPI && window.SupabaseAPI.searchApplications) {
+                                try {
+                                    const applications = await window.SupabaseAPI.searchApplications('');
+                                    if (applications && applications.length > 0 && window.AdminEnhancedUI.groupApplicationsByStudent) {
+                                        const grouped = window.AdminEnhancedUI.groupApplicationsByStudent(applications);
+                                        if (window.AdminEnhancedUI.renderGroupedApplications) {
+                                            window.AdminEnhancedUI.renderGroupedApplications(grouped);
+                                            console.log('✅ 기본 데이터로 AdminEnhancedUI 강제 렌더링 완료 (v4.3.2)');
+                                        }
+                                    }
+                                } catch (fallbackError) {
+                                    console.error('❌ 폴백 렌더링도 실패:', fallbackError);
+                                }
+                            }
+                        });
+                } else {
+                    console.log('✅ AdminEnhancedUI 이미 활성화됨 (캐시 데이터 존재)');
+                }
+                
+            } catch (error) {
+                console.error('❌ AdminEnhancedUI 활성화 실패:', error);
+            }
+        }
+
+        // v4.3.2 호환 Supabase 클라이언트 초기화 대기
         function waitForSupabaseClient() {
             return new Promise((resolve, reject) => {
                 let attempts = 0;
@@ -410,7 +483,7 @@
                     const clientReady = !!(window.SupabaseAPI);
                     
                     if (coreReady && adminReady && clientReady) {
-                        console.log('✅ v4.3.1 Supabase 모듈들 준비됨 (비동기 처리 안정화)');
+                        console.log('✅ v4.3.2 Supabase 모듈들 준비됨 (자동 초기화)');
                         console.log('📦 로드된 모듈:', {
                             core: coreReady,
                             admin: adminReady,
@@ -418,11 +491,11 @@
                         });
                         resolve();
                     } else if (attempts >= maxAttempts) {
-                        reject(new Error(`v4.3.1 Supabase 모듈 초기화 시간 초과 (${attempts}회 시도)`));
+                        reject(new Error(`v4.3.2 Supabase 모듈 초기화 시간 초과 (${attempts}회 시도)`));
                     } else {
                         // 진행 상황 로그 (매 2초마다)
                         if (attempts % 20 === 0) {
-                            console.log(`⏳ v4.3.1 모듈 로딩 대기 중... ${attempts}/${maxAttempts}`, {
+                            console.log(`⏳ v4.3.2 모듈 로딩 대기 중... ${attempts}/${maxAttempts}`, {
                                 core: coreReady ? '✅' : '⏳',
                                 admin: adminReady ? '✅' : '⏳',
                                 client: clientReady ? '✅' : '⏳'
@@ -460,7 +533,7 @@
             });
         }
 
-        // AdminEnhancedUI 초기화 대기 (v4.3.1 업데이트)
+        // AdminEnhancedUI 초기화 대기 (v4.3.2 업데이트)
         function waitForAdminEnhancedUI() {
             return new Promise((resolve, reject) => {
                 let attempts = 0;
@@ -470,10 +543,10 @@
                     attempts++;
                     
                     if (window.AdminEnhancedUI && typeof window.AdminEnhancedUI.init === 'function') {
-                        console.log('✅ AdminEnhancedUI v4.3.1 준비됨 (비동기 처리 안정화)');
+                        console.log('✅ AdminEnhancedUI v4.3.2 준비됨 (자동 초기화)');
                         resolve();
                     } else if (attempts >= maxAttempts) {
-                        console.warn('⚠️ AdminEnhancedUI v4.3.1를 찾을 수 없음, 기본 UI 사용');
+                        console.warn('⚠️ AdminEnhancedUI v4.3.2를 찾을 수 없음, 기본 UI 사용');
                         resolve(); // AdminEnhancedUI 없어도 계속 진행
                     } else {
                         setTimeout(checkAdminEnhancedUI, 100);
@@ -509,9 +582,9 @@
             }
         }
 
-        // 직접 데이터 로드 (AdminManager 없을 때)
+        // 직접 데이터 로드 (AdminManager 없을 때) - v4.3.2 개선
         async function loadDataDirectly() {
-            console.log('📋 직접 데이터 로드 방식 실행');
+            console.log('📋 직접 데이터 로드 방식 실행 (v4.3.2)');
 
             // 통계 데이터 로드
             await loadStatisticsDirectly();
@@ -519,8 +592,72 @@
             // 예산 현황 로드
             await loadBudgetOverviewDirectly();
             
-            // 교구 신청 목록 로드
-            await loadApplicationsDirectly();
+            // 교구 신청 목록 로드 - v4.3.2: AdminEnhancedUI 우선 사용
+            await loadApplicationsDirectlyV432();
+        }
+
+        // 🚀 v4.3.2 새로운 기능: AdminEnhancedUI 우선 교구 신청 로드
+        async function loadApplicationsDirectlyV432() {
+            console.log('📋 v4.3.2 교구 신청 로드: AdminEnhancedUI 우선 방식');
+            
+            try {
+                // 1순위: AdminEnhancedUI 사용 시도
+                if (window.AdminEnhancedUI && window.AdminEnhancedUI.isInitialized) {
+                    console.log('🎨 AdminEnhancedUI 사용하여 데이터 로드');
+                    
+                    try {
+                        await window.AdminEnhancedUI.loadApplicationsWithShipping();
+                        console.log('✅ AdminEnhancedUI 데이터 로드 성공');
+                        return; // 성공시 여기서 끝
+                    } catch (enhancedError) {
+                        console.warn('⚠️ AdminEnhancedUI 로드 실패, 기본 방식으로 폴백:', enhancedError);
+                    }
+                }
+                
+                // 2순위: 기본 방식으로 폴백
+                console.log('📋 기본 방식으로 교구 신청 로드');
+                await loadApplicationsBasic();
+                
+            } catch (error) {
+                console.error('❌ 모든 교구 신청 로드 방식 실패:', error);
+                // 실패시 빈 목록 표시
+                const container = document.getElementById('adminApplications');
+                if (container) {
+                    container.innerHTML = '<div class="no-results">교구 신청 목록을 불러올 수 없습니다.</div>';
+                }
+            }
+        }
+
+        // 기본 교구 신청 로드 (폴백용)
+        async function loadApplicationsBasic() {
+            try {
+                if (!window.SupabaseAPI || typeof window.SupabaseAPI.searchApplications !== 'function') {
+                    console.warn('⚠️ SupabaseAPI.searchApplications 함수를 찾을 수 없음');
+                    return;
+                }
+
+                const applications = await SupabaseAPI.searchApplications('');
+                
+                // AdminEnhancedUI가 있으면 그룹화하여 렌더링, 없으면 기본 렌더링
+                if (window.AdminEnhancedUI && typeof window.AdminEnhancedUI.groupApplicationsByStudent === 'function') {
+                    console.log('🎨 AdminEnhancedUI 그룹화 렌더링 사용');
+                    const grouped = window.AdminEnhancedUI.groupApplicationsByStudent(applications);
+                    if (typeof window.AdminEnhancedUI.renderGroupedApplications === 'function') {
+                        window.AdminEnhancedUI.renderGroupedApplications(grouped);
+                    } else {
+                        renderApplicationsDirectly(applications);
+                    }
+                } else {
+                    console.log('📋 기본 렌더링 사용');
+                    renderApplicationsDirectly(applications);
+                }
+
+                console.log('📋 기본 교구 신청 목록 로드 완료:', applications.length, '건');
+
+            } catch (error) {
+                console.error('❌ 기본 교구 신청 목록 로드 실패:', error);
+                throw error;
+            }
         }
 
         // 통계 데이터 직접 로드
@@ -566,29 +703,6 @@
             } catch (error) {
                 console.error('❌ 예산 현황 로드 실패:', error);
                 // 실패해도 계속 진행
-            }
-        }
-
-        // 교구 신청 목록 직접 로드
-        async function loadApplicationsDirectly() {
-            try {
-                if (!window.SupabaseAPI || typeof window.SupabaseAPI.searchApplications !== 'function') {
-                    console.warn('⚠️ SupabaseAPI.searchApplications 함수를 찾을 수 없음');
-                    return;
-                }
-
-                const applications = await SupabaseAPI.searchApplications('');
-                renderApplicationsDirectly(applications);
-
-                console.log('📋 교구 신청 목록 로드 완료:', applications.length, '건');
-
-            } catch (error) {
-                console.error('❌ 교구 신청 목록 로드 실패:', error);
-                // 실패시 빈 목록 표시
-                const container = document.getElementById('adminApplications');
-                if (container) {
-                    container.innerHTML = '<div class="no-results">교구 신청 목록을 불러올 수 없습니다.</div>';
-                }
             }
         }
 
@@ -842,7 +956,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'd') {
                 e.preventDefault();
-                console.log('🛠️ 교구 관리 페이지 - v4.3.1 디버그 정보 (비동기 처리 안정화)');
+                console.log('🛠️ 교구 관리 페이지 - v4.3.2 디버그 정보 (자동 초기화)');
                 console.log('isDataLoaded:', isDataLoaded);
                 console.log('retryCount:', retryCount);
                 console.log('모듈 상태:', {
@@ -852,6 +966,12 @@
                     AdminManager: !!window.AdminManager,
                     AdminEnhancedUI: !!window.AdminEnhancedUI
                 });
+                
+                // v4.3.2 새로운 기능: 수동 AdminEnhancedUI 활성화
+                if (e.shiftKey) {
+                    console.log('🎨 수동 AdminEnhancedUI 활성화 시도');
+                    activateAdminEnhancedUI();
+                }
             }
         });
 
@@ -862,7 +982,9 @@
             showLoadingState,
             showErrorState,
             showMainContent,
-            // v4.3.1 디버그 정보 추가
+            // v4.3.2 새로운 기능들
+            activateAdminEnhancedUI,
+            scheduleEnhancedUIActivation,
             getModuleStatus: () => ({
                 SupabaseCore: !!window.SupabaseCore,
                 SupabaseAdmin: !!window.SupabaseAdmin,
