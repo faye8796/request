@@ -1,4 +1,4 @@
-// 관리자 향상된 UI 모듈 v4.3 - 학생별 그룹화 및 배송지 정보 표시
+// 관리자 향상된 UI 모듈 v4.3.1 - 비동기 처리 안정화
 // admin-addon.js 기능을 새로운 모듈 구조로 통합
 // v4.3 requests 테이블 구조 변경 완전 호환
 
@@ -16,42 +16,60 @@ const AdminEnhancedUI = {
             return;
         }
 
-        console.log('🎨 AdminEnhancedUI v4.3 초기화 시작');
+        console.log('🎨 AdminEnhancedUI v4.3.1 초기화 시작 (비동기 처리 안정화)');
         
-        // 기존 AdminManager와 협업하는 방식으로 초기화
-        this.enhanceExistingFunctions();
-        this.setupEnhancedEventListeners();
-        
-        this.isInitialized = true;
-        console.log('✅ AdminEnhancedUI v4.3 초기화 완료');
+        try {
+            // 기존 AdminManager와 협업하는 방식으로 초기화
+            this.enhanceExistingFunctions();
+            this.setupEnhancedEventListeners();
+            
+            this.isInitialized = true;
+            console.log('✅ AdminEnhancedUI v4.3.1 초기화 완료');
+        } catch (error) {
+            console.error('❌ AdminEnhancedUI 초기화 실패:', error);
+        }
     },
 
     // 기존 함수들을 확장하는 방식 (오버라이드 대신)
     enhanceExistingFunctions() {
         console.log('🔧 기존 AdminManager 함수들 확장 중...');
         
-        if (window.AdminManager) {
-            // loadApplications 함수를 감싸서 확장
-            if (AdminManager.loadApplications) {
-                const originalLoadApplications = AdminManager.loadApplications.bind(AdminManager);
-                AdminManager.loadApplications = async (...args) => {
-                    // 원본 함수 실행
-                    await originalLoadApplications(...args);
-                    // 향상된 기능 추가
-                    await this.loadApplicationsWithShipping();
-                };
-            }
+        try {
+            if (window.AdminManager) {
+                // loadApplications 함수를 감싸서 확장
+                if (AdminManager.loadApplications) {
+                    const originalLoadApplications = AdminManager.loadApplications.bind(AdminManager);
+                    AdminManager.loadApplications = async (...args) => {
+                        try {
+                            // 원본 함수 실행
+                            await originalLoadApplications(...args);
+                            // 향상된 기능 추가
+                            await this.loadApplicationsWithShipping();
+                        } catch (error) {
+                            console.error('❌ loadApplications 확장 실패:', error);
+                        }
+                    };
+                }
 
-            // renderApplications 함수를 감싸서 확장
-            if (AdminManager.renderApplications) {
-                const originalRenderApplications = AdminManager.renderApplications.bind(AdminManager);
-                AdminManager.renderApplications = (applications) => {
-                    // 향상된 UI로 렌더링
-                    this.renderGroupedApplications(applications);
-                };
-            }
+                // renderApplications 함수를 감싸서 확장
+                if (AdminManager.renderApplications) {
+                    const originalRenderApplications = AdminManager.renderApplications.bind(AdminManager);
+                    AdminManager.renderApplications = (applications) => {
+                        try {
+                            // 향상된 UI로 렌더링
+                            this.renderGroupedApplications(applications);
+                        } catch (error) {
+                            console.error('❌ renderApplications 확장 실패:', error);
+                            // 폴백으로 원본 함수 실행
+                            originalRenderApplications(applications);
+                        }
+                    };
+                }
 
-            console.log('✅ AdminManager 함수 확장 완료');
+                console.log('✅ AdminManager 함수 확장 완료');
+            }
+        } catch (error) {
+            console.error('❌ AdminManager 함수 확장 실패:', error);
         }
     },
 
@@ -59,54 +77,73 @@ const AdminEnhancedUI = {
     setupEnhancedEventListeners() {
         console.log('🔧 향상된 이벤트 리스너 설정 시작');
 
-        // 검색 기능 향상 (debounce 적용)
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            // 기존 이벤트 리스너 제거 후 새로 설정
-            const newSearchInput = searchInput.cloneNode(true);
-            searchInput.parentNode.replaceChild(newSearchInput, searchInput);
-            
-            newSearchInput.addEventListener('input', this.debounce((e) => {
-                this.handleEnhancedSearch(e.target.value);
-            }, 300));
-        }
+        try {
+            // 검색 기능 향상 (debounce 적용)
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                // 기존 이벤트 리스너 제거 후 새로 설정
+                const newSearchInput = searchInput.cloneNode(true);
+                searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+                
+                newSearchInput.addEventListener('input', this.debounce((e) => {
+                    this.handleEnhancedSearch(e.target.value);
+                }, 300));
+            }
 
-        console.log('✅ 향상된 이벤트 리스너 설정 완료');
+            console.log('✅ 향상된 이벤트 리스너 설정 완료');
+        } catch (error) {
+            console.error('❌ 이벤트 리스너 설정 실패:', error);
+        }
     },
 
     // 향상된 검색 처리
     handleEnhancedSearch(searchTerm) {
         console.log('🔍 향상된 검색:', searchTerm);
         
-        this.currentSearchTerm = searchTerm.trim();
-        
-        // AdminManager의 currentSearchTerm 동기화
-        if (window.AdminManager) {
-            AdminManager.currentSearchTerm = this.currentSearchTerm;
+        try {
+            this.currentSearchTerm = searchTerm.trim();
+            
+            // AdminManager의 currentSearchTerm 동기화
+            if (window.AdminManager) {
+                AdminManager.currentSearchTerm = this.currentSearchTerm;
+            }
+            
+            // 향상된 검색으로 데이터 다시 로드 (비동기 에러 처리 강화)
+            this.loadApplicationsWithShipping().catch(error => {
+                console.error('❌ 검색 중 오류:', error);
+            });
+        } catch (error) {
+            console.error('❌ 검색 처리 실패:', error);
         }
-        
-        // 향상된 검색으로 데이터 다시 로드
-        this.loadApplicationsWithShipping();
     },
 
-    // 배송지 정보 포함하여 신청 내역 로드
+    // 배송지 정보 포함하여 신청 내역 로드 (에러 처리 강화)
     async loadApplicationsWithShipping() {
         try {
-            console.log('📦 배송지 정보 포함하여 신청 내역 로드 시작 (v4.3)');
+            console.log('📦 배송지 정보 포함하여 신청 내역 로드 시작 (v4.3.1)');
             
             if (!window.SupabaseAPI || typeof window.SupabaseAPI.searchApplications !== 'function') {
                 console.warn('⚠️ SupabaseAPI.searchApplications를 찾을 수 없음');
                 return;
             }
             
-            // 기존 방식으로 신청 내역 가져오기
-            const applications = await SupabaseAPI.searchApplications(this.currentSearchTerm);
+            // 기존 방식으로 신청 내역 가져오기 (타임아웃 설정)
+            const applications = await Promise.race([
+                SupabaseAPI.searchApplications(this.currentSearchTerm),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('검색 타임아웃')), 10000)
+                )
+            ]);
             
             // 학생별로 그룹화
             const groupedApplications = this.groupApplicationsByStudent(applications);
             
-            // 배송지 정보 로드
-            await this.loadShippingInfoForStudents(groupedApplications);
+            // 배송지 정보 로드 (에러 발생시 계속 진행)
+            try {
+                await this.loadShippingInfoForStudents(groupedApplications);
+            } catch (shippingError) {
+                console.warn('⚠️ 배송지 정보 로드 실패, 계속 진행:', shippingError);
+            }
             
             // 그룹화된 데이터 캐시
             this.groupedApplicationsCache = groupedApplications;
@@ -114,16 +151,20 @@ const AdminEnhancedUI = {
             // 학생별 그룹화 렌더링
             this.renderGroupedApplications(groupedApplications);
             
-            console.log('✅ 배송지 정보 포함 신청 내역 로드 완료 (v4.3)');
+            console.log('✅ 배송지 정보 포함 신청 내역 로드 완료 (v4.3.1)');
             
         } catch (error) {
             console.error('❌ 배송지 정보 포함 신청 내역 로드 실패:', error);
             
             // 실패시 기본 렌더링으로 폴백
-            if (window.AdminManager && typeof AdminManager.renderApplications === 'function') {
-                console.log('🔄 기본 렌더링으로 폴백');
-                const applications = await SupabaseAPI.searchApplications(this.currentSearchTerm);
-                this.renderBasicApplications(applications);
+            try {
+                if (window.AdminManager && typeof AdminManager.renderApplications === 'function') {
+                    console.log('🔄 기본 렌더링으로 폴백');
+                    const applications = await SupabaseAPI.searchApplications(this.currentSearchTerm);
+                    this.renderBasicApplications(applications);
+                }
+            } catch (fallbackError) {
+                console.error('❌ 폴백 렌더링도 실패:', fallbackError);
             }
         }
     },
@@ -132,107 +173,117 @@ const AdminEnhancedUI = {
     groupApplicationsByStudent(applications) {
         console.log('👥 학생별 신청 내역 그룹화 시작 (v4.3):', applications.length, '건');
         
-        const groupedData = new Map();
-        
-        applications.forEach(application => {
-            const userId = application.user_profiles?.id || application.user_id;
-            const userKey = userId || 'unknown';
+        try {
+            const groupedData = new Map();
             
-            if (!groupedData.has(userKey)) {
-                // 학생 정보 설정
-                const userProfile = application.user_profiles || {};
+            applications.forEach(application => {
+                const userId = application.user_profiles?.id || application.user_id;
+                const userKey = userId || 'unknown';
                 
-                groupedData.set(userKey, {
-                    studentId: userId,
-                    studentInfo: {
-                        name: userProfile.name || '알 수 없음',
-                        sejong_institute: userProfile.sejong_institute || '미설정',
-                        field: userProfile.field || '미설정',
-                        email: userProfile.email || '',
-                        phone: userProfile.phone || ''
-                    },
-                    shippingInfo: null, // 별도로 로드됨
-                    applications: [],
-                    statistics: {
-                        totalItems: 0,
-                        totalAmount: 0,
-                        pendingCount: 0,
-                        approvedCount: 0,
-                        rejectedCount: 0,
-                        purchasedCount: 0,
-                        // v4.3 신청 타입별 통계 추가
-                        onlineSingleCount: 0,
-                        onlineBundleCount: 0,
-                        offlineSingleCount: 0,
-                        offlineBundleCount: 0
+                if (!groupedData.has(userKey)) {
+                    // 학생 정보 설정
+                    const userProfile = application.user_profiles || {};
+                    
+                    groupedData.set(userKey, {
+                        studentId: userId,
+                        studentInfo: {
+                            name: userProfile.name || '알 수 없음',
+                            sejong_institute: userProfile.sejong_institute || '미설정',
+                            field: userProfile.field || '미설정',
+                            email: userProfile.email || '',
+                            phone: userProfile.phone || ''
+                        },
+                        shippingInfo: null, // 별도로 로드됨
+                        applications: [],
+                        statistics: {
+                            totalItems: 0,
+                            totalAmount: 0,
+                            pendingCount: 0,
+                            approvedCount: 0,
+                            rejectedCount: 0,
+                            purchasedCount: 0,
+                            // v4.3 신청 타입별 통계 추가
+                            onlineSingleCount: 0,
+                            onlineBundleCount: 0,
+                            offlineSingleCount: 0,
+                            offlineBundleCount: 0
+                        }
+                    });
+                }
+                
+                const studentGroup = groupedData.get(userKey);
+                studentGroup.applications.push(application);
+                
+                // 통계 업데이트
+                studentGroup.statistics.totalItems++;
+                studentGroup.statistics.totalAmount += (application.price || 0);
+                
+                // 상태별 통계
+                switch (application.status) {
+                    case 'pending':
+                        studentGroup.statistics.pendingCount++;
+                        break;
+                    case 'approved':
+                        studentGroup.statistics.approvedCount++;
+                        break;
+                    case 'rejected':
+                        studentGroup.statistics.rejectedCount++;
+                        break;
+                    case 'purchased':
+                        studentGroup.statistics.purchasedCount++;
+                        break;
+                }
+                
+                // v4.3 신청 타입별 통계
+                const isBundle = application.is_bundle;
+                const purchaseType = application.purchase_type;
+                
+                if (purchaseType === 'online') {
+                    if (isBundle) {
+                        studentGroup.statistics.onlineBundleCount++;
+                    } else {
+                        studentGroup.statistics.onlineSingleCount++;
                     }
-                });
-            }
-            
-            const studentGroup = groupedData.get(userKey);
-            studentGroup.applications.push(application);
-            
-            // 통계 업데이트
-            studentGroup.statistics.totalItems++;
-            studentGroup.statistics.totalAmount += (application.price || 0);
-            
-            // 상태별 통계
-            switch (application.status) {
-                case 'pending':
-                    studentGroup.statistics.pendingCount++;
-                    break;
-                case 'approved':
-                    studentGroup.statistics.approvedCount++;
-                    break;
-                case 'rejected':
-                    studentGroup.statistics.rejectedCount++;
-                    break;
-                case 'purchased':
-                    studentGroup.statistics.purchasedCount++;
-                    break;
-            }
-            
-            // v4.3 신청 타입별 통계
-            const isBundle = application.is_bundle;
-            const purchaseType = application.purchase_type;
-            
-            if (purchaseType === 'online') {
-                if (isBundle) {
-                    studentGroup.statistics.onlineBundleCount++;
-                } else {
-                    studentGroup.statistics.onlineSingleCount++;
+                } else if (purchaseType === 'offline') {
+                    if (isBundle) {
+                        studentGroup.statistics.offlineBundleCount++;
+                    } else {
+                        studentGroup.statistics.offlineSingleCount++;
+                    }
                 }
-            } else if (purchaseType === 'offline') {
-                if (isBundle) {
-                    studentGroup.statistics.offlineBundleCount++;
-                } else {
-                    studentGroup.statistics.offlineSingleCount++;
+            });
+            
+            const groupedArray = Array.from(groupedData.values());
+            
+            // 신청 순서대로 정렬 (최신순), v4.3에서는 온라인 우선 정렬 추가
+            groupedArray.sort((a, b) => {
+                try {
+                    // 먼저 온라인 신청을 우선으로 정렬 (대리구매 효율성)
+                    const aOnlineCount = a.statistics.onlineSingleCount + a.statistics.onlineBundleCount;
+                    const bOnlineCount = b.statistics.onlineSingleCount + b.statistics.onlineBundleCount;
+                    
+                    if (aOnlineCount > 0 && bOnlineCount === 0) return -1;
+                    if (aOnlineCount === 0 && bOnlineCount > 0) return 1;
+                    
+                    // 온라인 신청이 같으면 최신순으로 정렬
+                    const aLatest = Math.max(...a.applications.map(app => new Date(app.created_at).getTime()));
+                    const bLatest = Math.max(...b.applications.map(app => new Date(app.created_at).getTime()));
+                    return bLatest - aLatest;
+                } catch (sortError) {
+                    console.warn('⚠️ 정렬 중 오류:', sortError);
+                    return 0;
                 }
-            }
-        });
-        
-        const groupedArray = Array.from(groupedData.values());
-        
-        // 신청 순서대로 정렬 (최신순), v4.3에서는 온라인 우선 정렬 추가
-        groupedArray.sort((a, b) => {
-            // 먼저 온라인 신청을 우선으로 정렬 (대리구매 효율성)
-            const aOnlineCount = a.statistics.onlineSingleCount + a.statistics.onlineBundleCount;
-            const bOnlineCount = b.statistics.onlineSingleCount + b.statistics.onlineBundleCount;
+            });
             
-            if (aOnlineCount > 0 && bOnlineCount === 0) return -1;
-            if (aOnlineCount === 0 && bOnlineCount > 0) return 1;
-            
-            // 온라인 신청이 같으면 최신순으로 정렬
-            const aLatest = Math.max(...a.applications.map(app => new Date(app.created_at).getTime()));
-            const bLatest = Math.max(...b.applications.map(app => new Date(app.created_at).getTime()));
-            return bLatest - aLatest;
-        });
-        
-        console.log('✅ v4.3 그룹화 완료:', groupedArray.length, '명의 학생');
-        return groupedArray;
+            console.log('✅ v4.3 그룹화 완료:', groupedArray.length, '명의 학생');
+            return groupedArray;
+        } catch (error) {
+            console.error('❌ 그룹화 실패:', error);
+            return [];
+        }
     },
 
-    // 학생들의 배송지 정보 로드
+    // 학생들의 배송지 정보 로드 (에러 처리 강화)
     async loadShippingInfoForStudents(groupedApplications) {
         console.log('🏠 학생 배송지 정보 로드 시작');
         
@@ -247,8 +298,13 @@ const AdminEnhancedUI = {
                 return;
             }
             
-            // 배송지 정보 일괄 조회
-            const shippingInfos = await this.fetchShippingInfoBatch(studentIds);
+            // 배송지 정보 일괄 조회 (타임아웃 적용)
+            const shippingInfos = await Promise.race([
+                this.fetchShippingInfoBatch(studentIds),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('배송지 정보 로드 타임아웃')), 5000)
+                )
+            ]);
             
             // 그룹화된 데이터에 배송지 정보 연결
             groupedApplications.forEach(group => {
@@ -265,7 +321,7 @@ const AdminEnhancedUI = {
         }
     },
 
-    // 배송지 정보 일괄 조회
+    // 배송지 정보 일괄 조회 (연결 안정성 강화)
     async fetchShippingInfoBatch(studentIds) {
         try {
             if (!window.SupabaseAPI || typeof window.SupabaseAPI.ensureClient !== 'function') {
@@ -298,17 +354,21 @@ const AdminEnhancedUI = {
             
             if (shippingData && shippingData.length > 0) {
                 shippingData.forEach(shipping => {
-                    const shippingInfo = {
-                        address: shipping.address || '',
-                        zipcode: shipping.postal_code || '',
-                        recipient: shipping.recipient_name || '',
-                        phone: shipping.phone || '',
-                        deliveryNote: shipping.delivery_note || '',
-                        lastUpdated: shipping.updated_at || shipping.created_at
-                    };
-                    
-                    shippingMap.set(shipping.user_id, shippingInfo);
-                    this.shippingInfoCache.set(shipping.user_id, shippingInfo);
+                    try {
+                        const shippingInfo = {
+                            address: shipping.address || '',
+                            zipcode: shipping.postal_code || '',
+                            recipient: shipping.recipient_name || '',
+                            phone: shipping.phone || '',
+                            deliveryNote: shipping.delivery_note || '',
+                            lastUpdated: shipping.updated_at || shipping.created_at
+                        };
+                        
+                        shippingMap.set(shipping.user_id, shippingInfo);
+                        this.shippingInfoCache.set(shipping.user_id, shippingInfo);
+                    } catch (itemError) {
+                        console.warn('⚠️ 개별 배송지 정보 처리 실패:', itemError);
+                    }
                 });
             }
             
@@ -324,62 +384,434 @@ const AdminEnhancedUI = {
     renderGroupedApplications(groupedApplications) {
         console.log('🎨 학생별 그룹화 렌더링 시작 (v4.3):', groupedApplications?.length || 0, '개 그룹');
         
-        const container = document.getElementById('adminApplications');
-        if (!container) {
-            console.error('❌ adminApplications 컨테이너를 찾을 수 없음');
-            return;
-        }
-        
-        if (!groupedApplications || groupedApplications.length === 0) {
-            container.innerHTML = this.createNoResultsHTML();
-            return;
-        }
-        
-        container.innerHTML = '';
-        
-        groupedApplications.forEach(studentGroup => {
-            try {
-                const studentCard = this.createStudentGroupCard(studentGroup);
-                container.appendChild(studentCard);
-            } catch (error) {
-                console.error('❌ 학생 그룹 카드 생성 실패:', error);
-                // 개별 오류는 전체를 중단시키지 않음
+        try {
+            const container = document.getElementById('adminApplications');
+            if (!container) {
+                console.error('❌ adminApplications 컨테이너를 찾을 수 없음');
+                return;
             }
-        });
-        
-        // 아이콘 재생성
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
+            
+            if (!groupedApplications || groupedApplications.length === 0) {
+                container.innerHTML = this.createNoResultsHTML();
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            groupedApplications.forEach(studentGroup => {
+                try {
+                    const studentCard = this.createStudentGroupCard(studentGroup);
+                    container.appendChild(studentCard);
+                } catch (error) {
+                    console.error('❌ 학생 그룹 카드 생성 실패:', error);
+                    // 개별 오류는 전체를 중단시키지 않음
+                }
+            });
+            
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                try {
+                    lucide.createIcons();
+                } catch (iconError) {
+                    console.warn('⚠️ 아이콘 생성 실패:', iconError);
+                }
+            }
+            
+            // 이벤트 리스너 재설정
+            this.setupGroupedActionListeners();
+            
+            console.log('✅ 학생별 그룹화 렌더링 완료 (v4.3)');
+        } catch (error) {
+            console.error('❌ 그룹화 렌더링 실패:', error);
+        }
+    },
+
+    // v4.3 새로운 기능: 클립보드 복사 (에러 처리 강화)
+    async copyToClipboard(text, buttonElement) {
+        try {
+            // navigator.clipboard이 지원되는지 확인
+            if (!navigator.clipboard) {
+                throw new Error('클립보드 API가 지원되지 않습니다');
+            }
+            
+            // 타임아웃과 함께 복사 시도
+            await Promise.race([
+                navigator.clipboard.writeText(text),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('복사 타임아웃')), 3000)
+                )
+            ]);
+            
+            // 버튼 피드백
+            const originalHTML = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i data-lucide="check"></i>';
+            buttonElement.style.color = '#10b981';
+            
+            setTimeout(() => {
+                try {
+                    buttonElement.innerHTML = originalHTML;
+                    buttonElement.style.color = '';
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                } catch (restoreError) {
+                    console.warn('⚠️ 버튼 상태 복구 실패:', restoreError);
+                }
+            }, 1500);
+            
+        } catch (error) {
+            console.error('❌ 복사 실패:', error);
+            
+            // 폴백: 텍스트 선택 방식 시도
+            try {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // 성공 피드백
+                const originalHTML = buttonElement.innerHTML;
+                buttonElement.innerHTML = '<i data-lucide="check"></i>';
+                buttonElement.style.color = '#10b981';
+                
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalHTML;
+                    buttonElement.style.color = '';
+                }, 1500);
+            } catch (fallbackError) {
+                console.error('❌ 폴백 복사도 실패:', fallbackError);
+                alert('복사에 실패했습니다. 수동으로 복사해주세요.');
+            }
+        }
+    },
+
+    // 일괄 승인 처리 (에러 처리 강화)
+    async handleBulkApprove(studentId, buttonElement) {
+        if (!studentId || studentId === 'unknown') {
+            alert('학생 정보를 찾을 수 없습니다.');
+            return;
         }
         
-        // 이벤트 리스너 재설정
-        this.setupGroupedActionListeners();
+        try {
+            // 해당 학생의 대기중인 교구들 찾기
+            const studentGroup = this.groupedApplicationsCache?.find(group => group.studentId === studentId);
+            if (!studentGroup) {
+                alert('학생 정보를 찾을 수 없습니다.');
+                return;
+            }
+            
+            const pendingApplications = studentGroup.applications.filter(app => app.status === 'pending');
+            if (pendingApplications.length === 0) {
+                alert('승인 대기중인 교구가 없습니다.');
+                return;
+            }
+            
+            const studentName = studentGroup.studentInfo.name;
+            const confirmMessage = `${studentName} 학생의 대기중인 교구 ${pendingApplications.length}개를 모두 승인하시겠습니까?`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // 로딩 상태 표시
+            const originalText = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i data-lucide="loader" class="animate-spin"></i> 처리 중...';
+            buttonElement.disabled = true;
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            // 각 교구를 개별적으로 승인 (연속 실행 방지)
+            for (const application of pendingApplications) {
+                try {
+                    const result = await Promise.race([
+                        SupabaseAPI.updateItemStatus(application.id, 'approved'),
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('개별 승인 타임아웃')), 5000)
+                        )
+                    ]);
+                    
+                    if (result.success) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        console.error('개별 승인 실패:', application.item_name, result.message);
+                    }
+                    
+                    // 각 요청 사이에 짧은 대기 시간 (서버 부하 방지)
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                } catch (error) {
+                    errorCount++;
+                    console.error('개별 승인 오류:', application.item_name, error);
+                }
+            }
+            
+            // 결과 표시
+            if (successCount > 0) {
+                const message = errorCount > 0 ? 
+                    `${successCount}개 승인 완료, ${errorCount}개 실패` :
+                    `${successCount}개 교구가 모두 승인되었습니다.`;
+                
+                alert(message);
+                
+                // 데이터 새로고침 (에러 처리)
+                try {
+                    await this.refreshData();
+                } catch (refreshError) {
+                    console.warn('⚠️ 데이터 새로고침 실패:', refreshError);
+                }
+                
+            } else {
+                alert('승인 처리 중 오류가 발생했습니다.');
+            }
+            
+        } catch (error) {
+            console.error('❌ 일괄 승인 처리 오류:', error);
+            alert('일괄 승인 처리 중 오류가 발생했습니다.');
+        } finally {
+            // 버튼 상태 복구
+            try {
+                buttonElement.innerHTML = originalText;
+                buttonElement.disabled = false;
+                
+                // 아이콘 재생성
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            } catch (restoreError) {
+                console.warn('⚠️ 버튼 상태 복구 실패:', restoreError);
+            }
+        }
+    },
+
+    // 데이터 새로고침 (에러 처리 강화)
+    async refreshData() {
+        console.log('🔄 데이터 새로고침 시작 (v4.3.1)');
         
-        console.log('✅ 학생별 그룹화 렌더링 완료 (v4.3)');
+        try {
+            const refreshPromises = [];
+            
+            // AdminManager의 기본 데이터들 새로고침
+            if (window.AdminManager) {
+                if (typeof AdminManager.loadStatistics === 'function') {
+                    refreshPromises.push(AdminManager.loadStatistics().catch(e => console.warn('통계 로드 실패:', e)));
+                }
+                if (typeof AdminManager.loadBudgetOverview === 'function') {
+                    refreshPromises.push(AdminManager.loadBudgetOverview().catch(e => console.warn('예산 로드 실패:', e)));
+                }
+                if (typeof AdminManager.loadLessonPlanManagement === 'function') {
+                    refreshPromises.push(AdminManager.loadLessonPlanManagement().catch(e => console.warn('수업계획 로드 실패:', e)));
+                }
+            }
+            
+            // 모든 새로고침 작업을 병렬로 실행
+            await Promise.allSettled(refreshPromises);
+            
+            // 향상된 신청 내역 다시 로드
+            await this.loadApplicationsWithShipping();
+            
+            console.log('✅ 데이터 새로고침 완료 (v4.3.1)');
+            
+        } catch (error) {
+            console.error('❌ 데이터 새로고침 실패:', error);
+        }
+    },
+
+    // v4.3 새로운 기능: 비밀번호 표시/숨기기
+    togglePasswordVisibility(button) {
+        try {
+            const password = button.dataset.password;
+            const passwordField = button.parentElement.querySelector('.password-field');
+            const icon = button.querySelector('i');
+            
+            if (passwordField.textContent === '••••••••') {
+                // 비밀번호 표시
+                passwordField.textContent = password;
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                // 비밀번호 숨기기
+                passwordField.textContent = '••••••••';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        } catch (error) {
+            console.error('❌ 비밀번호 토글 실패:', error);
+        }
+    },
+
+    // 신청 목록 토글
+    toggleApplicationsList(toggleBtn) {
+        try {
+            const applicationsSection = toggleBtn.closest('.student-applications-section');
+            const applicationsList = applicationsSection.querySelector('.applications-list');
+            const toggleText = toggleBtn.querySelector('.toggle-text');
+            const toggleIcon = toggleBtn.querySelector('.toggle-icon');
+            
+            if (applicationsList.classList.contains('expanded')) {
+                applicationsList.classList.remove('expanded');
+                applicationsList.classList.add('collapsed');
+                toggleText.textContent = '펼치기';
+                toggleIcon.setAttribute('data-lucide', 'chevron-down');
+            } else {
+                applicationsList.classList.remove('collapsed');
+                applicationsList.classList.add('expanded');
+                toggleText.textContent = '접기';
+                toggleIcon.setAttribute('data-lucide', 'chevron-up');
+            }
+            
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        } catch (error) {
+            console.error('❌ 목록 토글 실패:', error);
+        }
+    },
+
+    // 개별 아이템 액션 처리 (에러 처리 강화)
+    async handleItemAction(action, requestId, buttonElement) {
+        try {
+            // AdminManager의 기존 함수 사용
+            if (window.AdminManager) {
+                switch(action) {
+                    case 'approve':
+                        if (typeof AdminManager.approveItem === 'function') {
+                            await AdminManager.approveItem(requestId, buttonElement);
+                        }
+                        break;
+                    case 'reject':
+                        if (typeof AdminManager.rejectItem === 'function') {
+                            await AdminManager.rejectItem(requestId, buttonElement);
+                        }
+                        break;
+                    case 'purchase':
+                        if (typeof AdminManager.markAsPurchased === 'function') {
+                            await AdminManager.markAsPurchased(requestId, buttonElement);
+                        }
+                        break;
+                }
+                
+                // 액션 완료 후 데이터 새로고침 (에러 처리)
+                setTimeout(() => {
+                    this.refreshData().catch(error => {
+                        console.warn('⚠️ 액션 후 새로고침 실패:', error);
+                    });
+                }, 1000);
+            }
+        } catch (error) {
+            console.error('❌ 아이템 액션 처리 실패:', error);
+        }
+    },
+
+    // 그룹화된 UI의 이벤트 리스너 설정 (v4.3 기능 추가)
+    setupGroupedActionListeners() {
+        console.log('🔧 그룹화 UI 이벤트 리스너 설정 (v4.3.1)');
+        
+        try {
+            // 토글 버튼들
+            const toggleBtns = document.querySelectorAll('.toggle-applications-btn');
+            toggleBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    this.toggleApplicationsList(e.target.closest('button'));
+                });
+            });
+            
+            // 일괄 승인 버튼들
+            const bulkApproveBtns = document.querySelectorAll('.bulk-approve-btn');
+            bulkApproveBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const studentId = e.target.closest('button').dataset.studentId;
+                    this.handleBulkApprove(studentId, e.target);
+                });
+            });
+            
+            // 개별 아이템 액션 버튼들
+            const actionButtons = document.querySelectorAll('.application-item .item-actions button[data-action]');
+            actionButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const action = e.target.closest('button').dataset.action;
+                    const itemElement = e.target.closest('.application-item');
+                    const requestId = itemElement.dataset.requestId;
+                    
+                    this.handleItemAction(action, requestId, e.target);
+                });
+            });
+            
+            // 영수증 보기 버튼들
+            const receiptButtons = document.querySelectorAll('.view-receipt-btn');
+            receiptButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const requestId = e.target.closest('button').dataset.requestId;
+                    if (window.AdminManager && typeof window.AdminManager.showViewReceiptModal === 'function') {
+                        AdminManager.showViewReceiptModal(requestId);
+                    }
+                });
+            });
+
+            // v4.3 새로운 기능: 복사 버튼들
+            const copyButtons = document.querySelectorAll('.copy-btn');
+            copyButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const textToCopy = e.target.closest('button').dataset.copy;
+                    this.copyToClipboard(textToCopy, e.target);
+                });
+            });
+
+            // v4.3 새로운 기능: 비밀번호 토글 버튼들
+            const passwordToggleBtns = document.querySelectorAll('.toggle-password-btn');
+            passwordToggleBtns.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    this.togglePasswordVisibility(e.target.closest('button'));
+                });
+            });
+            
+            console.log('✅ 그룹화 UI 이벤트 리스너 설정 완료 (v4.3.1)');
+        } catch (error) {
+            console.error('❌ 이벤트 리스너 설정 실패:', error);
+        }
     },
 
     // 기본 신청 내역 렌더링 (폴백용)
     renderBasicApplications(applications) {
         console.log('📋 기본 신청 내역 렌더링 (폴백)');
         
-        const container = document.getElementById('adminApplications');
-        if (!container) return;
+        try {
+            const container = document.getElementById('adminApplications');
+            if (!container) return;
 
-        if (!applications || applications.length === 0) {
-            container.innerHTML = this.createNoResultsHTML();
-            return;
-        }
+            if (!applications || applications.length === 0) {
+                container.innerHTML = this.createNoResultsHTML();
+                return;
+            }
 
-        container.innerHTML = '';
-        
-        applications.forEach(application => {
-            const applicationCard = this.createSimpleApplicationCard(application);
-            container.appendChild(applicationCard);
-        });
+            container.innerHTML = '';
+            
+            applications.forEach(application => {
+                try {
+                    const applicationCard = this.createSimpleApplicationCard(application);
+                    container.appendChild(applicationCard);
+                } catch (cardError) {
+                    console.warn('⚠️ 개별 카드 생성 실패:', cardError);
+                }
+            });
 
-        // 아이콘 재생성
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                try {
+                    lucide.createIcons();
+                } catch (iconError) {
+                    console.warn('⚠️ 아이콘 재생성 실패:', iconError);
+                }
+            }
+        } catch (error) {
+            console.error('❌ 기본 렌더링 실패:', error);
         }
     },
 
@@ -925,280 +1357,6 @@ const AdminEnhancedUI = {
         return card;
     },
 
-    // 그룹화된 UI의 이벤트 리스너 설정 (v4.3 기능 추가)
-    setupGroupedActionListeners() {
-        console.log('🔧 그룹화 UI 이벤트 리스너 설정 (v4.3)');
-        
-        // 토글 버튼들
-        const toggleBtns = document.querySelectorAll('.toggle-applications-btn');
-        toggleBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.toggleApplicationsList(e.target.closest('button'));
-            });
-        });
-        
-        // 일괄 승인 버튼들
-        const bulkApproveBtns = document.querySelectorAll('.bulk-approve-btn');
-        bulkApproveBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const studentId = e.target.closest('button').dataset.studentId;
-                this.handleBulkApprove(studentId, e.target);
-            });
-        });
-        
-        // 개별 아이템 액션 버튼들
-        const actionButtons = document.querySelectorAll('.application-item .item-actions button[data-action]');
-        actionButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                const action = e.target.closest('button').dataset.action;
-                const itemElement = e.target.closest('.application-item');
-                const requestId = itemElement.dataset.requestId;
-                
-                this.handleItemAction(action, requestId, e.target);
-            });
-        });
-        
-        // 영수증 보기 버튼들
-        const receiptButtons = document.querySelectorAll('.view-receipt-btn');
-        receiptButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                const requestId = e.target.closest('button').dataset.requestId;
-                if (window.AdminManager && typeof window.AdminManager.showViewReceiptModal === 'function') {
-                    AdminManager.showViewReceiptModal(requestId);
-                }
-            });
-        });
-
-        // v4.3 새로운 기능: 복사 버튼들
-        const copyButtons = document.querySelectorAll('.copy-btn');
-        copyButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                const textToCopy = e.target.closest('button').dataset.copy;
-                this.copyToClipboard(textToCopy, e.target);
-            });
-        });
-
-        // v4.3 새로운 기능: 비밀번호 토글 버튼들
-        const passwordToggleBtns = document.querySelectorAll('.toggle-password-btn');
-        passwordToggleBtns.forEach(button => {
-            button.addEventListener('click', (e) => {
-                this.togglePasswordVisibility(e.target.closest('button'));
-            });
-        });
-        
-        console.log('✅ 그룹화 UI 이벤트 리스너 설정 완료 (v4.3)');
-    },
-
-    // v4.3 새로운 기능: 클립보드 복사
-    async copyToClipboard(text, buttonElement) {
-        try {
-            await navigator.clipboard.writeText(text);
-            
-            // 버튼 피드백
-            const originalHTML = buttonElement.innerHTML;
-            buttonElement.innerHTML = '<i data-lucide="check"></i>';
-            buttonElement.style.color = '#10b981';
-            
-            setTimeout(() => {
-                buttonElement.innerHTML = originalHTML;
-                buttonElement.style.color = '';
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            }, 1500);
-            
-        } catch (error) {
-            console.error('복사 실패:', error);
-            alert('복사에 실패했습니다. 수동으로 복사해주세요.');
-        }
-    },
-
-    // v4.3 새로운 기능: 비밀번호 표시/숨기기
-    togglePasswordVisibility(button) {
-        const password = button.dataset.password;
-        const passwordField = button.parentElement.querySelector('.password-field');
-        const icon = button.querySelector('i');
-        
-        if (passwordField.textContent === '••••••••') {
-            // 비밀번호 표시
-            passwordField.textContent = password;
-            icon.setAttribute('data-lucide', 'eye-off');
-        } else {
-            // 비밀번호 숨기기
-            passwordField.textContent = '••••••••';
-            icon.setAttribute('data-lucide', 'eye');
-        }
-        
-        // 아이콘 재생성
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-    },
-
-    // 신청 목록 토글
-    toggleApplicationsList(toggleBtn) {
-        const applicationsSection = toggleBtn.closest('.student-applications-section');
-        const applicationsList = applicationsSection.querySelector('.applications-list');
-        const toggleText = toggleBtn.querySelector('.toggle-text');
-        const toggleIcon = toggleBtn.querySelector('.toggle-icon');
-        
-        if (applicationsList.classList.contains('expanded')) {
-            applicationsList.classList.remove('expanded');
-            applicationsList.classList.add('collapsed');
-            toggleText.textContent = '펼치기';
-            toggleIcon.setAttribute('data-lucide', 'chevron-down');
-        } else {
-            applicationsList.classList.remove('collapsed');
-            applicationsList.classList.add('expanded');
-            toggleText.textContent = '접기';
-            toggleIcon.setAttribute('data-lucide', 'chevron-up');
-        }
-        
-        // 아이콘 재생성
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-    },
-
-    // 일괄 승인 처리
-    async handleBulkApprove(studentId, buttonElement) {
-        if (!studentId || studentId === 'unknown') {
-            alert('학생 정보를 찾을 수 없습니다.');
-            return;
-        }
-        
-        // 해당 학생의 대기중인 교구들 찾기
-        const studentGroup = this.groupedApplicationsCache?.find(group => group.studentId === studentId);
-        if (!studentGroup) {
-            alert('학생 정보를 찾을 수 없습니다.');
-            return;
-        }
-        
-        const pendingApplications = studentGroup.applications.filter(app => app.status === 'pending');
-        if (pendingApplications.length === 0) {
-            alert('승인 대기중인 교구가 없습니다.');
-            return;
-        }
-        
-        const studentName = studentGroup.studentInfo.name;
-        const confirmMessage = `${studentName} 학생의 대기중인 교구 ${pendingApplications.length}개를 모두 승인하시겠습니까?`;
-        
-        if (!confirm(confirmMessage)) {
-            return;
-        }
-        
-        // 로딩 상태 표시
-        const originalText = buttonElement.innerHTML;
-        buttonElement.innerHTML = '<i data-lucide="loader" class="animate-spin"></i> 처리 중...';
-        buttonElement.disabled = true;
-        
-        try {
-            let successCount = 0;
-            let errorCount = 0;
-            
-            // 각 교구를 개별적으로 승인
-            for (const application of pendingApplications) {
-                try {
-                    const result = await SupabaseAPI.updateItemStatus(application.id, 'approved');
-                    if (result.success) {
-                        successCount++;
-                    } else {
-                        errorCount++;
-                        console.error('개별 승인 실패:', application.item_name, result.message);
-                    }
-                } catch (error) {
-                    errorCount++;
-                    console.error('개별 승인 오류:', application.item_name, error);
-                }
-            }
-            
-            // 결과 표시
-            if (successCount > 0) {
-                const message = errorCount > 0 ? 
-                    `${successCount}개 승인 완료, ${errorCount}개 실패` :
-                    `${successCount}개 교구가 모두 승인되었습니다.`;
-                
-                alert(message);
-                
-                // 데이터 새로고침
-                await this.refreshData();
-                
-            } else {
-                alert('승인 처리 중 오류가 발생했습니다.');
-            }
-            
-        } catch (error) {
-            console.error('❌ 일괄 승인 처리 오류:', error);
-            alert('일괄 승인 처리 중 오류가 발생했습니다.');
-        } finally {
-            // 버튼 상태 복구
-            buttonElement.innerHTML = originalText;
-            buttonElement.disabled = false;
-            
-            // 아이콘 재생성
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-        }
-    },
-
-    // 개별 아이템 액션 처리
-    async handleItemAction(action, requestId, buttonElement) {
-        // AdminManager의 기존 함수 사용
-        if (window.AdminManager) {
-            switch(action) {
-                case 'approve':
-                    if (typeof AdminManager.approveItem === 'function') {
-                        await AdminManager.approveItem(requestId, buttonElement);
-                    }
-                    break;
-                case 'reject':
-                    if (typeof AdminManager.rejectItem === 'function') {
-                        await AdminManager.rejectItem(requestId, buttonElement);
-                    }
-                    break;
-                case 'purchase':
-                    if (typeof AdminManager.markAsPurchased === 'function') {
-                        await AdminManager.markAsPurchased(requestId, buttonElement);
-                    }
-                    break;
-            }
-            
-            // 액션 완료 후 데이터 새로고침
-            setTimeout(() => {
-                this.refreshData();
-            }, 1000);
-        }
-    },
-
-    // 데이터 새로고침
-    async refreshData() {
-        console.log('🔄 데이터 새로고침 시작 (v4.3)');
-        
-        try {
-            // AdminManager의 기본 데이터들 새로고침
-            if (window.AdminManager) {
-                if (typeof AdminManager.loadStatistics === 'function') {
-                    await AdminManager.loadStatistics();
-                }
-                if (typeof AdminManager.loadBudgetOverview === 'function') {
-                    await AdminManager.loadBudgetOverview();
-                }
-                if (typeof AdminManager.loadLessonPlanManagement === 'function') {
-                    await AdminManager.loadLessonPlanManagement();
-                }
-            }
-            
-            // 향상된 신청 내역 다시 로드
-            await this.loadApplicationsWithShipping();
-            
-            console.log('✅ 데이터 새로고침 완료 (v4.3)');
-            
-        } catch (error) {
-            console.error('❌ 데이터 새로고침 실패:', error);
-        }
-    },
-
     // 결과 없음 HTML 생성
     createNoResultsHTML() {
         const message = this.currentSearchTerm ? 
@@ -1280,16 +1438,24 @@ window.AdminEnhancedUI = AdminEnhancedUI;
 if (typeof window !== 'undefined' && document.readyState !== 'loading') {
     // DOM이 이미 로드된 경우 즉시 초기화
     setTimeout(() => {
-        if (window.AdminManager) {
-            AdminEnhancedUI.init();
+        try {
+            if (window.AdminManager) {
+                AdminEnhancedUI.init();
+            }
+        } catch (initError) {
+            console.error('❌ AdminEnhancedUI 자동 초기화 실패:', initError);
         }
     }, 100);
 } else {
     // DOM 로드 대기
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
-            if (window.AdminManager) {
-                AdminEnhancedUI.init();
+            try {
+                if (window.AdminManager) {
+                    AdminEnhancedUI.init();
+                }
+            } catch (initError) {
+                console.error('❌ AdminEnhancedUI 자동 초기화 실패:', initError);
             }
         }, 100);
     });
