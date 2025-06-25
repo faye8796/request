@@ -1,6 +1,6 @@
 // 🔐 SupabaseAdmin - 관리자 전용 기능 모듈
 // 세종학당 문화인턴 지원 시스템 - 관리자 시스템용 API
-// v4.3.0 - requests 테이블 구조 호환성 업데이트
+// v4.3.1 - 하드코딩 제거, 100% DB 기반 예산 설정 시스템
 
 /**
  * 관리자 전용 Supabase API 모듈
@@ -10,12 +10,12 @@
  * - 🔐 관리자 인증 관리
  * - 📊 통계 및 대시보드 데이터
  * - 📚 수업계획 승인/반려 시스템
- * - 💰 예산 관리 시스템
+ * - 💰 예산 관리 시스템 (v4.3.1 하드코딩 제거)
  * - 📦 교구신청 관리 시스템
  * - 📄 영수증 관리 시스템
  * - ⚙️ 시스템 설정 관리
  * 
- * 🔧 v4.3.0 - requests 테이블 purchase_link → link 컬럼명 변경 호환
+ * 🔧 v4.3.1 - 하드코딩된 예산 설정 기본값 완전 제거, 100% DB 기반
  */
 
 const SupabaseAdmin = {
@@ -586,22 +586,23 @@ const SupabaseAdmin = {
     },
 
     // ===================
-    // 💰 예산 관리
+    // 💰 예산 관리 - v4.3.1 하드코딩 제거
     // ===================
     
     /**
-     * 모든 분야별 예산 설정 조회
-     * @returns {Promise<Object>} 분야별 예산 설정
+     * 모든 분야별 예산 설정 조회 - v4.3.1 하드코딩 제거
+     * @returns {Promise<Object>} 분야별 예산 설정 (DB 전용)
      */
     async getAllFieldBudgetSettings() {
-        console.log('💰 분야별 예산 설정 조회...');
+        console.log('💰 분야별 예산 설정 조회... (v4.3.1 DB 전용)');
         
         const result = await this.core.safeApiCall('분야별 예산 설정 조회', async () => {
             const client = await this.core.ensureClient();
             
             return await client
                 .from('budget_settings')
-                .select('*');
+                .select('*')
+                .order('field', { ascending: true });
         });
 
         if (result.success && result.data) {
@@ -612,19 +613,15 @@ const SupabaseAdmin = {
                     maxBudget: setting.max_budget_limit || 0
                 };
             });
+            
+            console.log('✅ v4.3.1 예산 설정 조회 완료 - DB 전용 (', Object.keys(settings).length, '개 분야)');
             return settings;
         }
 
-        // 기본 설정 반환
-        return {
-            '한국어교육': { perLessonAmount: 15000, maxBudget: 400000 },
-            '전통문화예술': { perLessonAmount: 25000, maxBudget: 600000 },
-            'K-Pop 문화': { perLessonAmount: 10000, maxBudget: 300000 },
-            '한국현대문화': { perLessonAmount: 18000, maxBudget: 450000 },
-            '전통음악': { perLessonAmount: 30000, maxBudget: 750000 },
-            '한국미술': { perLessonAmount: 22000, maxBudget: 550000 },
-            '한국요리문화': { perLessonAmount: 35000, maxBudget: 800000 }
-        };
+        // ❌ 하드코딩된 기본 설정 완전 제거
+        // ✅ DB 조회 실패시 빈 객체 반환
+        console.log('📋 예산 설정 조회 결과: 빈 설정 (DB에 설정 없음)');
+        return {};
     },
 
     /**
@@ -1126,4 +1123,4 @@ const SupabaseAdmin = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAdmin = SupabaseAdmin;
 
-console.log('🔐 SupabaseAdmin v4.3.0 모듈 로드 완료 - v4.3 requests 테이블 호환성 업데이트');
+console.log('🔐 SupabaseAdmin v4.3.1 모듈 로드 완료 - 하드코딩 제거, 100% DB 기반 예산 설정');
