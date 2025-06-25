@@ -16,6 +16,7 @@
  * - ⚙️ 시스템 설정 관리
  * 
  * 🔧 v4.3.1 - 하드코딩된 예산 설정 기본값 완전 제거, 100% DB 기반
+ * 🔧 v4.3.2 - 영수증 보기 기능 추가 (getReceiptByRequestId)
  */
 
 const SupabaseAdmin = {
@@ -850,7 +851,7 @@ const SupabaseAdmin = {
     },
 
     // ===================
-    // 📄 영수증 관리
+    // 📄 영수증 관리 - v4.3.2 영수증 보기 기능 추가
     // ===================
     
     /**
@@ -913,6 +914,74 @@ const SupabaseAdmin = {
         }
 
         return result.success ? (result.data || []) : [];
+    },
+
+    /**
+     * 특정 교구 신청 ID로 영수증 조회 (영수증 보기 모달용) - v4.3.2 추가
+     * @param {number} requestId - 교구 신청 ID
+     * @returns {Promise<Object|null>} 영수증 데이터
+     */
+    async getReceiptByRequestId(requestId) {
+        console.log('📄 특정 교구신청 영수증 조회:', requestId);
+        
+        const result = await this.core.safeApiCall('특정 영수증 조회', async () => {
+            const client = await this.core.ensureClient();
+            
+            return await client
+                .from('receipts')
+                .select(`
+                    id,
+                    receipt_number,
+                    purchase_date,
+                    total_amount,
+                    request_id,
+                    user_id,
+                    file_url,
+                    file_name,
+                    original_name,
+                    file_size,
+                    file_type,
+                    purchase_store,
+                    note,
+                    uploaded_at,
+                    verified,
+                    verified_at,
+                    verified_by,
+                    updated_at,
+                    requests:request_id (
+                        item_name,
+                        price,
+                        purchase_type,
+                        status,
+                        user_profiles:user_id (
+                            name,
+                            field,
+                            sejong_institute
+                        )
+                    )
+                `)
+                .eq('request_id', requestId)
+                .single(); // 단일 결과만 가져오기
+        });
+
+        if (result.success && result.data) {
+            // admin-utils.js에서 기대하는 데이터 구조로 변환
+            const receipt = result.data;
+            return {
+                ...receipt,
+                item_name: receipt.requests?.item_name,
+                student_name: receipt.requests?.user_profiles?.name,
+                student_field: receipt.requests?.user_profiles?.field,
+                student_institute: receipt.requests?.user_profiles?.sejong_institute,
+                image_path: receipt.file_url, // admin-utils.js에서 기대하는 필드명
+                store_name: receipt.purchase_store,
+                notes: receipt.note,
+                created_at: receipt.uploaded_at
+            };
+        }
+
+        console.log('⚠️ 해당 교구 신청에 대한 영수증을 찾을 수 없음:', requestId);
+        return null;
     },
 
     // ===================
@@ -1123,4 +1192,4 @@ const SupabaseAdmin = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAdmin = SupabaseAdmin;
 
-console.log('🔐 SupabaseAdmin v4.3.1 모듈 로드 완료 - 하드코딩 제거, 100% DB 기반 예산 설정');
+console.log('🔐 SupabaseAdmin v4.3.2 모듈 로드 완료 - 영수증 보기 기능 추가 (getReceiptByRequestId)');
