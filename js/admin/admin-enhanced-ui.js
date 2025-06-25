@@ -1,4 +1,4 @@
-// 관리자 향상된 UI 모듈 v4.3.1 - 비동기 처리 안정화
+// 관리자 향상된 UI 모듈 v4.3.2 - 영수증 보기 기능 수정
 // admin-addon.js 기능을 새로운 모듈 구조로 통합
 // v4.3 requests 테이블 구조 변경 완전 호환
 
@@ -16,7 +16,7 @@ const AdminEnhancedUI = {
             return;
         }
 
-        console.log('🎨 AdminEnhancedUI v4.3.1 초기화 시작 (비동기 처리 안정화)');
+        console.log('🎨 AdminEnhancedUI v4.3.2 초기화 시작 (영수증 보기 기능 수정)');
         
         try {
             // 기존 AdminManager와 협업하는 방식으로 초기화
@@ -24,7 +24,7 @@ const AdminEnhancedUI = {
             this.setupEnhancedEventListeners();
             
             this.isInitialized = true;
-            console.log('✅ AdminEnhancedUI v4.3.1 초기화 완료');
+            console.log('✅ AdminEnhancedUI v4.3.2 초기화 완료');
         } catch (error) {
             console.error('❌ AdminEnhancedUI 초기화 실패:', error);
         }
@@ -120,7 +120,7 @@ const AdminEnhancedUI = {
     // 배송지 정보 포함하여 신청 내역 로드 (에러 처리 강화)
     async loadApplicationsWithShipping() {
         try {
-            console.log('📦 배송지 정보 포함하여 신청 내역 로드 시작 (v4.3.1)');
+            console.log('📦 배송지 정보 포함하여 신청 내역 로드 시작 (v4.3.2)');
             
             if (!window.SupabaseAPI || typeof window.SupabaseAPI.searchApplications !== 'function') {
                 console.warn('⚠️ SupabaseAPI.searchApplications를 찾을 수 없음');
@@ -151,7 +151,7 @@ const AdminEnhancedUI = {
             // 학생별 그룹화 렌더링
             this.renderGroupedApplications(groupedApplications);
             
-            console.log('✅ 배송지 정보 포함 신청 내역 로드 완료 (v4.3.1)');
+            console.log('✅ 배송지 정보 포함 신청 내역 로드 완료 (v4.3.2)');
             
         } catch (error) {
             console.error('❌ 배송지 정보 포함 신청 내역 로드 실패:', error);
@@ -589,7 +589,7 @@ const AdminEnhancedUI = {
 
     // 데이터 새로고침 (에러 처리 강화)
     async refreshData() {
-        console.log('🔄 데이터 새로고침 시작 (v4.3.1)');
+        console.log('🔄 데이터 새로고침 시작 (v4.3.2)');
         
         try {
             const refreshPromises = [];
@@ -613,7 +613,7 @@ const AdminEnhancedUI = {
             // 향상된 신청 내역 다시 로드
             await this.loadApplicationsWithShipping();
             
-            console.log('✅ 데이터 새로고침 완료 (v4.3.1)');
+            console.log('✅ 데이터 새로고침 완료 (v4.3.2)');
             
         } catch (error) {
             console.error('❌ 데이터 새로고침 실패:', error);
@@ -710,9 +710,9 @@ const AdminEnhancedUI = {
         }
     },
 
-    // 그룹화된 UI의 이벤트 리스너 설정 (v4.3 기능 추가)
+    // 그룹화된 UI의 이벤트 리스너 설정 (v4.3.2 영수증 보기 기능 수정)
     setupGroupedActionListeners() {
-        console.log('🔧 그룹화 UI 이벤트 리스너 설정 (v4.3.1)');
+        console.log('🔧 그룹화 UI 이벤트 리스너 설정 (v4.3.2 - 영수증 보기 기능 수정)');
         
         try {
             // 토글 버튼들
@@ -744,13 +744,22 @@ const AdminEnhancedUI = {
                 });
             });
             
-            // 영수증 보기 버튼들
+            // 🔧 v4.3.2 수정: 영수증 보기 버튼들 - 올바른 함수 경로로 수정
             const receiptButtons = document.querySelectorAll('.view-receipt-btn');
             receiptButtons.forEach(button => {
                 button.addEventListener('click', (e) => {
                     const requestId = e.target.closest('button').dataset.requestId;
-                    if (window.AdminManager && typeof window.AdminManager.showViewReceiptModal === 'function') {
-                        AdminManager.showViewReceiptModal(requestId);
+                    console.log('🔍 영수증 보기 버튼 클릭됨 (v4.3.2):', requestId);
+                    
+                    // AdminManager.Utils.showViewReceiptModal로 올바른 경로 호출
+                    if (window.AdminManager && 
+                        window.AdminManager.Utils && 
+                        typeof window.AdminManager.Utils.showViewReceiptModal === 'function') {
+                        console.log('✅ AdminManager.Utils.showViewReceiptModal 호출');
+                        AdminManager.Utils.showViewReceiptModal(requestId);
+                    } else {
+                        console.error('❌ AdminManager.Utils.showViewReceiptModal 함수를 찾을 수 없음');
+                        alert('영수증 보기 기능을 사용할 수 없습니다. 페이지를 새로고침해주세요.');
                     }
                 });
             });
@@ -772,7 +781,7 @@ const AdminEnhancedUI = {
                 });
             });
             
-            console.log('✅ 그룹화 UI 이벤트 리스너 설정 완료 (v4.3.1)');
+            console.log('✅ 그룹화 UI 이벤트 리스너 설정 완료 (v4.3.2 - 영수증 보기 기능 수정)');
         } catch (error) {
             console.error('❌ 이벤트 리스너 설정 실패:', error);
         }
