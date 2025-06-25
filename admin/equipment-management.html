@@ -128,9 +128,9 @@
             }
         }
 
-        /* v4.3.1 캐시 버스팅 적용 완료 알림 */
+        /* v4.3.1 비동기 처리 안정화 완료 알림 */
         .module-fix-notice {
-            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
             color: white;
             padding: 1rem 1.5rem;
             border-radius: 0.75rem;
@@ -193,12 +193,12 @@
             </div>
         </div>
 
-        <!-- v4.3.1 캐시 버스팅 적용 완료 알림 -->
+        <!-- v4.3.1 비동기 처리 안정화 완료 알림 -->
         <div class="module-fix-notice">
-            <i data-lucide="refresh-cw"></i>
+            <i data-lucide="shield-check"></i>
             <div class="notice-content">
-                <div class="notice-title">🔧 v4.3.1 캐시 버스팅 적용 완료!</div>
-                <p class="notice-text">CSS 파일들에도 캐시 버스팅 적용 • 새로운 v4.3 UI가 이제 정상적으로 로드됩니다 • 브라우저 강제 새로고침 후 확인해주세요</p>
+                <div class="notice-title">🛡️ v4.3.1 비동기 처리 안정화 완료!</div>
+                <p class="notice-text">메시지 채널 에러 해결 • Promise 타임아웃 설정 • 클립보드 API 폴백 • 연쇄 작업 안정화 • 브라우저 확장 프로그램 충돌 방지</p>
             </div>
         </div>
 
@@ -281,14 +281,14 @@
 
             <!-- 교구 신청 목록 (학생별 그룹화) -->
             <div id="adminApplications" class="admin-applications">
-                <!-- AdminEnhancedUI v4.3에서 동적으로 생성될 학생별 그룹화된 교구 신청 목록 -->
+                <!-- AdminEnhancedUI v4.3.1에서 동적으로 생성될 학생별 그룹화된 교구 신청 목록 -->
             </div>
         </div>
     </div>
 
     <!-- 모달들은 admin 모듈들에서 동적으로 생성됨 -->
 
-    <!-- 🔧 v4.3.1 모듈화 시스템 호환 JavaScript Files (캐시 버스팅 적용) -->
+    <!-- 🔧 v4.3.1 비동기 처리 안정화 JavaScript Files -->
     <!-- 1. 기본 설정 모듈 -->
     <script src="../js/config.js?v=4.3.1"></script>
     <script src="../js/auth.js?v=4.3.1"></script>
@@ -314,7 +314,7 @@
     <script src="../js/admin/admin-budget.js?v=4.3.1"></script>
     <script src="../js/admin/admin-lesson-plans.js?v=4.3.1"></script>
     
-    <!-- 🎨 향상된 UI 모듈 v4.3 (기존 admin-addon.js 대체) -->
+    <!-- 🎨 향상된 UI 모듈 v4.3.1 (비동기 처리 안정화) -->
     <script src="../js/admin/admin-enhanced-ui.js?v=4.3.1"></script>
     
     <!-- 교구 관리 페이지 전용 스크립트 -->
@@ -326,7 +326,7 @@
 
         // 페이지 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 교구 관리 페이지 초기화 시작 (v4.3.1 캐시 버스팅 적용)');
+            console.log('🔧 교구 관리 페이지 초기화 시작 (v4.3.1 비동기 처리 안정화)');
             
             try {
                 // Lucide 아이콘 초기화
@@ -364,9 +364,9 @@
             return true;
         }
 
-        // 교구 관리 초기화 (v4.3.1 캐시 버스팅 호환 버전)
+        // 교구 관리 초기화 (v4.3.1 비동기 처리 안정화)
         async function initializeEquipmentManagement() {
-            console.log('🚀 교구 관리 시스템 초기화 중... (v4.3.1 캐시 버스팅 적용)');
+            console.log('🚀 교구 관리 시스템 초기화 중... (v4.3.1 비동기 처리 안정화)');
             
             try {
                 showLoadingState();
@@ -410,7 +410,7 @@
                     const clientReady = !!(window.SupabaseAPI);
                     
                     if (coreReady && adminReady && clientReady) {
-                        console.log('✅ v4.3.1 Supabase 모듈들 준비됨 (캐시 버스팅 적용)');
+                        console.log('✅ v4.3.1 Supabase 모듈들 준비됨 (비동기 처리 안정화)');
                         console.log('📦 로드된 모듈:', {
                             core: coreReady,
                             admin: adminReady,
@@ -470,7 +470,7 @@
                     attempts++;
                     
                     if (window.AdminEnhancedUI && typeof window.AdminEnhancedUI.init === 'function') {
-                        console.log('✅ AdminEnhancedUI v4.3.1 준비됨 (캐시 버스팅 적용)');
+                        console.log('✅ AdminEnhancedUI v4.3.1 준비됨 (비동기 처리 안정화)');
                         resolve();
                     } else if (attempts >= maxAttempts) {
                         console.warn('⚠️ AdminEnhancedUI v4.3.1를 찾을 수 없음, 기본 UI 사용');
@@ -842,7 +842,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'd') {
                 e.preventDefault();
-                console.log('🛠️ 교구 관리 페이지 - v4.3.1 디버그 정보 (캐시 버스팅 적용)');
+                console.log('🛠️ 교구 관리 페이지 - v4.3.1 디버그 정보 (비동기 처리 안정화)');
                 console.log('isDataLoaded:', isDataLoaded);
                 console.log('retryCount:', retryCount);
                 console.log('모듈 상태:', {
