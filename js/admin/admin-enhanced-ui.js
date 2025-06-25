@@ -1,4 +1,4 @@
-// 관리자 향상된 UI 모듈 v4.3.3 - 영수증 보기 기능 자체 구현
+// 관리자 향상된 UI 모듈 v4.3.4 - 영수증 보기 이벤트 리스너 개선
 // admin-addon.js 기능을 새로운 모듈 구조로 통합
 // v4.3 requests 테이블 구조 변경 완전 호환
 
@@ -6,7 +6,6 @@ const AdminEnhancedUI = {
     // 캐시 및 상태 관리
     groupedApplicationsCache: null,
     shippingInfoCache: new Map(),
-    receiptModalCache: new Map(),
     currentSearchTerm: '',
     isInitialized: false,
 
@@ -17,7 +16,7 @@ const AdminEnhancedUI = {
             return;
         }
 
-        console.log('🎨 AdminEnhancedUI v4.3.3 초기화 시작 (영수증 보기 자체 구현)');
+        console.log('🎨 AdminEnhancedUI v4.3.4 초기화 시작 (영수증 보기 이벤트 리스너 개선)');
         
         try {
             // 기존 AdminManager와 협업하는 방식으로 초기화
@@ -25,7 +24,7 @@ const AdminEnhancedUI = {
             this.setupEnhancedEventListeners();
             
             this.isInitialized = true;
-            console.log('✅ AdminEnhancedUI v4.3.3 초기화 완료');
+            console.log('✅ AdminEnhancedUI v4.3.4 초기화 완료');
         } catch (error) {
             console.error('❌ AdminEnhancedUI 초기화 실패:', error);
         }
@@ -121,7 +120,7 @@ const AdminEnhancedUI = {
     // 배송지 정보 포함하여 신청 내역 로드 (에러 처리 강화)
     async loadApplicationsWithShipping() {
         try {
-            console.log('📦 배송지 정보 포함하여 신청 내역 로드 시작 (v4.3.3)');
+            console.log('📦 배송지 정보 포함하여 신청 내역 로드 시작 (v4.3.4)');
             
             if (!window.SupabaseAPI || typeof window.SupabaseAPI.searchApplications !== 'function') {
                 console.warn('⚠️ SupabaseAPI.searchApplications를 찾을 수 없음');
@@ -152,7 +151,7 @@ const AdminEnhancedUI = {
             // 학생별 그룹화 렌더링
             this.renderGroupedApplications(groupedApplications);
             
-            console.log('✅ 배송지 정보 포함 신청 내역 로드 완료 (v4.3.3)');
+            console.log('✅ 배송지 정보 포함 신청 내역 로드 완료 (v4.3.4)');
             
         } catch (error) {
             console.error('❌ 배송지 정보 포함 신청 내역 로드 실패:', error);
@@ -318,20 +317,4 @@ const AdminEnhancedUI = {
             
         } catch (error) {
             console.error('❌ 배송지 정보 로드 실패:', error);
-            // 실패해도 계속 진행 (배송지 없이)
-        }
-    },
-
-    // 배송지 정보 일괄 조회 (연결 안정성 강화)
-    async fetchShippingInfoBatch(studentIds) {
-        try {
-            if (!window.SupabaseAPI || typeof window.SupabaseAPI.ensureClient !== 'function') {
-                throw new Error('SupabaseAPI를 사용할 수 없습니다');
-            }
-            
-            const client = await SupabaseAPI.ensureClient();
-            
-            // shipping_addresses 테이블에서 올바른 컬럼들을 조회
-            const { data: shippingData, error } = await client
-                .from('shipping_addresses')
-                .select(`
+            // 실패해도 계속 진행 (배
