@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>교구 구매 신청 관리 - 세종학당 문화인턴 지원 시스템</title>
     
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css">
-    <link rel="stylesheet" href="../css/admin.css">
-    <link rel="stylesheet" href="../css/lesson-plan.css">
-    <link rel="stylesheet" href="../css/admin-addon.css">
+    <!-- 🔧 v4.3.1 CSS Files (캐시 버스팅 적용) -->
+    <link rel="stylesheet" href="../css/main.css?v=4.3.1">
+    <link rel="stylesheet" href="../css/admin.css?v=4.3.1">
+    <link rel="stylesheet" href="../css/lesson-plan.css?v=4.3.1">
+    <link rel="stylesheet" href="../css/admin-addon.css?v=4.3.1">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -128,9 +128,9 @@
             }
         }
 
-        /* v4.3 업데이트 완료 알림 */
+        /* v4.3.1 캐시 버스팅 적용 완료 알림 */
         .module-fix-notice {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
             color: white;
             padding: 1rem 1.5rem;
             border-radius: 0.75rem;
@@ -193,12 +193,12 @@
             </div>
         </div>
 
-        <!-- v4.3 업데이트 완료 알림 -->
+        <!-- v4.3.1 캐시 버스팅 적용 완료 알림 -->
         <div class="module-fix-notice">
-            <i data-lucide="sparkles"></i>
+            <i data-lucide="refresh-cw"></i>
             <div class="notice-content">
-                <div class="notice-title">✨ v4.3 UI 업그레이드 완료!</div>
-                <p class="notice-text">requests 테이블 구조 최적화 반영 • 4가지 신청 타입별 전용 UI • 온라인 묶음구매 계정정보 표시 • 배송지 정보 통합 관리</p>
+                <div class="notice-title">🔧 v4.3.1 캐시 버스팅 적용 완료!</div>
+                <p class="notice-text">CSS 파일들에도 캐시 버스팅 적용 • 새로운 v4.3 UI가 이제 정상적으로 로드됩니다 • 브라우저 강제 새로고침 후 확인해주세요</p>
             </div>
         </div>
 
@@ -288,34 +288,34 @@
 
     <!-- 모달들은 admin 모듈들에서 동적으로 생성됨 -->
 
-    <!-- 🔧 v4.3 모듈화 시스템 호환 JavaScript Files -->
+    <!-- 🔧 v4.3.1 모듈화 시스템 호환 JavaScript Files (캐시 버스팅 적용) -->
     <!-- 1. 기본 설정 모듈 -->
-    <script src="../js/config.js?v=4.3.0"></script>
-    <script src="../js/auth.js?v=4.3.0"></script>
-    <script src="../js/utils.js?v=4.3.0"></script>
+    <script src="../js/config.js?v=4.3.1"></script>
+    <script src="../js/auth.js?v=4.3.1"></script>
+    <script src="../js/utils.js?v=4.3.1"></script>
     
     <!-- 2. Supabase 모듈들 (의존성 순서 중요!) -->
-    <script src="../js/supabase/supabase-core.js?v=4.3.0"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.3.0"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.3.0"></script>
-    <script src="../js/supabase-client.js?v=4.3.0"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.3.1"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.3.1"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.3.1"></script>
+    <script src="../js/supabase-client.js?v=4.3.1"></script>
     
     <!-- 3. 추가 모듈들 -->
-    <script src="../js/lesson-plan.js?v=4.3.0"></script>
+    <script src="../js/lesson-plan.js?v=4.3.1"></script>
     
     <!-- 🆕 모듈화된 Admin 파일들 (교구 관리에 필요한 모듈들만) -->
     <!-- 핵심 파일들 먼저 로드 -->
-    <script src="../js/admin/admin-core.js?v=4.3.0"></script>
-    <script src="../js/admin/admin-utils.js?v=4.3.0"></script>
-    <script src="../js/admin/admin-modals.js?v=4.3.0"></script>
+    <script src="../js/admin/admin-core.js?v=4.3.1"></script>
+    <script src="../js/admin/admin-utils.js?v=4.3.1"></script>
+    <script src="../js/admin/admin-modals.js?v=4.3.1"></script>
     
     <!-- 교구 관리에 필요한 모듈들 로드 -->
-    <script src="../js/admin/admin-applications.js?v=4.3.0"></script>
-    <script src="../js/admin/admin-budget.js?v=4.3.0"></script>
-    <script src="../js/admin/admin-lesson-plans.js?v=4.3.0"></script>
+    <script src="../js/admin/admin-applications.js?v=4.3.1"></script>
+    <script src="../js/admin/admin-budget.js?v=4.3.1"></script>
+    <script src="../js/admin/admin-lesson-plans.js?v=4.3.1"></script>
     
     <!-- 🎨 향상된 UI 모듈 v4.3 (기존 admin-addon.js 대체) -->
-    <script src="../js/admin/admin-enhanced-ui.js?v=4.3.0"></script>
+    <script src="../js/admin/admin-enhanced-ui.js?v=4.3.1"></script>
     
     <!-- 교구 관리 페이지 전용 스크립트 -->
     <script>
@@ -326,7 +326,7 @@
 
         // 페이지 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 교구 관리 페이지 초기화 시작 (v4.3 호환)');
+            console.log('🔧 교구 관리 페이지 초기화 시작 (v4.3.1 캐시 버스팅 적용)');
             
             try {
                 // Lucide 아이콘 초기화
@@ -364,9 +364,9 @@
             return true;
         }
 
-        // 교구 관리 초기화 (v4.3 호환 버전)
+        // 교구 관리 초기화 (v4.3.1 캐시 버스팅 호환 버전)
         async function initializeEquipmentManagement() {
-            console.log('🚀 교구 관리 시스템 초기화 중... (v4.3 호환)');
+            console.log('🚀 교구 관리 시스템 초기화 중... (v4.3.1 캐시 버스팅 적용)');
             
             try {
                 showLoadingState();
@@ -387,7 +387,7 @@
                 showMainContent();
                 isDataLoaded = true;
                 
-                console.log('✅ 교구 관리 시스템 초기화 완료 (v4.3)');
+                console.log('✅ 교구 관리 시스템 초기화 완료 (v4.3.1)');
 
             } catch (error) {
                 console.error('❌ 교구 관리 초기화 실패:', error);
@@ -395,7 +395,7 @@
             }
         }
 
-        // v4.3 호환 Supabase 클라이언트 초기화 대기
+        // v4.3.1 호환 Supabase 클라이언트 초기화 대기
         function waitForSupabaseClient() {
             return new Promise((resolve, reject) => {
                 let attempts = 0;
@@ -410,7 +410,7 @@
                     const clientReady = !!(window.SupabaseAPI);
                     
                     if (coreReady && adminReady && clientReady) {
-                        console.log('✅ v4.3 Supabase 모듈들 준비됨');
+                        console.log('✅ v4.3.1 Supabase 모듈들 준비됨 (캐시 버스팅 적용)');
                         console.log('📦 로드된 모듈:', {
                             core: coreReady,
                             admin: adminReady,
@@ -418,11 +418,11 @@
                         });
                         resolve();
                     } else if (attempts >= maxAttempts) {
-                        reject(new Error(`v4.3 Supabase 모듈 초기화 시간 초과 (${attempts}회 시도)`));
+                        reject(new Error(`v4.3.1 Supabase 모듈 초기화 시간 초과 (${attempts}회 시도)`));
                     } else {
                         // 진행 상황 로그 (매 2초마다)
                         if (attempts % 20 === 0) {
-                            console.log(`⏳ v4.3 모듈 로딩 대기 중... ${attempts}/${maxAttempts}`, {
+                            console.log(`⏳ v4.3.1 모듈 로딩 대기 중... ${attempts}/${maxAttempts}`, {
                                 core: coreReady ? '✅' : '⏳',
                                 admin: adminReady ? '✅' : '⏳',
                                 client: clientReady ? '✅' : '⏳'
@@ -460,7 +460,7 @@
             });
         }
 
-        // AdminEnhancedUI 초기화 대기 (v4.3 업데이트)
+        // AdminEnhancedUI 초기화 대기 (v4.3.1 업데이트)
         function waitForAdminEnhancedUI() {
             return new Promise((resolve, reject) => {
                 let attempts = 0;
@@ -470,10 +470,10 @@
                     attempts++;
                     
                     if (window.AdminEnhancedUI && typeof window.AdminEnhancedUI.init === 'function') {
-                        console.log('✅ AdminEnhancedUI v4.3 준비됨');
+                        console.log('✅ AdminEnhancedUI v4.3.1 준비됨 (캐시 버스팅 적용)');
                         resolve();
                     } else if (attempts >= maxAttempts) {
-                        console.warn('⚠️ AdminEnhancedUI v4.3를 찾을 수 없음, 기본 UI 사용');
+                        console.warn('⚠️ AdminEnhancedUI v4.3.1를 찾을 수 없음, 기본 UI 사용');
                         resolve(); // AdminEnhancedUI 없어도 계속 진행
                     } else {
                         setTimeout(checkAdminEnhancedUI, 100);
@@ -842,7 +842,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'd') {
                 e.preventDefault();
-                console.log('🛠️ 교구 관리 페이지 - v4.3 디버그 정보');
+                console.log('🛠️ 교구 관리 페이지 - v4.3.1 디버그 정보 (캐시 버스팅 적용)');
                 console.log('isDataLoaded:', isDataLoaded);
                 console.log('retryCount:', retryCount);
                 console.log('모듈 상태:', {
@@ -862,7 +862,7 @@
             showLoadingState,
             showErrorState,
             showMainContent,
-            // v4.3 디버그 정보 추가
+            // v4.3.1 디버그 정보 추가
             getModuleStatus: () => ({
                 SupabaseCore: !!window.SupabaseCore,
                 SupabaseAdmin: !!window.SupabaseAdmin,
