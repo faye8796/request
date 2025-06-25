@@ -128,7 +128,7 @@
             }
         }
 
-        /* v4.3.2 자동 초기화 완료 알림 */
+        /* v4.3.2 영수증 보기 기능 수정 완료 알림 */
         .module-fix-notice {
             background: linear-gradient(135deg, #059669 0%, #047857 100%);
             color: white;
@@ -193,12 +193,12 @@
             </div>
         </div>
 
-        <!-- v4.3.2 자동 초기화 완료 알림 -->
+        <!-- v4.3.2 영수증 보기 기능 수정 완료 알림 -->
         <div class="module-fix-notice">
-            <i data-lucide="shield-check"></i>
+            <i data-lucide="check-circle-2"></i>
             <div class="notice-content">
-                <div class="notice-title">🛡️ v4.3.2 자동 초기화 완료!</div>
-                <p class="notice-text">AdminEnhancedUI 자동 실행 • 학생별 그룹화 UI • 4가지 신청 타입별 최적화 • 캐시 무효화 강화</p>
+                <div class="notice-title">✅ v4.3.2 영수증 보기 기능 수정 완료!</div>
+                <p class="notice-text">AdminEnhancedUI 영수증 보기 버튼 문제 해결 • 올바른 함수 경로 수정 • 에러 처리 강화 • 사용자 경험 개선</p>
             </div>
         </div>
 
@@ -288,7 +288,7 @@
 
     <!-- 모달들은 admin 모듈들에서 동적으로 생성됨 -->
 
-    <!-- 🔧 v4.3.2 자동 초기화 JavaScript Files -->
+    <!-- 🔧 v4.3.2 영수증 보기 기능 수정 JavaScript Files -->
     <!-- 1. 기본 설정 모듈 -->
     <script src="../js/config.js?v=4.3.2"></script>
     <script src="../js/auth.js?v=4.3.2"></script>
@@ -314,7 +314,7 @@
     <script src="../js/admin/admin-budget.js?v=4.3.2"></script>
     <script src="../js/admin/admin-lesson-plans.js?v=4.3.2"></script>
     
-    <!-- 🎨 향상된 UI 모듈 v4.3.2 (자동 초기화) -->
+    <!-- 🎨 향상된 UI 모듈 v4.3.2 (영수증 보기 기능 수정) -->
     <script src="../js/admin/admin-enhanced-ui.js?v=4.3.2"></script>
     
     <!-- 교구 관리 페이지 전용 스크립트 -->
@@ -326,7 +326,7 @@
 
         // 페이지 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 교구 관리 페이지 초기화 시작 (v4.3.2 자동 초기화)');
+            console.log('🔧 교구 관리 페이지 초기화 시작 (v4.3.2 영수증 보기 기능 수정)');
             
             try {
                 // Lucide 아이콘 초기화
@@ -364,9 +364,9 @@
             return true;
         }
 
-        // 교구 관리 초기화 (v4.3.2 자동 초기화)
+        // 교구 관리 초기화 (v4.3.2 영수증 보기 기능 수정)
         async function initializeEquipmentManagement() {
-            console.log('🚀 교구 관리 시스템 초기화 중... (v4.3.2 자동 초기화)');
+            console.log('🚀 교구 관리 시스템 초기화 중... (v4.3.2 영수증 보기 기능 수정)');
             
             try {
                 showLoadingState();
@@ -483,7 +483,7 @@
                     const clientReady = !!(window.SupabaseAPI);
                     
                     if (coreReady && adminReady && clientReady) {
-                        console.log('✅ v4.3.2 Supabase 모듈들 준비됨 (자동 초기화)');
+                        console.log('✅ v4.3.2 Supabase 모듈들 준비됨 (영수증 보기 기능 수정)');
                         console.log('📦 로드된 모듈:', {
                             core: coreReady,
                             admin: adminReady,
@@ -543,7 +543,7 @@
                     attempts++;
                     
                     if (window.AdminEnhancedUI && typeof window.AdminEnhancedUI.init === 'function') {
-                        console.log('✅ AdminEnhancedUI v4.3.2 준비됨 (자동 초기화)');
+                        console.log('✅ AdminEnhancedUI v4.3.2 준비됨 (영수증 보기 기능 수정)');
                         resolve();
                     } else if (attempts >= maxAttempts) {
                         console.warn('⚠️ AdminEnhancedUI v4.3.2를 찾을 수 없음, 기본 UI 사용');
@@ -956,7 +956,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'd') {
                 e.preventDefault();
-                console.log('🛠️ 교구 관리 페이지 - v4.3.2 디버그 정보 (자동 초기화)');
+                console.log('🛠️ 교구 관리 페이지 - v4.3.2 디버그 정보 (영수증 보기 기능 수정)');
                 console.log('isDataLoaded:', isDataLoaded);
                 console.log('retryCount:', retryCount);
                 console.log('모듈 상태:', {
