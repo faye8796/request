@@ -1,0 +1,1033 @@
+/**
+ * 🎨 Institute Management CSS (v4.4.0)
+ * 세종학당 파견학당 정보 관리 시스템 - 전용 스타일시트
+ * 
+ * 📋 담당 영역:
+ * - 학당 관리 페이지 전용 스타일
+ * - 독립적인 디자인 시스템
+ * - 15개 필드 지원 UI
+ * - 반응형 디자인
+ * 
+ * 🚫 독립성: 기존 admin.css와 완전 분리
+ */
+
+/* ========================
+   기본 레이아웃 및 컨테이너
+   ======================== */
+
+.institute-management-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f7fafc 0%, #e2e8f0 100%);
+    padding: 2rem;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.institute-header {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+}
+
+.institute-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.institute-header-title h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0 0 0.5rem 0;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.institute-header-title p {
+    color: #718096;
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* ========================
+   액션 버튼
+   ======================== */
+
+.institute-btn {
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+.institute-btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.institute-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.institute-btn-secondary {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.institute-btn-secondary:hover {
+    background: #cbd5e0;
+}
+
+.institute-btn-success {
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+}
+
+.institute-btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+.institute-btn-danger {
+    background: linear-gradient(135deg, #f56565, #e53e3e);
+    color: white;
+}
+
+.institute-btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+}
+
+.institute-btn-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+.institute-btn-lg {
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+}
+
+/* ========================
+   통계 대시보드
+   ======================== */
+
+.institute-stats-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.institute-stat-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    transition: transform 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.institute-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+}
+
+.institute-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.institute-stat-card.total::before {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.institute-stat-card.assigned::before {
+    background: linear-gradient(135deg, #48bb78, #38a169);
+}
+
+.institute-stat-card.pending::before {
+    background: linear-gradient(135deg, #ed8936, #dd6b20);
+}
+
+.institute-stat-card.active::before {
+    background: linear-gradient(135deg, #38b2ac, #319795);
+}
+
+.institute-stat-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #f7fafc, #edf2f7);
+    color: #4a5568;
+}
+
+.institute-stat-card.total .institute-stat-icon {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.institute-stat-card.assigned .institute-stat-icon {
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+}
+
+.institute-stat-card.pending .institute-stat-icon {
+    background: linear-gradient(135deg, #ed8936, #dd6b20);
+    color: white;
+}
+
+.institute-stat-card.active .institute-stat-icon {
+    background: linear-gradient(135deg, #38b2ac, #319795);
+    color: white;
+}
+
+.institute-stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0 0 0.25rem 0;
+    line-height: 1;
+}
+
+.institute-stat-label {
+    color: #718096;
+    font-size: 0.9rem;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* ========================
+   검색 및 필터
+   ======================== */
+
+.institute-filters-section {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+}
+
+.institute-filters-grid {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 1rem;
+    align-items: center;
+}
+
+.institute-search-box {
+    position: relative;
+}
+
+.institute-search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    background: #f8fafc;
+}
+
+.institute-search-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    background: white;
+}
+
+.institute-search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a0aec0;
+    width: 1rem;
+    height: 1rem;
+}
+
+.institute-view-toggle {
+    display: flex;
+    background: #f1f5f9;
+    border-radius: 0.5rem;
+    padding: 0.25rem;
+}
+
+.institute-view-btn {
+    padding: 0.5rem 0.75rem;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.institute-view-btn.active {
+    background: white;
+    color: #667eea;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* ========================
+   그리드 뷰
+   ======================== */
+
+.institute-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.institute-card {
+    background: white;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.institute-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.institute-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.institute-card-header {
+    margin-bottom: 1rem;
+}
+
+.institute-card-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.4;
+}
+
+.institute-card-name-en {
+    font-size: 0.9rem;
+    color: #718096;
+    font-style: italic;
+    margin: 0 0 0.75rem 0;
+}
+
+.institute-status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.institute-status-badge.complete {
+    background: #e6fffa;
+    color: #00695c;
+}
+
+.institute-status-badge.incomplete {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.institute-status-badge.pending {
+    background: #fef2e2;
+    color: #9c4221;
+}
+
+/* ========================
+   카드 콘텐츠
+   ======================== */
+
+.institute-card-body {
+    margin-bottom: 1.5rem;
+}
+
+.institute-info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.institute-info-icon {
+    width: 1rem;
+    height: 1rem;
+    color: #718096;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.institute-info-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.institute-info-label {
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.25rem;
+}
+
+.institute-info-value {
+    color: #718096;
+    word-wrap: break-word;
+}
+
+.institute-info-value.placeholder {
+    color: #a0aec0;
+    font-style: italic;
+}
+
+.institute-info-value.long-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+}
+
+/* ========================
+   문화인턴 정보
+   ======================== */
+
+.institute-interns-section {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.institute-interns-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4a5568;
+    margin: 0 0 0.75rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.institute-interns-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.institute-intern-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+    border: 1px solid #e2e8f0;
+    color: #4a5568;
+}
+
+.institute-intern-name {
+    font-weight: 600;
+}
+
+.institute-intern-field {
+    color: #718096;
+}
+
+.institute-intern-tag:hover {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+}
+
+/* ========================
+   카드 액션
+   ======================== */
+
+.institute-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.institute-last-updated {
+    font-size: 0.8rem;
+    color: #a0aec0;
+    flex: 1;
+}
+
+.institute-card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* ========================
+   리스트 뷰
+   ======================== */
+
+.institute-list {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+.institute-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.institute-table th {
+    background: #f8fafc;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #4a5568;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.9rem;
+}
+
+.institute-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+}
+
+.institute-table tr:hover {
+    background: #f8fafc;
+}
+
+.institute-table tr:last-child td {
+    border-bottom: none;
+}
+
+.institute-table-name {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.institute-table-name-en {
+    font-size: 0.8rem;
+    color: #718096;
+    font-style: italic;
+    margin-top: 0.25rem;
+}
+
+.institute-table-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* ========================
+   모달
+   ======================== */
+
+.institute-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.institute-modal {
+    background: white;
+    border-radius: 1rem;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 25px rgba(0,0,0,0.15);
+}
+
+.institute-modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.institute-modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.institute-modal-close {
+    background: none;
+    border: none;
+    color: #718096;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.institute-modal-close:hover {
+    background: #f1f5f9;
+    color: #4a5568;
+}
+
+.institute-modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    max-height: calc(90vh - 140px);
+}
+
+.institute-modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+/* ========================
+   폼 요소
+   ======================== */
+
+.institute-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.institute-form-label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.institute-form-label.required::after {
+    content: ' *';
+    color: #dc2626;
+}
+
+.institute-form-input,
+.institute-form-textarea,
+.institute-form-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.institute-form-input:focus,
+.institute-form-textarea:focus,
+.institute-form-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.institute-form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.institute-form-help {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+.institute-form-error {
+    font-size: 0.8rem;
+    color: #dc2626;
+    margin-top: 0.25rem;
+}
+
+/* ========================
+   필드 그룹
+   ======================== */
+
+.institute-field-groups {
+    display: grid;
+    gap: 2rem;
+}
+
+.institute-field-group {
+    background: #f8fafc;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.institute-field-group-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.institute-field-group-title::before {
+    content: '';
+    width: 4px;
+    height: 1.2rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 2px;
+}
+
+.institute-field-group .institute-form-group:last-child {
+    margin-bottom: 0;
+}
+
+/* ========================
+   이미지 업로드
+   ======================== */
+
+.institute-image-upload {
+    border: 2px dashed #cbd5e0;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.institute-image-upload:hover {
+    border-color: #667eea;
+    background: #f7fafc;
+}
+
+.institute-image-upload.dragover {
+    border-color: #667eea;
+    background: #edf2f7;
+}
+
+.institute-image-preview {
+    max-width: 200px;
+    max-height: 150px;
+    border-radius: 0.5rem;
+    margin: 0 auto 1rem;
+    display: block;
+}
+
+.institute-image-upload-text {
+    color: #718096;
+    font-size: 0.9rem;
+}
+
+.institute-image-upload-icon {
+    width: 2rem;
+    height: 2rem;
+    color: #a0aec0;
+    margin: 0 auto 0.5rem;
+}
+
+/* ========================
+   로딩 및 상태
+   ======================== */
+
+.institute-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+}
+
+.institute-loading-spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid #e2e8f0;
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    animation: institute-spin 1s linear infinite;
+    margin-right: 1rem;
+}
+
+@keyframes institute-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.institute-empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    color: #718096;
+}
+
+.institute-empty-icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto 1rem;
+    color: #cbd5e0;
+}
+
+.institute-error-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+}
+
+.institute-error-icon {
+    width: 3rem;
+    height: 3rem;
+    color: #dc2626;
+    margin: 0 auto 1rem;
+}
+
+/* ========================
+   반응형 디자인
+   ======================== */
+
+@media (max-width: 1024px) {
+    .institute-grid {
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    }
+    
+    .institute-filters-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .institute-view-toggle {
+        justify-self: start;
+    }
+}
+
+@media (max-width: 768px) {
+    .institute-management-container {
+        padding: 1rem;
+    }
+
+    .institute-header {
+        padding: 1.5rem;
+    }
+
+    .institute-header-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .institute-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .institute-stats-section {
+        grid-template-columns: 1fr;
+    }
+
+    .institute-card-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .institute-card-actions {
+        justify-content: stretch;
+    }
+
+    .institute-card-actions .institute-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .institute-modal {
+        margin: 1rem;
+        max-height: calc(100vh - 2rem);
+    }
+
+    .institute-field-groups {
+        gap: 1.5rem;
+    }
+
+    .institute-field-group {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .institute-card {
+        padding: 1rem;
+    }
+
+    .institute-card-name {
+        font-size: 1rem;
+    }
+
+    .institute-stats-section {
+        gap: 1rem;
+    }
+
+    .institute-stat-card {
+        padding: 1rem;
+    }
+
+    .institute-stat-number {
+        font-size: 2rem;
+    }
+}
+
+/* ========================
+   접근성 및 유틸리티
+   ======================== */
+
+.institute-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.institute-focus-ring:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+.institute-text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.institute-shadow-lg {
+    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+}
+
+/* ========================
+   다크 모드 지원 (미래 확장)
+   ======================== */
+
+@media (prefers-color-scheme: dark) {
+    /* 다크 모드 스타일은 추후 구현 예정 */
+}
+
+/* ========================
+   애니메이션 효과
+   ======================== */
+
+.institute-fade-in {
+    animation: institute-fadeIn 0.3s ease-in-out;
+}
+
+@keyframes institute-fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.institute-slide-up {
+    animation: institute-slideUp 0.3s ease-out;
+}
+
+@keyframes institute-slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========================
+   프린트 스타일
+   ======================== */
+
+@media print {
+    .institute-management-container {
+        background: white;
+        padding: 0;
+    }
+    
+    .institute-card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+    
+    .institute-btn {
+        display: none;
+    }
+}
