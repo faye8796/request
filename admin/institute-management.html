@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>파견학당 정보 관리 - 세종학당 문화인턴 지원 시스템 (v4.7.5)</title>
+    <title>파견학당 정보 관리 - 세종학당 문화인턴 지원 시스템 (v4.7.6)</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.7.5">
-    <link rel="stylesheet" href="../css/institute.css?v=4.7.5">
+    <link rel="stylesheet" href="../css/main.css?v=4.7.6">
+    <link rel="stylesheet" href="../css/institute.css?v=4.7.6">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -21,11 +21,11 @@
         <div class="institute-header">
             <div class="institute-header-content">
                 <div class="institute-header-title">
-                    <h1>파견학당 정보 관리 (v4.7.5)</h1>
+                    <h1>파견학당 정보 관리 (v4.7.6)</h1>
                     <p>세종학당의 18개 필드 정보를 체계적으로 관리하고 문화인턴 배정 현황을 확인할 수 있습니다.</p>
                     <div class="alert alert-success">
                         <i data-lucide="check-circle"></i>
-                        <strong>v4.7.5 수정!</strong> DB 완성도 퍼센트를 기반으로 정확한 진행도 표시로 개선했습니다.
+                        <strong>v4.7.6 수정!</strong> "담당자와 동일" 체크박스 저장 문제를 해결했습니다.
                     </div>
                 </div>
                 <button class="institute-btn institute-btn-secondary" onclick="goBackToDashboard()">
@@ -442,29 +442,29 @@
 
     <!-- JavaScript Files -->
     <!-- 1. 기본 설정 모듈 (의존성 순서 중요!) -->
-    <script src="../js/config.js?v=4.7.5"></script>
-    <script src="../js/auth.js?v=4.7.5"></script>
-    <script src="../js/utils.js?v=4.7.5"></script>
+    <script src="../js/config.js?v=4.7.6"></script>
+    <script src="../js/auth.js?v=4.7.6"></script>
+    <script src="../js/utils.js?v=4.7.6"></script>
     
     <!-- 2. Supabase 모듈들 -->
-    <script src="../js/supabase/supabase-core.js?v=4.7.5"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.7.5"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.7.5"></script>
-    <script src="../js/supabase-client.js?v=4.7.5"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.7.6"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.7.6"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.7.6"></script>
+    <script src="../js/supabase-client.js?v=4.7.6"></script>
 
     <!-- 3. Institute 전용 모듈들 -->
-    <script src="../js/institute/institute-utils.js?v=4.7.5"></script>
-    <script src="../js/institute/institute-validation.js?v=4.7.5"></script>
-    <script src="../js/institute/institute-api.js?v=4.7.5"></script>
-    <script src="../js/institute/institute-core.js?v=4.7.5"></script>
-    <script src="../js/institute/institute-ui.js?v=4.7.5"></script>
+    <script src="../js/institute/institute-utils.js?v=4.7.6"></script>
+    <script src="../js/institute/institute-validation.js?v=4.7.6"></script>
+    <script src="../js/institute/institute-api.js?v=4.7.6"></script>
+    <script src="../js/institute/institute-core.js?v=4.7.6"></script>
+    <script src="../js/institute/institute-ui.js?v=4.7.6"></script>
 
     <script>
-        // 🏛️ 파견학당 정보 관리 시스템 (v4.7.5) - DB 완성도 퍼센트 기반 정확한 진행도 표시
-        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.5 초기화 - DB 완성도 퍼센트 기반 정확한 진행도 표시');
+        // 🏛️ 파견학당 정보 관리 시스템 (v4.7.6) - "담당자와 동일" 체크박스 저장 문제 해결
+        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.6 초기화 - "담당자와 동일" 체크박스 저장 문제 해결');
 
         /**
-         * 🔧 통합 매니저 클래스 (v4.7.5)
+         * 🔧 통합 매니저 클래스 (v4.7.6)
          */
         class InstituteManagerD {
             constructor() {
@@ -485,7 +485,7 @@
                 if (this.isInitialized) return;
 
                 try {
-                    console.log('🔄 v4.7.5 시스템 초기화 시작 - DB 완성도 퍼센트 기반 정확한 진행도 표시');
+                    console.log('🔄 v4.7.6 시스템 초기화 시작 - "담당자와 동일" 체크박스 저장 문제 해결');
                     
                     // Lucide 아이콘 초기화
                     if (typeof lucide !== 'undefined') {
@@ -523,10 +523,10 @@
                     await this.loadInitialData();
 
                     this.isInitialized = true;
-                    console.log('✅ v4.7.5 시스템 초기화 완료 - DB 완성도 퍼센트 기반 정확한 진행도 표시 구현됨');
+                    console.log('✅ v4.7.6 시스템 초기화 완료 - "담당자와 동일" 체크박스 저장 문제 해결됨');
 
                 } catch (error) {
-                    console.error('❌ v4.7.5 시스템 초기화 실패:', error);
+                    console.error('❌ v4.7.6 시스템 초기화 실패:', error);
                     this.showError(`시스템 초기화에 실패했습니다: ${error.message}`);
                     this.showErrorState(error.message);
                 }
@@ -565,7 +565,7 @@
                 while (Date.now() - startTime < timeout) {
                     const allLoaded = requiredModules.every(name => window[name]);
                     if (allLoaded) {
-                        console.log('✅ 모든 필수 모듈 로드 완료 (v4.7.5)');
+                        console.log('✅ 모든 필수 모듈 로드 완료 (v4.7.6)');
                         return;
                     }
                     await new Promise(resolve => setTimeout(resolve, 100));
@@ -579,7 +579,7 @@
              * 🔧 모듈 초기화
              */
             async initializeModules() {
-                console.log('🔄 모듈 초기화 중... (v4.7.5 DB 완성도 퍼센트 기반 정확한 진행도 표시 포함)');
+                console.log('🔄 모듈 초기화 중... (v4.7.6 "담당자와 동일" 체크박스 저장 문제 해결 포함)');
 
                 const modules = [
                     'InstituteUtils',
@@ -599,11 +599,11 @@
                     }
                 }
 
-                console.log('✅ 모든 모듈 초기화 완료 (v4.7.5)');
+                console.log('✅ 모든 모듈 초기화 완료 (v4.7.6)');
             }
 
             /**
-             * 📡 이벤트 리스너 설정 (v4.7.5)
+             * 📡 이벤트 리스너 설정 (v4.7.6)
              */
             setupEventListeners() {
                 // 검색 기능
@@ -630,7 +630,7 @@
                 // 리스트 이벤트 위임
                 document.getElementById('institute-table-body')?.addEventListener('click', this.handleTableClick.bind(this));
 
-                console.log('📡 이벤트 리스너 설정 완료 (v4.7.5)');
+                console.log('📡 이벤트 리스너 설정 완료 (v4.7.6)');
             }
 
             /**
@@ -691,15 +691,15 @@
             }
 
             /**
-             * 📊 초기 데이터 로드 (v4.7.5 - DB 완성도 퍼센트 기반)
+             * 📊 초기 데이터 로드 (v4.7.6)
              */
             async loadInitialData() {
                 try {
                     this.showLoading(true);
                     
-                    console.log('📊 초기 데이터 로드 시작 (v4.7.5 - DB 완성도 퍼센트 기반)...');
+                    console.log('📊 초기 데이터 로드 시작 (v4.7.6)...');
                     
-                    // v4.7.5 개선: InstituteAPI.getInstituteCardData() 사용
+                    // v4.7.6: InstituteAPI.getInstituteCardData() 사용
                     const institutes = await window.InstituteAPI.getInstituteCardData();
                     console.log(`📋 ${institutes.length}개 학당 로드됨 (완성도 퍼센트 포함)`);
                     
@@ -714,7 +714,7 @@
                     this.updateStatistics(institutes);
                     
                     this.showLoading(false);
-                    console.log('✅ 초기 데이터 로드 완료 (v4.7.5 - DB 완성도 퍼센트 기반)');
+                    console.log('✅ 초기 데이터 로드 완료 (v4.7.6)');
                     
                 } catch (error) {
                     console.error('❌ 초기 데이터 로드 실패:', error);
@@ -724,7 +724,7 @@
             }
 
             /**
-             * 📄 리스트 뷰 렌더링 (v4.7.5 - DB 완성도 기반)
+             * 📄 리스트 뷰 렌더링 (v4.7.6)
              */
             renderListView(institutes) {
                 const list = document.getElementById('institute-list');
@@ -739,10 +739,10 @@
             }
 
             /**
-             * 📋 학당 행 생성 (v4.7.5 - DB 완성도 퍼센트 기반 개선)
+             * 📋 학당 행 생성 (v4.7.6)
              */
             createInstituteRowWithDBCompletion(institute) {
-                // v4.7.5: DB의 completion_percentage와 status_text 사용
+                // v4.7.6: DB의 completion_percentage와 status_text 사용
                 const completionPercentage = institute.completion_percentage || 0;
                 const statusText = institute.status_text || this.getStatusFromAPI(completionPercentage);
                 const statusClass = this.getStatusClass(completionPercentage);
@@ -783,7 +783,7 @@
             }
 
             /**
-             * 🎨 완성도 퍼센트에 따른 상태 클래스 (v4.7.5)
+             * 🎨 완성도 퍼센트에 따른 상태 클래스 (v4.7.6)
              */
             getStatusClass(percentage) {
                 if (percentage >= 100) return 'complete';
@@ -794,7 +794,7 @@
             }
 
             /**
-             * 📊 API 기반 상태 텍스트 가져오기 (v4.7.5)
+             * 📊 API 기반 상태 텍스트 가져오기 (v4.7.6)
              */
             getStatusFromAPI(percentage) {
                 // InstituteAPI의 getCompletionStatusText 함수 활용
@@ -869,7 +869,7 @@
             }
 
             /**
-             * ✏️ 학당 정보 수정 (v4.7.5)
+             * ✏️ 학당 정보 수정 (v4.7.6)
              */
             async editInstitute(instituteId) {
                 try {
@@ -902,7 +902,7 @@
             }
 
             /**
-             * 🧹 편집 폼 완전 초기화 (v4.7.5)
+             * 🧹 편집 폼 완전 초기화 (v4.7.6)
              */
             clearEditForm() {
                 console.log('🧹 편집 폼 완전 초기화 시작...');
@@ -955,10 +955,10 @@
             }
 
             /**
-             * 📝 수정 폼 데이터 채우기 (v4.7.5)
+             * 📝 수정 폼 데이터 채우기 (v4.7.6)
              */
             populateEditForm(institute) {
-                console.log('📝 수정 폼 데이터 채우기 시작 (v4.7.5)...');
+                console.log('📝 수정 폼 데이터 채우기 시작 (v4.7.6)...');
                 
                 // 표준 필드 매핑 (파견 희망 기간 추가)
                 const fieldMappings = {
@@ -983,7 +983,7 @@
                 for (const [dbField, elementId] of Object.entries(fieldMappings)) {
                     const element = document.getElementById(elementId);
                     if (element) {
-                        // v4.7.5 개선: 빈 값이나 null도 빈 문자열로 설정
+                        // v4.7.6 개선: 빈 값이나 null도 빈 문자열로 설정
                         const value = institute[dbField] || '';
                         element.value = value;
                         
@@ -1018,7 +1018,7 @@
                 // 담당자와 동일 체크박스 상태 확인
                 this.checkCoordinatorSameAsManager();
                 
-                console.log('✅ 수정 폼 데이터 채우기 완료 (v4.7.5)');
+                console.log('✅ 수정 폼 데이터 채우기 완료 (v4.7.6)');
             }
 
             /**
@@ -1042,7 +1042,7 @@
             }
 
             /**
-             * 💾 학당 정보 저장 (v4.7.5)
+             * 💾 학당 정보 저장 (v4.7.6 - "담당자와 동일" 체크박스 저장 문제 해결)
              */
             async saveInstituteData() {
                 if (!this.currentInstitute) return;
@@ -1059,10 +1059,32 @@
                     const formData = new FormData(document.getElementById('institute-edit-form'));
                     const updateData = {};
                     
+                    // 기본 폼 데이터 수집
                     for (const [key, value] of formData.entries()) {
                         if (value.trim()) {
                             updateData[key] = value.trim();
                         }
+                    }
+
+                    // 🔧 v4.7.6 수정: "담당자와 동일" 체크박스 처리
+                    const checkbox = document.getElementById('coordinator-same-as-manager');
+                    if (checkbox && checkbox.checked) {
+                        // 체크박스가 체크되어 있으면 disabled된 필드의 값을 수동으로 추가
+                        const managerName = document.getElementById('edit-manager-name')?.value?.trim() || '';
+                        const managerContact = document.getElementById('edit-manager-contact')?.value?.trim() || '';
+                        
+                        if (managerName) {
+                            updateData.local_coordinator = managerName;
+                            console.log('🔧 담당자와 동일: local_coordinator =', managerName);
+                        }
+                        
+                        if (managerContact) {
+                            updateData.local_coordinator_phone = managerContact;
+                            console.log('🔧 담당자와 동일: local_coordinator_phone =', managerContact);
+                        }
+                    } else {
+                        // 체크박스가 체크되지 않은 경우, 필드가 활성화되어 있으므로 폼데이터에 포함됨
+                        // 별도 처리 불필요
                     }
 
                     // 이미지 URL 추가
@@ -1083,7 +1105,7 @@
                         updateData.education_environment = educationEnvironmentData;
                     }
 
-                    console.log('💾 저장할 데이터 (v4.7.5 파견 희망 기간 포함):', updateData);
+                    console.log('💾 저장할 데이터 (v4.7.6 "담당자와 동일" 체크박스 처리 포함):', updateData);
 
                     // 데이터 업데이트
                     const success = await window.InstituteCore.updateInstituteInfo(this.currentInstitute.id, updateData);
@@ -1144,7 +1166,7 @@
             }
 
             /**
-             * 🔍 검색 처리 (v4.7.5 - DB 완성도 기반)
+             * 🔍 검색 처리 (v4.7.6)
              */
             async handleSearch() {
                 const keyword = document.getElementById('institute-search')?.value?.trim();
@@ -1154,10 +1176,10 @@
                     let results;
                     
                     if (!keyword) {
-                        // v4.7.5: 전체 목록 로드 시에도 DB 완성도 정보 포함
+                        // v4.7.6: 전체 목록 로드 시에도 DB 완성도 정보 포함
                         results = await window.InstituteAPI.getInstituteCardData();
                     } else {
-                        // v4.7.5: 검색 시에도 DB 완성도 정보 포함
+                        // v4.7.6: 검색 시에도 DB 완성도 정보 포함
                         results = await window.InstituteAPI.getInstituteCardData({ search: keyword });
                     }
                     
@@ -1173,7 +1195,7 @@
             }
 
             /**
-             * 🔄 데이터 새로고침 (v4.7.5)
+             * 🔄 데이터 새로고침 (v4.7.6)
              */
             async refreshData() {
                 console.log('🔄 데이터 새로고침...');
@@ -1335,7 +1357,7 @@
                 return validEnvironments.length > 0 ? JSON.stringify(validEnvironments) : null;
             }
 
-            // === 실시간 검증 시스템 (v4.7.5) ===
+            // === 실시간 검증 시스템 (v4.7.6) ===
             initializeRealTimeValidation() {
                 const form = document.getElementById('institute-edit-form');
                 if (!form) return;
@@ -1368,7 +1390,7 @@
                     errorMessage = '이 필드는 필수입니다.';
                 }
 
-                // 특정 필드별 검증 (v4.7.5)
+                // 특정 필드별 검증 (v4.7.6)
                 switch (fieldName) {
                     case 'name_ko':
                         if (value && value.length < 2) {
@@ -1711,7 +1733,7 @@
                 }
             }
 
-            // === 상세 정보 모달 렌더링 (v4.7.5) ===
+            // === 상세 정보 모달 렌더링 (v4.7.6) ===
             renderDetailModal(institute) {
                 const content = document.getElementById('institute-detail-content');
                 if (!content) return;
@@ -1860,14 +1882,14 @@
                 document.getElementById('error-state').style.display = 'none';
             }
 
-            // === 통계 업데이트 (v4.7.5 - DB 완성도 기반) ===
+            // === 통계 업데이트 (v4.7.6) ===
             updateStatistics(institutes) {
                 let assignedInterns = 0;
                 let completeInstitutes = 0;
                 let incompleteInstitutes = 0;
 
                 institutes.forEach(institute => {
-                    // v4.7.5: DB의 info_completed 사용
+                    // v4.7.6: DB의 info_completed 사용
                     if (institute.info_completed === true) {
                         completeInstitutes++;
                     } else {
@@ -1976,14 +1998,14 @@
 
         // === DOMContentLoaded 이벤트 ===
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.5 시작 - DB 완성도 퍼센트 기반 정확한 진행도 표시');
+            console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.6 시작 - "담당자와 동일" 체크박스 저장 문제 해결');
             
             try {
                 await InstituteManager.initialize();
-                console.log('🎉 v4.7.5 시스템 준비 완료! DB 완성도 퍼센트 기반 정확한 진행도 표시 구현됨.');
+                console.log('🎉 v4.7.6 시스템 준비 완료! "담당자와 동일" 체크박스 저장 문제 해결됨.');
                 
             } catch (error) {
-                console.error('💥 v4.7.5 초기화 최종 실패:', error);
+                console.error('💥 v4.7.6 초기화 최종 실패:', error);
                 alert('시스템 초기화에 실패했습니다. 페이지를 새로고침하거나 관리자에게 문의하세요.');
             }
         });
@@ -1992,7 +2014,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.shiftKey && e.key === 'D') {
                 e.preventDefault();
-                console.log('🛠️ v4.7.5 디버그 정보');
+                console.log('🛠️ v4.7.6 디버그 정보');
                 console.log('통합 매니저 상태:', {
                     initialized: InstituteManager.isInitialized,
                     currentView: InstituteManager.currentView,
@@ -2012,7 +2034,7 @@
             }
         });
 
-        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.5 스크립트 로드 완료 - DB 완성도 퍼센트 기반 정확한 진행도 표시 구현');
+        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.6 스크립트 로드 완료 - "담당자와 동일" 체크박스 저장 문제 해결');
     </script>
 </body>
 </html>
