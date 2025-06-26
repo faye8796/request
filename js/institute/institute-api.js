@@ -1,5 +1,5 @@
 /**
- * 🔗 Institute API Module (v4.6.1) - 타입 캐스팅 문제 수정
+ * 🔗 Institute API Module (v4.6.2) - getInstituteList 함수 추가
  * 세종학당 파견학당 정보 관리 시스템 - Supabase API 전용 모듈
  * 
  * 📋 담당 기능:
@@ -11,10 +11,9 @@
  * 🔗 의존성: SupabaseCore만 의존
  * 🚫 독립성: 기존 SupabaseAdmin/Student 모듈과 분리
  * 
- * 🔧 v4.6.1 수정사항:
- * - UUID ↔ VARCHAR 타입 캐스팅 문제 해결
- * - getCulturalInternsByInstitute 함수 수정
- * - 카드 데이터 조회 최적화
+ * 🔧 v4.6.2 수정사항:
+ * - getInstituteList() 함수 추가 (InstituteCore 호환성)
+ * - 초기화 오류 해결 완료
  */
 
 class InstituteAPI {
@@ -56,7 +55,7 @@ class InstituteAPI {
         this.MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
         this.ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
         
-        console.log('🔗 InstituteAPI 모듈 초기화됨 (v4.6.1 - 타입 캐스팅 수정)');
+        console.log('🔗 InstituteAPI 모듈 초기화됨 (v4.6.2 - getInstituteList 함수 추가)');
     }
 
     /**
@@ -84,7 +83,7 @@ class InstituteAPI {
             await this.testConnection();
             
             this.initialized = true;
-            console.log('✅ InstituteAPI 초기화 완료 (v4.6.1)');
+            console.log('✅ InstituteAPI 초기화 완료 (v4.6.2)');
             return true;
             
         } catch (error) {
@@ -109,6 +108,46 @@ class InstituteAPI {
         } catch (error) {
             console.error('❌ 연결 테스트 실패:', error);
             throw error;
+        }
+    }
+
+    /**
+     * 📋 기본 학당 목록 조회 (InstituteCore 호환용)
+     * - InstituteCore에서 기본 데이터 로딩용으로 사용
+     * - 간단한 기본 정보만 반환 (성능 최적화)
+     * @returns {Promise<Array>}
+     */
+    async getInstituteList() {
+        if (!this.initialized) await this.initialize();
+        
+        try {
+            console.log('🔄 기본 학당 목록 조회 중...');
+            
+            const { data, error } = await this.supabase
+                .from('institutes')
+                .select(`
+                    id,
+                    name_ko,
+                    name_en,
+                    operator,
+                    is_active,
+                    created_at,
+                    updated_at
+                `)
+                .eq('is_active', true)
+                .order('name_ko', { ascending: true });
+            
+            if (error) {
+                console.error('❌ 기본 학당 목록 조회 실패:', error);
+                throw error;
+            }
+            
+            console.log(`✅ ${data.length}개 학당 기본 목록 조회 완료`);
+            return data || [];
+            
+        } catch (error) {
+            console.error('❌ getInstituteList 실패:', error);
+            return [];
         }
     }
 
@@ -612,7 +651,7 @@ class InstituteAPI {
     }
 
     /**
-     * 📊 API 모듈 상태 (v4.6.1)
+     * 📊 API 모듈 상태 (v4.6.2)
      */
     getAPIStatus() {
         return {
@@ -620,9 +659,10 @@ class InstituteAPI {
             supabase_connected: !!this.supabase,
             supported_fields: Object.keys(this.DB_FIELDS).length,
             storage_bucket: this.STORAGE_BUCKET,
-            module_version: '4.6.1',
+            module_version: '4.6.2',
             database_integration: 'completion tracking enabled',
-            type_casting: 'UUID ↔ VARCHAR fixed'
+            type_casting: 'UUID ↔ VARCHAR fixed',
+            compatibility: 'InstituteCore getInstituteList() supported'
         };
     }
 }
@@ -630,4 +670,4 @@ class InstituteAPI {
 // 🌐 전역 인스턴스 생성
 window.InstituteAPI = new InstituteAPI();
 
-console.log('🔗 InstituteAPI 모듈 로드 완료 (v4.6.1) - 타입 캐스팅 문제 수정');
+console.log('🔗 InstituteAPI 모듈 로드 완료 (v4.6.2) - getInstituteList 함수 추가로 초기화 오류 해결');
