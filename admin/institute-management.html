@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>파견학당 정보 관리 - 세종학당 문화인턴 지원 시스템 (v4.7.1)</title>
+    <title>파견학당 정보 관리 - 세종학당 문화인턴 지원 시스템 (v4.7.2)</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.7.1">
-    <link rel="stylesheet" href="../css/institute.css?v=4.7.1">
+    <link rel="stylesheet" href="../css/main.css?v=4.7.2">
+    <link rel="stylesheet" href="../css/institute.css?v=4.7.2">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -21,11 +21,11 @@
         <div class="institute-header">
             <div class="institute-header-content">
                 <div class="institute-header-title">
-                    <h1>파견학당 정보 관리 (v4.7.1)</h1>
-                    <p>세종학당의 17개 필드 정보를 체계적으로 관리하고 문화인턴 배정 현황을 확인할 수 있습니다.</p>
+                    <h1>파견학당 정보 관리 (v4.7.2)</h1>
+                    <p>세종학당의 18개 필드 정보를 체계적으로 관리하고 문화인턴 배정 현황을 확인할 수 있습니다.</p>
                     <div class="alert alert-success">
                         <i data-lucide="check-circle"></i>
-                        <strong>v4.7.1 UI 개선!</strong> 현지 적응 전담 인력 정보 입력이 더욱 직관적으로 개선되었습니다.
+                        <strong>v4.7.2 기능 추가!</strong> 파견 희망 기간 정보와 문화인턴 활동 정보가 추가되었습니다.
                     </div>
                 </div>
                 <button class="institute-btn institute-btn-secondary" onclick="goBackToDashboard()">
@@ -283,12 +283,22 @@
                             </div>
                         </div>
 
-                        <!-- 프로그램 정보 그룹 -->
+                        <!-- 문화인턴 활동 정보 그룹 (프로그램 정보에서 변경) -->
                         <div class="institute-field-group">
                             <h3 class="institute-field-group-title">
                                 <i data-lucide="graduation-cap"></i>
-                                프로그램 정보
+                                문화인턴 활동 정보
                             </h3>
+                            
+                            <!-- 파견 희망 기간 (새로 추가) -->
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-dispatch-period">파견 희망 기간</label>
+                                <input type="text" class="institute-form-input" id="edit-dispatch-period" name="dispatch_period" 
+                                       placeholder="예: 8월~11월(약 3개월 간)">
+                                <div class="institute-form-help">문화인턴 파견을 희망하는 기간을 자유롭게 입력하세요</div>
+                                <div class="institute-form-error" id="error-dispatch-period" style="display: none;"></div>
+                            </div>
+                            
                             <div class="institute-form-group">
                                 <label class="institute-form-label" for="edit-cultural-program-plan">문화수업 운영 계획</label>
                                 <textarea class="institute-form-textarea" id="edit-cultural-program-plan" name="lesson_plan" rows="4"></textarea>
@@ -432,29 +442,29 @@
 
     <!-- JavaScript Files -->
     <!-- 1. 기본 설정 모듈 (의존성 순서 중요!) -->
-    <script src="../js/config.js?v=4.7.1"></script>
-    <script src="../js/auth.js?v=4.7.1"></script>
-    <script src="../js/utils.js?v=4.7.1"></script>
+    <script src="../js/config.js?v=4.7.2"></script>
+    <script src="../js/auth.js?v=4.7.2"></script>
+    <script src="../js/utils.js?v=4.7.2"></script>
     
     <!-- 2. Supabase 모듈들 -->
-    <script src="../js/supabase/supabase-core.js?v=4.7.1"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.7.1"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.7.1"></script>
-    <script src="../js/supabase-client.js?v=4.7.1"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.7.2"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.7.2"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.7.2"></script>
+    <script src="../js/supabase-client.js?v=4.7.2"></script>
 
     <!-- 3. Institute 전용 모듈들 -->
-    <script src="../js/institute/institute-utils.js?v=4.7.1"></script>
-    <script src="../js/institute/institute-validation.js?v=4.7.1"></script>
-    <script src="../js/institute/institute-api.js?v=4.7.1"></script>
-    <script src="../js/institute/institute-core.js?v=4.7.1"></script>
-    <script src="../js/institute/institute-ui.js?v=4.7.1"></script>
+    <script src="../js/institute/institute-utils.js?v=4.7.2"></script>
+    <script src="../js/institute/institute-validation.js?v=4.7.2"></script>
+    <script src="../js/institute/institute-api.js?v=4.7.2"></script>
+    <script src="../js/institute/institute-core.js?v=4.7.2"></script>
+    <script src="../js/institute/institute-ui.js?v=4.7.2"></script>
 
     <script>
-        // 🏛️ 파견학당 정보 관리 시스템 (v4.7.1) - UI 개선
-        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.1 초기화 - UI 개선 버전');
+        // 🏛️ 파견학당 정보 관리 시스템 (v4.7.2) - 문화인턴 활동 정보 추가
+        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.2 초기화 - 문화인턴 활동 정보 지원');
 
         /**
-         * 🔧 통합 매니저 클래스 (v4.7.1)
+         * 🔧 통합 매니저 클래스 (v4.7.2)
          */
         class InstituteManagerD {
             constructor() {
@@ -462,7 +472,7 @@
                 this.currentView = 'list'; // 단일 뷰: list만 지원
                 this.validationState = {};
                 this.coursesData = [];
-                this.educationEnvironmentData = []; // 새로 추가
+                this.educationEnvironmentData = [];
                 this.isInitialized = false;
                 this.retryCount = 0;
                 this.maxRetries = 3;
@@ -475,7 +485,7 @@
                 if (this.isInitialized) return;
 
                 try {
-                    console.log('🔄 v4.7.1 시스템 초기화 시작 - UI 개선 버전');
+                    console.log('🔄 v4.7.2 시스템 초기화 시작 - 문화인턴 활동 정보 지원');
                     
                     // Lucide 아이콘 초기화
                     if (typeof lucide !== 'undefined') {
@@ -506,17 +516,17 @@
                     // 이미지 업로드 시스템 초기화
                     this.setupImageUpload();
 
-                    // 현지 적응 전담 인력 체크박스 이벤트 (개선됨)
+                    // 현지 적응 전담 인력 체크박스 이벤트
                     this.setupCoordinatorSameAsManagerCheckbox();
 
                     // 초기 데이터 로드
                     await this.loadInitialData();
 
                     this.isInitialized = true;
-                    console.log('✅ v4.7.1 시스템 초기화 완료 - UI 개선 완료');
+                    console.log('✅ v4.7.2 시스템 초기화 완료 - 문화인턴 활동 정보 완전 지원');
 
                 } catch (error) {
-                    console.error('❌ v4.7.1 시스템 초기화 실패:', error);
+                    console.error('❌ v4.7.2 시스템 초기화 실패:', error);
                     this.showError(`시스템 초기화에 실패했습니다: ${error.message}`);
                     this.showErrorState(error.message);
                 }
@@ -555,7 +565,7 @@
                 while (Date.now() - startTime < timeout) {
                     const allLoaded = requiredModules.every(name => window[name]);
                     if (allLoaded) {
-                        console.log('✅ 모든 필수 모듈 로드 완료 (v4.7.1)');
+                        console.log('✅ 모든 필수 모듈 로드 완료 (v4.7.2)');
                         return;
                     }
                     await new Promise(resolve => setTimeout(resolve, 100));
@@ -569,7 +579,7 @@
              * 🔧 모듈 초기화
              */
             async initializeModules() {
-                console.log('🔄 모듈 초기화 중... (v4.7.1 UI 개선 포함)');
+                console.log('🔄 모듈 초기화 중... (v4.7.2 문화인턴 활동 정보 포함)');
 
                 const modules = [
                     'InstituteUtils',
@@ -589,11 +599,11 @@
                     }
                 }
 
-                console.log('✅ 모든 모듈 초기화 완료 (v4.7.1)');
+                console.log('✅ 모든 모듈 초기화 완료 (v4.7.2)');
             }
 
             /**
-             * 📡 이벤트 리스너 설정 (v4.7.1)
+             * 📡 이벤트 리스너 설정 (v4.7.2)
              */
             setupEventListeners() {
                 // 검색 기능
@@ -620,11 +630,11 @@
                 // 리스트 이벤트 위임
                 document.getElementById('institute-table-body')?.addEventListener('click', this.handleTableClick.bind(this));
 
-                console.log('📡 이벤트 리스너 설정 완료 (v4.7.1)');
+                console.log('📡 이벤트 리스너 설정 완료 (v4.7.2)');
             }
 
             /**
-             * 👥 현지 적응 전담 인력 '담당자와 동일' 체크박스 이벤트 (v4.7.1 개선)
+             * 👥 현지 적응 전담 인력 '담당자와 동일' 체크박스 이벤트
              */
             setupCoordinatorSameAsManagerCheckbox() {
                 const checkbox = document.getElementById('coordinator-same-as-manager');
@@ -677,7 +687,7 @@
                     });
                 }
 
-                console.log('✅ 현지 적응 전담 인력 체크박스 이벤트 설정 완료 (v4.7.1 개선)');
+                console.log('✅ 현지 적응 전담 인력 체크박스 이벤트 설정 완료');
             }
 
             /**
@@ -704,7 +714,7 @@
                     this.updateStatistics(institutes);
                     
                     this.showLoading(false);
-                    console.log('✅ 초기 데이터 로드 완료 (v4.7.1)');
+                    console.log('✅ 초기 데이터 로드 완료 (v4.7.2)');
                     
                 } catch (error) {
                     console.error('❌ 초기 데이터 로드 실패:', error);
@@ -878,10 +888,10 @@
             }
 
             /**
-             * 📝 수정 폼 데이터 채우기 (v4.7.1 - 개선된 필드 매핑)
+             * 📝 수정 폼 데이터 채우기 (v4.7.2 - 파견 희망 기간 필드 포함)
              */
             populateEditForm(institute) {
-                // 표준 필드 매핑 (개선됨)
+                // 표준 필드 매핑 (파견 희망 기간 추가)
                 const fieldMappings = {
                     'name_ko': 'edit-name-ko',
                     'name_en': 'edit-name-en', 
@@ -892,7 +902,8 @@
                     'contact_person': 'edit-manager-name',
                     'contact_phone': 'edit-manager-contact',
                     'local_coordinator': 'edit-local-coordinator',
-                    'local_coordinator_phone': 'edit-local-coordinator-contact', // 추가됨!
+                    'local_coordinator_phone': 'edit-local-coordinator-contact',
+                    'dispatch_period': 'edit-dispatch-period', // 새로 추가!
                     'lesson_plan': 'edit-cultural-program-plan',
                     'local_language_requirement': 'edit-local-language-requirement',
                     'support_provided': 'edit-institute-support',
@@ -924,14 +935,14 @@
                 // 교육 환경 데이터 로드
                 this.loadEducationEnvironmentData(institute.education_environment);
 
-                // 담당자와 동일 체크박스 상태 확인 (개선됨)
+                // 담당자와 동일 체크박스 상태 확인
                 this.checkCoordinatorSameAsManager();
                 
-                console.log('✅ 수정 폼 데이터 채우기 완료 (v4.7.1 개선)');
+                console.log('✅ 수정 폼 데이터 채우기 완료 (v4.7.2 파견 희망 기간 포함)');
             }
 
             /**
-             * 👥 담당자와 현지 적응 전담 인력 정보가 동일한지 확인 (v4.7.1 개선)
+             * 👥 담당자와 현지 적응 전담 인력 정보가 동일한지 확인
              */
             checkCoordinatorSameAsManager() {
                 const managerName = document.getElementById('edit-manager-name')?.value || '';
@@ -951,7 +962,7 @@
             }
 
             /**
-             * 💾 학당 정보 저장 (v4.7.1 - 새로운 필드 포함)
+             * 💾 학당 정보 저장 (v4.7.2 - 파견 희망 기간 포함)
              */
             async saveInstituteData() {
                 if (!this.currentInstitute) return;
@@ -992,7 +1003,7 @@
                         updateData.education_environment = educationEnvironmentData;
                     }
 
-                    console.log('💾 저장할 데이터:', updateData);
+                    console.log('💾 저장할 데이터 (파견 희망 기간 포함):', updateData);
 
                     // 데이터 업데이트
                     const success = await window.InstituteCore.updateInstituteInfo(this.currentInstitute.id, updateData);
@@ -1624,7 +1635,7 @@
                 }
             }
 
-            // === 상세 정보 모달 렌더링 (v4.7.1) ===
+            // === 상세 정보 모달 렌더링 (v4.7.2 - 파견 희망 기간 포함) ===
             renderDetailModal(institute) {
                 const content = document.getElementById('institute-detail-content');
                 if (!content) return;
@@ -1671,14 +1682,15 @@
                     </div>
                 `;
 
-                // 프로그램 정보
-                if (institute.lesson_plan || institute.desired_courses || institute.education_environment) {
+                // 문화인턴 활동 정보 (이름 변경됨)
+                if (institute.dispatch_period || institute.lesson_plan || institute.desired_courses || institute.education_environment) {
                     modalHTML += `
                         <div class="institute-field-group" style="margin-bottom: 2rem;">
                             <h3 class="institute-field-group-title">
                                 <i data-lucide="graduation-cap"></i>
-                                프로그램 정보
+                                문화인턴 활동 정보
                             </h3>
+                            ${this.renderDetailField('파견 희망 기간', institute.dispatch_period)}
                             ${this.renderDetailField('문화수업운영계획', institute.lesson_plan, 'textarea')}
                             ${this.renderDetailField('희망개설강좌', institute.desired_courses, 'textarea')}
                             ${this.renderDetailField('교육환경정보', institute.education_environment, 'json')}
@@ -1902,14 +1914,14 @@
 
         // === DOMContentLoaded 이벤트 ===
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.1 시작 - UI 개선 완료');
+            console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.2 시작 - 문화인턴 활동 정보 완전 지원');
             
             try {
                 await InstituteManager.initialize();
-                console.log('🎉 v4.7.1 시스템 준비 완료! UI 개선으로 더욱 직관적인 사용자 경험 제공.');
+                console.log('🎉 v4.7.2 시스템 준비 완료! 파견 희망 기간과 문화인턴 활동 정보 완전 지원.');
                 
             } catch (error) {
-                console.error('💥 v4.7.1 초기화 최종 실패:', error);
+                console.error('💥 v4.7.2 초기화 최종 실패:', error);
                 alert('시스템 초기화에 실패했습니다. 페이지를 새로고침하거나 관리자에게 문의하세요.');
             }
         });
@@ -1918,7 +1930,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.shiftKey && e.key === 'D') {
                 e.preventDefault();
-                console.log('🛠️ v4.7.1 디버그 정보');
+                console.log('🛠️ v4.7.2 디버그 정보');
                 console.log('통합 매니저 상태:', {
                     initialized: InstituteManager.isInitialized,
                     currentView: InstituteManager.currentView,
@@ -1938,7 +1950,7 @@
             }
         });
 
-        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.1 스크립트 로드 완료 - UI 개선 완료');
+        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.2 스크립트 로드 완료 - 문화인턴 활동 정보 완전 지원');
     </script>
 </body>
 </html>
