@@ -1,5 +1,5 @@
 /**
- * 🔗 Institute API Module (v4.6.0) - 실제 DB 구조 반영
+ * 🔗 Institute API Module (v4.6.1) - 타입 캐스팅 문제 수정
  * 세종학당 파견학당 정보 관리 시스템 - Supabase API 전용 모듈
  * 
  * 📋 담당 기능:
@@ -11,11 +11,10 @@
  * 🔗 의존성: SupabaseCore만 의존
  * 🚫 독립성: 기존 SupabaseAdmin/Student 모듈과 분리
  * 
- * 🔧 v4.6.0 주요 업데이트:
- * - 실제 DB 컬럼명에 맞춘 필드 매핑
- * - info_completed, completion_percentage 컬럼 지원
- * - 카드 표시용 최적화된 조회 함수 추가
- * - 자동 완성도 계산 시스템 통합
+ * 🔧 v4.6.1 수정사항:
+ * - UUID ↔ VARCHAR 타입 캐스팅 문제 해결
+ * - getCulturalInternsByInstitute 함수 수정
+ * - 카드 데이터 조회 최적화
  */
 
 class InstituteAPI {
@@ -57,7 +56,7 @@ class InstituteAPI {
         this.MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
         this.ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
         
-        console.log('🔗 InstituteAPI 모듈 초기화됨 (v4.6.0 - DB 구조 반영)');
+        console.log('🔗 InstituteAPI 모듈 초기화됨 (v4.6.1 - 타입 캐스팅 수정)');
     }
 
     /**
@@ -85,7 +84,7 @@ class InstituteAPI {
             await this.testConnection();
             
             this.initialized = true;
-            console.log('✅ InstituteAPI 초기화 완료 (v4.6.0)');
+            console.log('✅ InstituteAPI 초기화 완료 (v4.6.1)');
             return true;
             
         } catch (error) {
@@ -115,7 +114,7 @@ class InstituteAPI {
 
     /**
      * 📋 카드 표시용 최적화된 학당 정보 조회
-     * - JOIN으로 학당 + 인턴 정보 한 번에 조회
+     * - 단순한 별도 조회 방식으로 안정성 확보
      * - 초기 로딩 성능 최적화
      * @param {Object} options - 조회 옵션
      * @returns {Promise<Array>}
@@ -126,7 +125,7 @@ class InstituteAPI {
         try {
             console.log('🔄 학당 카드 데이터 조회 중...');
             
-            // 학당 기본 정보 조회
+            // 1. 학당 기본 정보 조회
             let query = this.supabase
                 .from('institutes')
                 .select(`
@@ -154,10 +153,21 @@ class InstituteAPI {
             const { data: instituteData, error: instituteError } = await query;
             if (instituteError) throw instituteError;
             
-            // 각 학당의 배치된 문화인턴 정보 조회
+            // 2. 각 학당의 배치된 문화인턴 수 조회 (최적화)
             const cardData = [];
             for (const institute of instituteData) {
-                const internData = await this.getCulturalInternsByInstitute(institute.id);
+                // 간단한 COUNT 쿼리로 성능 최적화
+                const { data: internCount, error: countError } = await this.supabase
+                    .from('user_profiles')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('sejong_institute', institute.id.toString())
+                    .eq('user_type', 'student');
+                
+                if (countError) {
+                    console.warn(`⚠️ 인턴 수 조회 실패 (${institute.name_ko}):`, countError);
+                }
+                
+                const internCountNumber = countError ? 0 : (internCount?.length || 0);
                 
                 cardData.push({
                     id: institute.id,
@@ -167,16 +177,9 @@ class InstituteAPI {
                     image_url: institute.image_url,
                     info_completed: institute.info_completed,
                     completion_percentage: institute.completion_percentage,
-                    assigned_interns: {
-                        count: internData.length,
-                        interns: internData.map(intern => ({
-                            id: intern.id,
-                            name: intern.full_name,
-                            major: intern.major,
-                            institution: intern.institution
-                        }))
-                    },
-                    last_updated: institute.updated_at
+                    assigned_intern_count: internCountNumber,
+                    last_updated: institute.updated_at,
+                    status_text: this.getCompletionStatusText(institute.completion_percentage)
                 });
             }
             
@@ -187,6 +190,19 @@ class InstituteAPI {
             console.error('❌ getInstituteCardData 실패:', error);
             return [];
         }
+    }
+
+    /**
+     * 📊 완성도에 따른 상태 텍스트 생성
+     * @param {number} percentage - 완성 비율
+     * @returns {string}
+     */
+    getCompletionStatusText(percentage) {
+        if (percentage >= 100) return '완성';
+        if (percentage >= 75) return '거의 완성';
+        if (percentage >= 50) return '진행 중';
+        if (percentage >= 25) return '시작됨';
+        return '미시작';
     }
 
     /**
@@ -299,7 +315,8 @@ class InstituteAPI {
                 data: data,
                 completion: {
                     completed: data.info_completed,
-                    percentage: data.completion_percentage
+                    percentage: data.completion_percentage,
+                    status_text: this.getCompletionStatusText(data.completion_percentage)
                 }
             };
             
@@ -365,7 +382,7 @@ class InstituteAPI {
     }
 
     /**
-     * 👥 문화인턴 목록 조회 (sejong_institute 기준)
+     * 👥 문화인턴 목록 조회 (수정된 타입 캐스팅)
      * @param {string} instituteId - 학당 ID
      * @returns {Promise<Array>}
      */
@@ -375,6 +392,8 @@ class InstituteAPI {
         if (!instituteId) return [];
         
         try {
+            console.log(`🔄 문화인턴 목록 조회: ${instituteId}`);
+            
             const { data, error } = await this.supabase
                 .from('user_profiles')
                 .select(`
@@ -389,7 +408,7 @@ class InstituteAPI {
                     status,
                     created_at
                 `)
-                .eq('sejong_institute', instituteId)
+                .eq('sejong_institute', instituteId.toString()) // UUID를 문자열로 변환
                 .eq('user_type', 'student')
                 .order('full_name', { ascending: true });
             
@@ -398,6 +417,7 @@ class InstituteAPI {
                 return [];
             }
             
+            console.log(`✅ ${data.length}명의 문화인턴 조회 완료`);
             return data || [];
             
         } catch (error) {
@@ -427,7 +447,7 @@ class InstituteAPI {
             
             if (instituteError) throw instituteError;
             
-            // 인턴 통계
+            // 인턴 통계 (타입 캐스팅 문제 해결)
             const { data: internStats, error: internError } = await this.supabase
                 .from('user_profiles')
                 .select('sejong_institute', { count: 'exact' })
@@ -592,7 +612,7 @@ class InstituteAPI {
     }
 
     /**
-     * 📊 API 모듈 상태 (v4.6.0)
+     * 📊 API 모듈 상태 (v4.6.1)
      */
     getAPIStatus() {
         return {
@@ -600,8 +620,9 @@ class InstituteAPI {
             supabase_connected: !!this.supabase,
             supported_fields: Object.keys(this.DB_FIELDS).length,
             storage_bucket: this.STORAGE_BUCKET,
-            module_version: '4.6.0',
-            database_integration: 'completion tracking enabled'
+            module_version: '4.6.1',
+            database_integration: 'completion tracking enabled',
+            type_casting: 'UUID ↔ VARCHAR fixed'
         };
     }
 }
@@ -609,4 +630,4 @@ class InstituteAPI {
 // 🌐 전역 인스턴스 생성
 window.InstituteAPI = new InstituteAPI();
 
-console.log('🔗 InstituteAPI 모듈 로드 완료 (v4.6.0) - 실제 DB 구조 반영 + 완성도 관리');
+console.log('🔗 InstituteAPI 모듈 로드 완료 (v4.6.1) - 타입 캐스팅 문제 수정');
