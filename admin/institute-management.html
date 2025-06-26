@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>파견학당 정보 관리 - 세종학당 문화인턴 지원 시스템 (D단계)</title>
+    <title>파견학당 정보 관리 - 세종학당 문화인턴 지원 시스템 (v4.5.1)</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.5.0">
-    <link rel="stylesheet" href="../css/institute.css?v=4.5.0">
+    <link rel="stylesheet" href="../css/main.css?v=4.5.1">
+    <link rel="stylesheet" href="../css/institute.css?v=4.5.1">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -21,11 +21,11 @@
         <div class="institute-header">
             <div class="institute-header-content">
                 <div class="institute-header-title">
-                    <h1>파견학당 정보 관리 (D단계)</h1>
+                    <h1>파견학당 정보 관리 (v4.5.1)</h1>
                     <p>세종학당의 15개 필드 정보를 체계적으로 관리하고 문화인턴 배정 현황을 확인할 수 있습니다.</p>
-                    <div class="alert alert-info">
-                        <i data-lucide="info"></i>
-                        <strong>D단계 통합 완료!</strong> 전체 시스템이 연동되어 실제 데이터 CRUD가 가능합니다.
+                    <div class="alert alert-success">
+                        <i data-lucide="check-circle"></i>
+                        <strong>v4.5.1 수정 완료!</strong> SupabaseCore API 불일치 문제가 해결되어 시스템이 정상적으로 동작합니다.
                     </div>
                 </div>
                 <button class="institute-btn institute-btn-secondary" onclick="goBackToDashboard()">
@@ -180,7 +180,7 @@
         </div>
     </div>
 
-    <!-- D단계: 완전 개선된 학당 정보 수정 모달 -->
+    <!-- 완전 개선된 학당 정보 수정 모달 -->
     <div class="institute-modal-overlay" id="institute-edit-modal" style="display: none;">
         <div class="institute-modal">
             <!-- 로딩 오버레이 -->
@@ -405,26 +405,26 @@
 
     <!-- JavaScript Files -->
     <!-- 1. 기본 설정 모듈 (의존성 순서 중요!) -->
-    <script src="../js/config.js?v=4.5.0"></script>
-    <script src="../js/auth.js?v=4.5.0"></script>
-    <script src="../js/utils.js?v=4.5.0"></script>
+    <script src="../js/config.js?v=4.5.1"></script>
+    <script src="../js/auth.js?v=4.5.1"></script>
+    <script src="../js/utils.js?v=4.5.1"></script>
     
     <!-- 2. Supabase 모듈들 -->
-    <script src="../js/supabase/supabase-core.js?v=4.5.0"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.5.0"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.5.0"></script>
-    <script src="../js/supabase-client.js?v=4.5.0"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.5.1"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.5.1"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.5.1"></script>
+    <script src="../js/supabase-client.js?v=4.5.1"></script>
 
     <!-- 3. Institute 전용 모듈들 (B단계) -->
-    <script src="../js/institute/institute-utils.js?v=4.5.0"></script>
-    <script src="../js/institute/institute-validation.js?v=4.5.0"></script>
-    <script src="../js/institute/institute-api.js?v=4.5.0"></script>
-    <script src="../js/institute/institute-core.js?v=4.5.0"></script>
-    <script src="../js/institute/institute-ui.js?v=4.5.0"></script>
+    <script src="../js/institute/institute-utils.js?v=4.5.1"></script>
+    <script src="../js/institute/institute-validation.js?v=4.5.1"></script>
+    <script src="../js/institute/institute-api.js?v=4.5.1"></script>
+    <script src="../js/institute/institute-core.js?v=4.5.1"></script>
+    <script src="../js/institute/institute-ui.js?v=4.5.1"></script>
 
     <script>
-        // 🏛️ D단계: 통합 학당 관리 시스템 (v4.5.0)
-        console.log('🏛️ 파견학당 정보 관리 시스템 D단계 v4.5.0 초기화');
+        // 🏛️ 파견학당 정보 관리 시스템 (v4.5.1)
+        console.log('🏛️ 파견학당 정보 관리 시스템 v4.5.1 초기화 - API 불일치 수정 완료');
 
         /**
          * 🔧 통합 매니저 클래스
@@ -447,7 +447,7 @@
                 if (this.isInitialized) return;
 
                 try {
-                    console.log('🔄 D단계 시스템 초기화 시작...');
+                    console.log('🔄 v4.5.1 시스템 초기화 시작 - API 수정사항 적용됨');
                     
                     // Lucide 아이콘 초기화
                     if (typeof lucide !== 'undefined') {
@@ -479,10 +479,10 @@
                     await this.loadInitialData();
 
                     this.isInitialized = true;
-                    console.log('✅ D단계 시스템 초기화 완료');
+                    console.log('✅ v4.5.1 시스템 초기화 완료 - 모든 모듈 정상 작동');
 
                 } catch (error) {
-                    console.error('❌ D단계 시스템 초기화 실패:', error);
+                    console.error('❌ v4.5.1 시스템 초기화 실패:', error);
                     this.showError(`시스템 초기화에 실패했습니다: ${error.message}`);
                     this.showErrorState(error.message);
                 }
@@ -521,7 +521,7 @@
                 while (Date.now() - startTime < timeout) {
                     const allLoaded = requiredModules.every(name => window[name]);
                     if (allLoaded) {
-                        console.log('✅ 모든 필수 모듈 로드 완료');
+                        console.log('✅ 모든 필수 모듈 로드 완료 (v4.5.1)');
                         return;
                     }
                     await new Promise(resolve => setTimeout(resolve, 100));
@@ -535,7 +535,7 @@
              * 🔧 모듈 초기화
              */
             async initializeModules() {
-                console.log('🔄 모듈 초기화 중...');
+                console.log('🔄 모듈 초기화 중... (v4.5.1 API 수정사항 포함)');
 
                 const modules = [
                     'InstituteUtils',
@@ -551,10 +551,11 @@
                         if (!success) {
                             throw new Error(`${moduleName} 초기화 실패`);
                         }
+                        console.log(`✅ ${moduleName} 초기화 완료`);
                     }
                 }
 
-                console.log('✅ 모든 모듈 초기화 완료');
+                console.log('✅ 모든 모듈 초기화 완료 (v4.5.1)');
             }
 
             /**
@@ -1689,14 +1690,14 @@
 
         // === DOMContentLoaded 이벤트 ===
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🏛️ 파견학당 정보 관리 시스템 D단계 v4.5.0 시작');
+            console.log('🏛️ 파견학당 정보 관리 시스템 v4.5.1 시작 - API 수정 완료');
             
             try {
                 await InstituteManager.initialize();
-                console.log('🎉 D단계 통합 완료! 시스템이 준비되었습니다.');
+                console.log('🎉 v4.5.1 시스템 준비 완료! API 불일치 문제 해결됨.');
                 
             } catch (error) {
-                console.error('💥 D단계 초기화 최종 실패:', error);
+                console.error('💥 v4.5.1 초기화 최종 실패:', error);
                 alert('시스템 초기화에 실패했습니다. 페이지를 새로고침하거나 관리자에게 문의하세요.');
             }
         });
@@ -1705,7 +1706,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.shiftKey && e.key === 'D') {
                 e.preventDefault();
-                console.log('🛠️ D단계 디버그 정보');
+                console.log('🛠️ v4.5.1 디버그 정보');
                 console.log('통합 매니저 상태:', {
                     initialized: InstituteManager.isInitialized,
                     currentView: InstituteManager.currentView,
@@ -1724,7 +1725,7 @@
             }
         });
 
-        console.log('🏛️ 파견학당 정보 관리 시스템 D단계 v4.5.0 스크립트 로드 완료');
+        console.log('🏛️ 파견학당 정보 관리 시스템 v4.5.1 스크립트 로드 완료 - API 수정사항 반영');
     </script>
 </body>
 </html>
