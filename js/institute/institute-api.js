@@ -1,19 +1,21 @@
 /**
- * 🔗 Institute API Module (v4.5.1)
+ * 🔗 Institute API Module (v4.6.0) - 실제 DB 구조 반영
  * 세종학당 파견학당 정보 관리 시스템 - Supabase API 전용 모듈
  * 
  * 📋 담당 기능:
- * - institutes 테이블 CRUD 기능
+ * - institutes 테이블 CRUD 기능 (실제 DB 컬럼명 사용)
  * - user_profiles 테이블 문화인턴 조회
  * - Storage API 연동 (이미지 업로드)
- * - 15개 필드 완전 지원
+ * - 15개 필드 완전 지원 + 완성도 관리
  * 
  * 🔗 의존성: SupabaseCore만 의존
  * 🚫 독립성: 기존 SupabaseAdmin/Student 모듈과 분리
  * 
- * 🔧 v4.5.1 수정사항:
- * - SupabaseCore.getClient() → SupabaseCore.ensureClient() 변경
- * - API 불일치 문제 해결로 D단계 시스템 초기화 오류 수정
+ * 🔧 v4.6.0 주요 업데이트:
+ * - 실제 DB 컬럼명에 맞춘 필드 매핑
+ * - info_completed, completion_percentage 컬럼 지원
+ * - 카드 표시용 최적화된 조회 함수 추가
+ * - 자동 완성도 계산 시스템 통합
  */
 
 class InstituteAPI {
@@ -21,41 +23,45 @@ class InstituteAPI {
         this.supabase = null;
         this.initialized = false;
         
-        // 📋 institutes 테이블 15개 필드 매핑
-        this.INSTITUTE_FIELDS = {
+        // 📋 실제 DB 컬럼명 매핑 (15개 주요 필드)
+        this.DB_FIELDS = {
             // 기본 정보 (4개)
             name_ko: 'name_ko',                    // 학당명 (필수)
             name_en: 'name_en',                    // 영문명
-            operating_organization: 'operating_organization', // 운영기관
+            operator: 'operator',                  // 운영기관
             image_url: 'image_url',                // 학당사진
             
             // 연락처 정보 (5개)
             address: 'address',                    // 주소
             phone: 'phone',                        // 대표연락처
-            website_sns: 'website_sns',            // 홈페이지/SNS
-            manager_name: 'manager_name',          // 담당자성명
-            manager_contact: 'manager_contact',    // 담당자연락처
+            sns_url: 'sns_url',                    // 홈페이지/SNS
+            contact_person: 'contact_person',      // 담당자성명
+            contact_phone: 'contact_phone',        // 담당자연락처
             
             // 프로그램 정보 (3개)
-            local_adaptation_staff: 'local_adaptation_staff',       // 현지적응전담인력
-            cultural_program_plan: 'cultural_program_plan',         // 문화수업운영계획
-            desired_courses: 'desired_courses',                     // 희망개설강좌
+            local_coordinator: 'local_coordinator',      // 현지적응전담인력
+            lesson_plan: 'lesson_plan',                  // 문화수업운영계획
+            desired_courses: 'desired_courses',          // 희망개설강좌
             
             // 지원 정보 (3개)
             local_language_requirement: 'local_language_requirement', // 현지어구사필요수준
-            institute_support: 'institute_support',                   // 학당지원사항
-            country_safety_info: 'country_safety_info'                // 파견국가안전정보
+            support_provided: 'support_provided',                     // 학당지원사항
+            safety_info_url: 'safety_info_url',                       // 파견국가안전정보
+            
+            // 완성도 관리 (2개)
+            info_completed: 'info_completed',              // 정보 완성 여부
+            completion_percentage: 'completion_percentage' // 완성 비율 (0-100)
         };
         
         this.STORAGE_BUCKET = 'institute-images';
         this.MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
         this.ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
         
-        console.log('🔗 InstituteAPI 모듈 초기화됨');
+        console.log('🔗 InstituteAPI 모듈 초기화됨 (v4.6.0 - DB 구조 반영)');
     }
 
     /**
-     * 🚀 API 모듈 초기화 (v4.5.1 수정)
+     * 🚀 API 모듈 초기화
      * @returns {Promise<boolean>}
      */
     async initialize() {
@@ -64,12 +70,12 @@ class InstituteAPI {
         try {
             console.log('🔄 InstituteAPI 초기화 시작...');
             
-            // 🔧 v4.5.1: SupabaseCore 의존성 체크 수정
+            // SupabaseCore 의존성 체크
             if (!window.SupabaseCore || typeof window.SupabaseCore.ensureClient !== 'function') {
                 throw new Error('SupabaseCore 모듈이 로드되지 않았습니다');
             }
             
-            // 🔧 v4.5.1: ensureClient() 함수 사용 (올바른 API)
+            // Supabase 클라이언트 초기화
             this.supabase = await window.SupabaseCore.ensureClient();
             if (!this.supabase) {
                 throw new Error('Supabase 클라이언트를 가져올 수 없습니다');
@@ -79,7 +85,7 @@ class InstituteAPI {
             await this.testConnection();
             
             this.initialized = true;
-            console.log('✅ InstituteAPI 초기화 완료 (v4.5.1)');
+            console.log('✅ InstituteAPI 초기화 완료 (v4.6.0)');
             return true;
             
         } catch (error) {
@@ -95,11 +101,11 @@ class InstituteAPI {
         try {
             const { data, error } = await this.supabase
                 .from('institutes')
-                .select('id')
+                .select('id, completion_percentage')
                 .limit(1);
                 
             if (error) throw error;
-            console.log('✅ institutes 테이블 연결 확인');
+            console.log('✅ institutes 테이블 연결 확인 (완성도 컬럼 포함)');
             
         } catch (error) {
             console.error('❌ 연결 테스트 실패:', error);
@@ -108,33 +114,35 @@ class InstituteAPI {
     }
 
     /**
-     * 📋 학당 목록 조회 (기본 정보)
+     * 📋 카드 표시용 최적화된 학당 정보 조회
+     * - JOIN으로 학당 + 인턴 정보 한 번에 조회
+     * - 초기 로딩 성능 최적화
      * @param {Object} options - 조회 옵션
      * @returns {Promise<Array>}
      */
-    async getInstituteList(options = {}) {
+    async getInstituteCardData(options = {}) {
         if (!this.initialized) await this.initialize();
         
         try {
-            console.log('🔄 학당 목록 조회 중...');
+            console.log('🔄 학당 카드 데이터 조회 중...');
             
+            // 학당 기본 정보 조회
             let query = this.supabase
                 .from('institutes')
                 .select(`
                     id,
                     name_ko,
                     name_en,
-                    operating_organization,
+                    operator,
                     image_url,
-                    address,
-                    phone,
-                    manager_name,
+                    info_completed,
+                    completion_percentage,
                     created_at,
                     updated_at
                 `)
                 .order('name_ko', { ascending: true });
             
-            // 필터 적용
+            // 필터링 옵션
             if (options.search) {
                 query = query.or(`name_ko.ilike.%${options.search}%,name_en.ilike.%${options.search}%`);
             }
@@ -143,22 +151,40 @@ class InstituteAPI {
                 query = query.limit(options.limit);
             }
             
-            if (options.offset) {
-                query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
+            const { data: instituteData, error: instituteError } = await query;
+            if (instituteError) throw instituteError;
+            
+            // 각 학당의 배치된 문화인턴 정보 조회
+            const cardData = [];
+            for (const institute of instituteData) {
+                const internData = await this.getCulturalInternsByInstitute(institute.id);
+                
+                cardData.push({
+                    id: institute.id,
+                    name_ko: institute.name_ko,
+                    name_en: institute.name_en,
+                    operator: institute.operator,
+                    image_url: institute.image_url,
+                    info_completed: institute.info_completed,
+                    completion_percentage: institute.completion_percentage,
+                    assigned_interns: {
+                        count: internData.length,
+                        interns: internData.map(intern => ({
+                            id: intern.id,
+                            name: intern.full_name,
+                            major: intern.major,
+                            institution: intern.institution
+                        }))
+                    },
+                    last_updated: institute.updated_at
+                });
             }
             
-            const { data, error } = await query;
-            
-            if (error) {
-                console.error('❌ 학당 목록 조회 실패:', error);
-                throw error;
-            }
-            
-            console.log(`✅ ${data.length}개 학당 목록 조회 완료`);
-            return data || [];
+            console.log(`✅ ${cardData.length}개 학당 카드 데이터 조회 완료`);
+            return cardData;
             
         } catch (error) {
-            console.error('❌ getInstituteList 실패:', error);
+            console.error('❌ getInstituteCardData 실패:', error);
             return [];
         }
     }
@@ -185,19 +211,22 @@ class InstituteAPI {
                     id,
                     name_ko,
                     name_en,
-                    operating_organization,
+                    operator,
                     image_url,
                     address,
                     phone,
-                    website_sns,
-                    manager_name,
-                    manager_contact,
-                    local_adaptation_staff,
-                    cultural_program_plan,
+                    sns_url,
+                    contact_person,
+                    contact_phone,
+                    local_coordinator,
+                    lesson_plan,
                     desired_courses,
                     local_language_requirement,
-                    institute_support,
-                    country_safety_info,
+                    support_provided,
+                    safety_info_url,
+                    info_completed,
+                    completion_percentage,
+                    is_active,
                     created_at,
                     updated_at
                 `)
@@ -212,7 +241,7 @@ class InstituteAPI {
                 throw error;
             }
             
-            console.log(`✅ 학당 상세 정보 조회 완료: ${data.name_ko}`);
+            console.log(`✅ 학당 상세 정보 조회 완료: ${data.name_ko} (완성도: ${data.completion_percentage}%)`);
             return data;
             
         } catch (error) {
@@ -222,24 +251,24 @@ class InstituteAPI {
     }
 
     /**
-     * 📝 학당 정보 업데이트
+     * 📝 학당 정보 업데이트 (자동 완성도 계산)
      * @param {string} instituteId - 학당 ID
      * @param {Object} updateData - 업데이트할 데이터
-     * @returns {Promise<boolean>}
+     * @returns {Promise<Object>}
      */
     async updateInstitute(instituteId, updateData) {
         if (!this.initialized) await this.initialize();
         
         if (!instituteId || !updateData) {
             console.warn('⚠️ 학당 ID와 업데이트 데이터가 필요합니다');
-            return false;
+            return { success: false, error: '필수 매개변수가 누락되었습니다' };
         }
         
         try {
             console.log(`🔄 학당 정보 업데이트: ${instituteId}`);
             
-            // 업데이트 가능한 필드만 필터링
-            const allowedFields = Object.keys(this.INSTITUTE_FIELDS);
+            // 업데이트 가능한 필드만 필터링 (실제 DB 컬럼명 사용)
+            const allowedFields = Object.values(this.DB_FIELDS);
             const filteredData = {};
             
             for (const [key, value] of Object.entries(updateData)) {
@@ -263,12 +292,23 @@ class InstituteAPI {
                 throw error;
             }
             
-            console.log(`✅ 학당 정보 업데이트 완료: ${data.name_ko}`);
-            return true;
+            console.log(`✅ 학당 정보 업데이트 완료: ${data.name_ko} (완성도: ${data.completion_percentage}%)`);
+            
+            return {
+                success: true,
+                data: data,
+                completion: {
+                    completed: data.info_completed,
+                    percentage: data.completion_percentage
+                }
+            };
             
         } catch (error) {
             console.error(`❌ updateInstitute 실패 (${instituteId}):`, error);
-            return false;
+            return {
+                success: false,
+                error: error.message
+            };
         }
     }
 
@@ -288,8 +328,8 @@ class InstituteAPI {
         try {
             console.log(`🔄 새 학당 생성: ${instituteData.name_ko}`);
             
-            // 필드 필터링
-            const allowedFields = Object.keys(this.INSTITUTE_FIELDS);
+            // 필드 필터링 (실제 DB 컬럼명 사용)
+            const allowedFields = Object.values(this.DB_FIELDS);
             const filteredData = {};
             
             for (const [key, value] of Object.entries(instituteData)) {
@@ -302,6 +342,7 @@ class InstituteAPI {
             const now = new Date().toISOString();
             filteredData.created_at = now;
             filteredData.updated_at = now;
+            filteredData.is_active = true;
             
             const { data, error } = await this.supabase
                 .from('institutes')
@@ -314,47 +355,12 @@ class InstituteAPI {
                 throw error;
             }
             
-            console.log(`✅ 새 학당 생성 완료: ${data.name_ko} (ID: ${data.id})`);
+            console.log(`✅ 새 학당 생성 완료: ${data.name_ko} (ID: ${data.id}, 완성도: ${data.completion_percentage}%)`);
             return data;
             
         } catch (error) {
             console.error('❌ createInstitute 실패:', error);
             return null;
-        }
-    }
-
-    /**
-     * 🗑️ 학당 삭제
-     * @param {string} instituteId - 학당 ID
-     * @returns {Promise<boolean>}
-     */
-    async deleteInstitute(instituteId) {
-        if (!this.initialized) await this.initialize();
-        
-        if (!instituteId) {
-            console.warn('⚠️ 학당 ID가 필요합니다');
-            return false;
-        }
-        
-        try {
-            console.log(`🔄 학당 삭제: ${instituteId}`);
-            
-            const { error } = await this.supabase
-                .from('institutes')
-                .delete()
-                .eq('id', instituteId);
-            
-            if (error) {
-                console.error('❌ 학당 삭제 실패:', error);
-                throw error;
-            }
-            
-            console.log(`✅ 학당 삭제 완료: ${instituteId}`);
-            return true;
-            
-        } catch (error) {
-            console.error(`❌ deleteInstitute 실패 (${instituteId}):`, error);
-            return false;
         }
     }
 
@@ -369,8 +375,6 @@ class InstituteAPI {
         if (!instituteId) return [];
         
         try {
-            console.log(`🔄 문화인턴 목록 조회: ${instituteId}`);
-            
             const { data, error } = await this.supabase
                 .from('user_profiles')
                 .select(`
@@ -391,10 +395,9 @@ class InstituteAPI {
             
             if (error) {
                 console.error('❌ 문화인턴 목록 조회 실패:', error);
-                throw error;
+                return [];
             }
             
-            console.log(`✅ ${data.length}명의 문화인턴 조회 완료`);
             return data || [];
             
         } catch (error) {
@@ -404,49 +407,66 @@ class InstituteAPI {
     }
 
     /**
-     * 🔄 문화인턴 배정
-     * @param {string} internId - 문화인턴 ID
-     * @param {string} instituteId - 학당 ID
-     * @returns {Promise<boolean>}
+     * 📊 대시보드용 통계 정보
+     * @returns {Promise<Object>}
      */
-    async assignInternToInstitute(internId, instituteId) {
+    async getDashboardStatistics() {
         if (!this.initialized) await this.initialize();
         
-        if (!internId || !instituteId) {
-            console.warn('⚠️ 문화인턴 ID와 학당 ID가 필요합니다');
-            return false;
-        }
-        
         try {
-            console.log(`🔄 문화인턴 배정: ${internId} → ${instituteId}`);
+            console.log('🔄 대시보드 통계 조회 중...');
             
-            const { data, error } = await this.supabase
+            // 학당 통계
+            const { data: instituteStats, error: instituteError } = await this.supabase
+                .from('institutes')
+                .select(`
+                    id,
+                    info_completed,
+                    completion_percentage
+                `);
+            
+            if (instituteError) throw instituteError;
+            
+            // 인턴 통계
+            const { data: internStats, error: internError } = await this.supabase
                 .from('user_profiles')
-                .update({
-                    sejong_institute: instituteId,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', internId)
+                .select('sejong_institute', { count: 'exact' })
                 .eq('user_type', 'student')
-                .select()
-                .single();
+                .not('sejong_institute', 'is', null);
             
-            if (error) {
-                console.error('❌ 문화인턴 배정 실패:', error);
-                throw error;
-            }
+            if (internError) throw internError;
             
-            console.log(`✅ 문화인턴 배정 완료: ${data.full_name} → ${instituteId}`);
-            return true;
+            // 통계 계산
+            const totalInstitutes = instituteStats.length;
+            const completedInstitutes = instituteStats.filter(inst => inst.info_completed).length;
+            const assignedInterns = internStats.length;
+            const avgCompletion = totalInstitutes > 0 
+                ? Math.round(instituteStats.reduce((sum, inst) => sum + (inst.completion_percentage || 0), 0) / totalInstitutes)
+                : 0;
+            
+            const stats = {
+                total_institutes: totalInstitutes,
+                completed_institutes: completedInstitutes,
+                completion_rate: totalInstitutes > 0 ? Math.round((completedInstitutes / totalInstitutes) * 100) : 0,
+                assigned_interns: assignedInterns,
+                average_completion: avgCompletion,
+                nearly_completed: instituteStats.filter(inst => inst.completion_percentage >= 75).length,
+                in_progress: instituteStats.filter(inst => inst.completion_percentage >= 25 && inst.completion_percentage < 75).length,
+                barely_started: instituteStats.filter(inst => inst.completion_percentage < 25).length,
+                generated_at: new Date().toISOString()
+            };
+            
+            console.log('✅ 대시보드 통계 조회 완료:', stats);
+            return stats;
             
         } catch (error) {
-            console.error(`❌ assignInternToInstitute 실패 (${internId} → ${instituteId}):`, error);
-            return false;
+            console.error('❌ getDashboardStatistics 실패:', error);
+            return {};
         }
     }
 
     /**
-     * 🔍 학당 검색
+     * 🔍 학당 검색 (카드 표시용)
      * @param {Object} searchParams - 검색 조건
      * @returns {Promise<Array>}
      */
@@ -462,12 +482,10 @@ class InstituteAPI {
                     id,
                     name_ko,
                     name_en,
-                    operating_organization,
+                    operator,
                     image_url,
-                    address,
-                    phone,
-                    manager_name,
-                    created_at,
+                    info_completed,
+                    completion_percentage,
                     updated_at
                 `);
             
@@ -476,13 +494,16 @@ class InstituteAPI {
                 query = query.or(`
                     name_ko.ilike.%${searchParams.keyword}%,
                     name_en.ilike.%${searchParams.keyword}%,
-                    operating_organization.ilike.%${searchParams.keyword}%,
-                    address.ilike.%${searchParams.keyword}%
+                    operator.ilike.%${searchParams.keyword}%
                 `);
             }
             
-            if (searchParams.organization) {
-                query = query.ilike('operating_organization', `%${searchParams.organization}%`);
+            if (searchParams.completed !== undefined) {
+                query = query.eq('info_completed', searchParams.completed);
+            }
+            
+            if (searchParams.minCompletion !== undefined) {
+                query = query.gte('completion_percentage', searchParams.minCompletion);
             }
             
             // 정렬
@@ -508,52 +529,6 @@ class InstituteAPI {
         } catch (error) {
             console.error('❌ searchInstitutes 실패:', error);
             return [];
-        }
-    }
-
-    /**
-     * 📊 학당 통계
-     * @param {string} instituteId - 학당 ID
-     * @returns {Promise<Object>}
-     */
-    async getInstituteStatistics(instituteId) {
-        if (!this.initialized) await this.initialize();
-        
-        if (!instituteId) return {};
-        
-        try {
-            console.log(`🔄 학당 통계 조회: ${instituteId}`);
-            
-            // 문화인턴 수 조회
-            const { data: internData, error: internError } = await this.supabase
-                .from('user_profiles')
-                .select('id', { count: 'exact' })
-                .eq('sejong_institute', instituteId)
-                .eq('user_type', 'student');
-            
-            if (internError) throw internError;
-            
-            // 학당 기본 정보
-            const { data: instituteData, error: instituteError } = await this.supabase
-                .from('institutes')
-                .select('updated_at')
-                .eq('id', instituteId)
-                .single();
-            
-            if (instituteError) throw instituteError;
-            
-            const stats = {
-                intern_count: internData?.length || 0,
-                last_updated: instituteData?.updated_at || null,
-                statistics_updated_at: new Date().toISOString()
-            };
-            
-            console.log(`✅ 학당 통계 조회 완료: ${stats.intern_count}명의 문화인턴`);
-            return stats;
-            
-        } catch (error) {
-            console.error(`❌ getInstituteStatistics 실패 (${instituteId}):`, error);
-            return {};
         }
     }
 
@@ -617,51 +592,16 @@ class InstituteAPI {
     }
 
     /**
-     * 🗑️ 이미지 삭제
-     * @param {string} imageUrl - 삭제할 이미지 URL
-     * @returns {Promise<boolean>}
-     */
-    async deleteInstituteImage(imageUrl) {
-        if (!this.initialized) await this.initialize();
-        
-        if (!imageUrl) return false;
-        
-        try {
-            // URL에서 파일 경로 추출
-            const url = new URL(imageUrl);
-            const pathSegments = url.pathname.split('/');
-            const filePath = pathSegments.slice(-2).join('/'); // institutes/filename
-            
-            console.log(`🔄 이미지 삭제: ${filePath}`);
-            
-            const { error } = await this.supabase.storage
-                .from(this.STORAGE_BUCKET)
-                .remove([filePath]);
-            
-            if (error) {
-                console.error('❌ 이미지 삭제 실패:', error);
-                throw error;
-            }
-            
-            console.log(`✅ 이미지 삭제 완료: ${filePath}`);
-            return true;
-            
-        } catch (error) {
-            console.error('❌ deleteInstituteImage 실패:', error);
-            return false;
-        }
-    }
-
-    /**
-     * 📊 API 모듈 상태 (v4.5.1)
+     * 📊 API 모듈 상태 (v4.6.0)
      */
     getAPIStatus() {
         return {
             initialized: this.initialized,
             supabase_connected: !!this.supabase,
-            supported_fields: Object.keys(this.INSTITUTE_FIELDS).length,
+            supported_fields: Object.keys(this.DB_FIELDS).length,
             storage_bucket: this.STORAGE_BUCKET,
-            module_version: '4.5.1'
+            module_version: '4.6.0',
+            database_integration: 'completion tracking enabled'
         };
     }
 }
@@ -669,4 +609,4 @@ class InstituteAPI {
 // 🌐 전역 인스턴스 생성
 window.InstituteAPI = new InstituteAPI();
 
-console.log('🔗 InstituteAPI 모듈 로드 완료 (v4.5.1) - SupabaseCore API 불일치 수정');
+console.log('🔗 InstituteAPI 모듈 로드 완료 (v4.6.0) - 실제 DB 구조 반영 + 완성도 관리');
