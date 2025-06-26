@@ -1,5 +1,5 @@
 /**
- * ✅ Institute Validation Module (v4.7.0) - 새로운 필드 검증 추가
+ * ✅ Institute Validation Module (v4.7.1) - contact_phone 검증 완화
  * 세종학당 파견학당 정보 관리 시스템 - 데이터 검증 모듈
  * 
  * 📋 담당 기능:
@@ -12,17 +12,16 @@
  * 🔗 의존성: Utils만 의존 (독립적 설계)
  * 🚫 독립성: 완전히 독립적인 검증 모듈
  * 
- * 🔧 v4.7.0 수정사항:
- * - local_coordinator_phone 필드 검증 규칙 추가
- * - education_environment 필드 검증 규칙 추가 (JSONB 타입)
- * - 17개 필드 지원으로 확장
+ * 🔧 v4.7.1 수정사항:
+ * - contact_phone 필드 검증 완화: 자유로운 텍스트 입력 허용
+ * - 전화번호 형태 강제 검증 제거
  */
 
 class InstituteValidation {
     constructor() {
         this.initialized = false;
         
-        // 📋 17개 필드 검증 규칙 (v4.7.0 - 2개 필드 추가)
+        // 📋 17개 필드 검증 규칙 (v4.7.1 - contact_phone 검증 완화)
         this.VALIDATION_RULES = {
             // 기본 정보 (4개)
             name_ko: {
@@ -64,7 +63,7 @@ class InstituteValidation {
                 }
             },
             
-            // 연락처 정보 (7개) - local_coordinator_phone 추가
+            // 연락처 정보 (7개) - contact_phone 검증 완화
             address: {
                 required: false,
                 type: 'string',
@@ -101,10 +100,11 @@ class InstituteValidation {
             },
             contact_phone: {
                 required: false,
-                type: 'contact',
-                pattern: /^[0-9+\-\s\(\)\.@a-zA-Z]{8,100}$/,
+                type: 'string',
+                maxLength: 200,
+                // 패턴 제거 - 자유로운 텍스트 입력 허용
                 errorMessages: {
-                    pattern: '올바른 연락처 형식이 아닙니다. (전화번호 또는 이메일 형식)',
+                    maxLength: '대표 연락처는 최대 200자까지 입력 가능합니다.',
                 }
             },
             local_coordinator: {
@@ -120,7 +120,7 @@ class InstituteValidation {
             local_coordinator_phone: {
                 required: false,
                 type: 'contact',
-                pattern: /^[0-9+\-\s\(\)\.@a-zA-Z]{8,100}$/,
+                pattern: /^[0-9+\-\s\(\)\.\@a-zA-Z]{8,100}$/,
                 errorMessages: {
                     pattern: '올바른 현지 적응 전담 인력 연락처 형식이 아닙니다. (전화번호 또는 이메일 형식)',
                 }
@@ -200,7 +200,7 @@ class InstituteValidation {
             fieldErrors: new Map()
         };
         
-        console.log('✅ InstituteValidation 모듈 초기화됨 (v4.7.0)');
+        console.log('✅ InstituteValidation 모듈 초기화됨 (v4.7.1)');
     }
 
     /**
@@ -217,7 +217,7 @@ class InstituteValidation {
             this.validateRules();
             
             this.initialized = true;
-            console.log('✅ InstituteValidation 초기화 완료 (v4.7.0)');
+            console.log('✅ InstituteValidation 초기화 완료 (v4.7.1)');
             return true;
             
         } catch (error) {
@@ -423,11 +423,13 @@ class InstituteValidation {
                 result.errors.push(...patternResult.errors);
             }
             
-            // 사용자 정의 검증
-            const customResult = this.validateCustomRules(fieldName, processedValue, rule);
-            if (!customResult.isValid) {
-                result.isValid = false;
-                result.errors.push(...customResult.errors);
+            // 사용자 정의 검증 (contact_phone 제외)
+            if (fieldName !== 'contact_phone') {
+                const customResult = this.validateCustomRules(fieldName, processedValue, rule);
+                if (!customResult.isValid) {
+                    result.isValid = false;
+                    result.errors.push(...customResult.errors);
+                }
             }
             
         } catch (error) {
@@ -672,13 +674,13 @@ class InstituteValidation {
     }
 
     /**
-     * 🔧 사용자 정의 검증
+     * 🔧 사용자 정의 검증 (contact_phone 제외)
      */
     validateCustomRules(fieldName, value, rule) {
         const result = { isValid: true, errors: [] };
         
-        // 연락처 특별 검증 (담당자 연락처, 현지 적응 전담 인력 연락처)
-        if ((fieldName === 'contact_phone' || fieldName === 'local_coordinator_phone') && typeof value === 'string') {
+        // 현지 적응 전담 인력 연락처 특별 검증만 유지
+        if (fieldName === 'local_coordinator_phone' && typeof value === 'string') {
             const isEmail = this.CUSTOM_VALIDATORS.email.test(value);
             const isPhone = this.CUSTOM_VALIDATORS.phone_intl.test(value) || 
                           this.CUSTOM_VALIDATORS.phone_kr.test(value);
@@ -867,15 +869,15 @@ class InstituteValidation {
     }
 
     /**
-     * 📊 검증 모듈 상태 (v4.7.0)
+     * 📊 검증 모듈 상태 (v4.7.1)
      */
     getValidationStatus() {
         return {
             initialized: this.initialized,
             supported_fields: Object.keys(this.VALIDATION_RULES).length,
             validation_stats: this.getValidationStats(),
-            module_version: '4.7.0',
-            new_fields: ['local_coordinator_phone', 'education_environment'],
+            module_version: '4.7.1',
+            contact_phone_validation: 'relaxed', // v4.7.1 변경사항
             json_validation_support: true
         };
     }
@@ -884,4 +886,4 @@ class InstituteValidation {
 // 🌐 전역 인스턴스 생성
 window.InstituteValidation = new InstituteValidation();
 
-console.log('✅ InstituteValidation 모듈 로드 완료 (v4.7.0) - 17개 필드 검증 지원 (새로운 필드 추가)');
+console.log('✅ InstituteValidation 모듈 로드 완료 (v4.7.1) - contact_phone 검증 완화');
