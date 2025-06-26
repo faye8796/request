@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>파견학당 정보 관리 - 세종학당 문화인턴 지원 시스템 (v4.6.3)</title>
+    <title>파견학당 정보 관리 - 세종학당 문화인턴 지원 시스템 (v4.7.0)</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.6.3">
-    <link rel="stylesheet" href="../css/institute.css?v=4.6.3">
+    <link rel="stylesheet" href="../css/main.css?v=4.7.0">
+    <link rel="stylesheet" href="../css/institute.css?v=4.7.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -21,11 +21,11 @@
         <div class="institute-header">
             <div class="institute-header-content">
                 <div class="institute-header-title">
-                    <h1>파견학당 정보 관리 (v4.6.3)</h1>
-                    <p>세종학당의 15개 필드 정보를 체계적으로 관리하고 문화인턴 배정 현황을 확인할 수 있습니다.</p>
+                    <h1>파견학당 정보 관리 (v4.7.0)</h1>
+                    <p>세종학당의 17개 필드 정보를 체계적으로 관리하고 문화인턴 배정 현황을 확인할 수 있습니다.</p>
                     <div class="alert alert-success">
                         <i data-lucide="check-circle"></i>
-                        <strong>v4.6.3 UI 개선!</strong> 그리드 타입을 제거하고 필요한 정보만 표시하도록 단순화되었습니다.
+                        <strong>v4.7.0 고도화!</strong> 현지 적응 전담 인력 연락처와 교육 환경 정보 필드가 추가되었습니다.
                     </div>
                 </div>
                 <button class="institute-btn institute-btn-secondary" onclick="goBackToDashboard()">
@@ -206,7 +206,7 @@
                             </div>
                             <div class="institute-form-group">
                                 <label class="institute-form-label" for="edit-operating-organization">운영 기관</label>
-                                <input type="text" class="institute-form-input" id="edit-operating-organization" name="operating_organization">
+                                <input type="text" class="institute-form-input" id="edit-operating-organization" name="operator">
                                 <div class="institute-form-help">학당을 운영하는 기관명</div>
                                 <div class="institute-form-error" id="error-operating-organization" style="display: none;"></div>
                             </div>
@@ -245,21 +245,41 @@
                             </div>
                             <div class="institute-form-group">
                                 <label class="institute-form-label" for="edit-website-sns">홈페이지 또는 SNS</label>
-                                <input type="url" class="institute-form-input" id="edit-website-sns" name="website_sns">
+                                <input type="url" class="institute-form-input" id="edit-website-sns" name="sns_url">
                                 <div class="institute-form-help">학당의 웹사이트 또는 SNS 주소</div>
                                 <div class="institute-form-error" id="error-website-sns" style="display: none;"></div>
                             </div>
                             <div class="institute-form-group">
                                 <label class="institute-form-label" for="edit-manager-name">담당자 성명</label>
-                                <input type="text" class="institute-form-input" id="edit-manager-name" name="manager_name">
+                                <input type="text" class="institute-form-input" id="edit-manager-name" name="contact_person">
                                 <div class="institute-form-help">학당 담당자의 성명</div>
                                 <div class="institute-form-error" id="error-manager-name" style="display: none;"></div>
                             </div>
                             <div class="institute-form-group">
                                 <label class="institute-form-label" for="edit-manager-contact">담당자 연락처</label>
-                                <input type="text" class="institute-form-input" id="edit-manager-contact" name="manager_contact">
+                                <input type="text" class="institute-form-input" id="edit-manager-contact" name="contact_phone">
                                 <div class="institute-form-help">담당자의 전화번호 또는 이메일</div>
                                 <div class="institute-form-error" id="error-manager-contact" style="display: none;"></div>
+                            </div>
+                            
+                            <!-- 현지 적응 전담 인력 정보 (연락처 정보 섹션으로 이동) -->
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-local-coordinator">현지 적응 전담 인력</label>
+                                <input type="text" class="institute-form-input" id="edit-local-coordinator" name="local_coordinator">
+                                <div class="institute-form-help">현지 적응을 도와주는 전담 인력 성명</div>
+                                <div class="institute-form-error" id="error-local-coordinator" style="display: none;"></div>
+                            </div>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-local-coordinator-contact">현지 적응 전담 인력 연락처</label>
+                                <div class="institute-form-checkbox-group">
+                                    <label class="institute-form-checkbox">
+                                        <input type="checkbox" id="coordinator-same-as-manager">
+                                        담당자와 동일
+                                    </label>
+                                </div>
+                                <input type="text" class="institute-form-input" id="edit-local-coordinator-contact" name="local_coordinator_phone">
+                                <div class="institute-form-help">현지 적응 전담 인력의 전화번호 또는 이메일</div>
+                                <div class="institute-form-error" id="error-local-coordinator-contact" style="display: none;"></div>
                             </div>
                         </div>
 
@@ -270,18 +290,13 @@
                                 프로그램 정보
                             </h3>
                             <div class="institute-form-group">
-                                <label class="institute-form-label" for="edit-local-adaptation-staff">현지 적응 전담 인력</label>
-                                <textarea class="institute-form-textarea" id="edit-local-adaptation-staff" name="local_adaptation_staff" rows="4"></textarea>
-                                <div class="institute-form-help">현지 적응을 도와주는 전담 인력 정보</div>
-                                <div class="institute-form-error" id="error-local-adaptation-staff" style="display: none;"></div>
-                            </div>
-                            <div class="institute-form-group">
                                 <label class="institute-form-label" for="edit-cultural-program-plan">문화수업 운영 계획</label>
-                                <textarea class="institute-form-textarea" id="edit-cultural-program-plan" name="cultural_program_plan" rows="4"></textarea>
+                                <textarea class="institute-form-textarea" id="edit-cultural-program-plan" name="lesson_plan" rows="4"></textarea>
                                 <div class="institute-form-help">문화 수업 운영 계획 및 내용</div>
                                 <div class="institute-form-error" id="error-cultural-program-plan" style="display: none;"></div>
                             </div>
-                            <!-- 테이블 형식 입력 UI -->
+                            
+                            <!-- 희망 개설 강좌 테이블 -->
                             <div class="institute-form-group">
                                 <label class="institute-form-label" for="edit-desired-courses">희망 개설 강좌</label>
                                 <div class="institute-table-input" id="desired-courses-table">
@@ -310,6 +325,35 @@
                                 <div class="institute-form-help">개설하고자 하는 강좌 목록 (최대 10개)</div>
                                 <div class="institute-form-error" id="error-desired-courses" style="display: none;"></div>
                             </div>
+
+                            <!-- 교육 환경 정보 (새로 추가) -->
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-education-environment">교육 환경 정보</label>
+                                <div class="institute-table-input" id="education-environment-table">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>강의 주제</th>
+                                                <th>교육 장소</th>
+                                                <th>학당 교구 및 기자재</th>
+                                                <th>작업</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="education-environment-table-body">
+                                            <!-- 교육 환경 행들이 동적으로 생성됩니다 -->
+                                        </tbody>
+                                    </table>
+                                    <div class="institute-table-add-row">
+                                        <button type="button" class="institute-table-add-btn" id="add-education-environment-btn">
+                                            <i data-lucide="plus"></i>
+                                            교육 환경 추가
+                                        </button>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="edit-education-environment" name="education_environment">
+                                <div class="institute-form-help">교육 환경 및 교구 관련 정보 (최대 10개)</div>
+                                <div class="institute-form-error" id="error-education-environment" style="display: none;"></div>
+                            </div>
                         </div>
 
                         <!-- 지원 정보 그룹 -->
@@ -326,13 +370,13 @@
                             </div>
                             <div class="institute-form-group">
                                 <label class="institute-form-label" for="edit-institute-support">학당 지원 사항</label>
-                                <textarea class="institute-form-textarea" id="edit-institute-support" name="institute_support" rows="4"></textarea>
+                                <textarea class="institute-form-textarea" id="edit-institute-support" name="support_provided" rows="4"></textarea>
                                 <div class="institute-form-help">학당에서 제공하는 지원 사항</div>
                                 <div class="institute-form-error" id="error-institute-support" style="display: none;"></div>
                             </div>
                             <div class="institute-form-group">
                                 <label class="institute-form-label" for="edit-country-safety-info">파견 국가 안전 정보</label>
-                                <input type="url" class="institute-form-input" id="edit-country-safety-info" name="country_safety_info">
+                                <input type="url" class="institute-form-input" id="edit-country-safety-info" name="safety_info_url">
                                 <div class="institute-form-help">파견 국가의 안전 관련 정보 URL</div>
                                 <div class="institute-form-error" id="error-country-safety-info" style="display: none;"></div>
                             </div>
@@ -388,29 +432,29 @@
 
     <!-- JavaScript Files -->
     <!-- 1. 기본 설정 모듈 (의존성 순서 중요!) -->
-    <script src="../js/config.js?v=4.6.3"></script>
-    <script src="../js/auth.js?v=4.6.3"></script>
-    <script src="../js/utils.js?v=4.6.3"></script>
+    <script src="../js/config.js?v=4.7.0"></script>
+    <script src="../js/auth.js?v=4.7.0"></script>
+    <script src="../js/utils.js?v=4.7.0"></script>
     
     <!-- 2. Supabase 모듈들 -->
-    <script src="../js/supabase/supabase-core.js?v=4.6.3"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.6.3"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.6.3"></script>
-    <script src="../js/supabase-client.js?v=4.6.3"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.7.0"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.7.0"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.7.0"></script>
+    <script src="../js/supabase-client.js?v=4.7.0"></script>
 
     <!-- 3. Institute 전용 모듈들 -->
-    <script src="../js/institute/institute-utils.js?v=4.6.3"></script>
-    <script src="../js/institute/institute-validation.js?v=4.6.3"></script>
-    <script src="../js/institute/institute-api.js?v=4.6.3"></script>
-    <script src="../js/institute/institute-core.js?v=4.6.3"></script>
-    <script src="../js/institute/institute-ui.js?v=4.6.3"></script>
+    <script src="../js/institute/institute-utils.js?v=4.7.0"></script>
+    <script src="../js/institute/institute-validation.js?v=4.7.0"></script>
+    <script src="../js/institute/institute-api.js?v=4.7.0"></script>
+    <script src="../js/institute/institute-core.js?v=4.7.0"></script>
+    <script src="../js/institute/institute-ui.js?v=4.7.0"></script>
 
     <script>
-        // 🏛️ 파견학당 정보 관리 시스템 (v4.6.3) - UI 개선
-        console.log('🏛️ 파견학당 정보 관리 시스템 v4.6.3 초기화 - UI 단순화 개선');
+        // 🏛️ 파견학당 정보 관리 시스템 (v4.7.0) - 새로운 필드 추가
+        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.0 초기화 - 새로운 필드 추가');
 
         /**
-         * 🔧 통합 매니저 클래스 (v4.6.3)
+         * 🔧 통합 매니저 클래스 (v4.7.0)
          */
         class InstituteManagerD {
             constructor() {
@@ -418,6 +462,7 @@
                 this.currentView = 'list'; // 단일 뷰: list만 지원
                 this.validationState = {};
                 this.coursesData = [];
+                this.educationEnvironmentData = []; // 새로 추가
                 this.isInitialized = false;
                 this.retryCount = 0;
                 this.maxRetries = 3;
@@ -430,7 +475,7 @@
                 if (this.isInitialized) return;
 
                 try {
-                    console.log('🔄 v4.6.3 시스템 초기화 시작 - UI 단순화 적용');
+                    console.log('🔄 v4.7.0 시스템 초기화 시작 - 새로운 필드 지원');
                     
                     // Lucide 아이콘 초기화
                     if (typeof lucide !== 'undefined') {
@@ -455,17 +500,23 @@
                     // 강좌 테이블 시스템 초기화
                     this.initializeCourseTableSystem();
 
+                    // 교육 환경 테이블 시스템 초기화 (새로 추가)
+                    this.initializeEducationEnvironmentTableSystem();
+
                     // 이미지 업로드 시스템 초기화
                     this.setupImageUpload();
+
+                    // 현지 적응 전담 인력 체크박스 이벤트 (새로 추가)
+                    this.setupCoordinatorSameAsManagerCheckbox();
 
                     // 초기 데이터 로드
                     await this.loadInitialData();
 
                     this.isInitialized = true;
-                    console.log('✅ v4.6.3 시스템 초기화 완료 - 리스트 단일 뷰 적용');
+                    console.log('✅ v4.7.0 시스템 초기화 완료 - 새로운 필드 완전 지원');
 
                 } catch (error) {
-                    console.error('❌ v4.6.3 시스템 초기화 실패:', error);
+                    console.error('❌ v4.7.0 시스템 초기화 실패:', error);
                     this.showError(`시스템 초기화에 실패했습니다: ${error.message}`);
                     this.showErrorState(error.message);
                 }
@@ -504,7 +555,7 @@
                 while (Date.now() - startTime < timeout) {
                     const allLoaded = requiredModules.every(name => window[name]);
                     if (allLoaded) {
-                        console.log('✅ 모든 필수 모듈 로드 완료 (v4.6.3)');
+                        console.log('✅ 모든 필수 모듈 로드 완료 (v4.7.0)');
                         return;
                     }
                     await new Promise(resolve => setTimeout(resolve, 100));
@@ -518,7 +569,7 @@
              * 🔧 모듈 초기화
              */
             async initializeModules() {
-                console.log('🔄 모듈 초기화 중... (v4.6.3 UI 개선 포함)');
+                console.log('🔄 모듈 초기화 중... (v4.7.0 새로운 필드 포함)');
 
                 const modules = [
                     'InstituteUtils',
@@ -538,11 +589,11 @@
                     }
                 }
 
-                console.log('✅ 모든 모듈 초기화 완료 (v4.6.3)');
+                console.log('✅ 모든 모듈 초기화 완료 (v4.7.0)');
             }
 
             /**
-             * 📡 이벤트 리스너 설정 (v4.6.3 단순화)
+             * 📡 이벤트 리스너 설정 (v4.7.0)
              */
             setupEventListeners() {
                 // 검색 기능
@@ -569,7 +620,64 @@
                 // 리스트 이벤트 위임
                 document.getElementById('institute-table-body')?.addEventListener('click', this.handleTableClick.bind(this));
 
-                console.log('📡 이벤트 리스너 설정 완료 (v4.6.3 단순화)');
+                console.log('📡 이벤트 리스너 설정 완료 (v4.7.0)');
+            }
+
+            /**
+             * 👥 현지 적응 전담 인력 '담당자와 동일' 체크박스 이벤트 (새로 추가)
+             */
+            setupCoordinatorSameAsManagerCheckbox() {
+                const checkbox = document.getElementById('coordinator-same-as-manager');
+                if (!checkbox) return;
+
+                checkbox.addEventListener('change', (e) => {
+                    const managerName = document.getElementById('edit-manager-name');
+                    const managerContact = document.getElementById('edit-manager-contact');
+                    const coordinatorName = document.getElementById('edit-local-coordinator');
+                    const coordinatorContact = document.getElementById('edit-local-coordinator-contact');
+
+                    if (e.target.checked) {
+                        // 담당자 정보를 현지 적응 전담 인력 정보로 복사
+                        if (managerName && coordinatorName) {
+                            coordinatorName.value = managerName.value;
+                        }
+                        if (managerContact && coordinatorContact) {
+                            coordinatorContact.value = managerContact.value;
+                        }
+                        
+                        // 현지 적응 전담 인력 필드 비활성화
+                        if (coordinatorName) coordinatorName.disabled = true;
+                        if (coordinatorContact) coordinatorContact.disabled = true;
+                    } else {
+                        // 필드 활성화
+                        if (coordinatorName) coordinatorName.disabled = false;
+                        if (coordinatorContact) coordinatorContact.disabled = false;
+                    }
+                });
+
+                // 담당자 필드 변경 시 자동 업데이트
+                const managerName = document.getElementById('edit-manager-name');
+                const managerContact = document.getElementById('edit-manager-contact');
+                
+                if (managerName) {
+                    managerName.addEventListener('input', () => {
+                        if (checkbox.checked) {
+                            const coordinatorName = document.getElementById('edit-local-coordinator');
+                            if (coordinatorName) coordinatorName.value = managerName.value;
+                        }
+                    });
+                }
+
+                if (managerContact) {
+                    managerContact.addEventListener('input', () => {
+                        if (checkbox.checked) {
+                            const coordinatorContact = document.getElementById('edit-local-coordinator-contact');
+                            if (coordinatorContact) coordinatorContact.value = managerContact.value;
+                        }
+                    });
+                }
+
+                console.log('✅ 현지 적응 전담 인력 체크박스 이벤트 설정 완료');
             }
 
             /**
@@ -596,7 +704,7 @@
                     this.updateStatistics(institutes);
                     
                     this.showLoading(false);
-                    console.log('✅ 초기 데이터 로드 완료 (v4.6.3)');
+                    console.log('✅ 초기 데이터 로드 완료 (v4.7.0)');
                     
                 } catch (error) {
                     console.error('❌ 초기 데이터 로드 실패:', error);
@@ -770,14 +878,14 @@
             }
 
             /**
-             * 📝 수정 폼 데이터 채우기
+             * 📝 수정 폼 데이터 채우기 (v4.7.0 - 새로운 필드 지원)
              */
             populateEditForm(institute) {
                 const fields = [
-                    'name_ko', 'name_en', 'operating_organization', 'address', 'phone', 
-                    'website_sns', 'manager_name', 'manager_contact', 'local_adaptation_staff',
-                    'cultural_program_plan', 'local_language_requirement', 'institute_support',
-                    'country_safety_info'
+                    'name_ko', 'name_en', 'operator', 'address', 'phone', 
+                    'sns_url', 'contact_person', 'contact_phone', 'local_coordinator',
+                    'local_coordinator_phone', 'lesson_plan', 'local_language_requirement', 
+                    'support_provided', 'safety_info_url'
                 ];
                 
                 fields.forEach(fieldName => {
@@ -799,10 +907,35 @@
 
                 // 강좌 데이터 로드
                 this.loadCoursesData(institute.desired_courses);
+
+                // 교육 환경 데이터 로드 (새로 추가)
+                this.loadEducationEnvironmentData(institute.education_environment);
+
+                // 담당자와 동일 체크박스 상태 확인
+                this.checkCoordinatorSameAsManager();
             }
 
             /**
-             * 💾 학당 정보 저장
+             * 👥 담당자와 현지 적응 전담 인력 정보가 동일한지 확인 (새로 추가)
+             */
+            checkCoordinatorSameAsManager() {
+                const managerName = document.getElementById('edit-manager-name')?.value || '';
+                const managerContact = document.getElementById('edit-manager-contact')?.value || '';
+                const coordinatorName = document.getElementById('edit-local-coordinator')?.value || '';
+                const coordinatorContact = document.getElementById('edit-local-coordinator-contact')?.value || '';
+                
+                const checkbox = document.getElementById('coordinator-same-as-manager');
+                if (checkbox && managerName && managerContact && 
+                    managerName === coordinatorName && managerContact === coordinatorContact) {
+                    checkbox.checked = true;
+                    // 필드 비활성화
+                    document.getElementById('edit-local-coordinator').disabled = true;
+                    document.getElementById('edit-local-coordinator-contact').disabled = true;
+                }
+            }
+
+            /**
+             * 💾 학당 정보 저장 (v4.7.0 - 새로운 필드 포함)
              */
             async saveInstituteData() {
                 if (!this.currentInstitute) return;
@@ -829,6 +962,18 @@
                     const imageUrl = document.getElementById('edit-image-url')?.value;
                     if (imageUrl) {
                         updateData.image_url = imageUrl;
+                    }
+
+                    // 강좌 데이터 추가
+                    const coursesData = this.getCoursesJsonData();
+                    if (coursesData) {
+                        updateData.desired_courses = coursesData;
+                    }
+
+                    // 교육 환경 데이터 추가 (새로 추가)
+                    const educationEnvironmentData = this.getEducationEnvironmentJsonData();
+                    if (educationEnvironmentData) {
+                        updateData.education_environment = educationEnvironmentData;
                     }
 
                     // 데이터 업데이트
@@ -944,8 +1089,145 @@
                 }
             }
 
-            // === 나머지 메서드들은 기존과 동일하므로 생략 ===
-            // (실시간 검증, 강좌 테이블, 이미지 업로드, 모달 관리, 유틸리티 함수들)
+            // === 교육 환경 테이블 시스템 (새로 추가) ===
+            initializeEducationEnvironmentTableSystem() {
+                const addBtn = document.getElementById('add-education-environment-btn');
+                if (addBtn) {
+                    addBtn.addEventListener('click', this.addEducationEnvironmentRow.bind(this));
+                }
+
+                this.addEducationEnvironmentRow();
+                console.log('✅ 교육 환경 테이블 시스템 초기화 완료');
+            }
+
+            addEducationEnvironmentRow() {
+                const tableBody = document.getElementById('education-environment-table-body');
+                if (!tableBody) return;
+
+                const rowIndex = this.educationEnvironmentData.length;
+                if (rowIndex >= 10) {
+                    this.showError('최대 10개의 교육 환경 정보만 추가할 수 있습니다.');
+                    return;
+                }
+
+                const environmentData = { topic: '', location: '', equipment: '' };
+                this.educationEnvironmentData.push(environmentData);
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <input type="text" placeholder="강의 주제" value="${environmentData.topic}" 
+                               oninput="InstituteManager.updateEducationEnvironmentData(${rowIndex}, 'topic', this.value)">
+                    </td>
+                    <td>
+                        <input type="text" placeholder="교육 장소" value="${environmentData.location}" 
+                               oninput="InstituteManager.updateEducationEnvironmentData(${rowIndex}, 'location', this.value)">
+                    </td>
+                    <td>
+                        <input type="text" placeholder="학당 교구 및 기자재" value="${environmentData.equipment}" 
+                               oninput="InstituteManager.updateEducationEnvironmentData(${rowIndex}, 'equipment', this.value)">
+                    </td>
+                    <td>
+                        <button type="button" class="institute-table-remove-btn" onclick="InstituteManager.removeEducationEnvironmentRow(${rowIndex})">
+                            <i data-lucide="trash-2"></i>
+                        </button>
+                    </td>
+                `;
+
+                tableBody.appendChild(row);
+
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+
+                this.updateEducationEnvironmentHiddenInput();
+            }
+
+            updateEducationEnvironmentData(index, field, value) {
+                if (this.educationEnvironmentData[index]) {
+                    this.educationEnvironmentData[index][field] = value;
+                    this.updateEducationEnvironmentHiddenInput();
+                }
+            }
+
+            removeEducationEnvironmentRow(index) {
+                this.educationEnvironmentData.splice(index, 1);
+                this.renderEducationEnvironmentTable();
+                this.updateEducationEnvironmentHiddenInput();
+            }
+
+            renderEducationEnvironmentTable() {
+                const tableBody = document.getElementById('education-environment-table-body');
+                if (!tableBody) return;
+
+                tableBody.innerHTML = '';
+                this.educationEnvironmentData.forEach((environment, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <input type="text" placeholder="강의 주제" value="${environment.topic}" 
+                                   oninput="InstituteManager.updateEducationEnvironmentData(${index}, 'topic', this.value)">
+                        </td>
+                        <td>
+                            <input type="text" placeholder="교육 장소" value="${environment.location}" 
+                                   oninput="InstituteManager.updateEducationEnvironmentData(${index}, 'location', this.value)">
+                        </td>
+                        <td>
+                            <input type="text" placeholder="학당 교구 및 기자재" value="${environment.equipment}" 
+                                   oninput="InstituteManager.updateEducationEnvironmentData(${index}, 'equipment', this.value)">
+                        </td>
+                        <td>
+                            <button type="button" class="institute-table-remove-btn" onclick="InstituteManager.removeEducationEnvironmentRow(${index})">
+                                <i data-lucide="trash-2"></i>
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+
+            updateEducationEnvironmentHiddenInput() {
+                const hiddenInput = document.getElementById('edit-education-environment');
+                if (hiddenInput) {
+                    const validEnvironments = this.educationEnvironmentData.filter(env => 
+                        env.topic.trim() || env.location.trim() || env.equipment.trim()
+                    );
+                    hiddenInput.value = JSON.stringify(validEnvironments);
+                }
+            }
+
+            loadEducationEnvironmentData(environmentJson) {
+                this.educationEnvironmentData = [];
+                
+                if (environmentJson) {
+                    try {
+                        const environments = JSON.parse(environmentJson);
+                        if (Array.isArray(environments)) {
+                            this.educationEnvironmentData = environments;
+                        }
+                    } catch (error) {
+                        console.warn('교육 환경 데이터 파싱 실패:', error);
+                    }
+                }
+
+                if (this.educationEnvironmentData.length === 0) {
+                    this.educationEnvironmentData.push({ topic: '', location: '', equipment: '' });
+                }
+
+                this.renderEducationEnvironmentTable();
+                this.updateEducationEnvironmentHiddenInput();
+            }
+
+            getEducationEnvironmentJsonData() {
+                const validEnvironments = this.educationEnvironmentData.filter(env => 
+                    env.topic.trim() || env.location.trim() || env.equipment.trim()
+                );
+                return validEnvironments.length > 0 ? JSON.stringify(validEnvironments) : null;
+            }
 
             // === 실시간 검증 시스템 ===
             initializeRealTimeValidation() {
@@ -990,15 +1272,16 @@
                         break;
                     
                     case 'phone':
-                    case 'manager_contact':
+                    case 'contact_phone':
+                    case 'local_coordinator_phone':
                         if (value && !/^[\d\s\-\+\(\)]+$/.test(value)) {
                             isValid = false;
                             errorMessage = '올바른 전화번호 형식이 아닙니다.';
                         }
                         break;
                     
-                    case 'website_sns':
-                    case 'country_safety_info':
+                    case 'sns_url':
+                    case 'safety_info_url':
                         if (value && !this.isValidURL(value)) {
                             isValid = false;
                             errorMessage = '올바른 URL 형식이 아닙니다. (http:// 또는 https://로 시작)';
@@ -1186,6 +1469,13 @@
                 this.updateCoursesHiddenInput();
             }
 
+            getCoursesJsonData() {
+                const validCourses = this.coursesData.filter(course => 
+                    course.name.trim() || course.level.trim() || course.time.trim() || course.participants.trim()
+                );
+                return validCourses.length > 0 ? JSON.stringify(validCourses) : null;
+            }
+
             // === 이미지 업로드 시스템 ===
             setupImageUpload() {
                 const uploadArea = document.getElementById('image-upload-area');
@@ -1285,6 +1575,7 @@
                 this.currentInstitute = null;
                 this.validationState = {};
                 this.coursesData = [];
+                this.educationEnvironmentData = []; // 새로 추가
             }
 
             showAddModal() {
@@ -1315,7 +1606,7 @@
                 }
             }
 
-            // === 상세 정보 모달 렌더링 ===
+            // === 상세 정보 모달 렌더링 (v4.7.0 - 새로운 필드 포함) ===
             renderDetailModal(institute) {
                 const content = document.getElementById('institute-detail-content');
                 if (!content) return;
@@ -1341,7 +1632,7 @@
                         </h3>
                         ${this.renderDetailField('학당명', institute.name_ko)}
                         ${this.renderDetailField('영문명', institute.name_en)}
-                        ${this.renderDetailField('운영기관', institute.operating_organization)}
+                        ${this.renderDetailField('운영기관', institute.operator)}
                     </div>
                 `;
 
@@ -1354,29 +1645,31 @@
                         </h3>
                         ${this.renderDetailField('주소', institute.address)}
                         ${this.renderDetailField('대표연락처', institute.phone)}
-                        ${this.renderDetailField('홈페이지/SNS', institute.website_sns, 'link')}
-                        ${this.renderDetailField('담당자성명', institute.manager_name)}
-                        ${this.renderDetailField('담당자연락처', institute.manager_contact)}
+                        ${this.renderDetailField('홈페이지/SNS', institute.sns_url, 'link')}
+                        ${this.renderDetailField('담당자성명', institute.contact_person)}
+                        ${this.renderDetailField('담당자연락처', institute.contact_phone)}
+                        ${this.renderDetailField('현지 적응 전담 인력', institute.local_coordinator)}
+                        ${this.renderDetailField('현지 적응 전담 인력 연락처', institute.local_coordinator_phone)}
                     </div>
                 `;
 
                 // 프로그램 정보
-                if (institute.local_adaptation_staff || institute.cultural_program_plan || institute.desired_courses) {
+                if (institute.lesson_plan || institute.desired_courses || institute.education_environment) {
                     modalHTML += `
                         <div class="institute-field-group" style="margin-bottom: 2rem;">
                             <h3 class="institute-field-group-title">
                                 <i data-lucide="graduation-cap"></i>
                                 프로그램 정보
                             </h3>
-                            ${this.renderDetailField('현지적응전담인력', institute.local_adaptation_staff, 'textarea')}
-                            ${this.renderDetailField('문화수업운영계획', institute.cultural_program_plan, 'textarea')}
+                            ${this.renderDetailField('문화수업운영계획', institute.lesson_plan, 'textarea')}
                             ${this.renderDetailField('희망개설강좌', institute.desired_courses, 'textarea')}
+                            ${this.renderDetailField('교육환경정보', institute.education_environment, 'json')}
                         </div>
                     `;
                 }
 
                 // 지원 정보
-                if (institute.local_language_requirement || institute.institute_support || institute.country_safety_info) {
+                if (institute.local_language_requirement || institute.support_provided || institute.safety_info_url) {
                     modalHTML += `
                         <div class="institute-field-group">
                             <h3 class="institute-field-group-title">
@@ -1384,8 +1677,8 @@
                                 지원 정보
                             </h3>
                             ${this.renderDetailField('현지어구사필요수준', institute.local_language_requirement, 'textarea')}
-                            ${this.renderDetailField('학당지원사항', institute.institute_support, 'textarea')}
-                            ${this.renderDetailField('파견국가안전정보', institute.country_safety_info, 'link')}
+                            ${this.renderDetailField('학당지원사항', institute.support_provided, 'textarea')}
+                            ${this.renderDetailField('파견국가안전정보', institute.safety_info_url, 'link')}
                         </div>
                     `;
                 }
@@ -1406,6 +1699,17 @@
                     displayValue = `<a href="${value}" target="_blank" rel="noopener">${value}</a>`;
                 } else if (type === 'textarea') {
                     displayValue = value.replace(/\n/g, '<br>');
+                } else if (type === 'json') {
+                    try {
+                        const parsed = JSON.parse(value);
+                        if (Array.isArray(parsed)) {
+                            displayValue = parsed.map(item => 
+                                `• ${Object.values(item).filter(v => v).join(' / ')}`
+                            ).join('<br>');
+                        }
+                    } catch (e) {
+                        displayValue = value;
+                    }
                 }
                 
                 return `
@@ -1580,14 +1884,14 @@
 
         // === DOMContentLoaded 이벤트 ===
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🏛️ 파견학당 정보 관리 시스템 v4.6.3 시작 - UI 단순화 적용');
+            console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.0 시작 - 새로운 필드 완전 지원');
             
             try {
                 await InstituteManager.initialize();
-                console.log('🎉 v4.6.3 시스템 준비 완료! 그리드 타입 제거 및 리스트 뷰 단순화 완료.');
+                console.log('🎉 v4.7.0 시스템 준비 완료! 현지 적응 전담 인력 연락처와 교육 환경 정보 지원.');
                 
             } catch (error) {
-                console.error('💥 v4.6.3 초기화 최종 실패:', error);
+                console.error('💥 v4.7.0 초기화 최종 실패:', error);
                 alert('시스템 초기화에 실패했습니다. 페이지를 새로고침하거나 관리자에게 문의하세요.');
             }
         });
@@ -1596,13 +1900,14 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.shiftKey && e.key === 'D') {
                 e.preventDefault();
-                console.log('🛠️ v4.6.3 디버그 정보');
+                console.log('🛠️ v4.7.0 디버그 정보');
                 console.log('통합 매니저 상태:', {
                     initialized: InstituteManager.isInitialized,
                     currentView: InstituteManager.currentView,
                     currentInstitute: InstituteManager.currentInstitute,
                     validationState: InstituteManager.validationState,
                     coursesData: InstituteManager.coursesData,
+                    educationEnvironmentData: InstituteManager.educationEnvironmentData, // 새로 추가
                     retryCount: InstituteManager.retryCount
                 });
                 
@@ -1615,7 +1920,7 @@
             }
         });
 
-        console.log('🏛️ 파견학당 정보 관리 시스템 v4.6.3 스크립트 로드 완료 - UI 단순화 적용');
+        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.0 스크립트 로드 완료 - 새로운 필드 완전 지원');
     </script>
 </body>
 </html>
