@@ -1,5 +1,5 @@
 /**
- * 🎨 Institute Management CSS (v4.4.0)
+ * 🎨 Institute Management CSS (v4.4.0 - C단계)
  * 세종학당 파견학당 정보 관리 시스템 - 전용 스타일시트
  * 
  * 📋 담당 영역:
@@ -7,6 +7,7 @@
  * - 독립적인 디자인 시스템
  * - 15개 필드 지원 UI
  * - 반응형 디자인
+ * - C단계: 1000px 모달창, 실시간 검증, 애니메이션
  * 
  * 🚫 독립성: 기존 admin.css와 완전 분리
  */
@@ -569,7 +570,7 @@
 }
 
 /* ========================
-   모달
+   🎯 C단계: 개선된 모달 시스템
    ======================== */
 
 .institute-modal-overlay {
@@ -584,16 +585,45 @@
     justify-content: center;
     z-index: 1000;
     padding: 1rem;
+    backdrop-filter: blur(3px);
+    animation: institute-modal-fade-in 0.3s ease-out;
+}
+
+@keyframes institute-modal-fade-in {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(3px);
+    }
 }
 
 .institute-modal {
     background: white;
     border-radius: 1rem;
-    max-width: 800px;
-    width: 100%;
+    min-width: 1000px; /* 🎯 C단계: 가로 최소 1000px */
+    max-width: 1200px; /* 최대 너비 증가 */
+    width: 95vw; /* 뷰포트 기반 너비 */
+    height: 90vh; /* 🎯 C단계: 세로 90% */
     max-height: 90vh;
     overflow: hidden;
     box-shadow: 0 20px 25px rgba(0,0,0,0.15);
+    animation: institute-modal-slide-down 0.4s ease-out;
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes institute-modal-slide-down {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .institute-modal-header {
@@ -602,6 +632,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #f8fafc, #edf2f7);
 }
 
 .institute-modal-title {
@@ -622,17 +654,43 @@
     padding: 0.5rem;
     border-radius: 0.25rem;
     transition: all 0.2s ease;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .institute-modal-close:hover {
     background: #f1f5f9;
     color: #4a5568;
+    transform: scale(1.1);
 }
 
 .institute-modal-body {
     padding: 1.5rem;
-    overflow-y: auto;
-    max-height: calc(90vh - 140px);
+    overflow-y: auto; /* 🎯 C단계: 스크롤 가능 */
+    flex: 1;
+    position: relative;
+}
+
+/* 🎯 C단계: 스크롤바 스타일링 */
+.institute-modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.institute-modal-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.institute-modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+}
+
+.institute-modal-body::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
 }
 
 .institute-modal-footer {
@@ -641,14 +699,60 @@
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
+    flex-shrink: 0;
+    background: #f8fafc;
 }
 
 /* ========================
-   폼 요소
+   🎯 C단계: 로딩 오버레이
+   ======================== */
+
+.institute-modal-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    backdrop-filter: blur(2px);
+}
+
+.institute-modal-loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+}
+
+.institute-modal-loading-spinner {
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 3px solid #e2e8f0;
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    animation: institute-spin 1s linear infinite;
+}
+
+.institute-modal-loading-text {
+    color: #4a5568;
+    font-weight: 500;
+}
+
+/* ========================
+   🎯 C단계: 폼 요소 개선
    ======================== */
 
 .institute-form-group {
     margin-bottom: 1.5rem;
+    position: relative;
 }
 
 .institute-form-label {
@@ -657,6 +761,7 @@
     color: #374151;
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
+    transition: color 0.2s ease;
 }
 
 .institute-form-label.required::after {
@@ -674,6 +779,7 @@
     font-size: 0.9rem;
     transition: all 0.2s ease;
     background: white;
+    position: relative;
 }
 
 .institute-form-input:focus,
@@ -682,6 +788,7 @@
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    transform: translateY(-1px);
 }
 
 .institute-form-textarea {
@@ -695,14 +802,157 @@
     margin-top: 0.25rem;
 }
 
+/* 🎯 C단계: 실시간 검증 스타일 */
 .institute-form-error {
     font-size: 0.8rem;
     color: #dc2626;
     margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    animation: institute-shake 0.3s ease-in-out;
+}
+
+.institute-form-success {
+    font-size: 0.8rem;
+    color: #16a34a;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.institute-form-warning {
+    font-size: 0.8rem;
+    color: #d97706;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+@keyframes institute-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* 검증 상태별 입력 필드 스타일 */
+.institute-form-input.error,
+.institute-form-textarea.error {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.institute-form-input.success,
+.institute-form-textarea.success {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.institute-form-input.warning,
+.institute-form-textarea.warning {
+    border-color: #d97706;
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
 }
 
 /* ========================
-   필드 그룹
+   🎯 C단계: 테이블 형식 입력 UI
+   ======================== */
+
+.institute-table-input {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: white;
+}
+
+.institute-table-input table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.institute-table-input th {
+    background: #f8fafc;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: #4a5568;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.85rem;
+}
+
+.institute-table-input td {
+    padding: 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+}
+
+.institute-table-input tr:last-child td {
+    border-bottom: none;
+}
+
+.institute-table-input input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.institute-table-input input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.institute-table-add-row {
+    display: flex;
+    justify-content: center;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}
+
+.institute-table-add-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.institute-table-add-btn:hover {
+    background: #5a6fd8;
+    transform: translateY(-1px);
+}
+
+.institute-table-remove-btn {
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.institute-table-remove-btn:hover {
+    background: #b91c1c;
+    transform: scale(1.05);
+}
+
+/* ========================
+   필드 그룹 개선
    ======================== */
 
 .institute-field-groups {
@@ -715,6 +965,12 @@
     border-radius: 0.75rem;
     padding: 1.5rem;
     border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.institute-field-group:hover {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transform: translateY(-1px);
 }
 
 .institute-field-group-title {
@@ -725,10 +981,14 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    position: relative;
+    padding-left: 1rem;
 }
 
 .institute-field-group-title::before {
     content: '';
+    position: absolute;
+    left: 0;
     width: 4px;
     height: 1.2rem;
     background: linear-gradient(135deg, #667eea, #764ba2);
@@ -740,7 +1000,7 @@
 }
 
 /* ========================
-   이미지 업로드
+   🎯 C단계: 이미지 업로드 개선
    ======================== */
 
 .institute-image-upload {
@@ -748,18 +1008,37 @@
     border-radius: 0.5rem;
     padding: 2rem;
     text-align: center;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.institute-image-upload::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+    transition: left 0.6s ease;
+}
+
+.institute-image-upload:hover::before {
+    left: 100%;
 }
 
 .institute-image-upload:hover {
     border-color: #667eea;
     background: #f7fafc;
+    transform: scale(1.02);
 }
 
 .institute-image-upload.dragover {
     border-color: #667eea;
     background: #edf2f7;
+    transform: scale(1.05);
 }
 
 .institute-image-preview {
@@ -768,11 +1047,19 @@
     border-radius: 0.5rem;
     margin: 0 auto 1rem;
     display: block;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.institute-image-preview:hover {
+    transform: scale(1.05);
 }
 
 .institute-image-upload-text {
     color: #718096;
     font-size: 0.9rem;
+    position: relative;
+    z-index: 1;
 }
 
 .institute-image-upload-icon {
@@ -783,7 +1070,7 @@
 }
 
 /* ========================
-   로딩 및 상태
+   로딩 및 상태 개선
    ======================== */
 
 .institute-loading {
@@ -847,8 +1134,15 @@
 }
 
 /* ========================
-   반응형 디자인
+   🎯 C단계: 반응형 디자인 개선
    ======================== */
+
+@media (max-width: 1200px) {
+    .institute-modal {
+        min-width: 900px;
+        width: 90vw;
+    }
+}
 
 @media (max-width: 1024px) {
     .institute-grid {
@@ -862,6 +1156,11 @@
     
     .institute-view-toggle {
         justify-self: start;
+    }
+
+    .institute-modal {
+        min-width: 700px;
+        width: 85vw;
     }
 }
 
@@ -903,8 +1202,11 @@
     }
 
     .institute-modal {
-        margin: 1rem;
-        max-height: calc(100vh - 2rem);
+        min-width: 600px;
+        width: 95vw;
+        height: 95vh;
+        margin: 0.5rem;
+        max-height: calc(100vh - 1rem);
     }
 
     .institute-field-groups {
@@ -935,6 +1237,24 @@
 
     .institute-stat-number {
         font-size: 2rem;
+    }
+
+    .institute-modal {
+        min-width: 0;
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+        max-height: 100vh;
+    }
+
+    .institute-modal-header,
+    .institute-modal-footer {
+        padding: 1rem;
+    }
+
+    .institute-modal-body {
+        padding: 1rem;
     }
 }
 
@@ -970,15 +1290,7 @@
 }
 
 /* ========================
-   다크 모드 지원 (미래 확장)
-   ======================== */
-
-@media (prefers-color-scheme: dark) {
-    /* 다크 모드 스타일은 추후 구현 예정 */
-}
-
-/* ========================
-   애니메이션 효과
+   🎯 C단계: 애니메이션 효과 강화
    ======================== */
 
 .institute-fade-in {
@@ -1011,6 +1323,43 @@
     }
 }
 
+.institute-bounce {
+    animation: institute-bounce 0.6s ease-in-out;
+}
+
+@keyframes institute-bounce {
+    0%, 20%, 60%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    80% {
+        transform: translateY(-5px);
+    }
+}
+
+.institute-pulse {
+    animation: institute-pulse 2s infinite;
+}
+
+@keyframes institute-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* ========================
+   다크 모드 지원 (미래 확장)
+   ======================== */
+
+@media (prefers-color-scheme: dark) {
+    /* 다크 모드 스타일은 추후 구현 예정 */
+}
+
 /* ========================
    프린트 스타일
    ======================== */
@@ -1028,6 +1377,10 @@
     }
     
     .institute-btn {
+        display: none;
+    }
+
+    .institute-modal-overlay {
         display: none;
     }
 }
