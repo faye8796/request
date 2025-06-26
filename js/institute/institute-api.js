@@ -1,19 +1,19 @@
 /**
- * 🔗 Institute API Module (v4.6.2) - getInstituteList 함수 추가
+ * 🔗 Institute API Module (v4.7.0) - 새로운 필드 추가
  * 세종학당 파견학당 정보 관리 시스템 - Supabase API 전용 모듈
  * 
  * 📋 담당 기능:
  * - institutes 테이블 CRUD 기능 (실제 DB 컬럼명 사용)
  * - user_profiles 테이블 문화인턴 조회
  * - Storage API 연동 (이미지 업로드)
- * - 15개 필드 완전 지원 + 완성도 관리
+ * - 17개 필드 완전 지원 + 완성도 관리
  * 
  * 🔗 의존성: SupabaseCore만 의존
  * 🚫 독립성: 기존 SupabaseAdmin/Student 모듈과 분리
  * 
- * 🔧 v4.6.2 수정사항:
- * - getInstituteList() 함수 추가 (InstituteCore 호환성)
- * - 초기화 오류 해결 완료
+ * 🔧 v4.7.0 수정사항:
+ * - local_coordinator_phone 필드 추가 (현지 적응 전담 인력 연락처)
+ * - education_environment 필드 추가 (교육 환경 정보 JSONB)
  */
 
 class InstituteAPI {
@@ -21,7 +21,7 @@ class InstituteAPI {
         this.supabase = null;
         this.initialized = false;
         
-        // 📋 실제 DB 컬럼명 매핑 (15개 주요 필드)
+        // 📋 실제 DB 컬럼명 매핑 (17개 주요 필드)
         this.DB_FIELDS = {
             // 기본 정보 (4개)
             name_ko: 'name_ko',                    // 학당명 (필수)
@@ -29,17 +29,19 @@ class InstituteAPI {
             operator: 'operator',                  // 운영기관
             image_url: 'image_url',                // 학당사진
             
-            // 연락처 정보 (5개)
+            // 연락처 정보 (7개) - 현지 적응 전담 인력 정보 포함
             address: 'address',                    // 주소
             phone: 'phone',                        // 대표연락처
             sns_url: 'sns_url',                    // 홈페이지/SNS
             contact_person: 'contact_person',      // 담당자성명
             contact_phone: 'contact_phone',        // 담당자연락처
+            local_coordinator: 'local_coordinator',      // 현지 적응 전담 인력
+            local_coordinator_phone: 'local_coordinator_phone', // 현지 적응 전담 인력 연락처
             
             // 프로그램 정보 (3개)
-            local_coordinator: 'local_coordinator',      // 현지적응전담인력
             lesson_plan: 'lesson_plan',                  // 문화수업운영계획
             desired_courses: 'desired_courses',          // 희망개설강좌
+            education_environment: 'education_environment', // 교육 환경 정보 (JSONB)
             
             // 지원 정보 (3개)
             local_language_requirement: 'local_language_requirement', // 현지어구사필요수준
@@ -55,7 +57,7 @@ class InstituteAPI {
         this.MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
         this.ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
         
-        console.log('🔗 InstituteAPI 모듈 초기화됨 (v4.6.2 - getInstituteList 함수 추가)');
+        console.log('🔗 InstituteAPI 모듈 초기화됨 (v4.7.0 - 새로운 필드 추가)');
     }
 
     /**
@@ -83,7 +85,7 @@ class InstituteAPI {
             await this.testConnection();
             
             this.initialized = true;
-            console.log('✅ InstituteAPI 초기화 완료 (v4.6.2)');
+            console.log('✅ InstituteAPI 초기화 완료 (v4.7.0)');
             return true;
             
         } catch (error) {
@@ -99,11 +101,11 @@ class InstituteAPI {
         try {
             const { data, error } = await this.supabase
                 .from('institutes')
-                .select('id, completion_percentage')
+                .select('id, completion_percentage, local_coordinator_phone, education_environment')
                 .limit(1);
                 
             if (error) throw error;
-            console.log('✅ institutes 테이블 연결 확인 (완성도 컬럼 포함)');
+            console.log('✅ institutes 테이블 연결 확인 (새로운 컬럼 포함)');
             
         } catch (error) {
             console.error('❌ 연결 테스트 실패:', error);
@@ -245,7 +247,7 @@ class InstituteAPI {
     }
 
     /**
-     * 🔍 학당 상세 정보 조회 (15개 필드 전체)
+     * 🔍 학당 상세 정보 조회 (17개 필드 전체)
      * @param {string} instituteId - 학당 ID
      * @returns {Promise<Object|null>}
      */
@@ -274,8 +276,10 @@ class InstituteAPI {
                     contact_person,
                     contact_phone,
                     local_coordinator,
+                    local_coordinator_phone,
                     lesson_plan,
                     desired_courses,
+                    education_environment,
                     local_language_requirement,
                     support_provided,
                     safety_info_url,
@@ -651,7 +655,7 @@ class InstituteAPI {
     }
 
     /**
-     * 📊 API 모듈 상태 (v4.6.2)
+     * 📊 API 모듈 상태 (v4.7.0)
      */
     getAPIStatus() {
         return {
@@ -659,8 +663,9 @@ class InstituteAPI {
             supabase_connected: !!this.supabase,
             supported_fields: Object.keys(this.DB_FIELDS).length,
             storage_bucket: this.STORAGE_BUCKET,
-            module_version: '4.6.2',
+            module_version: '4.7.0',
             database_integration: 'completion tracking enabled',
+            new_fields: 'local_coordinator_phone, education_environment',
             type_casting: 'UUID ↔ VARCHAR fixed',
             compatibility: 'InstituteCore getInstituteList() supported'
         };
@@ -670,4 +675,4 @@ class InstituteAPI {
 // 🌐 전역 인스턴스 생성
 window.InstituteAPI = new InstituteAPI();
 
-console.log('🔗 InstituteAPI 모듈 로드 완료 (v4.6.2) - getInstituteList 함수 추가로 초기화 오류 해결');
+console.log('🔗 InstituteAPI 모듈 로드 완료 (v4.7.0) - 새로운 필드 추가');
