@@ -1,5 +1,5 @@
 /**
- * 🔗 Institute API Module (v4.4.0)
+ * 🔗 Institute API Module (v4.5.1)
  * 세종학당 파견학당 정보 관리 시스템 - Supabase API 전용 모듈
  * 
  * 📋 담당 기능:
@@ -10,6 +10,10 @@
  * 
  * 🔗 의존성: SupabaseCore만 의존
  * 🚫 독립성: 기존 SupabaseAdmin/Student 모듈과 분리
+ * 
+ * 🔧 v4.5.1 수정사항:
+ * - SupabaseCore.getClient() → SupabaseCore.ensureClient() 변경
+ * - API 불일치 문제 해결로 D단계 시스템 초기화 오류 수정
  */
 
 class InstituteAPI {
@@ -51,30 +55,31 @@ class InstituteAPI {
     }
 
     /**
-     * 🚀 API 모듈 초기화
+     * 🚀 API 모듈 초기화 (v4.5.1 수정)
      * @returns {Promise<boolean>}
      */
     async initialize() {
         if (this.initialized) return true;
         
         try {
-            // SupabaseCore 의존성 체크
-            if (!window.SupabaseCore || !window.SupabaseCore.getClient) {
+            console.log('🔄 InstituteAPI 초기화 시작...');
+            
+            // 🔧 v4.5.1: SupabaseCore 의존성 체크 수정
+            if (!window.SupabaseCore || typeof window.SupabaseCore.ensureClient !== 'function') {
                 throw new Error('SupabaseCore 모듈이 로드되지 않았습니다');
             }
             
-            this.supabase = window.SupabaseCore.getClient();
+            // 🔧 v4.5.1: ensureClient() 함수 사용 (올바른 API)
+            this.supabase = await window.SupabaseCore.ensureClient();
             if (!this.supabase) {
                 throw new Error('Supabase 클라이언트를 가져올 수 없습니다');
             }
-            
-            console.log('🔄 InstituteAPI 초기화 시작...');
             
             // 연결 테스트
             await this.testConnection();
             
             this.initialized = true;
-            console.log('✅ InstituteAPI 초기화 완료');
+            console.log('✅ InstituteAPI 초기화 완료 (v4.5.1)');
             return true;
             
         } catch (error) {
@@ -648,7 +653,7 @@ class InstituteAPI {
     }
 
     /**
-     * 📊 API 모듈 상태
+     * 📊 API 모듈 상태 (v4.5.1)
      */
     getAPIStatus() {
         return {
@@ -656,7 +661,7 @@ class InstituteAPI {
             supabase_connected: !!this.supabase,
             supported_fields: Object.keys(this.INSTITUTE_FIELDS).length,
             storage_bucket: this.STORAGE_BUCKET,
-            module_version: '4.4.0'
+            module_version: '4.5.1'
         };
     }
 }
@@ -664,4 +669,4 @@ class InstituteAPI {
 // 🌐 전역 인스턴스 생성
 window.InstituteAPI = new InstituteAPI();
 
-console.log('🔗 InstituteAPI 모듈 로드 완료 (v4.4.0) - 15개 필드 지원');
+console.log('🔗 InstituteAPI 모듈 로드 완료 (v4.5.1) - SupabaseCore API 불일치 수정');
