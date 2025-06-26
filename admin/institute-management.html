@@ -3,422 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>파견 학당 정보 관리 - 세종학당 문화인턴 지원 시스템</title>
+    <title>파견학당 정보 관리 - 세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.3.2">
-    <link rel="stylesheet" href="../css/admin.css?v=4.3.2">
+    <link rel="stylesheet" href="../css/main.css?v=4.4.0">
+    <link rel="stylesheet" href="../css/institute.css?v=4.4.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <!-- Supabase JavaScript Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
-    <style>
-        .institute-management-container {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #f7fafc 0%, #e2e8f0 100%);
-            padding: 2rem;
-        }
-
-        .management-header {
-            background: white;
-            border-radius: 1rem;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border: 1px solid #e2e8f0;
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .header-title h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #2d3748;
-            margin: 0 0 0.5rem 0;
-        }
-
-        .header-title p {
-            color: #718096;
-            margin: 0;
-        }
-
-        .back-btn {
-            background: #e2e8f0;
-            color: #4a5568;
-            border: none;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .back-btn:hover {
-            background: #cbd5e0;
-        }
-
-        /* 통계 섹션 */
-        .stats-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border: 1px solid #e2e8f0;
-            transition: transform 0.2s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-        }
-
-        .stat-card .stat-icon {
-            width: 3rem;
-            height: 3rem;
-            border-radius: 0.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1rem;
-        }
-
-        .stat-card.total .stat-icon {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
-
-        .stat-card.assigned .stat-icon {
-            background: linear-gradient(135deg, #48bb78, #38a169);
-            color: white;
-        }
-
-        .stat-card.pending .stat-icon {
-            background: linear-gradient(135deg, #ed8936, #dd6b20);
-            color: white;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #2d3748;
-            margin: 0;
-        }
-
-        .stat-label {
-            color: #718096;
-            font-size: 0.9rem;
-            margin: 0;
-        }
-
-        /* 필터 및 검색 섹션 */
-        .filters-section {
-            background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border: 1px solid #e2e8f0;
-        }
-
-        .filters-grid {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .search-box {
-            position: relative;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 0.75rem 1rem 0.75rem 2.5rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-            font-size: 0.9rem;
-            transition: border-color 0.2s ease;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 0.75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #a0aec0;
-            width: 1rem;
-            height: 1rem;
-        }
-
-        .refresh-btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .refresh-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-
-        /* 학당 카드 그리드 */
-        .institutes-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .institute-card {
-            background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .institute-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
-
-        .institute-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-        }
-
-        .institute-header {
-            margin-bottom: 1rem;
-        }
-
-        .institute-name {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #2d3748;
-            margin: 0 0 0.5rem 0;
-            line-height: 1.4;
-        }
-
-        .institute-status {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            background: #e6fffa;
-            color: #00695c;
-            font-size: 0.75rem;
-            font-weight: 600;
-            border-radius: 1rem;
-            text-transform: uppercase;
-        }
-
-        .institute-status.incomplete {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .institute-body {
-            margin-bottom: 1.5rem;
-        }
-
-        .info-row {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.75rem;
-            font-size: 0.9rem;
-        }
-
-        .info-icon {
-            width: 1rem;
-            height: 1rem;
-            color: #718096;
-            flex-shrink: 0;
-        }
-
-        .info-text {
-            color: #4a5568;
-        }
-
-        .info-text.placeholder {
-            color: #a0aec0;
-            font-style: italic;
-        }
-
-        .intern-list {
-            margin: 0.5rem 0;
-        }
-
-        .intern-item {
-            display: inline-block;
-            background: #f7fafc;
-            padding: 0.25rem 0.5rem;
-            margin: 0.25rem 0.25rem 0.25rem 0;
-            border-radius: 0.5rem;
-            font-size: 0.8rem;
-            color: #4a5568;
-            border: 1px solid #e2e8f0;
-        }
-
-        .intern-name {
-            font-weight: 600;
-        }
-
-        .intern-field {
-            color: #718096;
-        }
-
-        .institute-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .last-updated {
-            font-size: 0.8rem;
-            color: #a0aec0;
-        }
-
-        .update-btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .update-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-
-        /* 로딩 상태 */
-        .loading-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 4rem 2rem;
-            background: white;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        .loading-spinner {
-            width: 2rem;
-            height: 2rem;
-            border: 3px solid #e2e8f0;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 1rem;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* 반응형 디자인 */
-        @media (max-width: 768px) {
-            .institute-management-container {
-                padding: 1rem;
-            }
-
-            .management-header {
-                padding: 1.5rem;
-            }
-
-            .header-content {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .institutes-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .filters-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .stats-section {
-                grid-template-columns: 1fr;
-            }
-
-            .institute-footer {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 0.75rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .institute-card {
-                padding: 1rem;
-            }
-
-            .institute-name {
-                font-size: 1rem;
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="institute-management-container">
         <!-- 헤더 섹션 -->
-        <div class="management-header">
-            <div class="header-content">
-                <div class="header-title">
-                    <h1>파견 학당 정보 관리</h1>
-                    <p>42개 세종학당의 정보를 체계적으로 관리하고 문화인턴 배정 현황을 확인할 수 있습니다.</p>
+        <div class="institute-header">
+            <div class="institute-header-content">
+                <div class="institute-header-title">
+                    <h1>파견학당 정보 관리</h1>
+                    <p>세종학당의 15개 필드 정보를 체계적으로 관리하고 문화인턴 배정 현황을 확인할 수 있습니다.</p>
                 </div>
-                <button class="back-btn" onclick="goBackToDashboard()">
+                <button class="institute-btn institute-btn-secondary" onclick="goBackToDashboard()">
                     <i data-lucide="arrow-left"></i>
                     대시보드로 돌아가기
                 </button>
@@ -426,94 +32,330 @@
         </div>
 
         <!-- 통계 섹션 -->
-        <div class="stats-section">
-            <div class="stat-card total">
-                <div class="stat-icon">
-                    <i data-lucide="building"></i>
+        <div class="institute-stats-section">
+            <div class="institute-stat-card total">
+                <div class="institute-stat-icon">
+                    <i data-lucide="building2"></i>
                 </div>
-                <div class="stat-number" id="totalInstitutes">-</div>
-                <p class="stat-label">총 세종학당 수</p>
+                <div class="institute-stat-number" id="total-institutes">-</div>
+                <p class="institute-stat-label">총 세종학당 수</p>
             </div>
-            <div class="stat-card assigned">
-                <div class="stat-icon">
+            <div class="institute-stat-card assigned">
+                <div class="institute-stat-icon">
                     <i data-lucide="users"></i>
                 </div>
-                <div class="stat-number" id="assignedInterns">-</div>
-                <p class="stat-label">배정된 문화인턴</p>
+                <div class="institute-stat-number" id="assigned-interns">-</div>
+                <p class="institute-stat-label">배정된 문화인턴</p>
             </div>
-            <div class="stat-card pending">
-                <div class="stat-icon">
+            <div class="institute-stat-card active">
+                <div class="institute-stat-icon">
+                    <i data-lucide="check-circle"></i>
+                </div>
+                <div class="institute-stat-number" id="complete-institutes">-</div>
+                <p class="institute-stat-label">정보 완성 학당</p>
+            </div>
+            <div class="institute-stat-card pending">
+                <div class="institute-stat-icon">
                     <i data-lucide="alert-circle"></i>
                 </div>
-                <div class="stat-number" id="incompleteInfo">-</div>
-                <p class="stat-label">정보 미완성 학당</p>
+                <div class="institute-stat-number" id="incomplete-institutes">-</div>
+                <p class="institute-stat-label">정보 미완성 학당</p>
             </div>
         </div>
 
         <!-- 필터 및 검색 섹션 -->
-        <div class="filters-section">
-            <div class="filters-grid">
-                <div class="search-box">
-                    <i data-lucide="search" class="search-icon"></i>
-                    <input type="text" class="search-input" placeholder="학당명 또는 문화인턴 이름으로 검색..." id="searchInput">
+        <div class="institute-filters-section">
+            <div class="institute-filters-grid">
+                <div class="institute-search-box">
+                    <i data-lucide="search" class="institute-search-icon"></i>
+                    <input type="text" class="institute-search-input" id="institute-search" 
+                           placeholder="학당명, 운영기관, 담당자 이름으로 검색...">
                 </div>
-                <button class="refresh-btn" onclick="loadInstitutes()">
+                <div class="institute-view-toggle">
+                    <button class="institute-view-btn active" id="view-toggle-grid" data-view="grid">
+                        <i data-lucide="grid-3x3"></i>
+                        그리드
+                    </button>
+                    <button class="institute-view-btn" id="view-toggle-list" data-view="list">
+                        <i data-lucide="list"></i>
+                        리스트
+                    </button>
+                </div>
+                <button class="institute-btn institute-btn-primary" id="refresh-button">
                     <i data-lucide="refresh-cw"></i>
                     새로고침
                 </button>
             </div>
         </div>
 
-        <!-- 학당 카드 그리드 -->
-        <div id="institutesContainer">
+        <!-- 메인 콘텐츠 영역 -->
+        <div id="institute-management-container">
             <!-- 로딩 상태 -->
-            <div class="loading-container" id="loadingContainer">
-                <div class="loading-spinner"></div>
+            <div class="institute-loading" id="loading-spinner">
+                <div class="institute-loading-spinner"></div>
                 <span>학당 정보를 불러오는 중...</span>
             </div>
-        </div>
 
-        <!-- 학당 카드가 동적으로 생성될 위치 -->
-        <div class="institutes-grid" id="institutesGrid" style="display: none;">
-            <!-- 카드들이 여기에 동적으로 추가됩니다 -->
+            <!-- 그리드 뷰 -->
+            <div class="institute-grid" id="institute-grid" style="display: none;">
+                <!-- 학당 카드들이 동적으로 생성됩니다 -->
+            </div>
+
+            <!-- 리스트 뷰 -->
+            <div class="institute-list" id="institute-list" style="display: none;">
+                <table class="institute-table">
+                    <thead>
+                        <tr>
+                            <th>학당명</th>
+                            <th>운영기관</th>
+                            <th>주소</th>
+                            <th>담당자</th>
+                            <th>문화인턴</th>
+                            <th>상태</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody id="institute-table-body">
+                        <!-- 학당 행들이 동적으로 생성됩니다 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 빈 상태 -->
+            <div class="institute-empty-state" id="empty-state" style="display: none;">
+                <i data-lucide="search" class="institute-empty-icon"></i>
+                <h3>검색 결과가 없습니다</h3>
+                <p>다른 검색어를 시도해보세요.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 학당 상세 정보 모달 -->
+    <div class="institute-modal-overlay" id="institute-detail-modal" style="display: none;">
+        <div class="institute-modal">
+            <div class="institute-modal-header">
+                <h2 class="institute-modal-title">
+                    <i data-lucide="building2"></i>
+                    학당 상세 정보
+                </h2>
+                <button class="institute-modal-close" onclick="closeDetailModal()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="institute-modal-body" id="institute-detail-content">
+                <!-- 상세 정보가 동적으로 생성됩니다 -->
+            </div>
+            <div class="institute-modal-footer">
+                <button class="institute-btn institute-btn-primary" id="edit-institute-btn">
+                    <i data-lucide="edit"></i>
+                    정보 수정
+                </button>
+                <button class="institute-btn institute-btn-secondary" onclick="closeDetailModal()">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 학당 정보 수정 모달 -->
+    <div class="institute-modal-overlay" id="institute-edit-modal" style="display: none;">
+        <div class="institute-modal">
+            <div class="institute-modal-header">
+                <h2 class="institute-modal-title">
+                    <i data-lucide="edit"></i>
+                    학당 정보 수정
+                </h2>
+                <button class="institute-modal-close" onclick="closeEditModal()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="institute-modal-body">
+                <form id="institute-edit-form">
+                    <div class="institute-field-groups">
+                        <!-- 기본 정보 그룹 -->
+                        <div class="institute-field-group">
+                            <h3 class="institute-field-group-title">
+                                <i data-lucide="info"></i>
+                                기본 정보
+                            </h3>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label required" for="edit-name-ko">학당명</label>
+                                <input type="text" class="institute-form-input" id="edit-name-ko" name="name_ko" required>
+                                <div class="institute-form-help">학당의 공식 한국어 명칭</div>
+                            </div>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-name-en">영문명</label>
+                                <input type="text" class="institute-form-input" id="edit-name-en" name="name_en">
+                                <div class="institute-form-help">학당의 영문 명칭</div>
+                            </div>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-operating-organization">운영기관</label>
+                                <input type="text" class="institute-form-input" id="edit-operating-organization" name="operating_organization">
+                                <div class="institute-form-help">학당을 운영하는 기관명</div>
+                            </div>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-image-url">학당사진</label>
+                                <div class="institute-image-upload" id="image-upload-area">
+                                    <img id="image-preview" class="institute-image-preview" style="display: none;">
+                                    <i data-lucide="upload" class="institute-image-upload-icon"></i>
+                                    <div class="institute-image-upload-text">
+                                        클릭하거나 이미지를 드래그하여 업로드
+                                    </div>
+                                </div>
+                                <input type="file" id="image-file-input" accept="image/*" style="display: none;">
+                                <input type="hidden" id="edit-image-url" name="image_url">
+                            </div>
+                        </div>
+
+                        <!-- 연락처 정보 그룹 -->
+                        <div class="institute-field-group">
+                            <h3 class="institute-field-group-title">
+                                <i data-lucide="phone"></i>
+                                연락처 정보
+                            </h3>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-address">주소</label>
+                                <textarea class="institute-form-textarea" id="edit-address" name="address" rows="3"></textarea>
+                                <div class="institute-form-help">학당의 상세 주소</div>
+                            </div>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-phone">대표연락처</label>
+                                <input type="tel" class="institute-form-input" id="edit-phone" name="phone">
+                                <div class="institute-form-help">학당의 대표 전화번호</div>
+                            </div>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-website-sns">홈페이지/SNS</label>
+                                <input type="url" class="institute-form-input" id="edit-website-sns" name="website_sns">
+                                <div class="institute-form-help">학당의 웹사이트 또는 SNS 주소</div>
+                            </div>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-manager-name">담당자성명</label>
+                                <input type="text" class="institute-form-input" id="edit-manager-name" name="manager_name">
+                                <div class="institute-form-help">학당 담당자의 성명</div>
+                            </div>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-manager-contact">담당자연락처</label>
+                                <input type="text" class="institute-form-input" id="edit-manager-contact" name="manager_contact">
+                                <div class="institute-form-help">담당자의 전화번호 또는 이메일</div>
+                            </div>
+                        </div>
+
+                        <!-- 프로그램 정보 그룹 -->
+                        <div class="institute-field-group">
+                            <h3 class="institute-field-group-title">
+                                <i data-lucide="graduation-cap"></i>
+                                프로그램 정보
+                            </h3>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-local-adaptation-staff">현지적응전담인력</label>
+                                <textarea class="institute-form-textarea" id="edit-local-adaptation-staff" name="local_adaptation_staff" rows="4"></textarea>
+                                <div class="institute-form-help">현지 적응을 도와주는 전담 인력 정보</div>
+                            </div>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-cultural-program-plan">문화수업운영계획</label>
+                                <textarea class="institute-form-textarea" id="edit-cultural-program-plan" name="cultural_program_plan" rows="4"></textarea>
+                                <div class="institute-form-help">문화 수업 운영 계획 및 내용</div>
+                            </div>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-desired-courses">희망개설강좌</label>
+                                <textarea class="institute-form-textarea" id="edit-desired-courses" name="desired_courses" rows="4"></textarea>
+                                <div class="institute-form-help">개설하고자 하는 강좌 목록</div>
+                            </div>
+                        </div>
+
+                        <!-- 지원 정보 그룹 -->
+                        <div class="institute-field-group">
+                            <h3 class="institute-field-group-title">
+                                <i data-lucide="help-circle"></i>
+                                지원 정보
+                            </h3>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-local-language-requirement">현지어구사필요수준</label>
+                                <textarea class="institute-form-textarea" id="edit-local-language-requirement" name="local_language_requirement" rows="4"></textarea>
+                                <div class="institute-form-help">문화인턴에게 요구되는 현지어 수준</div>
+                            </div>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-institute-support">학당지원사항</label>
+                                <textarea class="institute-form-textarea" id="edit-institute-support" name="institute_support" rows="4"></textarea>
+                                <div class="institute-form-help">학당에서 제공하는 지원 사항</div>
+                            </div>
+                            <div class="institute-form-group">
+                                <label class="institute-form-label" for="edit-country-safety-info">파견국가안전정보</label>
+                                <textarea class="institute-form-textarea" id="edit-country-safety-info" name="country_safety_info" rows="4"></textarea>
+                                <div class="institute-form-help">파견 국가의 안전 관련 정보</div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="institute-modal-footer">
+                <button class="institute-btn institute-btn-success" id="save-institute-btn">
+                    <i data-lucide="save"></i>
+                    저장하기
+                </button>
+                <button class="institute-btn institute-btn-secondary" onclick="closeEditModal()">
+                    취소
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- JavaScript Files -->
-    <!-- 1. 기본 설정 모듈 -->
-    <script src="../js/config.js?v=4.3.2"></script>
-    <script src="../js/auth.js?v=4.3.2"></script>
-    <script src="../js/utils.js?v=4.3.2"></script>
+    <!-- 1. 기본 설정 모듈 (의존성 순서 중요!) -->
+    <script src="../js/config.js?v=4.4.0"></script>
+    <script src="../js/auth.js?v=4.4.0"></script>
+    <script src="../js/utils.js?v=4.4.0"></script>
     
-    <!-- 2. Supabase 모듈들 (의존성 순서 중요!) -->
-    <script src="../js/supabase/supabase-core.js?v=4.3.2"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.3.2"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.3.2"></script>
-    <script src="../js/supabase-client.js?v=4.3.2"></script>
+    <!-- 2. Supabase 모듈들 -->
+    <script src="../js/supabase/supabase-core.js?v=4.4.0"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.4.0"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.4.0"></script>
+    <script src="../js/supabase-client.js?v=4.4.0"></script>
+
+    <!-- 3. Institute 전용 모듈들 (B단계) -->
+    <script src="../js/institute/institute-utils.js?v=4.4.0"></script>
+    <script src="../js/institute/institute-validation.js?v=4.4.0"></script>
+    <script src="../js/institute/institute-api.js?v=4.4.0"></script>
+    <script src="../js/institute/institute-core.js?v=4.4.0"></script>
+    <script src="../js/institute/institute-ui.js?v=4.4.0"></script>
 
     <script>
         // 전역 변수
-        let allInstitutes = [];
-        let filteredInstitutes = [];
+        let currentInstitute = null;
+        let currentView = 'grid';
 
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🏛️ 학당 관리 페이지 초기화 (A단계 - 카드 레이아웃)');
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🏛️ 파견학당 정보 관리 시스템 v4.4.0 초기화');
             
-            // Lucide 아이콘 초기화
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
+            try {
+                // Lucide 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+
+                // 관리자 인증 확인
+                checkAdminAuthentication();
+
+                // Institute 모듈들 초기화 대기
+                await initializeInstituteModules();
+
+                // UI 이벤트 설정
+                setupEventListeners();
+
+                // 초기 데이터 로드
+                await loadInstituteData();
+
+                console.log('✅ 파견학당 관리 시스템 초기화 완료');
+
+            } catch (error) {
+                console.error('❌ 시스템 초기화 실패:', error);
+                showError('시스템 초기화에 실패했습니다: ' + error.message);
             }
-
-            // 관리자 인증 확인
-            checkAdminAuthentication();
-
-            // 학당 데이터 로드
-            loadInstitutes();
-
-            // 검색 기능 설정
-            setupSearch();
         });
 
+        /**
+         * 🔐 관리자 인증 확인
+         */
         function checkAdminAuthentication() {
             console.log('🔐 관리자 인증 확인 중...');
             
@@ -528,261 +370,767 @@
             console.log('✅ 관리자 인증 확인됨');
         }
 
-        async function loadInstitutes() {
-            console.log('📋 학당 정보 로드 시작...');
+        /**
+         * 🚀 Institute 모듈들 초기화
+         */
+        async function initializeInstituteModules() {
+            console.log('🔄 Institute 모듈들 초기화 중...');
+
+            // 모듈 로드 대기
+            await waitForModules([
+                'InstituteUtils',
+                'InstituteValidation', 
+                'InstituteAPI',
+                'InstituteCore',
+                'InstituteUI'
+            ]);
+
+            // 순차적 초기화
+            const initResults = [];
             
-            try {
-                showLoading();
+            initResults.push(await window.InstituteUtils.initialize());
+            initResults.push(await window.InstituteValidation.initialize());
+            initResults.push(await window.InstituteAPI.initialize());
+            initResults.push(await window.InstituteCore.initialize());
+            initResults.push(await window.InstituteUI.initialize());
 
-                // Supabase가 준비될 때까지 대기
-                await waitForSupabase();
-
-                // 학당 정보와 문화인턴 정보를 함께 조회
-                const { data: institutes, error: institutesError } = await SupabaseAPI.client
-                    .from('institutes')
-                    .select('*')
-                    .order('name_ko');
-
-                if (institutesError) {
-                    throw institutesError;
-                }
-
-                const { data: interns, error: internsError } = await SupabaseAPI.client
-                    .from('user_profiles')
-                    .select('name, field, sejong_institute')
-                    .eq('user_type', 'student')
-                    .not('sejong_institute', 'is', null);
-
-                if (internsError) {
-                    throw internsError;
-                }
-
-                // 학당별 문화인턴 정보 그룹화
-                const internsByInstitute = {};
-                interns.forEach(intern => {
-                    if (!internsByInstitute[intern.sejong_institute]) {
-                        internsByInstitute[intern.sejong_institute] = [];
-                    }
-                    internsByInstitute[intern.sejong_institute].push(intern);
-                });
-
-                // 학당 정보에 문화인턴 정보 연결
-                allInstitutes = institutes.map(institute => ({
-                    ...institute,
-                    interns: internsByInstitute[institute.name_ko] || []
-                }));
-
-                filteredInstitutes = [...allInstitutes];
-
-                console.log(`📊 총 ${allInstitutes.length}개 학당 로드 완료`);
-
-                hideLoading();
-                renderInstitutes();
-                updateStats();
-
-            } catch (error) {
-                console.error('❌ 학당 정보 로드 실패:', error);
-                hideLoading();
-                showError('학당 정보를 불러오는데 실패했습니다: ' + error.message);
+            const failedModules = initResults.filter(result => !result);
+            if (failedModules.length > 0) {
+                throw new Error(`${failedModules.length}개 모듈 초기화 실패`);
             }
+
+            console.log('✅ 모든 Institute 모듈 초기화 완료');
         }
 
-        async function waitForSupabase() {
-            let attempts = 0;
-            while (!window.SupabaseAPI && attempts < 50) {
+        /**
+         * ⏰ 모듈 로드 대기
+         */
+        async function waitForModules(moduleNames, timeout = 10000) {
+            const startTime = Date.now();
+            
+            while (Date.now() - startTime < timeout) {
+                const allLoaded = moduleNames.every(name => window[name]);
+                if (allLoaded) {
+                    console.log(`✅ 모든 모듈 로드 완료: ${moduleNames.join(', ')}`);
+                    return;
+                }
                 await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
             }
             
-            if (!window.SupabaseAPI) {
-                throw new Error('Supabase 초기화 실패');
+            const missingModules = moduleNames.filter(name => !window[name]);
+            throw new Error(`모듈 로드 타임아웃: ${missingModules.join(', ')}`);
+        }
+
+        /**
+         * 📡 이벤트 리스너 설정
+         */
+        function setupEventListeners() {
+            // 검색 기능
+            const searchInput = document.getElementById('institute-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', window.Utils.debounce(handleSearch, 300));
+            }
+
+            // 뷰 전환 버튼
+            document.getElementById('view-toggle-grid')?.addEventListener('click', () => switchView('grid'));
+            document.getElementById('view-toggle-list')?.addEventListener('click', () => switchView('list'));
+
+            // 새로고침 버튼
+            document.getElementById('refresh-button')?.addEventListener('click', refreshData);
+
+            // 수정 모달 저장 버튼
+            document.getElementById('save-institute-btn')?.addEventListener('click', saveInstituteData);
+
+            // 이미지 업로드
+            setupImageUpload();
+
+            // ESC 키로 모달 닫기
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeAllModals();
+                }
+            });
+
+            console.log('📡 이벤트 리스너 설정 완료');
+        }
+
+        /**
+         * 📊 초기 데이터 로드
+         */
+        async function loadInstituteData() {
+            try {
+                showLoading(true);
+                
+                // InstituteCore를 통해 데이터 로드
+                await window.InstituteCore.loadBasicData();
+                
+                // UI 렌더링
+                await renderInstitutes();
+                
+                // 통계 업데이트
+                updateStatistics();
+                
+                showLoading(false);
+                
+            } catch (error) {
+                console.error('❌ 데이터 로드 실패:', error);
+                showError('학당 데이터를 불러오는데 실패했습니다.');
+                showLoading(false);
             }
         }
 
-        function renderInstitutes() {
-            const container = document.getElementById('institutesGrid');
-            container.innerHTML = '';
-
-            if (filteredInstitutes.length === 0) {
-                container.innerHTML = `
-                    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: #718096;">
-                        <i data-lucide="search" style="width: 3rem; height: 3rem; margin-bottom: 1rem;"></i>
-                        <p>검색 결과가 없습니다.</p>
-                    </div>
-                `;
-                lucide.createIcons();
+        /**
+         * 🎨 학당 목록 렌더링
+         */
+        async function renderInstitutes() {
+            const institutes = window.InstituteCore.getAllInstitutes();
+            
+            if (institutes.length === 0) {
+                showEmptyState();
                 return;
             }
 
-            filteredInstitutes.forEach(institute => {
-                const card = createInstituteCard(institute);
-                container.appendChild(card);
-            });
+            if (currentView === 'grid') {
+                renderGridView(institutes);
+            } else {
+                renderListView(institutes);
+            }
 
-            container.style.display = 'grid';
-            lucide.createIcons();
+            // 아이콘 다시 생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         }
 
+        /**
+         * 🔲 그리드 뷰 렌더링
+         */
+        function renderGridView(institutes) {
+            const grid = document.getElementById('institute-grid');
+            const list = document.getElementById('institute-list');
+            
+            if (!grid) return;
+
+            grid.innerHTML = institutes.map(institute => createInstituteCard(institute)).join('');
+            grid.style.display = 'grid';
+            if (list) list.style.display = 'none';
+        }
+
+        /**
+         * 📄 리스트 뷰 렌더링  
+         */
+        function renderListView(institutes) {
+            const grid = document.getElementById('institute-grid');
+            const list = document.getElementById('institute-list');
+            const tableBody = document.getElementById('institute-table-body');
+            
+            if (!tableBody) return;
+
+            tableBody.innerHTML = institutes.map(institute => createInstituteRow(institute)).join('');
+            if (list) list.style.display = 'block';
+            if (grid) grid.style.display = 'none';
+        }
+
+        /**
+         * 🏗️ 학당 카드 생성
+         */
         function createInstituteCard(institute) {
-            const div = document.createElement('div');
-            div.className = 'institute-card';
-
-            const isComplete = checkInstituteCompleteness(institute);
-            const internsList = institute.interns.map(intern => 
-                `<span class="intern-item"><span class="intern-name">${intern.name}</span> <span class="intern-field">(${intern.field})</span></span>`
-            ).join('');
-
-            const contactPerson = institute.contact_person || '미정';
-            const lastUpdated = institute.updated_at ? 
-                new Date(institute.updated_at).toLocaleDateString('ko-KR') : '정보 없음';
-
-            div.innerHTML = `
-                <div class="institute-header">
-                    <h3 class="institute-name">${institute.name_ko}</h3>
-                    <span class="institute-status ${isComplete ? '' : 'incomplete'}">
-                        ${isComplete ? '완료' : '미완성'}
-                    </span>
-                </div>
-                
-                <div class="institute-body">
-                    <div class="info-row">
-                        <i data-lucide="users" class="info-icon"></i>
-                        <span class="info-text">
-                            ${institute.interns.length > 0 ? 
-                                `문화인턴 ${institute.interns.length}명` : 
-                                '<span class="placeholder">배정된 문화인턴 없음</span>'
-                            }
+            const displayData = window.InstituteUtils.createDisplayData(institute);
+            const completionStatus = getCompletionStatus(institute);
+            
+            return `
+                <div class="institute-card institute-fade-in" data-id="${institute.id}">
+                    <div class="institute-card-header">
+                        <h3 class="institute-card-name">${institute.name_ko}</h3>
+                        ${institute.name_en ? `<p class="institute-card-name-en">${institute.name_en}</p>` : ''}
+                        <span class="institute-status-badge ${completionStatus.class}">
+                            ${completionStatus.label}
                         </span>
                     </div>
                     
-                    ${institute.interns.length > 0 ? `
-                        <div class="intern-list">
-                            ${internsList}
+                    <div class="institute-card-body">
+                        <div class="institute-info-row">
+                            <i data-lucide="building" class="institute-info-icon"></i>
+                            <div class="institute-info-content">
+                                <div class="institute-info-label">운영기관</div>
+                                <div class="institute-info-value ${!institute.operating_organization ? 'placeholder' : ''}">
+                                    ${institute.operating_organization || '미설정'}
+                                </div>
+                            </div>
                         </div>
-                    ` : ''}
-                    
-                    <div class="info-row">
-                        <i data-lucide="user" class="info-icon"></i>
-                        <span class="info-text ${contactPerson === '미정' ? 'placeholder' : ''}">
-                            담당자: ${contactPerson}
-                        </span>
+                        
+                        <div class="institute-info-row">
+                            <i data-lucide="map-pin" class="institute-info-icon"></i>
+                            <div class="institute-info-content">
+                                <div class="institute-info-label">주소</div>
+                                <div class="institute-info-value long-text ${!institute.address ? 'placeholder' : ''}">
+                                    ${window.InstituteUtils.truncateText(institute.address || '주소 미설정', 60)}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="institute-info-row">
+                            <i data-lucide="user" class="institute-info-icon"></i>
+                            <div class="institute-info-content">
+                                <div class="institute-info-label">담당자</div>
+                                <div class="institute-info-value ${!institute.manager_name ? 'placeholder' : ''}">
+                                    ${institute.manager_name || '미지정'}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${getInternSection(institute)}
                     </div>
                     
-                    <div class="info-row">
-                        <i data-lucide="map-pin" class="info-icon"></i>
-                        <span class="info-text ${!institute.address ? 'placeholder' : ''}">
-                            ${institute.address || '주소 정보 없음'}
-                        </span>
+                    <div class="institute-card-footer">
+                        <div class="institute-last-updated">
+                            최종 수정: ${displayData.updated_at_relative || '정보 없음'}
+                        </div>
+                        <div class="institute-card-actions">
+                            <button class="institute-btn institute-btn-sm institute-btn-primary" 
+                                    onclick="showInstituteDetails('${institute.id}')">
+                                <i data-lucide="eye"></i>
+                                상세보기
+                            </button>
+                            <button class="institute-btn institute-btn-sm institute-btn-secondary" 
+                                    onclick="editInstitute('${institute.id}')">
+                                <i data-lucide="edit"></i>
+                                수정
+                            </button>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="institute-footer">
-                    <span class="last-updated">최종 수정: ${lastUpdated}</span>
-                    <button class="update-btn" onclick="openUpdateModal('${institute.id}')">
-                        <i data-lucide="edit"></i>
-                        업데이트
-                    </button>
                 </div>
             `;
-
-            return div;
         }
 
-        function checkInstituteCompleteness(institute) {
-            const requiredFields = [
-                'name_en', 'operator', 'address', 'contact_person', 
-                'phone', 'contact_phone'
-            ];
+        /**
+         * 📋 학당 행 생성 (리스트 뷰)
+         */
+        function createInstituteRow(institute) {
+            const completionStatus = getCompletionStatus(institute);
+            const internCount = 0; // TODO: 문화인턴 수 계산
             
-            return requiredFields.every(field => 
-                institute[field] && institute[field].trim() !== ''
+            return `
+                <tr data-id="${institute.id}">
+                    <td>
+                        <div class="institute-table-name">${institute.name_ko}</div>
+                        ${institute.name_en ? `<div class="institute-table-name-en">${institute.name_en}</div>` : ''}
+                    </td>
+                    <td>${institute.operating_organization || '-'}</td>
+                    <td>${window.InstituteUtils.truncateText(institute.address || '-', 40)}</td>
+                    <td>${institute.manager_name || '-'}</td>
+                    <td>${internCount}명</td>
+                    <td>
+                        <span class="institute-status-badge ${completionStatus.class}">
+                            ${completionStatus.label}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="institute-table-actions">
+                            <button class="institute-btn institute-btn-sm institute-btn-primary" 
+                                    onclick="showInstituteDetails('${institute.id}')">
+                                <i data-lucide="eye"></i>
+                            </button>
+                            <button class="institute-btn institute-btn-sm institute-btn-secondary" 
+                                    onclick="editInstitute('${institute.id}')">
+                                <i data-lucide="edit"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        /**
+         * 📊 완성도 상태 확인
+         */
+        function getCompletionStatus(institute) {
+            const requiredFields = ['name_ko', 'operating_organization', 'address', 'manager_name'];
+            const completedFields = requiredFields.filter(field => 
+                institute[field] && institute[field].toString().trim() !== ''
             );
+            
+            const completion = completedFields.length / requiredFields.length;
+            
+            if (completion >= 0.8) {
+                return { class: 'complete', label: '완료' };
+            } else if (completion >= 0.5) {
+                return { class: 'pending', label: '진행중' };
+            } else {
+                return { class: 'incomplete', label: '미완성' };
+            }
         }
 
-        function updateStats() {
-            const totalCount = allInstitutes.length;
-            const assignedCount = allInstitutes.reduce((sum, inst) => sum + inst.interns.length, 0);
-            const incompleteCount = allInstitutes.filter(inst => !checkInstituteCompleteness(inst)).length;
-
-            document.getElementById('totalInstitutes').textContent = totalCount;
-            document.getElementById('assignedInterns').textContent = assignedCount;
-            document.getElementById('incompleteInfo').textContent = incompleteCount;
+        /**
+         * 👥 문화인턴 섹션 생성
+         */
+        function getInternSection(institute) {
+            // TODO: 실제 문화인턴 데이터 연동
+            return `
+                <div class="institute-interns-section">
+                    <div class="institute-interns-title">
+                        <i data-lucide="users"></i>
+                        배정된 문화인턴 (0명)
+                    </div>
+                    <div class="institute-info-value placeholder">
+                        배정된 문화인턴이 없습니다
+                    </div>
+                </div>
+            `;
         }
 
-        function setupSearch() {
-            const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', function(e) {
-                const query = e.target.value.toLowerCase().trim();
+        /**
+         * 🔍 검색 처리
+         */
+        async function handleSearch() {
+            const keyword = document.getElementById('institute-search')?.value?.trim();
+            
+            if (!keyword) {
+                await renderInstitutes();
+                return;
+            }
+
+            try {
+                const results = await window.InstituteCore.searchInstitutes({ keyword });
                 
-                if (query === '') {
-                    filteredInstitutes = [...allInstitutes];
+                if (currentView === 'grid') {
+                    renderGridView(results);
                 } else {
-                    filteredInstitutes = allInstitutes.filter(institute => {
-                        const instituteName = institute.name_ko.toLowerCase();
-                        const internNames = institute.interns.map(intern => 
-                            intern.name.toLowerCase()
-                        ).join(' ');
-                        
-                        return instituteName.includes(query) || internNames.includes(query);
-                    });
+                    renderListView(results);
+                }
+
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
                 }
                 
-                renderInstitutes();
+            } catch (error) {
+                console.error('❌ 검색 실패:', error);
+                showError('검색 중 오류가 발생했습니다.');
+            }
+        }
+
+        /**
+         * 🔄 뷰 전환
+         */
+        function switchView(view) {
+            currentView = view;
+            
+            // 버튼 활성화 상태 업데이트
+            document.querySelectorAll('.institute-view-btn').forEach(btn => {
+                btn.classList.remove('active');
             });
+            document.getElementById(`view-toggle-${view}`)?.classList.add('active');
+            
+            // 뷰 렌더링
+            renderInstitutes();
         }
 
-        function openUpdateModal(instituteId) {
-            // B단계에서 구현될 모달 기능
-            console.log('🔄 업데이트 모달 열기:', instituteId);
-            alert('업데이트 모달 기능은 B단계에서 구현될 예정입니다.\n\n다음 단계를 위한 프롬프트를 확인해주세요!');
+        /**
+         * 👁️ 학당 상세 정보 표시
+         */
+        async function showInstituteDetails(instituteId) {
+            try {
+                showLoading(true);
+                
+                const institute = await window.InstituteCore.getInstituteDetails(instituteId);
+                if (!institute) {
+                    throw new Error('학당 정보를 찾을 수 없습니다');
+                }
+
+                renderDetailModal(institute);
+                showModal('institute-detail-modal');
+                
+                // 수정 버튼 이벤트
+                document.getElementById('edit-institute-btn').onclick = () => {
+                    closeDetailModal();
+                    editInstitute(instituteId);
+                };
+                
+                showLoading(false);
+                
+            } catch (error) {
+                console.error('❌ 상세 정보 로드 실패:', error);
+                showError('학당 상세 정보를 불러오는데 실패했습니다.');
+                showLoading(false);
+            }
         }
 
-        function showLoading() {
-            document.getElementById('loadingContainer').style.display = 'flex';
-            document.getElementById('institutesGrid').style.display = 'none';
+        /**
+         * 📝 상세 정보 모달 렌더링
+         */
+        function renderDetailModal(institute) {
+            const content = document.getElementById('institute-detail-content');
+            if (!content) return;
+
+            const displayData = window.InstituteUtils.createDisplayData(institute);
+            const groupedFields = displayData.grouped_fields;
+
+            let modalHTML = '';
+
+            // 학당 이미지
+            if (institute.image_url) {
+                modalHTML += `
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <img src="${institute.image_url}" alt="${institute.name_ko}" 
+                             style="max-width: 100%; max-height: 300px; border-radius: 0.5rem; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                    </div>
+                `;
+            }
+
+            // 필드 그룹별로 렌더링
+            Object.entries(groupedFields).forEach(([groupKey, groupData]) => {
+                if (groupData.fields.length === 0) return;
+
+                modalHTML += `
+                    <div class="institute-field-group" style="margin-bottom: 2rem;">
+                        <h3 class="institute-field-group-title">
+                            <i data-lucide="${groupData.icon}"></i>
+                            ${groupData.name}
+                        </h3>
+                `;
+
+                groupData.fields.forEach(field => {
+                    const value = field.value || '정보 없음';
+                    const isLongText = typeof value === 'string' && value.length > 100;
+                    
+                    modalHTML += `
+                        <div class="institute-info-row" style="margin-bottom: 1rem;">
+                            <i data-lucide="${field.icon}" class="institute-info-icon"></i>
+                            <div class="institute-info-content">
+                                <div class="institute-info-label">${field.label}</div>
+                                <div class="institute-info-value ${!field.value ? 'placeholder' : ''}" 
+                                     ${isLongText ? 'style="white-space: pre-wrap; line-height: 1.6;"' : ''}>
+                                    ${field.name === 'website_sns' && field.value ? 
+                                        `<a href="${field.value}" target="_blank" rel="noopener">${field.value}</a>` : 
+                                        value}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                modalHTML += '</div>';
+            });
+
+            content.innerHTML = modalHTML;
+
+            // 아이콘 다시 생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         }
 
-        function hideLoading() {
-            document.getElementById('loadingContainer').style.display = 'none';
-            document.getElementById('institutesGrid').style.display = 'grid';
+        /**
+         * ✏️ 학당 정보 수정
+         */
+        async function editInstitute(instituteId) {
+            try {
+                currentInstitute = await window.InstituteCore.getInstituteDetails(instituteId);
+                if (!currentInstitute) {
+                    throw new Error('학당 정보를 찾을 수 없습니다');
+                }
+
+                populateEditForm(currentInstitute);
+                showModal('institute-edit-modal');
+                
+            } catch (error) {
+                console.error('❌ 수정 모달 열기 실패:', error);
+                showError('학당 정보를 불러오는데 실패했습니다.');
+            }
+        }
+
+        /**
+         * 📝 수정 폼 데이터 채우기
+         */
+        function populateEditForm(institute) {
+            const formFields = window.InstituteUtils.getAllFields();
+            
+            formFields.forEach(fieldName => {
+                const element = document.getElementById(`edit-${fieldName.replace(/_/g, '-')}`);
+                if (element && institute[fieldName]) {
+                    element.value = institute[fieldName];
+                }
+            });
+
+            // 이미지 미리보기
+            if (institute.image_url) {
+                const preview = document.getElementById('image-preview');
+                if (preview) {
+                    preview.src = institute.image_url;
+                    preview.style.display = 'block';
+                }
+            }
+        }
+
+        /**
+         * 💾 학당 정보 저장
+         */
+        async function saveInstituteData() {
+            if (!currentInstitute) return;
+
+            try {
+                const formData = new FormData(document.getElementById('institute-edit-form'));
+                const updateData = {};
+                
+                for (const [key, value] of formData.entries()) {
+                    if (value.trim()) {
+                        updateData[key] = value.trim();
+                    }
+                }
+
+                // 이미지 URL 추가
+                const imageUrl = document.getElementById('edit-image-url')?.value;
+                if (imageUrl) {
+                    updateData.image_url = imageUrl;
+                }
+
+                // 유효성 검사
+                const validation = window.InstituteValidation.validateInstituteData(updateData);
+                if (!validation.isValid) {
+                    showError('입력 데이터에 오류가 있습니다: ' + validation.errors.join(', '));
+                    return;
+                }
+
+                showLoading(true);
+
+                // 데이터 업데이트
+                const success = await window.InstituteCore.updateInstituteInfo(currentInstitute.id, updateData);
+                
+                if (success) {
+                    showSuccess('학당 정보가 성공적으로 업데이트되었습니다.');
+                    closeEditModal();
+                    await refreshData();
+                } else {
+                    throw new Error('업데이트 실패');
+                }
+
+                showLoading(false);
+                
+            } catch (error) {
+                console.error('❌ 저장 실패:', error);
+                showError('저장 중 오류가 발생했습니다: ' + error.message);
+                showLoading(false);
+            }
+        }
+
+        /**
+         * 📸 이미지 업로드 설정
+         */
+        function setupImageUpload() {
+            const uploadArea = document.getElementById('image-upload-area');
+            const fileInput = document.getElementById('image-file-input');
+            const preview = document.getElementById('image-preview');
+            const hiddenInput = document.getElementById('edit-image-url');
+
+            if (!uploadArea || !fileInput) return;
+
+            // 클릭으로 파일 선택
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            // 파일 선택 처리
+            fileInput.addEventListener('change', handleImageSelect);
+
+            // 드래그 앤 드롭
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleImageFile(files[0]);
+                }
+            });
+
+            async function handleImageSelect() {
+                const file = fileInput.files[0];
+                if (file) {
+                    await handleImageFile(file);
+                }
+            }
+
+            async function handleImageFile(file) {
+                if (!currentInstitute) return;
+
+                try {
+                    // 파일 검증
+                    if (!file.type.startsWith('image/')) {
+                        throw new Error('이미지 파일만 업로드 가능합니다.');
+                    }
+
+                    if (file.size > 5 * 1024 * 1024) {
+                        throw new Error('파일 크기는 5MB 이하여야 합니다.');
+                    }
+
+                    showLoading(true);
+
+                    // 이미지 업로드
+                    const imageUrl = await window.InstituteAPI.uploadInstituteImage(file, currentInstitute.id);
+                    
+                    if (imageUrl) {
+                        preview.src = imageUrl;
+                        preview.style.display = 'block';
+                        hiddenInput.value = imageUrl;
+                        showSuccess('이미지가 업로드되었습니다.');
+                    } else {
+                        throw new Error('이미지 업로드에 실패했습니다.');
+                    }
+
+                    showLoading(false);
+
+                } catch (error) {
+                    console.error('❌ 이미지 업로드 실패:', error);
+                    showError(error.message);
+                    showLoading(false);
+                }
+            }
+        }
+
+        /**
+         * 📊 통계 업데이트
+         */
+        function updateStatistics() {
+            const institutes = window.InstituteCore.getAllInstitutes();
+            
+            let assignedInterns = 0;
+            let completeInstitutes = 0;
+            let incompleteInstitutes = 0;
+
+            institutes.forEach(institute => {
+                // TODO: 실제 문화인턴 수 계산
+                // assignedInterns += institute.interns ? institute.interns.length : 0;
+                
+                const status = getCompletionStatus(institute);
+                if (status.class === 'complete') {
+                    completeInstitutes++;
+                } else {
+                    incompleteInstitutes++;
+                }
+            });
+
+            // 통계 업데이트
+            document.getElementById('total-institutes').textContent = institutes.length;
+            document.getElementById('assigned-interns').textContent = assignedInterns;
+            document.getElementById('complete-institutes').textContent = completeInstitutes;
+            document.getElementById('incomplete-institutes').textContent = incompleteInstitutes;
+        }
+
+        /**
+         * 🔄 데이터 새로고침
+         */
+        async function refreshData() {
+            console.log('🔄 데이터 새로고침...');
+            
+            try {
+                // 캐시 클리어
+                window.InstituteCore.clearCache();
+                
+                // 데이터 다시 로드
+                await loadInstituteData();
+                
+                showSuccess('데이터가 새로고침되었습니다.');
+                
+            } catch (error) {
+                console.error('❌ 새로고침 실패:', error);
+                showError('데이터 새로고침에 실패했습니다.');
+            }
+        }
+
+        /**
+         * 🚪 모달 관리
+         */
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeDetailModal() {
+            document.getElementById('institute-detail-modal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function closeEditModal() {
+            document.getElementById('institute-edit-modal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            currentInstitute = null;
+        }
+
+        function closeAllModals() {
+            closeDetailModal();
+            closeEditModal();
+        }
+
+        /**
+         * 🎨 UI 상태 관리
+         */
+        function showLoading(show) {
+            const spinner = document.getElementById('loading-spinner');
+            const container = document.getElementById('institute-management-container');
+            
+            if (spinner) {
+                spinner.style.display = show ? 'flex' : 'none';
+            }
+        }
+
+        function showEmptyState() {
+            document.getElementById('institute-grid').style.display = 'none';
+            document.getElementById('institute-list').style.display = 'none';
+            document.getElementById('empty-state').style.display = 'block';
         }
 
         function showError(message) {
-            const container = document.getElementById('institutesContainer');
-            container.innerHTML = `
-                <div style="background: white; border-radius: 1rem; padding: 3rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-                    <i data-lucide="alert-circle" style="width: 3rem; height: 3rem; color: #e53e3e; margin-bottom: 1rem;"></i>
-                    <h3 style="color: #2d3748; margin-bottom: 0.5rem;">오류 발생</h3>
-                    <p style="color: #718096; margin-bottom: 1.5rem;">${message}</p>
-                    <button class="refresh-btn" onclick="loadInstitutes()">
-                        <i data-lucide="refresh-cw"></i>
-                        다시 시도
-                    </button>
-                </div>
-            `;
-            lucide.createIcons();
+            if (window.Utils && window.Utils.showToast) {
+                window.Utils.showToast(message, 'error');
+            } else {
+                alert('오류: ' + message);
+            }
         }
 
+        function showSuccess(message) {
+            if (window.Utils && window.Utils.showToast) {
+                window.Utils.showToast(message, 'success');
+            } else {
+                console.log('✅ ' + message);
+            }
+        }
+
+        /**
+         * 🔙 대시보드로 돌아가기
+         */
         function goBackToDashboard() {
             console.log('🔙 대시보드로 돌아가기');
             window.location.href = '../admin.html';
         }
 
-        // 키보드 단축키 (개발자용)
+        // 개발자 디버그 키보드 단축키
         document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'd') {
+            if (e.ctrlKey && e.shiftKey && e.key === 'D') {
                 e.preventDefault();
-                console.log('🛠️ A단계 디버그 정보');
-                console.log('전체 학당:', allInstitutes.length);
-                console.log('필터된 학당:', filteredInstitutes.length);
+                console.log('🛠️ C단계 디버그 정보');
                 console.log('모듈 상태:', {
-                    SupabaseCore: !!window.SupabaseCore,
-                    SupabaseAPI: !!window.SupabaseAPI
+                    InstituteUtils: window.InstituteUtils?.getUtilsStatus(),
+                    InstituteValidation: window.InstituteValidation?.getValidationStatus(),
+                    InstituteAPI: window.InstituteAPI?.getAPIStatus(),
+                    InstituteCore: window.InstituteCore?.getModuleStatus(),
+                    InstituteUI: window.InstituteUI?.getUIStatus()
                 });
+                console.log('현재 뷰:', currentView);
+                console.log('현재 편집 중인 학당:', currentInstitute);
             }
         });
 
-        console.log('🏛️ A단계: 학당 카드 레이아웃 스크립트 로드 완료');
+        console.log('🏛️ 파견학당 정보 관리 시스템 v4.4.0 스크립트 로드 완료');
     </script>
 </body>
 </html>
