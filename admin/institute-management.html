@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>파견학당 정보 관리 - 세종학당 문화인턴 지원 시스템 (v4.7.4)</title>
+    <title>파견학당 정보 관리 - 세종학당 문화인턴 지원 시스템 (v4.7.5)</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.7.4">
-    <link rel="stylesheet" href="../css/institute.css?v=4.7.4">
+    <link rel="stylesheet" href="../css/main.css?v=4.7.5">
+    <link rel="stylesheet" href="../css/institute.css?v=4.7.5">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -21,11 +21,11 @@
         <div class="institute-header">
             <div class="institute-header-content">
                 <div class="institute-header-title">
-                    <h1>파견학당 정보 관리 (v4.7.4)</h1>
+                    <h1>파견학당 정보 관리 (v4.7.5)</h1>
                     <p>세종학당의 18개 필드 정보를 체계적으로 관리하고 문화인턴 배정 현황을 확인할 수 있습니다.</p>
                     <div class="alert alert-success">
                         <i data-lucide="check-circle"></i>
-                        <strong>v4.7.4 수정!</strong> 편집 모달 데이터 초기화 문제를 해결했습니다.
+                        <strong>v4.7.5 수정!</strong> DB 완성도 퍼센트를 기반으로 정확한 진행도 표시로 개선했습니다.
                     </div>
                 </div>
                 <button class="institute-btn institute-btn-secondary" onclick="goBackToDashboard()">
@@ -113,7 +113,7 @@
                             <th>학당명</th>
                             <th>담당자</th>
                             <th>담당자 연락처</th>
-                            <th>상태</th>
+                            <th>완성도</th>
                             <th>작업</th>
                         </tr>
                     </thead>
@@ -442,29 +442,29 @@
 
     <!-- JavaScript Files -->
     <!-- 1. 기본 설정 모듈 (의존성 순서 중요!) -->
-    <script src="../js/config.js?v=4.7.4"></script>
-    <script src="../js/auth.js?v=4.7.4"></script>
-    <script src="../js/utils.js?v=4.7.4"></script>
+    <script src="../js/config.js?v=4.7.5"></script>
+    <script src="../js/auth.js?v=4.7.5"></script>
+    <script src="../js/utils.js?v=4.7.5"></script>
     
     <!-- 2. Supabase 모듈들 -->
-    <script src="../js/supabase/supabase-core.js?v=4.7.4"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.7.4"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.7.4"></script>
-    <script src="../js/supabase-client.js?v=4.7.4"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.7.5"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.7.5"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.7.5"></script>
+    <script src="../js/supabase-client.js?v=4.7.5"></script>
 
     <!-- 3. Institute 전용 모듈들 -->
-    <script src="../js/institute/institute-utils.js?v=4.7.4"></script>
-    <script src="../js/institute/institute-validation.js?v=4.7.4"></script>
-    <script src="../js/institute/institute-api.js?v=4.7.4"></script>
-    <script src="../js/institute/institute-core.js?v=4.7.4"></script>
-    <script src="../js/institute/institute-ui.js?v=4.7.4"></script>
+    <script src="../js/institute/institute-utils.js?v=4.7.5"></script>
+    <script src="../js/institute/institute-validation.js?v=4.7.5"></script>
+    <script src="../js/institute/institute-api.js?v=4.7.5"></script>
+    <script src="../js/institute/institute-core.js?v=4.7.5"></script>
+    <script src="../js/institute/institute-ui.js?v=4.7.5"></script>
 
     <script>
-        // 🏛️ 파견학당 정보 관리 시스템 (v4.7.4) - 폼 데이터 초기화 문제 해결
-        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.4 초기화 - 폼 데이터 초기화 문제 해결');
+        // 🏛️ 파견학당 정보 관리 시스템 (v4.7.5) - DB 완성도 퍼센트 기반 정확한 진행도 표시
+        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.5 초기화 - DB 완성도 퍼센트 기반 정확한 진행도 표시');
 
         /**
-         * 🔧 통합 매니저 클래스 (v4.7.4)
+         * 🔧 통합 매니저 클래스 (v4.7.5)
          */
         class InstituteManagerD {
             constructor() {
@@ -485,7 +485,7 @@
                 if (this.isInitialized) return;
 
                 try {
-                    console.log('🔄 v4.7.4 시스템 초기화 시작 - 폼 데이터 초기화 문제 해결');
+                    console.log('🔄 v4.7.5 시스템 초기화 시작 - DB 완성도 퍼센트 기반 정확한 진행도 표시');
                     
                     // Lucide 아이콘 초기화
                     if (typeof lucide !== 'undefined') {
@@ -523,10 +523,10 @@
                     await this.loadInitialData();
 
                     this.isInitialized = true;
-                    console.log('✅ v4.7.4 시스템 초기화 완료 - 폼 데이터 초기화 문제 완전 해결');
+                    console.log('✅ v4.7.5 시스템 초기화 완료 - DB 완성도 퍼센트 기반 정확한 진행도 표시 구현됨');
 
                 } catch (error) {
-                    console.error('❌ v4.7.4 시스템 초기화 실패:', error);
+                    console.error('❌ v4.7.5 시스템 초기화 실패:', error);
                     this.showError(`시스템 초기화에 실패했습니다: ${error.message}`);
                     this.showErrorState(error.message);
                 }
@@ -565,7 +565,7 @@
                 while (Date.now() - startTime < timeout) {
                     const allLoaded = requiredModules.every(name => window[name]);
                     if (allLoaded) {
-                        console.log('✅ 모든 필수 모듈 로드 완료 (v4.7.4)');
+                        console.log('✅ 모든 필수 모듈 로드 완료 (v4.7.5)');
                         return;
                     }
                     await new Promise(resolve => setTimeout(resolve, 100));
@@ -579,7 +579,7 @@
              * 🔧 모듈 초기화
              */
             async initializeModules() {
-                console.log('🔄 모듈 초기화 중... (v4.7.4 폼 데이터 초기화 문제 해결 포함)');
+                console.log('🔄 모듈 초기화 중... (v4.7.5 DB 완성도 퍼센트 기반 정확한 진행도 표시 포함)');
 
                 const modules = [
                     'InstituteUtils',
@@ -599,11 +599,11 @@
                     }
                 }
 
-                console.log('✅ 모든 모듈 초기화 완료 (v4.7.4)');
+                console.log('✅ 모든 모듈 초기화 완료 (v4.7.5)');
             }
 
             /**
-             * 📡 이벤트 리스너 설정 (v4.7.4)
+             * 📡 이벤트 리스너 설정 (v4.7.5)
              */
             setupEventListeners() {
                 // 검색 기능
@@ -630,7 +630,7 @@
                 // 리스트 이벤트 위임
                 document.getElementById('institute-table-body')?.addEventListener('click', this.handleTableClick.bind(this));
 
-                console.log('📡 이벤트 리스너 설정 완료 (v4.7.4)');
+                console.log('📡 이벤트 리스너 설정 완료 (v4.7.5)');
             }
 
             /**
@@ -691,17 +691,17 @@
             }
 
             /**
-             * 📊 초기 데이터 로드 (간소화된 필드만)
+             * 📊 초기 데이터 로드 (v4.7.5 - DB 완성도 퍼센트 기반)
              */
             async loadInitialData() {
                 try {
                     this.showLoading(true);
                     
-                    console.log('📊 초기 데이터 로드 시작 (필수 정보만)...');
+                    console.log('📊 초기 데이터 로드 시작 (v4.7.5 - DB 완성도 퍼센트 기반)...');
                     
-                    // 필요한 정보만 로드
-                    const institutes = await this.loadInstituteListSimplified();
-                    console.log(`📋 ${institutes.length}개 학당 로드됨`);
+                    // v4.7.5 개선: InstituteAPI.getInstituteCardData() 사용
+                    const institutes = await window.InstituteAPI.getInstituteCardData();
+                    console.log(`📋 ${institutes.length}개 학당 로드됨 (완성도 퍼센트 포함)`);
                     
                     if (institutes.length === 0) {
                         this.showEmptyState();
@@ -710,11 +710,11 @@
                         this.renderListView(institutes);
                     }
                     
-                    // 통계 업데이트
+                    // 통계 업데이트 (DB 완성도 기반)
                     this.updateStatistics(institutes);
                     
                     this.showLoading(false);
-                    console.log('✅ 초기 데이터 로드 완료 (v4.7.4)');
+                    console.log('✅ 초기 데이터 로드 완료 (v4.7.5 - DB 완성도 퍼센트 기반)');
                     
                 } catch (error) {
                     console.error('❌ 초기 데이터 로드 실패:', error);
@@ -724,43 +724,7 @@
             }
 
             /**
-             * 📋 간소화된 학당 목록 로드 (필요한 필드만)
-             */
-            async loadInstituteListSimplified() {
-                try {
-                    if (!window.InstituteAPI) {
-                        throw new Error('InstituteAPI 모듈이 없습니다');
-                    }
-
-                    // 필요한 필드만 조회하는 새로운 API 사용
-                    const institutes = await window.InstituteAPI.getInstituteList();
-                    
-                    // 각 학당의 담당자 정보 추가 조회
-                    const enrichedInstitutes = [];
-                    for (const institute of institutes) {
-                        const details = await window.InstituteAPI.getInstituteById(institute.id);
-                        enrichedInstitutes.push({
-                            id: institute.id,
-                            name_ko: institute.name_ko,
-                            name_en: institute.name_en,
-                            contact_person: details?.contact_person || '',
-                            contact_phone: details?.contact_phone || '',
-                            completion_percentage: details?.completion_percentage || 0,
-                            info_completed: details?.info_completed || false,
-                            updated_at: institute.updated_at
-                        });
-                    }
-                    
-                    return enrichedInstitutes;
-                    
-                } catch (error) {
-                    console.error('❌ 간소화된 학당 목록 로드 실패:', error);
-                    return [];
-                }
-            }
-
-            /**
-             * 📄 리스트 뷰 렌더링 (단순화)
+             * 📄 리스트 뷰 렌더링 (v4.7.5 - DB 완성도 기반)
              */
             renderListView(institutes) {
                 const list = document.getElementById('institute-list');
@@ -768,17 +732,20 @@
                 
                 if (!tableBody) return;
 
-                tableBody.innerHTML = institutes.map(institute => this.createInstituteRowSimplified(institute)).join('');
+                tableBody.innerHTML = institutes.map(institute => this.createInstituteRowWithDBCompletion(institute)).join('');
                 if (list) list.style.display = 'block';
                 
                 this.hideEmptyAndError();
             }
 
             /**
-             * 📋 학당 행 생성 (단순화된 버전)
+             * 📋 학당 행 생성 (v4.7.5 - DB 완성도 퍼센트 기반 개선)
              */
-            createInstituteRowSimplified(institute) {
-                const completionStatus = this.getCompletionStatus(institute);
+            createInstituteRowWithDBCompletion(institute) {
+                // v4.7.5: DB의 completion_percentage와 status_text 사용
+                const completionPercentage = institute.completion_percentage || 0;
+                const statusText = institute.status_text || this.getStatusFromAPI(completionPercentage);
+                const statusClass = this.getStatusClass(completionPercentage);
                 
                 return `
                     <tr data-id="${institute.id}">
@@ -789,9 +756,15 @@
                         <td>${institute.contact_person || '-'}</td>
                         <td>${institute.contact_phone || '-'}</td>
                         <td>
-                            <span class="institute-status-badge ${completionStatus.class}">
-                                ${completionStatus.label}
-                            </span>
+                            <div class="institute-completion-display">
+                                <span class="institute-status-badge ${statusClass}">
+                                    ${statusText}
+                                </span>
+                                <div class="institute-completion-bar">
+                                    <div class="institute-completion-fill" style="width: ${completionPercentage}%"></div>
+                                </div>
+                                <span class="institute-completion-percentage">${completionPercentage}%</span>
+                            </div>
                         </td>
                         <td>
                             <div class="institute-table-actions">
@@ -807,6 +780,34 @@
                         </td>
                     </tr>
                 `;
+            }
+
+            /**
+             * 🎨 완성도 퍼센트에 따른 상태 클래스 (v4.7.5)
+             */
+            getStatusClass(percentage) {
+                if (percentage >= 100) return 'complete';
+                if (percentage >= 75) return 'nearly-complete';
+                if (percentage >= 50) return 'progress';
+                if (percentage >= 25) return 'started';
+                return 'incomplete';
+            }
+
+            /**
+             * 📊 API 기반 상태 텍스트 가져오기 (v4.7.5)
+             */
+            getStatusFromAPI(percentage) {
+                // InstituteAPI의 getCompletionStatusText 함수 활용
+                if (window.InstituteAPI && window.InstituteAPI.getCompletionStatusText) {
+                    return window.InstituteAPI.getCompletionStatusText(percentage);
+                }
+                
+                // 폴백
+                if (percentage >= 100) return '완성';
+                if (percentage >= 75) return '거의 완성';
+                if (percentage >= 50) return '진행 중';
+                if (percentage >= 25) return '시작됨';
+                return '미시작';
             }
 
             /**
@@ -868,13 +869,13 @@
             }
 
             /**
-             * ✏️ 학당 정보 수정 (v4.7.4 - 폼 초기화 추가)
+             * ✏️ 학당 정보 수정 (v4.7.5)
              */
             async editInstitute(instituteId) {
                 try {
                     console.log(`🔄 학당 편집 시작: ${instituteId}`);
                     
-                    // 📝 1단계: 폼 완전 초기화 (v4.7.4 새로 추가!)
+                    // 📝 1단계: 폼 완전 초기화
                     this.clearEditForm();
                     
                     // 📝 2단계: 학당 데이터 로드
@@ -901,7 +902,7 @@
             }
 
             /**
-             * 🧹 편집 폼 완전 초기화 (v4.7.4 새로 추가!)
+             * 🧹 편집 폼 완전 초기화 (v4.7.5)
              */
             clearEditForm() {
                 console.log('🧹 편집 폼 완전 초기화 시작...');
@@ -954,10 +955,10 @@
             }
 
             /**
-             * 📝 수정 폼 데이터 채우기 (v4.7.4 - 모든 필드 처리 개선)
+             * 📝 수정 폼 데이터 채우기 (v4.7.5)
              */
             populateEditForm(institute) {
-                console.log('📝 수정 폼 데이터 채우기 시작 (v4.7.4 개선됨)...');
+                console.log('📝 수정 폼 데이터 채우기 시작 (v4.7.5)...');
                 
                 // 표준 필드 매핑 (파견 희망 기간 추가)
                 const fieldMappings = {
@@ -982,7 +983,7 @@
                 for (const [dbField, elementId] of Object.entries(fieldMappings)) {
                     const element = document.getElementById(elementId);
                     if (element) {
-                        // v4.7.4 개선: 빈 값이나 null도 빈 문자열로 설정
+                        // v4.7.5 개선: 빈 값이나 null도 빈 문자열로 설정
                         const value = institute[dbField] || '';
                         element.value = value;
                         
@@ -1017,7 +1018,7 @@
                 // 담당자와 동일 체크박스 상태 확인
                 this.checkCoordinatorSameAsManager();
                 
-                console.log('✅ 수정 폼 데이터 채우기 완료 (v4.7.4 모든 필드 처리 개선)');
+                console.log('✅ 수정 폼 데이터 채우기 완료 (v4.7.5)');
             }
 
             /**
@@ -1041,7 +1042,7 @@
             }
 
             /**
-             * 💾 학당 정보 저장 (v4.7.4 - 파견 희망 기간 포함)
+             * 💾 학당 정보 저장 (v4.7.5)
              */
             async saveInstituteData() {
                 if (!this.currentInstitute) return;
@@ -1082,7 +1083,7 @@
                         updateData.education_environment = educationEnvironmentData;
                     }
 
-                    console.log('💾 저장할 데이터 (파견 희망 기간 포함):', updateData);
+                    console.log('💾 저장할 데이터 (v4.7.5 파견 희망 기간 포함):', updateData);
 
                     // 데이터 업데이트
                     const success = await window.InstituteCore.updateInstituteInfo(this.currentInstitute.id, updateData);
@@ -1143,7 +1144,7 @@
             }
 
             /**
-             * 🔍 검색 처리 (간소화)
+             * 🔍 검색 처리 (v4.7.5 - DB 완성도 기반)
              */
             async handleSearch() {
                 const keyword = document.getElementById('institute-search')?.value?.trim();
@@ -1153,14 +1154,11 @@
                     let results;
                     
                     if (!keyword) {
-                        results = await this.loadInstituteListSimplified();
+                        // v4.7.5: 전체 목록 로드 시에도 DB 완성도 정보 포함
+                        results = await window.InstituteAPI.getInstituteCardData();
                     } else {
-                        // 간단한 클라이언트 사이드 필터링
-                        const allInstitutes = await this.loadInstituteListSimplified();
-                        results = allInstitutes.filter(institute => 
-                            institute.name_ko.toLowerCase().includes(keyword.toLowerCase()) ||
-                            (institute.contact_person && institute.contact_person.toLowerCase().includes(keyword.toLowerCase()))
-                        );
+                        // v4.7.5: 검색 시에도 DB 완성도 정보 포함
+                        results = await window.InstituteAPI.getInstituteCardData({ search: keyword });
                     }
                     
                     this.renderListView(results);
@@ -1175,7 +1173,7 @@
             }
 
             /**
-             * 🔄 데이터 새로고침
+             * 🔄 데이터 새로고침 (v4.7.5)
              */
             async refreshData() {
                 console.log('🔄 데이터 새로고침...');
@@ -1337,7 +1335,7 @@
                 return validEnvironments.length > 0 ? JSON.stringify(validEnvironments) : null;
             }
 
-            // === 실시간 검증 시스템 (v4.7.4 - contact_phone 검증 제거) ===
+            // === 실시간 검증 시스템 (v4.7.5) ===
             initializeRealTimeValidation() {
                 const form = document.getElementById('institute-edit-form');
                 if (!form) return;
@@ -1370,7 +1368,7 @@
                     errorMessage = '이 필드는 필수입니다.';
                 }
 
-                // 특정 필드별 검증 (v4.7.4 - contact_phone 검증 제거)
+                // 특정 필드별 검증 (v4.7.5)
                 switch (fieldName) {
                     case 'name_ko':
                         if (value && value.length < 2) {
@@ -1386,8 +1384,6 @@
                             errorMessage = '올바른 전화번호 형식이 아닙니다.';
                         }
                         break;
-                    
-                    // contact_phone 검증 완전 제거됨
                     
                     case 'sns_url':
                     case 'safety_info_url':
@@ -1715,7 +1711,7 @@
                 }
             }
 
-            // === 상세 정보 모달 렌더링 (v4.7.4 - 파견 희망 기간 포함) ===
+            // === 상세 정보 모달 렌더링 (v4.7.5) ===
             renderDetailModal(institute) {
                 const content = document.getElementById('institute-detail-content');
                 if (!content) return;
@@ -1864,42 +1860,28 @@
                 document.getElementById('error-state').style.display = 'none';
             }
 
-            // === 통계 업데이트 ===
+            // === 통계 업데이트 (v4.7.5 - DB 완성도 기반) ===
             updateStatistics(institutes) {
                 let assignedInterns = 0;
                 let completeInstitutes = 0;
                 let incompleteInstitutes = 0;
 
                 institutes.forEach(institute => {
-                    const status = this.getCompletionStatus(institute);
-                    if (status.class === 'complete') {
+                    // v4.7.5: DB의 info_completed 사용
+                    if (institute.info_completed === true) {
                         completeInstitutes++;
                     } else {
                         incompleteInstitutes++;
                     }
+                    
+                    // 배정된 인턴 수 합산
+                    assignedInterns += institute.assigned_intern_count || 0;
                 });
 
                 document.getElementById('total-institutes').textContent = institutes.length;
                 document.getElementById('assigned-interns').textContent = assignedInterns;
                 document.getElementById('complete-institutes').textContent = completeInstitutes;
                 document.getElementById('incomplete-institutes').textContent = incompleteInstitutes;
-            }
-
-            getCompletionStatus(institute) {
-                const requiredFields = ['name_ko', 'contact_person'];
-                const completedFields = requiredFields.filter(field => 
-                    institute[field] && institute[field].toString().trim() !== ''
-                );
-                
-                const completion = completedFields.length / requiredFields.length;
-                
-                if (completion >= 0.8) {
-                    return { class: 'complete', label: '완료' };
-                } else if (completion >= 0.5) {
-                    return { class: 'pending', label: '진행중' };
-                } else {
-                    return { class: 'incomplete', label: '미완성' };
-                }
             }
 
             // === 메시지 표시 ===
@@ -1994,14 +1976,14 @@
 
         // === DOMContentLoaded 이벤트 ===
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.4 시작 - 폼 데이터 초기화 문제 완전 해결');
+            console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.5 시작 - DB 완성도 퍼센트 기반 정확한 진행도 표시');
             
             try {
                 await InstituteManager.initialize();
-                console.log('🎉 v4.7.4 시스템 준비 완료! 폼 데이터 초기화 문제 완전 해결됨.');
+                console.log('🎉 v4.7.5 시스템 준비 완료! DB 완성도 퍼센트 기반 정확한 진행도 표시 구현됨.');
                 
             } catch (error) {
-                console.error('💥 v4.7.4 초기화 최종 실패:', error);
+                console.error('💥 v4.7.5 초기화 최종 실패:', error);
                 alert('시스템 초기화에 실패했습니다. 페이지를 새로고침하거나 관리자에게 문의하세요.');
             }
         });
@@ -2010,7 +1992,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.shiftKey && e.key === 'D') {
                 e.preventDefault();
-                console.log('🛠️ v4.7.4 디버그 정보');
+                console.log('🛠️ v4.7.5 디버그 정보');
                 console.log('통합 매니저 상태:', {
                     initialized: InstituteManager.isInitialized,
                     currentView: InstituteManager.currentView,
@@ -2030,7 +2012,7 @@
             }
         });
 
-        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.4 스크립트 로드 완료 - 폼 데이터 초기화 문제 완전 해결');
+        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.5 스크립트 로드 완료 - DB 완성도 퍼센트 기반 정확한 진행도 표시 구현');
     </script>
 </body>
 </html>
