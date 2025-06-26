@@ -6,19 +6,19 @@
     <title>파견 학당 정보 관리 - 세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.2.0">
-    <link rel="stylesheet" href="../css/admin.css?v=4.2.0">
+    <link rel="stylesheet" href="../css/main.css?v=4.3.2">
+    <link rel="stylesheet" href="../css/admin.css?v=4.3.2">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
-    <!-- Supabase JavaScript Client - Fixed CDN URL -->
+    <!-- Supabase JavaScript Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
     <style>
         .institute-management-container {
             min-height: 100vh;
-            background: #f7fafc;
+            background: linear-gradient(135deg, #f7fafc 0%, #e2e8f0 100%);
             padding: 2rem;
         }
 
@@ -28,6 +28,7 @@
             padding: 2rem;
             margin-bottom: 2rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
         }
 
         .header-content {
@@ -50,46 +51,6 @@
             margin: 0;
         }
 
-        .coming-soon-section {
-            background: white;
-            border-radius: 1rem;
-            padding: 4rem 2rem;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        .coming-soon-icon {
-            width: 6rem;
-            height: 6rem;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            margin: 0 auto 2rem;
-        }
-
-        .coming-soon-icon i {
-            width: 3rem;
-            height: 3rem;
-        }
-
-        .coming-soon-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #2d3748;
-            margin-bottom: 1rem;
-        }
-
-        .coming-soon-description {
-            font-size: 1.1rem;
-            color: #718096;
-            line-height: 1.6;
-            max-width: 600px;
-            margin: 0 auto 2rem;
-        }
-
         .back-btn {
             background: #e2e8f0;
             color: #4a5568;
@@ -108,40 +69,302 @@
             background: #cbd5e0;
         }
 
-        /* v4.2 호환성 수정 알림 */
-        .module-fix-notice {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 0.75rem;
+        /* 통계 섹션 */
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
             margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card .stat-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.75rem;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            justify-content: center;
+            margin-bottom: 1rem;
         }
 
-        .module-fix-notice i {
-            width: 20px;
-            height: 20px;
-            flex-shrink: 0;
+        .stat-card.total .stat-icon {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
         }
 
-        .module-fix-notice .notice-content {
-            flex: 1;
+        .stat-card.assigned .stat-icon {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
         }
 
-        .module-fix-notice .notice-title {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
+        .stat-card.pending .stat-icon {
+            background: linear-gradient(135deg, #ed8936, #dd6b20);
+            color: white;
         }
 
-        .module-fix-notice .notice-text {
-            font-size: 0.9rem;
-            opacity: 0.9;
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
             margin: 0;
         }
 
+        .stat-label {
+            color: #718096;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        /* 필터 및 검색 섹션 */
+        .filters-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a0aec0;
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        /* 학당 카드 그리드 */
+        .institutes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .institute-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .institute-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .institute-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .institute-header {
+            margin-bottom: 1rem;
+        }
+
+        .institute-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0 0 0.5rem 0;
+            line-height: 1.4;
+        }
+
+        .institute-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: #e6fffa;
+            color: #00695c;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 1rem;
+            text-transform: uppercase;
+        }
+
+        .institute-status.incomplete {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .institute-body {
+            margin-bottom: 1.5rem;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .info-icon {
+            width: 1rem;
+            height: 1rem;
+            color: #718096;
+            flex-shrink: 0;
+        }
+
+        .info-text {
+            color: #4a5568;
+        }
+
+        .info-text.placeholder {
+            color: #a0aec0;
+            font-style: italic;
+        }
+
+        .intern-list {
+            margin: 0.5rem 0;
+        }
+
+        .intern-item {
+            display: inline-block;
+            background: #f7fafc;
+            padding: 0.25rem 0.5rem;
+            margin: 0.25rem 0.25rem 0.25rem 0;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+        }
+
+        .intern-name {
+            font-weight: 600;
+        }
+
+        .intern-field {
+            color: #718096;
+        }
+
+        .institute-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .last-updated {
+            font-size: 0.8rem;
+            color: #a0aec0;
+        }
+
+        .update-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .update-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        /* 로딩 상태 */
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .loading-spinner {
+            width: 2rem;
+            height: 2rem;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 반응형 디자인 */
         @media (max-width: 768px) {
             .institute-management-container {
                 padding: 1rem;
@@ -156,12 +379,32 @@
                 align-items: stretch;
             }
 
-            .coming-soon-section {
-                padding: 3rem 1.5rem;
+            .institutes-grid {
+                grid-template-columns: 1fr;
             }
 
-            .coming-soon-title {
-                font-size: 1.5rem;
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-section {
+                grid-template-columns: 1fr;
+            }
+
+            .institute-footer {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .institute-card {
+                padding: 1rem;
+            }
+
+            .institute-name {
+                font-size: 1rem;
             }
         }
     </style>
@@ -173,7 +416,7 @@
             <div class="header-content">
                 <div class="header-title">
                     <h1>파견 학당 정보 관리</h1>
-                    <p>세종학당 정보를 등록하고 관리하며, 학생 배정 및 현지 정보를 업데이트할 수 있습니다.</p>
+                    <p>42개 세종학당의 정보를 체계적으로 관리하고 문화인턴 배정 현황을 확인할 수 있습니다.</p>
                 </div>
                 <button class="back-btn" onclick="goBackToDashboard()">
                     <i data-lucide="arrow-left"></i>
@@ -182,56 +425,79 @@
             </div>
         </div>
 
-        <!-- v4.2 호환성 수정 알림 -->
-        <div class="module-fix-notice">
-            <i data-lucide="check-circle"></i>
-            <div class="notice-content">
-                <div class="notice-title">✅ v4.2 모듈화 시스템 호환성 수정 완료!</div>
-                <p class="notice-text">Supabase 모듈 로딩 순서가 수정되어 학당 관리 페이지가 정상 동작합니다.</p>
+        <!-- 통계 섹션 -->
+        <div class="stats-section">
+            <div class="stat-card total">
+                <div class="stat-icon">
+                    <i data-lucide="building"></i>
+                </div>
+                <div class="stat-number" id="totalInstitutes">-</div>
+                <p class="stat-label">총 세종학당 수</p>
+            </div>
+            <div class="stat-card assigned">
+                <div class="stat-icon">
+                    <i data-lucide="users"></i>
+                </div>
+                <div class="stat-number" id="assignedInterns">-</div>
+                <p class="stat-label">배정된 문화인턴</p>
+            </div>
+            <div class="stat-card pending">
+                <div class="stat-icon">
+                    <i data-lucide="alert-circle"></i>
+                </div>
+                <div class="stat-number" id="incompleteInfo">-</div>
+                <p class="stat-label">정보 미완성 학당</p>
             </div>
         </div>
 
-        <!-- Coming Soon 섹션 -->
-        <div class="coming-soon-section">
-            <div class="coming-soon-icon">
-                <i data-lucide="building"></i>
+        <!-- 필터 및 검색 섹션 -->
+        <div class="filters-section">
+            <div class="filters-grid">
+                <div class="search-box">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" class="search-input" placeholder="학당명 또는 문화인턴 이름으로 검색..." id="searchInput">
+                </div>
+                <button class="refresh-btn" onclick="loadInstitutes()">
+                    <i data-lucide="refresh-cw"></i>
+                    새로고침
+                </button>
             </div>
-            <h2 class="coming-soon-title">학당 관리 기능 준비 중</h2>
-            <p class="coming-soon-description">
-                전 세계 세종학당의 상세 정보를 체계적으로 관리할 수 있는 기능을 개발 중입니다.<br>
-                학당 기본 정보, 연락처, 현지 유용 정보, 학생 배정 관리 등의 기능이 포함될 예정입니다.
-            </p>
-            <button class="btn primary" onclick="goBackToDashboard()">
-                <i data-lucide="arrow-left"></i>
-                대시보드로 돌아가기
-            </button>
+        </div>
+
+        <!-- 학당 카드 그리드 -->
+        <div id="institutesContainer">
+            <!-- 로딩 상태 -->
+            <div class="loading-container" id="loadingContainer">
+                <div class="loading-spinner"></div>
+                <span>학당 정보를 불러오는 중...</span>
+            </div>
+        </div>
+
+        <!-- 학당 카드가 동적으로 생성될 위치 -->
+        <div class="institutes-grid" id="institutesGrid" style="display: none;">
+            <!-- 카드들이 여기에 동적으로 추가됩니다 -->
         </div>
     </div>
 
-    <!-- 🔧 v4.2 모듈화 시스템 호환 JavaScript Files -->
+    <!-- JavaScript Files -->
     <!-- 1. 기본 설정 모듈 -->
-    <script src="../js/config.js?v=4.2.0"></script>
-    <script src="../js/auth.js?v=4.2.0"></script>
-    <script src="../js/utils.js?v=4.2.0"></script>
+    <script src="../js/config.js?v=4.3.2"></script>
+    <script src="../js/auth.js?v=4.3.2"></script>
+    <script src="../js/utils.js?v=4.3.2"></script>
     
     <!-- 2. Supabase 모듈들 (의존성 순서 중요!) -->
-    <script src="../js/supabase/supabase-core.js?v=4.2.0"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.2.0"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.2.0"></script>
-    <script src="../js/supabase-client.js?v=4.2.0"></script>
-    
-    <!-- 🆕 모듈화된 Admin 파일들 (기본 모듈들만) -->
-    <!-- 핵심 파일들 먼저 로드 -->
-    <script src="../js/admin/admin-core.js?v=4.2.0"></script>
-    <script src="../js/admin/admin-utils.js?v=4.2.0"></script>
-    <script src="../js/admin/admin-modals.js?v=4.2.0"></script>
-    
-    <!-- 학당 관리에 필요한 모듈들 (추후 확장 시) -->
-    <script src="../js/admin/admin-features.js?v=4.2.0"></script>
-    
+    <script src="../js/supabase/supabase-core.js?v=4.3.2"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.3.2"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.3.2"></script>
+    <script src="../js/supabase-client.js?v=4.3.2"></script>
+
     <script>
+        // 전역 변수
+        let allInstitutes = [];
+        let filteredInstitutes = [];
+
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🏛️ 학당 관리 페이지 초기화 (v4.2 호환)');
+            console.log('🏛️ 학당 관리 페이지 초기화 (A단계 - 카드 레이아웃)');
             
             // Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
@@ -240,6 +506,12 @@
 
             // 관리자 인증 확인
             checkAdminAuthentication();
+
+            // 학당 데이터 로드
+            loadInstitutes();
+
+            // 검색 기능 설정
+            setupSearch();
         });
 
         function checkAdminAuthentication() {
@@ -256,6 +528,241 @@
             console.log('✅ 관리자 인증 확인됨');
         }
 
+        async function loadInstitutes() {
+            console.log('📋 학당 정보 로드 시작...');
+            
+            try {
+                showLoading();
+
+                // Supabase가 준비될 때까지 대기
+                await waitForSupabase();
+
+                // 학당 정보와 문화인턴 정보를 함께 조회
+                const { data: institutes, error: institutesError } = await SupabaseAPI.client
+                    .from('institutes')
+                    .select('*')
+                    .order('name_ko');
+
+                if (institutesError) {
+                    throw institutesError;
+                }
+
+                const { data: interns, error: internsError } = await SupabaseAPI.client
+                    .from('user_profiles')
+                    .select('name, field, sejong_institute')
+                    .eq('user_type', 'student')
+                    .not('sejong_institute', 'is', null);
+
+                if (internsError) {
+                    throw internsError;
+                }
+
+                // 학당별 문화인턴 정보 그룹화
+                const internsByInstitute = {};
+                interns.forEach(intern => {
+                    if (!internsByInstitute[intern.sejong_institute]) {
+                        internsByInstitute[intern.sejong_institute] = [];
+                    }
+                    internsByInstitute[intern.sejong_institute].push(intern);
+                });
+
+                // 학당 정보에 문화인턴 정보 연결
+                allInstitutes = institutes.map(institute => ({
+                    ...institute,
+                    interns: internsByInstitute[institute.name_ko] || []
+                }));
+
+                filteredInstitutes = [...allInstitutes];
+
+                console.log(`📊 총 ${allInstitutes.length}개 학당 로드 완료`);
+
+                hideLoading();
+                renderInstitutes();
+                updateStats();
+
+            } catch (error) {
+                console.error('❌ 학당 정보 로드 실패:', error);
+                hideLoading();
+                showError('학당 정보를 불러오는데 실패했습니다: ' + error.message);
+            }
+        }
+
+        async function waitForSupabase() {
+            let attempts = 0;
+            while (!window.SupabaseAPI && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.SupabaseAPI) {
+                throw new Error('Supabase 초기화 실패');
+            }
+        }
+
+        function renderInstitutes() {
+            const container = document.getElementById('institutesGrid');
+            container.innerHTML = '';
+
+            if (filteredInstitutes.length === 0) {
+                container.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: #718096;">
+                        <i data-lucide="search" style="width: 3rem; height: 3rem; margin-bottom: 1rem;"></i>
+                        <p>검색 결과가 없습니다.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            filteredInstitutes.forEach(institute => {
+                const card = createInstituteCard(institute);
+                container.appendChild(card);
+            });
+
+            container.style.display = 'grid';
+            lucide.createIcons();
+        }
+
+        function createInstituteCard(institute) {
+            const div = document.createElement('div');
+            div.className = 'institute-card';
+
+            const isComplete = checkInstituteCompleteness(institute);
+            const internsList = institute.interns.map(intern => 
+                `<span class="intern-item"><span class="intern-name">${intern.name}</span> <span class="intern-field">(${intern.field})</span></span>`
+            ).join('');
+
+            const contactPerson = institute.contact_person || '미정';
+            const lastUpdated = institute.updated_at ? 
+                new Date(institute.updated_at).toLocaleDateString('ko-KR') : '정보 없음';
+
+            div.innerHTML = `
+                <div class="institute-header">
+                    <h3 class="institute-name">${institute.name_ko}</h3>
+                    <span class="institute-status ${isComplete ? '' : 'incomplete'}">
+                        ${isComplete ? '완료' : '미완성'}
+                    </span>
+                </div>
+                
+                <div class="institute-body">
+                    <div class="info-row">
+                        <i data-lucide="users" class="info-icon"></i>
+                        <span class="info-text">
+                            ${institute.interns.length > 0 ? 
+                                `문화인턴 ${institute.interns.length}명` : 
+                                '<span class="placeholder">배정된 문화인턴 없음</span>'
+                            }
+                        </span>
+                    </div>
+                    
+                    ${institute.interns.length > 0 ? `
+                        <div class="intern-list">
+                            ${internsList}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="info-row">
+                        <i data-lucide="user" class="info-icon"></i>
+                        <span class="info-text ${contactPerson === '미정' ? 'placeholder' : ''}">
+                            담당자: ${contactPerson}
+                        </span>
+                    </div>
+                    
+                    <div class="info-row">
+                        <i data-lucide="map-pin" class="info-icon"></i>
+                        <span class="info-text ${!institute.address ? 'placeholder' : ''}">
+                            ${institute.address || '주소 정보 없음'}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="institute-footer">
+                    <span class="last-updated">최종 수정: ${lastUpdated}</span>
+                    <button class="update-btn" onclick="openUpdateModal('${institute.id}')">
+                        <i data-lucide="edit"></i>
+                        업데이트
+                    </button>
+                </div>
+            `;
+
+            return div;
+        }
+
+        function checkInstituteCompleteness(institute) {
+            const requiredFields = [
+                'name_en', 'operator', 'address', 'contact_person', 
+                'phone', 'contact_phone'
+            ];
+            
+            return requiredFields.every(field => 
+                institute[field] && institute[field].trim() !== ''
+            );
+        }
+
+        function updateStats() {
+            const totalCount = allInstitutes.length;
+            const assignedCount = allInstitutes.reduce((sum, inst) => sum + inst.interns.length, 0);
+            const incompleteCount = allInstitutes.filter(inst => !checkInstituteCompleteness(inst)).length;
+
+            document.getElementById('totalInstitutes').textContent = totalCount;
+            document.getElementById('assignedInterns').textContent = assignedCount;
+            document.getElementById('incompleteInfo').textContent = incompleteCount;
+        }
+
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', function(e) {
+                const query = e.target.value.toLowerCase().trim();
+                
+                if (query === '') {
+                    filteredInstitutes = [...allInstitutes];
+                } else {
+                    filteredInstitutes = allInstitutes.filter(institute => {
+                        const instituteName = institute.name_ko.toLowerCase();
+                        const internNames = institute.interns.map(intern => 
+                            intern.name.toLowerCase()
+                        ).join(' ');
+                        
+                        return instituteName.includes(query) || internNames.includes(query);
+                    });
+                }
+                
+                renderInstitutes();
+            });
+        }
+
+        function openUpdateModal(instituteId) {
+            // B단계에서 구현될 모달 기능
+            console.log('🔄 업데이트 모달 열기:', instituteId);
+            alert('업데이트 모달 기능은 B단계에서 구현될 예정입니다.\n\n다음 단계를 위한 프롬프트를 확인해주세요!');
+        }
+
+        function showLoading() {
+            document.getElementById('loadingContainer').style.display = 'flex';
+            document.getElementById('institutesGrid').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('institutesGrid').style.display = 'grid';
+        }
+
+        function showError(message) {
+            const container = document.getElementById('institutesContainer');
+            container.innerHTML = `
+                <div style="background: white; border-radius: 1rem; padding: 3rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <i data-lucide="alert-circle" style="width: 3rem; height: 3rem; color: #e53e3e; margin-bottom: 1rem;"></i>
+                    <h3 style="color: #2d3748; margin-bottom: 0.5rem;">오류 발생</h3>
+                    <p style="color: #718096; margin-bottom: 1.5rem;">${message}</p>
+                    <button class="refresh-btn" onclick="loadInstitutes()">
+                        <i data-lucide="refresh-cw"></i>
+                        다시 시도
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
         function goBackToDashboard() {
             console.log('🔙 대시보드로 돌아가기');
             window.location.href = '../admin.html';
@@ -265,17 +772,17 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'd') {
                 e.preventDefault();
-                console.log('🛠️ 학당 관리 페이지 - v4.2 디버그 정보');
+                console.log('🛠️ A단계 디버그 정보');
+                console.log('전체 학당:', allInstitutes.length);
+                console.log('필터된 학당:', filteredInstitutes.length);
                 console.log('모듈 상태:', {
                     SupabaseCore: !!window.SupabaseCore,
-                    SupabaseAdmin: !!window.SupabaseAdmin,
-                    SupabaseAPI: !!window.SupabaseAPI,
-                    AdminManager: !!window.AdminManager
+                    SupabaseAPI: !!window.SupabaseAPI
                 });
             }
         });
 
-        console.log('🏛️ 학당 관리 v4.2 호환 스크립트 로드 완료');
+        console.log('🏛️ A단계: 학당 카드 레이아웃 스크립트 로드 완료');
     </script>
 </body>
 </html>
