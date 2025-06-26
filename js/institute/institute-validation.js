@@ -1,5 +1,5 @@
 /**
- * ✅ Institute Validation Module (v4.4.0)
+ * ✅ Institute Validation Module (v4.7.0) - 새로운 필드 검증 추가
  * 세종학당 파견학당 정보 관리 시스템 - 데이터 검증 모듈
  * 
  * 📋 담당 기능:
@@ -7,17 +7,22 @@
  * - 폼 유효성 검사
  * - 입력 규칙 관리
  * - 에러 메시지 처리
- * - 15개 필드 완전 검증 지원
+ * - 17개 필드 완전 검증 지원 (local_coordinator_phone, education_environment 추가)
  * 
  * 🔗 의존성: Utils만 의존 (독립적 설계)
  * 🚫 독립성: 완전히 독립적인 검증 모듈
+ * 
+ * 🔧 v4.7.0 수정사항:
+ * - local_coordinator_phone 필드 검증 규칙 추가
+ * - education_environment 필드 검증 규칙 추가 (JSONB 타입)
+ * - 17개 필드 지원으로 확장
  */
 
 class InstituteValidation {
     constructor() {
         this.initialized = false;
         
-        // 📋 15개 필드 검증 규칙
+        // 📋 17개 필드 검증 규칙 (v4.7.0 - 2개 필드 추가)
         this.VALIDATION_RULES = {
             // 기본 정보 (4개)
             name_ko: {
@@ -42,7 +47,7 @@ class InstituteValidation {
                     pattern: '영문명은 영문자, 숫자, 공백, 기본 기호만 사용 가능합니다.',
                 }
             },
-            operating_organization: {
+            operator: {
                 required: false,
                 type: 'string',
                 maxLength: 200,
@@ -59,7 +64,7 @@ class InstituteValidation {
                 }
             },
             
-            // 연락처 정보 (5개)
+            // 연락처 정보 (7개) - local_coordinator_phone 추가
             address: {
                 required: false,
                 type: 'string',
@@ -76,7 +81,7 @@ class InstituteValidation {
                     pattern: '올바른 전화번호 형식이 아닙니다. (8-20자, 숫자, +, -, (), 공백, . 사용 가능)',
                 }
             },
-            website_sns: {
+            sns_url: {
                 required: false,
                 type: 'url',
                 pattern: /^https?:\/\/.+\..+/,
@@ -84,7 +89,7 @@ class InstituteValidation {
                     pattern: '올바른 웹사이트 URL 형식이 아닙니다. (http:// 또는 https://로 시작)',
                 }
             },
-            manager_name: {
+            contact_person: {
                 required: false,
                 type: 'string',
                 maxLength: 100,
@@ -94,7 +99,7 @@ class InstituteValidation {
                     pattern: '담당자명은 한글, 영문, 공백, 하이픈, 점만 사용 가능합니다.',
                 }
             },
-            manager_contact: {
+            contact_phone: {
                 required: false,
                 type: 'contact',
                 pattern: /^[0-9+\-\s\(\)\.@a-zA-Z]{8,100}$/,
@@ -102,17 +107,27 @@ class InstituteValidation {
                     pattern: '올바른 연락처 형식이 아닙니다. (전화번호 또는 이메일 형식)',
                 }
             },
-            
-            // 프로그램 정보 (3개)
-            local_adaptation_staff: {
+            local_coordinator: {
                 required: false,
-                type: 'textarea',
-                maxLength: 1000,
+                type: 'string',
+                maxLength: 100,
+                pattern: /^[가-힣a-zA-Z\s\-\.]+$/,
                 errorMessages: {
-                    maxLength: '현지적응전담인력 정보는 최대 1000자까지 입력 가능합니다.',
+                    maxLength: '현지 적응 전담 인력명은 최대 100자까지 입력 가능합니다.',
+                    pattern: '현지 적응 전담 인력명은 한글, 영문, 공백, 하이픈, 점만 사용 가능합니다.',
                 }
             },
-            cultural_program_plan: {
+            local_coordinator_phone: {
+                required: false,
+                type: 'contact',
+                pattern: /^[0-9+\-\s\(\)\.@a-zA-Z]{8,100}$/,
+                errorMessages: {
+                    pattern: '올바른 현지 적응 전담 인력 연락처 형식이 아닙니다. (전화번호 또는 이메일 형식)',
+                }
+            },
+            
+            // 프로그램 정보 (3개) - education_environment 추가
+            lesson_plan: {
                 required: false,
                 type: 'textarea',
                 maxLength: 2000,
@@ -122,10 +137,23 @@ class InstituteValidation {
             },
             desired_courses: {
                 required: false,
-                type: 'textarea',
-                maxLength: 1000,
+                type: 'json',
+                maxItems: 10,
                 errorMessages: {
-                    maxLength: '희망개설강좌 정보는 최대 1000자까지 입력 가능합니다.',
+                    maxItems: '희망개설강좌는 최대 10개까지 추가 가능합니다.',
+                    invalidJson: '희망개설강좌 데이터 형식이 올바르지 않습니다.',
+                }
+            },
+            education_environment: {
+                required: false,
+                type: 'json',
+                maxItems: 10,
+                requiredFields: ['topic', 'location', 'equipment'],
+                errorMessages: {
+                    maxItems: '교육 환경 정보는 최대 10개까지 추가 가능합니다.',
+                    invalidJson: '교육 환경 정보 데이터 형식이 올바르지 않습니다.',
+                    missingRequiredField: '교육 환경 정보에는 강의 주제, 교육 장소, 학당 교구 정보가 모두 필요합니다.',
+                    invalidFieldType: '교육 환경 정보의 각 항목은 문자열이어야 합니다.',
                 }
             },
             
@@ -138,7 +166,7 @@ class InstituteValidation {
                     maxLength: '현지어구사필요수준 정보는 최대 1000자까지 입력 가능합니다.',
                 }
             },
-            institute_support: {
+            support_provided: {
                 required: false,
                 type: 'textarea',
                 maxLength: 2000,
@@ -146,12 +174,12 @@ class InstituteValidation {
                     maxLength: '학당지원사항 정보는 최대 2000자까지 입력 가능합니다.',
                 }
             },
-            country_safety_info: {
+            safety_info_url: {
                 required: false,
-                type: 'textarea',
-                maxLength: 2000,
+                type: 'url',
+                pattern: /^https?:\/\/.+\..+/,
                 errorMessages: {
-                    maxLength: '파견국가안전정보는 최대 2000자까지 입력 가능합니다.',
+                    pattern: '올바른 파견국가안전정보 URL 형식이 아닙니다. (http:// 또는 https://로 시작)',
                 }
             }
         };
@@ -172,7 +200,7 @@ class InstituteValidation {
             fieldErrors: new Map()
         };
         
-        console.log('✅ InstituteValidation 모듈 초기화됨');
+        console.log('✅ InstituteValidation 모듈 초기화됨 (v4.7.0)');
     }
 
     /**
@@ -189,7 +217,7 @@ class InstituteValidation {
             this.validateRules();
             
             this.initialized = true;
-            console.log('✅ InstituteValidation 초기화 완료');
+            console.log('✅ InstituteValidation 초기화 완료 (v4.7.0)');
             return true;
             
         } catch (error) {
@@ -202,7 +230,7 @@ class InstituteValidation {
      * 🔍 검증 규칙 무결성 체크
      */
     validateRules() {
-        const expectedFields = 15;
+        const expectedFields = 17; // v4.7.0에서 17개로 증가
         const actualFields = Object.keys(this.VALIDATION_RULES).length;
         
         if (actualFields !== expectedFields) {
@@ -369,6 +397,18 @@ class InstituteValidation {
                 result.sanitizedValue = processedValue;
             }
             
+            // JSON 타입 특별 처리 (v4.7.0 추가)
+            if (rule.type === 'json') {
+                const jsonResult = this.validateJsonField(fieldName, value, rule);
+                if (!jsonResult.isValid) {
+                    result.isValid = false;
+                    result.errors.push(...jsonResult.errors);
+                } else {
+                    result.sanitizedValue = jsonResult.sanitizedValue;
+                }
+                return result;
+            }
+            
             // 길이 검증
             const lengthResult = this.validateFieldLength(fieldName, processedValue, rule);
             if (!lengthResult.isValid) {
@@ -394,6 +434,151 @@ class InstituteValidation {
             console.error(`❌ 필드 검증 오류 (${fieldName}):`, error);
             result.isValid = false;
             result.errors.push(`필드 검증 중 오류가 발생했습니다: ${error.message}`);
+        }
+        
+        return result;
+    }
+
+    /**
+     * 📊 JSON 필드 검증 (v4.7.0 추가)
+     * @param {string} fieldName - 필드명
+     * @param {*} value - 검증할 값
+     * @param {Object} rule - 검증 규칙
+     * @returns {Object} 검증 결과
+     */
+    validateJsonField(fieldName, value, rule) {
+        const result = { isValid: true, errors: [], sanitizedValue: value };
+        
+        try {
+            let jsonData;
+            
+            // JSON 파싱
+            if (typeof value === 'string') {
+                if (value.trim() === '') {
+                    result.sanitizedValue = [];
+                    return result;
+                }
+                jsonData = JSON.parse(value);
+            } else if (Array.isArray(value)) {
+                jsonData = value;
+            } else {
+                result.isValid = false;
+                result.errors.push(rule.errorMessages.invalidJson || 'JSON 형식이 올바르지 않습니다.');
+                return result;
+            }
+            
+            // 배열 확인
+            if (!Array.isArray(jsonData)) {
+                result.isValid = false;
+                result.errors.push(rule.errorMessages.invalidJson || '배열 형식이어야 합니다.');
+                return result;
+            }
+            
+            // 최대 항목 수 확인
+            if (rule.maxItems && jsonData.length > rule.maxItems) {
+                result.isValid = false;
+                result.errors.push(rule.errorMessages.maxItems || `최대 ${rule.maxItems}개까지 추가 가능합니다.`);
+                return result;
+            }
+            
+            // 특정 필드별 검증
+            if (fieldName === 'education_environment') {
+                const envResult = this.validateEducationEnvironmentData(jsonData, rule);
+                if (!envResult.isValid) {
+                    result.isValid = false;
+                    result.errors.push(...envResult.errors);
+                    return result;
+                }
+                result.sanitizedValue = envResult.sanitizedValue;
+            } else if (fieldName === 'desired_courses') {
+                const courseResult = this.validateDesiredCoursesData(jsonData, rule);
+                if (!courseResult.isValid) {
+                    result.isValid = false;
+                    result.errors.push(...courseResult.errors);
+                    return result;
+                }
+                result.sanitizedValue = courseResult.sanitizedValue;
+            }
+            
+        } catch (error) {
+            result.isValid = false;
+            result.errors.push(rule.errorMessages.invalidJson || 'JSON 형식이 올바르지 않습니다.');
+        }
+        
+        return result;
+    }
+
+    /**
+     * 🏫 교육 환경 데이터 검증 (v4.7.0 추가)
+     */
+    validateEducationEnvironmentData(data, rule) {
+        const result = { isValid: true, errors: [], sanitizedValue: [] };
+        
+        for (let i = 0; i < data.length; i++) {
+            const item = data[i];
+            
+            if (!item || typeof item !== 'object') {
+                result.isValid = false;
+                result.errors.push(`교육 환경 정보 ${i + 1}번째 항목이 올바르지 않습니다.`);
+                continue;
+            }
+            
+            const sanitizedItem = {};
+            
+            // 필수 필드 확인
+            for (const field of rule.requiredFields || []) {
+                if (!item[field] || typeof item[field] !== 'string' || item[field].trim() === '') {
+                    // 필수 필드가 없는 경우는 경고로만 처리 (사용자가 빈 행을 추가할 수 있음)
+                    continue;
+                }
+                sanitizedItem[field] = item[field].trim();
+            }
+            
+            // 하나라도 값이 있으면 추가
+            if (Object.keys(sanitizedItem).length > 0) {
+                // 모든 필수 필드가 있는지 확인
+                const hasAllFields = rule.requiredFields.every(field => sanitizedItem[field]);
+                if (!hasAllFields) {
+                    result.isValid = false;
+                    result.errors.push(`교육 환경 정보 ${i + 1}번째 항목: 강의 주제, 교육 장소, 교구 정보를 모두 입력해주세요.`);
+                    continue;
+                }
+                
+                result.sanitizedValue.push(sanitizedItem);
+            }
+        }
+        
+        return result;
+    }
+
+    /**
+     * 📚 희망개설강좌 데이터 검증
+     */
+    validateDesiredCoursesData(data, rule) {
+        const result = { isValid: true, errors: [], sanitizedValue: [] };
+        
+        for (let i = 0; i < data.length; i++) {
+            const item = data[i];
+            
+            if (!item || typeof item !== 'object') {
+                result.isValid = false;
+                result.errors.push(`희망개설강좌 ${i + 1}번째 항목이 올바르지 않습니다.`);
+                continue;
+            }
+            
+            const sanitizedItem = {};
+            const hasAnyValue = Object.values(item).some(value => 
+                value && typeof value === 'string' && value.trim() !== ''
+            );
+            
+            if (hasAnyValue) {
+                for (const [key, value] of Object.entries(item)) {
+                    if (value && typeof value === 'string') {
+                        sanitizedItem[key] = value.trim();
+                    }
+                }
+                result.sanitizedValue.push(sanitizedItem);
+            }
         }
         
         return result;
@@ -434,6 +619,10 @@ class InstituteValidation {
                     result.isValid = false;
                     result.errors.push(`${fieldName}은(는) 숫자여야 합니다.`);
                 }
+                break;
+                
+            case 'json':
+                // JSON 타입은 별도 validateJsonField에서 처리
                 break;
         }
         
@@ -488,8 +677,8 @@ class InstituteValidation {
     validateCustomRules(fieldName, value, rule) {
         const result = { isValid: true, errors: [] };
         
-        // 연락처 특별 검증
-        if (fieldName === 'manager_contact' && typeof value === 'string') {
+        // 연락처 특별 검증 (담당자 연락처, 현지 적응 전담 인력 연락처)
+        if ((fieldName === 'contact_phone' || fieldName === 'local_coordinator_phone') && typeof value === 'string') {
             const isEmail = this.CUSTOM_VALIDATORS.email.test(value);
             const isPhone = this.CUSTOM_VALIDATORS.phone_intl.test(value) || 
                           this.CUSTOM_VALIDATORS.phone_kr.test(value);
@@ -512,22 +701,31 @@ class InstituteValidation {
     }
 
     /**
-     * 🔗 상호 의존성 검증
+     * 🔗 상호 의존성 검증 (v4.7.0 - 현지 적응 전담 인력 검증 추가)
      */
     validateCrossFieldDependencies(data) {
         const result = { isValid: true, errors: [], warnings: [] };
         
         // 담당자 정보 일관성 검증
-        if (data.manager_name && !data.manager_contact) {
+        if (data.contact_person && !data.contact_phone) {
             result.warnings.push('담당자명이 있지만 연락처가 없습니다.');
         }
         
-        if (data.manager_contact && !data.manager_name) {
+        if (data.contact_phone && !data.contact_person) {
             result.warnings.push('담당자 연락처가 있지만 이름이 없습니다.');
         }
         
+        // 현지 적응 전담 인력 일관성 검증
+        if (data.local_coordinator && !data.local_coordinator_phone) {
+            result.warnings.push('현지 적응 전담 인력명이 있지만 연락처가 없습니다.');
+        }
+        
+        if (data.local_coordinator_phone && !data.local_coordinator) {
+            result.warnings.push('현지 적응 전담 인력 연락처가 있지만 이름이 없습니다.');
+        }
+        
         // 프로그램 정보 일관성
-        if (data.desired_courses && !data.cultural_program_plan) {
+        if (data.desired_courses && !data.lesson_plan) {
             result.warnings.push('희망개설강좌가 있지만 문화수업운영계획이 없습니다.');
         }
         
@@ -669,14 +867,16 @@ class InstituteValidation {
     }
 
     /**
-     * 📊 검증 모듈 상태
+     * 📊 검증 모듈 상태 (v4.7.0)
      */
     getValidationStatus() {
         return {
             initialized: this.initialized,
             supported_fields: Object.keys(this.VALIDATION_RULES).length,
             validation_stats: this.getValidationStats(),
-            module_version: '4.4.0'
+            module_version: '4.7.0',
+            new_fields: ['local_coordinator_phone', 'education_environment'],
+            json_validation_support: true
         };
     }
 }
@@ -684,4 +884,4 @@ class InstituteValidation {
 // 🌐 전역 인스턴스 생성
 window.InstituteValidation = new InstituteValidation();
 
-console.log('✅ InstituteValidation 모듈 로드 완료 (v4.4.0) - 15개 필드 검증 지원');
+console.log('✅ InstituteValidation 모듈 로드 완료 (v4.7.0) - 17개 필드 검증 지원 (새로운 필드 추가)');
