@@ -1,16 +1,16 @@
 /* 
  * 학생용 학당 정보 페이지 전용 스타일시트
- * Version: 4.6.4
- * Description: 탭 기반 학당 정보 표시 및 안전정보 iframe 연동
+ * Version: 4.6.6
+ * Description: 개선된 밝은 테마 + 테이블/목록 형태 UI
  */
 
 /* ============================================
-   기본 레이아웃
+   기본 레이아웃 - 밝은 테마
    ============================================ */
 
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     padding: 1rem;
 }
 
@@ -26,25 +26,31 @@
 .institute-header {
     background: white;
     border-radius: 1rem;
-    padding: 2rem;
+    padding: 2.5rem 2rem;
     margin-bottom: 2rem;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     text-align: center;
+    border: 1px solid #e2e8f0;
 }
 
 .institute-title {
-    font-size: 2.5rem;
+    font-size: 2.8rem;
     font-weight: 700;
-    color: #2d3748;
+    color: #1a202c;
+    margin: 0 0 0.75rem 0;
+    line-height: 1.2;
+}
+
+.institute-english-title {
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: #4a5568;
     margin: 0;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-style: italic;
 }
 
 /* ============================================
-   학당 이미지
+   학당 이미지 - 개선된 레이아웃
    ============================================ */
 
 .institute-image-container {
@@ -52,16 +58,20 @@
     border-radius: 1rem;
     padding: 2rem;
     margin-bottom: 2rem;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     text-align: center;
+    border: 1px solid #e2e8f0;
 }
 
 .institute-image {
+    width: 90%;
     max-width: 100%;
     max-height: 400px;
     border-radius: 0.75rem;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     object-fit: cover;
+    margin: 0 auto;
+    display: block;
 }
 
 .default-image-placeholder {
@@ -70,6 +80,8 @@
     align-items: center;
     justify-content: center;
     min-height: 300px;
+    width: 90%;
+    margin: 0 auto;
     background: #f7fafc;
     border: 2px dashed #cbd5e0;
     border-radius: 0.75rem;
@@ -89,19 +101,20 @@
 }
 
 /* ============================================
-   탭 시스템
+   탭 시스템 - 밝은 테마
    ============================================ */
 
 .tab-container {
     background: white;
     border-radius: 1rem;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     overflow: hidden;
+    border: 1px solid #e2e8f0;
 }
 
 .tab-menu {
     display: flex;
-    background: #f7fafc;
+    background: #f8fafc;
     border-bottom: 1px solid #e2e8f0;
 }
 
@@ -112,7 +125,7 @@
     padding: 1.5rem 2rem;
     font-size: 1.1rem;
     font-weight: 600;
-    color: #718096;
+    color: #4a5568;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -124,13 +137,13 @@
 
 .tab-button:hover {
     background: #edf2f7;
-    color: #4a5568;
+    color: #2d3748;
 }
 
 .tab-button.active {
     background: white;
-    color: #667eea;
-    box-shadow: 0 -2px 0 0 #667eea;
+    color: #4299e1;
+    box-shadow: 0 -2px 0 0 #4299e1;
 }
 
 .tab-button.active::after {
@@ -140,7 +153,7 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: #667eea;
+    background: #4299e1;
 }
 
 .tab-button i {
@@ -176,7 +189,7 @@
 .section-title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #2d3748;
+    color: #1a202c;
     margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
@@ -188,74 +201,198 @@
 .section-title i {
     width: 24px;
     height: 24px;
-    color: #667eea;
+    color: #4299e1;
 }
 
 /* ============================================
-   정보 그리드
+   테이블 형태 정보 표시
    ============================================ */
 
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-}
-
-.info-item {
-    background: #f7fafc;
+.info-table {
+    background: #f8fafc;
     border-radius: 0.75rem;
-    padding: 1.5rem;
-    border-left: 4px solid #667eea;
-    transition: all 0.3s ease;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
 }
 
-.info-item:hover {
+.info-table-row {
+    display: flex;
+    border-bottom: 1px solid #e2e8f0;
+    min-height: 60px;
+    align-items: center;
+}
+
+.info-table-row:last-child {
+    border-bottom: none;
+}
+
+.info-table-row:nth-child(even) {
+    background: white;
+}
+
+.info-table-row:hover {
     background: #edf2f7;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-.info-label {
+.info-table-label {
+    flex: 0 0 200px;
+    padding: 1rem 1.5rem;
     font-weight: 600;
-    color: #4a5568;
-    margin-bottom: 0.75rem;
+    color: #2d3748;
+    background: #edf2f7;
+    border-right: 1px solid #e2e8f0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 0.95rem;
 }
 
-.info-label i {
+.info-table-label i {
     width: 16px;
     height: 16px;
-    color: #667eea;
+    color: #4299e1;
 }
 
-.info-value {
-    color: #2d3748;
+.info-table-value {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    color: #1a202c;
     line-height: 1.6;
-    font-size: 1rem;
     word-break: break-word;
 }
 
-.info-value.empty {
+.info-table-value.empty {
     color: #a0aec0;
     font-style: italic;
 }
 
-/* 링크 스타일 */
-.info-value a {
-    color: #667eea;
+.info-table-value a {
+    color: #4299e1;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 500;
     transition: color 0.3s ease;
 }
 
-.info-value a:hover {
-    color: #5a67d8;
+.info-table-value a:hover {
+    color: #3182ce;
     text-decoration: underline;
+}
+
+/* ============================================
+   목록 형태 정보 표시
+   ============================================ */
+
+.info-list {
+    background: #f8fafc;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+.info-list-item {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: white;
+    transition: background-color 0.3s ease;
+}
+
+.info-list-item:last-child {
+    border-bottom: none;
+}
+
+.info-list-item:hover {
+    background: #f7fafc;
+}
+
+.info-list-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+}
+
+.info-list-title i {
+    width: 18px;
+    height: 18px;
+    color: #4299e1;
+}
+
+.info-list-content {
+    color: #1a202c;
+    line-height: 1.6;
+    margin-left: 1.5rem;
+}
+
+.info-list-content.empty {
+    color: #a0aec0;
+    font-style: italic;
+}
+
+.info-list-content a {
+    color: #4299e1;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.info-list-content a:hover {
+    color: #3182ce;
+    text-decoration: underline;
+}
+
+/* ============================================
+   JSON 데이터 표시 개선
+   ============================================ */
+
+.json-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+}
+
+.json-table th,
+.json-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.json-table th {
+    background: #edf2f7;
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 0.9rem;
+}
+
+.json-table td {
+    color: #1a202c;
+    font-size: 0.95rem;
+}
+
+.json-table tbody tr:hover {
+    background: #f7fafc;
+}
+
+.json-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0 0;
+}
+
+.json-list li {
+    background: #edf2f7;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid #4299e1;
+    color: #1a202c;
+}
+
+.json-list li:last-child {
+    margin-bottom: 0;
 }
 
 /* ============================================
@@ -264,9 +401,10 @@
 
 .safety-info-container {
     min-height: 600px;
-    background: #f7fafc;
+    background: #f8fafc;
     border-radius: 0.75rem;
     overflow: hidden;
+    border: 1px solid #e2e8f0;
 }
 
 .safety-iframe {
@@ -283,7 +421,7 @@
     align-items: center;
     justify-content: center;
     min-height: 400px;
-    color: #718096;
+    color: #4a5568;
 }
 
 .safety-loading i {
@@ -316,7 +454,7 @@
 }
 
 .safety-error p {
-    color: #718096;
+    color: #4a5568;
     margin: 0;
 }
 
@@ -340,34 +478,13 @@
     font-size: 1.3rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
-    color: #718096;
+    color: #4a5568;
 }
 
 .safety-unavailable p {
     margin: 0;
     font-size: 1rem;
-}
-
-/* ============================================
-   JSON 데이터 표시
-   ============================================ */
-
-.json-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.json-list li {
-    background: rgba(102, 126, 234, 0.1);
-    border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
-    margin-bottom: 0.5rem;
-    border-left: 3px solid #667eea;
-}
-
-.json-list li:last-child {
-    margin-bottom: 0;
+    color: #718096;
 }
 
 /* ============================================
@@ -380,7 +497,7 @@
     align-items: center;
     justify-content: center;
     padding: 4rem 2rem;
-    color: #718096;
+    color: #4a5568;
 }
 
 .loading-content i {
@@ -413,7 +530,7 @@
 }
 
 .error-content p {
-    color: #718096;
+    color: #4a5568;
     margin: 0;
 }
 
@@ -441,12 +558,16 @@
 /* 태블릿 */
 @media (max-width: 1024px) {
     .institute-title {
-        font-size: 2.2rem;
+        font-size: 2.4rem;
     }
     
-    .info-grid {
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.25rem;
+    .institute-english-title {
+        font-size: 1.2rem;
+    }
+    
+    .info-table-label {
+        flex: 0 0 180px;
+        font-size: 0.9rem;
     }
     
     .section-title {
@@ -467,8 +588,12 @@
     }
     
     .institute-title {
-        font-size: 1.8rem;
+        font-size: 2rem;
         line-height: 1.2;
+    }
+    
+    .institute-english-title {
+        font-size: 1rem;
     }
     
     .tab-menu {
@@ -484,12 +609,26 @@
         padding: 1.5rem;
     }
     
-    .info-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+    /* 테이블 형태를 모바일에서 세로 배치로 변경 */
+    .info-table-row {
+        flex-direction: column;
+        min-height: auto;
     }
     
-    .info-item {
+    .info-table-label {
+        flex: none;
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 0.75rem 1rem;
+    }
+    
+    .info-table-value {
+        width: 100%;
+        padding: 0.75rem 1rem;
+    }
+    
+    .info-list-item {
         padding: 1.25rem;
     }
     
@@ -527,7 +666,11 @@
 /* 작은 모바일 */
 @media (max-width: 480px) {
     .institute-title {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
+    }
+    
+    .institute-english-title {
+        font-size: 0.9rem;
     }
     
     .tab-button {
@@ -545,16 +688,23 @@
         padding: 1rem;
     }
     
-    .info-item {
+    .info-table-label,
+    .info-table-value {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+    
+    .info-list-item {
         padding: 1rem;
     }
     
-    .info-label {
-        font-size: 0.8rem;
+    .info-list-title {
+        font-size: 0.9rem;
     }
     
-    .info-value {
-        font-size: 0.9rem;
+    .info-list-content {
+        font-size: 0.85rem;
+        margin-left: 1rem;
     }
     
     .section-title {
@@ -563,73 +713,6 @@
     
     .safety-iframe {
         height: 400px;
-    }
-}
-
-/* ============================================
-   다크모드 지원 (선택사항)
-   ============================================ */
-
-@media (prefers-color-scheme: dark) {
-    .tab-container {
-        background: #2d3748;
-    }
-    
-    .tab-menu {
-        background: #1a202c;
-        border-bottom-color: #4a5568;
-    }
-    
-    .tab-button {
-        color: #a0aec0;
-    }
-    
-    .tab-button:hover {
-        background: #2d3748;
-        color: #e2e8f0;
-    }
-    
-    .tab-button.active {
-        background: #2d3748;
-        color: #90cdf4;
-    }
-    
-    .tab-panel {
-        background: #2d3748;
-    }
-    
-    .info-item {
-        background: #1a202c;
-        border-left-color: #90cdf4;
-    }
-    
-    .info-item:hover {
-        background: #2d3748;
-    }
-    
-    .section-title {
-        color: #e2e8f0;
-        border-bottom-color: #4a5568;
-    }
-    
-    .info-label {
-        color: #a0aec0;
-    }
-    
-    .info-value {
-        color: #e2e8f0;
-    }
-    
-    .info-value.empty {
-        color: #718096;
-    }
-    
-    .info-value a {
-        color: #90cdf4;
-    }
-    
-    .info-value a:hover {
-        color: #63b3ed;
     }
 }
 
@@ -663,7 +746,29 @@
         border: 1px solid #e2e8f0;
     }
     
-    .info-item {
+    .info-table-row,
+    .info-list-item {
         break-inside: avoid;
     }
+}
+
+/* ============================================
+   접근성 개선
+   ============================================ */
+
+.info-table-label,
+.info-list-title {
+    font-weight: 600;
+}
+
+.tab-button:focus {
+    outline: 2px solid #4299e1;
+    outline-offset: 2px;
+}
+
+.info-table-value a:focus,
+.info-list-content a:focus {
+    outline: 2px solid #4299e1;
+    outline-offset: 2px;
+    border-radius: 0.25rem;
 }
