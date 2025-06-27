@@ -6,9 +6,9 @@
     <title>파견 학당 정보 - 세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.6.7">
-    <link rel="stylesheet" href="../css/student.css?v=4.6.7">
-    <link rel="stylesheet" href="../css/student-institute-info.css?v=4.6.7">
+    <link rel="stylesheet" href="../css/main.css?v=4.6.8">
+    <link rel="stylesheet" href="../css/student.css?v=4.6.8">
+    <link rel="stylesheet" href="../css/student-institute-info.css?v=4.6.8">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -105,6 +105,35 @@
             padding: 2rem;
             text-align: center;
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        /* Enhanced Table 스타일 */
+        .enhanced-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+        }
+
+        .enhanced-table th,
+        .enhanced-table td {
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .enhanced-table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #2d3748;
+            text-align: center;
+        }
+
+        .enhanced-table tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .enhanced-table tbody tr:hover {
+            background: #e2e8f0;
         }
 
         /* 모바일 반응형 */
@@ -243,25 +272,25 @@
 
     <!-- JavaScript Files -->
     <!-- 기본 설정 모듈 -->
-    <script src="../js/config.js?v=4.6.7"></script>
-    <script src="../js/auth.js?v=4.6.7"></script>
-    <script src="../js/utils.js?v=4.6.7"></script>
+    <script src="../js/config.js?v=4.6.8"></script>
+    <script src="../js/auth.js?v=4.6.8"></script>
+    <script src="../js/utils.js?v=4.6.8"></script>
     
     <!-- Supabase 모듈들 -->
-    <script src="../js/supabase/supabase-core.js?v=4.6.7"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.6.7"></script>
-    <script src="../js/supabase-client.js?v=4.6.7"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.6.8"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.6.8"></script>
+    <script src="../js/supabase-client.js?v=4.6.8"></script>
     
     <!-- 학당 정보 전용 모듈들 -->
-    <script src="../js/student/institute-info-api.js?v=4.6.7"></script>
-    <script src="../js/student/institute-info-core.js?v=4.6.7"></script>
-    <script src="../js/student/institute-info-ui.js?v=4.6.7"></script>
+    <script src="../js/student/institute-info-api.js?v=4.6.8"></script>
+    <script src="../js/student/institute-info-core.js?v=4.6.8"></script>
+    <script src="../js/student/institute-info-ui.js?v=4.6.8"></script>
 
     <!-- 페이지 초기화 스크립트 -->
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                console.log('🏛️ 학당 정보 페이지 초기화 시작 v4.6.7');
+                console.log('🏛️ 학당 정보 페이지 초기화 시작 v4.6.8');
                 
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
@@ -281,7 +310,7 @@
                     throw new Error('InstituteInfoCore 모듈을 찾을 수 없습니다');
                 }
                 
-                console.log('✅ 학당 정보 페이지 초기화 완료 v4.6.7');
+                console.log('✅ 학당 정보 페이지 초기화 완료 v4.6.8');
                 
             } catch (error) {
                 console.error('❌ 초기화 실패:', error);
@@ -343,7 +372,7 @@
             }
         }
 
-        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.6.7 - Enhanced UI');
+        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.6.8 - 완전 개선된 UI');
     </script>
 </body>
 </html>
