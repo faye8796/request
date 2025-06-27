@@ -1,5 +1,5 @@
 /**
- * 🎨 Institute UI Module (v4.4.0)
+ * 🎨 Institute UI Module (v4.8.1) - Field Name Consistency Fix
  * 세종학당 파견학당 정보 관리 시스템 - UI 컨트롤러 모듈
  * 
  * 📋 담당 기능:
@@ -10,6 +10,12 @@
  * 
  * 🔗 의존성: Utils, InstituteCore, InstituteAPI
  * 🚫 독립성: 기존 admin UI 시스템과 분리
+ * 
+ * 🔧 v4.8.1 수정사항:
+ * - FIELD_LABELS 필드명을 실제 DB 컬럼명과 일치하도록 수정
+ * - cultural_program_plan → lesson_plan
+ * - institute_support → support_provided
+ * - 기타 필드명 일관성 개선
  */
 
 class InstituteUI {
@@ -27,26 +33,29 @@ class InstituteUI {
         // 이벤트 리스너 참조 (메모리 누수 방지)
         this.eventListeners = new Map();
         
-        // 📋 15개 필드 UI 매핑
+        // 📋 18개 필드 UI 매핑 (실제 DB 컬럼명 사용)
         this.FIELD_LABELS = {
             name_ko: '학당명',
             name_en: '영문명',
-            operating_organization: '운영기관',
+            operator: '운영기관',
             image_url: '학당사진',
             address: '주소',
             phone: '대표연락처',
-            website_sns: '홈페이지/SNS',
-            manager_name: '담당자성명',
-            manager_contact: '담당자연락처',
-            local_adaptation_staff: '현지적응전담인력',
-            cultural_program_plan: '문화수업운영계획',
+            sns_url: '홈페이지/SNS',
+            contact_person: '담당자성명',
+            contact_phone: '담당자연락처',
+            local_coordinator: '현지적응전담인력',
+            local_coordinator_phone: '현지적응전담인력연락처',
+            dispatch_period: '파견희망기간',
+            lesson_plan: '문화수업운영계획',
             desired_courses: '희망개설강좌',
+            education_environment: '교육환경정보',
             local_language_requirement: '현지어구사필요수준',
-            institute_support: '학당지원사항',
-            country_safety_info: '파견국가안전정보'
+            support_provided: '학당지원사항',
+            safety_info_url: '파견국가안전정보'
         };
         
-        console.log('🎨 InstituteUI 모듈 초기화됨');
+        console.log('🎨 InstituteUI 모듈 초기화됨 (v4.8.1)');
     }
 
     /**
@@ -71,7 +80,7 @@ class InstituteUI {
             // 초기 데이터 로드
             await this.loadInitialData();
             
-            console.log('✅ InstituteUI 초기화 완료');
+            console.log('✅ InstituteUI 초기화 완료 (v4.8.1)');
             return true;
             
         } catch (error) {
@@ -225,7 +234,7 @@ class InstituteUI {
     }
 
     /**
-     * 🔲 그리드 뷰 렌더링
+     * 🔲 그리드 뷰 렌더링 (실제 DB 컬럼명 사용)
      */
     renderGrid(institutes) {
         if (!this.elements.instituteGrid) return;
@@ -251,7 +260,7 @@ class InstituteUI {
                     <div class="institute-meta">
                         <div class="meta-item">
                             <i class="lucide-building"></i>
-                            <span>${institute.operating_organization || '운영기관 미설정'}</span>
+                            <span>${institute.operator || '운영기관 미설정'}</span>
                         </div>
                         ${institute.address ? `
                             <div class="meta-item">
@@ -259,10 +268,10 @@ class InstituteUI {
                                 <span>${this.truncateText(institute.address, 30)}</span>
                             </div>
                         ` : ''}
-                        ${institute.manager_name ? `
+                        ${institute.contact_person ? `
                             <div class="meta-item">
                                 <i class="lucide-user"></i>
-                                <span>${institute.manager_name}</span>
+                                <span>${institute.contact_person}</span>
                             </div>
                         ` : ''}
                     </div>
@@ -287,7 +296,7 @@ class InstituteUI {
     }
 
     /**
-     * 📄 리스트 뷰 렌더링
+     * 📄 리스트 뷰 렌더링 (실제 DB 컬럼명 사용)
      */
     renderList(institutes) {
         if (!this.elements.instituteList) return;
@@ -322,9 +331,9 @@ class InstituteUI {
                                         </div>
                                     </div>
                                 </td>
-                                <td>${institute.operating_organization || '-'}</td>
+                                <td>${institute.operator || '-'}</td>
                                 <td>${this.truncateText(institute.address || '-', 40)}</td>
-                                <td>${institute.manager_name || '-'}</td>
+                                <td>${institute.contact_person || '-'}</td>
                                 <td>${institute.phone || '-'}</td>
                                 <td>
                                     <div class="btn-group" role="group">
@@ -463,7 +472,7 @@ class InstituteUI {
     }
 
     /**
-     * 📝 상세 정보 모달 렌더링
+     * 📝 상세 정보 모달 렌더링 (실제 DB 컬럼명 사용)
      */
     renderDetailModal(institute) {
         if (!this.elements.detailModal) return;
@@ -489,24 +498,27 @@ class InstituteUI {
                             <h6 class="text-primary">기본 정보</h6>
                             ${this.renderDetailField('학당명', institute.name_ko)}
                             ${this.renderDetailField('영문명', institute.name_en)}
-                            ${this.renderDetailField('운영기관', institute.operating_organization)}
+                            ${this.renderDetailField('운영기관', institute.operator)}
                             ${this.renderDetailField('주소', institute.address)}
                         </div>
                         <div class="col-md-6">
                             <h6 class="text-primary">연락처 정보</h6>
                             ${this.renderDetailField('대표연락처', institute.phone)}
-                            ${this.renderDetailField('홈페이지/SNS', institute.website_sns, 'link')}
-                            ${this.renderDetailField('담당자성명', institute.manager_name)}
-                            ${this.renderDetailField('담당자연락처', institute.manager_contact)}
+                            ${this.renderDetailField('홈페이지/SNS', institute.sns_url, 'link')}
+                            ${this.renderDetailField('담당자성명', institute.contact_person)}
+                            ${this.renderDetailField('담당자연락처', institute.contact_phone)}
+                            ${this.renderDetailField('현지적응전담인력', institute.local_coordinator)}
+                            ${this.renderDetailField('현지적응전담인력연락처', institute.local_coordinator_phone)}
                         </div>
                     </div>
                     
                     <div class="row mt-4">
                         <div class="col-12">
                             <h6 class="text-primary">프로그램 정보</h6>
-                            ${this.renderDetailField('현지적응전담인력', institute.local_adaptation_staff, 'textarea')}
-                            ${this.renderDetailField('문화수업운영계획', institute.cultural_program_plan, 'textarea')}
+                            ${this.renderDetailField('파견희망기간', institute.dispatch_period, 'textarea')}
+                            ${this.renderDetailField('문화수업운영계획', institute.lesson_plan, 'textarea')}
                             ${this.renderDetailField('희망개설강좌', institute.desired_courses, 'textarea')}
+                            ${this.renderDetailField('교육환경정보', institute.education_environment, 'textarea')}
                         </div>
                     </div>
                     
@@ -514,8 +526,8 @@ class InstituteUI {
                         <div class="col-12">
                             <h6 class="text-primary">지원 정보</h6>
                             ${this.renderDetailField('현지어구사필요수준', institute.local_language_requirement, 'textarea')}
-                            ${this.renderDetailField('학당지원사항', institute.institute_support, 'textarea')}
-                            ${this.renderDetailField('파견국가안전정보', institute.country_safety_info, 'textarea')}
+                            ${this.renderDetailField('학당지원사항', institute.support_provided, 'textarea')}
+                            ${this.renderDetailField('파견국가안전정보', institute.safety_info_url, 'link')}
                         </div>
                     </div>
                 </div>
@@ -544,7 +556,7 @@ class InstituteUI {
         if (type === 'link' && value.startsWith('http')) {
             displayValue = `<a href="${value}" target="_blank" rel="noopener">${value}</a>`;
         } else if (type === 'textarea') {
-            displayValue = value.replace(/\n/g, '<br>');
+            displayValue = value.replace(/\\n/g, '<br>');
         }
         
         return `
@@ -709,7 +721,9 @@ class InstituteUI {
             is_loading: this.isLoading,
             search_params: this.searchParams,
             event_listeners_count: this.eventListeners.size,
-            module_version: '4.4.0'
+            module_version: '4.8.1',
+            field_consistency: 'fixed',
+            db_column_mapping: 'accurate'
         };
     }
 }
@@ -717,4 +731,4 @@ class InstituteUI {
 // 🌐 전역 인스턴스 생성
 window.InstituteUI = new InstituteUI();
 
-console.log('🎨 InstituteUI 모듈 로드 완료 (v4.4.0)');
+console.log('🎨 InstituteUI 모듈 로드 완료 (v4.8.1) - Field Name Consistency Fixed');
