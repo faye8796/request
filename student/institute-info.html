@@ -107,6 +107,44 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         }
 
+        /* 학당 이미지 컨테이너 중앙 정렬 */
+        .institute-image-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 2rem 0;
+            width: 100%;
+        }
+
+        .institute-image {
+            max-width: 100%;
+            max-height: 400px;
+            width: auto;
+            height: auto;
+            border-radius: 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .default-image-placeholder {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 300px;
+            height: 200px;
+            background: #f7fafc;
+            border: 2px dashed #e2e8f0;
+            border-radius: 1rem;
+            color: #a0aec0;
+            font-size: 1rem;
+        }
+
+        .default-image-placeholder i {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+
         /* Enhanced Table 스타일 개선 */
         .enhanced-table {
             border-collapse: collapse;
@@ -219,6 +257,16 @@
 
             .header-title {
                 font-size: 2rem;
+            }
+
+            /* 모바일에서 이미지 크기 조정 */
+            .institute-image {
+                max-height: 250px;
+            }
+
+            .default-image-placeholder {
+                width: 250px;
+                height: 150px;
             }
 
             /* 모바일에서 테이블 컬럼 너비 자동 조정 */
@@ -463,7 +511,7 @@
             }
         }
 
-        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.7.1 - UI 정렬 최적화 업데이트');
+        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.7.2 - 이미지 중앙 정렬 최적화');
     </script>
 </body>
 </html>
