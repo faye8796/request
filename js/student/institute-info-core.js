@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 핵심 로직 모듈
- * Version: 4.6.9
- * Description: 문화인턴 활동 정보 및 교육 환경 정보 테이블 컬럼 개선
+ * Version: 4.7.0
+ * Description: 희망 개설 강좌 중복 제거 및 교육 환경 정보 매핑 개선
  */
 
 window.InstituteInfoCore = (function() {
@@ -20,7 +20,7 @@ window.InstituteInfoCore = (function() {
      */
     async function initialize() {
         try {
-            console.log('🧠 InstituteInfoCore 초기화 시작 v4.6.9');
+            console.log('🧠 InstituteInfoCore 초기화 시작 v4.7.0');
             
             // 의존성 모듈 확인
             if (!window.InstituteInfoAPI) {
@@ -44,7 +44,7 @@ window.InstituteInfoCore = (function() {
             await loadInstituteData();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoCore 초기화 완료 v4.6.9');
+            console.log('✅ InstituteInfoCore 초기화 완료 v4.7.0');
             
         } catch (error) {
             console.error('❌ InstituteInfoCore 초기화 실패:', error);
@@ -149,7 +149,7 @@ window.InstituteInfoCore = (function() {
         try {
             console.log('📋 학당 정보 표시 중...');
             
-            // 기본 정보 구성 (테이블 형태) - 수정된 필드 매핑
+            // 기본 정보 구성 (테이블 형태)
             const basicInfo = [
                 {
                     icon: 'briefcase',
@@ -194,7 +194,7 @@ window.InstituteInfoCore = (function() {
                 }
             ];
             
-            // 문화인턴 활동 정보 구성 - 수정된 컬럼 구조
+            // 문화인턴 활동 정보 구성 - 희망 개설 강좌를 별도 라벨 없이 바로 테이블로
             const activityInfo = [
                 {
                     icon: 'calendar',
@@ -206,25 +206,34 @@ window.InstituteInfoCore = (function() {
                     label: '문화수업 운영 계획',
                     value: currentInstituteData.lesson_plan || '정보 없음',
                     isLongText: true  // 긴 텍스트 표시용 플래그
-                },
-                {
-                    icon: 'target',
-                    label: '희망 개설 강좌',
-                    value: currentInstituteData.desired_courses,
-                    isJsonData: true,
-                    jsonType: 'cultural-activity-table'  // 새로운 테이블 타입
                 }
             ];
+            
+            // 희망 개설 강좌가 있는 경우에만 추가 (라벨 없이 바로 테이블)
+            if (currentInstituteData.desired_courses && 
+                Array.isArray(currentInstituteData.desired_courses) && 
+                currentInstituteData.desired_courses.length > 0) {
+                
+                activityInfo.push({
+                    icon: 'target',
+                    label: '', // 라벨 없이 바로 테이블 표시
+                    value: currentInstituteData.desired_courses,
+                    isJsonData: true,
+                    jsonType: 'cultural-activity-table',
+                    isDirectTable: true  // 직접 테이블 표시 플래그
+                });
+            }
             
             // 교육 환경 정보 구성 (별도 섹션)
             const educationInfo = [];
             if (currentInstituteData.education_environment) {
                 educationInfo.push({
                     icon: 'school',
-                    label: '교육 환경 정보',
+                    label: '', // 라벨 없이 바로 테이블 표시
                     value: currentInstituteData.education_environment,
                     isJsonData: true,
-                    jsonType: 'education-environment-table'  // 새로운 테이블 타입
+                    jsonType: 'education-environment-table',
+                    isDirectTable: true
                 });
             }
             
@@ -248,7 +257,7 @@ window.InstituteInfoCore = (function() {
             
             // 교육 환경 정보 표시 (데이터가 있는 경우에만)
             if (educationInfo.length > 0) {
-                console.log('📚 교육 환경 정보 표시 중...');
+                console.log('📚 교육 환경 정보 표시 중...', currentInstituteData.education_environment);
                 window.InstituteInfoUI.renderInfoTable('educationInfoTable', educationInfo);
             } else {
                 console.log('📚 교육 환경 정보 없음');
@@ -257,19 +266,11 @@ window.InstituteInfoCore = (function() {
                 if (educationTable) {
                     educationTable.innerHTML = `
                         <div class="info-table-row">
-                            <div class="info-table-label">
-                                <i data-lucide="school"></i>
-                                교육 환경 정보
-                            </div>
-                            <div class="info-table-value empty">
+                            <div class="info-table-value empty" style="text-align: center; padding: 2rem;">
                                 교육 환경 정보가 등록되지 않았습니다.
                             </div>
                         </div>
                     `;
-                    // 아이콘 초기화
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
                 }
             }
             
@@ -355,11 +356,11 @@ window.InstituteInfoCore = (function() {
                         };
                     });
                 } else if (type === 'education-environment-table') {
-                    // 교육 환경 정보 - 새로운 컬럼 구조
+                    // 교육 환경 정보 - 새로운 컬럼 구조 (topic 필드 매핑 개선)
                     return data.map((item) => {
                         if (typeof item === 'object' && item !== null) {
                             return {
-                                '문화 수업 주제': item.subject || item.course || item['문화 수업 주제'] || item.name || '미정',
+                                '문화 수업 주제': item.topic || item.subject || item.course || item['문화 수업 주제'] || item.name || '미정',
                                 '교육 장소': item.location || item.place || item['교육 장소'] || item.venue || '미정',
                                 '학당 교구 및 기자재': item.equipment || item.materials || item['학당 교구 및 기자재'] || item.facilities || '미정'
                             };
@@ -537,12 +538,12 @@ window.InstituteInfoCore = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoCore',
-            version: '4.6.9',
+            version: '4.7.0',
             initialized: isInitialized,
             currentTab,
             hasData: !!currentInstituteData,
             eventListenersCount: eventListeners.size,
-            description: '문화인턴 활동 정보 및 교육 환경 정보 테이블 컬럼이 개선된 학당 정보 핵심 로직 모듈'
+            description: '희망 개설 강좌 중복 제거 및 교육 환경 정보 매핑이 개선된 학당 정보 핵심 로직 모듈'
         };
     }
     
@@ -575,4 +576,4 @@ window.InstituteInfoCore = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🧠 InstituteInfoCore 모듈 로드 완료 - v4.6.9 (문화인턴 활동 정보 및 교육 환경 정보 개선)');
+console.log('🧠 InstituteInfoCore 모듈 로드 완료 - v4.7.0 (희망 개설 강좌 중복 제거 및 교육 환경 정보 개선)');
