@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.8.5
- * Description: 국가 기본정보 정렬 문제 해결 - DOM 기반 렌더링 방식으로 변경
+ * Version: 4.8.6
+ * Description: 안전정보 제목 중복 문제 해결 - 안내 메시지 제목 변경
  */
 
 window.InstituteInfoUI = (function() {
@@ -79,7 +79,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.5');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.6');
             
             // DOM 요소 캐시
             cacheElements();
@@ -88,7 +88,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.5');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.6');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -548,7 +548,7 @@ window.InstituteInfoUI = (function() {
                 return table;
             }
             
-            // 헤더 생성 - 줄바꿈 문제 해결 (\\\\\\\\\\\\\\\\\\\\\\\\n → \\n)
+            // 헤더 생성 - 줄바꿈 문제 해결 (\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n → \\n)
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
             
@@ -1103,7 +1103,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 안전정보 안내 메시지 HTML 생성 (UPDATED - 빨간색 강조)
+     * 안전정보 안내 메시지 HTML 생성 (FIXED - 제목 중복 문제 해결)
      */
     function createSafetyGuideNotice() {
         return `
@@ -1112,7 +1112,7 @@ window.InstituteInfoUI = (function() {
                     <i data-lucide="alert-triangle"></i>
                 </div>
                 <div class="notice-content">
-                    <h4 class="notice-title">상세 안전정보</h4>
+                    <h4 class="notice-title">파견 전 안내사항</h4>
                     <p class="notice-text">파견 전 해당 국가의 상세 안전정보를 꼭 확인하세요</p>
                 </div>
             </div>
@@ -1485,10 +1485,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.8.5',
+            version: '4.8.6',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '국가 기본정보 정렬 문제 해결 - DOM 기반 렌더링 방식으로 변경'
+            description: '안전정보 제목 중복 문제 해결 - 안내 메시지 제목 변경'
         };
     }
     
@@ -1536,4 +1536,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.5 (국가 기본정보 정렬 문제 해결)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.6 (안전정보 제목 중복 문제 해결)');
