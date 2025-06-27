@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 API 모듈
- * Version: 4.8.0
- * Description: 국가 안전정보 조회 기능 추가 - DB 기반 안전정보 시스템
+ * Version: 4.8.1
+ * Description: 국가 매칭 로직 간소화 및 safety_info_url 처리 개선
  */
 
 window.InstituteInfoAPI = (function() {
@@ -16,7 +16,7 @@ window.InstituteInfoAPI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🔗 InstituteInfoAPI 초기화 시작 v4.8.0');
+            console.log('🔗 InstituteInfoAPI 초기화 시작 v4.8.1');
             
             // SupabaseCore 확인 및 클라이언트 확보
             if (!window.SupabaseCore) {
@@ -32,7 +32,7 @@ window.InstituteInfoAPI = (function() {
             
             isInitialized = true;
             
-            console.log('✅ InstituteInfoAPI 초기화 완료 v4.8.0');
+            console.log('✅ InstituteInfoAPI 초기화 완료 v4.8.1');
             return true;
             
         } catch (error) {
@@ -121,7 +121,7 @@ window.InstituteInfoAPI = (function() {
     }
     
     /**
-     * 주소에서 국가명 추출
+     * 주소에서 국가명 추출 (간소화된 버전)
      */
     function extractCountryFromAddress(address) {
         try {
@@ -132,39 +132,54 @@ window.InstituteInfoAPI = (function() {
             
             console.log('🔍 주소에서 국가명 추출 시도:', address);
             
-            // 국가명 매핑 테이블
+            // 간소화된 국가명 매핑 (주요 국가만)
             const countryMappings = {
-                // 영어 국가명
+                // 미국 (가장 많은 변형)
                 'United States': '미국',
                 'USA': '미국',
                 'US': '미국',
                 'America': '미국',
+                'Texas': '미국',
+                'California': '미국',
+                'New York': '미국',
+                'Florida': '미국',
+                
+                // 주요 영어권 국가
                 'Canada': '캐나다',
                 'Australia': '호주',
                 'United Kingdom': '영국',
                 'UK': '영국',
                 'Britain': '영국',
+                'England': '영국',
+                
+                // 아시아 주요 국가
                 'Japan': '일본',
                 'China': '중국',
-                'France': '프랑스',
-                'Germany': '독일',
-                'Italy': '이탈리아',
-                'Spain': '스페인',
-                'Russia': '러시아',
                 'Thailand': '태국',
                 'Vietnam': '베트남',
                 'Indonesia': '인도네시아',
                 'Philippines': '필리핀',
                 'Malaysia': '말레이시아',
                 'Singapore': '싱가포르',
+                
+                // 유럽 주요 국가
+                'France': '프랑스',
+                'Germany': '독일',
+                'Italy': '이탈리아',
+                'Spain': '스페인',
+                'Russia': '러시아',
+                
+                // 중남미 주요 국가
                 'Brazil': '브라질',
                 'Argentina': '아르헨티나',
                 'Mexico': '멕시코',
+                
+                // 기타 지역
                 'Turkey': '터키',
                 'Egypt': '이집트',
                 'South Africa': '남아프리카공화국',
                 
-                // 한국어 국가명
+                // 한국어 국가명 (그대로 매핑)
                 '미국': '미국',
                 '캐나다': '캐나다',
                 '호주': '호주',
@@ -190,22 +205,31 @@ window.InstituteInfoAPI = (function() {
                 '남아프리카공화국': '남아프리카공화국'
             };
             
-            // 주소에서 국가명 검색
+            // 1단계: 직접 매칭 시도
             for (const [pattern, country] of Object.entries(countryMappings)) {
                 if (address.includes(pattern)) {
-                    console.log(`✅ 국가명 추출 성공: ${pattern} → ${country}`);
+                    console.log(`✅ 직접 매칭 성공: ${pattern} → ${country}`);
                     return country;
                 }
             }
             
-            // 주 약어로 미국 판별 (TX, CA, NY 등)
+            // 2단계: 미국 주 약어 패턴 확인 (TX, CA, NY 등)
             const usStatePattern = /\b[A-Z]{2}\b(?:\s|,|$)/;
             if (usStatePattern.test(address)) {
-                console.log('✅ 미국 주 약어로 미국 판별');
+                console.log('✅ 미국 주 약어 패턴으로 미국 판별');
                 return '미국';
             }
             
-            console.log('❌ 국가명 추출 실패, 알 수 없는 국가');
+            // 3단계: 도시명으로 미국 판별 (일반적인 미국 도시들)
+            const usCities = ['San Antonio', 'Houston', 'Dallas', 'Austin', 'Los Angeles', 'San Francisco', 'New York', 'Chicago', 'Miami', 'Boston', 'Seattle', 'Denver', 'Phoenix', 'Las Vegas'];
+            for (const city of usCities) {
+                if (address.includes(city)) {
+                    console.log(`✅ 미국 도시명으로 미국 판별: ${city}`);
+                    return '미국';
+                }
+            }
+            
+            console.log('❌ 국가명 추출 실패 - 알 수 없는 국가');
             return null;
             
         } catch (error) {
@@ -268,7 +292,7 @@ window.InstituteInfoAPI = (function() {
     }
     
     /**
-     * 학당별 안전정보 URL 처리
+     * 학당별 안전정보 URL 처리 (개선된 버전)
      */
     function getSafetyInfoUrl(instituteData) {
         try {
@@ -277,15 +301,28 @@ window.InstituteInfoAPI = (function() {
                 return 'https://www.0404.go.kr/';
             }
             
-            // 1순위: 학당별 safety_info_url
-            if (instituteData.safety_info_url && 
-                instituteData.safety_info_url.trim() !== '' && 
-                instituteData.safety_info_url !== 'null' &&
-                instituteData.safety_info_url !== 'undefined') {
+            console.log('🔗 안전정보 URL 처리 시작:', {
+                학당명: instituteData.name_ko,
+                safety_info_url: instituteData.safety_info_url,
+                url_타입: typeof instituteData.safety_info_url
+            });
+            
+            // 1순위: 학당별 safety_info_url 검증
+            if (instituteData.safety_info_url) {
+                const url = String(instituteData.safety_info_url).trim();
                 
-                const url = instituteData.safety_info_url.trim();
-                console.log(`🔗 학당 전용 안전정보 URL 사용: ${url}`);
-                return url;
+                // 유효하지 않은 값들 제외
+                const invalidValues = ['', 'null', 'undefined', 'NULL', 'UNDEFINED'];
+                
+                if (url && !invalidValues.includes(url)) {
+                    // URL 형식 기본 검증
+                    if (url.startsWith('http://') || url.startsWith('https://')) {
+                        console.log(`✅ 학당 전용 안전정보 URL 사용: ${url}`);
+                        return url;
+                    } else {
+                        console.warn('⚠️ 유효하지 않은 URL 형식:', url);
+                    }
+                }
             }
             
             // 2순위: 외교부 기본 사이트
@@ -564,10 +601,10 @@ window.InstituteInfoAPI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoAPI',
-            version: '4.8.0',
+            version: '4.8.1',
             initialized: isInitialized,
             hasSupabaseClient: !!supabaseClient,
-            description: '국가 안전정보 조회 기능이 추가된 DB 기반 안전정보 시스템'
+            description: '국가 매칭 로직 간소화 및 safety_info_url 처리 개선'
         };
     }
     
@@ -581,7 +618,7 @@ window.InstituteInfoAPI = (function() {
         getCountryInfoByAddress,
         validateSafetyInfoUrl,
         
-        // 국가 정보 관련 (NEW)
+        // 국가 정보 관련 (개선된 버전)
         extractCountryFromAddress,
         getSafetyInfoUrl,
         
@@ -606,4 +643,4 @@ window.InstituteInfoAPI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('📡 InstituteInfoAPI 모듈 로드 완료 - v4.8.0 (국가 안전정보 조회 기능 추가)');
+console.log('📡 InstituteInfoAPI 모듈 로드 완료 - v4.8.1 (국가 매칭 로직 간소화 및 safety_info_url 처리 개선)');
