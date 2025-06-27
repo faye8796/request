@@ -118,7 +118,7 @@
         .enhanced-table td {
             border: 1px solid #e2e8f0;
             padding: 0.75rem;
-            text-align: center; /* 모든 텍스트 가운데 정렬 */
+            text-align: center;
         }
 
         .enhanced-table th {
@@ -136,54 +136,72 @@
             background: #e2e8f0;
         }
 
-        /* 희망 개설 강좌 테이블 컬럼 너비 조정 */
+        /* 희망 개설 강좌 테이블 컬럼 너비 및 정렬 조정 */
         .cultural-activity-table th:nth-child(1), /* 문화 수업 주제 */
         .cultural-activity-table td:nth-child(1) {
-            width: 40%;
-            text-align: left; /* 제목은 왼쪽 정렬 */
+            width: 30%; /* 3/10 비율 */
+            text-align: center; /* 가운데 정렬로 변경 */
         }
 
         .cultural-activity-table th:nth-child(2), /* 참가자 한국어 수준 */
         .cultural-activity-table td:nth-child(2) {
-            width: 20%;
+            width: 10%; /* 1/10 비율 */
+            text-align: center;
         }
 
-        .cultural-activity-table th:nth-child(3), /* 세부 일정 */
+        .cultural-activity-table th:nth-child(3), /* 목표 수강인원 */
         .cultural-activity-table td:nth-child(3) {
-            width: 25%;
+            width: 10%; /* 1/10 비율 */
+            text-align: center;
         }
 
-        .cultural-activity-table th:nth-child(4), /* 목표 수강인원 */
+        .cultural-activity-table th:nth-child(4), /* 세부 일정 */
         .cultural-activity-table td:nth-child(4) {
-            width: 15%;
+            width: 50%; /* 5/10 비율 */
+            text-align: center;
         }
 
-        /* 교육 환경 정보 테이블 컬럼 너비 조정 */
+        /* 참가자 한국어 수준 헤더에 줄바꿈 적용 */
+        .cultural-activity-table th:nth-child(2)::after {
+            content: "\A";
+            white-space: pre;
+        }
+
+        /* 교육 환경 정보 테이블 - 모든 데이터 가운데 정렬 */
         .education-environment-table th:nth-child(1), /* 문화 수업 주제 */
         .education-environment-table td:nth-child(1) {
             width: 35%;
-            text-align: left; /* 제목은 왼쪽 정렬 */
+            text-align: center; /* 가운데 정렬 적용 */
         }
 
         .education-environment-table th:nth-child(2), /* 교육 장소 */
         .education-environment-table td:nth-child(2) {
             width: 25%;
+            text-align: center;
         }
 
         .education-environment-table th:nth-child(3), /* 학당 교구 및 기자재 */
         .education-environment-table td:nth-child(3) {
             width: 40%;
-            text-align: left; /* 긴 내용은 왼쪽 정렬 */
+            text-align: center; /* 가운데 정렬 적용 */
         }
 
-        /* 일반 테이블 스타일 - 모든 내용 가운데 정렬 */
-        .info-table .info-table-value,
-        .json-table td,
+        /* 기본정보 섹션 - 왼쪽 정렬 */
+        .info-table .info-table-value {
+            text-align: left; /* 왼쪽 정렬로 변경 */
+        }
+
+        /* 기타 사항 섹션 - 왼쪽 정렬 */
         .json-list li {
+            text-align: left; /* 왼쪽 정렬로 변경 */
+        }
+
+        /* 기타 테이블 데이터는 기본 가운데 정렬 유지 */
+        .json-table td {
             text-align: center;
         }
 
-        /* 긴 텍스트나 링크는 예외적으로 왼쪽 정렬 */
+        /* 링크나 긴 텍스트는 왼쪽 정렬 유지 */
         .info-table-value.text-break,
         .info-table-value a {
             text-align: left;
@@ -445,7 +463,7 @@
             }
         }
 
-        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.7.1 - 희망 개설 강좌 독립 섹션 및 테이블 스타일 개선');
+        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.7.1 - UI 정렬 최적화 업데이트');
     </script>
 </body>
 </html>
