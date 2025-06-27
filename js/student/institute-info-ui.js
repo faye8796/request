@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.8.3
- * Description: 안전정보 UI 개선 - 국가 기본정보 세로 리스트 형태 변경 및 안내 메시지 강화
+ * Version: 4.8.4
+ * Description: 안전정보 UI 수정 - 안내 메시지 위치 변경 및 가로 배치 개선
  */
 
 window.InstituteInfoUI = (function() {
@@ -79,7 +79,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.3');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.4');
             
             // DOM 요소 캐시
             cacheElements();
@@ -88,7 +88,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.3');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.4');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -548,7 +548,7 @@ window.InstituteInfoUI = (function() {
                 return table;
             }
             
-            // 헤더 생성 - 줄바꿈 문제 해결 (\\\\\\n → \n)
+            // 헤더 생성 - 줄바꿈 문제 해결 (\\\\\\\\\\\\n → \\n)
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
             
@@ -1046,7 +1046,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 국가별 안전정보 통합 표시 (NEW - 메인 함수)
+     * 국가별 안전정보 통합 표시 (UPDATED - 안내 메시지 위치 수정)
      */
     async function showCountrySafetyInfo(instituteData) {
         try {
@@ -1065,9 +1065,11 @@ window.InstituteInfoUI = (function() {
             console.log('🔍 조회된 국가정보:', countryInfo);
             console.log('🔗 안전정보 URL:', safetyUrl);
 
-            // 전체 안전정보 컨테이너 생성
+            // 전체 안전정보 컨테이너 생성 (UPDATED - 안내 메시지 위치 변경)
             let safetyHtml = `
-                <!-- 안전정보 안내 메시지 (UPDATED) -->\n                ${createSafetyGuideNotice()}\n                \n                <!-- 해외안전여행 앱 다운로드 UI -->\n                ${createAppDownloadSection()}\n            `;
+                <!-- 해외안전여행 앱 다운로드 UI -->
+                ${createAppDownloadSection()}
+            `;
 
             // 국가 기본정보가 있는 경우 추가
             if (countryInfo) {
@@ -1075,14 +1077,14 @@ window.InstituteInfoUI = (function() {
                 safetyHtml += createEmbassyInfoSection(countryInfo);
             }
 
-            // 외부링크 섹션 추가 (UPDATED)
+            // 외부링크 섹션 추가 (안내 메시지 포함)
             safetyHtml += createSafetyExternalLinksSection(safetyUrl, countryInfo);
 
             // HTML 적용
             elements.safetyInfoContent.innerHTML = safetyHtml;
 
             initializeLucideIcons();
-            console.log('✅ 국가별 안전정보 표시 완료');
+            console.log('✅ 국가별 안전정보 표시 완료 (안내 메시지 위치 수정됨)');
 
         } catch (error) {
             console.error('❌ 국가별 안전정보 표시 실패:', error);
@@ -1261,7 +1263,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 외부링크 섹션 HTML 생성 (UPDATED - 2개 버튼으로 변경)
+     * 외부링크 섹션 HTML 생성 (UPDATED - 안내 메시지 포함)
      */
     function createSafetyExternalLinksSection(safetyUrl, countryInfo) {
         try {
@@ -1269,6 +1271,9 @@ window.InstituteInfoUI = (function() {
             
             return `
                 <div class="safety-external-links">
+                    <!-- 안전정보 안내 메시지 (이동됨) -->
+                    ${createSafetyGuideNotice()}
+                    
                     <h4 class="safety-section-title">
                         <i data-lucide="external-link"></i>
                         상세 안전정보
@@ -1301,6 +1306,7 @@ window.InstituteInfoUI = (function() {
             console.error('❌ 외부링크 섹션 생성 실패:', error);
             return `
                 <div class="safety-external-links">
+                    ${createSafetyGuideNotice()}
                     <div class="external-links-grid two-buttons">
                         <button type="button" onclick="window.open('https://www.0404.go.kr/', '_blank')" class="external-link-btn primary">
                             <i data-lucide="external-link"></i>
@@ -1347,7 +1353,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 안전정보 없음 표시 (앱 다운로드 UI 포함)
+     * 안전정보 없음 표시 (UPDATED - 안내 메시지 위치 수정)
      */
     function showSafetyUnavailable() {
         try {
@@ -1356,25 +1362,37 @@ window.InstituteInfoUI = (function() {
             }
 
             elements.safetyInfoContent.innerHTML = `
-                ${createSafetyGuideNotice()}
                 ${createAppDownloadSection()}
+
+                <!-- 외부링크 섹션 (안내 메시지 포함) -->
+                <div class="safety-external-links">
+                    ${createSafetyGuideNotice()}
+                    
+                    <h4 class="safety-section-title">
+                        <i data-lucide="external-link"></i>
+                        상세 안전정보
+                    </h4>
+                    <div class="external-links-grid two-buttons">
+                        <button type="button" onclick="window.open('https://www.0404.go.kr/', '_blank')" class="external-link-btn primary">
+                            <i data-lucide="globe"></i>
+                            <div class="btn-content">
+                                <span class="btn-title">외교부 해외안전여행</span>
+                                <span class="btn-desc">종합 안전정보 및 여행경보</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
 
                 <!-- 안전정보 없음 메시지 -->
                 <div class="safety-unavailable">
                     <i data-lucide="shield-off"></i>
                     <h3>안전정보가 등록되지 않았습니다</h3>
                     <p>해당 국가의 안전정보가 아직 등록되지 않았습니다.</p>
-                    <div class="unavailable-actions">
-                        <button type="button" onclick="window.open('https://www.0404.go.kr/', '_blank')" class="external-link-btn">
-                            <i data-lucide="external-link"></i>
-                            외교부 해외안전여행 사이트에서 확인하기
-                        </button>
-                    </div>
                 </div>
             `;
 
             initializeLucideIcons();
-            console.log('📋 안전정보 없음 표시 (안내 메시지 및 앱 다운로드 UI 포함)');
+            console.log('📋 안전정보 없음 표시 (안내 메시지 위치 수정됨)');
 
         } catch (error) {
             console.error('❌ 안전정보 없음 표시 실패:', error);
@@ -1405,10 +1423,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.8.3',
+            version: '4.8.4',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '안전정보 UI 개선 - 국가 기본정보 세로 리스트 형태 변경 및 안내 메시지 강화'
+            description: '안전정보 UI 수정 - 안내 메시지 위치 변경 및 가로 배치 개선'
         };
     }
     
@@ -1450,4 +1468,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.3 (안전정보 UI 개선)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.4 (안전정보 UI 수정)');
