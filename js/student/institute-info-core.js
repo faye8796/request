@@ -20,7 +20,6 @@ window.InstituteInfoCore = (function() {
      */
     async function initialize() {
         try {
-            console.log('🧠 InstituteInfoCore 초기화 시작 v4.8.0');
             
             // 의존성 모듈 확인
             if (!window.InstituteInfoAPI) {
@@ -44,10 +43,8 @@ window.InstituteInfoCore = (function() {
             await loadInstituteData();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoCore 초기화 완료 v4.8.0');
             
         } catch (error) {
-            console.error('❌ InstituteInfoCore 초기화 실패:', error);
             
             // UI에 에러 표시
             if (window.InstituteInfoUI && window.InstituteInfoUI.showError) {
@@ -63,7 +60,6 @@ window.InstituteInfoCore = (function() {
      */
     function setupEventListeners() {
         try {
-            console.log('🎯 이벤트 리스너 설정 중...');
             
             // URL 해시 변경 이벤트
             const hashChangeHandler = () => handleHashChange();
@@ -73,10 +69,7 @@ window.InstituteInfoCore = (function() {
             // 초기 해시 처리
             handleHashChange();
             
-            console.log('✅ 이벤트 리스너 설정 완료');
-            
         } catch (error) {
-            console.error('❌ 이벤트 리스너 설정 실패:', error);
         }
     }
     
@@ -85,7 +78,6 @@ window.InstituteInfoCore = (function() {
      */
     async function loadInstituteData() {
         try {
-            console.log('📚 학당 데이터 로드 시작');
             
             // 로딩 상태 표시
             window.InstituteInfoUI.showLoading();
@@ -96,14 +88,10 @@ window.InstituteInfoCore = (function() {
             // 데이터 전처리
             currentInstituteData = window.InstituteInfoAPI.processInstituteData(rawData);
             
-            console.log('✅ 학당 데이터 로드 완료:', currentInstituteData.name_ko);
-            console.log('🔍 로드된 데이터:', currentInstituteData);
-            
             // UI 업데이트
             await updateUI();
             
         } catch (error) {
-            console.error('❌ 학당 데이터 로드 실패:', error);
             
             const processedError = window.InstituteInfoAPI.handleError(error, '학당 정보 로드');
             window.InstituteInfoUI.showError(processedError.message);
@@ -119,8 +107,6 @@ window.InstituteInfoCore = (function() {
                 throw new Error('표시할 학당 데이터가 없습니다');
             }
             
-            console.log('🎨 UI 업데이트 시작');
-            
             // 기본 정보 표시
             window.InstituteInfoUI.showInstituteHeader(currentInstituteData);
             window.InstituteInfoUI.showInstituteImage(currentInstituteData);
@@ -134,10 +120,7 @@ window.InstituteInfoCore = (function() {
             // 메인 콘텐츠 표시
             window.InstituteInfoUI.showMainContent();
             
-            console.log('✅ UI 업데이트 완료');
-            
         } catch (error) {
-            console.error('❌ UI 업데이트 실패:', error);
             window.InstituteInfoUI.showError('화면 표시 중 오류가 발생했습니다');
         }
     }
@@ -147,7 +130,6 @@ window.InstituteInfoCore = (function() {
      */
     function displayInstituteInfo() {
         try {
-            console.log('📋 학당 정보 표시 중...');
             
             // 기본 정보 구성 (테이블 형태)
             const basicInfo = [
@@ -171,8 +153,12 @@ window.InstituteInfoCore = (function() {
                     label: 'SNS 정보',
                     value: currentInstituteData.sns_url || '정보 없음',
                     isLink: currentInstituteData.sns_url ? true : false
-                },
-                {
+                }
+                /* 
+                === 담당자 정보 임시 숨김 (향후 공개 예정) ===
+                나중에 아래 4개 필드를 다시 활성화하려면 이 주석을 제거하고 아래 코드를 기본 정보 배열에 추가하세요:
+                
+                ,{
                     icon: 'user',
                     label: '담당자 정보',
                     value: currentInstituteData.contact_person || '정보 없음'
@@ -192,6 +178,9 @@ window.InstituteInfoCore = (function() {
                     label: '적응 지원 담당자 연락처',
                     value: currentInstituteData.local_coordinator_phone || '정보 없음'
                 }
+                
+                === 담당자 정보 임시 숨김 끝 ===
+                */
             ];
             
             // 문화인턴 활동 정보 구성 (희망 개설 강좌 제외)
@@ -258,10 +247,8 @@ window.InstituteInfoCore = (function() {
             
             // 희망 개설 강좌 정보 표시 (데이터가 있는 경우에만)
             if (desiredCoursesInfo.length > 0) {
-                console.log('🎯 희망 개설 강좌 정보 표시 중...', currentInstituteData.desired_courses);
                 window.InstituteInfoUI.renderInfoTable('desiredCoursesTable', desiredCoursesInfo);
             } else {
-                console.log('🎯 희망 개설 강좌 정보 없음');
                 // 희망 개설 강좌 정보가 없을 때 안내 메시지 표시
                 const coursesTable = document.getElementById('desiredCoursesTable');
                 if (coursesTable) {
@@ -277,10 +264,8 @@ window.InstituteInfoCore = (function() {
             
             // 교육 환경 정보 표시 (데이터가 있는 경우에만)
             if (educationInfo.length > 0) {
-                console.log('📚 교육 환경 정보 표시 중...', currentInstituteData.education_environment);
                 window.InstituteInfoUI.renderInfoTable('educationInfoTable', educationInfo);
             } else {
-                console.log('📚 교육 환경 정보 없음');
                 // 교육 환경 정보가 없을 때 안내 메시지 표시
                 const educationTable = document.getElementById('educationInfoTable');
                 if (educationTable) {
@@ -296,10 +281,7 @@ window.InstituteInfoCore = (function() {
             
             window.InstituteInfoUI.renderInfoList('additionalInfoList', additionalInfo);
             
-            console.log('✅ 학당 정보 표시 완료');
-            
         } catch (error) {
-            console.error('❌ 학당 정보 표시 실패:', error);
         }
     }
     
@@ -308,20 +290,16 @@ window.InstituteInfoCore = (function() {
      */
     async function displaySafetyInfo() {
         try {
-            console.log('🛡️ 안전정보 표시 중... (DB 기반 방식)');
             
             if (!currentInstituteData) {
-                console.warn('⚠️ 학당 데이터가 없어 안전정보를 표시할 수 없습니다');
                 window.InstituteInfoUI.showSafetyUnavailable();
                 return;
             }
             
             // 새로운 안전정보 표시 시스템 사용
             // 이 함수는 안전정보 탭이 활성화될 때만 실제로 동작합니다
-            console.log('✅ 안전정보 시스템 준비 완료 (탭 활성화 시 로드됨)');
             
         } catch (error) {
-            console.error('❌ 안전정보 표시 실패:', error);
             window.InstituteInfoUI.showSafetyError('안전정보를 불러올 수 없습니다');
         }
     }
@@ -435,7 +413,6 @@ window.InstituteInfoCore = (function() {
             return String(data);
             
         } catch (error) {
-            console.warn('⚠️ JSONB 데이터 처리 실패:', error);
             return data ? String(data) : null;
         }
     }
@@ -449,8 +426,6 @@ window.InstituteInfoCore = (function() {
                 return;
             }
             
-            console.log(`🔄 탭 전환: ${currentTab} → ${tabName}`);
-            
             // 탭 상태 업데이트
             currentTab = tabName;
             
@@ -460,10 +435,7 @@ window.InstituteInfoCore = (function() {
             // URL 해시 업데이트
             window.location.hash = tabName;
             
-            console.log(`✅ 탭 전환 완료: ${tabName}`);
-            
         } catch (error) {
-            console.error('❌ 탭 전환 실패:', error);
         }
     }
     
@@ -476,7 +448,6 @@ window.InstituteInfoCore = (function() {
             const validTabs = ['info', 'safety'];
             
             if (hash && validTabs.includes(hash) && hash !== currentTab) {
-                console.log(`🔗 URL 해시로 탭 전환: ${hash}`);
                 
                 currentTab = hash;
                 if (window.InstituteInfoUI && window.InstituteInfoUI.switchTab) {
@@ -485,7 +456,6 @@ window.InstituteInfoCore = (function() {
             }
             
         } catch (error) {
-            console.error('❌ 해시 변경 처리 실패:', error);
         }
     }
     
@@ -494,7 +464,6 @@ window.InstituteInfoCore = (function() {
      */
     async function refreshData() {
         try {
-            console.log('🔄 데이터 새로고침 시작');
             
             // 로딩 상태 표시
             window.InstituteInfoUI.showLoading();
@@ -502,10 +471,7 @@ window.InstituteInfoCore = (function() {
             // 데이터 다시 로드
             await loadInstituteData();
             
-            console.log('✅ 데이터 새로고침 완료');
-            
         } catch (error) {
-            console.error('❌ 데이터 새로고침 실패:', error);
             window.InstituteInfoUI.showError('데이터 새로고침 중 오류가 발생했습니다');
         }
     }
@@ -515,7 +481,6 @@ window.InstituteInfoCore = (function() {
      */
     function cleanup() {
         try {
-            console.log('🧹 InstituteInfoCore 정리 중...');
             
             // 이벤트 리스너 제거
             eventListeners.forEach((listenerInfo, element) => {
@@ -535,10 +500,7 @@ window.InstituteInfoCore = (function() {
             currentTab = 'info';
             isInitialized = false;
             
-            console.log('✅ InstituteInfoCore 정리 완료');
-            
         } catch (error) {
-            console.error('❌ InstituteInfoCore 정리 실패:', error);
         }
     }
     
