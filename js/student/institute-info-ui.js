@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.6.4
- * Description: 화면 렌더링, DOM 조작, 탭 관리 담당
+ * Version: 4.6.6
+ * Description: 개선된 테이블/목록 형태 UI 렌더링 모듈
  */
 
 window.InstituteInfoUI = (function() {
@@ -16,13 +16,14 @@ window.InstituteInfoUI = (function() {
         errorMessage: null,
         mainContent: null,
         instituteTitle: null,
+        instituteEnglishTitle: null,
         instituteImage: null,
         defaultImagePlaceholder: null,
         tabButtons: null,
         tabPanels: null,
-        basicInfoGrid: null,
-        activityInfoGrid: null,
-        additionalInfoGrid: null,
+        basicInfoTable: null,
+        activityInfoTable: null,
+        additionalInfoList: null,
         safetyInfoContent: null
     };
     
@@ -31,7 +32,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.6.6');
             
             // DOM 요소 캐시
             cacheElements();
@@ -40,7 +41,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.6.6');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -57,13 +58,14 @@ window.InstituteInfoUI = (function() {
             elements.errorMessage = document.getElementById('errorMessage');
             elements.mainContent = document.getElementById('mainContent');
             elements.instituteTitle = document.getElementById('instituteTitle');
+            elements.instituteEnglishTitle = document.getElementById('instituteEnglishTitle');
             elements.instituteImage = document.getElementById('instituteImage');
             elements.defaultImagePlaceholder = document.getElementById('defaultImagePlaceholder');
             elements.tabButtons = document.querySelectorAll('.tab-button');
             elements.tabPanels = document.querySelectorAll('.tab-panel');
-            elements.basicInfoGrid = document.getElementById('basicInfoGrid');
-            elements.activityInfoGrid = document.getElementById('activityInfoGrid');
-            elements.additionalInfoGrid = document.getElementById('additionalInfoGrid');
+            elements.basicInfoTable = document.getElementById('basicInfoTable');
+            elements.activityInfoTable = document.getElementById('activityInfoTable');
+            elements.additionalInfoList = document.getElementById('additionalInfoList');
             elements.safetyInfoContent = document.getElementById('safetyInfoContent');
             
             console.log('✅ DOM 요소 캐시 완료');
@@ -169,8 +171,15 @@ window.InstituteInfoUI = (function() {
     function showInstituteHeader(instituteData) {
         try {
             if (elements.instituteTitle && instituteData) {
-                elements.instituteTitle.textContent = instituteData.display_name || '학당명 없음';
-                console.log(`📋 학당 헤더 표시: ${instituteData.display_name}`);
+                // 한국어 학당명
+                elements.instituteTitle.textContent = instituteData.name_ko || '학당명 없음';
+                
+                // 영문 학당명
+                if (elements.instituteEnglishTitle) {
+                    elements.instituteEnglishTitle.textContent = instituteData.name_en || 'English Name Not Available';
+                }
+                
+                console.log(`📋 학당 헤더 표시: ${instituteData.name_ko} (${instituteData.name_en})`);
             }
         } catch (error) {
             console.error('❌ 학당 헤더 표시 실패:', error);
@@ -225,48 +234,48 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 정보 섹션 렌더링
+     * 테이블 형태로 정보 렌더링
      */
-    function renderInfoSection(gridId, infoItems) {
+    function renderInfoTable(tableId, infoItems) {
         try {
-            const grid = document.getElementById(gridId);
-            if (!grid || !Array.isArray(infoItems)) {
-                console.warn(`⚠️ 정보 섹션 렌더링 실패: ${gridId}`);
+            const table = document.getElementById(tableId);
+            if (!table || !Array.isArray(infoItems)) {
+                console.warn(`⚠️ 테이블 렌더링 실패: ${tableId}`);
                 return;
             }
             
-            grid.innerHTML = '';
+            table.innerHTML = '';
             
             infoItems.forEach(item => {
-                const infoElement = createInfoItem(item);
-                if (infoElement) {
-                    grid.appendChild(infoElement);
+                const row = createTableRow(item);
+                if (row) {
+                    table.appendChild(row);
                 }
             });
             
             initializeLucideIcons();
-            console.log(`✅ 정보 섹션 렌더링 완료: ${gridId}`);
+            console.log(`✅ 테이블 렌더링 완료: ${tableId}`);
             
         } catch (error) {
-            console.error(`❌ 정보 섹션 렌더링 실패 (${gridId}):`, error);
+            console.error(`❌ 테이블 렌더링 실패 (${tableId}):`, error);
         }
     }
     
     /**
-     * 정보 아이템 생성
+     * 테이블 행 생성
      */
-    function createInfoItem(item) {
+    function createTableRow(item) {
         try {
             if (!item || !item.label) {
                 return null;
             }
             
-            const infoItem = document.createElement('div');
-            infoItem.className = 'info-item';
+            const row = document.createElement('div');
+            row.className = 'info-table-row';
             
             // 레이블 생성
             const label = document.createElement('div');
-            label.className = 'info-label';
+            label.className = 'info-table-label';
             label.innerHTML = `
                 <i data-lucide="${item.icon || 'info'}"></i>
                 ${item.label}
@@ -274,7 +283,7 @@ window.InstituteInfoUI = (function() {
             
             // 값 생성
             const value = document.createElement('div');
-            value.className = 'info-value';
+            value.className = 'info-table-value';
             
             if (!item.value || item.value === '' || item.value === null || item.value === undefined) {
                 value.textContent = '정보 없음';
@@ -282,31 +291,253 @@ window.InstituteInfoUI = (function() {
             } else if (item.isLink && item.value) {
                 // 링크 처리
                 value.innerHTML = `<a href="${item.value}" target="_blank" rel="noopener noreferrer">${item.value}</a>`;
-            } else if (item.isJsonList && Array.isArray(item.value)) {
-                // JSON 리스트 처리
-                const list = document.createElement('ul');
-                list.className = 'json-list';
-                
-                item.value.forEach(listItem => {
-                    const li = document.createElement('li');
-                    li.textContent = String(listItem);
-                    list.appendChild(li);
-                });
-                
-                value.appendChild(list);
+            } else if (item.isJsonData && typeof item.value === 'object') {
+                // JSON 데이터 처리
+                value.appendChild(createJsonDisplay(item.value, item.jsonType));
             } else {
                 // 일반 텍스트 처리
                 value.textContent = String(item.value);
             }
             
-            infoItem.appendChild(label);
-            infoItem.appendChild(value);
+            row.appendChild(label);
+            row.appendChild(value);
             
-            return infoItem;
+            return row;
             
         } catch (error) {
-            console.error('❌ 정보 아이템 생성 실패:', error);
+            console.error('❌ 테이블 행 생성 실패:', error);
             return null;
+        }
+    }
+    
+    /**
+     * 목록 형태로 정보 렌더링
+     */
+    function renderInfoList(listId, infoItems) {
+        try {
+            const list = document.getElementById(listId);
+            if (!list || !Array.isArray(infoItems)) {
+                console.warn(`⚠️ 목록 렌더링 실패: ${listId}`);
+                return;
+            }
+            
+            list.innerHTML = '';
+            
+            infoItems.forEach(item => {
+                const listItem = createListItem(item);
+                if (listItem) {
+                    list.appendChild(listItem);
+                }
+            });
+            
+            initializeLucideIcons();
+            console.log(`✅ 목록 렌더링 완료: ${listId}`);
+            
+        } catch (error) {
+            console.error(`❌ 목록 렌더링 실패 (${listId}):`, error);
+        }
+    }
+    
+    /**
+     * 목록 아이템 생성
+     */
+    function createListItem(item) {
+        try {
+            if (!item || !item.label) {
+                return null;
+            }
+            
+            const listItem = document.createElement('div');
+            listItem.className = 'info-list-item';
+            
+            // 제목 생성
+            const title = document.createElement('div');
+            title.className = 'info-list-title';
+            title.innerHTML = `
+                <i data-lucide="${item.icon || 'info'}"></i>
+                ${item.label}
+            `;
+            
+            // 내용 생성
+            const content = document.createElement('div');
+            content.className = 'info-list-content';
+            
+            if (!item.value || item.value === '' || item.value === null || item.value === undefined) {
+                content.textContent = '정보 없음';
+                content.classList.add('empty');
+            } else if (item.isLink && item.value) {
+                // 링크 처리
+                content.innerHTML = `<a href="${item.value}" target="_blank" rel="noopener noreferrer">${item.value}</a>`;
+            } else if (item.isJsonData && typeof item.value === 'object') {
+                // JSON 데이터 처리
+                content.appendChild(createJsonDisplay(item.value, item.jsonType));
+            } else {
+                // 일반 텍스트 처리
+                content.textContent = String(item.value);
+            }
+            
+            listItem.appendChild(title);
+            listItem.appendChild(content);
+            
+            return listItem;
+            
+        } catch (error) {
+            console.error('❌ 목록 아이템 생성 실패:', error);
+            return null;
+        }
+    }
+    
+    /**
+     * JSON 데이터 표시 생성
+     */
+    function createJsonDisplay(data, type = 'list') {
+        try {
+            if (!data) {
+                const empty = document.createElement('span');
+                empty.textContent = '정보 없음';
+                empty.className = 'empty';
+                return empty;
+            }
+            
+            if (Array.isArray(data)) {
+                if (type === 'table') {
+                    return createJsonTable(data);
+                } else {
+                    return createJsonList(data);
+                }
+            } else if (typeof data === 'object') {
+                return createJsonObject(data);
+            } else {
+                const span = document.createElement('span');
+                span.textContent = String(data);
+                return span;
+            }
+            
+        } catch (error) {
+            console.error('❌ JSON 표시 생성 실패:', error);
+            const errorSpan = document.createElement('span');
+            errorSpan.textContent = '데이터 표시 오류';
+            errorSpan.className = 'empty';
+            return errorSpan;
+        }
+    }
+    
+    /**
+     * JSON 테이블 생성
+     */
+    function createJsonTable(data) {
+        try {
+            const table = document.createElement('table');
+            table.className = 'json-table';
+            
+            if (data.length === 0) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.textContent = '데이터 없음';
+                td.className = 'empty';
+                tr.appendChild(td);
+                table.appendChild(tr);
+                return table;
+            }
+            
+            // 헤더 생성 (첫 번째 객체의 키를 기준으로)
+            const firstItem = data[0];
+            if (typeof firstItem === 'object' && firstItem !== null) {
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                
+                Object.keys(firstItem).forEach(key => {
+                    const th = document.createElement('th');
+                    th.textContent = key;
+                    headerRow.appendChild(th);
+                });
+                
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+                
+                // 바디 생성
+                const tbody = document.createElement('tbody');
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    Object.keys(firstItem).forEach(key => {
+                        const td = document.createElement('td');
+                        td.textContent = item[key] || '';
+                        row.appendChild(td);
+                    });
+                    tbody.appendChild(row);
+                });
+                table.appendChild(tbody);
+            }
+            
+            return table;
+            
+        } catch (error) {
+            console.error('❌ JSON 테이블 생성 실패:', error);
+            return createJsonList(data);
+        }
+    }
+    
+    /**
+     * JSON 목록 생성
+     */
+    function createJsonList(data) {
+        try {
+            const list = document.createElement('ul');
+            list.className = 'json-list';
+            
+            if (data.length === 0) {
+                const li = document.createElement('li');
+                li.textContent = '데이터 없음';
+                li.className = 'empty';
+                list.appendChild(li);
+                return list;
+            }
+            
+            data.forEach(item => {
+                const li = document.createElement('li');
+                if (typeof item === 'object') {
+                    li.textContent = JSON.stringify(item);
+                } else {
+                    li.textContent = String(item);
+                }
+                list.appendChild(li);
+            });
+            
+            return list;
+            
+        } catch (error) {
+            console.error('❌ JSON 목록 생성 실패:', error);
+            const errorList = document.createElement('ul');
+            errorList.className = 'json-list';
+            const li = document.createElement('li');
+            li.textContent = '목록 표시 오류';
+            li.className = 'empty';
+            errorList.appendChild(li);
+            return errorList;
+        }
+    }
+    
+    /**
+     * JSON 객체 생성
+     */
+    function createJsonObject(data) {
+        try {
+            const container = document.createElement('div');
+            
+            Object.entries(data).forEach(([key, value]) => {
+                const item = document.createElement('div');
+                item.innerHTML = `<strong>${key}:</strong> ${value}`;
+                container.appendChild(item);
+            });
+            
+            return container;
+            
+        } catch (error) {
+            console.error('❌ JSON 객체 생성 실패:', error);
+            const errorDiv = document.createElement('div');
+            errorDiv.textContent = '객체 표시 오류';
+            errorDiv.className = 'empty';
+            return errorDiv;
         }
     }
     
@@ -482,10 +713,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.6.4',
+            version: '4.6.6',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '학당 정보 UI 렌더링 및 DOM 조작 모듈'
+            description: '개선된 테이블/목록 형태 학당 정보 UI 모듈'
         };
     }
     
@@ -502,7 +733,8 @@ window.InstituteInfoUI = (function() {
         // 콘텐츠 표시
         showInstituteHeader,
         showInstituteImage,
-        renderInfoSection,
+        renderInfoTable,
+        renderInfoList,
         
         // 탭 관리
         switchTab,
@@ -524,4 +756,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.6.4');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.6.6 (개선된 테이블/목록 UI)');
