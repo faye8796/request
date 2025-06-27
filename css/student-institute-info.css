@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 페이지 CSS
- * Version: 4.6.7
- * Description: UI 문제점 해결 - 테이블 레이아웃 개선 및 반응형 강화
+ * Version: 4.7.4
+ * Description: 파견 국가 안전 정보 기능 개선 - 앱 다운로드 UI 스타일 추가
  */
 
 /* ===== 전역 스타일 ===== */
@@ -402,66 +402,213 @@ body {
     min-height: 400px;
 }
 
-.safety-iframe {
-    width: 100%;
-    height: 600px;
-    border: none;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+/* ===== 앱 다운로드 배너 스타일 (새로 추가) ===== */
+.app-download-banner {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    color: white;
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.app-download-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.app-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+    min-width: 300px;
+}
+
+.app-icon {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.app-icon i {
+    font-size: 2rem;
+    color: white;
+}
+
+.app-text h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: white;
+}
+
+.app-text p {
+    font-size: 0.95rem;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.4;
+}
+
+.download-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    padding: 12px 20px;
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    min-width: 160px;
+    justify-content: center;
+}
+
+.download-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    color: white;
+    text-decoration: none;
+}
+
+.download-btn i {
+    font-size: 1.1rem;
+}
+
+/* ===== 안전정보 컨테이너 스타일 (개선) ===== */
+.safety-iframe-container {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+}
+
+.safety-iframe {
+    width: 100%;
+    height: 800px;
+    min-height: 600px;
+    border: none;
+    display: block;
+}
+
+/* ===== 로딩 상태 스타일 (개선) ===== */
 .safety-loading {
+    background: white;
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+}
+
+.safety-loading .loading-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 4rem;
-    color: #4a5568;
+    gap: 16px;
 }
 
-.safety-loading i {
-    width: 3rem;
-    height: 3rem;
-    margin-bottom: 1rem;
-    animation: spin 1s linear infinite;
+.safety-loading .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e2e8f0;
+    border-radius: 50%;
+    border-top-color: #3b82f6;
+    animation: spin 1s ease-in-out infinite;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
+.safety-loading p {
+    color: #64748b;
+    font-size: 1rem;
+    margin: 0;
 }
 
+/* ===== 에러 상태 스타일 (개선) ===== */
 .safety-error,
 .safety-unavailable {
+    background: white;
+    border-radius: 12px;
+    padding: 48px 24px;
     text-align: center;
-    padding: 4rem 2rem;
-    color: #4a5568;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
 }
 
 .safety-error i,
 .safety-unavailable i {
-    width: 4rem;
-    height: 4rem;
-    margin-bottom: 1.5rem;
-    color: #e53e3e;
+    font-size: 3rem;
+    color: #ef4444;
+    margin-bottom: 16px;
 }
 
 .safety-unavailable i {
-    color: #a0aec0;
+    color: #f59e0b;
 }
 
 .safety-error h3,
 .safety-unavailable h3 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    color: #1a202c;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 12px 0;
 }
 
 .safety-error p,
 .safety-unavailable p {
+    color: #6b7280;
     font-size: 1rem;
-    line-height: 1.6;
-    max-width: 500px;
-    margin: 0 auto;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+}
+
+.error-actions,
+.unavailable-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.external-link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.external-link-btn:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    color: white;
+    text-decoration: none;
 }
 
 /* ===== 애니메이션 효과 ===== */
@@ -478,6 +625,10 @@ body {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 /* ===== 반응형 디자인 ===== */
@@ -541,6 +692,34 @@ body {
     .info-list-content {
         padding-left: 0;
     }
+    
+    /* 앱 다운로드 배너 반응형 */
+    .app-download-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .app-info {
+        min-width: auto;
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .download-buttons {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .download-btn {
+        min-width: 140px;
+        font-size: 0.85rem;
+        padding: 10px 16px;
+    }
+    
+    .safety-iframe {
+        height: 600px;
+        min-height: 400px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -576,6 +755,19 @@ body {
     .safety-iframe {
         height: 400px;
     }
+    
+    .app-download-banner {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+    
+    .app-text h3 {
+        font-size: 1.1rem;
+    }
+    
+    .app-text p {
+        font-size: 0.85rem;
+    }
 }
 
 /* ===== 인쇄 스타일 ===== */
@@ -599,7 +791,8 @@ body {
         margin-bottom: 2rem;
     }
     
-    .safety-iframe {
+    .safety-iframe,
+    .app-download-banner {
         display: none;
     }
 }
