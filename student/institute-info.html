@@ -8,7 +8,7 @@
     <!-- CSS Files -->
     <link rel="stylesheet" href="../css/main.css?v=4.6.5">
     <link rel="stylesheet" href="../css/student.css?v=4.6.5">
-    <link rel="stylesheet" href="../css/student-institute-info.css?v=4.6.5">
+    <link rel="stylesheet" href="../css/student-institute-info.css?v=4.6.6">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -20,7 +20,7 @@
         /* 빠른 로딩을 위한 핵심 스타일 */
         .page-container {
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             padding: 1rem;
         }
 
@@ -29,22 +29,23 @@
             border-radius: 1rem;
             padding: 2rem;
             margin-bottom: 2rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             text-align: center;
             max-width: 1200px;
             margin: 0 auto 2rem;
+            border: 1px solid #e2e8f0;
         }
 
         .header-title {
             font-size: 2.5rem;
             font-weight: 700;
-            color: #2d3748;
+            color: #1a202c;
             margin-bottom: 0.5rem;
         }
 
         .header-subtitle {
             font-size: 1.2rem;
-            color: #718096;
+            color: #4a5568;
             margin-bottom: 1rem;
         }
 
@@ -79,7 +80,8 @@
             padding: 4rem;
             background: white;
             border-radius: 1rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
         }
 
         .spinner {
@@ -87,7 +89,7 @@
             height: 3rem;
             border: 3px solid #e2e8f0;
             border-radius: 50%;
-            border-top-color: #667eea;
+            border-top-color: #4299e1;
             animation: spin 1s ease-in-out infinite;
         }
 
@@ -102,7 +104,7 @@
             border-radius: 1rem;
             padding: 2rem;
             text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         }
 
         /* 모바일 반응형 */
@@ -151,6 +153,7 @@
                 <!-- 학당명 헤더 -->
                 <div class="institute-header">
                     <h2 id="instituteTitle" class="institute-title">학당명</h2>
+                    <p id="instituteEnglishTitle" class="institute-english-title">English Name</p>
                 </div>
 
                 <!-- 학당 이미지 -->
@@ -185,8 +188,8 @@
                                     <i data-lucide="map-pin"></i>
                                     학당 기본정보
                                 </h3>
-                                <div class="info-grid" id="basicInfoGrid">
-                                    <!-- 동적으로 생성 -->
+                                <div class="info-table" id="basicInfoTable">
+                                    <!-- 테이블 형태로 표시 -->
                                 </div>
                             </div>
 
@@ -196,19 +199,19 @@
                                     <i data-lucide="target"></i>
                                     문화인턴 활동 정보
                                 </h3>
-                                <div class="info-grid" id="activityInfoGrid">
-                                    <!-- 동적으로 생성 -->
+                                <div class="info-table" id="activityInfoTable">
+                                    <!-- 테이블 형태로 표시 -->
                                 </div>
                             </div>
 
                             <!-- 기타 사항 -->
                             <div class="info-section">
                                 <h3 class="section-title">
-                                    <i data-lucide="shield-check"></i>
+                                    <i data-lucide="info"></i>
                                     기타 사항
                                 </h3>
-                                <div class="info-grid" id="additionalInfoGrid">
-                                    <!-- 동적으로 생성 -->
+                                <div class="info-list" id="additionalInfoList">
+                                    <!-- 세로 목록 형태로 표시 -->
                                 </div>
                             </div>
                         </div>
@@ -239,20 +242,23 @@
     <script src="../js/supabase-client.js?v=4.6.5"></script>
     
     <!-- 학당 정보 전용 모듈들 -->
-    <script src="../js/student/institute-info-api.js?v=4.6.5"></script>
-    <script src="../js/student/institute-info-core.js?v=4.6.5"></script>
-    <script src="../js/student/institute-info-ui.js?v=4.6.5"></script>
+    <script src="../js/student/institute-info-api.js?v=4.6.6"></script>
+    <script src="../js/student/institute-info-core.js?v=4.6.6"></script>
+    <script src="../js/student/institute-info-ui.js?v=4.6.6"></script>
 
     <!-- 페이지 초기화 스크립트 -->
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                console.log('🏛️ 학당 정보 페이지 초기화 시작 v4.6.5');
+                console.log('🏛️ 학당 정보 페이지 초기화 시작 v4.6.6');
                 
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
+                
+                // 탭 이벤트 리스너 설정
+                setupTabEventListeners();
                 
                 // 필수 모듈 대기
                 await waitForModules();
@@ -264,13 +270,27 @@
                     throw new Error('InstituteInfoCore 모듈을 찾을 수 없습니다');
                 }
                 
-                console.log('✅ 학당 정보 페이지 초기화 완료 v4.6.5');
+                console.log('✅ 학당 정보 페이지 초기화 완료 v4.6.6');
                 
             } catch (error) {
                 console.error('❌ 초기화 실패:', error);
                 showError(error.message);
             }
         });
+
+        // 탭 이벤트 리스너 설정
+        function setupTabEventListeners() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const tabName = button.dataset.tab;
+                    if (window.InstituteInfoUI && window.InstituteInfoUI.switchTab) {
+                        window.InstituteInfoUI.switchTab(tabName);
+                    }
+                });
+            });
+        }
 
         // 필수 모듈 로딩 대기
         function waitForModules() {
@@ -312,7 +332,7 @@
             }
         }
 
-        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.6.5 - SupabaseCore 직접 연동');
+        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.6.6 - 개선된 UI');
     </script>
 </body>
 </html>
