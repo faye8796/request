@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.8.6
- * Description: 안전정보 제목 중복 문제 해결 - 안내 메시지 제목 변경
+ * Version: 4.8.7
+ * Description: 안전정보 UI 개선 - 안내 박스 제거 및 버튼 크기 확장
  */
 
 window.InstituteInfoUI = (function() {
@@ -79,7 +79,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.6');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.7');
             
             // DOM 요소 캐시
             cacheElements();
@@ -88,7 +88,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.6');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.7');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -1103,23 +1103,6 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 안전정보 안내 메시지 HTML 생성 (FIXED - 제목 중복 문제 해결)
-     */
-    function createSafetyGuideNotice() {
-        return `
-            <div class="safety-guide-notice">
-                <div class="notice-icon">
-                    <i data-lucide="alert-triangle"></i>
-                </div>
-                <div class="notice-content">
-                    <h4 class="notice-title">파견 전 안내사항</h4>
-                    <p class="notice-text">파견 전 해당 국가의 상세 안전정보를 꼭 확인하세요</p>
-                </div>
-            </div>
-        `;
-    }
-    
-    /**
      * 앱 다운로드 섹션 DOM 요소 생성
      */
     function createAppDownloadElement() {
@@ -1305,7 +1288,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 외부링크 섹션 DOM 요소 생성
+     * 외부링크 섹션 DOM 요소 생성 (UPDATED - 안내 박스 제거 및 버튼 확장)
      */
     function createSafetyExternalLinksElement(safetyUrl, countryInfo) {
         try {
@@ -1314,18 +1297,19 @@ window.InstituteInfoUI = (function() {
             const section = document.createElement('div');
             section.className = 'safety-external-links';
             section.innerHTML = `
-                <!-- 안전정보 안내 메시지 -->
-                ${createSafetyGuideNotice()}
-                
                 <h4 class="safety-section-title">
                     <i data-lucide="external-link"></i>
                     상세 안전정보
                 </h4>
-                <div class="external-links-grid two-buttons">
+                <p class="safety-warning-text">
+                    <i data-lucide="alert-triangle" style="color: #dc2626; margin-right: 0.5rem; flex-shrink: 0;"></i>
+                    파견 전 해당 국가의 상세 안전정보를 꼭 확인하세요
+                </p>
+                <div class="external-links-grid expanded-buttons">
                     ${hasCustomUrl ? `
                         <button type="button" 
                                 onclick="window.open('${safetyUrl}', '_blank')" 
-                                class="external-link-btn primary">
+                                class="external-link-btn primary expanded">
                             <i data-lucide="shield"></i>
                             <div class="btn-content">
                                 <span class="btn-title">파견 국가 상세 안전 정보</span>
@@ -1335,7 +1319,7 @@ window.InstituteInfoUI = (function() {
                     ` : ''}
                     <button type="button" 
                             onclick="window.open('https://www.0404.go.kr/', '_blank')" 
-                            class="external-link-btn ${hasCustomUrl ? 'secondary' : 'primary'}">
+                            class="external-link-btn ${hasCustomUrl ? 'secondary' : 'primary'} expanded">
                         <i data-lucide="globe"></i>
                         <div class="btn-content">
                             <span class="btn-title">외교부 해외안전여행</span>
@@ -1343,6 +1327,37 @@ window.InstituteInfoUI = (function() {
                         </div>
                     </button>
                 </div>
+                <style>
+                    .safety-warning-text {
+                        color: #dc2626;
+                        font-weight: 600;
+                        margin: 0.75rem 0 1.5rem 0;
+                        font-size: 0.9rem;
+                        display: flex;
+                        align-items: center;
+                        line-height: 1.4;
+                    }
+                    
+                    .external-links-grid.expanded-buttons {
+                        gap: 1rem;
+                        margin-top: 1rem;
+                    }
+                    
+                    .external-link-btn.expanded {
+                        flex: 1;
+                        min-width: 0;
+                        padding: 1rem 1.5rem;
+                    }
+                    
+                    .external-links-grid.expanded-buttons .external-link-btn {
+                        flex-basis: calc(50% - 0.5rem);
+                        max-width: none;
+                    }
+                    
+                    .external-links-grid.expanded-buttons .external-link-btn:only-child {
+                        flex-basis: 100%;
+                    }
+                </style>
             `;
             return section;
         } catch (error) {
@@ -1415,7 +1430,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 안전정보 없음 표시 (UPDATED - 안내 메시지 위치 수정)
+     * 안전정보 없음 표시 (UPDATED - 안내 박스 제거 및 버튼 확장)
      */
     function showSafetyUnavailable() {
         try {
@@ -1423,27 +1438,65 @@ window.InstituteInfoUI = (function() {
                 return;
             }
 
-            elements.safetyInfoContent.innerHTML = `
-                ${createAppDownloadSection()}
+            // 앱 다운로드 섹션 추가
+            const appSection = createAppDownloadElement();
+            elements.safetyInfoContent.innerHTML = '';
+            if (appSection) {
+                elements.safetyInfoContent.appendChild(appSection);
+            }
 
-                <!-- 외부링크 섹션 (안내 메시지 포함) -->
-                <div class="safety-external-links">
-                    ${createSafetyGuideNotice()}
-                    
-                    <h4 class="safety-section-title">
-                        <i data-lucide="external-link"></i>
-                        상세 안전정보
-                    </h4>
-                    <div class="external-links-grid two-buttons">
-                        <button type="button" onclick="window.open('https://www.0404.go.kr/', '_blank')" class="external-link-btn primary">
-                            <i data-lucide="globe"></i>
-                            <div class="btn-content">
-                                <span class="btn-title">외교부 해외안전여행</span>
-                                <span class="btn-desc">종합 안전정보 및 여행경보</span>
-                            </div>
-                        </button>
-                    </div>
+            // 외부링크 섹션 (개선된 버전) 추가
+            const linksSection = document.createElement('div');
+            linksSection.className = 'safety-external-links';
+            linksSection.innerHTML = `
+                <h4 class="safety-section-title">
+                    <i data-lucide="external-link"></i>
+                    상세 안전정보
+                </h4>
+                <p class="safety-warning-text">
+                    <i data-lucide="alert-triangle" style="color: #dc2626; margin-right: 0.5rem; flex-shrink: 0;"></i>
+                    파견 전 해당 국가의 상세 안전정보를 꼭 확인하세요
+                </p>
+                <div class="external-links-grid expanded-buttons">
+                    <button type="button" onclick="window.open('https://www.0404.go.kr/', '_blank')" class="external-link-btn primary expanded">
+                        <i data-lucide="globe"></i>
+                        <div class="btn-content">
+                            <span class="btn-title">외교부 해외안전여행</span>
+                            <span class="btn-desc">종합 안전정보 및 여행경보</span>
+                        </div>
+                    </button>
                 </div>
+                <style>
+                    .safety-warning-text {
+                        color: #dc2626;
+                        font-weight: 600;
+                        margin: 0.75rem 0 1.5rem 0;
+                        font-size: 0.9rem;
+                        display: flex;
+                        align-items: center;
+                        line-height: 1.4;
+                    }
+                    
+                    .external-links-grid.expanded-buttons {
+                        gap: 1rem;
+                        margin-top: 1rem;
+                    }
+                    
+                    .external-link-btn.expanded {
+                        flex: 1;
+                        min-width: 0;
+                        padding: 1rem 1.5rem;
+                    }
+                    
+                    .external-links-grid.expanded-buttons .external-link-btn {
+                        flex-basis: calc(50% - 0.5rem);
+                        max-width: none;
+                    }
+                    
+                    .external-links-grid.expanded-buttons .external-link-btn:only-child {
+                        flex-basis: 100%;
+                    }
+                </style>
 
                 <!-- 안전정보 없음 메시지 -->
                 <div class="safety-unavailable">
@@ -1453,8 +1506,10 @@ window.InstituteInfoUI = (function() {
                 </div>
             `;
 
+            elements.safetyInfoContent.appendChild(linksSection);
+
             initializeLucideIcons();
-            console.log('📋 안전정보 없음 표시 (안내 메시지 위치 수정됨)');
+            console.log('📋 안전정보 없음 표시 (안내 박스 제거 및 버튼 확장)');
 
         } catch (error) {
             console.error('❌ 안전정보 없음 표시 실패:', error);
@@ -1485,10 +1540,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.8.6',
+            version: '4.8.7',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '안전정보 제목 중복 문제 해결 - 안내 메시지 제목 변경'
+            description: '안전정보 UI 개선 - 안내 박스 제거 및 버튼 크기 확장'
         };
     }
     
@@ -1536,4 +1591,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.6 (안전정보 제목 중복 문제 해결)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.7 (안전정보 UI 개선 - 안내 박스 제거 및 버튼 크기 확장)');
