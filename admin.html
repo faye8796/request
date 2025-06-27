@@ -603,6 +603,22 @@
                             관리하기
                         </button>
                     </div>
+
+                    <!-- 🆕 국가별 안전정보 관리 -->
+                    <div class="menu-card" onclick="navigateToCountrySafetyManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="globe"></i>
+                        </div>
+                        <h2 class="menu-title">국가별 안전정보 관리</h2>
+                        <p class="menu-description">
+                            파견국가별 안전 정보 및 대사관 연락처를<br>
+                            등록하고 관리할 수 있습니다.
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
                 </div>
 
                 <!-- 로그아웃 섹션 -->
@@ -1084,12 +1100,18 @@
                 window.location.href = 'admin/equipment-management.html';
             }
 
+            // 🆕 국가별 안전정보 관리 네비게이션
+            function navigateToCountrySafetyManagement() {
+                window.location.href = 'admin/country-safety-management.html';
+            }
+
             // 전역 함수로 노출
             window.handleAdminLogin = handleAdminLogin;
             window.handleLogout = handleLogout;
             window.navigateToInstituteManagement = navigateToInstituteManagement;
             window.navigateToFlightManagement = navigateToFlightManagement;
             window.navigateToEquipmentManagement = navigateToEquipmentManagement;
+            window.navigateToCountrySafetyManagement = navigateToCountrySafetyManagement; // 🆕
 
             // DOMContentLoaded 이벤트 리스너
             document.addEventListener('DOMContentLoaded', safeInitialize);
@@ -1100,7 +1122,8 @@
                 handleLogout,
                 navigateToInstituteManagement,
                 navigateToFlightManagement,
-                navigateToEquipmentManagement
+                navigateToEquipmentManagement,
+                navigateToCountrySafetyManagement // 🆕
             };
         })();
 
@@ -1108,6 +1131,7 @@
         console.log('📦 아키텍처: Core + Student + Admin + 통합매니저 + 관리자모듈');
         console.log('🔧 기존 관리자 코드 100% 호환성 보장 + 성능 최적화');
         console.log('🆕 v4.2.2: setCurrentUser 함수 추가로 인증 오류 수정 완료');
+        console.log('🌍 v4.6.4: 국가별 안전정보 관리 시스템 추가 완료');
     </script>
 </body>
 </html>
