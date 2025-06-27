@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.7.4
- * Description: 파견 국가 안전 정보 기능 개선 - 앱 다운로드 UI 추가 및 데이터 연동 완성
+ * Version: 4.7.5
+ * Description: 파견 국가 안전 정보 기능 수정 - Core 모듈 데이터 접근 방식 개선
  */
 
 window.InstituteInfoUI = (function() {
@@ -79,7 +79,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.7.4');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.7.5');
             
             // DOM 요소 캐시
             cacheElements();
@@ -88,7 +88,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.7.4');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.7.5');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -1034,15 +1034,15 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 안전정보 탭 활성화 처리 (데이터 연동 완성)
+     * 안전정보 탭 활성화 처리 (데이터 연동 수정)
      */
     function handleSafetyTabActivation() {
         try {
             console.log('🛡️ 안전정보 탭 활성화됨');
             
-            // InstituteInfoCore에서 현재 학당 데이터 가져오기
-            if (window.InstituteInfoCore && window.InstituteInfoCore.getCurrentInstituteData) {
-                const instituteData = window.InstituteInfoCore.getCurrentInstituteData();
+            // InstituteInfoCore에서 현재 학당 데이터 가져오기 (수정됨)
+            if (window.InstituteInfoCore && window.InstituteInfoCore.currentData) {
+                const instituteData = window.InstituteInfoCore.currentData;
                 
                 if (instituteData && instituteData.safety_info_url) {
                     const safetyUrl = instituteData.safety_info_url.trim();
@@ -1059,7 +1059,7 @@ window.InstituteInfoUI = (function() {
                     showSafetyUnavailable();
                 }
             } else {
-                console.warn('⚠️ InstituteInfoCore 모듈을 찾을 수 없습니다');
+                console.warn('⚠️ InstituteInfoCore 모듈 또는 currentData를 찾을 수 없습니다');
                 showSafetyUnavailable();
             }
             
@@ -1319,10 +1319,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.7.4',
+            version: '4.7.5',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '파편 국가 안전 정보 기능 개선 - 앱 다운로드 UI 추가 및 데이터 연동 완성'
+            description: '파견 국가 안전 정보 기능 수정 - Core 모듈 데이터 접근 방식 개선'
         };
     }
     
@@ -1365,4 +1365,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.7.4 (파견 국가 안전 정보 기능 개선 - 앱 다운로드 UI 추가 및 데이터 연동 완성)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.7.5 (파견 국가 안전 정보 기능 수정 - Core 모듈 데이터 접근 방식 개선)');
