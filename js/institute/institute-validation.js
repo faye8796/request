@@ -1,5 +1,5 @@
 /**
- * ✅ Institute Validation Module (v4.7.2) - phone 필드 검증 완화
+ * ✅ Institute Validation Module (v4.7.3) - 이메일 언더스코어 문제 해결
  * 세종학당 파견학당 정보 관리 시스템 - 데이터 검증 모듈
  * 
  * 📋 담당 기능:
@@ -12,17 +12,17 @@
  * 🔗 의존성: Utils만 의존 (독립적 설계)
  * 🚫 독립성: 완전히 독립적인 검증 모듈
  * 
- * 🔧 v4.7.2 수정사항:
- * - phone 필드 검증 완화: 이메일 또는 전화번호 입력 허용
- * - contact_phone 필드 검증 완화: 자유로운 텍스트 입력 허용 (v4.7.1 유지)
- * - 연락처 필드 일관성 향상
+ * 🔧 v4.7.3 수정사항:
+ * - phone 필드 패턴에 언더스코어(_) 추가: wang_xl0628@hanmail.net 등의 이메일 주소 지원
+ * - local_coordinator_phone 필드 패턴에 언더스코어(_) 추가
+ * - 이메일 주소 검증 완전 수정
  */
 
 class InstituteValidation {
     constructor() {
         this.initialized = false;
         
-        // 📋 17개 필드 검증 규칙 (v4.7.2 - phone 필드 검증 완화)
+        // 📋 17개 필드 검증 규칙 (v4.7.3 - 이메일 언더스코어 문제 해결)
         this.VALIDATION_RULES = {
             // 기본 정보 (4개)
             name_ko: {
@@ -64,7 +64,7 @@ class InstituteValidation {
                 }
             },
             
-            // 연락처 정보 (7개) - phone 필드 검증 완화
+            // 연락처 정보 (7개) - phone 필드에 언더스코어(_) 추가
             address: {
                 required: false,
                 type: 'string',
@@ -76,7 +76,7 @@ class InstituteValidation {
             phone: {
                 required: false,
                 type: 'contact',
-                pattern: /^[0-9+\-\s\(\)\.@a-zA-Z]{8,100}$/,
+                pattern: /^[0-9+\-\s\(\)\.@a-zA-Z_]{8,100}$/,  // 🔧 언더스코어(_) 추가!
                 errorMessages: {
                     pattern: '올바른 대표전화번호 형식이 아닙니다. (전화번호 또는 이메일 형식)',
                 }
@@ -121,7 +121,7 @@ class InstituteValidation {
             local_coordinator_phone: {
                 required: false,
                 type: 'contact',
-                pattern: /^[0-9+\-\s\(\)\.@a-zA-Z]{8,100}$/,
+                pattern: /^[0-9+\-\s\(\)\.@a-zA-Z_]{8,100}$/,  // 🔧 언더스코어(_) 추가!
                 errorMessages: {
                     pattern: '올바른 현지 적응 전담 인력 연락처 형식이 아닙니다. (전화번호 또는 이메일 형식)',
                 }
@@ -201,7 +201,7 @@ class InstituteValidation {
             fieldErrors: new Map()
         };
         
-        console.log('✅ InstituteValidation 모듈 초기화됨 (v4.7.2)');
+        console.log('✅ InstituteValidation 모듈 초기화됨 (v4.7.3 - 이메일 언더스코어 문제 해결)');
     }
 
     /**
@@ -218,7 +218,7 @@ class InstituteValidation {
             this.validateRules();
             
             this.initialized = true;
-            console.log('✅ InstituteValidation 초기화 완료 (v4.7.2)');
+            console.log('✅ InstituteValidation 초기화 완료 (v4.7.3)');
             return true;
             
         } catch (error) {
@@ -675,7 +675,7 @@ class InstituteValidation {
     }
 
     /**
-     * 🔧 사용자 정의 검증 (v4.7.2 - phone 필드 추가)
+     * 🔧 사용자 정의 검증 (v4.7.3 - phone 필드 추가)
      */
     validateCustomRules(fieldName, value, rule) {
         const result = { isValid: true, errors: [] };
@@ -882,17 +882,18 @@ class InstituteValidation {
     }
 
     /**
-     * 📊 검증 모듈 상태 (v4.7.2)
+     * 📊 검증 모듈 상태 (v4.7.3)
      */
     getValidationStatus() {
         return {
             initialized: this.initialized,
             supported_fields: Object.keys(this.VALIDATION_RULES).length,
             validation_stats: this.getValidationStats(),
-            module_version: '4.7.2',
-            phone_validation: 'email_or_phone', // v4.7.2 변경사항
+            module_version: '4.7.3',
+            phone_validation: 'email_or_phone_with_underscore', // v4.7.3 변경사항
             contact_phone_validation: 'free_text', // v4.7.1 변경사항
-            json_validation_support: true
+            json_validation_support: true,
+            underscore_fix: 'wang_xl0628@hanmail.net 등의 이메일 주소 지원'
         };
     }
 }
@@ -900,4 +901,4 @@ class InstituteValidation {
 // 🌐 전역 인스턴스 생성
 window.InstituteValidation = new InstituteValidation();
 
-console.log('✅ InstituteValidation 모듈 로드 완료 (v4.7.2) - phone 필드 검증 완화');
+console.log('✅ InstituteValidation 모듈 로드 완료 (v4.7.3) - 이메일 언더스코어 문제 해결');
