@@ -1,5 +1,5 @@
 /**
- * 🛠️ Institute Utils Module (v4.4.0)
+ * 🛠️ Institute Utils Module (v4.8.1) - Field Name Consistency Fix
  * 세종학당 파견학당 정보 관리 시스템 - 유틸리티 모듈
  * 
  * 📋 담당 기능:
@@ -11,29 +11,38 @@
  * 
  * 🔗 의존성: 없음 (완전 독립적)
  * 🚫 독립성: 순수 유틸리티 모듈
+ * 
+ * 🔧 v4.8.1 수정사항:
+ * - FIELD_METADATA 필드명을 실제 DB 컬럼명과 일치하도록 수정
+ * - cultural_program_plan → lesson_plan
+ * - institute_support → support_provided
+ * - 기타 필드명 일관성 개선
  */
 
 class InstituteUtils {
     constructor() {
         this.initialized = false;
         
-        // 📋 15개 필드 메타데이터
+        // 📋 17개 필드 메타데이터 (실제 DB 컬럼명 사용)
         this.FIELD_METADATA = {
             name_ko: { group: 'basic', label: '학당명', icon: 'building2', exportable: true },
             name_en: { group: 'basic', label: '영문명', icon: 'type', exportable: true },
-            operating_organization: { group: 'basic', label: '운영기관', icon: 'building', exportable: true },
+            operator: { group: 'basic', label: '운영기관', icon: 'building', exportable: true },
             image_url: { group: 'basic', label: '학당사진', icon: 'image', exportable: false },
             address: { group: 'contact', label: '주소', icon: 'map-pin', exportable: true },
             phone: { group: 'contact', label: '대표연락처', icon: 'phone', exportable: true },
-            website_sns: { group: 'contact', label: '홈페이지/SNS', icon: 'globe', exportable: true },
-            manager_name: { group: 'contact', label: '담당자성명', icon: 'user', exportable: true },
-            manager_contact: { group: 'contact', label: '담당자연락처', icon: 'mail', exportable: true },
-            local_adaptation_staff: { group: 'program', label: '현지적응전담인력', icon: 'users', exportable: true },
-            cultural_program_plan: { group: 'program', label: '문화수업운영계획', icon: 'calendar', exportable: true },
+            sns_url: { group: 'contact', label: '홈페이지/SNS', icon: 'globe', exportable: true },
+            contact_person: { group: 'contact', label: '담당자성명', icon: 'user', exportable: true },
+            contact_phone: { group: 'contact', label: '담당자연락처', icon: 'mail', exportable: true },
+            local_coordinator: { group: 'contact', label: '현지적응전담인력', icon: 'users', exportable: true },
+            local_coordinator_phone: { group: 'contact', label: '현지적응전담인력연락처', icon: 'phone', exportable: true },
+            dispatch_period: { group: 'program', label: '파견희망기간', icon: 'calendar-days', exportable: true },
+            lesson_plan: { group: 'program', label: '문화수업운영계획', icon: 'calendar', exportable: true },
             desired_courses: { group: 'program', label: '희망개설강좌', icon: 'book', exportable: true },
+            education_environment: { group: 'program', label: '교육환경정보', icon: 'monitor', exportable: true },
             local_language_requirement: { group: 'support', label: '현지어구사필요수준', icon: 'message-circle', exportable: true },
-            institute_support: { group: 'support', label: '학당지원사항', icon: 'heart-handshake', exportable: true },
-            country_safety_info: { group: 'support', label: '파견국가안전정보', icon: 'shield', exportable: true }
+            support_provided: { group: 'support', label: '학당지원사항', icon: 'heart-handshake', exportable: true },
+            safety_info_url: { group: 'support', label: '파견국가안전정보', icon: 'shield', exportable: true }
         };
         
         // 🌍 국가/지역 정보
@@ -66,7 +75,7 @@ class InstituteUtils {
             maintenance: '#6b7280'  // 점검
         };
         
-        console.log('🛠️ InstituteUtils 모듈 초기화됨');
+        console.log('🛠️ InstituteUtils 모듈 초기화됨 (v4.8.1)');
     }
 
     /**
@@ -83,7 +92,7 @@ class InstituteUtils {
             this.validateUtilities();
             
             this.initialized = true;
-            console.log('✅ InstituteUtils 초기화 완료');
+            console.log('✅ InstituteUtils 초기화 완료 (v4.8.1)');
             return true;
             
         } catch (error) {
@@ -96,7 +105,7 @@ class InstituteUtils {
      * 🔍 유틸리티 무결성 체크
      */
     validateUtilities() {
-        const expectedFieldCount = 15;
+        const expectedFieldCount = 18; // v4.8.1에서 18개로 증가 (dispatch_period, local_coordinator_phone, education_environment 추가)
         const actualFieldCount = Object.keys(this.FIELD_METADATA).length;
         
         if (actualFieldCount !== expectedFieldCount) {
@@ -120,7 +129,7 @@ class InstituteUtils {
         if (!phone || typeof phone !== 'string') return '';
         
         // 숫자만 추출
-        const digits = phone.replace(/[^\d]/g, '');
+        const digits = phone.replace(/[^\\d]/g, '');
         
         switch (format) {
             case 'international':
@@ -281,7 +290,7 @@ class InstituteUtils {
         
         switch (type) {
             case 'title':
-                return text.replace(/\w\S*/g, (txt) =>
+                return text.replace(/\\w\\S*/g, (txt) =>
                     txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
             case 'sentence':
                 return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
@@ -314,7 +323,7 @@ class InstituteUtils {
      * @returns {string}
      */
     escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return string.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');
     }
 
     /**
@@ -341,7 +350,7 @@ class InstituteUtils {
     }
 
     /**
-     * 🎯 필드값 정규화
+     * 🎯 필드값 정규화 (실제 DB 컬럼명 사용)
      * @param {string} fieldName - 필드명
      * @param {*} value - 원본 값
      * @returns {*}
@@ -354,18 +363,21 @@ class InstituteUtils {
         
         switch (fieldName) {
             case 'phone':
-            case 'manager_contact':
+            case 'contact_phone':
+            case 'local_coordinator_phone':
                 return typeof value === 'string' ? value.trim() : value;
                 
-            case 'website_sns':
+            case 'sns_url':
             case 'image_url':
+            case 'safety_info_url':
                 const urlResult = this.formatURL(value);
                 return urlResult.isValid ? urlResult.formatted : value;
                 
             case 'name_ko':
             case 'name_en':
-            case 'operating_organization':
-            case 'manager_name':
+            case 'operator':
+            case 'contact_person':
+            case 'local_coordinator':
                 return typeof value === 'string' ? this.transformCase(value.trim(), 'title') : value;
                 
             default:
@@ -388,14 +400,18 @@ class InstituteUtils {
             display.phone_formatted = this.formatPhone(display.phone);
         }
         
-        if (display.manager_contact) {
-            display.manager_contact_formatted = this.formatPhone(display.manager_contact);
+        if (display.contact_phone) {
+            display.contact_phone_formatted = this.formatPhone(display.contact_phone);
+        }
+        
+        if (display.local_coordinator_phone) {
+            display.local_coordinator_phone_formatted = this.formatPhone(display.local_coordinator_phone);
         }
         
         // URL 포맷팅
-        if (display.website_sns) {
-            const urlInfo = this.formatURL(display.website_sns);
-            display.website_info = urlInfo;
+        if (display.sns_url) {
+            const urlInfo = this.formatURL(display.sns_url);
+            display.sns_info = urlInfo;
         }
         
         // 날짜 포맷팅
@@ -473,9 +489,11 @@ class InstituteUtils {
                 // 특별 처리가 필요한 필드들
                 switch (field) {
                     case 'phone':
-                    case 'manager_contact':
+                    case 'contact_phone':
+                    case 'local_coordinator_phone':
                         return this.formatPhone(value, 'display');
-                    case 'website_sns':
+                    case 'sns_url':
+                    case 'safety_info_url':
                         const urlInfo = this.formatURL(value);
                         return urlInfo.isValid ? urlInfo.formatted : value || '';
                     case 'created_at':
@@ -502,7 +520,7 @@ class InstituteUtils {
         return data.map(row => 
             row.map(cell => `"${String(cell).replace(/"/g, '""')}"`)
                .join(',')
-        ).join('\n');
+        ).join('\\n');
     }
 
     /**
@@ -571,7 +589,7 @@ class InstituteUtils {
         
         // 운영기관별 분포
         institutes.forEach(institute => {
-            const org = institute.operating_organization || '미지정';
+            const org = institute.operator || '미지정';
             stats.organization_distribution[org] = (stats.organization_distribution[org] || 0) + 1;
         });
         
@@ -698,7 +716,9 @@ class InstituteUtils {
             supported_fields: Object.keys(this.FIELD_METADATA).length,
             field_groups: Object.keys(this.FIELD_GROUPS).length,
             supported_countries: Object.keys(this.COUNTRY_INFO).length,
-            module_version: '4.4.0'
+            module_version: '4.8.1',
+            field_consistency: 'fixed',
+            db_column_mapping: 'accurate'
         };
     }
 
@@ -729,4 +749,4 @@ class InstituteUtils {
 // 🌐 전역 인스턴스 생성
 window.InstituteUtils = new InstituteUtils();
 
-console.log('🛠️ InstituteUtils 모듈 로드 완료 (v4.4.0) - 15개 필드 지원');
+console.log('🛠️ InstituteUtils 모듈 로드 완료 (v4.8.1) - Field Name Consistency Fixed');
