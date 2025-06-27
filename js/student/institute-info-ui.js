@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.7.1
- * Description: 희망 개설 강좌 독립 섹션 및 테이블 스타일 완전 개선
+ * Version: 4.7.2
+ * Description: 희망 개설 강좌 테이블 헤더 개선 및 정렬 최적화
  */
 
 window.InstituteInfoUI = (function() {
@@ -34,7 +34,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.7.1');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.7.2');
             
             // DOM 요소 캐시
             cacheElements();
@@ -43,7 +43,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.7.1');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.7.2');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -299,13 +299,13 @@ window.InstituteInfoUI = (function() {
             const value = document.createElement('div');
             value.className = 'info-table-value';
             
-            // 기본적으로 가운데 정렬 적용
-            value.style.textAlign = 'center';
+            // 기본정보와 기타 사항은 왼쪽 정렬, 나머지는 가운데 정렬
+            value.style.textAlign = 'left'; // 기본정보 섹션 왼쪽 정렬 적용
             
             // 긴 텍스트인 경우 특별 처리
             if (item.isLongText) {
                 value.classList.add('text-break');
-                value.style.textAlign = 'left'; // 긴 텍스트는 왼쪽 정렬
+                value.style.textAlign = 'left';
             }
             
             if (!item.value || item.value === '' || item.value === null || item.value === undefined) {
@@ -387,8 +387,8 @@ window.InstituteInfoUI = (function() {
             const content = document.createElement('div');
             content.className = 'info-list-content';
             
-            // 기본적으로 가운데 정렬
-            content.style.textAlign = 'center';
+            // 기타 사항은 왼쪽 정렬
+            content.style.textAlign = 'left';
             
             if (!item.value || item.value === '' || item.value === null || item.value === undefined) {
                 content.textContent = '정보 없음';
@@ -484,11 +484,12 @@ window.InstituteInfoUI = (function() {
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
             
-            const headers = ['문화 수업 주제', '참가자 한국어 수준', '세부 일정', '목표 수강인원'];
+            const headers = ['문화 수업 주제', '참가자\n한국어 수준', '목표 수강인원', '세부 일정'];
             headers.forEach(headerText => {
                 const th = document.createElement('th');
-                th.textContent = headerText;
                 th.style.textAlign = 'center';
+                th.style.whiteSpace = 'pre-line'; // 줄바꿈 적용
+                th.textContent = headerText;
                 headerRow.appendChild(th);
             });
             
@@ -500,11 +501,11 @@ window.InstituteInfoUI = (function() {
             data.forEach((item) => {
                 const row = document.createElement('tr');
                 
-                // 문화 수업 주제 - 제목이므로 왼쪽 정렬
+                // 문화 수업 주제 - 가운데 정렬
                 const subjectCell = document.createElement('td');
                 const subject = item['문화 수업 주제'] || item.name || item.강좌명 || item.course || '미정';
                 subjectCell.textContent = subject;
-                subjectCell.style.textAlign = 'left';
+                subjectCell.style.textAlign = 'center'; // 가운데 정렬로 변경
                 row.appendChild(subjectCell);
                 
                 // 참가자 한국어 수준 - 가운데 정렬
@@ -514,19 +515,19 @@ window.InstituteInfoUI = (function() {
                 levelCell.style.textAlign = 'center';
                 row.appendChild(levelCell);
                 
-                // 세부 일정 - 가운데 정렬
-                const scheduleCell = document.createElement('td');
-                const schedule = item['세부 일정'] || item.time || item.시간 || item.duration || '미정';
-                scheduleCell.textContent = schedule;
-                scheduleCell.style.textAlign = 'center';
-                row.appendChild(scheduleCell);
-                
                 // 목표 수강인원 - 가운데 정렬
                 const participantsCell = document.createElement('td');
                 const participants = item['목표 수강인원'] || item.participants || item.수강인원 || item.인원 || '미정';
                 participantsCell.textContent = participants;
                 participantsCell.style.textAlign = 'center';
                 row.appendChild(participantsCell);
+                
+                // 세부 일정 - 가운데 정렬
+                const scheduleCell = document.createElement('td');
+                const schedule = item['세부 일정'] || item.time || item.시간 || item.duration || '미정';
+                scheduleCell.textContent = schedule;
+                scheduleCell.style.textAlign = 'center';
+                row.appendChild(scheduleCell);
                 
                 tbody.appendChild(row);
             });
@@ -585,11 +586,11 @@ window.InstituteInfoUI = (function() {
             data.forEach((item) => {
                 const row = document.createElement('tr');
                 
-                // 문화 수업 주제 - topic 필드 우선 매핑, 제목이므로 왼쪽 정렬
+                // 문화 수업 주제 - 가운데 정렬
                 const subjectCell = document.createElement('td');
                 const subject = item.topic || item['문화 수업 주제'] || item.subject || item.course || item.name || '미정';
                 subjectCell.textContent = subject;
-                subjectCell.style.textAlign = 'left';
+                subjectCell.style.textAlign = 'center'; // 가운데 정렬 적용
                 row.appendChild(subjectCell);
                 
                 // 교육 장소 - 가운데 정렬
@@ -599,11 +600,11 @@ window.InstituteInfoUI = (function() {
                 locationCell.style.textAlign = 'center';
                 row.appendChild(locationCell);
                 
-                // 학당 교구 및 기자재 - 긴 내용이므로 왼쪽 정렬
+                // 학당 교구 및 기자재 - 가운데 정렬
                 const equipmentCell = document.createElement('td');
                 const equipment = item.equipment || item['학당 교구 및 기자재'] || item.materials || item.facilities || '미정';
                 equipmentCell.textContent = equipment;
-                equipmentCell.style.textAlign = 'left';
+                equipmentCell.style.textAlign = 'center'; // 가운데 정렬 적용
                 row.appendChild(equipmentCell);
                 
                 tbody.appendChild(row);
@@ -781,14 +782,14 @@ window.InstituteInfoUI = (function() {
                 const li = document.createElement('li');
                 li.textContent = '데이터 없음';
                 li.className = 'empty';
-                li.style.textAlign = 'center';
+                li.style.textAlign = 'left'; // 기타 사항 목록은 왼쪽 정렬
                 list.appendChild(li);
                 return list;
             }
             
             data.forEach(item => {
                 const li = document.createElement('li');
-                li.style.textAlign = 'center'; // 목록도 가운데 정렬
+                li.style.textAlign = 'left'; // 기타 사항 목록은 왼쪽 정렬
                 if (typeof item === 'object') {
                     // 객체인 경우 주요 정보만 표시
                     const displayText = item.name || item.강좌명 || JSON.stringify(item);
@@ -808,7 +809,7 @@ window.InstituteInfoUI = (function() {
             const li = document.createElement('li');
             li.textContent = '목록 표시 오류';
             li.className = 'empty';
-            li.style.textAlign = 'center';
+            li.style.textAlign = 'left';
             errorList.appendChild(li);
             return errorList;
         }
@@ -1012,10 +1013,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.7.1',
+            version: '4.7.2',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '희망 개설 강좌 독립 섹션 및 테이블 스타일이 완전 개선된 학당 정보 UI 모듈'
+            description: '희망 개설 강좌 테이블 헤더 개선 및 정렬 최적화된 학당 정보 UI 모듈'
         };
     }
     
@@ -1055,4 +1056,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.7.1 (희망 개설 강좌 독립 섹션 및 테이블 스타일 완전 개선)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.7.2 (희망 개설 강좌 테이블 헤더 개선 및 정렬 최적화)');
