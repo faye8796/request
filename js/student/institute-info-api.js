@@ -18,12 +18,18 @@ window.InstituteInfoAPI = (function() {
         try {
             console.log('🔗 InstituteInfoAPI 초기화 시작');
             
-            // Supabase 클라이언트 확인
-            if (!window.SupabaseAPI || !window.SupabaseAPI.client) {
-                throw new Error('SupabaseAPI가 초기화되지 않았습니다');
+            // SupabaseCore 확인 및 클라이언트 확보
+            if (!window.SupabaseCore) {
+                throw new Error('SupabaseCore가 로드되지 않았습니다');
             }
             
-            supabaseClient = window.SupabaseAPI.client;
+            // SupabaseCore 클라이언트 확보
+            supabaseClient = await window.SupabaseCore.ensureClient();
+            
+            if (!supabaseClient) {
+                throw new Error('Supabase 클라이언트 초기화 실패');
+            }
+            
             isInitialized = true;
             
             console.log('✅ InstituteInfoAPI 초기화 완료');
@@ -277,4 +283,4 @@ window.InstituteInfoAPI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('📡 InstituteInfoAPI 모듈 로드 완료 - v4.6.4');
+console.log('📡 InstituteInfoAPI 모듈 로드 완료 - v4.6.4 (SupabaseCore 연동)');
