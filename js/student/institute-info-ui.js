@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.7.2
- * Description: 희망 개설 강좌 테이블 헤더 개선 및 정렬 최적화
+ * Version: 4.7.3
+ * Description: 데이터베이스 줄바꿈(\n) 처리 개선 및 HTML 안전성 확보
  */
 
 window.InstituteInfoUI = (function() {
@@ -30,11 +30,56 @@ window.InstituteInfoUI = (function() {
     };
     
     /**
+     * HTML 안전 줄바꿈 변환 함수
+     * XSS 방지를 위해 텍스트를 이스케이프 처리 후 줄바꿈만 <br> 태그로 변환
+     */
+    function convertNewlinesToHtml(text) {
+        try {
+            if (!text || typeof text !== 'string') {
+                return text;
+            }
+            
+            // HTML 특수문자 이스케이프 처리
+            const escapeHtml = (unsafe) => {
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            };
+            
+            // HTML 이스케이프 후 줄바꿈 변환
+            const escapedText = escapeHtml(text);
+            
+            // 다양한 줄바꿈 형식을 <br> 태그로 변환
+            return escapedText
+                .replace(/\r\n/g, '<br>')  // Windows 스타일 (\r\n)
+                .replace(/\r/g, '<br>')    // 구 Mac 스타일 (\r)
+                .replace(/\n/g, '<br>');   // Unix/Linux 스타일 (\n)
+                
+        } catch (error) {
+            console.error('❌ 줄바꿈 변환 실패:', error);
+            return text; // 원본 텍스트 반환
+        }
+    }
+    
+    /**
+     * 텍스트에 줄바꿈이 포함되어 있는지 확인
+     */
+    function hasNewlines(text) {
+        if (!text || typeof text !== 'string') {
+            return false;
+        }
+        return /[\r\n]/.test(text);
+    }
+    
+    /**
      * 모듈 초기화
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.7.2');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.7.3');
             
             // DOM 요소 캐시
             cacheElements();
@@ -43,7 +88,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.7.2');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.7.3');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -266,7 +311,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 테이블 행 생성
+     * 테이블 행 생성 (줄바꿈 처리 개선)
      */
     function createTableRow(item) {
         try {
@@ -306,6 +351,8 @@ window.InstituteInfoUI = (function() {
             if (item.isLongText) {
                 value.classList.add('text-break');
                 value.style.textAlign = 'left';
+                // CSS 백업 옵션 추가
+                value.style.whiteSpace = 'pre-line';
             }
             
             if (!item.value || item.value === '' || item.value === null || item.value === undefined) {
@@ -320,8 +367,19 @@ window.InstituteInfoUI = (function() {
                 value.appendChild(createJsonDisplay(item.value, item.jsonType));
                 value.style.textAlign = 'center'; // JSON 테이블은 가운데 정렬
             } else {
-                // 일반 텍스트 처리
-                value.textContent = String(item.value);
+                // 일반 텍스트 처리 - 줄바꿈 지원 개선
+                const textValue = String(item.value);
+                
+                if (hasNewlines(textValue)) {
+                    // 줄바꿈이 포함된 텍스트는 HTML로 변환
+                    value.innerHTML = convertNewlinesToHtml(textValue);
+                    // CSS 백업 옵션 추가
+                    value.style.whiteSpace = 'pre-line';
+                    console.log('🔄 줄바꿈 텍스트 변환:', textValue.substring(0, 50) + '...');
+                } else {
+                    // 일반 텍스트는 기존 방식 유지
+                    value.textContent = textValue;
+                }
             }
             
             row.appendChild(label);
@@ -364,7 +422,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 목록 아이템 생성
+     * 목록 아이템 생성 (줄바꿈 처리 개선)
      */
     function createListItem(item) {
         try {
@@ -401,8 +459,19 @@ window.InstituteInfoUI = (function() {
                 // JSON 데이터 처리
                 content.appendChild(createJsonDisplay(item.value, item.jsonType));
             } else {
-                // 일반 텍스트 처리
-                content.textContent = String(item.value);
+                // 일반 텍스트 처리 - 줄바꿈 지원 개선
+                const textValue = String(item.value);
+                
+                if (hasNewlines(textValue)) {
+                    // 줄바꿈이 포함된 텍스트는 HTML로 변환
+                    content.innerHTML = convertNewlinesToHtml(textValue);
+                    // CSS 백업 옵션 추가
+                    content.style.whiteSpace = 'pre-line';
+                    console.log('🔄 줄바꿈 텍스트 변환 (목록):', textValue.substring(0, 50) + '...');
+                } else {
+                    // 일반 텍스트는 기존 방식 유지
+                    content.textContent = textValue;
+                }
             }
             
             listItem.appendChild(title);
@@ -444,7 +513,16 @@ window.InstituteInfoUI = (function() {
                 return createJsonObject(data);
             } else {
                 const span = document.createElement('span');
-                span.textContent = String(data);
+                const textValue = String(data);
+                
+                // JSON 데이터에서도 줄바꿈 처리
+                if (hasNewlines(textValue)) {
+                    span.innerHTML = convertNewlinesToHtml(textValue);
+                    span.style.whiteSpace = 'pre-line';
+                } else {
+                    span.textContent = textValue;
+                }
+                
                 return span;
             }
             
@@ -484,7 +562,7 @@ window.InstituteInfoUI = (function() {
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
             
-            const headers = ['문화 수업 주제', '참가자\n한국어 수준', '목표 수강인원', '세부 일정'];
+            const headers = ['문화 수업 주제', '참가자\\n한국어 수준', '목표 수강인원', '세부 일정'];
             headers.forEach(headerText => {
                 const th = document.createElement('th');
                 th.style.textAlign = 'center';
@@ -501,31 +579,51 @@ window.InstituteInfoUI = (function() {
             data.forEach((item) => {
                 const row = document.createElement('tr');
                 
-                // 문화 수업 주제 - 가운데 정렬
+                // 문화 수업 주제 - 가운데 정렬, 줄바꿈 처리
                 const subjectCell = document.createElement('td');
                 const subject = item['문화 수업 주제'] || item.name || item.강좌명 || item.course || '미정';
-                subjectCell.textContent = subject;
-                subjectCell.style.textAlign = 'center'; // 가운데 정렬로 변경
+                if (hasNewlines(subject)) {
+                    subjectCell.innerHTML = convertNewlinesToHtml(subject);
+                    subjectCell.style.whiteSpace = 'pre-line';
+                } else {
+                    subjectCell.textContent = subject;
+                }
+                subjectCell.style.textAlign = 'center';
                 row.appendChild(subjectCell);
                 
-                // 참가자 한국어 수준 - 가운데 정렬
+                // 참가자 한국어 수준 - 가운데 정렬, 줄바꿈 처리
                 const levelCell = document.createElement('td');
                 const level = item['참가자 한국어 수준'] || item.level || item.수준 || item.난이도 || '미정';
-                levelCell.textContent = level;
+                if (hasNewlines(level)) {
+                    levelCell.innerHTML = convertNewlinesToHtml(level);
+                    levelCell.style.whiteSpace = 'pre-line';
+                } else {
+                    levelCell.textContent = level;
+                }
                 levelCell.style.textAlign = 'center';
                 row.appendChild(levelCell);
                 
-                // 목표 수강인원 - 가운데 정렬
+                // 목표 수강인원 - 가운데 정렬, 줄바꿈 처리
                 const participantsCell = document.createElement('td');
                 const participants = item['목표 수강인원'] || item.participants || item.수강인원 || item.인원 || '미정';
-                participantsCell.textContent = participants;
+                if (hasNewlines(participants)) {
+                    participantsCell.innerHTML = convertNewlinesToHtml(participants);
+                    participantsCell.style.whiteSpace = 'pre-line';
+                } else {
+                    participantsCell.textContent = participants;
+                }
                 participantsCell.style.textAlign = 'center';
                 row.appendChild(participantsCell);
                 
-                // 세부 일정 - 가운데 정렬
+                // 세부 일정 - 가운데 정렬, 줄바꿈 처리
                 const scheduleCell = document.createElement('td');
                 const schedule = item['세부 일정'] || item.time || item.시간 || item.duration || '미정';
-                scheduleCell.textContent = schedule;
+                if (hasNewlines(schedule)) {
+                    scheduleCell.innerHTML = convertNewlinesToHtml(schedule);
+                    scheduleCell.style.whiteSpace = 'pre-line';
+                } else {
+                    scheduleCell.textContent = schedule;
+                }
                 scheduleCell.style.textAlign = 'center';
                 row.appendChild(scheduleCell);
                 
@@ -534,7 +632,7 @@ window.InstituteInfoUI = (function() {
             
             table.appendChild(tbody);
             
-            console.log('✅ 문화인턴 활동 정보 테이블 생성 완료');
+            console.log('✅ 문화인턴 활동 정보 테이블 생성 완료 (줄바꿈 처리 포함)');
             return table;
             
         } catch (error) {
@@ -586,25 +684,40 @@ window.InstituteInfoUI = (function() {
             data.forEach((item) => {
                 const row = document.createElement('tr');
                 
-                // 문화 수업 주제 - 가운데 정렬
+                // 문화 수업 주제 - 가운데 정렬, 줄바꿈 처리
                 const subjectCell = document.createElement('td');
                 const subject = item.topic || item['문화 수업 주제'] || item.subject || item.course || item.name || '미정';
-                subjectCell.textContent = subject;
-                subjectCell.style.textAlign = 'center'; // 가운데 정렬 적용
+                if (hasNewlines(subject)) {
+                    subjectCell.innerHTML = convertNewlinesToHtml(subject);
+                    subjectCell.style.whiteSpace = 'pre-line';
+                } else {
+                    subjectCell.textContent = subject;
+                }
+                subjectCell.style.textAlign = 'center';
                 row.appendChild(subjectCell);
                 
-                // 교육 장소 - 가운데 정렬
+                // 교육 장소 - 가운데 정렬, 줄바꿈 처리
                 const locationCell = document.createElement('td');
                 const location = item.location || item['교육 장소'] || item.place || item.venue || '미정';
-                locationCell.textContent = location;
+                if (hasNewlines(location)) {
+                    locationCell.innerHTML = convertNewlinesToHtml(location);
+                    locationCell.style.whiteSpace = 'pre-line';
+                } else {
+                    locationCell.textContent = location;
+                }
                 locationCell.style.textAlign = 'center';
                 row.appendChild(locationCell);
                 
-                // 학당 교구 및 기자재 - 가운데 정렬
+                // 학당 교구 및 기자재 - 가운데 정렬, 줄바꿈 처리
                 const equipmentCell = document.createElement('td');
                 const equipment = item.equipment || item['학당 교구 및 기자재'] || item.materials || item.facilities || '미정';
-                equipmentCell.textContent = equipment;
-                equipmentCell.style.textAlign = 'center'; // 가운데 정렬 적용
+                if (hasNewlines(equipment)) {
+                    equipmentCell.innerHTML = convertNewlinesToHtml(equipment);
+                    equipmentCell.style.whiteSpace = 'pre-line';
+                } else {
+                    equipmentCell.textContent = equipment;
+                }
+                equipmentCell.style.textAlign = 'center';
                 row.appendChild(equipmentCell);
                 
                 tbody.appendChild(row);
@@ -612,7 +725,7 @@ window.InstituteInfoUI = (function() {
             
             table.appendChild(tbody);
             
-            console.log('✅ 교육 환경 정보 테이블 생성 완료');
+            console.log('✅ 교육 환경 정보 테이블 생성 완료 (줄바꿈 처리 포함)');
             return table;
             
         } catch (error) {
@@ -670,31 +783,51 @@ window.InstituteInfoUI = (function() {
                 indexCell.style.textAlign = 'center';
                 row.appendChild(indexCell);
                 
-                // 강좌명 - 제목이므로 왼쪽 정렬
+                // 강좌명 - 제목이므로 왼쪽 정렬, 줄바꿈 처리
                 const nameCell = document.createElement('td');
                 const courseName = item.강좌명 || item.name || item.course || item.subject || '미정';
-                nameCell.textContent = courseName;
+                if (hasNewlines(courseName)) {
+                    nameCell.innerHTML = convertNewlinesToHtml(courseName);
+                    nameCell.style.whiteSpace = 'pre-line';
+                } else {
+                    nameCell.textContent = courseName;
+                }
                 nameCell.style.textAlign = 'left';
                 row.appendChild(nameCell);
                 
-                // 수준 - 가운데 정렬
+                // 수준 - 가운데 정렬, 줄바꿈 처리
                 const levelCell = document.createElement('td');
                 const level = item.수준 || item.level || item.난이도 || item.difficulty || '미정';
-                levelCell.textContent = level;
+                if (hasNewlines(level)) {
+                    levelCell.innerHTML = convertNewlinesToHtml(level);
+                    levelCell.style.whiteSpace = 'pre-line';
+                } else {
+                    levelCell.textContent = level;
+                }
                 levelCell.style.textAlign = 'center';
                 row.appendChild(levelCell);
                 
-                // 시간 - 가운데 정렬
+                // 시간 - 가운데 정렬, 줄바꿈 처리
                 const timeCell = document.createElement('td');
                 const time = item.시간 || item.time || item.duration || item.schedule || '미정';
-                timeCell.textContent = time;
+                if (hasNewlines(time)) {
+                    timeCell.innerHTML = convertNewlinesToHtml(time);
+                    timeCell.style.whiteSpace = 'pre-line';
+                } else {
+                    timeCell.textContent = time;
+                }
                 timeCell.style.textAlign = 'center';
                 row.appendChild(timeCell);
                 
-                // 수강인원 - 가운데 정렬
+                // 수강인원 - 가운데 정렬, 줄바꿈 처리
                 const participantsCell = document.createElement('td');
                 const participants = item.수강인원 || item.participants || item.인원 || item.capacity || '미정';
-                participantsCell.textContent = participants;
+                if (hasNewlines(participants)) {
+                    participantsCell.innerHTML = convertNewlinesToHtml(participants);
+                    participantsCell.style.whiteSpace = 'pre-line';
+                } else {
+                    participantsCell.textContent = participants;
+                }
                 participantsCell.style.textAlign = 'center';
                 row.appendChild(participantsCell);
                 
@@ -703,7 +836,7 @@ window.InstituteInfoUI = (function() {
             
             table.appendChild(tbody);
             
-            console.log('✅ Enhanced JSON 테이블 생성 완료');
+            console.log('✅ Enhanced JSON 테이블 생성 완료 (줄바꿈 처리 포함)');
             return table;
             
         } catch (error) {
@@ -753,7 +886,15 @@ window.InstituteInfoUI = (function() {
                     const row = document.createElement('tr');
                     Object.keys(firstItem).forEach(key => {
                         const td = document.createElement('td');
-                        td.textContent = item[key] || '';
+                        const cellValue = item[key] || '';
+                        
+                        // 셀 값에도 줄바꿈 처리 적용
+                        if (hasNewlines(cellValue)) {
+                            td.innerHTML = convertNewlinesToHtml(cellValue);
+                            td.style.whiteSpace = 'pre-line';
+                        } else {
+                            td.textContent = cellValue;
+                        }
                         td.style.textAlign = 'center';
                         row.appendChild(td);
                     });
@@ -790,12 +931,24 @@ window.InstituteInfoUI = (function() {
             data.forEach(item => {
                 const li = document.createElement('li');
                 li.style.textAlign = 'left'; // 기타 사항 목록은 왼쪽 정렬
+                
                 if (typeof item === 'object') {
                     // 객체인 경우 주요 정보만 표시
                     const displayText = item.name || item.강좌명 || JSON.stringify(item);
-                    li.textContent = displayText;
+                    if (hasNewlines(displayText)) {
+                        li.innerHTML = convertNewlinesToHtml(displayText);
+                        li.style.whiteSpace = 'pre-line';
+                    } else {
+                        li.textContent = displayText;
+                    }
                 } else {
-                    li.textContent = String(item);
+                    const textItem = String(item);
+                    if (hasNewlines(textItem)) {
+                        li.innerHTML = convertNewlinesToHtml(textItem);
+                        li.style.whiteSpace = 'pre-line';
+                    } else {
+                        li.textContent = textItem;
+                    }
                 }
                 list.appendChild(li);
             });
@@ -825,7 +978,14 @@ window.InstituteInfoUI = (function() {
             
             Object.entries(data).forEach(([key, value]) => {
                 const item = document.createElement('div');
-                item.innerHTML = `<strong>${key}:</strong> ${value}`;
+                const valueText = String(value);
+                
+                if (hasNewlines(valueText)) {
+                    item.innerHTML = `<strong>${key}:</strong> ${convertNewlinesToHtml(valueText)}`;
+                    item.style.whiteSpace = 'pre-line';
+                } else {
+                    item.innerHTML = `<strong>${key}:</strong> ${valueText}`;
+                }
                 container.appendChild(item);
             });
             
@@ -1013,10 +1173,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.7.2',
+            version: '4.7.3',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '희망 개설 강좌 테이블 헤더 개선 및 정렬 최적화된 학당 정보 UI 모듈'
+            description: '데이터베이스 줄바꿈(\\n) 처리 개선 및 HTML 안전성이 확보된 학당 정보 UI 모듈'
         };
     }
     
@@ -1048,6 +1208,8 @@ window.InstituteInfoUI = (function() {
         addAnimation,
         initializeLucideIcons,
         getModuleInfo,
+        convertNewlinesToHtml,  // 새로 추가된 공개 함수
+        hasNewlines,            // 새로 추가된 공개 함수
         
         // 상태 접근
         get isInitialized() { return isInitialized; },
@@ -1056,4 +1218,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.7.2 (희망 개설 강좌 테이블 헤더 개선 및 정렬 최적화)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.7.3 (데이터베이스 줄바꿈(\\n) 처리 개선 및 HTML 안전성 확보)');
