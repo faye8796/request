@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.8.1
- * Description: 안전정보 안내 메시지 추가 및 버튼 이름 변경 - 파견 국가 상세 안전 정보
+ * Version: 4.8.2
+ * Description: 테이블 헤더 줄바꿈 문제 해결 - 참가자 한국어 수준 컬럼 헤더 개선
  */
 
 window.InstituteInfoUI = (function() {
@@ -79,7 +79,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.1');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.2');
             
             // DOM 요소 캐시
             cacheElements();
@@ -88,7 +88,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.1');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.2');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -526,7 +526,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 문화인턴 활동 정보 테이블 생성 (개선된 스타일)
+     * 문화인턴 활동 정보 테이블 생성 (개선된 스타일) - 줄바꿈 문제 해결
      */
     function createCulturalActivityTable(data) {
         try {
@@ -548,11 +548,11 @@ window.InstituteInfoUI = (function() {
                 return table;
             }
             
-            // 헤더 생성
+            // 헤더 생성 - 줄바꿈 문제 해결 (\\\\n → \n)
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
             
-            const headers = ['문화 수업 주제', '참가자\\n한국어 수준', '목표 수강인원', '세부 일정'];
+            const headers = ['문화 수업 주제', '참가자\n한국어 수준', '목표 수강인원', '세부 일정'];
             headers.forEach(headerText => {
                 const th = document.createElement('th');
                 th.style.textAlign = 'center';
@@ -622,7 +622,7 @@ window.InstituteInfoUI = (function() {
             
             table.appendChild(tbody);
             
-            console.log('✅ 문화인턴 활동 정보 테이블 생성 완료 (줄바꿈 처리 포함)');
+            console.log('✅ 문화인턴 활동 정보 테이블 생성 완료 (줄바꿈 처리 포함 - 수정됨)');
             return table;
             
         } catch (error) {
@@ -1391,10 +1391,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.8.1',
+            version: '4.8.2',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '안전정보 안내 메시지 추가 및 버튼 이름 변경 - 파견 국가 상세 안전 정보'
+            description: '테이블 헤더 줄바꿈 문제 해결 - 참가자 한국어 수준 컬럼 헤더 개선'
         };
     }
     
@@ -1436,4 +1436,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.1 (안전정보 안내 메시지 추가 및 버튼 이름 변경)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.2 (테이블 헤더 줄바꿈 문제 해결)');
