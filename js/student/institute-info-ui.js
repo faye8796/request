@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.8.4
- * Description: 안전정보 UI 수정 - 안내 메시지 위치 변경 및 가로 배치 개선
+ * Version: 4.8.5
+ * Description: 국가 기본정보 정렬 문제 해결 - DOM 기반 렌더링 방식으로 변경
  */
 
 window.InstituteInfoUI = (function() {
@@ -79,7 +79,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.4');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.5');
             
             // DOM 요소 캐시
             cacheElements();
@@ -88,7 +88,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.4');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.5');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -548,7 +548,7 @@ window.InstituteInfoUI = (function() {
                 return table;
             }
             
-            // 헤더 생성 - 줄바꿈 문제 해결 (\\\\\\\\\\\\n → \\n)
+            // 헤더 생성 - 줄바꿈 문제 해결 (\\\\\\\\\\\\\\\\\\\\\\\\n → \\n)
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
             
@@ -1065,26 +1065,36 @@ window.InstituteInfoUI = (function() {
             console.log('🔍 조회된 국가정보:', countryInfo);
             console.log('🔗 안전정보 URL:', safetyUrl);
 
-            // 전체 안전정보 컨테이너 생성 (UPDATED - 안내 메시지 위치 변경)
-            let safetyHtml = `
-                <!-- 해외안전여행 앱 다운로드 UI -->
-                ${createAppDownloadSection()}
-            `;
+            // 전체 안전정보 컨테이너 초기화
+            elements.safetyInfoContent.innerHTML = '';
+
+            // 앱 다운로드 섹션 추가
+            const appSection = createAppDownloadElement();
+            if (appSection) {
+                elements.safetyInfoContent.appendChild(appSection);
+            }
 
             // 국가 기본정보가 있는 경우 추가
             if (countryInfo) {
-                safetyHtml += createCountryBasicInfoSection(countryInfo);
-                safetyHtml += createEmbassyInfoSection(countryInfo);
+                const countrySection = createCountryBasicInfoElement(countryInfo);
+                if (countrySection) {
+                    elements.safetyInfoContent.appendChild(countrySection);
+                }
+
+                const embassySection = createEmbassyInfoElement(countryInfo);
+                if (embassySection) {
+                    elements.safetyInfoContent.appendChild(embassySection);
+                }
             }
 
-            // 외부링크 섹션 추가 (안내 메시지 포함)
-            safetyHtml += createSafetyExternalLinksSection(safetyUrl, countryInfo);
-
-            // HTML 적용
-            elements.safetyInfoContent.innerHTML = safetyHtml;
+            // 외부링크 섹션 추가
+            const linksSection = createSafetyExternalLinksElement(safetyUrl, countryInfo);
+            if (linksSection) {
+                elements.safetyInfoContent.appendChild(linksSection);
+            }
 
             initializeLucideIcons();
-            console.log('✅ 국가별 안전정보 표시 완료 (안내 메시지 위치 수정됨)');
+            console.log('✅ 국가별 안전정보 표시 완료 (DOM 기반 방식)');
 
         } catch (error) {
             console.error('❌ 국가별 안전정보 표시 실패:', error);
@@ -1110,11 +1120,13 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 앱 다운로드 섹션 HTML 생성
+     * 앱 다운로드 섹션 DOM 요소 생성
      */
-    function createAppDownloadSection() {
-        return `
-            <div class="app-download-banner">
+    function createAppDownloadElement() {
+        try {
+            const section = document.createElement('div');
+            section.className = 'app-download-banner';
+            section.innerHTML = `
                 <div class="app-download-content">
                     <div class="app-info">
                         <div class="app-icon">
@@ -1142,18 +1154,41 @@ window.InstituteInfoUI = (function() {
                         </a>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+            return section;
+        } catch (error) {
+            console.error('❌ 앱 다운로드 섹션 생성 실패:', error);
+            return null;
+        }
     }
     
     /**
-     * 국가 기본정보 섹션 HTML 생성 (UPDATED - 세로 리스트 형태로 변경)
+     * 국가 기본정보 섹션 DOM 요소 생성 (FIXED - DOM 기반으로 변경)
      */
-    function createCountryBasicInfoSection(countryInfo) {
+    function createCountryBasicInfoElement(countryInfo) {
         try {
+            console.log('🏗️ 국가 기본정보 섹션 DOM 생성 시작 (수정된 방식)');
+            
             const basicInfo = countryInfo.basic_info || {};
             
-            // 정보 순서: 수도, 면적, 언어, 민족 구성, 종교
+            // 메인 컨테이너
+            const section = document.createElement('div');
+            section.className = 'country-basic-info';
+            
+            // 타이틀 생성
+            const title = document.createElement('h4');
+            title.className = 'safety-section-title';
+            title.innerHTML = `
+                <i data-lucide="globe"></i>
+                ${countryInfo.country_name} 기본정보
+            `;
+            section.appendChild(title);
+            
+            // 테이블 컨테이너
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'info-table';
+            
+            // 정보 항목들
             const infoItems = [
                 {
                     icon: 'map-pin',
@@ -1182,143 +1217,170 @@ window.InstituteInfoUI = (function() {
                 }
             ];
             
-            let itemsHtml = '';
+            // DOM 기반으로 각 행 생성 (createTableRow와 동일한 방식)
             infoItems.forEach(item => {
-                itemsHtml += `
-                    <div class="info-table-row">
-                        <div class="info-table-label">
-                            <i data-lucide="${item.icon}"></i>
-                            ${item.label}
-                        </div>
-                        <div class="info-table-value">
-                            ${item.value}
-                        </div>
-                    </div>
-                `;
+                const row = document.createElement('div');
+                row.className = 'info-table-row';
+                
+                // 레이블 생성
+                const label = document.createElement('div');
+                label.className = 'info-table-label';
+                
+                const icon = document.createElement('i');
+                icon.setAttribute('data-lucide', item.icon);
+                label.appendChild(icon);
+                label.appendChild(document.createTextNode(' ' + item.label));
+                
+                // 값 생성
+                const value = document.createElement('div');
+                value.className = 'info-table-value';
+                value.textContent = item.value;
+                
+                // 행에 요소 추가
+                row.appendChild(label);
+                row.appendChild(value);
+                
+                // 테이블에 행 추가
+                tableContainer.appendChild(row);
             });
             
-            return `
-                <div class="country-basic-info">
-                    <h4 class="safety-section-title">
-                        <i data-lucide="globe"></i>
-                        ${countryInfo.country_name} 기본정보
-                    </h4>
-                    <div class="info-table">
-                        ${itemsHtml}
-                    </div>
-                </div>
-            `;
+            section.appendChild(tableContainer);
+            
+            console.log('✅ 국가 기본정보 섹션 DOM 생성 완료 (DOM 기반 방식)');
+            return section;
+            
         } catch (error) {
             console.error('❌ 국가 기본정보 섹션 생성 실패:', error);
-            return '';
+            return null;
         }
     }
     
     /**
-     * 재외공관 정보 섹션 HTML 생성
+     * 재외공관 정보 섹션 DOM 요소 생성
      */
-    function createEmbassyInfoSection(countryInfo) {
+    function createEmbassyInfoElement(countryInfo) {
         try {
-            return `
-                <div class="embassy-info">
-                    <h4 class="safety-section-title">
-                        <i data-lucide="building-2"></i>
-                        재외공관 정보
-                    </h4>
-                    <div class="embassy-info-grid">
-                        <div class="embassy-item">
-                            <div class="embassy-icon">
-                                <i data-lucide="map-pin"></i>
-                            </div>
-                            <div class="embassy-details">
-                                <span class="embassy-label">대사관 주소</span>
-                                <span class="embassy-value">${countryInfo.embassy_address || '정보 없음'}</span>
-                            </div>
+            const section = document.createElement('div');
+            section.className = 'embassy-info';
+            section.innerHTML = `
+                <h4 class="safety-section-title">
+                    <i data-lucide="building-2"></i>
+                    재외공관 정보
+                </h4>
+                <div class="embassy-info-grid">
+                    <div class="embassy-item">
+                        <div class="embassy-icon">
+                            <i data-lucide="map-pin"></i>
                         </div>
-                        <div class="embassy-item">
-                            <div class="embassy-icon">
-                                <i data-lucide="phone"></i>
-                            </div>
-                            <div class="embassy-details">
-                                <span class="embassy-label">대표번호</span>
-                                <span class="embassy-value">${countryInfo.embassy_phone || '정보 없음'}</span>
-                            </div>
+                        <div class="embassy-details">
+                            <span class="embassy-label">대사관 주소</span>
+                            <span class="embassy-value">${countryInfo.embassy_address || '정보 없음'}</span>
                         </div>
-                        <div class="embassy-item emergency">
-                            <div class="embassy-icon">
-                                <i data-lucide="phone-call"></i>
-                            </div>
-                            <div class="embassy-details">
-                                <span class="embassy-label">긴급연락처</span>
-                                <span class="embassy-value emergency-number">${countryInfo.emergency_contact || '정보 없음'}</span>
-                            </div>
+                    </div>
+                    <div class="embassy-item">
+                        <div class="embassy-icon">
+                            <i data-lucide="phone"></i>
+                        </div>
+                        <div class="embassy-details">
+                            <span class="embassy-label">대표번호</span>
+                            <span class="embassy-value">${countryInfo.embassy_phone || '정보 없음'}</span>
+                        </div>
+                    </div>
+                    <div class="embassy-item emergency">
+                        <div class="embassy-icon">
+                            <i data-lucide="phone-call"></i>
+                        </div>
+                        <div class="embassy-details">
+                            <span class="embassy-label">긴급연락처</span>
+                            <span class="embassy-value emergency-number">${countryInfo.emergency_contact || '정보 없음'}</span>
                         </div>
                     </div>
                 </div>
             `;
+            return section;
         } catch (error) {
             console.error('❌ 재외공관 정보 섹션 생성 실패:', error);
-            return '';
+            return null;
         }
     }
     
     /**
-     * 외부링크 섹션 HTML 생성 (UPDATED - 안내 메시지 포함)
+     * 외부링크 섹션 DOM 요소 생성
      */
-    function createSafetyExternalLinksSection(safetyUrl, countryInfo) {
+    function createSafetyExternalLinksElement(safetyUrl, countryInfo) {
         try {
             const hasCustomUrl = safetyUrl && safetyUrl !== 'https://www.0404.go.kr/';
             
-            return `
-                <div class="safety-external-links">
-                    <!-- 안전정보 안내 메시지 (이동됨) -->
-                    ${createSafetyGuideNotice()}
-                    
-                    <h4 class="safety-section-title">
-                        <i data-lucide="external-link"></i>
-                        상세 안전정보
-                    </h4>
-                    <div class="external-links-grid two-buttons">
-                        ${hasCustomUrl ? `
-                            <button type="button" 
-                                    onclick="window.open('${safetyUrl}', '_blank')" 
-                                    class="external-link-btn primary">
-                                <i data-lucide="shield"></i>
-                                <div class="btn-content">
-                                    <span class="btn-title">파견 국가 상세 안전 정보</span>
-                                    <span class="btn-desc">해당 지역 맞춤 안전정보</span>
-                                </div>
-                            </button>
-                        ` : ''}
+            const section = document.createElement('div');
+            section.className = 'safety-external-links';
+            section.innerHTML = `
+                <!-- 안전정보 안내 메시지 -->
+                ${createSafetyGuideNotice()}
+                
+                <h4 class="safety-section-title">
+                    <i data-lucide="external-link"></i>
+                    상세 안전정보
+                </h4>
+                <div class="external-links-grid two-buttons">
+                    ${hasCustomUrl ? `
                         <button type="button" 
-                                onclick="window.open('https://www.0404.go.kr/', '_blank')" 
-                                class="external-link-btn ${hasCustomUrl ? 'secondary' : 'primary'}">
-                            <i data-lucide="globe"></i>
+                                onclick="window.open('${safetyUrl}', '_blank')" 
+                                class="external-link-btn primary">
+                            <i data-lucide="shield"></i>
                             <div class="btn-content">
-                                <span class="btn-title">외교부 해외안전여행</span>
-                                <span class="btn-desc">종합 안전정보 및 여행경보</span>
+                                <span class="btn-title">파견 국가 상세 안전 정보</span>
+                                <span class="btn-desc">해당 지역 맞춤 안전정보</span>
                             </div>
                         </button>
-                    </div>
+                    ` : ''}
+                    <button type="button" 
+                            onclick="window.open('https://www.0404.go.kr/', '_blank')" 
+                            class="external-link-btn ${hasCustomUrl ? 'secondary' : 'primary'}">
+                        <i data-lucide="globe"></i>
+                        <div class="btn-content">
+                            <span class="btn-title">외교부 해외안전여행</span>
+                            <span class="btn-desc">종합 안전정보 및 여행경보</span>
+                        </div>
+                    </button>
                 </div>
             `;
+            return section;
         } catch (error) {
             console.error('❌ 외부링크 섹션 생성 실패:', error);
-            return `
-                <div class="safety-external-links">
-                    ${createSafetyGuideNotice()}
-                    <div class="external-links-grid two-buttons">
-                        <button type="button" onclick="window.open('https://www.0404.go.kr/', '_blank')" class="external-link-btn primary">
-                            <i data-lucide="external-link"></i>
-                            <div class="btn-content">
-                                <span class="btn-title">외교부 해외안전여행</span>
-                                <span class="btn-desc">종합 안전정보 및 여행경보</span>
-                            </div>
-                        </button>
-                    </div>
-                </div>
-            `;
+            return null;
         }
+    }
+    
+    /**
+     * 국가 기본정보 섹션 HTML 생성 (DEPRECATED - DOM 기반으로 대체됨)
+     */
+    function createCountryBasicInfoSection(countryInfo) {
+        console.warn('⚠️ createCountryBasicInfoSection은 더 이상 사용되지 않습니다. createCountryBasicInfoElement를 사용하세요.');
+        return createCountryBasicInfoElement(countryInfo)?.outerHTML || '';
+    }
+    
+    /**
+     * 앱 다운로드 섹션 HTML 생성 (DEPRECATED - DOM 기반으로 대체됨)
+     */
+    function createAppDownloadSection() {
+        console.warn('⚠️ createAppDownloadSection은 더 이상 사용되지 않습니다. createAppDownloadElement를 사용하세요.');
+        return createAppDownloadElement()?.outerHTML || '';
+    }
+    
+    /**
+     * 재외공관 정보 섹션 HTML 생성 (DEPRECATED - DOM 기반으로 대체됨)
+     */
+    function createEmbassyInfoSection(countryInfo) {
+        console.warn('⚠️ createEmbassyInfoSection은 더 이상 사용되지 않습니다. createEmbassyInfoElement를 사용하세요.');
+        return createEmbassyInfoElement(countryInfo)?.outerHTML || '';
+    }
+    
+    /**
+     * 외부링크 섹션 HTML 생성 (DEPRECATED - DOM 기반으로 대체됨)
+     */
+    function createSafetyExternalLinksSection(safetyUrl, countryInfo) {
+        console.warn('⚠️ createSafetyExternalLinksSection은 더 이상 사용되지 않습니다. createSafetyExternalLinksElement를 사용하세요.');
+        return createSafetyExternalLinksElement(safetyUrl, countryInfo)?.outerHTML || '';
     }
     
     /**
@@ -1423,10 +1485,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.8.4',
+            version: '4.8.5',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '안전정보 UI 수정 - 안내 메시지 위치 변경 및 가로 배치 개선'
+            description: '국가 기본정보 정렬 문제 해결 - DOM 기반 렌더링 방식으로 변경'
         };
     }
     
@@ -1454,6 +1516,12 @@ window.InstituteInfoUI = (function() {
         showSafetyError,
         showSafetyUnavailable,
         
+        // DOM 기반 요소 생성 (NEW)
+        createCountryBasicInfoElement,
+        createAppDownloadElement,
+        createEmbassyInfoElement,
+        createSafetyExternalLinksElement,
+        
         // 유틸리티
         addAnimation,
         initializeLucideIcons,
@@ -1468,4 +1536,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.4 (안전정보 UI 수정)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.5 (국가 기본정보 정렬 문제 해결)');
