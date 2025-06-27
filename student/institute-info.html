@@ -6,9 +6,9 @@
     <title>파견 학당 정보 - 세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.6.9">
-    <link rel="stylesheet" href="../css/student.css?v=4.6.9">
-    <link rel="stylesheet" href="../css/student-institute-info.css?v=4.6.9">
+    <link rel="stylesheet" href="../css/main.css?v=4.7.1">
+    <link rel="stylesheet" href="../css/student.css?v=4.7.1">
+    <link rel="stylesheet" href="../css/student-institute-info.css?v=4.7.1">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -107,7 +107,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         }
 
-        /* Enhanced Table 스타일 */
+        /* Enhanced Table 스타일 개선 */
         .enhanced-table {
             border-collapse: collapse;
             width: 100%;
@@ -118,7 +118,7 @@
         .enhanced-table td {
             border: 1px solid #e2e8f0;
             padding: 0.75rem;
-            text-align: left;
+            text-align: center; /* 모든 텍스트 가운데 정렬 */
         }
 
         .enhanced-table th {
@@ -136,6 +136,59 @@
             background: #e2e8f0;
         }
 
+        /* 희망 개설 강좌 테이블 컬럼 너비 조정 */
+        .cultural-activity-table th:nth-child(1), /* 문화 수업 주제 */
+        .cultural-activity-table td:nth-child(1) {
+            width: 40%;
+            text-align: left; /* 제목은 왼쪽 정렬 */
+        }
+
+        .cultural-activity-table th:nth-child(2), /* 참가자 한국어 수준 */
+        .cultural-activity-table td:nth-child(2) {
+            width: 20%;
+        }
+
+        .cultural-activity-table th:nth-child(3), /* 세부 일정 */
+        .cultural-activity-table td:nth-child(3) {
+            width: 25%;
+        }
+
+        .cultural-activity-table th:nth-child(4), /* 목표 수강인원 */
+        .cultural-activity-table td:nth-child(4) {
+            width: 15%;
+        }
+
+        /* 교육 환경 정보 테이블 컬럼 너비 조정 */
+        .education-environment-table th:nth-child(1), /* 문화 수업 주제 */
+        .education-environment-table td:nth-child(1) {
+            width: 35%;
+            text-align: left; /* 제목은 왼쪽 정렬 */
+        }
+
+        .education-environment-table th:nth-child(2), /* 교육 장소 */
+        .education-environment-table td:nth-child(2) {
+            width: 25%;
+        }
+
+        .education-environment-table th:nth-child(3), /* 학당 교구 및 기자재 */
+        .education-environment-table td:nth-child(3) {
+            width: 40%;
+            text-align: left; /* 긴 내용은 왼쪽 정렬 */
+        }
+
+        /* 일반 테이블 스타일 - 모든 내용 가운데 정렬 */
+        .info-table .info-table-value,
+        .json-table td,
+        .json-list li {
+            text-align: center;
+        }
+
+        /* 긴 텍스트나 링크는 예외적으로 왼쪽 정렬 */
+        .info-table-value.text-break,
+        .info-table-value a {
+            text-align: left;
+        }
+
         /* 모바일 반응형 */
         @media (max-width: 768px) {
             .page-container {
@@ -148,6 +201,15 @@
 
             .header-title {
                 font-size: 2rem;
+            }
+
+            /* 모바일에서 테이블 컬럼 너비 자동 조정 */
+            .cultural-activity-table th,
+            .cultural-activity-table td,
+            .education-environment-table th,
+            .education-environment-table td {
+                width: auto;
+                min-width: 80px;
             }
         }
     </style>
@@ -233,6 +295,17 @@
                                 </div>
                             </div>
 
+                            <!-- 희망 개설 강좌 - 새로 추가된 독립 섹션 -->
+                            <div class="info-section">
+                                <h3 class="section-title">
+                                    <i data-lucide="book-open"></i>
+                                    희망 개설 강좌
+                                </h3>
+                                <div class="info-table" id="desiredCoursesTable">
+                                    <!-- 희망 개설 강좌 테이블이 여기에 표시 -->
+                                </div>
+                            </div>
+
                             <!-- 교육 환경 정보 -->
                             <div class="info-section">
                                 <h3 class="section-title">
@@ -272,25 +345,25 @@
 
     <!-- JavaScript Files -->
     <!-- 기본 설정 모듈 -->
-    <script src="../js/config.js?v=4.6.9"></script>
-    <script src="../js/auth.js?v=4.6.9"></script>
-    <script src="../js/utils.js?v=4.6.9"></script>
+    <script src="../js/config.js?v=4.7.1"></script>
+    <script src="../js/auth.js?v=4.7.1"></script>
+    <script src="../js/utils.js?v=4.7.1"></script>
     
     <!-- Supabase 모듈들 -->
-    <script src="../js/supabase/supabase-core.js?v=4.6.9"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.6.9"></script>
-    <script src="../js/supabase-client.js?v=4.6.9"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.7.1"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.7.1"></script>
+    <script src="../js/supabase-client.js?v=4.7.1"></script>
     
     <!-- 학당 정보 전용 모듈들 -->
-    <script src="../js/student/institute-info-api.js?v=4.6.9"></script>
-    <script src="../js/student/institute-info-core.js?v=4.6.9"></script>
-    <script src="../js/student/institute-info-ui.js?v=4.6.9"></script>
+    <script src="../js/student/institute-info-api.js?v=4.7.1"></script>
+    <script src="../js/student/institute-info-core.js?v=4.7.1"></script>
+    <script src="../js/student/institute-info-ui.js?v=4.7.1"></script>
 
     <!-- 페이지 초기화 스크립트 -->
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                console.log('🏛️ 학당 정보 페이지 초기화 시작 v4.6.9');
+                console.log('🏛️ 학당 정보 페이지 초기화 시작 v4.7.1');
                 
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
@@ -310,7 +383,7 @@
                     throw new Error('InstituteInfoCore 모듈을 찾을 수 없습니다');
                 }
                 
-                console.log('✅ 학당 정보 페이지 초기화 완료 v4.6.9');
+                console.log('✅ 학당 정보 페이지 초기화 완료 v4.7.1');
                 
             } catch (error) {
                 console.error('❌ 초기화 실패:', error);
@@ -372,7 +445,7 @@
             }
         }
 
-        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.6.9 - 문화인턴 활동 정보 및 교육 환경 정보 개선');
+        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.7.1 - 희망 개설 강좌 독립 섹션 및 테이블 스타일 개선');
     </script>
 </body>
 </html>
