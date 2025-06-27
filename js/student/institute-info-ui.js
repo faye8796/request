@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.6.8
- * Description: PDF 구조와 일치하는 Enhanced Table 개선
+ * Version: 4.6.9
+ * Description: 문화인턴 활동 정보 및 교육 환경 정보 테이블 구조 개선
  */
 
 window.InstituteInfoUI = (function() {
@@ -32,7 +32,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.6.8');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.6.9');
             
             // DOM 요소 캐시
             cacheElements();
@@ -41,7 +41,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.6.8');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.6.9');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -405,7 +405,11 @@ window.InstituteInfoUI = (function() {
             }
             
             if (Array.isArray(data)) {
-                if (type === 'enhanced-table') {
+                if (type === 'cultural-activity-table') {
+                    return createCulturalActivityTable(data);
+                } else if (type === 'education-environment-table') {
+                    return createEducationEnvironmentTable(data);
+                } else if (type === 'enhanced-table') {
                     return createEnhancedJsonTable(data);
                 } else if (type === 'table') {
                     return createJsonTable(data);
@@ -430,7 +434,165 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * Enhanced JSON 테이블 생성 (PDF 구조와 정확히 일치)
+     * 문화인턴 활동 정보 테이블 생성 (새로운 컬럼 구조)
+     */
+    function createCulturalActivityTable(data) {
+        try {
+            console.log('🎯 문화인턴 활동 정보 테이블 생성 중...', data);
+            
+            const table = document.createElement('table');
+            table.className = 'json-table enhanced-table';
+            
+            if (!data || data.length === 0) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.textContent = '강좌 정보 없음';
+                td.className = 'empty';
+                td.colSpan = 4; // 순번 삭제로 4개 컬럼
+                td.style.textAlign = 'center';
+                td.style.padding = '2rem';
+                tr.appendChild(td);
+                table.appendChild(tr);
+                return table;
+            }
+            
+            // 헤더 생성 (새로운 컬럼 구조)
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            const headers = ['문화 수업 주제', '참가자 한국어 수준', '세부 일정', '목표 수강인원'];
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // 바디 생성
+            const tbody = document.createElement('tbody');
+            data.forEach((item) => {
+                const row = document.createElement('tr');
+                
+                // 문화 수업 주제
+                const subjectCell = document.createElement('td');
+                const subject = item['문화 수업 주제'] || item.name || item.강좌명 || item.course || '미정';
+                subjectCell.textContent = subject;
+                row.appendChild(subjectCell);
+                
+                // 참가자 한국어 수준
+                const levelCell = document.createElement('td');
+                const level = item['참가자 한국어 수준'] || item.level || item.수준 || item.난이도 || '미정';
+                levelCell.textContent = level;
+                levelCell.style.textAlign = 'center';
+                row.appendChild(levelCell);
+                
+                // 세부 일정
+                const scheduleCell = document.createElement('td');
+                const schedule = item['세부 일정'] || item.time || item.시간 || item.duration || '미정';
+                scheduleCell.textContent = schedule;
+                scheduleCell.style.textAlign = 'center';
+                row.appendChild(scheduleCell);
+                
+                // 목표 수강인원
+                const participantsCell = document.createElement('td');
+                const participants = item['목표 수강인원'] || item.participants || item.수강인원 || item.인원 || '미정';
+                participantsCell.textContent = participants;
+                participantsCell.style.textAlign = 'center';
+                row.appendChild(participantsCell);
+                
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(tbody);
+            
+            console.log('✅ 문화인턴 활동 정보 테이블 생성 완료');
+            return table;
+            
+        } catch (error) {
+            console.error('❌ 문화인턴 활동 정보 테이블 생성 실패:', error);
+            return createJsonList(data);
+        }
+    }
+    
+    /**
+     * 교육 환경 정보 테이블 생성 (새로운 컬럼 구조)
+     */
+    function createEducationEnvironmentTable(data) {
+        try {
+            console.log('🏫 교육 환경 정보 테이블 생성 중...', data);
+            
+            const table = document.createElement('table');
+            table.className = 'json-table enhanced-table';
+            
+            if (!data || data.length === 0) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.textContent = '교육 환경 정보 없음';
+                td.className = 'empty';
+                td.colSpan = 3;
+                td.style.textAlign = 'center';
+                td.style.padding = '2rem';
+                tr.appendChild(td);
+                table.appendChild(tr);
+                return table;
+            }
+            
+            // 헤더 생성 (교육 환경 정보 컬럼 구조)
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            const headers = ['문화 수업 주제', '교육 장소', '학당 교구 및 기자재'];
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // 바디 생성
+            const tbody = document.createElement('tbody');
+            data.forEach((item) => {
+                const row = document.createElement('tr');
+                
+                // 문화 수업 주제
+                const subjectCell = document.createElement('td');
+                const subject = item['문화 수업 주제'] || item.subject || item.course || item.name || '미정';
+                subjectCell.textContent = subject;
+                row.appendChild(subjectCell);
+                
+                // 교육 장소
+                const locationCell = document.createElement('td');
+                const location = item['교육 장소'] || item.location || item.place || item.venue || '미정';
+                locationCell.textContent = location;
+                locationCell.style.textAlign = 'center';
+                row.appendChild(locationCell);
+                
+                // 학당 교구 및 기자재
+                const equipmentCell = document.createElement('td');
+                const equipment = item['학당 교구 및 기자재'] || item.equipment || item.materials || item.facilities || '미정';
+                equipmentCell.textContent = equipment;
+                row.appendChild(equipmentCell);
+                
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(tbody);
+            
+            console.log('✅ 교육 환경 정보 테이블 생성 완료');
+            return table;
+            
+        } catch (error) {
+            console.error('❌ 교육 환경 정보 테이블 생성 실패:', error);
+            return createJsonList(data);
+        }
+    }
+    
+    /**
+     * Enhanced JSON 테이블 생성 (기존 호환성 유지)
      */
     function createEnhancedJsonTable(data) {
         try {
@@ -452,7 +614,7 @@ window.InstituteInfoUI = (function() {
                 return table;
             }
             
-            // 헤더 생성 (PDF와 정확히 일치)
+            // 헤더 생성 (기존 구조)
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
             
@@ -811,10 +973,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.6.8',
+            version: '4.6.9',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: 'PDF 구조와 일치하는 Enhanced Table 개선된 학당 정보 UI 모듈'
+            description: '문화인턴 활동 정보 및 교육 환경 정보 테이블 구조가 개선된 학당 정보 UI 모듈'
         };
     }
     
@@ -854,4 +1016,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.6.8 (PDF 구조 완전 일치)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.6.9 (문화인턴 활동 정보 및 교육 환경 정보 테이블 개선)');
