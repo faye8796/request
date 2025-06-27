@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 핵심 로직 모듈
- * Version: 4.7.1
- * Description: 희망 개설 강좌 독립 섹션 및 테이블 스타일 개선
+ * Version: 4.8.0
+ * Description: DB 기반 국가 안전정보 시스템 적용 - iframe 제거 및 구조화된 안전정보 연동
  */
 
 window.InstituteInfoCore = (function() {
@@ -20,7 +20,7 @@ window.InstituteInfoCore = (function() {
      */
     async function initialize() {
         try {
-            console.log('🧠 InstituteInfoCore 초기화 시작 v4.7.1');
+            console.log('🧠 InstituteInfoCore 초기화 시작 v4.8.0');
             
             // 의존성 모듈 확인
             if (!window.InstituteInfoAPI) {
@@ -44,7 +44,7 @@ window.InstituteInfoCore = (function() {
             await loadInstituteData();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoCore 초기화 완료 v4.7.1');
+            console.log('✅ InstituteInfoCore 초기화 완료 v4.8.0');
             
         } catch (error) {
             console.error('❌ InstituteInfoCore 초기화 실패:', error);
@@ -128,7 +128,7 @@ window.InstituteInfoCore = (function() {
             // 학당 정보 탭 표시
             displayInstituteInfo();
             
-            // 안전정보 탭 표시
+            // 안전정보 탭 표시 (새로운 방식)
             await displaySafetyInfo();
             
             // 메인 콘텐츠 표시
@@ -304,31 +304,21 @@ window.InstituteInfoCore = (function() {
     }
     
     /**
-     * 안전정보 표시
+     * 안전정보 표시 (새로운 DB 기반 방식)
      */
     async function displaySafetyInfo() {
         try {
-            console.log('🛡️ 안전정보 표시 중...');
+            console.log('🛡️ 안전정보 표시 중... (DB 기반 방식)');
             
-            const safetyUrl = currentInstituteData.safety_info_url;
-            
-            if (!safetyUrl) {
+            if (!currentInstituteData) {
+                console.warn('⚠️ 학당 데이터가 없어 안전정보를 표시할 수 없습니다');
                 window.InstituteInfoUI.showSafetyUnavailable();
                 return;
             }
             
-            // URL 유효성 검사
-            const isValidUrl = await window.InstituteInfoAPI.validateSafetyInfoUrl(safetyUrl);
-            
-            if (!isValidUrl) {
-                window.InstituteInfoUI.showSafetyError('유효하지 않은 안전정보 URL입니다');
-                return;
-            }
-            
-            // iframe으로 안전정보 로드
-            window.InstituteInfoUI.showSafetyIframe(safetyUrl);
-            
-            console.log('✅ 안전정보 표시 완료');
+            // 새로운 안전정보 표시 시스템 사용
+            // 이 함수는 안전정보 탭이 활성화될 때만 실제로 동작합니다
+            console.log('✅ 안전정보 시스템 준비 완료 (탭 활성화 시 로드됨)');
             
         } catch (error) {
             console.error('❌ 안전정보 표시 실패:', error);
@@ -558,12 +548,12 @@ window.InstituteInfoCore = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoCore',
-            version: '4.7.1',
+            version: '4.8.0',
             initialized: isInitialized,
             currentTab,
             hasData: !!currentInstituteData,
             eventListenersCount: eventListeners.size,
-            description: '희망 개설 강좌 독립 섹션 및 테이블 스타일이 개선된 학당 정보 핵심 로직 모듈'
+            description: 'DB 기반 국가 안전정보 시스템이 적용된 학당 정보 핵심 로직 모듈'
         };
     }
     
@@ -596,4 +586,4 @@ window.InstituteInfoCore = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🧠 InstituteInfoCore 모듈 로드 완료 - v4.7.1 (희망 개설 강좌 독립 섹션 및 스타일 개선)');
+console.log('🧠 InstituteInfoCore 모듈 로드 완료 - v4.8.0 (DB 기반 국가 안전정보 시스템 적용)');
