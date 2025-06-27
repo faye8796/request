@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.8.2
- * Description: 테이블 헤더 줄바꿈 문제 해결 - 참가자 한국어 수준 컬럼 헤더 개선
+ * Version: 4.8.3
+ * Description: 안전정보 UI 개선 - 국가 기본정보 세로 리스트 형태 변경 및 안내 메시지 강화
  */
 
 window.InstituteInfoUI = (function() {
@@ -79,7 +79,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.2');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.3');
             
             // DOM 요소 캐시
             cacheElements();
@@ -88,7 +88,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.2');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.3');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -548,7 +548,7 @@ window.InstituteInfoUI = (function() {
                 return table;
             }
             
-            // 헤더 생성 - 줄바꿈 문제 해결 (\\\\n → \n)
+            // 헤더 생성 - 줄바꿈 문제 해결 (\\\\\\n → \n)
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
             
@@ -1067,12 +1067,7 @@ window.InstituteInfoUI = (function() {
 
             // 전체 안전정보 컨테이너 생성
             let safetyHtml = `
-                <!-- 안전정보 안내 메시지 (NEW) -->
-                ${createSafetyGuideNotice()}
-                
-                <!-- 해외안전여행 앱 다운로드 UI -->
-                ${createAppDownloadSection()}
-            `;
+                <!-- 안전정보 안내 메시지 (UPDATED) -->\n                ${createSafetyGuideNotice()}\n                \n                <!-- 해외안전여행 앱 다운로드 UI -->\n                ${createAppDownloadSection()}\n            `;
 
             // 국가 기본정보가 있는 경우 추가
             if (countryInfo) {
@@ -1080,7 +1075,7 @@ window.InstituteInfoUI = (function() {
                 safetyHtml += createEmbassyInfoSection(countryInfo);
             }
 
-            // 외부링크 섹션 추가
+            // 외부링크 섹션 추가 (UPDATED)
             safetyHtml += createSafetyExternalLinksSection(safetyUrl, countryInfo);
 
             // HTML 적용
@@ -1096,7 +1091,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 안전정보 안내 메시지 HTML 생성 (NEW)
+     * 안전정보 안내 메시지 HTML 생성 (UPDATED - 빨간색 강조)
      */
     function createSafetyGuideNotice() {
         return `
@@ -1105,8 +1100,8 @@ window.InstituteInfoUI = (function() {
                     <i data-lucide="alert-triangle"></i>
                 </div>
                 <div class="notice-content">
-                    <h4 class="notice-title">안전 정보 안내</h4>
-                    <p class="notice-text">출국 전 파견지의 상세 안전 정보를 꼭 확인하세요</p>
+                    <h4 class="notice-title">상세 안전정보</h4>
+                    <p class="notice-text">파견 전 해당 국가의 상세 안전정보를 꼭 확인하세요</p>
                 </div>
             </div>
         `;
@@ -1150,11 +1145,55 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 국가 기본정보 섹션 HTML 생성
+     * 국가 기본정보 섹션 HTML 생성 (UPDATED - 세로 리스트 형태로 변경)
      */
     function createCountryBasicInfoSection(countryInfo) {
         try {
             const basicInfo = countryInfo.basic_info || {};
+            
+            // 정보 순서: 수도, 면적, 언어, 민족 구성, 종교
+            const infoItems = [
+                {
+                    icon: 'map-pin',
+                    label: '수도',
+                    value: basicInfo.capital || '정보 없음'
+                },
+                {
+                    icon: 'square',
+                    label: '면적',
+                    value: basicInfo.area || '정보 없음'
+                },
+                {
+                    icon: 'message-circle',
+                    label: '언어',
+                    value: basicInfo.language || '정보 없음'
+                },
+                {
+                    icon: 'users',
+                    label: '민족 구성',
+                    value: basicInfo.ethnicity || '정보 없음'
+                },
+                {
+                    icon: 'church',
+                    label: '종교',
+                    value: basicInfo.religion || '정보 없음'
+                }
+            ];
+            
+            let itemsHtml = '';
+            infoItems.forEach(item => {
+                itemsHtml += `
+                    <div class="info-table-row">
+                        <div class="info-table-label">
+                            <i data-lucide="${item.icon}"></i>
+                            ${item.label}
+                        </div>
+                        <div class="info-table-value">
+                            ${item.value}
+                        </div>
+                    </div>
+                `;
+            });
             
             return `
                 <div class="country-basic-info">
@@ -1162,27 +1201,8 @@ window.InstituteInfoUI = (function() {
                         <i data-lucide="globe"></i>
                         ${countryInfo.country_name} 기본정보
                     </h4>
-                    <div class="country-info-grid">
-                        <div class="info-item">
-                            <span class="info-label">면적</span>
-                            <span class="info-value">${basicInfo.area || '정보 없음'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">수도</span>
-                            <span class="info-value">${basicInfo.capital || '정보 없음'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">언어</span>
-                            <span class="info-value">${basicInfo.language || '정보 없음'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">종교</span>
-                            <span class="info-value">${basicInfo.religion || '정보 없음'}</span>
-                        </div>
-                        <div class="info-item full-width">
-                            <span class="info-label">민족 구성</span>
-                            <span class="info-value">${basicInfo.ethnicity || '정보 없음'}</span>
-                        </div>
+                    <div class="info-table">
+                        ${itemsHtml}
                     </div>
                 </div>
             `;
@@ -1241,7 +1261,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 외부링크 섹션 HTML 생성 (버튼 이름 변경 적용)
+     * 외부링크 섹션 HTML 생성 (UPDATED - 2개 버튼으로 변경)
      */
     function createSafetyExternalLinksSection(safetyUrl, countryInfo) {
         try {
@@ -1253,7 +1273,7 @@ window.InstituteInfoUI = (function() {
                         <i data-lucide="external-link"></i>
                         상세 안전정보
                     </h4>
-                    <div class="external-links-grid">
+                    <div class="external-links-grid two-buttons">
                         ${hasCustomUrl ? `
                             <button type="button" 
                                     onclick="window.open('${safetyUrl}', '_blank')" 
@@ -1274,17 +1294,6 @@ window.InstituteInfoUI = (function() {
                                 <span class="btn-desc">종합 안전정보 및 여행경보</span>
                             </div>
                         </button>
-                        ${countryInfo ? `
-                            <button type="button" 
-                                    onclick="window.open('https://www.0404.go.kr/country/${countryInfo.country_name}', '_blank')" 
-                                    class="external-link-btn tertiary">
-                                <i data-lucide="map"></i>
-                                <div class="btn-content">
-                                    <span class="btn-title">${countryInfo.country_name} 정보</span>
-                                    <span class="btn-desc">국가별 상세 안전정보</span>
-                                </div>
-                            </button>
-                        ` : ''}
                     </div>
                 </div>
             `;
@@ -1292,10 +1301,15 @@ window.InstituteInfoUI = (function() {
             console.error('❌ 외부링크 섹션 생성 실패:', error);
             return `
                 <div class="safety-external-links">
-                    <button type="button" onclick="window.open('https://www.0404.go.kr/', '_blank')" class="external-link-btn primary">
-                        <i data-lucide="external-link"></i>
-                        외교부 해외안전여행 사이트
-                    </button>
+                    <div class="external-links-grid two-buttons">
+                        <button type="button" onclick="window.open('https://www.0404.go.kr/', '_blank')" class="external-link-btn primary">
+                            <i data-lucide="external-link"></i>
+                            <div class="btn-content">
+                                <span class="btn-title">외교부 해외안전여행</span>
+                                <span class="btn-desc">종합 안전정보 및 여행경보</span>
+                            </div>
+                        </button>
+                    </div>
                 </div>
             `;
         }
@@ -1391,10 +1405,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.8.2',
+            version: '4.8.3',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '테이블 헤더 줄바꿈 문제 해결 - 참가자 한국어 수준 컬럼 헤더 개선'
+            description: '안전정보 UI 개선 - 국가 기본정보 세로 리스트 형태 변경 및 안내 메시지 강화'
         };
     }
     
@@ -1436,4 +1450,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.2 (테이블 헤더 줄바꿈 문제 해결)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.3 (안전정보 UI 개선)');
