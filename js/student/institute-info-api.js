@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 API 모듈
- * Version: 4.7.1
- * Description: 희망 개설 강좌 독립 섹션 지원 및 데이터 처리 최적화
+ * Version: 4.8.0
+ * Description: 국가 안전정보 조회 기능 추가 - DB 기반 안전정보 시스템
  */
 
 window.InstituteInfoAPI = (function() {
@@ -16,7 +16,7 @@ window.InstituteInfoAPI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🔗 InstituteInfoAPI 초기화 시작 v4.7.1');
+            console.log('🔗 InstituteInfoAPI 초기화 시작 v4.8.0');
             
             // SupabaseCore 확인 및 클라이언트 확보
             if (!window.SupabaseCore) {
@@ -32,7 +32,7 @@ window.InstituteInfoAPI = (function() {
             
             isInitialized = true;
             
-            console.log('✅ InstituteInfoAPI 초기화 완료 v4.7.1');
+            console.log('✅ InstituteInfoAPI 초기화 완료 v4.8.0');
             return true;
             
         } catch (error) {
@@ -117,6 +117,184 @@ window.InstituteInfoAPI = (function() {
         } catch (error) {
             console.error('❌ 사용자 파견학당 조회 실패:', error);
             throw error;
+        }
+    }
+    
+    /**
+     * 주소에서 국가명 추출
+     */
+    function extractCountryFromAddress(address) {
+        try {
+            if (!address || typeof address !== 'string') {
+                console.warn('⚠️ 유효하지 않은 주소 데이터:', address);
+                return null;
+            }
+            
+            console.log('🔍 주소에서 국가명 추출 시도:', address);
+            
+            // 국가명 매핑 테이블
+            const countryMappings = {
+                // 영어 국가명
+                'United States': '미국',
+                'USA': '미국',
+                'US': '미국',
+                'America': '미국',
+                'Canada': '캐나다',
+                'Australia': '호주',
+                'United Kingdom': '영국',
+                'UK': '영국',
+                'Britain': '영국',
+                'Japan': '일본',
+                'China': '중국',
+                'France': '프랑스',
+                'Germany': '독일',
+                'Italy': '이탈리아',
+                'Spain': '스페인',
+                'Russia': '러시아',
+                'Thailand': '태국',
+                'Vietnam': '베트남',
+                'Indonesia': '인도네시아',
+                'Philippines': '필리핀',
+                'Malaysia': '말레이시아',
+                'Singapore': '싱가포르',
+                'Brazil': '브라질',
+                'Argentina': '아르헨티나',
+                'Mexico': '멕시코',
+                'Turkey': '터키',
+                'Egypt': '이집트',
+                'South Africa': '남아프리카공화국',
+                
+                // 한국어 국가명
+                '미국': '미국',
+                '캐나다': '캐나다',
+                '호주': '호주',
+                '영국': '영국',
+                '일본': '일본',
+                '중국': '중국',
+                '프랑스': '프랑스',
+                '독일': '독일',
+                '이탈리아': '이탈리아',
+                '스페인': '스페인',
+                '러시아': '러시아',
+                '태국': '태국',
+                '베트남': '베트남',
+                '인도네시아': '인도네시아',
+                '필리핀': '필리핀',
+                '말레이시아': '말레이시아',
+                '싱가포르': '싱가포르',
+                '브라질': '브라질',
+                '아르헨티나': '아르헨티나',
+                '멕시코': '멕시코',
+                '터키': '터키',
+                '이집트': '이집트',
+                '남아프리카공화국': '남아프리카공화국'
+            };
+            
+            // 주소에서 국가명 검색
+            for (const [pattern, country] of Object.entries(countryMappings)) {
+                if (address.includes(pattern)) {
+                    console.log(`✅ 국가명 추출 성공: ${pattern} → ${country}`);
+                    return country;
+                }
+            }
+            
+            // 주 약어로 미국 판별 (TX, CA, NY 등)
+            const usStatePattern = /\b[A-Z]{2}\b(?:\s|,|$)/;
+            if (usStatePattern.test(address)) {
+                console.log('✅ 미국 주 약어로 미국 판별');
+                return '미국';
+            }
+            
+            console.log('❌ 국가명 추출 실패, 알 수 없는 국가');
+            return null;
+            
+        } catch (error) {
+            console.error('❌ 국가명 추출 중 오류:', error);
+            return null;
+        }
+    }
+    
+    /**
+     * 주소 기반 국가 안전정보 조회
+     */
+    async function getCountryInfoByAddress(address) {
+        try {
+            if (!isInitialized) {
+                await initialize();
+            }
+            
+            console.log('🔍 주소 기반 국가 안전정보 조회 시작:', address);
+            
+            // 주소에서 국가명 추출
+            const countryName = extractCountryFromAddress(address);
+            
+            if (!countryName) {
+                console.log('❌ 국가명을 추출할 수 없어 안전정보 조회 불가');
+                return null;
+            }
+            
+            console.log(`🔍 추출된 국가명으로 안전정보 조회: ${countryName}`);
+            
+            // country_safety_info 테이블에서 해당 국가 정보 조회
+            const { data: countryInfo, error: countryError } = await supabaseClient
+                .from('country_safety_info')
+                .select('*')
+                .eq('country_name', countryName)
+                .single();
+            
+            if (countryError) {
+                if (countryError.code === 'PGRST116') {
+                    // 데이터가 없는 경우
+                    console.log(`📋 ${countryName} 안전정보 데이터 없음`);
+                    return null;
+                } else {
+                    console.error('❌ 국가 안전정보 조회 실패:', countryError);
+                    throw new Error(`국가 안전정보 조회 실패: ${countryError.message}`);
+                }
+            }
+            
+            if (!countryInfo) {
+                console.log(`📋 ${countryName} 안전정보 없음`);
+                return null;
+            }
+            
+            console.log('✅ 국가 안전정보 조회 완료:', countryInfo.country_name);
+            return countryInfo;
+            
+        } catch (error) {
+            console.error('❌ 국가 안전정보 조회 실패:', error);
+            return null; // 에러 시 null 반환하여 기본 처리 가능하도록
+        }
+    }
+    
+    /**
+     * 학당별 안전정보 URL 처리
+     */
+    function getSafetyInfoUrl(instituteData) {
+        try {
+            if (!instituteData) {
+                console.warn('⚠️ 학당 데이터가 없습니다');
+                return 'https://www.0404.go.kr/';
+            }
+            
+            // 1순위: 학당별 safety_info_url
+            if (instituteData.safety_info_url && 
+                instituteData.safety_info_url.trim() !== '' && 
+                instituteData.safety_info_url !== 'null' &&
+                instituteData.safety_info_url !== 'undefined') {
+                
+                const url = instituteData.safety_info_url.trim();
+                console.log(`🔗 학당 전용 안전정보 URL 사용: ${url}`);
+                return url;
+            }
+            
+            // 2순위: 외교부 기본 사이트
+            console.log('🔗 기본 외교부 안전정보 사이트 사용');
+            return 'https://www.0404.go.kr/';
+            
+        } catch (error) {
+            console.error('❌ 안전정보 URL 처리 실패:', error);
+            return 'https://www.0404.go.kr/';
         }
     }
     
@@ -276,6 +454,9 @@ window.InstituteInfoAPI = (function() {
                     '교육 환경'
                 ),
                 
+                // 안전정보 URL 처리
+                safety_info_url: getSafetyInfoUrl(instituteData),
+                
                 // 빈 값 처리 및 표시용 이름
                 display_name: instituteData.name_ko || '학당명 없음',
                 display_english_name: instituteData.name_en || 'English Name Not Available',
@@ -383,10 +564,10 @@ window.InstituteInfoAPI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoAPI',
-            version: '4.7.1',
+            version: '4.8.0',
             initialized: isInitialized,
             hasSupabaseClient: !!supabaseClient,
-            description: '희망 개설 강좌 독립 섹션 지원 및 데이터 처리가 최적화된 학당 정보 조회 API'
+            description: '국가 안전정보 조회 기능이 추가된 DB 기반 안전정보 시스템'
         };
     }
     
@@ -397,7 +578,12 @@ window.InstituteInfoAPI = (function() {
         
         // 데이터 조회
         getCurrentUserInstitute,
+        getCountryInfoByAddress,
         validateSafetyInfoUrl,
+        
+        // 국가 정보 관련 (NEW)
+        extractCountryFromAddress,
+        getSafetyInfoUrl,
         
         // 데이터 처리
         processInstituteData,
@@ -420,4 +606,4 @@ window.InstituteInfoAPI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('📡 InstituteInfoAPI 모듈 로드 완료 - v4.7.1 (희망 개설 강좌 독립 섹션 지원 및 최적화)');
+console.log('📡 InstituteInfoAPI 모듈 로드 완료 - v4.8.0 (국가 안전정보 조회 기능 추가)');
