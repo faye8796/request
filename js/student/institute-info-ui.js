@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.6.6
- * Description: 개선된 테이블/목록 형태 UI 렌더링 모듈
+ * Version: 4.6.7
+ * Description: Enhanced Table 지원 및 UI 개선
  */
 
 window.InstituteInfoUI = (function() {
@@ -32,7 +32,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.6.6');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.6.7');
             
             // DOM 요소 캐시
             cacheElements();
@@ -41,7 +41,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.6.6');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.6.7');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -285,6 +285,11 @@ window.InstituteInfoUI = (function() {
             const value = document.createElement('div');
             value.className = 'info-table-value';
             
+            // 긴 텍스트인 경우 특별 처리
+            if (item.isLongText) {
+                value.classList.add('text-break');
+            }
+            
             if (!item.value || item.value === '' || item.value === null || item.value === undefined) {
                 value.textContent = '정보 없음';
                 value.classList.add('empty');
@@ -388,7 +393,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * JSON 데이터 표시 생성
+     * JSON 데이터 표시 생성 (Enhanced 버전)
      */
     function createJsonDisplay(data, type = 'list') {
         try {
@@ -400,7 +405,9 @@ window.InstituteInfoUI = (function() {
             }
             
             if (Array.isArray(data)) {
-                if (type === 'table') {
+                if (type === 'enhanced-table') {
+                    return createEnhancedJsonTable(data);
+                } else if (type === 'table') {
                     return createJsonTable(data);
                 } else {
                     return createJsonList(data);
@@ -419,6 +426,83 @@ window.InstituteInfoUI = (function() {
             errorSpan.textContent = '데이터 표시 오류';
             errorSpan.className = 'empty';
             return errorSpan;
+        }
+    }
+    
+    /**
+     * Enhanced JSON 테이블 생성 (강좌 정보용)
+     */
+    function createEnhancedJsonTable(data) {
+        try {
+            const table = document.createElement('table');
+            table.className = 'json-table';
+            
+            if (data.length === 0) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.textContent = '강좌 정보 없음';
+                td.className = 'empty';
+                td.colSpan = 4;
+                td.style.textAlign = 'center';
+                td.style.padding = '2rem';
+                tr.appendChild(td);
+                table.appendChild(tr);
+                return table;
+            }
+            
+            // 헤더 생성
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            const headers = ['순번', '강좌명', '수준', '시간', '수강인원'];
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            // 바디 생성
+            const tbody = document.createElement('tbody');
+            data.forEach((item, index) => {
+                const row = document.createElement('tr');
+                
+                // 순번
+                const indexCell = document.createElement('td');
+                indexCell.textContent = index + 1;
+                row.appendChild(indexCell);
+                
+                // 강좌명
+                const nameCell = document.createElement('td');
+                nameCell.textContent = item.name || item.강좌명 || item.course || '미정';
+                row.appendChild(nameCell);
+                
+                // 수준
+                const levelCell = document.createElement('td');
+                levelCell.textContent = item.level || item.수준 || item.난이도 || '미정';
+                row.appendChild(levelCell);
+                
+                // 시간
+                const timeCell = document.createElement('td');
+                timeCell.textContent = item.time || item.시간 || item.duration || '미정';
+                row.appendChild(timeCell);
+                
+                // 수강인원
+                const participantsCell = document.createElement('td');
+                participantsCell.textContent = item.participants || item.수강인원 || item.인원 || '미정';
+                row.appendChild(participantsCell);
+                
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(tbody);
+            return table;
+            
+        } catch (error) {
+            console.error('❌ Enhanced JSON 테이블 생성 실패:', error);
+            return createJsonList(data);
         }
     }
     
@@ -496,7 +580,9 @@ window.InstituteInfoUI = (function() {
             data.forEach(item => {
                 const li = document.createElement('li');
                 if (typeof item === 'object') {
-                    li.textContent = JSON.stringify(item);
+                    // 객체인 경우 주요 정보만 표시
+                    const displayText = item.name || item.강좌명 || JSON.stringify(item);
+                    li.textContent = displayText;
                 } else {
                     li.textContent = String(item);
                 }
@@ -713,10 +799,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.6.6',
+            version: '4.6.7',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '개선된 테이블/목록 형태 학당 정보 UI 모듈'
+            description: 'Enhanced Table 지원 및 UI 개선된 학당 정보 UI 모듈'
         };
     }
     
@@ -756,4 +842,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.6.6 (개선된 테이블/목록 UI)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.6.7 (Enhanced Table 지원)');
