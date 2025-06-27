@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 핵심 로직 모듈
- * Version: 4.6.8
- * Description: 누락된 필드 표시 및 문화인턴 활동 정보 개선
+ * Version: 4.6.9
+ * Description: 문화인턴 활동 정보 및 교육 환경 정보 테이블 컬럼 개선
  */
 
 window.InstituteInfoCore = (function() {
@@ -20,7 +20,7 @@ window.InstituteInfoCore = (function() {
      */
     async function initialize() {
         try {
-            console.log('🧠 InstituteInfoCore 초기화 시작 v4.6.8');
+            console.log('🧠 InstituteInfoCore 초기화 시작 v4.6.9');
             
             // 의존성 모듈 확인
             if (!window.InstituteInfoAPI) {
@@ -44,7 +44,7 @@ window.InstituteInfoCore = (function() {
             await loadInstituteData();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoCore 초기화 완료 v4.6.8');
+            console.log('✅ InstituteInfoCore 초기화 완료 v4.6.9');
             
         } catch (error) {
             console.error('❌ InstituteInfoCore 초기화 실패:', error);
@@ -194,7 +194,7 @@ window.InstituteInfoCore = (function() {
                 }
             ];
             
-            // 문화인턴 활동 정보 구성 - PDF 구조에 맞게 개선
+            // 문화인턴 활동 정보 구성 - 수정된 컬럼 구조
             const activityInfo = [
                 {
                     icon: 'calendar',
@@ -212,7 +212,7 @@ window.InstituteInfoCore = (function() {
                     label: '희망 개설 강좌',
                     value: currentInstituteData.desired_courses,
                     isJsonData: true,
-                    jsonType: 'enhanced-table'  // PDF와 일치하는 테이블 형태
+                    jsonType: 'cultural-activity-table'  // 새로운 테이블 타입
                 }
             ];
             
@@ -224,7 +224,7 @@ window.InstituteInfoCore = (function() {
                     label: '교육 환경 정보',
                     value: currentInstituteData.education_environment,
                     isJsonData: true,
-                    jsonType: 'enhanced-table'
+                    jsonType: 'education-environment-table'  // 새로운 테이블 타입
                 });
             }
             
@@ -335,8 +335,43 @@ window.InstituteInfoCore = (function() {
             
             // 배열인 경우
             if (Array.isArray(data)) {
-                if (type === 'enhanced-table') {
-                    // PDF 구조에 맞는 테이블 형태로 변환
+                if (type === 'cultural-activity-table') {
+                    // 문화인턴 활동 정보 - 수정된 컬럼 구조
+                    return data.map((item) => {
+                        if (typeof item === 'object' && item !== null) {
+                            return {
+                                // 순번 삭제됨
+                                '문화 수업 주제': item.name || item.강좌명 || item.course || item['문화 수업 주제'] || '미정',
+                                '참가자 한국어 수준': item.level || item.수준 || item.난이도 || item['참가자 한국어 수준'] || '미정',
+                                '세부 일정': item.time || item.시간 || item.duration || item['세부 일정'] || '미정',
+                                '목표 수강인원': item.participants || item.수강인원 || item.인원 || item['목표 수강인원'] || '미정'
+                            };
+                        }
+                        return {
+                            '문화 수업 주제': String(item),
+                            '참가자 한국어 수준': '미정',
+                            '세부 일정': '미정',
+                            '목표 수강인원': '미정'
+                        };
+                    });
+                } else if (type === 'education-environment-table') {
+                    // 교육 환경 정보 - 새로운 컬럼 구조
+                    return data.map((item) => {
+                        if (typeof item === 'object' && item !== null) {
+                            return {
+                                '문화 수업 주제': item.subject || item.course || item['문화 수업 주제'] || item.name || '미정',
+                                '교육 장소': item.location || item.place || item['교육 장소'] || item.venue || '미정',
+                                '학당 교구 및 기자재': item.equipment || item.materials || item['학당 교구 및 기자재'] || item.facilities || '미정'
+                            };
+                        }
+                        return {
+                            '문화 수업 주제': String(item),
+                            '교육 장소': '미정',
+                            '학당 교구 및 기자재': '미정'
+                        };
+                    });
+                } else if (type === 'enhanced-table') {
+                    // 기존 Enhanced Table (호환성 유지)
                     return data.map((item, index) => {
                         if (typeof item === 'object' && item !== null) {
                             return {
@@ -370,9 +405,9 @@ window.InstituteInfoCore = (function() {
             
             // 객체인 경우
             if (typeof data === 'object' && data !== null) {
-                if (type === 'enhanced-table') {
-                    // 객체를 테이블 행으로 변환
-                    return [data];
+                if (type === 'cultural-activity-table' || type === 'education-environment-table') {
+                    // 객체를 배열로 변환 후 재처리
+                    return processJsonData([data], type);
                 } else if (type === 'table') {
                     // 테이블 형태로 표시할 경우
                     return Object.entries(data).map(([key, value]) => ({
@@ -502,12 +537,12 @@ window.InstituteInfoCore = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoCore',
-            version: '4.6.8',
+            version: '4.6.9',
             initialized: isInitialized,
             currentTab,
             hasData: !!currentInstituteData,
             eventListenersCount: eventListeners.size,
-            description: '누락된 필드 표시 및 문화인턴 활동 정보 개선된 학당 정보 핵심 로직 모듈'
+            description: '문화인턴 활동 정보 및 교육 환경 정보 테이블 컬럼이 개선된 학당 정보 핵심 로직 모듈'
         };
     }
     
@@ -540,4 +575,4 @@ window.InstituteInfoCore = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🧠 InstituteInfoCore 모듈 로드 완료 - v4.6.8 (누락된 필드 표시 및 개선)');
+console.log('🧠 InstituteInfoCore 모듈 로드 완료 - v4.6.9 (문화인턴 활동 정보 및 교육 환경 정보 개선)');
