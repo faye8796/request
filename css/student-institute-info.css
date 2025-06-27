@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 페이지 CSS
- * Version: 4.8.1
- * Description: 기본정보 세로 나열 UI 개선 및 안전정보 안내 메시지 추가
+ * Version: 4.8.2
+ * Description: 기본정보 가로 배치 복원 및 줄바꿈 처리 개선
  */
 
 /* ===== 전역 스타일 ===== */
@@ -186,7 +186,7 @@ body {
     stroke-width: 2;
 }
 
-/* ===== 기본정보 세로 나열 스타일 (NEW) ===== */
+/* ===== 기본정보 가로 배치 스타일 (RESTORED) ===== */
 .info-table {
     display: block;
     background: white;
@@ -197,10 +197,13 @@ body {
 }
 
 .info-table-row {
-    display: block;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
     padding: 1rem 0;
     border-bottom: 1px solid #f1f5f9;
     transition: all 0.2s ease;
+    min-height: fit-content;
 }
 
 .info-table-row:last-child {
@@ -227,7 +230,9 @@ body {
     font-weight: 600;
     color: #2d3748;
     font-size: 0.95rem;
-    margin-bottom: 0.5rem;
+    flex: 0 0 30%; /* 고정 너비 30% */
+    min-width: 120px;
+    padding-top: 0.1rem; /* 텍스트 정렬을 위한 미세 조정 */
 }
 
 .info-table-label i {
@@ -243,9 +248,10 @@ body {
     font-size: 1rem;
     line-height: 1.6;
     word-break: break-word;
-    padding-left: 1.5rem; /* 아이콘과 정렬 */
     overflow-wrap: break-word;
     hyphens: auto;
+    flex: 1; /* 나머지 공간 사용 */
+    white-space: pre-line; /* 줄바꿈 지원 추가 */
 }
 
 .info-table-value.empty {
@@ -304,6 +310,7 @@ body {
     font-size: 1rem;
     line-height: 1.6;
     padding-left: 2rem;
+    white-space: pre-line; /* 줄바꿈 지원 추가 */
 }
 
 .info-list-content.empty {
@@ -341,6 +348,7 @@ body {
     text-align: left;
     font-weight: 600;
     font-size: 0.9rem;
+    white-space: pre-line; /* 테이블 헤더 줄바꿈 지원 개선 */
 }
 
 .json-table tbody tr {
@@ -361,6 +369,7 @@ body {
     font-size: 0.9rem;
     color: #2d3748;
     vertical-align: top;
+    white-space: pre-line; /* 테이블 셀 줄바꿈 지원 개선 */
 }
 
 .json-table td:first-child {
@@ -368,6 +377,7 @@ body {
     color: #3182ce;
     text-align: center;
     width: 60px;
+    white-space: nowrap; /* 순번은 줄바꿈 없이 */
 }
 
 .json-list {
@@ -383,6 +393,7 @@ body {
     border-bottom: 1px solid #e2e8f0;
     color: #2d3748;
     font-size: 0.95rem;
+    white-space: pre-line; /* 목록 아이템 줄바꿈 지원 */
 }
 
 .json-list li:last-child {
@@ -401,10 +412,56 @@ body {
     font-style: italic;
     text-align: center;
     padding: 2rem;
+    white-space: normal; /* 빈 상태 메시지는 일반 줄바꿈 */
 }
 
 .json-list li.empty:before {
     display: none;
+}
+
+/* ===== 희망 개설 강좌 테이블 컬럼 너비 및 정렬 조정 ===== */
+.cultural-activity-table th:nth-child(1), /* 문화 수업 주제 */
+.cultural-activity-table td:nth-child(1) {
+    width: 30%; /* 3/10 비율 */
+    text-align: center; /* 가운데 정렬로 변경 */
+}
+
+.cultural-activity-table th:nth-child(2), /* 참가자 한국어 수준 */
+.cultural-activity-table td:nth-child(2) {
+    width: 10%; /* 1/10 비율 */
+    text-align: center;
+    white-space: pre-line; /* 줄바꿈 지원 */
+}
+
+.cultural-activity-table th:nth-child(3), /* 목표 수강인원 */
+.cultural-activity-table td:nth-child(3) {
+    width: 10%; /* 1/10 비율 */
+    text-align: center;
+}
+
+.cultural-activity-table th:nth-child(4), /* 세부 일정 */
+.cultural-activity-table td:nth-child(4) {
+    width: 50%; /* 5/10 비율 */
+    text-align: center;
+}
+
+/* 교육 환경 정보 테이블 - 모든 데이터 가운데 정렬 */
+.education-environment-table th:nth-child(1), /* 문화 수업 주제 */
+.education-environment-table td:nth-child(1) {
+    width: 35%;
+    text-align: center; /* 가운데 정렬 적용 */
+}
+
+.education-environment-table th:nth-child(2), /* 교육 장소 */
+.education-environment-table td:nth-child(2) {
+    width: 25%;
+    text-align: center;
+}
+
+.education-environment-table th:nth-child(3), /* 학당 교구 및 기자재 */
+.education-environment-table td:nth-child(3) {
+    width: 40%;
+    text-align: center; /* 가운데 정렬 적용 */
 }
 
 /* ===== 안전정보 탭 ===== */
@@ -1000,6 +1057,8 @@ body {
     }
     
     .info-table-row {
+        flex-direction: column;
+        gap: 0.5rem;
         padding: 0.75rem 0;
     }
     
@@ -1009,9 +1068,15 @@ body {
         padding-right: 1rem;
     }
     
+    .info-table-label {
+        flex: none;
+        min-width: auto;
+        margin-bottom: 0.25rem;
+    }
+    
     .info-table-value {
-        padding-left: 1.25rem;
         font-size: 0.95rem;
+        padding-left: 1.5rem; /* 아이콘과 정렬 유지 */
     }
     
     /* JSON 테이블 반응형 */
@@ -1266,4 +1331,9 @@ body {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+}
+
+/* ===== 줄바꿈 처리를 위한 CSS 백업 옵션 ===== */
+.newline-text {
+    white-space: pre-line;
 }
