@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.6.9
- * Description: 문화인턴 활동 정보 및 교육 환경 정보 테이블 구조 개선
+ * Version: 4.7.0
+ * Description: 빈 라벨 처리 및 테이블 컬럼 너비 개선
  */
 
 window.InstituteInfoUI = (function() {
@@ -32,7 +32,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.6.9');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.7.0');
             
             // DOM 요소 캐시
             cacheElements();
@@ -41,7 +41,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.6.9');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.7.0');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -266,7 +266,17 @@ window.InstituteInfoUI = (function() {
      */
     function createTableRow(item) {
         try {
-            if (!item || !item.label) {
+            if (!item) {
+                return null;
+            }
+            
+            // 빈 라벨이면서 JSON 데이터인 경우 직접 테이블 반환
+            if ((!item.label || item.label === '') && item.isJsonData && item.isDirectTable) {
+                return createJsonDisplay(item.value, item.jsonType);
+            }
+            
+            // 라벨이 없으면 건너뛰기
+            if (!item.label) {
                 return null;
             }
             
@@ -441,7 +451,7 @@ window.InstituteInfoUI = (function() {
             console.log('🎯 문화인턴 활동 정보 테이블 생성 중...', data);
             
             const table = document.createElement('table');
-            table.className = 'json-table enhanced-table';
+            table.className = 'json-table enhanced-table cultural-activity-table';
             
             if (!data || data.length === 0) {
                 const tr = document.createElement('tr');
@@ -524,7 +534,7 @@ window.InstituteInfoUI = (function() {
             console.log('🏫 교육 환경 정보 테이블 생성 중...', data);
             
             const table = document.createElement('table');
-            table.className = 'json-table enhanced-table';
+            table.className = 'json-table enhanced-table education-environment-table';
             
             if (!data || data.length === 0) {
                 const tr = document.createElement('tr');
@@ -558,22 +568,22 @@ window.InstituteInfoUI = (function() {
             data.forEach((item) => {
                 const row = document.createElement('tr');
                 
-                // 문화 수업 주제
+                // 문화 수업 주제 - topic 필드 우선 매핑
                 const subjectCell = document.createElement('td');
-                const subject = item['문화 수업 주제'] || item.subject || item.course || item.name || '미정';
+                const subject = item.topic || item['문화 수업 주제'] || item.subject || item.course || item.name || '미정';
                 subjectCell.textContent = subject;
                 row.appendChild(subjectCell);
                 
                 // 교육 장소
                 const locationCell = document.createElement('td');
-                const location = item['교육 장소'] || item.location || item.place || item.venue || '미정';
+                const location = item.location || item['교육 장소'] || item.place || item.venue || '미정';
                 locationCell.textContent = location;
                 locationCell.style.textAlign = 'center';
                 row.appendChild(locationCell);
                 
                 // 학당 교구 및 기자재
                 const equipmentCell = document.createElement('td');
-                const equipment = item['학당 교구 및 기자재'] || item.equipment || item.materials || item.facilities || '미정';
+                const equipment = item.equipment || item['학당 교구 및 기자재'] || item.materials || item.facilities || '미정';
                 equipmentCell.textContent = equipment;
                 row.appendChild(equipmentCell);
                 
@@ -973,10 +983,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.6.9',
+            version: '4.7.0',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '문화인턴 활동 정보 및 교육 환경 정보 테이블 구조가 개선된 학당 정보 UI 모듈'
+            description: '빈 라벨 처리 및 테이블 컬럼 너비가 개선된 학당 정보 UI 모듈'
         };
     }
     
@@ -1016,4 +1026,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.6.9 (문화인턴 활동 정보 및 교육 환경 정보 테이블 개선)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.7.0 (빈 라벨 처리 및 테이블 개선)');
