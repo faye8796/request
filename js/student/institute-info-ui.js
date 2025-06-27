@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.6.7
- * Description: Enhanced Table 지원 및 UI 개선
+ * Version: 4.6.8
+ * Description: PDF 구조와 일치하는 Enhanced Table 개선
  */
 
 window.InstituteInfoUI = (function() {
@@ -32,7 +32,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.6.7');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.6.8');
             
             // DOM 요소 캐시
             cacheElements();
@@ -41,7 +41,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.6.7');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.6.8');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -293,7 +293,7 @@ window.InstituteInfoUI = (function() {
             if (!item.value || item.value === '' || item.value === null || item.value === undefined) {
                 value.textContent = '정보 없음';
                 value.classList.add('empty');
-            } else if (item.isLink && item.value) {
+            } else if (item.isLink && item.value && item.value !== '정보 없음') {
                 // 링크 처리
                 value.innerHTML = `<a href="${item.value}" target="_blank" rel="noopener noreferrer">${item.value}</a>`;
             } else if (item.isJsonData && typeof item.value === 'object') {
@@ -370,7 +370,7 @@ window.InstituteInfoUI = (function() {
             if (!item.value || item.value === '' || item.value === null || item.value === undefined) {
                 content.textContent = '정보 없음';
                 content.classList.add('empty');
-            } else if (item.isLink && item.value) {
+            } else if (item.isLink && item.value && item.value !== '정보 없음') {
                 // 링크 처리
                 content.innerHTML = `<a href="${item.value}" target="_blank" rel="noopener noreferrer">${item.value}</a>`;
             } else if (item.isJsonData && typeof item.value === 'object') {
@@ -430,19 +430,21 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * Enhanced JSON 테이블 생성 (강좌 정보용)
+     * Enhanced JSON 테이블 생성 (PDF 구조와 정확히 일치)
      */
     function createEnhancedJsonTable(data) {
         try {
-            const table = document.createElement('table');
-            table.className = 'json-table';
+            console.log('📊 Enhanced JSON 테이블 생성 중...', data);
             
-            if (data.length === 0) {
+            const table = document.createElement('table');
+            table.className = 'json-table enhanced-table';
+            
+            if (!data || data.length === 0) {
                 const tr = document.createElement('tr');
                 const td = document.createElement('td');
                 td.textContent = '강좌 정보 없음';
                 td.className = 'empty';
-                td.colSpan = 4;
+                td.colSpan = 5;
                 td.style.textAlign = 'center';
                 td.style.padding = '2rem';
                 tr.appendChild(td);
@@ -450,7 +452,7 @@ window.InstituteInfoUI = (function() {
                 return table;
             }
             
-            // 헤더 생성
+            // 헤더 생성 (PDF와 정확히 일치)
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
             
@@ -472,32 +474,42 @@ window.InstituteInfoUI = (function() {
                 // 순번
                 const indexCell = document.createElement('td');
                 indexCell.textContent = index + 1;
+                indexCell.style.textAlign = 'center';
                 row.appendChild(indexCell);
                 
-                // 강좌명
+                // 강좌명 - 다양한 필드명 지원
                 const nameCell = document.createElement('td');
-                nameCell.textContent = item.name || item.강좌명 || item.course || '미정';
+                const courseName = item.강좌명 || item.name || item.course || item.subject || '미정';
+                nameCell.textContent = courseName;
                 row.appendChild(nameCell);
                 
-                // 수준
+                // 수준 - 다양한 필드명 지원
                 const levelCell = document.createElement('td');
-                levelCell.textContent = item.level || item.수준 || item.난이도 || '미정';
+                const level = item.수준 || item.level || item.난이도 || item.difficulty || '미정';
+                levelCell.textContent = level;
+                levelCell.style.textAlign = 'center';
                 row.appendChild(levelCell);
                 
-                // 시간
+                // 시간 - 다양한 필드명 지원
                 const timeCell = document.createElement('td');
-                timeCell.textContent = item.time || item.시간 || item.duration || '미정';
+                const time = item.시간 || item.time || item.duration || item.schedule || '미정';
+                timeCell.textContent = time;
+                timeCell.style.textAlign = 'center';
                 row.appendChild(timeCell);
                 
-                // 수강인원
+                // 수강인원 - 다양한 필드명 지원
                 const participantsCell = document.createElement('td');
-                participantsCell.textContent = item.participants || item.수강인원 || item.인원 || '미정';
+                const participants = item.수강인원 || item.participants || item.인원 || item.capacity || '미정';
+                participantsCell.textContent = participants;
+                participantsCell.style.textAlign = 'center';
                 row.appendChild(participantsCell);
                 
                 tbody.appendChild(row);
             });
             
             table.appendChild(tbody);
+            
+            console.log('✅ Enhanced JSON 테이블 생성 완료');
             return table;
             
         } catch (error) {
@@ -799,10 +811,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.6.7',
+            version: '4.6.8',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: 'Enhanced Table 지원 및 UI 개선된 학당 정보 UI 모듈'
+            description: 'PDF 구조와 일치하는 Enhanced Table 개선된 학당 정보 UI 모듈'
         };
     }
     
@@ -842,4 +854,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.6.7 (Enhanced Table 지원)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.6.8 (PDF 구조 완전 일치)');
