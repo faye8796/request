@@ -6,9 +6,9 @@
     <title>파견 학당 정보 - 세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.7.3">
-    <link rel="stylesheet" href="../css/student.css?v=4.7.3">
-    <link rel="stylesheet" href="../css/student-institute-info.css?v=4.7.3">
+    <link rel="stylesheet" href="../css/main.css?v=4.7.4">
+    <link rel="stylesheet" href="../css/student.css?v=4.7.4">
+    <link rel="stylesheet" href="../css/student-institute-info.css?v=4.7.4">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -245,7 +245,7 @@
             text-align: left;
         }
 
-        /* 줄바꿈 처리를 위한 CSS 백업 옵션 - v4.7.3 */
+        /* 줄바꿈 처리를 위한 CSS 백업 옵션 - v4.7.4 */
         .newline-text {
             white-space: pre-line;
         }
@@ -416,25 +416,25 @@
 
     <!-- JavaScript Files -->
     <!-- 기본 설정 모듈 -->
-    <script src="../js/config.js?v=4.7.3"></script>
-    <script src="../js/auth.js?v=4.7.3"></script>
-    <script src="../js/utils.js?v=4.7.3"></script>
+    <script src="../js/config.js?v=4.7.4"></script>
+    <script src="../js/auth.js?v=4.7.4"></script>
+    <script src="../js/utils.js?v=4.7.4"></script>
     
     <!-- Supabase 모듈들 -->
-    <script src="../js/supabase/supabase-core.js?v=4.7.3"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.7.3"></script>
-    <script src="../js/supabase-client.js?v=4.7.3"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.7.4"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.7.4"></script>
+    <script src="../js/supabase-client.js?v=4.7.4"></script>
     
     <!-- 학당 정보 전용 모듈들 -->
-    <script src="../js/student/institute-info-api.js?v=4.7.3"></script>
-    <script src="../js/student/institute-info-core.js?v=4.7.3"></script>
-    <script src="../js/student/institute-info-ui.js?v=4.7.3"></script>
+    <script src="../js/student/institute-info-api.js?v=4.7.4"></script>
+    <script src="../js/student/institute-info-core.js?v=4.7.4"></script>
+    <script src="../js/student/institute-info-ui.js?v=4.7.4"></script>
 
     <!-- 페이지 초기화 스크립트 -->
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                console.log('🏛️ 학당 정보 페이지 초기화 시작 v4.7.3');
+                console.log('🏛️ 학당 정보 페이지 초기화 시작 v4.7.4');
                 
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
@@ -454,7 +454,7 @@
                     throw new Error('InstituteInfoCore 모듈을 찾을 수 없습니다');
                 }
                 
-                console.log('✅ 학당 정보 페이지 초기화 완료 v4.7.3 - 줄바꿈 처리 개선');
+                console.log('✅ 학당 정보 페이지 초기화 완료 v4.7.4 - 파견 국가 안전 정보 기능 개선');
                 
             } catch (error) {
                 console.error('❌ 초기화 실패:', error);
@@ -516,7 +516,7 @@
             }
         }
 
-        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.7.3 - 데이터베이스 줄바꿈(\\n) 처리 개선');
+        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.7.4 - 파견 국가 안전 정보 기능 개선 (앱 다운로드 UI 추가)');
     </script>
 </body>
 </html>
