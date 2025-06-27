@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.7.5
- * Description: 파견 국가 안전 정보 기능 수정 - Core 모듈 데이터 접근 방식 개선
+ * Version: 4.7.6
+ * Description: 안전정보 iframe 로딩 안정성 개선 - 타임아웃 연장 및 에러 처리 강화
  */
 
 window.InstituteInfoUI = (function() {
@@ -79,7 +79,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.7.5');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.7.6');
             
             // DOM 요소 캐시
             cacheElements();
@@ -88,7 +88,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.7.5');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.7.6');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -1034,21 +1034,23 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 안전정보 탭 활성화 처리 (데이터 연동 수정)
+     * 안전정보 탭 활성화 처리 (안정성 개선)
      */
     function handleSafetyTabActivation() {
         try {
             console.log('🛡️ 안전정보 탭 활성화됨');
             
-            // InstituteInfoCore에서 현재 학당 데이터 가져오기 (수정됨)
+            // InstituteInfoCore에서 현재 학당 데이터 가져오기
             if (window.InstituteInfoCore && window.InstituteInfoCore.currentData) {
                 const instituteData = window.InstituteInfoCore.currentData;
+                console.log('🔍 현재 학당 데이터:', instituteData);
                 
                 if (instituteData && instituteData.safety_info_url) {
                     const safetyUrl = instituteData.safety_info_url.trim();
+                    console.log('🔗 안전정보 URL 확인:', safetyUrl);
                     
                     if (safetyUrl && safetyUrl !== '' && safetyUrl !== 'null' && safetyUrl !== 'undefined') {
-                        console.log(`🔗 안전정보 URL 발견: ${safetyUrl}`);
+                        console.log(`✅ 유효한 안전정보 URL 발견: ${safetyUrl}`);
                         showSafetyIframe(safetyUrl);
                     } else {
                         console.log('📋 안전정보 URL이 비어있음');
@@ -1070,7 +1072,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 안전정보 iframe 표시 (앱 다운로드 UI 추가)
+     * 안전정보 iframe 표시 (안정성 개선)
      */
     function showSafetyIframe(url) {
         try {
@@ -1079,6 +1081,8 @@ window.InstituteInfoUI = (function() {
                 showSafetyUnavailable();
                 return;
             }
+
+            console.log(`🛡️ 안전정보 iframe 생성 시작: ${url}`);
 
             // 앱 다운로드 UI + iframe 컨테이너 생성
             elements.safetyInfoContent.innerHTML = `
@@ -1117,7 +1121,7 @@ window.InstituteInfoUI = (function() {
                 <div class="safety-loading">
                     <div class="loading-content">
                         <div class="spinner"></div>
-                        <p>안전정보를 불러오는 중...</p>
+                        <p>안전정보를 불러오는 중... (최대 30초 소요)</p>
                     </div>
                 </div>
 
@@ -1134,10 +1138,16 @@ window.InstituteInfoUI = (function() {
             iframe.title = '파견 국가 안전 정보';
             iframe.frameBorder = '0';
             iframe.loading = 'lazy';
-            iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-forms';
+            iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation';
             
-            // iframe 로드 이벤트
+            // 로딩 상태 추적
+            let isLoaded = false;
+            
+            // iframe 로드 성공 이벤트
             iframe.onload = () => {
+                if (isLoaded) return; // 중복 호출 방지
+                isLoaded = true;
+                
                 const loadingElement = elements.safetyInfoContent.querySelector('.safety-loading');
                 const iframeContainer = elements.safetyInfoContent.querySelector('.safety-iframe-container');
                 
@@ -1150,20 +1160,28 @@ window.InstituteInfoUI = (function() {
                 console.log('✅ 안전정보 iframe 로드 완료');
             };
 
+            // iframe 로드 실패 이벤트
             iframe.onerror = () => {
-                handleIframeError('안전정보 페이지를 불러올 수 없습니다');
+                if (isLoaded) return; // 중복 호출 방지
+                isLoaded = true;
+                handleIframeError('안전정보 페이지에 접근할 수 없습니다');
             };
 
-            // 타임아웃 설정 (15초)
-            setTimeout(() => {
-                const loadingElement = elements.safetyInfoContent.querySelector('.safety-loading');
-                if (loadingElement && loadingElement.style.display !== 'none') {
-                    handleIframeError('안전정보 로딩 시간이 초과되었습니다');
+            // 타임아웃 설정 (30초로 연장)
+            const timeoutId = setTimeout(() => {
+                if (!isLoaded) {
+                    isLoaded = true;
+                    handleIframeError('안전정보 로딩 시간이 초과되었습니다 (30초)');
                 }
-            }, 15000);
+            }, 30000); // 15초 → 30초로 연장
+
+            // 성공적으로 로드되면 타임아웃 취소
+            iframe.addEventListener('load', () => {
+                clearTimeout(timeoutId);
+            });
 
             initializeLucideIcons();
-            console.log(`🛡️ 안전정보 iframe 생성: ${url}`);
+            console.log(`🛡️ 안전정보 iframe 설정 완료: ${url}`);
 
         } catch (error) {
             console.error('❌ 안전정보 iframe 표시 실패:', error);
@@ -1172,10 +1190,12 @@ window.InstituteInfoUI = (function() {
     }
 
     /**
-     * iframe 에러 처리 함수 (새로 추가)
+     * iframe 에러 처리 함수 (개선됨)
      */
     function handleIframeError(message) {
         try {
+            console.error(`❌ iframe 에러 발생: ${message}`);
+            
             const loadingElement = elements.safetyInfoContent.querySelector('.safety-loading');
             const iframeContainer = elements.safetyInfoContent.querySelector('.safety-iframe-container');
             
@@ -1193,6 +1213,10 @@ window.InstituteInfoUI = (function() {
                                 <i data-lucide="external-link"></i>
                                 외교부 해외안전여행 사이트에서 확인하기
                             </button>
+                            <button type="button" onclick="location.reload()" class="external-link-btn" style="background: #6b7280;">
+                                <i data-lucide="refresh-cw"></i>
+                                페이지 새로고침
+                            </button>
                         </div>
                     </div>
                 `;
@@ -1200,7 +1224,6 @@ window.InstituteInfoUI = (function() {
             }
             
             initializeLucideIcons();
-            console.error(`❌ iframe 에러: ${message}`);
             
         } catch (error) {
             console.error('❌ iframe 에러 처리 실패:', error);
@@ -1319,10 +1342,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.7.5',
+            version: '4.7.6',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '파견 국가 안전 정보 기능 수정 - Core 모듈 데이터 접근 방식 개선'
+            description: '안전정보 iframe 로딩 안정성 개선 - 타임아웃 연장 및 에러 처리 강화'
         };
     }
     
@@ -1349,7 +1372,7 @@ window.InstituteInfoUI = (function() {
         showSafetyIframe,
         showSafetyError,
         showSafetyUnavailable,
-        handleIframeError,  // 새로 추가된 공개 함수
+        handleIframeError,  // 개선된 공개 함수
         
         // 유틸리티
         addAnimation,
@@ -1365,4 +1388,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.7.5 (파견 국가 안전 정보 기능 수정 - Core 모듈 데이터 접근 방식 개선)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.7.6 (안전정보 iframe 로딩 안정성 개선 - 타임아웃 연장 및 에러 처리 강화)');
