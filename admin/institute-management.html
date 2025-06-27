@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>파견학당 정보 관리 - 세종학당 문화인턴 지원 시스템 (v4.7.7)</title>
+    <title>파견학당 정보 관리 - 세종학당 문화인턴 지원 시스템 (v4.7.3)</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.7.7">
-    <link rel="stylesheet" href="../css/institute.css?v=4.7.7">
+    <link rel="stylesheet" href="../css/main.css?v=4.7.3">
+    <link rel="stylesheet" href="../css/institute.css?v=4.7.3">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -21,11 +21,11 @@
         <div class="institute-header">
             <div class="institute-header-content">
                 <div class="institute-header-title">
-                    <h1>파견학당 정보 관리 (v4.7.7)</h1>
+                    <h1>파견학당 정보 관리 (v4.7.3)</h1>
                     <p>세종학당의 18개 필드 정보를 체계적으로 관리하고 문화인턴 배정 현황을 확인할 수 있습니다.</p>
                     <div class="alert alert-success">
                         <i data-lucide="check-circle"></i>
-                        <strong>v4.7.7 수정!</strong> 대표 연락처 필드에서 이메일과 전화번호 모두 입력 가능하도록 개선했습니다.
+                        <strong>v4.7.3 수정!</strong> 이메일 주소 언더스코어 문제 해결: wang_xl0628@hanmail.net 등의 이메일 주소가 정상적으로 입력됩니다.
                     </div>
                 </div>
                 <button class="institute-btn institute-btn-secondary" onclick="goBackToDashboard()">
@@ -240,7 +240,7 @@
                             <div class="institute-form-group">
                                 <label class="institute-form-label" for="edit-phone">대표 연락처</label>
                                 <input type="text" class="institute-form-input" id="edit-phone" name="phone">
-                                <div class="institute-form-help">학당의 대표 전화번호 또는 이메일</div>
+                                <div class="institute-form-help">학당의 대표 전화번호 또는 이메일 (wang_xl0628@hanmail.net 형식 지원)</div>
                                 <div class="institute-form-error" id="error-phone" style="display: none;"></div>
                             </div>
                             <div class="institute-form-group">
@@ -278,7 +278,7 @@
                             <div class="institute-form-group">
                                 <label class="institute-form-label" for="edit-local-coordinator-contact">현지 적응 전담 인력 연락처</label>
                                 <input type="text" class="institute-form-input" id="edit-local-coordinator-contact" name="local_coordinator_phone">
-                                <div class="institute-form-help">현지 적응 전담 인력의 전화번호 또는 이메일</div>
+                                <div class="institute-form-help">현지 적응 전담 인력의 전화번호 또는 이메일 (언더스코어 지원)</div>
                                 <div class="institute-form-error" id="error-local-coordinator-contact" style="display: none;"></div>
                             </div>
                         </div>
@@ -442,29 +442,29 @@
 
     <!-- JavaScript Files -->
     <!-- 1. 기본 설정 모듈 (의존성 순서 중요!) -->
-    <script src="../js/config.js?v=4.7.7"></script>
-    <script src="../js/auth.js?v=4.7.7"></script>
-    <script src="../js/utils.js?v=4.7.7"></script>
+    <script src="../js/config.js?v=4.7.3"></script>
+    <script src="../js/auth.js?v=4.7.3"></script>
+    <script src="../js/utils.js?v=4.7.3"></script>
     
     <!-- 2. Supabase 모듈들 -->
-    <script src="../js/supabase/supabase-core.js?v=4.7.7"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.7.7"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.7.7"></script>
-    <script src="../js/supabase-client.js?v=4.7.7"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.7.3"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.7.3"></script>
+    <script src="../js/supabase/supabase-admin.js?v=4.7.3"></script>
+    <script src="../js/supabase-client.js?v=4.7.3"></script>
 
     <!-- 3. Institute 전용 모듈들 -->
-    <script src="../js/institute/institute-utils.js?v=4.7.7"></script>
-    <script src="../js/institute/institute-validation.js?v=4.7.7"></script>
-    <script src="../js/institute/institute-api.js?v=4.7.7"></script>
-    <script src="../js/institute/institute-core.js?v=4.7.7"></script>
-    <script src="../js/institute/institute-ui.js?v=4.7.7"></script>
+    <script src="../js/institute/institute-utils.js?v=4.7.3"></script>
+    <script src="../js/institute/institute-validation.js?v=4.7.3"></script>
+    <script src="../js/institute/institute-api.js?v=4.7.3"></script>
+    <script src="../js/institute/institute-core.js?v=4.7.3"></script>
+    <script src="../js/institute/institute-ui.js?v=4.7.3"></script>
 
     <script>
-        // 🏛️ 파견학당 정보 관리 시스템 (v4.7.7) - HTML 실시간 검증 로직 수정
-        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.7 초기화 - phone 필드 이메일/전화번호 모두 허용');
+        // 🏛️ 파견학당 정보 관리 시스템 (v4.7.3) - 이메일 언더스코어 문제 해결
+        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.3 초기화 - 이메일 언더스코어 문제 해결');
 
         /**
-         * 🔧 통합 매니저 클래스 (v4.7.7)
+         * 🔧 통합 매니저 클래스 (v4.7.3)
          */
         class InstituteManagerD {
             constructor() {
@@ -485,7 +485,7 @@
                 if (this.isInitialized) return;
 
                 try {
-                    console.log('🔄 v4.7.7 시스템 초기화 시작 - phone 필드 이메일/전화번호 모두 허용');
+                    console.log('🔄 v4.7.3 시스템 초기화 시작 - 이메일 언더스코어 문제 해결');
                     
                     // Lucide 아이콘 초기화
                     if (typeof lucide !== 'undefined') {
@@ -523,10 +523,10 @@
                     await this.loadInitialData();
 
                     this.isInitialized = true;
-                    console.log('✅ v4.7.7 시스템 초기화 완료 - phone 필드 이메일/전화번호 모두 허용됨');
+                    console.log('✅ v4.7.3 시스템 초기화 완료 - 이메일 언더스코어 문제 해결됨');
 
                 } catch (error) {
-                    console.error('❌ v4.7.7 시스템 초기화 실패:', error);
+                    console.error('❌ v4.7.3 시스템 초기화 실패:', error);
                     this.showError(`시스템 초기화에 실패했습니다: ${error.message}`);
                     this.showErrorState(error.message);
                 }
@@ -565,7 +565,7 @@
                 while (Date.now() - startTime < timeout) {
                     const allLoaded = requiredModules.every(name => window[name]);
                     if (allLoaded) {
-                        console.log('✅ 모든 필수 모듈 로드 완료 (v4.7.7)');
+                        console.log('✅ 모든 필수 모듈 로드 완료 (v4.7.3)');
                         return;
                     }
                     await new Promise(resolve => setTimeout(resolve, 100));
@@ -579,7 +579,7 @@
              * 🔧 모듈 초기화
              */
             async initializeModules() {
-                console.log('🔄 모듈 초기화 중... (v4.7.7 phone 필드 이메일/전화번호 검증 개선 포함)');
+                console.log('🔄 모듈 초기화 중... (v4.7.3 이메일 언더스코어 문제 해결 포함)');
 
                 const modules = [
                     'InstituteUtils',
@@ -599,11 +599,11 @@
                     }
                 }
 
-                console.log('✅ 모든 모듈 초기화 완료 (v4.7.7)');
+                console.log('✅ 모든 모듈 초기화 완료 (v4.7.3)');
             }
 
             /**
-             * 📡 이벤트 리스너 설정 (v4.7.7)
+             * 📡 이벤트 리스너 설정 (v4.7.3)
              */
             setupEventListeners() {
                 // 검색 기능
@@ -630,7 +630,7 @@
                 // 리스트 이벤트 위임
                 document.getElementById('institute-table-body')?.addEventListener('click', this.handleTableClick.bind(this));
 
-                console.log('📡 이벤트 리스너 설정 완료 (v4.7.7)');
+                console.log('📡 이벤트 리스너 설정 완료 (v4.7.3)');
             }
 
             /**
@@ -691,15 +691,15 @@
             }
 
             /**
-             * 📊 초기 데이터 로드 (v4.7.7)
+             * 📊 초기 데이터 로드 (v4.7.3)
              */
             async loadInitialData() {
                 try {
                     this.showLoading(true);
                     
-                    console.log('📊 초기 데이터 로드 시작 (v4.7.7)...');
+                    console.log('📊 초기 데이터 로드 시작 (v4.7.3)...');
                     
-                    // v4.7.7: InstituteAPI.getInstituteCardData() 사용
+                    // v4.7.3: InstituteAPI.getInstituteCardData() 사용
                     const institutes = await window.InstituteAPI.getInstituteCardData();
                     console.log(`📋 ${institutes.length}개 학당 로드됨 (완성도 퍼센트 포함)`);
                     
@@ -714,7 +714,7 @@
                     this.updateStatistics(institutes);
                     
                     this.showLoading(false);
-                    console.log('✅ 초기 데이터 로드 완료 (v4.7.7)');
+                    console.log('✅ 초기 데이터 로드 완료 (v4.7.3)');
                     
                 } catch (error) {
                     console.error('❌ 초기 데이터 로드 실패:', error);
@@ -724,7 +724,7 @@
             }
 
             /**
-             * 📄 리스트 뷰 렌더링 (v4.7.7)
+             * 📄 리스트 뷰 렌더링 (v4.7.3)
              */
             renderListView(institutes) {
                 const list = document.getElementById('institute-list');
@@ -739,10 +739,10 @@
             }
 
             /**
-             * 📋 학당 행 생성 (v4.7.7)
+             * 📋 학당 행 생성 (v4.7.3)
              */
             createInstituteRowWithDBCompletion(institute) {
-                // v4.7.7: DB의 completion_percentage와 status_text 사용
+                // v4.7.3: DB의 completion_percentage와 status_text 사용
                 const completionPercentage = institute.completion_percentage || 0;
                 const statusText = institute.status_text || this.getStatusFromAPI(completionPercentage);
                 const statusClass = this.getStatusClass(completionPercentage);
@@ -783,7 +783,7 @@
             }
 
             /**
-             * 🎨 완성도 퍼센트에 따른 상태 클래스 (v4.7.7)
+             * 🎨 완성도 퍼센트에 따른 상태 클래스 (v4.7.3)
              */
             getStatusClass(percentage) {
                 if (percentage >= 100) return 'complete';
@@ -794,7 +794,7 @@
             }
 
             /**
-             * 📊 API 기반 상태 텍스트 가져오기 (v4.7.7)
+             * 📊 API 기반 상태 텍스트 가져오기 (v4.7.3)
              */
             getStatusFromAPI(percentage) {
                 // InstituteAPI의 getCompletionStatusText 함수 활용
@@ -869,7 +869,7 @@
             }
 
             /**
-             * ✏️ 학당 정보 수정 (v4.7.7)
+             * ✏️ 학당 정보 수정 (v4.7.3)
              */
             async editInstitute(instituteId) {
                 try {
@@ -902,7 +902,7 @@
             }
 
             /**
-             * 🧹 편집 폼 완전 초기화 (v4.7.7)
+             * 🧹 편집 폼 완전 초기화 (v4.7.3)
              */
             clearEditForm() {
                 console.log('🧹 편집 폼 완전 초기화 시작...');
@@ -955,10 +955,10 @@
             }
 
             /**
-             * 📝 수정 폼 데이터 채우기 (v4.7.7)
+             * 📝 수정 폼 데이터 채우기 (v4.7.3)
              */
             populateEditForm(institute) {
-                console.log('📝 수정 폼 데이터 채우기 시작 (v4.7.7)...');
+                console.log('📝 수정 폼 데이터 채우기 시작 (v4.7.3)...');
                 
                 // 표준 필드 매핑 (파견 희망 기간 추가)
                 const fieldMappings = {
@@ -983,7 +983,7 @@
                 for (const [dbField, elementId] of Object.entries(fieldMappings)) {
                     const element = document.getElementById(elementId);
                     if (element) {
-                        // v4.7.7 개선: 빈 값이나 null도 빈 문자열로 설정
+                        // v4.7.3 개선: 빈 값이나 null도 빈 문자열로 설정
                         const value = institute[dbField] || '';
                         element.value = value;
                         
@@ -1018,7 +1018,7 @@
                 // 담당자와 동일 체크박스 상태 확인
                 this.checkCoordinatorSameAsManager();
                 
-                console.log('✅ 수정 폼 데이터 채우기 완료 (v4.7.7)');
+                console.log('✅ 수정 폼 데이터 채우기 완료 (v4.7.3)');
             }
 
             /**
@@ -1042,7 +1042,7 @@
             }
 
             /**
-             * 💾 학당 정보 저장 (v4.7.7 - "담당자와 동일" 체크박스 저장 문제 해결)
+             * 💾 학당 정보 저장 (v4.7.3 - "담당자와 동일" 체크박스 저장 문제 해결)
              */
             async saveInstituteData() {
                 if (!this.currentInstitute) return;
@@ -1066,7 +1066,7 @@
                         }
                     }
 
-                    // 🔧 v4.7.7 수정: "담당자와 동일" 체크박스 처리
+                    // 🔧 v4.7.3 수정: "담당자와 동일" 체크박스 처리
                     const checkbox = document.getElementById('coordinator-same-as-manager');
                     if (checkbox && checkbox.checked) {
                         // 체크박스가 체크되어 있으면 disabled된 필드의 값을 수동으로 추가
@@ -1105,7 +1105,7 @@
                         updateData.education_environment = educationEnvironmentData;
                     }
 
-                    console.log('💾 저장할 데이터 (v4.7.7 phone 필드 이메일/전화번호 모두 허용):', updateData);
+                    console.log('💾 저장할 데이터 (v4.7.3 이메일 언더스코어 문제 해결):', updateData);
 
                     // 데이터 업데이트
                     const success = await window.InstituteCore.updateInstituteInfo(this.currentInstitute.id, updateData);
@@ -1166,7 +1166,7 @@
             }
 
             /**
-             * 🔍 검색 처리 (v4.7.7)
+             * 🔍 검색 처리 (v4.7.3)
              */
             async handleSearch() {
                 const keyword = document.getElementById('institute-search')?.value?.trim();
@@ -1176,10 +1176,10 @@
                     let results;
                     
                     if (!keyword) {
-                        // v4.7.7: 전체 목록 로드 시에도 DB 완성도 정보 포함
+                        // v4.7.3: 전체 목록 로드 시에도 DB 완성도 정보 포함
                         results = await window.InstituteAPI.getInstituteCardData();
                     } else {
-                        // v4.7.7: 검색 시에도 DB 완성도 정보 포함
+                        // v4.7.3: 검색 시에도 DB 완성도 정보 포함
                         results = await window.InstituteAPI.getInstituteCardData({ search: keyword });
                     }
                     
@@ -1195,7 +1195,7 @@
             }
 
             /**
-             * 🔄 데이터 새로고침 (v4.7.7)
+             * 🔄 데이터 새로고침 (v4.7.3)
              */
             async refreshData() {
                 console.log('🔄 데이터 새로고침...');
@@ -1357,7 +1357,7 @@
                 return validEnvironments.length > 0 ? JSON.stringify(validEnvironments) : null;
             }
 
-            // === 실시간 검증 시스템 (v4.7.7 - 이메일/전화번호 모두 허용) ===
+            // === 실시간 검증 시스템 (v4.7.3 - 이메일 언더스코어 지원) ===
             initializeRealTimeValidation() {
                 const form = document.getElementById('institute-edit-form');
                 if (!form) return;
@@ -1373,11 +1373,11 @@
                     });
                 });
 
-                console.log('✅ v4.7.7 실시간 검증 시스템 초기화 완료 - phone 필드 이메일/전화번호 모두 허용');
+                console.log('✅ v4.7.3 실시간 검증 시스템 초기화 완료 - 이메일 언더스코어 지원');
             }
 
             /**
-             * 🔍 이메일 또는 전화번호 형식 검증 헬퍼 함수 (v4.7.7 추가)
+             * 🔍 이메일 또는 전화번호 형식 검증 헬퍼 함수 (v4.7.3 개선 - 언더스코어 지원)
              */
             isValidEmailOrPhone(value) {
                 if (!value || typeof value !== 'string') return false;
@@ -1413,7 +1413,7 @@
                     errorMessage = '이 필드는 필수입니다.';
                 }
 
-                // 특정 필드별 검증 (v4.7.7 - phone 필드 이메일/전화번호 모두 허용)
+                // 특정 필드별 검증 (v4.7.3 - phone 필드 이메일 언더스코어 지원)
                 switch (fieldName) {
                     case 'name_ko':
                         if (value && value.length < 2) {
@@ -1424,7 +1424,7 @@
                     
                     case 'phone':
                     case 'local_coordinator_phone':
-                        // 🔧 v4.7.7 수정: 이메일 또는 전화번호 모두 허용
+                        // 🔧 v4.7.3 수정: 이메일 또는 전화번호 모두 허용 (언더스코어 포함)
                         if (value && !this.isValidEmailOrPhone(value)) {
                             isValid = false;
                             errorMessage = '올바른 이메일 또는 전화번호 형식이 아닙니다.';
@@ -1757,7 +1757,7 @@
                 }
             }
 
-            // === 상세 정보 모달 렌더링 (v4.7.7) ===
+            // === 상세 정보 모달 렌더링 (v4.7.3) ===
             renderDetailModal(institute) {
                 const content = document.getElementById('institute-detail-content');
                 if (!content) return;
@@ -1906,14 +1906,14 @@
                 document.getElementById('error-state').style.display = 'none';
             }
 
-            // === 통계 업데이트 (v4.7.7) ===
+            // === 통계 업데이트 (v4.7.3) ===
             updateStatistics(institutes) {
                 let assignedInterns = 0;
                 let completeInstitutes = 0;
                 let incompleteInstitutes = 0;
 
                 institutes.forEach(institute => {
-                    // v4.7.7: DB의 info_completed 사용
+                    // v4.7.3: DB의 info_completed 사용
                     if (institute.info_completed === true) {
                         completeInstitutes++;
                     } else {
@@ -2022,14 +2022,14 @@
 
         // === DOMContentLoaded 이벤트 ===
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.7 시작 - phone 필드 이메일/전화번호 모두 허용');
+            console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.3 시작 - 이메일 언더스코어 문제 해결');
             
             try {
                 await InstituteManager.initialize();
-                console.log('🎉 v4.7.7 시스템 준비 완료! phone 필드에서 이메일과 전화번호 모두 입력 가능합니다.');
+                console.log('🎉 v4.7.3 시스템 준비 완료! wang_xl0628@hanmail.net 등의 이메일 주소가 정상적으로 입력됩니다.');
                 
             } catch (error) {
-                console.error('💥 v4.7.7 초기화 최종 실패:', error);
+                console.error('💥 v4.7.3 초기화 최종 실패:', error);
                 alert('시스템 초기화에 실패했습니다. 페이지를 새로고침하거나 관리자에게 문의하세요.');
             }
         });
@@ -2038,7 +2038,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.shiftKey && e.key === 'D') {
                 e.preventDefault();
-                console.log('🛠️ v4.7.7 디버그 정보');
+                console.log('🛠️ v4.7.3 디버그 정보 - 이메일 언더스코어 문제 해결');
                 console.log('통합 매니저 상태:', {
                     initialized: InstituteManager.isInitialized,
                     currentView: InstituteManager.currentView,
@@ -2058,7 +2058,7 @@
             }
         });
 
-        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.7 스크립트 로드 완료 - phone 필드 이메일/전화번호 모두 허용');
+        console.log('🏛️ 파견학당 정보 관리 시스템 v4.7.3 스크립트 로드 완료 - 이메일 언더스코어 문제 해결');
     </script>
 </body>
 </html>
