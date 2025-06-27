@@ -277,9 +277,6 @@
         <div class="page-header">
             <h1 class="header-title">파견 학당 정보</h1>
             <p class="header-subtitle">배정받은 세종학당의 상세 정보를 확인하세요</p>
-            <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 1rem;">
-                🎨 v4.8.4 업데이트: 안전정보 UI 수정 - 안내 메시지 위치 변경 및 가로 배치 개선
-            </p>
             <a href="dashboard.html" class="back-button">
                 <i data-lucide="arrow-left"></i>
                 대시보드로 돌아가기
@@ -397,9 +394,6 @@
                                     <div style="text-align: center; padding: 2rem; color: #6b7280;">
                                         <i data-lucide="shield" style="font-size: 2rem; margin-bottom: 1rem;"></i>
                                         <p>안전정보 탭을 선택하면 데이터베이스 기반의 구조화된 안전정보가 표시됩니다.</p>
-                                        <p style="font-size: 0.9rem; margin-top: 1rem;">
-                                            ✨ 새로운 기능: 안내 메시지 위치 변경, 가로 배치 개선
-                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -430,8 +424,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                console.log('🏛️ 학당 정보 페이지 초기화 시작 v4.8.4');
-                
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
@@ -450,10 +442,7 @@
                     throw new Error('InstituteInfoCore 모듈을 찾을 수 없습니다');
                 }
                 
-                console.log('✅ 학당 정보 페이지 초기화 완료 v4.8.4 - 안전정보 UI 수정');
-                
             } catch (error) {
-                console.error('❌ 초기화 실패:', error);
                 showError(error.message);
             }
         });
@@ -511,8 +500,6 @@
                 lucide.createIcons();
             }
         }
-
-        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.8.4 - 안전정보 UI 수정');
     </script>
 </body>
 </html>
