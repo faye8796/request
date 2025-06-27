@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 페이지 CSS
- * Version: 4.8.3
- * Description: 안전정보 UI 개선 - 국가 기본정보 세로 리스트 형태 및 안내 메시지 빨간색 강조
+ * Version: 4.8.4
+ * Description: 안전정보 UI 수정 - 안내 메시지 위치 변경 및 가로 배치 개선
  */
 
 /* ===== 전역 스타일 ===== */
@@ -186,7 +186,7 @@ body {
     stroke-width: 2;
 }
 
-/* ===== 기본정보 가로 배치 스타일 (RESTORED) ===== */
+/* ===== 기본정보 가로 배치 스타일 (IMPROVED - 동일 라인 정렬 개선) ===== */
 .info-table {
     display: block;
     background: white;
@@ -198,12 +198,12 @@ body {
 
 .info-table-row {
     display: flex;
-    align-items: flex-start;
+    align-items: center; /* flex-start → center로 변경하여 수직 가운데 정렬 */
     gap: 1rem;
-    padding: 1rem 0;
+    padding: 0.75rem 0; /* 패딩 축소로 높이 줄이기 */
     border-bottom: 1px solid #f1f5f9;
     transition: all 0.2s ease;
-    min-height: fit-content;
+    min-height: auto; /* fit-content → auto로 변경 */
 }
 
 .info-table-row:last-child {
@@ -220,6 +220,8 @@ body {
     margin: 0 -1.5rem;
     padding-left: 1.5rem;
     padding-right: 1.5rem;
+    padding-top: 0.75rem; /* 호버 시에도 동일한 패딩 유지 */
+    padding-bottom: 0.75rem;
     border-radius: 0.5rem;
 }
 
@@ -232,7 +234,7 @@ body {
     font-size: 0.95rem;
     flex: 0 0 30%; /* 고정 너비 30% */
     min-width: 120px;
-    padding-top: 0.1rem; /* 텍스트 정렬을 위한 미세 조정 */
+    /* padding-top 제거 - 수직 가운데 정렬로 대체 */
 }
 
 .info-table-label i {
@@ -246,12 +248,16 @@ body {
 .info-table-value {
     color: #1a202c;
     font-size: 1rem;
-    line-height: 1.6;
+    line-height: 1.5; /* 라인 높이 조정 */
     word-break: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
     flex: 1; /* 나머지 공간 사용 */
     white-space: pre-line; /* 줄바꿈 지원 추가 */
+    /* 수직 정렬을 위한 추가 설정 */
+    display: flex;
+    align-items: center;
+    min-height: 1.5rem; /* 최소 높이 설정 */
 }
 
 .info-table-value.empty {
@@ -651,6 +657,9 @@ body {
     margin-bottom: 12px;
     transition: all 0.3s ease;
     border-bottom: 1px solid rgba(125, 211, 252, 0.3) !important;
+    /* 동일 라인 정렬 개선 */
+    align-items: center;
+    min-height: auto;
 }
 
 .country-basic-info .info-table-row:last-child {
@@ -1067,7 +1076,7 @@ body {
         display: none;
     }
     
-    /* 기본정보 테이블 모바일 최적화 */
+    /* 기본정보 테이블 모바일 최적화 (IMPROVED) */
     .info-table {
         padding: 1rem;
     }
@@ -1076,12 +1085,15 @@ body {
         flex-direction: column;
         gap: 0.5rem;
         padding: 0.75rem 0;
+        align-items: flex-start; /* 모바일에서는 시작점 정렬 */
     }
     
     .info-table-row:hover {
         margin: 0 -1rem;
         padding-left: 1rem;
         padding-right: 1rem;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
     }
     
     .info-table-label {
@@ -1093,6 +1105,8 @@ body {
     .info-table-value {
         font-size: 0.95rem;
         padding-left: 1.5rem; /* 아이콘과 정렬 유지 */
+        align-items: flex-start; /* 모바일에서는 시작점 정렬 */
+        min-height: auto;
     }
     
     /* JSON 테이블 반응형 */
@@ -1256,7 +1270,7 @@ body {
         align-items: center;
     }
     
-    /* 기본정보 더 작은 화면 최적화 */
+    /* 기본정보 더 작은 화면 최적화 (IMPROVED) */
     .info-table {
         padding: 0.75rem;
     }
