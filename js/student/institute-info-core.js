@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 핵심 로직 모듈
- * Version: 4.6.7
- * Description: UI 문제점 해결 - 필드 배치 수정 및 UI 개선
+ * Version: 4.6.8
+ * Description: 누락된 필드 표시 및 문화인턴 활동 정보 개선
  */
 
 window.InstituteInfoCore = (function() {
@@ -20,7 +20,7 @@ window.InstituteInfoCore = (function() {
      */
     async function initialize() {
         try {
-            console.log('🧠 InstituteInfoCore 초기화 시작 v4.6.7');
+            console.log('🧠 InstituteInfoCore 초기화 시작 v4.6.8');
             
             // 의존성 모듈 확인
             if (!window.InstituteInfoAPI) {
@@ -44,7 +44,7 @@ window.InstituteInfoCore = (function() {
             await loadInstituteData();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoCore 초기화 완료 v4.6.7');
+            console.log('✅ InstituteInfoCore 초기화 완료 v4.6.8');
             
         } catch (error) {
             console.error('❌ InstituteInfoCore 초기화 실패:', error);
@@ -149,52 +149,52 @@ window.InstituteInfoCore = (function() {
         try {
             console.log('📋 학당 정보 표시 중...');
             
-            // 기본 정보 구성 (테이블 형태) - 현지 적응 지원 담당자 정보 추가
+            // 기본 정보 구성 (테이블 형태) - 수정된 필드 매핑
             const basicInfo = [
                 {
                     icon: 'briefcase',
                     label: '운영기관',
-                    value: currentInstituteData.operator
+                    value: currentInstituteData.operator || '정보 없음'
                 },
                 {
                     icon: 'map-pin',
                     label: '주소',
-                    value: currentInstituteData.address
+                    value: currentInstituteData.address || '정보 없음'
                 },
                 {
                     icon: 'phone',
                     label: '연락처',
-                    value: currentInstituteData.phone
+                    value: currentInstituteData.phone || '정보 없음'
                 },
                 {
                     icon: 'link',
                     label: 'SNS 정보',
-                    value: currentInstituteData.sns_url,
-                    isLink: true
+                    value: currentInstituteData.sns_url || '정보 없음',
+                    isLink: currentInstituteData.sns_url ? true : false
                 },
                 {
                     icon: 'user',
                     label: '담당자 정보',
-                    value: currentInstituteData.contact_person
+                    value: currentInstituteData.contact_person || '정보 없음'
                 },
                 {
                     icon: 'phone-call',
                     label: '담당자 연락처',
-                    value: currentInstituteData.contact_phone
+                    value: currentInstituteData.contact_phone || '정보 없음'
                 },
                 {
                     icon: 'user-check',
                     label: '현지 적응 지원 담당자',
-                    value: currentInstituteData.local_coordinator
+                    value: currentInstituteData.local_coordinator || '정보 없음'
                 },
                 {
                     icon: 'phone-forwarded',
                     label: '적응 지원 담당자 연락처',
-                    value: currentInstituteData.local_coordinator_phone
+                    value: currentInstituteData.local_coordinator_phone || '정보 없음'
                 }
             ];
             
-            // 문화인턴 활동 정보 구성 (테이블 형태) - 파견 희망 기간 데이터 확인
+            // 문화인턴 활동 정보 구성 - PDF 구조에 맞게 개선
             const activityInfo = [
                 {
                     icon: 'calendar',
@@ -204,7 +204,7 @@ window.InstituteInfoCore = (function() {
                 {
                     icon: 'book-open',
                     label: '문화수업 운영 계획',
-                    value: currentInstituteData.lesson_plan,
+                    value: currentInstituteData.lesson_plan || '정보 없음',
                     isLongText: true  // 긴 텍스트 표시용 플래그
                 },
                 {
@@ -212,32 +212,33 @@ window.InstituteInfoCore = (function() {
                     label: '희망 개설 강좌',
                     value: currentInstituteData.desired_courses,
                     isJsonData: true,
-                    jsonType: 'enhanced-table'  // 개선된 테이블 형태
+                    jsonType: 'enhanced-table'  // PDF와 일치하는 테이블 형태
                 }
             ];
             
             // 교육 환경 정보 구성 (별도 섹션)
-            const educationInfo = [
-                {
+            const educationInfo = [];
+            if (currentInstituteData.education_environment) {
+                educationInfo.push({
                     icon: 'school',
                     label: '교육 환경 정보',
                     value: currentInstituteData.education_environment,
                     isJsonData: true,
-                    jsonType: 'enhanced-table'  // 개선된 테이블 형태
-                }
-            ];
+                    jsonType: 'enhanced-table'
+                });
+            }
             
-            // 기타 사항 구성 (목록 형태) - 안전 정보 URL 제거
+            // 기타 사항 구성 (목록 형태)
             const additionalInfo = [
                 {
                     icon: 'languages',
                     label: '현지 언어 구사 필요 수준',
-                    value: currentInstituteData.local_language_requirement
+                    value: currentInstituteData.local_language_requirement || '정보 없음'
                 },
                 {
                     icon: 'heart-handshake',
                     label: '학당 지원 사항',
-                    value: currentInstituteData.support_provided
+                    value: currentInstituteData.support_provided || '정보 없음'
                 }
             ];
             
@@ -245,9 +246,31 @@ window.InstituteInfoCore = (function() {
             window.InstituteInfoUI.renderInfoTable('basicInfoTable', basicInfo);
             window.InstituteInfoUI.renderInfoTable('activityInfoTable', activityInfo);
             
-            // 교육 환경 정보 추가 (별도 섹션이 있다면)
-            if (currentInstituteData.education_environment) {
+            // 교육 환경 정보 표시 (데이터가 있는 경우에만)
+            if (educationInfo.length > 0) {
+                console.log('📚 교육 환경 정보 표시 중...');
                 window.InstituteInfoUI.renderInfoTable('educationInfoTable', educationInfo);
+            } else {
+                console.log('📚 교육 환경 정보 없음');
+                // 교육 환경 정보가 없을 때 안내 메시지 표시
+                const educationTable = document.getElementById('educationInfoTable');
+                if (educationTable) {
+                    educationTable.innerHTML = `
+                        <div class="info-table-row">
+                            <div class="info-table-label">
+                                <i data-lucide="school"></i>
+                                교육 환경 정보
+                            </div>
+                            <div class="info-table-value empty">
+                                교육 환경 정보가 등록되지 않았습니다.
+                            </div>
+                        </div>
+                    `;
+                    // 아이콘 초기화
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
             }
             
             window.InstituteInfoUI.renderInfoList('additionalInfoList', additionalInfo);
@@ -313,20 +336,23 @@ window.InstituteInfoCore = (function() {
             // 배열인 경우
             if (Array.isArray(data)) {
                 if (type === 'enhanced-table') {
-                    // 개선된 테이블 형태로 변환
+                    // PDF 구조에 맞는 테이블 형태로 변환
                     return data.map((item, index) => {
                         if (typeof item === 'object' && item !== null) {
                             return {
-                                index: index + 1,
-                                ...item
+                                순번: index + 1,
+                                강좌명: item.name || item.강좌명 || item.course || '미정',
+                                수준: item.level || item.수준 || item.난이도 || '미정',
+                                시간: item.time || item.시간 || item.duration || '미정',
+                                수강인원: item.participants || item.수강인원 || item.인원 || '미정'
                             };
                         }
                         return {
-                            index: index + 1,
-                            name: String(item),
-                            level: '',
-                            time: '',
-                            participants: ''
+                            순번: index + 1,
+                            강좌명: String(item),
+                            수준: '미정',
+                            시간: '미정',
+                            수강인원: '미정'
                         };
                     });
                 }
@@ -476,12 +502,12 @@ window.InstituteInfoCore = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoCore',
-            version: '4.6.7',
+            version: '4.6.8',
             initialized: isInitialized,
             currentTab,
             hasData: !!currentInstituteData,
             eventListenersCount: eventListeners.size,
-            description: 'UI 문제점 해결 - 필드 배치 수정 및 개선된 학당 정보 핵심 로직 모듈'
+            description: '누락된 필드 표시 및 문화인턴 활동 정보 개선된 학당 정보 핵심 로직 모듈'
         };
     }
     
@@ -514,4 +540,4 @@ window.InstituteInfoCore = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🧠 InstituteInfoCore 모듈 로드 완료 - v4.6.7 (UI 문제점 해결)');	
+console.log('🧠 InstituteInfoCore 모듈 로드 완료 - v4.6.8 (누락된 필드 표시 및 개선)');
