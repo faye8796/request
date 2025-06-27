@@ -1,5 +1,5 @@
 /**
- * 🏛️ Institute Core Module (v4.4.0)
+ * 🏛️ Institute Core Module (v4.8.0) - Field Name Consistency Fix
  * 세종학당 파견학당 정보 관리 시스템 - 핵심 기능 모듈
  * 
  * 📋 담당 기능:
@@ -10,6 +10,12 @@
  * 
  * 🔗 의존성: SupabaseCore, Utils, Config, Auth (기본 요소만)
  * 🚫 독립성: js/admin/ 모듈들과 완전 분리
+ * 
+ * 🔧 v4.8.0 수정사항:
+ * - INSTITUTE_FIELDS 필드명을 실제 DB 컬럼명과 일치하도록 수정
+ * - cultural_program_plan → lesson_plan
+ * - institute_support → support_provided
+ * - 기타 필드명 일관성 개선
  */
 
 class InstituteCore {
@@ -18,18 +24,18 @@ class InstituteCore {
         this.culturalInterns = new Map(); // 문화인턴 데이터 캐시
         this.initialized = false;
         
-        // 📋 15개 필드 정의
+        // 📋 17개 필드 정의 (실제 DB 컬럼명 사용)
         this.INSTITUTE_FIELDS = {
-            basic: ['name_ko', 'name_en', 'operating_organization', 'image_url'],
-            contact: ['address', 'phone', 'website_sns', 'manager_name', 'manager_contact'],
-            program: ['local_adaptation_staff', 'cultural_program_plan', 'desired_courses'],
-            support: ['local_language_requirement', 'institute_support', 'country_safety_info']
+            basic: ['name_ko', 'name_en', 'operator', 'image_url'],
+            contact: ['address', 'phone', 'sns_url', 'contact_person', 'contact_phone', 'local_coordinator', 'local_coordinator_phone'],
+            program: ['dispatch_period', 'lesson_plan', 'desired_courses', 'education_environment'],
+            support: ['local_language_requirement', 'support_provided', 'safety_info_url']
         };
         
         this.REQUIRED_FIELDS = ['name_ko']; // 필수 필드
         this.VALIDATION_RULES = this.initValidationRules();
         
-        console.log('🏛️ InstituteCore 모듈 초기화됨');
+        console.log('🏛️ InstituteCore 모듈 초기화됨 (v4.8.0)');
     }
 
     /**
@@ -45,13 +51,13 @@ class InstituteCore {
                 throw new Error('필수 의존성 모듈이 로드되지 않았습니다');
             }
             
-            console.log('🔄 InstituteCore 초기화 시작...');
+            console.log('🔄 InstituteCore 초기화 시작... (v4.8.0)');
             
             // 기본 데이터 로드
             await this.loadBasicData();
             
             this.initialized = true;
-            console.log('✅ InstituteCore 초기화 완료');
+            console.log('✅ InstituteCore 초기화 완료 (v4.8.0)');
             return true;
             
         } catch (error) {
@@ -337,8 +343,8 @@ class InstituteCore {
             normalized.phone = String(normalized.phone).trim();
         }
         
-        if (normalized.manager_contact) {
-            normalized.manager_contact = String(normalized.manager_contact).trim();
+        if (normalized.contact_phone) {
+            normalized.contact_phone = String(normalized.contact_phone).trim();
         }
 
         return normalized;
@@ -351,9 +357,9 @@ class InstituteCore {
         return {
             name_ko: { required: true, minLength: 2, maxLength: 200 },
             name_en: { required: false, maxLength: 200 },
-            phone: { required: false, pattern: /^[0-9+\-\s\(\)]+$/ },
-            manager_contact: { required: false, pattern: /^[0-9+\-\s\(\)]+$/ },
-            website_sns: { required: false, pattern: /^https?:\/\/.+/ }
+            phone: { required: false, pattern: /^[0-9+\-\s\(\)\.@a-zA-Z]+$/ },
+            contact_phone: { required: false, pattern: /^[0-9+\-\s\(\)\.@a-zA-Z]+$/ },
+            sns_url: { required: false, pattern: /^https?:\/\/.+/ }
         };
     }
 
@@ -373,7 +379,8 @@ class InstituteCore {
             initialized: this.initialized,
             cached_institutes: this.instituteData.size,
             cached_interns: this.culturalInterns.size,
-            module_version: '4.4.0',
+            module_version: '4.8.0',
+            field_consistency: 'fixed',
             last_initialized: this.lastInitialized || null
         };
     }
@@ -382,4 +389,4 @@ class InstituteCore {
 // 🌐 전역 인스턴스 생성
 window.InstituteCore = new InstituteCore();
 
-console.log('🏛️ InstituteCore 모듈 로드 완료 (v4.4.0)');
+console.log('🏛️ InstituteCore 모듈 로드 완료 (v4.8.0) - Field Name Consistency Fixed');
