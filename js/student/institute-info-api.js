@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 API 모듈
- * Version: 4.6.9
- * Description: 문화인턴 활동 정보 및 교육 환경 정보 데이터 처리 개선
+ * Version: 4.7.1
+ * Description: 희망 개설 강좌 독립 섹션 지원 및 데이터 처리 최적화
  */
 
 window.InstituteInfoAPI = (function() {
@@ -16,7 +16,7 @@ window.InstituteInfoAPI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🔗 InstituteInfoAPI 초기화 시작 v4.6.9');
+            console.log('🔗 InstituteInfoAPI 초기화 시작 v4.7.1');
             
             // SupabaseCore 확인 및 클라이언트 확보
             if (!window.SupabaseCore) {
@@ -32,7 +32,7 @@ window.InstituteInfoAPI = (function() {
             
             isInitialized = true;
             
-            console.log('✅ InstituteInfoAPI 초기화 완료 v4.6.9');
+            console.log('✅ InstituteInfoAPI 초기화 완료 v4.7.1');
             return true;
             
         } catch (error) {
@@ -383,10 +383,10 @@ window.InstituteInfoAPI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoAPI',
-            version: '4.6.9',
+            version: '4.7.1',
             initialized: isInitialized,
             hasSupabaseClient: !!supabaseClient,
-            description: '문화인턴 활동 정보 및 교육 환경 정보 데이터 처리가 개선된 학당 정보 조회 API'
+            description: '희망 개설 강좌 독립 섹션 지원 및 데이터 처리가 최적화된 학당 정보 조회 API'
         };
     }
     
@@ -420,4 +420,4 @@ window.InstituteInfoAPI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('📡 InstituteInfoAPI 모듈 로드 완료 - v4.6.9 (문화인턴 활동 정보 및 교육 환경 정보 개선)');
+console.log('📡 InstituteInfoAPI 모듈 로드 완료 - v4.7.1 (희망 개설 강좌 독립 섹션 지원 및 최적화)');
