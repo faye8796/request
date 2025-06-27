@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 API 모듈
- * Version: 4.6.6
- * Description: 개선된 학당 정보 조회 및 JSONB 데이터 처리 API
+ * Version: 4.6.8
+ * Description: 누락된 필드 추가 및 데이터 로드 개선
  */
 
 window.InstituteInfoAPI = (function() {
@@ -16,7 +16,7 @@ window.InstituteInfoAPI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🔗 InstituteInfoAPI 초기화 시작 v4.6.6');
+            console.log('🔗 InstituteInfoAPI 초기화 시작 v4.6.8');
             
             // SupabaseCore 확인 및 클라이언트 확보
             if (!window.SupabaseCore) {
@@ -32,7 +32,7 @@ window.InstituteInfoAPI = (function() {
             
             isInitialized = true;
             
-            console.log('✅ InstituteInfoAPI 초기화 완료 v4.6.6');
+            console.log('✅ InstituteInfoAPI 초기화 완료 v4.6.8');
             return true;
             
         } catch (error) {
@@ -67,7 +67,7 @@ window.InstituteInfoAPI = (function() {
             
             console.log(`🏛️ 배정된 학당: ${instituteName}`);
             
-            // institutes 테이블에서 학당 정보 조회
+            // institutes 테이블에서 학당 정보 조회 (누락된 필드들 추가)
             const { data: instituteData, error: instituteError } = await supabaseClient
                 .from('institutes')
                 .select(`
@@ -81,8 +81,12 @@ window.InstituteInfoAPI = (function() {
                     contact_person,
                     contact_phone,
                     local_coordinator,
+                    local_coordinator_phone,
                     lesson_plan,
                     desired_courses,
+                    desired_course,
+                    dispatch_period,
+                    education_environment,
                     local_language_requirement,
                     support_provided,
                     safety_info_url,
@@ -107,6 +111,7 @@ window.InstituteInfoAPI = (function() {
             }
             
             console.log('✅ 학당 정보 조회 완료:', instituteData.name_ko);
+            console.log('🔍 조회된 데이터 필드들:', Object.keys(instituteData));
             return instituteData;
             
         } catch (error) {
@@ -252,6 +257,8 @@ window.InstituteInfoAPI = (function() {
      */
     function processInstituteData(instituteData) {
         try {
+            console.log('🔄 학당 데이터 전처리 시작...', instituteData);
+            
             // 기본 정보 처리
             const processed = {
                 ...instituteData,
@@ -259,9 +266,15 @@ window.InstituteInfoAPI = (function() {
                 // 이미지 URL 처리
                 image_url: getInstituteImageUrl(instituteData.image_url),
                 
-                // JSON 필드 처리
-                desired_courses: formatJsonForTable(instituteData.desired_courses, '희망 개설 강좌'),
-                education_environment: formatJsonForTable(instituteData.education_environment, '교육 환경'),
+                // JSON 필드 처리 (둘 다 확인)
+                desired_courses: formatJsonForTable(
+                    instituteData.desired_courses || instituteData.desired_course, 
+                    '희망 개설 강좌'
+                ),
+                education_environment: formatJsonForTable(
+                    instituteData.education_environment, 
+                    '교육 환경'
+                ),
                 
                 // 빈 값 처리 및 표시용 이름
                 display_name: instituteData.name_ko || '학당명 없음',
@@ -270,9 +283,12 @@ window.InstituteInfoAPI = (function() {
                 display_address: instituteData.address || '주소 정보 없음',
                 display_phone: instituteData.phone || '연락처 정보 없음',
                 display_contact: instituteData.contact_person || '담당자 정보 없음',
+                display_contact_phone: instituteData.contact_phone || '담당자 연락처 정보 없음',
                 display_sns: instituteData.sns_url || '정보 없음',
                 display_coordinator: instituteData.local_coordinator || '정보 없음',
+                display_coordinator_phone: instituteData.local_coordinator_phone || '정보 없음',
                 display_lesson_plan: instituteData.lesson_plan || '수업 계획 정보 없음',
+                display_dispatch_period: instituteData.dispatch_period || '정보 없음',
                 display_language_req: instituteData.local_language_requirement || '정보 없음',
                 display_support: instituteData.support_provided || '지원 정보 없음',
                 
@@ -282,6 +298,7 @@ window.InstituteInfoAPI = (function() {
             };
             
             console.log('✅ 학당 데이터 전처리 완료');
+            console.log('🔍 전처리된 필드들:', Object.keys(processed));
             return processed;
             
         } catch (error) {
@@ -366,10 +383,10 @@ window.InstituteInfoAPI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoAPI',
-            version: '4.6.6',
+            version: '4.6.8',
             initialized: isInitialized,
             hasSupabaseClient: !!supabaseClient,
-            description: '개선된 학당 정보 조회 및 JSONB 데이터 처리 API'
+            description: '누락된 필드 추가 및 데이터 로드 개선된 학당 정보 조회 API'
         };
     }
     
@@ -403,4 +420,4 @@ window.InstituteInfoAPI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('📡 InstituteInfoAPI 모듈 로드 완료 - v4.6.6 (개선된 JSONB 처리)');
+console.log('📡 InstituteInfoAPI 모듈 로드 완료 - v4.6.8 (누락된 필드 추가 및 개선)');
