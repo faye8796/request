@@ -6,9 +6,9 @@
     <title>파견 학당 정보 - 세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.8.3">
-    <link rel="stylesheet" href="../css/student.css?v=4.8.3">
-    <link rel="stylesheet" href="../css/student-institute-info.css?v=4.8.3">
+    <link rel="stylesheet" href="../css/main.css?v=4.8.4">
+    <link rel="stylesheet" href="../css/student.css?v=4.8.4">
+    <link rel="stylesheet" href="../css/student-institute-info.css?v=4.8.4">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -278,7 +278,7 @@
             <h1 class="header-title">파견 학당 정보</h1>
             <p class="header-subtitle">배정받은 세종학당의 상세 정보를 확인하세요</p>
             <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 1rem;">
-                🎨 v4.8.3 업데이트: 안전정보 UI 개선 - 국가 기본정보 세로 리스트 형태 및 안내 메시지 강화
+                🎨 v4.8.4 업데이트: 안전정보 UI 수정 - 안내 메시지 위치 변경 및 가로 배치 개선
             </p>
             <a href="dashboard.html" class="back-button">
                 <i data-lucide="arrow-left"></i>
@@ -340,7 +340,7 @@
                                     학당 기본정보
                                 </h3>
                                 <div class="info-table" id="basicInfoTable">
-                                    <!-- 가로 배치 형태로 표시 (복원됨) -->
+                                    <!-- 가로 배치 형태로 표시 (개선됨) -->
                                 </div>
                             </div>
 
@@ -351,7 +351,7 @@
                                     문화인턴 활동 정보
                                 </h3>
                                 <div class="info-table" id="activityInfoTable">
-                                    <!-- 가로 배치 형태로 표시 (복원됨) -->
+                                    <!-- 가로 배치 형태로 표시 (개선됨) -->
                                 </div>
                             </div>
 
@@ -398,7 +398,7 @@
                                         <i data-lucide="shield" style="font-size: 2rem; margin-bottom: 1rem;"></i>
                                         <p>안전정보 탭을 선택하면 데이터베이스 기반의 구조화된 안전정보가 표시됩니다.</p>
                                         <p style="font-size: 0.9rem; margin-top: 1rem;">
-                                            ✨ 새로운 기능: 빨간색 강조 안내 메시지, 세로 리스트 형태 국가 기본정보, 간소화된 외부링크 버튼
+                                            ✨ 새로운 기능: 안내 메시지 위치 변경, 가로 배치 개선
                                         </p>
                                     </div>
                                 </div>
@@ -412,25 +412,25 @@
 
     <!-- JavaScript Files -->
     <!-- 기본 설정 모듈 -->
-    <script src="../js/config.js?v=4.8.3"></script>
-    <script src="../js/auth.js?v=4.8.3"></script>
-    <script src="../js/utils.js?v=4.8.3"></script>
+    <script src="../js/config.js?v=4.8.4"></script>
+    <script src="../js/auth.js?v=4.8.4"></script>
+    <script src="../js/utils.js?v=4.8.4"></script>
     
     <!-- Supabase 모듈들 -->
-    <script src="../js/supabase/supabase-core.js?v=4.8.3"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.8.3"></script>
-    <script src="../js/supabase-client.js?v=4.8.3"></script>
+    <script src="../js/supabase/supabase-core.js?v=4.8.4"></script>
+    <script src="../js/supabase/supabase-student.js?v=4.8.4"></script>
+    <script src="../js/supabase-client.js?v=4.8.4"></script>
     
     <!-- 학당 정보 전용 모듈들 -->
-    <script src="../js/student/institute-info-api.js?v=4.8.3"></script>
-    <script src="../js/student/institute-info-core.js?v=4.8.3"></script>
-    <script src="../js/student/institute-info-ui.js?v=4.8.3"></script>
+    <script src="../js/student/institute-info-api.js?v=4.8.4"></script>
+    <script src="../js/student/institute-info-core.js?v=4.8.4"></script>
+    <script src="../js/student/institute-info-ui.js?v=4.8.4"></script>
 
     <!-- 페이지 초기화 스크립트 -->
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                console.log('🏛️ 학당 정보 페이지 초기화 시작 v4.8.3');
+                console.log('🏛️ 학당 정보 페이지 초기화 시작 v4.8.4');
                 
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
@@ -450,7 +450,7 @@
                     throw new Error('InstituteInfoCore 모듈을 찾을 수 없습니다');
                 }
                 
-                console.log('✅ 학당 정보 페이지 초기화 완료 v4.8.3 - 안전정보 UI 개선');
+                console.log('✅ 학당 정보 페이지 초기화 완료 v4.8.4 - 안전정보 UI 수정');
                 
             } catch (error) {
                 console.error('❌ 초기화 실패:', error);
@@ -512,7 +512,7 @@
             }
         }
 
-        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.8.3 - 안전정보 UI 개선');
+        console.log('🏛️ 학당 정보 페이지 로드 완료 v4.8.4 - 안전정보 UI 수정');
     </script>
 </body>
 </html>
