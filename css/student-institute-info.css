@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 페이지 CSS
- * Version: 4.8.2
- * Description: 기본정보 가로 배치 복원 및 줄바꿈 처리 개선
+ * Version: 4.8.3
+ * Description: 안전정보 UI 개선 - 국가 기본정보 세로 리스트 형태 및 안내 메시지 빨간색 강조
  */
 
 /* ===== 전역 스타일 ===== */
@@ -469,31 +469,31 @@ body {
     min-height: 400px;
 }
 
-/* ===== 안전정보 안내 메시지 (NEW) ===== */
+/* ===== 안전정보 안내 메시지 (UPDATED - 빨간색 강조) ===== */
 .safety-guide-notice {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border: 2px solid #f59e0b;
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+    border: 2px solid #dc2626;
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 24px;
     display: flex;
     align-items: center;
     gap: 16px;
-    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2);
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.2);
 }
 
 .safety-guide-notice .notice-icon {
-    background: rgba(245, 158, 11, 0.2);
+    background: rgba(220, 38, 38, 0.2);
     border-radius: 50%;
     padding: 12px;
-    border: 2px solid rgba(245, 158, 11, 0.3);
+    border: 2px solid rgba(220, 38, 38, 0.3);
     flex-shrink: 0;
 }
 
 .safety-guide-notice .notice-icon i {
     width: 1.5rem;
     height: 1.5rem;
-    color: #92400e;
+    color: #991b1b;
     stroke-width: 2;
 }
 
@@ -504,15 +504,16 @@ body {
 .safety-guide-notice .notice-title {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #92400e;
+    color: #991b1b;
     margin: 0 0 6px 0;
 }
 
 .safety-guide-notice .notice-text {
     font-size: 0.95rem;
-    color: #78350f;
+    color: #7f1d1d;
     margin: 0;
     line-height: 1.5;
+    font-weight: 600;
 }
 
 /* ===== 앱 다운로드 배너 스타일 ===== */
@@ -605,7 +606,7 @@ body {
     font-size: 1.1rem;
 }
 
-/* ===== 국가 기본정보 카드 (NEW) ===== */
+/* ===== 국가 기본정보 카드 (UPDATED - 세로 리스트 형태) ===== */
 .country-basic-info {
     background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
     border-radius: 16px;
@@ -634,46 +635,54 @@ body {
     stroke-width: 2;
 }
 
-.country-info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 16px;
+/* 국가 기본정보를 세로 리스트 형태로 변경 */
+.country-basic-info .info-table {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
 }
 
-.info-item {
+.country-basic-info .info-table-row {
     background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(125, 211, 252, 0.3);
     border-radius: 12px;
     padding: 16px;
-    border: 1px solid rgba(125, 211, 252, 0.3);
+    margin-bottom: 12px;
     transition: all 0.3s ease;
+    border-bottom: 1px solid rgba(125, 211, 252, 0.3) !important;
 }
 
-.info-item:hover {
+.country-basic-info .info-table-row:last-child {
+    margin-bottom: 0;
+    border-bottom: 1px solid rgba(125, 211, 252, 0.3) !important;
+}
+
+.country-basic-info .info-table-row:hover {
     background: rgba(255, 255, 255, 0.95);
     transform: translateY(-2px);
     box-shadow: 0 4px 16px rgba(125, 211, 252, 0.2);
+    margin: 0 0 12px 0;
+    padding: 16px;
+    border-radius: 12px;
 }
 
-.info-item.full-width {
-    grid-column: 1 / -1;
-}
-
-.info-label {
-    display: block;
-    font-weight: 600;
+.country-basic-info .info-table-label {
     color: #0369a1;
+    font-weight: 600;
     font-size: 0.9rem;
-    margin-bottom: 8px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
-.info-value {
-    display: block;
+.country-basic-info .info-table-label i {
+    color: #0369a1;
+}
+
+.country-basic-info .info-table-value {
     color: #1e293b;
-    font-size: 1rem;
-    line-height: 1.5;
     font-weight: 500;
+    font-size: 1rem;
 }
 
 /* ===== 재외공관 정보 카드 (NEW) ===== */
@@ -797,7 +806,7 @@ body {
     font-size: 1.1rem;
 }
 
-/* ===== 외부링크 섹션 (NEW) ===== */
+/* ===== 외부링크 섹션 (UPDATED - 2개 버튼 지원) ===== */
 .safety-external-links {
     background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
     border-radius: 16px;
@@ -820,6 +829,13 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 16px;
+}
+
+/* 2개 버튼 전용 레이아웃 */
+.external-links-grid.two-buttons {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .external-link-btn {
@@ -1105,16 +1121,20 @@ body {
         margin-bottom: 16px;
     }
     
-    .country-info-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
+    /* 국가 기본정보 모바일 최적화 */
+    .country-basic-info .info-table-row {
+        padding: 12px;
+        margin-bottom: 8px;
     }
     
-    .info-item.full-width {
-        grid-column: 1;
+    .country-basic-info .info-table-row:hover {
+        margin: 0 0 8px 0;
+        padding: 12px;
     }
     
-    .external-links-grid {
+    /* 외부링크 그리드 모바일 반응형 */
+    .external-links-grid,
+    .external-links-grid.two-buttons {
         grid-template-columns: 1fr;
         gap: 12px;
     }
@@ -1245,6 +1265,12 @@ body {
         padding-left: 1rem;
         font-size: 0.9rem;
     }
+    
+    /* 국가 기본정보 더 작은 화면 최적화 */
+    .country-basic-info .info-table-row {
+        padding: 10px;
+        margin-bottom: 6px;
+    }
 }
 
 /* ===== 인쇄 스타일 ===== */
@@ -1295,8 +1321,11 @@ body {
 @media (prefers-contrast: high) {
     .info-table-row,
     .info-list-item,
-    .info-item,
     .embassy-item {
+        border-width: 2px;
+    }
+    
+    .country-basic-info .info-table-row {
         border-width: 2px;
     }
     
