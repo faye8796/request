@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.8.0
- * Description: DB 기반 국가 안전정보 표시 시스템 - iframe 대신 구조화된 안전정보 제공
+ * Version: 4.8.1
+ * Description: 안전정보 안내 메시지 추가 및 버튼 이름 변경 - 파견 국가 상세 안전 정보
  */
 
 window.InstituteInfoUI = (function() {
@@ -79,7 +79,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.0');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.1');
             
             // DOM 요소 캐시
             cacheElements();
@@ -88,7 +88,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.0');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.1');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -344,13 +344,9 @@ window.InstituteInfoUI = (function() {
             const value = document.createElement('div');
             value.className = 'info-table-value';
             
-            // 기본정보와 기타 사항은 왼쪽 정렬, 나머지는 가운데 정렬
-            value.style.textAlign = 'left'; // 기본정보 섹션 왼쪽 정렬 적용
-            
             // 긴 텍스트인 경우 특별 처리
             if (item.isLongText) {
                 value.classList.add('text-break');
-                value.style.textAlign = 'left';
                 // CSS 백업 옵션 추가
                 value.style.whiteSpace = 'pre-line';
             }
@@ -359,13 +355,11 @@ window.InstituteInfoUI = (function() {
                 value.textContent = '정보 없음';
                 value.classList.add('empty');
             } else if (item.isLink && item.value && item.value !== '정보 없음') {
-                // 링크 처리 - 링크는 왼쪽 정렬
+                // 링크 처리
                 value.innerHTML = `<a href="${item.value}" target="_blank" rel="noopener noreferrer">${item.value}</a>`;
-                value.style.textAlign = 'left';
             } else if (item.isJsonData && typeof item.value === 'object') {
                 // JSON 데이터 처리
                 value.appendChild(createJsonDisplay(item.value, item.jsonType));
-                value.style.textAlign = 'center'; // JSON 테이블은 가운데 정렬
             } else {
                 // 일반 텍스트 처리 - 줄바꿈 지원 개선
                 const textValue = String(item.value);
@@ -445,16 +439,12 @@ window.InstituteInfoUI = (function() {
             const content = document.createElement('div');
             content.className = 'info-list-content';
             
-            // 기타 사항은 왼쪽 정렬
-            content.style.textAlign = 'left';
-            
             if (!item.value || item.value === '' || item.value === null || item.value === undefined) {
                 content.textContent = '정보 없음';
                 content.classList.add('empty');
             } else if (item.isLink && item.value && item.value !== '정보 없음') {
-                // 링크 처리 - 링크는 왼쪽 정렬
+                // 링크 처리
                 content.innerHTML = `<a href="${item.value}" target="_blank" rel="noopener noreferrer">${item.value}</a>`;
-                content.style.textAlign = 'left';
             } else if (item.isJsonData && typeof item.value === 'object') {
                 // JSON 데이터 처리
                 content.appendChild(createJsonDisplay(item.value, item.jsonType));
@@ -923,14 +913,12 @@ window.InstituteInfoUI = (function() {
                 const li = document.createElement('li');
                 li.textContent = '데이터 없음';
                 li.className = 'empty';
-                li.style.textAlign = 'left'; // 기타 사항 목록은 왼쪽 정렬
                 list.appendChild(li);
                 return list;
             }
             
             data.forEach(item => {
                 const li = document.createElement('li');
-                li.style.textAlign = 'left'; // 기타 사항 목록은 왼쪽 정렬
                 
                 if (typeof item === 'object') {
                     // 객체인 경우 주요 정보만 표시
@@ -962,7 +950,6 @@ window.InstituteInfoUI = (function() {
             const li = document.createElement('li');
             li.textContent = '목록 표시 오류';
             li.className = 'empty';
-            li.style.textAlign = 'left';
             errorList.appendChild(li);
             return errorList;
         }
@@ -1080,6 +1067,9 @@ window.InstituteInfoUI = (function() {
 
             // 전체 안전정보 컨테이너 생성
             let safetyHtml = `
+                <!-- 안전정보 안내 메시지 (NEW) -->
+                ${createSafetyGuideNotice()}
+                
                 <!-- 해외안전여행 앱 다운로드 UI -->
                 ${createAppDownloadSection()}
             `;
@@ -1103,6 +1093,23 @@ window.InstituteInfoUI = (function() {
             console.error('❌ 국가별 안전정보 표시 실패:', error);
             showSafetyError('안전정보 표시 중 오류가 발생했습니다');
         }
+    }
+    
+    /**
+     * 안전정보 안내 메시지 HTML 생성 (NEW)
+     */
+    function createSafetyGuideNotice() {
+        return `
+            <div class="safety-guide-notice">
+                <div class="notice-icon">
+                    <i data-lucide="alert-triangle"></i>
+                </div>
+                <div class="notice-content">
+                    <h4 class="notice-title">안전 정보 안내</h4>
+                    <p class="notice-text">출국 전 파견지의 상세 안전 정보를 꼭 확인하세요</p>
+                </div>
+            </div>
+        `;
     }
     
     /**
@@ -1234,7 +1241,7 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 외부링크 섹션 HTML 생성
+     * 외부링크 섹션 HTML 생성 (버튼 이름 변경 적용)
      */
     function createSafetyExternalLinksSection(safetyUrl, countryInfo) {
         try {
@@ -1253,7 +1260,7 @@ window.InstituteInfoUI = (function() {
                                     class="external-link-btn primary">
                                 <i data-lucide="shield"></i>
                                 <div class="btn-content">
-                                    <span class="btn-title">학당별 안전정보</span>
+                                    <span class="btn-title">파견 국가 상세 안전 정보</span>
                                     <span class="btn-desc">해당 지역 맞춤 안전정보</span>
                                 </div>
                             </button>
@@ -1335,6 +1342,7 @@ window.InstituteInfoUI = (function() {
             }
 
             elements.safetyInfoContent.innerHTML = `
+                ${createSafetyGuideNotice()}
                 ${createAppDownloadSection()}
 
                 <!-- 안전정보 없음 메시지 -->
@@ -1352,7 +1360,7 @@ window.InstituteInfoUI = (function() {
             `;
 
             initializeLucideIcons();
-            console.log('📋 안전정보 없음 표시 (앱 다운로드 UI 포함)');
+            console.log('📋 안전정보 없음 표시 (안내 메시지 및 앱 다운로드 UI 포함)');
 
         } catch (error) {
             console.error('❌ 안전정보 없음 표시 실패:', error);
@@ -1383,10 +1391,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.8.0',
+            version: '4.8.1',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: 'DB 기반 국가 안전정보 표시 시스템 - iframe 대신 구조화된 안전정보 제공'
+            description: '안전정보 안내 메시지 추가 및 버튼 이름 변경 - 파견 국가 상세 안전 정보'
         };
     }
     
@@ -1428,4 +1436,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.0 (DB 기반 국가 안전정보 표시 시스템)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.1 (안전정보 안내 메시지 추가 및 버튼 이름 변경)');
