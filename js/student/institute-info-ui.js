@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 UI 모듈
- * Version: 4.7.6
- * Description: 안전정보 iframe 로딩 안정성 개선 - 타임아웃 연장 및 에러 처리 강화
+ * Version: 4.8.0
+ * Description: DB 기반 국가 안전정보 표시 시스템 - iframe 대신 구조화된 안전정보 제공
  */
 
 window.InstituteInfoUI = (function() {
@@ -79,7 +79,7 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.7.6');
+            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.0');
             
             // DOM 요소 캐시
             cacheElements();
@@ -88,7 +88,7 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.7.6');
+            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.0');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -1034,32 +1034,19 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 안전정보 탭 활성화 처리 (안정성 개선)
+     * 안전정보 탭 활성화 처리 (새로운 DB 기반 방식)
      */
-    function handleSafetyTabActivation() {
+    async function handleSafetyTabActivation() {
         try {
-            console.log('🛡️ 안전정보 탭 활성화됨');
+            console.log('🛡️ 안전정보 탭 활성화됨 - DB 기반 방식');
             
             // InstituteInfoCore에서 현재 학당 데이터 가져오기
             if (window.InstituteInfoCore && window.InstituteInfoCore.currentData) {
                 const instituteData = window.InstituteInfoCore.currentData;
                 console.log('🔍 현재 학당 데이터:', instituteData);
                 
-                if (instituteData && instituteData.safety_info_url) {
-                    const safetyUrl = instituteData.safety_info_url.trim();
-                    console.log('🔗 안전정보 URL 확인:', safetyUrl);
-                    
-                    if (safetyUrl && safetyUrl !== '' && safetyUrl !== 'null' && safetyUrl !== 'undefined') {
-                        console.log(`✅ 유효한 안전정보 URL 발견: ${safetyUrl}`);
-                        showSafetyIframe(safetyUrl);
-                    } else {
-                        console.log('📋 안전정보 URL이 비어있음');
-                        showSafetyUnavailable();
-                    }
-                } else {
-                    console.log('📋 학당 데이터 또는 안전정보 URL 없음');
-                    showSafetyUnavailable();
-                }
+                // 새로운 안전정보 표시 시스템 호출
+                await showCountrySafetyInfo(instituteData);
             } else {
                 console.warn('⚠️ InstituteInfoCore 모듈 또는 currentData를 찾을 수 없습니다');
                 showSafetyUnavailable();
@@ -1072,161 +1059,238 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 안전정보 iframe 표시 (안정성 개선)
+     * 국가별 안전정보 통합 표시 (NEW - 메인 함수)
      */
-    function showSafetyIframe(url) {
+    async function showCountrySafetyInfo(instituteData) {
         try {
-            if (!elements.safetyInfoContent || !url) {
-                console.warn('⚠️ 안전정보 컨테이너 또는 URL이 없습니다');
+            if (!elements.safetyInfoContent || !instituteData) {
+                console.warn('⚠️ 안전정보 컨테이너 또는 학당 데이터가 없습니다');
                 showSafetyUnavailable();
                 return;
             }
 
-            console.log(`🛡️ 안전정보 iframe 생성 시작: ${url}`);
+            console.log('🛡️ 국가별 안전정보 표시 시작:', instituteData.name_ko);
 
-            // 앱 다운로드 UI + iframe 컨테이너 생성
-            elements.safetyInfoContent.innerHTML = `
+            // 국가 정보 조회 시도
+            const countryInfo = await window.InstituteInfoAPI.getCountryInfoByAddress(instituteData.address);
+            const safetyUrl = window.InstituteInfoAPI.getSafetyInfoUrl(instituteData);
+
+            console.log('🔍 조회된 국가정보:', countryInfo);
+            console.log('🔗 안전정보 URL:', safetyUrl);
+
+            // 전체 안전정보 컨테이너 생성
+            let safetyHtml = `
                 <!-- 해외안전여행 앱 다운로드 UI -->
-                <div class="app-download-banner">
-                    <div class="app-download-content">
-                        <div class="app-info">
-                            <div class="app-icon">
-                                <i data-lucide="smartphone"></i>
-                            </div>
-                            <div class="app-text">
-                                <h3>해외안전여행 어플리케이션</h3>
-                                <p>실시간 안전정보와 긴급상황 대응 서비스를 제공합니다</p>
-                            </div>
-                        </div>
-                        <div class="download-buttons">
-                            <a href="https://play.google.com/store/apps/details?id=kr.go.mofa.safetravel" 
-                               target="_blank" 
-                               rel="noopener noreferrer" 
-                               class="download-btn android">
-                                <i data-lucide="smartphone"></i>
-                                <span>플레이스토어 다운로드</span>
-                            </a>
-                            <a href="https://apps.apple.com/kr/app/%ED%95%B4%EC%99%B8%EC%95%88%EC%A0%84%EC%97%AC%ED%96%89-%EC%98%81%EC%82%AC%EC%BD%9C%EC%84%BC%ED%84%B0-%EB%AC%B4%EB%A3%8C%EC%A0%84%ED%99%94/id1469501110" 
-                               target="_blank" 
-                               rel="noopener noreferrer" 
-                               class="download-btn ios">
-                                <i data-lucide="smartphone"></i>
-                                <span>앱스토어 다운로드</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- iframe 로딩 표시 -->
-                <div class="safety-loading">
-                    <div class="loading-content">
-                        <div class="spinner"></div>
-                        <p>안전정보를 불러오는 중... (최대 30초 소요)</p>
-                    </div>
-                </div>
-
-                <!-- iframe 컨테이너 -->
-                <div class="safety-iframe-container" style="display: none;">
-                    <!-- iframe이 여기에 삽입됩니다 -->
-                </div>
+                ${createAppDownloadSection()}
             `;
 
-            // iframe 생성 및 설정
-            const iframe = document.createElement('iframe');
-            iframe.className = 'safety-iframe';
-            iframe.src = url;
-            iframe.title = '파견 국가 안전 정보';
-            iframe.frameBorder = '0';
-            iframe.loading = 'lazy';
-            iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation';
-            
-            // 로딩 상태 추적
-            let isLoaded = false;
-            
-            // iframe 로드 성공 이벤트
-            iframe.onload = () => {
-                if (isLoaded) return; // 중복 호출 방지
-                isLoaded = true;
-                
-                const loadingElement = elements.safetyInfoContent.querySelector('.safety-loading');
-                const iframeContainer = elements.safetyInfoContent.querySelector('.safety-iframe-container');
-                
-                if (loadingElement) loadingElement.style.display = 'none';
-                if (iframeContainer) {
-                    iframeContainer.appendChild(iframe);
-                    iframeContainer.style.display = 'block';
-                }
-                
-                console.log('✅ 안전정보 iframe 로드 완료');
-            };
+            // 국가 기본정보가 있는 경우 추가
+            if (countryInfo) {
+                safetyHtml += createCountryBasicInfoSection(countryInfo);
+                safetyHtml += createEmbassyInfoSection(countryInfo);
+            }
 
-            // iframe 로드 실패 이벤트
-            iframe.onerror = () => {
-                if (isLoaded) return; // 중복 호출 방지
-                isLoaded = true;
-                handleIframeError('안전정보 페이지에 접근할 수 없습니다');
-            };
+            // 외부링크 섹션 추가
+            safetyHtml += createSafetyExternalLinksSection(safetyUrl, countryInfo);
 
-            // 타임아웃 설정 (30초로 연장)
-            const timeoutId = setTimeout(() => {
-                if (!isLoaded) {
-                    isLoaded = true;
-                    handleIframeError('안전정보 로딩 시간이 초과되었습니다 (30초)');
-                }
-            }, 30000); // 15초 → 30초로 연장
-
-            // 성공적으로 로드되면 타임아웃 취소
-            iframe.addEventListener('load', () => {
-                clearTimeout(timeoutId);
-            });
+            // HTML 적용
+            elements.safetyInfoContent.innerHTML = safetyHtml;
 
             initializeLucideIcons();
-            console.log(`🛡️ 안전정보 iframe 설정 완료: ${url}`);
+            console.log('✅ 국가별 안전정보 표시 완료');
 
         } catch (error) {
-            console.error('❌ 안전정보 iframe 표시 실패:', error);
+            console.error('❌ 국가별 안전정보 표시 실패:', error);
             showSafetyError('안전정보 표시 중 오류가 발생했습니다');
         }
     }
-
+    
     /**
-     * iframe 에러 처리 함수 (개선됨)
+     * 앱 다운로드 섹션 HTML 생성
      */
-    function handleIframeError(message) {
-        try {
-            console.error(`❌ iframe 에러 발생: ${message}`);
-            
-            const loadingElement = elements.safetyInfoContent.querySelector('.safety-loading');
-            const iframeContainer = elements.safetyInfoContent.querySelector('.safety-iframe-container');
-            
-            if (loadingElement) loadingElement.style.display = 'none';
-            
-            // 에러 메시지 표시 (앱 다운로드 UI는 유지)
-            if (iframeContainer) {
-                iframeContainer.innerHTML = `
-                    <div class="safety-error">
-                        <i data-lucide="alert-circle"></i>
-                        <h3>안전정보를 불러올 수 없습니다</h3>
-                        <p>${message}</p>
-                        <div class="error-actions">
-                            <button type="button" onclick="window.open('https://www.0404.go.kr/', '_blank')" class="external-link-btn">
-                                <i data-lucide="external-link"></i>
-                                외교부 해외안전여행 사이트에서 확인하기
-                            </button>
-                            <button type="button" onclick="location.reload()" class="external-link-btn" style="background: #6b7280;">
-                                <i data-lucide="refresh-cw"></i>
-                                페이지 새로고침
-                            </button>
+    function createAppDownloadSection() {
+        return `
+            <div class="app-download-banner">
+                <div class="app-download-content">
+                    <div class="app-info">
+                        <div class="app-icon">
+                            <i data-lucide="smartphone"></i>
+                        </div>
+                        <div class="app-text">
+                            <h3>해외안전여행 어플리케이션</h3>
+                            <p>실시간 안전정보와 긴급상황 대응 서비스를 제공합니다</p>
                         </div>
                     </div>
-                `;
-                iframeContainer.style.display = 'block';
-            }
+                    <div class="download-buttons">
+                        <a href="https://play.google.com/store/apps/details?id=kr.go.mofa.safetravel" 
+                           target="_blank" 
+                           rel="noopener noreferrer" 
+                           class="download-btn android">
+                            <i data-lucide="smartphone"></i>
+                            <span>플레이스토어 다운로드</span>
+                        </a>
+                        <a href="https://apps.apple.com/kr/app/%ED%95%B4%EC%99%B8%EC%95%88%EC%A0%84%EC%97%AC%ED%96%89-%EC%98%81%EC%82%AC%EC%BD%9C%EC%84%BC%ED%84%B0-%EB%AC%B4%EB%A3%8C%EC%A0%84%ED%99%94/id1469501110" 
+                           target="_blank" 
+                           rel="noopener noreferrer" 
+                           class="download-btn ios">
+                            <i data-lucide="smartphone"></i>
+                            <span>앱스토어 다운로드</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    /**
+     * 국가 기본정보 섹션 HTML 생성
+     */
+    function createCountryBasicInfoSection(countryInfo) {
+        try {
+            const basicInfo = countryInfo.basic_info || {};
             
-            initializeLucideIcons();
-            
+            return `
+                <div class="country-basic-info">
+                    <h4 class="safety-section-title">
+                        <i data-lucide="globe"></i>
+                        ${countryInfo.country_name} 기본정보
+                    </h4>
+                    <div class="country-info-grid">
+                        <div class="info-item">
+                            <span class="info-label">면적</span>
+                            <span class="info-value">${basicInfo.area || '정보 없음'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">수도</span>
+                            <span class="info-value">${basicInfo.capital || '정보 없음'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">언어</span>
+                            <span class="info-value">${basicInfo.language || '정보 없음'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">종교</span>
+                            <span class="info-value">${basicInfo.religion || '정보 없음'}</span>
+                        </div>
+                        <div class="info-item full-width">
+                            <span class="info-label">민족 구성</span>
+                            <span class="info-value">${basicInfo.ethnicity || '정보 없음'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         } catch (error) {
-            console.error('❌ iframe 에러 처리 실패:', error);
+            console.error('❌ 국가 기본정보 섹션 생성 실패:', error);
+            return '';
+        }
+    }
+    
+    /**
+     * 재외공관 정보 섹션 HTML 생성
+     */
+    function createEmbassyInfoSection(countryInfo) {
+        try {
+            return `
+                <div class="embassy-info">
+                    <h4 class="safety-section-title">
+                        <i data-lucide="building-2"></i>
+                        재외공관 정보
+                    </h4>
+                    <div class="embassy-info-grid">
+                        <div class="embassy-item">
+                            <div class="embassy-icon">
+                                <i data-lucide="map-pin"></i>
+                            </div>
+                            <div class="embassy-details">
+                                <span class="embassy-label">대사관 주소</span>
+                                <span class="embassy-value">${countryInfo.embassy_address || '정보 없음'}</span>
+                            </div>
+                        </div>
+                        <div class="embassy-item">
+                            <div class="embassy-icon">
+                                <i data-lucide="phone"></i>
+                            </div>
+                            <div class="embassy-details">
+                                <span class="embassy-label">대표번호</span>
+                                <span class="embassy-value">${countryInfo.embassy_phone || '정보 없음'}</span>
+                            </div>
+                        </div>
+                        <div class="embassy-item emergency">
+                            <div class="embassy-icon">
+                                <i data-lucide="phone-call"></i>
+                            </div>
+                            <div class="embassy-details">
+                                <span class="embassy-label">긴급연락처</span>
+                                <span class="embassy-value emergency-number">${countryInfo.emergency_contact || '정보 없음'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            console.error('❌ 재외공관 정보 섹션 생성 실패:', error);
+            return '';
+        }
+    }
+    
+    /**
+     * 외부링크 섹션 HTML 생성
+     */
+    function createSafetyExternalLinksSection(safetyUrl, countryInfo) {
+        try {
+            const hasCustomUrl = safetyUrl && safetyUrl !== 'https://www.0404.go.kr/';
+            
+            return `
+                <div class="safety-external-links">
+                    <h4 class="safety-section-title">
+                        <i data-lucide="external-link"></i>
+                        상세 안전정보
+                    </h4>
+                    <div class="external-links-grid">
+                        ${hasCustomUrl ? `
+                            <button type="button" 
+                                    onclick="window.open('${safetyUrl}', '_blank')" 
+                                    class="external-link-btn primary">
+                                <i data-lucide="shield"></i>
+                                <div class="btn-content">
+                                    <span class="btn-title">학당별 안전정보</span>
+                                    <span class="btn-desc">해당 지역 맞춤 안전정보</span>
+                                </div>
+                            </button>
+                        ` : ''}
+                        <button type="button" 
+                                onclick="window.open('https://www.0404.go.kr/', '_blank')" 
+                                class="external-link-btn ${hasCustomUrl ? 'secondary' : 'primary'}">
+                            <i data-lucide="globe"></i>
+                            <div class="btn-content">
+                                <span class="btn-title">외교부 해외안전여행</span>
+                                <span class="btn-desc">종합 안전정보 및 여행경보</span>
+                            </div>
+                        </button>
+                        ${countryInfo ? `
+                            <button type="button" 
+                                    onclick="window.open('https://www.0404.go.kr/country/${countryInfo.country_name}', '_blank')" 
+                                    class="external-link-btn tertiary">
+                                <i data-lucide="map"></i>
+                                <div class="btn-content">
+                                    <span class="btn-title">${countryInfo.country_name} 정보</span>
+                                    <span class="btn-desc">국가별 상세 안전정보</span>
+                                </div>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            console.error('❌ 외부링크 섹션 생성 실패:', error);
+            return `
+                <div class="safety-external-links">
+                    <button type="button" onclick="window.open('https://www.0404.go.kr/', '_blank')" class="external-link-btn primary">
+                        <i data-lucide="external-link"></i>
+                        외교부 해외안전여행 사이트
+                    </button>
+                </div>
+            `;
         }
     }
     
@@ -1244,6 +1308,12 @@ window.InstituteInfoUI = (function() {
                     <i data-lucide="alert-circle"></i>
                     <h3>안전정보를 불러올 수 없습니다</h3>
                     <p>${message || '알 수 없는 오류가 발생했습니다'}</p>
+                    <div class="error-actions">
+                        <button type="button" onclick="window.open('https://www.0404.go.kr/', '_blank')" class="external-link-btn">
+                            <i data-lucide="external-link"></i>
+                            외교부 해외안전여행 사이트에서 확인하기
+                        </button>
+                    </div>
                 </div>
             `;
             
@@ -1265,36 +1335,7 @@ window.InstituteInfoUI = (function() {
             }
 
             elements.safetyInfoContent.innerHTML = `
-                <!-- 해외안전여행 앱 다운로드 UI -->
-                <div class="app-download-banner">
-                    <div class="app-download-content">
-                        <div class="app-info">
-                            <div class="app-icon">
-                                <i data-lucide="smartphone"></i>
-                            </div>
-                            <div class="app-text">
-                                <h3>해외안전여행 어플리케이션</h3>
-                                <p>실시간 안전정보와 긴급상황 대응 서비스를 제공합니다</p>
-                            </div>
-                        </div>
-                        <div class="download-buttons">
-                            <a href="https://play.google.com/store/apps/details?id=kr.go.mofa.safetravel" 
-                               target="_blank" 
-                               rel="noopener noreferrer" 
-                               class="download-btn android">
-                                <i data-lucide="smartphone"></i>
-                                <span>플레이스토어 다운로드</span>
-                            </a>
-                            <a href="https://apps.apple.com/kr/app/%ED%95%B4%EC%99%B8%EC%95%88%EC%A0%84%EC%97%AC%ED%96%89-%EC%98%81%EC%82%AC%EC%BD%9C%EC%84%BC%ED%84%B0-%EB%AC%B4%EB%A3%8C%EC%A0%84%ED%99%94/id1469501110" 
-                               target="_blank" 
-                               rel="noopener noreferrer" 
-                               class="download-btn ios">
-                                <i data-lucide="smartphone"></i>
-                                <span>앱스토어 다운로드</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                ${createAppDownloadSection()}
 
                 <!-- 안전정보 없음 메시지 -->
                 <div class="safety-unavailable">
@@ -1342,10 +1383,10 @@ window.InstituteInfoUI = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoUI',
-            version: '4.7.6',
+            version: '4.8.0',
             initialized: isInitialized,
             elementsCount: Object.keys(elements).length,
-            description: '안전정보 iframe 로딩 안정성 개선 - 타임아웃 연장 및 에러 처리 강화'
+            description: 'DB 기반 국가 안전정보 표시 시스템 - iframe 대신 구조화된 안전정보 제공'
         };
     }
     
@@ -1368,11 +1409,10 @@ window.InstituteInfoUI = (function() {
         // 탭 관리
         switchTab,
         
-        // 안전정보
-        showSafetyIframe,
+        // 안전정보 (새로운 방식)
+        showCountrySafetyInfo,
         showSafetyError,
         showSafetyUnavailable,
-        handleIframeError,  // 개선된 공개 함수
         
         // 유틸리티
         addAnimation,
@@ -1388,4 +1428,4 @@ window.InstituteInfoUI = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.7.6 (안전정보 iframe 로딩 안정성 개선 - 타임아웃 연장 및 에러 처리 강화)');
+console.log('🎨 InstituteInfoUI 모듈 로드 완료 - v4.8.0 (DB 기반 국가 안전정보 표시 시스템)');
