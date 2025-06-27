@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 페이지 CSS
- * Version: 4.8.0
- * Description: DB 기반 국가 안전정보 시스템 스타일 추가 - 구조화된 안전정보 카드들
+ * Version: 4.8.1
+ * Description: 기본정보 세로 나열 UI 개선 및 안전정보 안내 메시지 추가
  */
 
 /* ===== 전역 스타일 ===== */
@@ -186,26 +186,38 @@ body {
     stroke-width: 2;
 }
 
-/* ===== 테이블 형태 정보 표시 (개선된 버전) ===== */
+/* ===== 기본정보 세로 나열 스타일 (NEW) ===== */
 .info-table {
-    display: grid;
-    gap: 1rem;
+    display: block;
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid #e2e8f0;
 }
 
 .info-table-row {
-    display: grid;
-    grid-template-columns: 200px 1fr;
-    gap: 1rem;
-    padding: 1rem;
-    background: #f7fafc;
-    border-radius: 0.5rem;
-    border: 1px solid #e2e8f0;
+    display: block;
+    padding: 1rem 0;
+    border-bottom: 1px solid #f1f5f9;
     transition: all 0.2s ease;
 }
 
+.info-table-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.info-table-row:first-child {
+    padding-top: 0;
+}
+
 .info-table-row:hover {
-    background: #edf2f7;
-    border-color: #cbd5e0;
+    background: #f8fafc;
+    margin: 0 -1.5rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    border-radius: 0.5rem;
 }
 
 .info-table-label {
@@ -215,8 +227,7 @@ body {
     font-weight: 600;
     color: #2d3748;
     font-size: 0.95rem;
-    min-width: 200px;
-    flex-shrink: 0;
+    margin-bottom: 0.5rem;
 }
 
 .info-table-label i {
@@ -229,13 +240,12 @@ body {
 
 .info-table-value {
     color: #1a202c;
-    font-size: 0.95rem;
-    line-height: 1.5;
+    font-size: 1rem;
+    line-height: 1.6;
     word-break: break-word;
-    /* 긴 텍스트 처리 개선 */
-    hyphens: auto;
+    padding-left: 1.5rem; /* 아이콘과 정렬 */
     overflow-wrap: break-word;
-    min-width: 0; /* flexbox에서 텍스트 오버플로우 방지 */
+    hyphens: auto;
 }
 
 .info-table-value.empty {
@@ -400,6 +410,52 @@ body {
 /* ===== 안전정보 탭 ===== */
 .safety-info-container {
     min-height: 400px;
+}
+
+/* ===== 안전정보 안내 메시지 (NEW) ===== */
+.safety-guide-notice {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 2px solid #f59e0b;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2);
+}
+
+.safety-guide-notice .notice-icon {
+    background: rgba(245, 158, 11, 0.2);
+    border-radius: 50%;
+    padding: 12px;
+    border: 2px solid rgba(245, 158, 11, 0.3);
+    flex-shrink: 0;
+}
+
+.safety-guide-notice .notice-icon i {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: #92400e;
+    stroke-width: 2;
+}
+
+.safety-guide-notice .notice-content {
+    flex: 1;
+}
+
+.safety-guide-notice .notice-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #92400e;
+    margin: 0 0 6px 0;
+}
+
+.safety-guide-notice .notice-text {
+    font-size: 0.95rem;
+    color: #78350f;
+    margin: 0;
+    line-height: 1.5;
 }
 
 /* ===== 앱 다운로드 배너 스타일 ===== */
@@ -938,20 +994,24 @@ body {
         display: none;
     }
     
-    /* 테이블을 세로 배치로 변경 */
-    .info-table-row {
-        grid-template-columns: 1fr;
-        gap: 0.5rem;
+    /* 기본정보 테이블 모바일 최적화 */
+    .info-table {
+        padding: 1rem;
     }
     
-    .info-table-label {
-        min-width: auto;
-        padding-bottom: 0.25rem;
-        border-bottom: 1px solid #e2e8f0;
+    .info-table-row {
+        padding: 0.75rem 0;
+    }
+    
+    .info-table-row:hover {
+        margin: 0 -1rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
     
     .info-table-value {
-        padding-top: 0.25rem;
+        padding-left: 1.25rem;
+        font-size: 0.95rem;
     }
     
     /* JSON 테이블 반응형 */
@@ -1030,6 +1090,14 @@ body {
         padding: 10px 16px;
     }
     
+    /* 안전정보 안내 메시지 반응형 */
+    .safety-guide-notice {
+        flex-direction: column;
+        text-align: center;
+        padding: 16px;
+        gap: 12px;
+    }
+    
     .safety-iframe {
         height: 600px;
         min-height: 400px;
@@ -1101,6 +1169,16 @@ body {
     
     .btn-content {
         align-items: center;
+    }
+    
+    /* 기본정보 더 작은 화면 최적화 */
+    .info-table {
+        padding: 0.75rem;
+    }
+    
+    .info-table-value {
+        padding-left: 1rem;
+        font-size: 0.9rem;
     }
 }
 
