@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 핵심 로직 모듈
- * Version: 4.7.0
- * Description: 희망 개설 강좌 중복 제거 및 교육 환경 정보 매핑 개선
+ * Version: 4.7.1
+ * Description: 희망 개설 강좌 독립 섹션 및 테이블 스타일 개선
  */
 
 window.InstituteInfoCore = (function() {
@@ -20,7 +20,7 @@ window.InstituteInfoCore = (function() {
      */
     async function initialize() {
         try {
-            console.log('🧠 InstituteInfoCore 초기화 시작 v4.7.0');
+            console.log('🧠 InstituteInfoCore 초기화 시작 v4.7.1');
             
             // 의존성 모듈 확인
             if (!window.InstituteInfoAPI) {
@@ -44,7 +44,7 @@ window.InstituteInfoCore = (function() {
             await loadInstituteData();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoCore 초기화 완료 v4.7.0');
+            console.log('✅ InstituteInfoCore 초기화 완료 v4.7.1');
             
         } catch (error) {
             console.error('❌ InstituteInfoCore 초기화 실패:', error);
@@ -194,7 +194,7 @@ window.InstituteInfoCore = (function() {
                 }
             ];
             
-            // 문화인턴 활동 정보 구성 - 희망 개설 강좌를 별도 라벨 없이 바로 테이블로
+            // 문화인턴 활동 정보 구성 (희망 개설 강좌 제외)
             const activityInfo = [
                 {
                     icon: 'calendar',
@@ -209,12 +209,13 @@ window.InstituteInfoCore = (function() {
                 }
             ];
             
-            // 희망 개설 강좌가 있는 경우에만 추가 (라벨 없이 바로 테이블)
+            // 희망 개설 강좌 정보 (별도 섹션)
+            const desiredCoursesInfo = [];
             if (currentInstituteData.desired_courses && 
                 Array.isArray(currentInstituteData.desired_courses) && 
                 currentInstituteData.desired_courses.length > 0) {
                 
-                activityInfo.push({
+                desiredCoursesInfo.push({
                     icon: 'target',
                     label: '', // 라벨 없이 바로 테이블 표시
                     value: currentInstituteData.desired_courses,
@@ -254,6 +255,25 @@ window.InstituteInfoCore = (function() {
             // UI에 정보 표시
             window.InstituteInfoUI.renderInfoTable('basicInfoTable', basicInfo);
             window.InstituteInfoUI.renderInfoTable('activityInfoTable', activityInfo);
+            
+            // 희망 개설 강좌 정보 표시 (데이터가 있는 경우에만)
+            if (desiredCoursesInfo.length > 0) {
+                console.log('🎯 희망 개설 강좌 정보 표시 중...', currentInstituteData.desired_courses);
+                window.InstituteInfoUI.renderInfoTable('desiredCoursesTable', desiredCoursesInfo);
+            } else {
+                console.log('🎯 희망 개설 강좌 정보 없음');
+                // 희망 개설 강좌 정보가 없을 때 안내 메시지 표시
+                const coursesTable = document.getElementById('desiredCoursesTable');
+                if (coursesTable) {
+                    coursesTable.innerHTML = `
+                        <div class="info-table-row">
+                            <div class="info-table-value empty" style="text-align: center; padding: 2rem;">
+                                희망 개설 강좌 정보가 등록되지 않았습니다.
+                            </div>
+                        </div>
+                    `;
+                }
+            }
             
             // 교육 환경 정보 표시 (데이터가 있는 경우에만)
             if (educationInfo.length > 0) {
@@ -538,12 +558,12 @@ window.InstituteInfoCore = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoCore',
-            version: '4.7.0',
+            version: '4.7.1',
             initialized: isInitialized,
             currentTab,
             hasData: !!currentInstituteData,
             eventListenersCount: eventListeners.size,
-            description: '희망 개설 강좌 중복 제거 및 교육 환경 정보 매핑이 개선된 학당 정보 핵심 로직 모듈'
+            description: '희망 개설 강좌 독립 섹션 및 테이블 스타일이 개선된 학당 정보 핵심 로직 모듈'
         };
     }
     
@@ -576,4 +596,4 @@ window.InstituteInfoCore = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🧠 InstituteInfoCore 모듈 로드 완료 - v4.7.0 (희망 개설 강좌 중복 제거 및 교육 환경 정보 개선)');
+console.log('🧠 InstituteInfoCore 모듈 로드 완료 - v4.7.1 (희망 개설 강좌 독립 섹션 및 스타일 개선)');
