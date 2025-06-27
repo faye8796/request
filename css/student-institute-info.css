@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 페이지 CSS
- * Version: 4.7.4
- * Description: 파견 국가 안전 정보 기능 개선 - 앱 다운로드 UI 스타일 추가
+ * Version: 4.8.0
+ * Description: DB 기반 국가 안전정보 시스템 스타일 추가 - 구조화된 안전정보 카드들
  */
 
 /* ===== 전역 스타일 ===== */
@@ -402,7 +402,7 @@ body {
     min-height: 400px;
 }
 
-/* ===== 앱 다운로드 배너 스타일 (새로 추가) ===== */
+/* ===== 앱 다운로드 배너 스타일 ===== */
 .app-download-banner {
     background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
     border-radius: 16px;
@@ -490,6 +490,309 @@ body {
 
 .download-btn i {
     font-size: 1.1rem;
+}
+
+/* ===== 국가 기본정보 카드 (NEW) ===== */
+.country-basic-info {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 2px solid #7dd3fc;
+    box-shadow: 0 8px 32px rgba(125, 211, 252, 0.2);
+}
+
+.safety-section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0c4a6e;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #7dd3fc;
+}
+
+.safety-section-title i {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: #0369a1;
+    stroke-width: 2;
+}
+
+.country-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.info-item {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid rgba(125, 211, 252, 0.3);
+    transition: all 0.3s ease;
+}
+
+.info-item:hover {
+    background: rgba(255, 255, 255, 0.95);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(125, 211, 252, 0.2);
+}
+
+.info-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.info-label {
+    display: block;
+    font-weight: 600;
+    color: #0369a1;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.info-value {
+    display: block;
+    color: #1e293b;
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+/* ===== 재외공관 정보 카드 (NEW) ===== */
+.embassy-info {
+    background: linear-gradient(135deg, #fef3e2 0%, #fed7aa 100%);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 2px solid #fb923c;
+    box-shadow: 0 8px 32px rgba(251, 146, 60, 0.2);
+}
+
+.embassy-info .safety-section-title {
+    color: #9a3412;
+    border-bottom-color: #fb923c;
+}
+
+.embassy-info .safety-section-title i {
+    color: #ea580c;
+}
+
+.embassy-info-grid {
+    display: grid;
+    gap: 16px;
+}
+
+.embassy-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    padding: 18px;
+    border: 1px solid rgba(251, 146, 60, 0.3);
+    transition: all 0.3s ease;
+}
+
+.embassy-item:hover {
+    background: rgba(255, 255, 255, 0.95);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(251, 146, 60, 0.2);
+}
+
+.embassy-item.emergency {
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+    border-color: #f87171;
+    position: relative;
+}
+
+.embassy-item.emergency::before {
+    content: "🚨";
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 1.5rem;
+    background: #dc2626;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+.embassy-icon {
+    background: rgba(251, 146, 60, 0.2);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid rgba(251, 146, 60, 0.4);
+    flex-shrink: 0;
+}
+
+.embassy-item.emergency .embassy-icon {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.embassy-icon i {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #ea580c;
+    stroke-width: 2;
+}
+
+.embassy-item.emergency .embassy-icon i {
+    color: #dc2626;
+}
+
+.embassy-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.embassy-label {
+    display: block;
+    font-weight: 600;
+    color: #9a3412;
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.embassy-item.emergency .embassy-label {
+    color: #991b1b;
+}
+
+.embassy-value {
+    display: block;
+    color: #1e293b;
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 500;
+    word-break: break-word;
+}
+
+.embassy-value.emergency-number {
+    font-weight: 700;
+    color: #dc2626;
+    font-size: 1.1rem;
+}
+
+/* ===== 외부링크 섹션 (NEW) ===== */
+.safety-external-links {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 2px solid #9ca3af;
+    box-shadow: 0 8px 32px rgba(156, 163, 175, 0.2);
+}
+
+.safety-external-links .safety-section-title {
+    color: #374151;
+    border-bottom-color: #9ca3af;
+}
+
+.safety-external-links .safety-section-title i {
+    color: #6b7280;
+}
+
+.external-links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.external-link-btn {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    color: #374151;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.external-link-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    text-decoration: none;
+}
+
+.external-link-btn.primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border-color: #2563eb;
+    color: white;
+}
+
+.external-link-btn.primary:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    color: white;
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+}
+
+.external-link-btn.secondary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-color: #059669;
+    color: white;
+}
+
+.external-link-btn.secondary:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+}
+
+.external-link-btn.tertiary {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border-color: #7c3aed;
+    color: white;
+}
+
+.external-link-btn.tertiary:hover {
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    color: white;
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
+}
+
+.external-link-btn i {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    stroke-width: 2;
+}
+
+.btn-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    flex: 1;
+}
+
+.btn-title {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.btn-desc {
+    font-size: 0.85rem;
+    opacity: 0.8;
+    font-weight: 500;
+    line-height: 1.3;
 }
 
 /* ===== 안전정보 컨테이너 스타일 (개선) ===== */
@@ -587,30 +890,6 @@ body {
     flex-wrap: wrap;
 }
 
-.external-link-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 12px 20px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.external-link-btn:hover {
-    background: #2563eb;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    color: white;
-    text-decoration: none;
-}
-
 /* ===== 애니메이션 효과 ===== */
 .fade-in {
     animation: fadeInUp 0.6s ease-out;
@@ -693,6 +972,41 @@ body {
         padding-left: 0;
     }
     
+    /* 안전정보 카드들 반응형 */
+    .country-basic-info,
+    .embassy-info,
+    .safety-external-links {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+    
+    .country-info-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .info-item.full-width {
+        grid-column: 1;
+    }
+    
+    .external-links-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .external-link-btn {
+        padding: 16px;
+        gap: 12px;
+    }
+    
+    .btn-title {
+        font-size: 0.9rem;
+    }
+    
+    .btn-desc {
+        font-size: 0.8rem;
+    }
+    
     /* 앱 다운로드 배너 반응형 */
     .app-download-content {
         flex-direction: column;
@@ -756,17 +1070,37 @@ body {
         height: 400px;
     }
     
-    .app-download-banner {
-        padding: 16px;
-        margin-bottom: 16px;
+    .app-download-banner,
+    .country-basic-info,
+    .embassy-info,
+    .safety-external-links {
+        padding: 12px;
+        margin-bottom: 12px;
     }
     
-    .app-text h3 {
+    .app-text h3,
+    .safety-section-title {
         font-size: 1.1rem;
     }
     
     .app-text p {
         font-size: 0.85rem;
+    }
+    
+    .embassy-item {
+        padding: 14px;
+        gap: 12px;
+    }
+    
+    .external-link-btn {
+        padding: 14px;
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+    
+    .btn-content {
+        align-items: center;
     }
 }
 
@@ -792,8 +1126,16 @@ body {
     }
     
     .safety-iframe,
-    .app-download-banner {
+    .app-download-banner,
+    .external-link-btn {
         display: none;
+    }
+    
+    .country-basic-info,
+    .embassy-info {
+        background: white !important;
+        border: 2px solid #000 !important;
+        box-shadow: none !important;
     }
 }
 
@@ -809,12 +1151,18 @@ body {
 /* 고대비 모드 지원 */
 @media (prefers-contrast: high) {
     .info-table-row,
-    .info-list-item {
+    .info-list-item,
+    .info-item,
+    .embassy-item {
         border-width: 2px;
     }
     
     .tab-button.active {
         box-shadow: inset 0 -4px 0 #000;
+    }
+    
+    .external-link-btn {
+        border-width: 3px;
     }
 }
 
