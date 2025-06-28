@@ -16,8 +16,6 @@ window.InstituteInfoAPI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🔗 InstituteInfoAPI 초기화 시작 v4.8.1');
-            
             // SupabaseCore 확인 및 클라이언트 확보
             if (!window.SupabaseCore) {
                 throw new Error('SupabaseCore가 로드되지 않았습니다');
@@ -32,7 +30,6 @@ window.InstituteInfoAPI = (function() {
             
             isInitialized = true;
             
-            console.log('✅ InstituteInfoAPI 초기화 완료 v4.8.1');
             return true;
             
         } catch (error) {
@@ -50,8 +47,6 @@ window.InstituteInfoAPI = (function() {
                 await initialize();
             }
             
-            console.log('🔍 사용자 파견학당 정보 조회 중...');
-            
             // 현재 로그인한 사용자 정보 가져오기
             const currentStudent = localStorage.getItem('currentStudent');
             if (!currentStudent) {
@@ -64,8 +59,6 @@ window.InstituteInfoAPI = (function() {
             if (!instituteName) {
                 throw new Error('파견학당이 배정되지 않았습니다');
             }
-            
-            console.log(`🏛️ 배정된 학당: ${instituteName}`);
             
             // institutes 테이블에서 학당 정보 조회 (모든 필드 포함)
             const { data: instituteData, error: instituteError } = await supabaseClient
@@ -110,8 +103,6 @@ window.InstituteInfoAPI = (function() {
                 throw new Error(`학당 정보를 찾을 수 없습니다: ${instituteName}`);
             }
             
-            console.log('✅ 학당 정보 조회 완료:', instituteData.name_ko);
-            console.log('🔍 조회된 데이터 필드들:', Object.keys(instituteData));
             return instituteData;
             
         } catch (error) {
@@ -126,11 +117,8 @@ window.InstituteInfoAPI = (function() {
     function extractCountryFromAddress(address) {
         try {
             if (!address || typeof address !== 'string') {
-                console.warn('⚠️ 유효하지 않은 주소 데이터:', address);
                 return null;
             }
-            
-            console.log('🔍 주소에서 국가명 추출 시도:', address);
             
             // 간소화된 국가명 매핑 (주요 국가만)
             const countryMappings = {
@@ -208,7 +196,6 @@ window.InstituteInfoAPI = (function() {
             // 1단계: 직접 매칭 시도
             for (const [pattern, country] of Object.entries(countryMappings)) {
                 if (address.includes(pattern)) {
-                    console.log(`✅ 직접 매칭 성공: ${pattern} → ${country}`);
                     return country;
                 }
             }
@@ -216,7 +203,6 @@ window.InstituteInfoAPI = (function() {
             // 2단계: 미국 주 약어 패턴 확인 (TX, CA, NY 등)
             const usStatePattern = /\b[A-Z]{2}\b(?:\s|,|$)/;
             if (usStatePattern.test(address)) {
-                console.log('✅ 미국 주 약어 패턴으로 미국 판별');
                 return '미국';
             }
             
@@ -224,12 +210,10 @@ window.InstituteInfoAPI = (function() {
             const usCities = ['San Antonio', 'Houston', 'Dallas', 'Austin', 'Los Angeles', 'San Francisco', 'New York', 'Chicago', 'Miami', 'Boston', 'Seattle', 'Denver', 'Phoenix', 'Las Vegas'];
             for (const city of usCities) {
                 if (address.includes(city)) {
-                    console.log(`✅ 미국 도시명으로 미국 판별: ${city}`);
                     return '미국';
                 }
             }
             
-            console.log('❌ 국가명 추출 실패 - 알 수 없는 국가');
             return null;
             
         } catch (error) {
@@ -247,17 +231,12 @@ window.InstituteInfoAPI = (function() {
                 await initialize();
             }
             
-            console.log('🔍 주소 기반 국가 안전정보 조회 시작:', address);
-            
             // 주소에서 국가명 추출
             const countryName = extractCountryFromAddress(address);
             
             if (!countryName) {
-                console.log('❌ 국가명을 추출할 수 없어 안전정보 조회 불가');
                 return null;
             }
-            
-            console.log(`🔍 추출된 국가명으로 안전정보 조회: ${countryName}`);
             
             // country_safety_info 테이블에서 해당 국가 정보 조회
             const { data: countryInfo, error: countryError } = await supabaseClient
@@ -269,7 +248,6 @@ window.InstituteInfoAPI = (function() {
             if (countryError) {
                 if (countryError.code === 'PGRST116') {
                     // 데이터가 없는 경우
-                    console.log(`📋 ${countryName} 안전정보 데이터 없음`);
                     return null;
                 } else {
                     console.error('❌ 국가 안전정보 조회 실패:', countryError);
@@ -278,11 +256,9 @@ window.InstituteInfoAPI = (function() {
             }
             
             if (!countryInfo) {
-                console.log(`📋 ${countryName} 안전정보 없음`);
                 return null;
             }
             
-            console.log('✅ 국가 안전정보 조회 완료:', countryInfo.country_name);
             return countryInfo;
             
         } catch (error) {
@@ -297,15 +273,8 @@ window.InstituteInfoAPI = (function() {
     function getSafetyInfoUrl(instituteData) {
         try {
             if (!instituteData) {
-                console.warn('⚠️ 학당 데이터가 없습니다');
                 return 'https://www.0404.go.kr/';
             }
-            
-            console.log('🔗 안전정보 URL 처리 시작:', {
-                학당명: instituteData.name_ko,
-                safety_info_url: instituteData.safety_info_url,
-                url_타입: typeof instituteData.safety_info_url
-            });
             
             // 1순위: 학당별 safety_info_url 검증
             if (instituteData.safety_info_url) {
@@ -317,16 +286,12 @@ window.InstituteInfoAPI = (function() {
                 if (url && !invalidValues.includes(url)) {
                     // URL 형식 기본 검증
                     if (url.startsWith('http://') || url.startsWith('https://')) {
-                        console.log(`✅ 학당 전용 안전정보 URL 사용: ${url}`);
                         return url;
-                    } else {
-                        console.warn('⚠️ 유효하지 않은 URL 형식:', url);
                     }
                 }
             }
             
             // 2순위: 외교부 기본 사이트
-            console.log('🔗 기본 외교부 안전정보 사이트 사용');
             return 'https://www.0404.go.kr/';
             
         } catch (error) {
@@ -357,7 +322,6 @@ window.InstituteInfoAPI = (function() {
             return data?.publicUrl || null;
             
         } catch (error) {
-            console.warn('⚠️ 이미지 URL 생성 실패:', error);
             return null;
         }
     }
@@ -377,11 +341,9 @@ window.InstituteInfoAPI = (function() {
                 return false;
             }
             
-            console.log(`🔍 안전정보 URL 확인: ${url}`);
             return true;
             
         } catch (error) {
-            console.warn('⚠️ 안전정보 URL 검증 실패:', error);
             return false;
         }
     }
@@ -411,7 +373,6 @@ window.InstituteInfoAPI = (function() {
                     return JSON.parse(jsonData);
                 } catch (parseError) {
                     // JSON 파싱 실패 시 원본 문자열 반환
-                    console.warn(`⚠️ ${fieldName} JSON 파싱 실패, 문자열로 처리:`, parseError);
                     return jsonData;
                 }
             }
@@ -419,7 +380,6 @@ window.InstituteInfoAPI = (function() {
             return jsonData;
             
         } catch (error) {
-            console.warn(`⚠️ ${fieldName} 파싱 실패:`, error);
             return null;
         }
     }
@@ -462,7 +422,6 @@ window.InstituteInfoAPI = (function() {
             return parsed;
             
         } catch (error) {
-            console.warn(`⚠️ ${fieldName} 테이블 포맷팅 실패:`, error);
             return jsonData;
         }
     }
@@ -472,8 +431,6 @@ window.InstituteInfoAPI = (function() {
      */
     function processInstituteData(instituteData) {
         try {
-            console.log('🔄 학당 데이터 전처리 시작...', instituteData);
-            
             // 기본 정보 처리
             const processed = {
                 ...instituteData,
@@ -515,8 +472,6 @@ window.InstituteInfoAPI = (function() {
                 completion_percentage: instituteData.completion_percentage || 0
             };
             
-            console.log('✅ 학당 데이터 전처리 완료');
-            console.log('🔍 전처리된 필드들:', Object.keys(processed));
             return processed;
             
         } catch (error) {
