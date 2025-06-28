@@ -79,8 +79,6 @@ window.InstituteInfoUI = (function() {
      */
     async function initialize() {
         try {
-            console.log('🎨 InstituteInfoUI 초기화 시작 v4.8.7');
-            
             // DOM 요소 캐시
             cacheElements();
             
@@ -88,7 +86,6 @@ window.InstituteInfoUI = (function() {
             initializeLucideIcons();
             
             isInitialized = true;
-            console.log('✅ InstituteInfoUI 초기화 완료 v4.8.7');
             
         } catch (error) {
             console.error('❌ InstituteInfoUI 초기화 실패:', error);
@@ -117,8 +114,6 @@ window.InstituteInfoUI = (function() {
             elements.additionalInfoList = document.getElementById('additionalInfoList');
             elements.safetyInfoContent = document.getElementById('safetyInfoContent');
             
-            console.log('✅ DOM 요소 캐시 완료');
-            
         } catch (error) {
             console.error('❌ DOM 요소 캐시 실패:', error);
         }
@@ -131,12 +126,9 @@ window.InstituteInfoUI = (function() {
         try {
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
-                console.log('✅ Lucide 아이콘 초기화 완료');
-            } else {
-                console.warn('⚠️ Lucide 아이콘 라이브러리를 찾을 수 없습니다');
             }
         } catch (error) {
-            console.warn('⚠️ Lucide 아이콘 초기화 실패:', error);
+            // 아이콘 초기화 실패는 치명적이지 않으므로 조용히 처리
         }
     }
     
@@ -149,7 +141,6 @@ window.InstituteInfoUI = (function() {
             if (elements.loadingSpinner) {
                 elements.loadingSpinner.style.display = 'flex';
             }
-            console.log('📡 로딩 상태 표시');
         } catch (error) {
             console.error('❌ 로딩 표시 실패:', error);
         }
@@ -171,7 +162,6 @@ window.InstituteInfoUI = (function() {
             }
             
             initializeLucideIcons();
-            console.log(`❌ 에러 메시지 표시: ${message}`);
             
         } catch (error) {
             console.error('❌ 에러 표시 실패:', error);
@@ -191,7 +181,6 @@ window.InstituteInfoUI = (function() {
             }
             
             initializeLucideIcons();
-            console.log('✅ 메인 콘텐츠 표시');
             
         } catch (error) {
             console.error('❌ 메인 콘텐츠 표시 실패:', error);
@@ -227,8 +216,6 @@ window.InstituteInfoUI = (function() {
                 if (elements.instituteEnglishTitle) {
                     elements.instituteEnglishTitle.textContent = instituteData.name_en || 'English Name Not Available';
                 }
-                
-                console.log(`📋 학당 헤더 표시: ${instituteData.name_ko} (${instituteData.name_en})`);
             }
         } catch (error) {
             console.error('❌ 학당 헤더 표시 실패:', error);
@@ -249,16 +236,13 @@ window.InstituteInfoUI = (function() {
                     elements.instituteImage.src = imageUrl;
                     elements.instituteImage.style.display = 'block';
                     elements.defaultImagePlaceholder.style.display = 'none';
-                    console.log('🖼️ 학당 이미지 표시 완료');
                 };
                 img.onerror = () => {
                     showDefaultImage();
-                    console.log('⚠️ 학당 이미지 로드 실패, 기본 이미지 표시');
                 };
                 img.src = imageUrl;
             } else {
                 showDefaultImage();
-                console.log('📷 기본 이미지 표시');
             }
             
         } catch (error) {
@@ -289,7 +273,6 @@ window.InstituteInfoUI = (function() {
         try {
             const table = document.getElementById(tableId);
             if (!table || !Array.isArray(infoItems)) {
-                console.warn(`⚠️ 테이블 렌더링 실패: ${tableId}`);
                 return;
             }
             
@@ -303,7 +286,6 @@ window.InstituteInfoUI = (function() {
             });
             
             initializeLucideIcons();
-            console.log(`✅ 테이블 렌더링 완료: ${tableId}`);
             
         } catch (error) {
             console.error(`❌ 테이블 렌더링 실패 (${tableId}):`, error);
@@ -369,7 +351,6 @@ window.InstituteInfoUI = (function() {
                     value.innerHTML = convertNewlinesToHtml(textValue);
                     // CSS 백업 옵션 추가
                     value.style.whiteSpace = 'pre-line';
-                    console.log('🔄 줄바꿈 텍스트 변환:', textValue.substring(0, 50) + '...');
                 } else {
                     // 일반 텍스트는 기존 방식 유지
                     value.textContent = textValue;
@@ -394,7 +375,6 @@ window.InstituteInfoUI = (function() {
         try {
             const list = document.getElementById(listId);
             if (!list || !Array.isArray(infoItems)) {
-                console.warn(`⚠️ 목록 렌더링 실패: ${listId}`);
                 return;
             }
             
@@ -408,7 +388,6 @@ window.InstituteInfoUI = (function() {
             });
             
             initializeLucideIcons();
-            console.log(`✅ 목록 렌더링 완료: ${listId}`);
             
         } catch (error) {
             console.error(`❌ 목록 렌더링 실패 (${listId}):`, error);
@@ -457,7 +436,6 @@ window.InstituteInfoUI = (function() {
                     content.innerHTML = convertNewlinesToHtml(textValue);
                     // CSS 백업 옵션 추가
                     content.style.whiteSpace = 'pre-line';
-                    console.log('🔄 줄바꿈 텍스트 변환 (목록):', textValue.substring(0, 50) + '...');
                 } else {
                     // 일반 텍스트는 기존 방식 유지
                     content.textContent = textValue;
@@ -530,8 +508,6 @@ window.InstituteInfoUI = (function() {
      */
     function createCulturalActivityTable(data) {
         try {
-            console.log('🎯 문화인턴 활동 정보 테이블 생성 중...', data);
-            
             const table = document.createElement('table');
             table.className = 'json-table enhanced-table cultural-activity-table';
             
@@ -548,7 +524,7 @@ window.InstituteInfoUI = (function() {
                 return table;
             }
             
-            // 헤더 생성 - 줄바꿈 문제 해결 (\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n → \\n)
+            // 헤더 생성 - 줄바꿈 문제 해결
             const thead = document.createElement('thead');
             const headerRow = document.createElement('tr');
             
@@ -622,7 +598,6 @@ window.InstituteInfoUI = (function() {
             
             table.appendChild(tbody);
             
-            console.log('✅ 문화인턴 활동 정보 테이블 생성 완료 (줄바꿈 처리 포함 - 수정됨)');
             return table;
             
         } catch (error) {
@@ -636,8 +611,6 @@ window.InstituteInfoUI = (function() {
      */
     function createEducationEnvironmentTable(data) {
         try {
-            console.log('🏫 교육 환경 정보 테이블 생성 중...', data);
-            
             const table = document.createElement('table');
             table.className = 'json-table enhanced-table education-environment-table';
             
@@ -715,7 +688,6 @@ window.InstituteInfoUI = (function() {
             
             table.appendChild(tbody);
             
-            console.log('✅ 교육 환경 정보 테이블 생성 완료 (줄바꿈 처리 포함)');
             return table;
             
         } catch (error) {
@@ -729,8 +701,6 @@ window.InstituteInfoUI = (function() {
      */
     function createEnhancedJsonTable(data) {
         try {
-            console.log('📊 Enhanced JSON 테이블 생성 중...', data);
-            
             const table = document.createElement('table');
             table.className = 'json-table enhanced-table';
             
@@ -826,7 +796,6 @@ window.InstituteInfoUI = (function() {
             
             table.appendChild(tbody);
             
-            console.log('✅ Enhanced JSON 테이블 생성 완료 (줄바꿈 처리 포함)');
             return table;
             
         } catch (error) {
@@ -993,8 +962,6 @@ window.InstituteInfoUI = (function() {
      */
     function switchTab(tabName) {
         try {
-            console.log(`🔄 탭 전환 시작: ${tabName}`);
-            
             // 탭 버튼 활성화 상태 업데이트
             elements.tabButtons.forEach(button => {
                 const isActive = button.dataset.tab === tabName;
@@ -1013,7 +980,6 @@ window.InstituteInfoUI = (function() {
             }
             
             initializeLucideIcons();
-            console.log(`✅ 탭 전환 완료: ${tabName}`);
             
         } catch (error) {
             console.error(`❌ 탭 전환 실패 (${tabName}):`, error);
@@ -1025,17 +991,13 @@ window.InstituteInfoUI = (function() {
      */
     async function handleSafetyTabActivation() {
         try {
-            console.log('🛡️ 안전정보 탭 활성화됨 - DB 기반 방식');
-            
             // InstituteInfoCore에서 현재 학당 데이터 가져오기
             if (window.InstituteInfoCore && window.InstituteInfoCore.currentData) {
                 const instituteData = window.InstituteInfoCore.currentData;
-                console.log('🔍 현재 학당 데이터:', instituteData);
                 
                 // 새로운 안전정보 표시 시스템 호출
                 await showCountrySafetyInfo(instituteData);
             } else {
-                console.warn('⚠️ InstituteInfoCore 모듈 또는 currentData를 찾을 수 없습니다');
                 showSafetyUnavailable();
             }
             
@@ -1051,19 +1013,13 @@ window.InstituteInfoUI = (function() {
     async function showCountrySafetyInfo(instituteData) {
         try {
             if (!elements.safetyInfoContent || !instituteData) {
-                console.warn('⚠️ 안전정보 컨테이너 또는 학당 데이터가 없습니다');
                 showSafetyUnavailable();
                 return;
             }
 
-            console.log('🛡️ 국가별 안전정보 표시 시작:', instituteData.name_ko);
-
             // 국가 정보 조회 시도
             const countryInfo = await window.InstituteInfoAPI.getCountryInfoByAddress(instituteData.address);
             const safetyUrl = window.InstituteInfoAPI.getSafetyInfoUrl(instituteData);
-
-            console.log('🔍 조회된 국가정보:', countryInfo);
-            console.log('🔗 안전정보 URL:', safetyUrl);
 
             // 전체 안전정보 컨테이너 초기화
             elements.safetyInfoContent.innerHTML = '';
@@ -1094,7 +1050,6 @@ window.InstituteInfoUI = (function() {
             }
 
             initializeLucideIcons();
-            console.log('✅ 국가별 안전정보 표시 완료 (DOM 기반 방식)');
 
         } catch (error) {
             console.error('❌ 국가별 안전정보 표시 실패:', error);
@@ -1150,8 +1105,6 @@ window.InstituteInfoUI = (function() {
      */
     function createCountryBasicInfoElement(countryInfo) {
         try {
-            console.log('🏗️ 국가 기본정보 섹션 DOM 생성 시작 (수정된 방식)');
-            
             const basicInfo = countryInfo.basic_info || {};
             
             // 메인 컨테이너
@@ -1229,7 +1182,6 @@ window.InstituteInfoUI = (function() {
             
             section.appendChild(tableContainer);
             
-            console.log('✅ 국가 기본정보 섹션 DOM 생성 완료 (DOM 기반 방식)');
             return section;
             
         } catch (error) {
@@ -1367,38 +1319,6 @@ window.InstituteInfoUI = (function() {
     }
     
     /**
-     * 국가 기본정보 섹션 HTML 생성 (DEPRECATED - DOM 기반으로 대체됨)
-     */
-    function createCountryBasicInfoSection(countryInfo) {
-        console.warn('⚠️ createCountryBasicInfoSection은 더 이상 사용되지 않습니다. createCountryBasicInfoElement를 사용하세요.');
-        return createCountryBasicInfoElement(countryInfo)?.outerHTML || '';
-    }
-    
-    /**
-     * 앱 다운로드 섹션 HTML 생성 (DEPRECATED - DOM 기반으로 대체됨)
-     */
-    function createAppDownloadSection() {
-        console.warn('⚠️ createAppDownloadSection은 더 이상 사용되지 않습니다. createAppDownloadElement를 사용하세요.');
-        return createAppDownloadElement()?.outerHTML || '';
-    }
-    
-    /**
-     * 재외공관 정보 섹션 HTML 생성 (DEPRECATED - DOM 기반으로 대체됨)
-     */
-    function createEmbassyInfoSection(countryInfo) {
-        console.warn('⚠️ createEmbassyInfoSection은 더 이상 사용되지 않습니다. createEmbassyInfoElement를 사용하세요.');
-        return createEmbassyInfoElement(countryInfo)?.outerHTML || '';
-    }
-    
-    /**
-     * 외부링크 섹션 HTML 생성 (DEPRECATED - DOM 기반으로 대체됨)
-     */
-    function createSafetyExternalLinksSection(safetyUrl, countryInfo) {
-        console.warn('⚠️ createSafetyExternalLinksSection은 더 이상 사용되지 않습니다. createSafetyExternalLinksElement를 사용하세요.');
-        return createSafetyExternalLinksElement(safetyUrl, countryInfo)?.outerHTML || '';
-    }
-    
-    /**
      * 안전정보 에러 표시
      */
     function showSafetyError(message) {
@@ -1422,7 +1342,6 @@ window.InstituteInfoUI = (function() {
             `;
             
             initializeLucideIcons();
-            console.log(`❌ 안전정보 에러 표시: ${message}`);
             
         } catch (error) {
             console.error('❌ 안전정보 에러 표시 실패:', error);
@@ -1509,7 +1428,6 @@ window.InstituteInfoUI = (function() {
             elements.safetyInfoContent.appendChild(linksSection);
 
             initializeLucideIcons();
-            console.log('📋 안전정보 없음 표시 (안내 박스 제거 및 버튼 확장)');
 
         } catch (error) {
             console.error('❌ 안전정보 없음 표시 실패:', error);
