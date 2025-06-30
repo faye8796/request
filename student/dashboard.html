@@ -138,6 +138,24 @@
             font-weight: 600;
         }
 
+        .menu-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .menu-card.disabled::after {
+            content: '준비 중';
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #718096;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
         .menu-icon {
             width: 4rem;
             height: 4rem;
@@ -355,9 +373,9 @@
     <script src="../js/student/notification-system.js?v=5.1.0"></script>
     <script src="../js/student/dashboard.js?v=5.1.0"></script>
     
-    <!-- 대시보드 초기화 - Option A: dashboard.html 중심 방식 -->
+    <!-- 대시보드 초기화 - v5.2.0 국내교육 프로그램 추가 -->
     <script>
-        console.log('🎯 Dashboard v5.1.0 - Option A (dashboard.html 중심 방식) 시작');
+        console.log('🎯 Dashboard v5.2.0 - 국내교육 프로그램 추가 버전 시작');
         
         // 모듈 상태 추적 및 학생 정보 관리 통합 시스템
         const ModuleStatusTracker = {
@@ -371,6 +389,7 @@
             isInitialized: false, // 무한루프 방지 플래그
             studentData: null, // 학생 정보 저장
             initializationStep: 'loading', // loading → modules → student → menu → complete
+            featureSettings: null, // 기능 설정 저장
 
             // 상태 업데이트 (무한루프 해결)
             updateStatus(moduleKey, isLoaded) {
@@ -402,7 +421,7 @@
                 }
             },
 
-            // 🆕 학생 정보 로딩 (Option A의 핵심 기능)
+            // 🆕 학생 정보 로딩
             async loadStudentInfo() {
                 console.log('👤 학생 정보 로딩 시작...');
                 this.initializationStep = 'student';
@@ -423,13 +442,13 @@
 
                     this.studentData = studentData;
                     
-                    // UI 업데이트 (dashboard.js의 함수 재활용)
+                    // UI 업데이트
                     this.updateStudentInfoUI(studentData);
                     
-                    // 다음 단계로 진행
-                    console.log('✅ 학생 정보 로딩 완료 - 메뉴 로딩 시작');
-                    this.initializationStep = 'menu';
-                    this.loadMenuItems();
+                    // 다음 단계로 진행 - 기능 설정 로드
+                    console.log('✅ 학생 정보 로딩 완료 - 기능 설정 로딩 시작');
+                    this.initializationStep = 'features';
+                    this.loadFeatureSettings();
                     
                 } catch (error) {
                     console.error('❌ 학생 정보 로딩 실패:', error);
@@ -443,7 +462,52 @@
                 }
             },
 
-            // 학생 정보 UI 업데이트 (dashboard.js 스타일과 통일)
+            // 🆕 기능 설정 로딩 (DB에서 동적으로 가져오기)
+            async loadFeatureSettings() {
+                console.log('⚙️ 기능 설정 로딩 시작...');
+                
+                try {
+                    // SupabaseAPI를 통해 기능 설정 가져오기
+                    if (window.SupabaseAPI && typeof window.SupabaseAPI.getFeatureSettings === 'function') {
+                        const result = await window.SupabaseAPI.getFeatureSettings();
+                        
+                        if (result && result.success && result.data) {
+                            this.featureSettings = result.data;
+                            console.log('✅ 기능 설정 로딩 완료:', this.featureSettings);
+                        } else {
+                            console.warn('⚠️ 기능 설정을 가져올 수 없음, 기본값 사용');
+                            this.featureSettings = this.getDefaultFeatureSettings();
+                        }
+                    } else {
+                        console.warn('⚠️ SupabaseAPI 없음, 기본값 사용');
+                        this.featureSettings = this.getDefaultFeatureSettings();
+                    }
+                    
+                    // 메뉴 로딩으로 진행
+                    console.log('✅ 기능 설정 로딩 완료 - 메뉴 로딩 시작');
+                    this.initializationStep = 'menu';
+                    this.loadMenuItems();
+                    
+                } catch (error) {
+                    console.error('❌ 기능 설정 로딩 실패:', error);
+                    console.log('🔄 기본값으로 폴백...');
+                    this.featureSettings = this.getDefaultFeatureSettings();
+                    this.initializationStep = 'menu';
+                    this.loadMenuItems();
+                }
+            },
+
+            // 기본 기능 설정 (DB 로딩 실패 시 사용)
+            getDefaultFeatureSettings() {
+                return [
+                    { feature_name: 'institute_info', feature_title: '파견학당 정보', is_active: true, display_order: 1 },
+                    { feature_name: 'domestic_program', feature_title: '국내교육 프로그램 안내', is_active: false, display_order: 2 },
+                    { feature_name: 'flight_request', feature_title: '항공권 구매 신청', is_active: false, display_order: 3 },
+                    { feature_name: 'equipment_request', feature_title: '문화교구 신청', is_active: false, display_order: 4 }
+                ];
+            },
+
+            // 학생 정보 UI 업데이트
             updateStudentInfoUI(student) {
                 try {
                     const studentNameElement = document.getElementById('studentName');
@@ -465,11 +529,6 @@
                         institute: student.sejong_institute,
                         field: student.field
                     });
-                    
-                    // dashboard.js의 함수가 있다면 함께 호출하여 동기화
-                    if (typeof window.updateStudentInfo === 'function') {
-                        window.updateStudentInfo(student);
-                    }
                     
                 } catch (error) {
                     console.error('❌ 학생 정보 UI 업데이트 오류:', error);
@@ -496,14 +555,122 @@
                 this.showSystemMessage(message, 'error');
             },
 
+            // 🆕 v5.2.0 메뉴 항목 로드 (DB 기반 동적 생성)
+            loadMenuItems() {
+                console.log('📋 메뉴 항목 로딩 시작... (v5.2.0)');
+                const menuGrid = document.getElementById('menuGrid');
+                if (!menuGrid) return;
+
+                // 기능 설정을 display_order 순으로 정렬
+                const sortedFeatures = [...this.featureSettings].sort((a, b) => a.display_order - b.display_order);
+                
+                let menuHTML = '';
+                
+                sortedFeatures.forEach(feature => {
+                    const cardConfig = this.getMenuCardConfig(feature);
+                    if (cardConfig) {
+                        menuHTML += this.generateMenuCardHTML(cardConfig);
+                    }
+                });
+                
+                menuGrid.innerHTML = menuHTML;
+                
+                // 아이콘 다시 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                
+                console.log('✅ 메뉴 항목 로딩 완료 (v5.2.0)');
+                this.showSystemReady();
+            },
+
+            // 🆕 메뉴 카드 설정 가져오기
+            getMenuCardConfig(feature) {
+                const configs = {
+                    'institute_info': {
+                        icon: 'building',
+                        title: '파견학당 정보',
+                        description: '파견되는 세종학당의 정보를 확인할 수 있습니다.',
+                        url: './institute-info.html',
+                        buttonText: '확인하기',
+                        buttonIcon: 'arrow-right'
+                    },
+                    'domestic_program': {
+                        icon: 'graduation-cap',
+                        title: '국내교육 프로그램',
+                        description: '파견 전 필수 교육과정과 문화 이해 프로그램 정보를 확인할 수 있습니다.',
+                        url: './domestic-program.html',
+                        buttonText: '확인하기',
+                        buttonIcon: 'arrow-right'
+                    },
+                    'flight_request': {
+                        icon: 'plane',
+                        title: '항공권 구매 신청',
+                        description: '파견을 위한 항공권 신청 및 여행 일정을 관리할 수 있습니다.',
+                        url: './flight-request.html',
+                        buttonText: '신청하기',
+                        buttonIcon: 'arrow-right'
+                    },
+                    'equipment_request': {
+                        icon: 'package',
+                        title: '문화교구 신청',
+                        description: '문화 수업에 필요한 교구를 신청하고 관리할 수 있습니다.',
+                        url: './equipment-request.html',
+                        buttonText: '신청하기',
+                        buttonIcon: 'arrow-right'
+                    }
+                };
+
+                const config = configs[feature.feature_name];
+                if (config) {
+                    config.isActive = feature.is_active;
+                    config.featureName = feature.feature_name;
+                    return config;
+                }
+                return null;
+            },
+
+            // 🆕 메뉴 카드 HTML 생성
+            generateMenuCardHTML(config) {
+                const { icon, title, description, url, buttonText, buttonIcon, isActive, featureName } = config;
+                
+                let cardClass = 'menu-card';
+                let cardOnClick = '';
+                let buttonState = '';
+                let badge = '';
+                
+                if (isActive) {
+                    cardClass += ' available';
+                    cardOnClick = `onclick="navigateToPage('${url}')"`;
+                } else {
+                    cardClass += ' disabled';
+                    badge = '<span class="disabled-badge">준비 중</span>';
+                    buttonState = 'disabled';
+                }
+                
+                return `
+                    <div class="${cardClass}" ${cardOnClick}>
+                        <div class="menu-icon">
+                            <i data-lucide="${icon}"></i>
+                        </div>
+                        <h3 class="menu-title">${title}</h3>
+                        <p class="menu-description">${description}</p>
+                        <button class="menu-button" ${buttonState}>
+                            <i data-lucide="${isActive ? buttonIcon : 'clock'}"></i>
+                            ${isActive ? buttonText : '준비 중'}
+                        </button>
+                    </div>
+                `;
+            },
+
             // 시스템 준비 완료 표시
             showSystemReady() {
                 const systemStatus = document.getElementById('systemStatus');
                 if (systemStatus) {
                     systemStatus.innerHTML = `
                         <div class="alert alert-success">
-                            <strong>🚀 시스템이 정상적으로 초기화되었습니다!</strong><br>
-                            모든 기능을 사용할 수 있습니다.
+                            <strong>🚀 시스템이 정상적으로 초기화되었습니다! (v5.2.0)</strong><br>
+                            국내교육 프로그램이 추가되어 모든 기능을 사용할 수 있습니다.
                         </div>
                     `;
                     
@@ -515,7 +682,7 @@
                 
                 this.isInitialized = true;
                 this.initializationStep = 'complete';
-                console.log('🎉 대시보드 초기화 완전 완료 - Option A');
+                console.log('🎉 대시보드 초기화 완전 완료 - v5.2.0 국내교육 프로그램 포함');
             },
 
             // 시스템 메시지 표시
@@ -540,65 +707,6 @@
                 }
             },
 
-            // 메뉴 항목 로드 - 기존 로직 유지
-            loadMenuItems() {
-                console.log('📋 메뉴 항목 로딩 시작...');
-                const menuGrid = document.getElementById('menuGrid');
-                if (menuGrid) {
-                    menuGrid.innerHTML = `
-                        <div class="menu-card available" onclick="navigateToPage('./institute-info.html')">
-                            <div class="menu-icon">
-                                <i data-lucide="building"></i>
-                            </div>
-                            <h3 class="menu-title">학당 정보</h3>
-                            <p class="menu-description">
-                                파견되는 세종학당의 정보를 확인할 수 있습니다.
-                            </p>
-                            <button class="menu-button">
-                                <i data-lucide="arrow-right"></i>
-                                확인하기
-                            </button>
-                        </div>
-
-                        <div class="menu-card coming-soon">
-                            <div class="menu-icon">
-                                <i data-lucide="plane"></i>
-                            </div>
-                            <h3 class="menu-title">항공권 신청</h3>
-                            <p class="menu-description">
-                                파견을 위한 항공권 신청 및 여행 일정을 관리할 수 있습니다.
-                            </p>
-                            <button class="menu-button" disabled>
-                                <i data-lucide="clock"></i>
-                                개발 중
-                            </button>
-                        </div>
-
-                        <div class="menu-card available" onclick="navigateToPage('./equipment-request.html')">
-                            <div class="menu-icon">
-                                <i data-lucide="package"></i>
-                            </div>
-                            <h3 class="menu-title">교구 신청</h3>
-                            <p class="menu-description">
-                                문화 수업에 필요한 교구를 신청하고 관리할 수 있습니다.
-                            </p>
-                            <button class="menu-button">
-                                <i data-lucide="arrow-right"></i>
-                                신청하기
-                            </button>
-                        </div>
-                    `;
-                    
-                    // 아이콘 다시 초기화
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
-                }
-                
-                console.log('✅ 메뉴 항목 로딩 완료');
-                this.showSystemReady();
-            },
-
             // 디버그 정보
             getDebugInfo() {
                 return {
@@ -606,7 +714,8 @@
                     initializationStep: this.initializationStep,
                     modules: this.modules,
                     studentData: this.studentData,
-                    version: 'v5.1.0 - Option A'
+                    featureSettings: this.featureSettings,
+                    version: 'v5.2.0 - 국내교육 프로그램 추가'
                 };
             }
         };
@@ -655,7 +764,7 @@
         // DOMContentLoaded 이벤트 핸들러 - 즉시 시작
         document.addEventListener('DOMContentLoaded', function() {
             try {
-                console.log('🎯 DOMContentLoaded - dashboard.html 주도 초기화 시작');
+                console.log('🎯 DOMContentLoaded - v5.2.0 국내교육 프로그램 포함 초기화 시작');
                 
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
@@ -679,6 +788,7 @@
                             console.error('❌ 모듈 로딩 타임아웃 - 기본 설정으로 진행');
                             
                             // 타임아웃 시에도 기본 메뉴는 표시
+                            ModuleStatusTracker.featureSettings = ModuleStatusTracker.getDefaultFeatureSettings();
                             ModuleStatusTracker.initializationStep = 'menu';
                             ModuleStatusTracker.loadMenuItems();
                             ModuleStatusTracker.showSystemMessage('일부 기능이 제한될 수 있습니다.', 'warning');
@@ -721,11 +831,6 @@
                     window.SupabaseAPI.logout();
                 }
                 
-                // dashboard.js 로그아웃 (있는 경우)
-                if (typeof window.handleLogout !== 'undefined' && window.handleLogout !== arguments.callee) {
-                    window.handleLogout();
-                }
-                
                 // 로그인 페이지로 이동
                 window.location.href = '../index.html';
             } catch (error) {
@@ -737,22 +842,23 @@
         // 전역 디버그 함수
         window.showDashboardDebug = function() {
             const debugInfo = ModuleStatusTracker.getDebugInfo();
-            console.group('🔍 Dashboard Debug Info - Option A');
+            console.group('🔍 Dashboard Debug Info - v5.2.0');
             console.log('초기화 상태:', debugInfo.isInitialized);
             console.log('현재 단계:', debugInfo.initializationStep);
             console.log('모듈 상태:', debugInfo.modules);
             console.log('학생 데이터:', debugInfo.studentData);
+            console.log('기능 설정:', debugInfo.featureSettings);
             console.log('버전:', debugInfo.version);
             console.groupEnd();
             
-            alert(`Dashboard Debug Info (v5.1.0 - Option A):\n\n초기화: ${debugInfo.isInitialized}\n단계: ${debugInfo.initializationStep}\n학생: ${debugInfo.studentData?.name || 'N/A'}\n\n자세한 정보는 콘솔을 확인하세요.`);
+            alert(`Dashboard Debug Info (v5.2.0):\\n\\n초기화: ${debugInfo.isInitialized}\\n단계: ${debugInfo.initializationStep}\\n학생: ${debugInfo.studentData?.name || 'N/A'}\\n기능: ${debugInfo.featureSettings?.length || 0}개\\n\\n자세한 정보는 콘솔을 확인하세요.`);
         };
 
         // 전역 변수로 노출 (dashboard.js와의 호환성)
         window.ModuleStatusTracker = ModuleStatusTracker;
         window.navigateToPage = navigateToPage;
         
-        console.log('✅ Dashboard v5.1.0 초기화 스크립트 로딩 완료 - Option A 방식');
+        console.log('✅ Dashboard v5.2.0 초기화 스크립트 로딩 완료 - 국내교육 프로그램 추가');
     </script>
 </body>
 </html>
