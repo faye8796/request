@@ -1,7 +1,7 @@
-// 🚀 Supabase Client 통합 매니저 v4.3.2
+// 🚀 Supabase Client 통합 매니저 v5.2.0
 // 세종학당 문화인턴 지원 시스템 - 모듈화된 Supabase API 통합 관리자
 // 3개 모듈(Core, Student, Admin)을 하나로 통합하여 기존 코드와 100% 호환성 보장
-// 🔧 v4.3.2: 영수증 보기 기능 연결 (getReceiptByRequestId 관리자 지원)
+// 🆕 v5.2.0: 기능 설정 관리 지원 추가 (getFeatureSettings, updateFeatureSetting)
 
 /**
  * 모듈화된 Supabase API 통합 매니저
@@ -9,23 +9,24 @@
  * 📦 아키텍처:
  * - SupabaseCore: 핵심 공통 기능 (5.6KB)
  * - SupabaseStudent: 학생 전용 기능 (32.9KB) 
- * - SupabaseAdmin: 관리자 전용 기능 (44.4KB)
+ * - SupabaseAdmin: 관리자 전용 기능 (46.8KB)
  * - SupabaseClient: 통합 매니저 (얇은 래퍼)
  * 
  * 🔧 호환성:
  * - 기존 SupabaseAPI 인터페이스 100% 유지
  * - 코드 수정 없이 기존 시스템과 완전 호환
- * - 성능 최적화: 필요한 모듈만 로드 (70KB → 최대 83KB, 실제로는 적은 메모리 사용)
+ * - 성능 최적화: 필요한 모듈만 로드 (70KB → 최대 85KB, 실제로는 적은 메모리 사용)
  * 
  * 🚀 성능 개선:
  * - 지연 로딩: 사용할 때만 모듈 활성화
  * - 메모리 효율성: 모듈별 독립적 관리
  * - 개발 편의성: 기능별 모듈 분리로 유지보수 향상
  * 
- * 🔧 v4.3.2 개선사항:
- * - getReceiptByRequestId 관리자 지원 추가
- * - 영수증 보기 기능 Admin 모듈 연결
- * - 모듈 간 영수증 조회 통합 지원
+ * 🆕 v5.2.0 개선사항:
+ * - getFeatureSettings 관리자 지원 추가
+ * - updateFeatureSetting 기능 토글 지원
+ * - 관리자 대시보드 기능 설정 완전 지원
+ * - 모듈 간 기능 설정 관리 통합
  */
 
 const SupabaseAPI = {
@@ -68,7 +69,7 @@ const SupabaseAPI = {
         }
 
         this._isInitializing = true;
-        console.log('🚀 SupabaseAPI 통합 매니저 초기화 시작 v4.3.2...');
+        console.log('🚀 SupabaseAPI 통합 매니저 초기화 시작 v5.2.0...');
 
         try {
             // 1. 모듈 의존성 확인 및 준비
@@ -173,7 +174,7 @@ const SupabaseAPI = {
     },
 
     /**
-     * 🔧 v4.3.2 안전한 모듈 호출 래퍼 - 강화된 버전
+     * 🔧 v5.2.0 안전한 모듈 호출 래퍼 - 강화된 버전
      * @param {string} moduleName - 모듈명 (core, student, admin)
      * @param {string} methodName - 메소드명
      * @param {Array} args - 인수 배열
@@ -201,7 +202,7 @@ const SupabaseAPI = {
     },
 
     /**
-     * 🆕 v4.3.2 안전한 모듈 대기 함수
+     * 🆕 v5.2.0 안전한 모듈 대기 함수
      * 특정 모듈이 로드될 때까지 대기
      */
     async _waitForSpecificModules(moduleNames, maxWaitSeconds = 5) {
@@ -355,7 +356,7 @@ const SupabaseAPI = {
     },
 
     /**
-     * 🔧 v4.3.2 영수증 조회 - 관리자/학생 모듈 통합 지원
+     * 🔧 v5.2.0 영수증 조회 - 관리자/학생 모듈 통합 지원
      * 관리자 페이지에서 호출시 Admin 모듈 사용, 학생 페이지에서 호출시 Student 모듈 사용
      */
     async getReceiptByRequestId(requestId) {
@@ -469,7 +470,7 @@ const SupabaseAPI = {
     },
 
     /**
-     * 🔧 v4.3.2 강화된 시스템 설정 조회
+     * 🔧 v5.2.0 강화된 시스템 설정 조회
      * 모듈 로딩 대기 및 안전한 에러 처리 추가
      */
     async getSystemSettings() {
@@ -631,6 +632,30 @@ const SupabaseAPI = {
     },
 
     // ===================
+    // 🆕 v5.2.0 기능 설정 관리 (SupabaseAdmin)
+    // ===================
+
+    /**
+     * 🆕 모든 기능 설정 조회 (v5.2.0)
+     * @returns {Promise<Object>} 기능 설정 조회 결과
+     */
+    async getFeatureSettings() {
+        console.log('⚙️ 기능 설정 조회 요청... (v5.2.0)');
+        return await this._callModule('admin', 'getFeatureSettings');
+    },
+
+    /**
+     * 🆕 개별 기능 설정 업데이트 (v5.2.0) 
+     * @param {string} featureName - 기능명
+     * @param {boolean} isActive - 활성화 상태
+     * @returns {Promise<Object>} 업데이트 결과
+     */
+    async updateFeatureSetting(featureName, isActive) {
+        console.log('⚙️ 기능 설정 업데이트 요청:', { featureName, isActive });
+        return await this._callModule('admin', 'updateFeatureSetting', featureName, isActive);
+    },
+
+    // ===================
     // 🔄 레거시 호환성 보장
     // ===================
 
@@ -686,7 +711,7 @@ const SupabaseAPI = {
         
         return {
             status: this._moduleStatus.initialized ? 'healthy' : 'initializing',
-            version: 'v4.3.2',
+            version: 'v5.2.0',
             architecture: 'modular',
             compatibility: '100% legacy compatible',
             modules: stats.moduleStatus,
@@ -696,10 +721,11 @@ const SupabaseAPI = {
                 memoryEfficiency: 'high'
             },
             fixes: [
-                'getReceiptByRequestId Admin module support added',
-                'Module loading timing issues resolved',
-                'getSystemSettings robustness enhanced',
-                'Graceful degradation for module failures'
+                'getFeatureSettings Admin module support added',
+                'updateFeatureSetting feature toggle support',
+                'Feature settings management complete',
+                'Admin dashboard toggle functionality',
+                'Module loading timing issues resolved'
             ]
         };
     }
@@ -711,7 +737,7 @@ const SupabaseAPI = {
 
 // 자동 초기화 (기존 코드와 호환성 유지)
 (async () => {
-    console.log('🚀 SupabaseAPI 통합 매니저 v4.3.2 시작...');
+    console.log('🚀 SupabaseAPI 통합 매니저 v5.2.0 시작...');
     
     // CONFIG 로드 대기 (기존 코드와 동일한 패턴)
     let waitCount = 0;
@@ -751,8 +777,8 @@ if (typeof window !== 'undefined') {
     };
 }
 
-console.log('🎯 SupabaseAPI 통합 매니저 v4.3.2 로드 완료');
-console.log('📦 모듈화 아키텍처: Core(5.6KB) + Student(32.9KB) + Admin(44.4KB)');
+console.log('🎯 SupabaseAPI 통합 매니저 v5.2.0 로드 완료');
+console.log('📦 모듈화 아키텍처: Core(5.6KB) + Student(32.9KB) + Admin(46.8KB)');
 console.log('🔧 기존 코드 100% 호환성 보장 - 수정 불필요');
 console.log('🚀 성능 최적화: 지연 로딩 + 메모리 효율성 + 모듈별 관리');
-console.log('🔧 v4.3.2 개선: getReceiptByRequestId 관리자 지원 추가');
+console.log('🆕 v5.2.0 신기능: 기능 설정 관리 완전 지원 (getFeatureSettings, updateFeatureSetting)');
