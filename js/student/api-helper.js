@@ -1,7 +1,7 @@
-// API 도우미 모듈 - D단계 (v4.0.1) - 콘솔 로그 정리
+// API 도우미 모듈 - v5.1.1 - dashboard 덮어씌움 문제 해결
 // 🎯 책임: 공통 API 호출, 사용자 관리, 안전한 요청 처리
 // 📦 분리 출처: student.js → api-helper.js
-// 🧹 v4.0.1: 학생 사용 환경을 위한 콘솔 로그 정리 (오류/경고만 유지)
+// 🔧 v5.1.1: dashboard 페이지에서 학생 정보 덮어씌움 문제 해결
 
 const ApiHelper = {
     // === 모듈 초기화 ===
@@ -105,9 +105,36 @@ const ApiHelper = {
 
     // === 사용자 정보 표시 관리 ===
 
-    // 사용자 정보 표시 업데이트
+    // 🔧 v5.1.1: dashboard 페이지 보호 추가
+    // 현재 페이지가 dashboard인지 확인
+    isDashboardPage: function() {
+        try {
+            // URL 기반 확인
+            const path = window.location.pathname;
+            if (path.includes('dashboard.html')) {
+                return true;
+            }
+            
+            // ModuleStatusTracker 존재 확인 (dashboard.html에만 있음)
+            if (window.ModuleStatusTracker) {
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            return false;
+        }
+    },
+
+    // 사용자 정보 표시 업데이트 - 수정됨
     updateUserDisplay: function() {
         try {
+            // 🔧 dashboard 페이지에서는 실행하지 않음 (덮어씌움 방지)
+            if (this.isDashboardPage()) {
+                console.log('🛡️ Dashboard 페이지에서 사용자 정보 업데이트 스킵 (충돌 방지)');
+                return Promise.resolve();
+            }
+
             if (typeof AuthManager === 'undefined' || !AuthManager.updateUserDisplay) {
                 console.error('AuthManager 또는 updateUserDisplay 메서드를 찾을 수 없습니다');
                 this.showFallbackUserInfo();
@@ -128,9 +155,16 @@ const ApiHelper = {
         }
     },
 
-    // 폴백 사용자 정보 표시
+    // 폴백 사용자 정보 표시 - 수정됨
     showFallbackUserInfo: function() {
         try {
+            // 🔧 dashboard 페이지에서는 실행하지 않음 (덮어씌움 방지)
+            if (this.isDashboardPage()) {
+                console.log('🛡️ Dashboard 페이지에서 폴백 정보 표시 스킵 (충돌 방지)');
+                return;
+            }
+
+            // 기존 SPA 시스템의 요소들만 업데이트 (dashboard 요소와 다른 ID)
             const welcomeEl = document.getElementById('studentWelcome');
             const detailsEl = document.getElementById('studentDetails');
             
@@ -141,6 +175,8 @@ const ApiHelper = {
             if (detailsEl) {
                 detailsEl.textContent = '사용자 정보를 불러오는 중...';
             }
+
+            console.log('📋 SPA 페이지에서 폴백 사용자 정보 표시');
         } catch (error) {
             console.error('폴백 사용자 정보 표시 오류:', error);
         }
@@ -516,4 +552,4 @@ const ApiHelper = {
 // 전역 접근을 위한 window 객체에 추가
 window.ApiHelper = ApiHelper;
 
-console.log('🔗 ApiHelper v4.0.1 로드 완료 - 콘솔 로그 정리');
+console.log('🔗 ApiHelper v5.1.1 로드 완료 - Dashboard 덮어씌움 문제 해결');
