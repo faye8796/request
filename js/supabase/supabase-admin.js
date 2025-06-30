@@ -1,6 +1,6 @@
 // 🔐 SupabaseAdmin - 관리자 전용 기능 모듈
 // 세종학당 문화인턴 지원 시스템 - 관리자 시스템용 API
-// v4.3.1 - 하드코딩 제거, 100% DB 기반 예산 설정 시스템
+// v5.2.0 - 기능 설정 관리 추가 (getFeatureSettings, updateFeatureSetting)
 
 /**
  * 관리자 전용 Supabase API 모듈
@@ -14,9 +14,11 @@
  * - 📦 교구신청 관리 시스템
  * - 📄 영수증 관리 시스템
  * - ⚙️ 시스템 설정 관리
+ * - 🆕 기능 설정 관리 (v5.2.0)
  * 
  * 🔧 v4.3.1 - 하드코딩된 예산 설정 기본값 완전 제거, 100% DB 기반
  * 🔧 v4.3.2 - 영수증 보기 기능 추가 (getReceiptByRequestId)
+ * 🆕 v5.2.0 - 기능 설정 관리 추가 (getFeatureSettings, updateFeatureSetting)
  */
 
 const SupabaseAdmin = {
@@ -1088,6 +1090,65 @@ const SupabaseAdmin = {
         return result.success ? newMode : false;
     },
 
+    // ===================
+    // 🆕 v5.2.0 기능 설정 관리
+    // ===================
+    
+    /**
+     * 🆕 모든 기능 설정 조회 (v5.2.0)
+     * @returns {Promise<Object>} 기능 설정 조회 결과
+     */
+    async getFeatureSettings() {
+        console.log('⚙️ 기능 설정 조회 시작... (v5.2.0)');
+        
+        const result = await this.core.safeApiCall('기능 설정 조회', async () => {
+            const client = await this.core.ensureClient();
+            
+            return await client
+                .from('feature_settings')
+                .select('*')
+                .order('display_order', { ascending: true });
+        });
+
+        if (result.success) {
+            console.log('✅ 기능 설정 조회 완료:', result.data?.length || 0, '개 기능');
+            return { success: true, data: result.data || [] };
+        } else {
+            console.error('❌ 기능 설정 조회 실패:', result.error || result.message);
+            return { 
+                success: false, 
+                message: result.message || '기능 설정을 조회할 수 없습니다.',
+                data: []
+            };
+        }
+    },
+
+    /**
+     * 🆕 개별 기능 설정 업데이트 (v5.2.0)
+     * @param {string} featureName - 기능명
+     * @param {boolean} isActive - 활성화 상태
+     * @returns {Promise<Object>} 업데이트 결과
+     */
+    async updateFeatureSetting(featureName, isActive) {
+        console.log('⚙️ 기능 설정 업데이트:', { featureName, isActive });
+        
+        return await this.core.safeApiCall('기능 설정 업데이트', async () => {
+            const client = await this.core.ensureClient();
+            
+            const updateData = {
+                is_active: isActive,
+                updated_at: new Date().toISOString(),
+                updated_by: 'admin' // 관리자가 업데이트
+            };
+
+            return await client
+                .from('feature_settings')
+                .update(updateData)
+                .eq('feature_name', featureName)
+                .select();
+        });
+    },
+
     /**
      * Excel 내보내기용 데이터 준비 - v4.3.0 호환성
      * @returns {Promise<Array>} CSV 형태 데이터
@@ -1192,4 +1253,6 @@ const SupabaseAdmin = {
 // 전역 접근을 위해 window 객체에 추가
 window.SupabaseAdmin = SupabaseAdmin;
 
-console.log('🔐 SupabaseAdmin v4.3.2 모듈 로드 완료 - 영수증 보기 기능 추가 (getReceiptByRequestId)');
+console.log('🔐 SupabaseAdmin v5.2.0 모듈 로드 완료');
+console.log('🆕 v5.2.0 새로운 기능: getFeatureSettings, updateFeatureSetting 추가');
+console.log('✅ 관리자 대시보드 기능 토글 완전 지원');
