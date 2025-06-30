@@ -630,7 +630,7 @@
                 return null;
             },
 
-            // 🆕 메뉴 카드 HTML 생성
+            // 🆕 메뉴 카드 HTML 생성 (Coming Soon 스타일 적용)
             generateMenuCardHTML(config) {
                 const { icon, title, description, url, buttonText, buttonIcon, isActive, featureName } = config;
                 
@@ -643,8 +643,8 @@
                     cardClass += ' available';
                     cardOnClick = `onclick="navigateToPage('${url}')"`;
                 } else {
-                    cardClass += ' disabled';
-                    badge = '<span class="disabled-badge">준비 중</span>';
+                    cardClass += ' coming-soon'; // 'disabled' → 'coming-soon' 변경
+                    badge = '<span class="coming-soon-badge">Coming Soon</span>';
                     buttonState = 'disabled';
                 }
                 
@@ -657,7 +657,7 @@
                         <p class="menu-description">${description}</p>
                         <button class="menu-button" ${buttonState}>
                             <i data-lucide="${isActive ? buttonIcon : 'clock'}"></i>
-                            ${isActive ? buttonText : '준비 중'}
+                            ${isActive ? buttonText : 'Coming Soon'}
                         </button>
                     </div>
                 `;
