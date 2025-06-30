@@ -1,7 +1,7 @@
-// 학생 기능 핵심 매니저 - v4.1.1 배송지 모듈 연결 수정
+// 학생 기능 핵심 매니저 - v5.2.1 API Helper 삭제된 함수 호출 수정
 // 🎯 책임: 모듈 관리, 페이지 전환, 간단한 조정자 역할
 // 📦 분리 완료: 교구신청, 배송지, 영수증, 수업계획, API, 알림 → 각각 독립 모듈
-// 🔧 v4.1.1: 배송지 모듈 연결 수정 (ShippingManagement → ShippingManagementModule)
+// 🔧 v5.2.1: API Helper에서 삭제된 updateUserDisplay() 함수 호출 제거
 
 const StudentManager = {
     // === 모듈 시스템 ===
@@ -45,7 +45,7 @@ const StudentManager = {
         }
 
         try {
-            console.log('🎓 StudentManager v4.1.1 초기화 시작 (배송지 모듈 연결 수정)');
+            console.log('🎓 StudentManager v5.2.1 초기화 시작 (API Helper 삭제된 함수 호출 수정)');
             
             // 1. 모듈 로드
             this.loadAllModules();
@@ -58,7 +58,7 @@ const StudentManager = {
             return this.initializeModulesData()
                 .then(function() {
                     self.isInitialized = true;
-                    console.log('✅ StudentManager v4.1.1 초기화 완료');
+                    console.log('✅ StudentManager v5.2.1 초기화 완료');
                     
                     // 시스템 준비 완료 알림
                     const notificationSystem = self.getModule('notification');
@@ -145,12 +145,9 @@ const StudentManager = {
                 return Promise.resolve();
             }
 
-            // 사용자 정보 업데이트
-            return apiHelper.updateUserDisplay()
-                .then(function() {
-                    // 신청 내역 로드
-                    return apiHelper.loadApplications();
-                })
+            // 🔧 v5.2.1: 삭제된 updateUserDisplay() 함수 호출 제거
+            // 신청 내역 로드부터 시작
+            return apiHelper.loadApplications()
                 .then(function() {
                     // 예산 상태 업데이트
                     return apiHelper.updateBudgetStatus();
@@ -579,4 +576,4 @@ window.initializeStudentPage = function() {
     }
 };
 
-console.log('📚 StudentManager v4.1.1 로드 완료 - 배송지 모듈 연결 수정 및 완전 모듈화된 슬림 핵심 매니저');
+console.log('📚 StudentManager v5.2.1 로드 완료 - API Helper 삭제된 함수 호출 수정');
