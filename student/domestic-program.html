@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>국내교육 프로그램 안내 - 세종학당 문화인턴 지원 시스템</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="../css/main.css?v=5.0.0">
+    <link rel="stylesheet" href="../css/student.css?v=5.0.0">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Supabase JavaScript Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+
+    <style>
+        .domestic-program-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+        }
+
+        .program-header {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .program-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .program-subtitle {
+            font-size: 1.2rem;
+            color: #718096;
+            margin-bottom: 1rem;
+        }
+
+        .program-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 3rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            text-align: center;
+        }
+
+        .placeholder-icon {
+            width: 8rem;
+            height: 8rem;
+            margin: 0 auto 2rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .placeholder-icon i {
+            width: 4rem;
+            height: 4rem;
+        }
+
+        .placeholder-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 1rem;
+        }
+
+        .placeholder-description {
+            font-size: 1.1rem;
+            color: #718096;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+        }
+
+        .status-badge {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 0.75rem 1.5rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .features-preview {
+            background: #f7fafc;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .features-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .features-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .features-list li {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e2e8f0;
+            color: #4a5568;
+        }
+
+        .features-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            color: #667eea;
+        }
+
+        .navigation-section {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .nav-btn.secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .nav-btn.secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            border-left: 4px solid;
+            margin: 1rem 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .alert-info {
+            background-color: #ebf8ff;
+            border-color: #3182ce;
+            color: #2c5282;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 3rem;
+            color: #718096;
+        }
+
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .domestic-program-container {
+                padding: 1rem;
+            }
+
+            .program-header,
+            .program-content {
+                padding: 2rem 1.5rem;
+            }
+
+            .program-title {
+                font-size: 2rem;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .placeholder-icon {
+                width: 6rem;
+                height: 6rem;
+            }
+
+            .placeholder-icon i {
+                width: 3rem;
+                height: 3rem;
+            }
+
+            .placeholder-title {
+                font-size: 1.5rem;
+            }
+
+            .navigation-section {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .nav-btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="domestic-program-container">
+        <!-- 로딩 상태 -->
+        <div id="loadingState" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>페이지를 준비하는 중입니다...</p>
+        </div>
+
+        <!-- 메인 콘텐츠 -->
+        <div id="mainContent" style="display: none;">
+            <!-- 헤더 -->
+            <div class="program-header">
+                <h1 class="program-title">
+                    <i data-lucide="graduation-cap"></i>
+                    국내교육 프로그램 안내
+                </h1>
+                <p class="program-subtitle">Domestic Education Program Information</p>
+            </div>
+
+            <!-- 프로그램 콘텐츠 -->
+            <div class="program-content">
+                <div class="placeholder-icon">
+                    <i data-lucide="book-open"></i>
+                </div>
+                
+                <h2 class="placeholder-title">국내교육 프로그램</h2>
+                
+                <div class="status-badge">
+                    <i data-lucide="clock"></i>
+                    준비 중
+                </div>
+                
+                <p class="placeholder-description">
+                    문화인턴들을 위한 국내교육 프로그램 정보를 제공할 예정입니다.<br>
+                    파견 전 필수 교육과정, 문화 이해 프로그램, 언어 교육 등<br>
+                    다양한 교육 콘텐츠를 확인하실 수 있습니다.
+                </p>
+
+                <!-- 예상 기능 미리보기 -->
+                <div class="features-preview">
+                    <h3 class="features-title">
+                        <i data-lucide="list-checks"></i>
+                        제공 예정 기능
+                    </h3>
+                    <ul class="features-list">
+                        <li>
+                            <i data-lucide="users" class="feature-icon"></i>
+                            파견 전 필수 교육과정 안내
+                        </li>
+                        <li>
+                            <i data-lucide="globe" class="feature-icon"></i>
+                            문화 이해 및 적응 프로그램
+                        </li>
+                        <li>
+                            <i data-lucide="message-circle" class="feature-icon"></i>
+                            현지 언어 기초 교육
+                        </li>
+                        <li>
+                            <i data-lucide="calendar" class="feature-icon"></i>
+                            교육 일정 및 등록 관리
+                        </li>
+                        <li>
+                            <i data-lucide="file-text" class="feature-icon"></i>
+                            교육 자료 다운로드
+                        </li>
+                        <li>
+                            <i data-lucide="award" class="feature-icon"></i>
+                            이수증 발급 시스템
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 안내 메시지 -->
+                <div class="alert alert-info">
+                    <i data-lucide="info"></i>
+                    <div>
+                        <strong>안내:</strong> 국내교육 프로그램은 현재 개발 중입니다. 
+                        빠른 시일 내에 서비스를 제공할 예정이니 조금만 기다려주세요.
+                    </div>
+                </div>
+
+                <!-- 네비게이션 -->
+                <div class="navigation-section">
+                    <a href="./dashboard.html" class="nav-btn">
+                        <i data-lucide="arrow-left"></i>
+                        대시보드로 돌아가기
+                    </a>
+                    <a href="./institute-info.html" class="nav-btn secondary">
+                        <i data-lucide="building"></i>
+                        파견학당 정보 보기
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="../js/config.js?v=5.0.0"></script>
+    <script src="../js/utils.js?v=5.0.0"></script>
+    <script src="../js/auth.js?v=5.0.0"></script>
+    <script src="../js/supabase/supabase-core.js?v=5.0.0"></script>
+    <script src="../js/supabase/supabase-student.js?v=5.0.0"></script>
+    <script src="../js/supabase-client.js?v=5.0.0"></script>
+
+    <script>
+        console.log('📚 국내교육 프로그램 페이지 v1.0.0 시작');
+
+        // 페이지 초기화
+        let isPageInitialized = false;
+
+        // 학생 인증 확인
+        async function checkStudentAuth() {
+            try {
+                const studentData = localStorage.getItem('currentStudent');
+                if (!studentData) {
+                    throw new Error('로그인이 필요합니다.');
+                }
+
+                const student = JSON.parse(studentData);
+                if (!student.id || !student.name) {
+                    throw new Error('사용자 정보가 올바르지 않습니다.');
+                }
+
+                console.log('✅ 학생 인증 확인 완료:', student.name);
+                return student;
+            } catch (error) {
+                console.error('❌ 학생 인증 실패:', error);
+                
+                setTimeout(() => {
+                    alert(error.message + ' 다시 로그인해주세요.');
+                    window.location.href = '../index.html';
+                }, 1500);
+                
+                throw error;
+            }
+        }
+
+        // 페이지 초기화
+        async function initializePage() {
+            try {
+                if (isPageInitialized) return;
+
+                console.log('🔄 국내교육 프로그램 페이지 초기화 시작...');
+
+                // 1. 학생 인증 확인
+                await checkStudentAuth();
+
+                // 2. 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                    console.log('✅ 아이콘 초기화 완료');
+                }
+
+                // 3. UI 표시
+                await showMainContent();
+
+                // 4. 초기화 완료
+                isPageInitialized = true;
+                console.log('✅ 국내교육 프로그램 페이지 초기화 완료');
+
+            } catch (error) {
+                console.error('❌ 페이지 초기화 실패:', error);
+                showErrorState(error.message);
+            }
+        }
+
+        // 메인 콘텐츠 표시
+        async function showMainContent() {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const loadingState = document.getElementById('loadingState');
+                    const mainContent = document.getElementById('mainContent');
+
+                    if (loadingState) {
+                        loadingState.style.display = 'none';
+                    }
+                    if (mainContent) {
+                        mainContent.style.display = 'block';
+                    }
+
+                    // 아이콘 다시 초기화
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+
+                    console.log('✅ 메인 콘텐츠 표시 완료');
+                    resolve();
+                }, 1000); // 1초 로딩 시뮬레이션
+            });
+        }
+
+        // 에러 상태 표시
+        function showErrorState(message) {
+            const loadingState = document.getElementById('loadingState');
+            if (loadingState) {
+                loadingState.innerHTML = `
+                    <div style="color: #e53e3e;">
+                        <i data-lucide="alert-circle" style="width: 3rem; height: 3rem; margin: 0 auto 1rem; display: block;"></i>
+                        <p><strong>오류가 발생했습니다</strong></p>
+                        <p>${message}</p>
+                        <button onclick="window.location.href='./dashboard.html'" 
+                                style="margin-top: 1rem; padding: 0.5rem 1rem; background: #e53e3e; color: white; border: none; border-radius: 0.5rem; cursor: pointer;">
+                            대시보드로 돌아가기
+                        </button>
+                    </div>
+                `;
+                
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+        }
+
+        // DOMContentLoaded 이벤트
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📚 DOM 로드 완료 - 국내교육 프로그램 페이지 초기화 시작');
+            initializePage();
+        });
+
+        // 페이지 가시성 변경 감지 (탭 전환 시 재초기화)
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && !isPageInitialized) {
+                console.log('📚 페이지 재활성화 - 초기화 재시도');
+                initializePage();
+            }
+        });
+
+        console.log('📚 국내교육 프로그램 페이지 스크립트 로드 완료');
+    </script>
+</body>
+</html>
