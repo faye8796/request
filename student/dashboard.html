@@ -6,14 +6,14 @@
     <title>세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.2.1">
-    <link rel="stylesheet" href="../css/student.css?v=4.2.1">
+    <link rel="stylesheet" href="../css/main.css?v=5.1.0">
+    <link rel="stylesheet" href="../css/student.css?v=5.1.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <!-- Supabase JavaScript Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=4.2.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=5.1.0"></script>
 
     <!-- Dashboard 전용 스타일 -->
     <style>
@@ -64,6 +64,15 @@
         .student-info p {
             margin: 0;
             color: #4a5568;
+        }
+
+        .student-info .loading {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        .student-info .error {
+            color: #dc2626;
         }
 
         .menu-grid {
@@ -261,6 +270,12 @@
             color: #155724;
         }
 
+        .alert-error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
         /* 모바일 반응형 */
         @media (max-width: 768px) {
             .dashboard-container {
@@ -296,8 +311,8 @@
             </div>
             
             <div class="student-info" id="studentInfo">
-                <h3 id="studentName">학생 정보를 불러오는 중...</h3>
-                <p id="studentDetails">세종학당 • 문화 분야</p>
+                <h3 id="studentName" class="loading">학생 정보를 불러오는 중...</h3>
+                <p id="studentDetails" class="loading">정보를 불러오는 중...</p>
             </div>
         </div>
 
@@ -325,24 +340,26 @@
     <!-- JavaScript Files -->
     
     <!-- 핵심 설정 -->
-    <script src="../js/config.js?v=4.2.1"></script>
-    <script src="../js/utils.js?v=4.2.1"></script>
-    <script src="../js/auth.js?v=4.2.1"></script>
+    <script src="../js/config.js?v=5.1.0"></script>
+    <script src="../js/utils.js?v=5.1.0"></script>
+    <script src="../js/auth.js?v=5.1.0"></script>
 
     <!-- Supabase 모듈들 -->
-    <script src="../js/supabase/supabase-core.js?v=4.2.1"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.2.1"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.2.1"></script>
-    <script src="../js/supabase-client.js?v=4.2.1"></script>
+    <script src="../js/supabase/supabase-core.js?v=5.1.0"></script>
+    <script src="../js/supabase/supabase-student.js?v=5.1.0"></script>
+    <script src="../js/supabase/supabase-admin.js?v=5.1.0"></script>
+    <script src="../js/supabase-client.js?v=5.1.0"></script>
 
     <!-- 학생 기능 모듈들 -->
-    <script src="../js/student/api-helper.js?v=4.2.1"></script>
-    <script src="../js/student/notification-system.js?v=4.2.1"></script>
-    <script src="../js/student/dashboard.js?v=4.2.1"></script>
+    <script src="../js/student/api-helper.js?v=5.1.0"></script>
+    <script src="../js/student/notification-system.js?v=5.1.0"></script>
+    <script src="../js/student/dashboard.js?v=5.1.0"></script>
     
-    <!-- 대시보드 초기화 -->
+    <!-- 대시보드 초기화 - Option A: dashboard.html 중심 방식 -->
     <script>
-        // 모듈 상태 추적 - 무한루프 해결
+        console.log('🎯 Dashboard v5.1.0 - Option A (dashboard.html 중심 방식) 시작');
+        
+        // 모듈 상태 추적 및 학생 정보 관리 통합 시스템
         const ModuleStatusTracker = {
             modules: {
                 core: { name: 'SupabaseCore', loaded: false },
@@ -352,6 +369,8 @@
             },
             
             isInitialized: false, // 무한루프 방지 플래그
+            studentData: null, // 학생 정보 저장
+            initializationStep: 'loading', // loading → modules → student → menu → complete
 
             // 상태 업데이트 (무한루프 해결)
             updateStatus(moduleKey, isLoaded) {
@@ -376,10 +395,105 @@
                 const allLoaded = Object.values(this.modules)
                     .every(module => module.loaded);
                 
-                if (allLoaded) {
-                    this.isInitialized = true; // 플래그 설정
-                    this.showSystemReady();
+                if (allLoaded && this.initializationStep === 'loading') {
+                    console.log('✅ 모든 모듈 로딩 완료 - 학생 정보 로딩 시작');
+                    this.initializationStep = 'modules';
+                    this.loadStudentInfo();
                 }
+            },
+
+            // 🆕 학생 정보 로딩 (Option A의 핵심 기능)
+            async loadStudentInfo() {
+                console.log('👤 학생 정보 로딩 시작...');
+                this.initializationStep = 'student';
+                
+                try {
+                    // localStorage에서 학생 정보 로드
+                    const studentDataStr = localStorage.getItem('currentStudent');
+                    if (!studentDataStr) {
+                        throw new Error('로그인 정보가 없습니다.');
+                    }
+
+                    const studentData = JSON.parse(studentDataStr);
+                    
+                    // 필수 필드 검증
+                    if (!studentData.id || !studentData.name) {
+                        throw new Error('사용자 데이터가 불완전합니다.');
+                    }
+
+                    this.studentData = studentData;
+                    
+                    // UI 업데이트 (dashboard.js의 함수 재활용)
+                    this.updateStudentInfoUI(studentData);
+                    
+                    // 다음 단계로 진행
+                    console.log('✅ 학생 정보 로딩 완료 - 메뉴 로딩 시작');
+                    this.initializationStep = 'menu';
+                    this.loadMenuItems();
+                    
+                } catch (error) {
+                    console.error('❌ 학생 정보 로딩 실패:', error);
+                    this.showStudentInfoError(error.message);
+                    
+                    // 3초 후 로그인 페이지로 이동
+                    setTimeout(() => {
+                        alert(error.message + ' 다시 로그인해주세요.');
+                        window.location.href = '../index.html';
+                    }, 3000);
+                }
+            },
+
+            // 학생 정보 UI 업데이트 (dashboard.js 스타일과 통일)
+            updateStudentInfoUI(student) {
+                try {
+                    const studentNameElement = document.getElementById('studentName');
+                    if (studentNameElement) {
+                        studentNameElement.textContent = `${student.name}님, 안녕하세요!`;
+                        studentNameElement.className = ''; // loading 클래스 제거
+                    }
+                    
+                    const studentDetailsElement = document.getElementById('studentDetails');
+                    if (studentDetailsElement) {
+                        const institute = student.sejong_institute || '세종학당';
+                        const field = student.field || '문화 분야';
+                        studentDetailsElement.textContent = `${institute} • ${field}`;
+                        studentDetailsElement.className = ''; // loading 클래스 제거
+                    }
+                    
+                    console.log('✅ 학생 정보 UI 업데이트 완료:', {
+                        name: student.name,
+                        institute: student.sejong_institute,
+                        field: student.field
+                    });
+                    
+                    // dashboard.js의 함수가 있다면 함께 호출하여 동기화
+                    if (typeof window.updateStudentInfo === 'function') {
+                        window.updateStudentInfo(student);
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ 학생 정보 UI 업데이트 오류:', error);
+                    this.showStudentInfoError('정보 표시 중 오류가 발생했습니다.');
+                }
+            },
+
+            // 학생 정보 오류 표시
+            showStudentInfoError(message) {
+                const studentNameElement = document.getElementById('studentName');
+                const studentDetailsElement = document.getElementById('studentDetails');
+                
+                if (studentNameElement) {
+                    studentNameElement.textContent = '오류: 학생 정보를 불러올 수 없습니다';
+                    studentNameElement.className = 'error';
+                }
+                
+                if (studentDetailsElement) {
+                    studentDetailsElement.textContent = message;
+                    studentDetailsElement.className = 'error';
+                }
+
+                // 시스템 상태에도 표시
+                this.showSystemMessage(message, 'error');
             },
 
             // 시스템 준비 완료 표시
@@ -392,14 +506,43 @@
                             모든 기능을 사용할 수 있습니다.
                         </div>
                     `;
+                    
+                    // 3초 후 자동 제거
+                    setTimeout(() => {
+                        systemStatus.innerHTML = '';
+                    }, 3000);
                 }
                 
-                // 메뉴 로딩 상태 제거하고 실제 메뉴 표시
-                this.loadMenuItems();
+                this.isInitialized = true;
+                this.initializationStep = 'complete';
+                console.log('🎉 대시보드 초기화 완전 완료 - Option A');
             },
 
-            // 메뉴 항목 로드 - 순서 변경: 학당 정보 > 항공권 신청 > 교구 신청
+            // 시스템 메시지 표시
+            showSystemMessage(message, type = 'info') {
+                const systemStatus = document.getElementById('systemStatus');
+                if (!systemStatus) return;
+
+                const alertClass = `alert-${type}`;
+                const icon = type === 'error' ? 'alert-circle' : (type === 'warning' ? 'alert-triangle' : 'info');
+
+                systemStatus.innerHTML = `
+                    <div class="alert ${alertClass}">
+                        <i data-lucide="${icon}"></i>
+                        <div>
+                            <p>${message}</p>
+                        </div>
+                    </div>
+                `;
+
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            },
+
+            // 메뉴 항목 로드 - 기존 로직 유지
             loadMenuItems() {
+                console.log('📋 메뉴 항목 로딩 시작...');
                 const menuGrid = document.getElementById('menuGrid');
                 if (menuGrid) {
                     menuGrid.innerHTML = `
@@ -451,6 +594,20 @@
                         lucide.createIcons();
                     }
                 }
+                
+                console.log('✅ 메뉴 항목 로딩 완료');
+                this.showSystemReady();
+            },
+
+            // 디버그 정보
+            getDebugInfo() {
+                return {
+                    isInitialized: this.isInitialized,
+                    initializationStep: this.initializationStep,
+                    modules: this.modules,
+                    studentData: this.studentData,
+                    version: 'v5.1.0 - Option A'
+                };
             }
         };
 
@@ -484,21 +641,28 @@
         // 페이지 네비게이션 함수
         function navigateToPage(url) {
             try {
+                // 데이터 동기화 확인
+                if (ModuleStatusTracker.studentData) {
+                    localStorage.setItem('currentStudent', JSON.stringify(ModuleStatusTracker.studentData));
+                }
                 window.location.href = url;
             } catch (error) {
                 console.error('❌ 페이지 이동 오류:', error);
+                alert('페이지 이동 중 오류가 발생했습니다.');
             }
         }
 
-        // DOMContentLoaded 이벤트 핸들러
+        // DOMContentLoaded 이벤트 핸들러 - 즉시 시작
         document.addEventListener('DOMContentLoaded', function() {
             try {
+                console.log('🎯 DOMContentLoaded - dashboard.html 주도 초기화 시작');
+                
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
 
-                // 모듈 로딩 감지 시작
+                // 모듈 로딩 감지 시작 (즉시)
                 checkModuleLoading();
 
                 // 주기적으로 모듈 상태 확인 (최대 10초)
@@ -512,16 +676,19 @@
                         clearInterval(checkInterval);
                         
                         if (!ModuleStatusTracker.isInitialized) {
-                            console.error('❌ 모듈 로딩 타임아웃 - 일부 기능이 제한될 수 있습니다.');
+                            console.error('❌ 모듈 로딩 타임아웃 - 기본 설정으로 진행');
                             
                             // 타임아웃 시에도 기본 메뉴는 표시
+                            ModuleStatusTracker.initializationStep = 'menu';
                             ModuleStatusTracker.loadMenuItems();
+                            ModuleStatusTracker.showSystemMessage('일부 기능이 제한될 수 있습니다.', 'warning');
                         }
                     }
                 }, 100);
 
             } catch (error) {
                 console.error('❌ 페이지 초기화 오류:', error);
+                ModuleStatusTracker.showSystemMessage('시스템 초기화 중 오류가 발생했습니다.', 'error');
             }
         });
 
@@ -554,6 +721,11 @@
                     window.SupabaseAPI.logout();
                 }
                 
+                // dashboard.js 로그아웃 (있는 경우)
+                if (typeof window.handleLogout !== 'undefined' && window.handleLogout !== arguments.callee) {
+                    window.handleLogout();
+                }
+                
                 // 로그인 페이지로 이동
                 window.location.href = '../index.html';
             } catch (error) {
@@ -561,6 +733,26 @@
                 window.location.href = '../index.html';
             }
         }
+
+        // 전역 디버그 함수
+        window.showDashboardDebug = function() {
+            const debugInfo = ModuleStatusTracker.getDebugInfo();
+            console.group('🔍 Dashboard Debug Info - Option A');
+            console.log('초기화 상태:', debugInfo.isInitialized);
+            console.log('현재 단계:', debugInfo.initializationStep);
+            console.log('모듈 상태:', debugInfo.modules);
+            console.log('학생 데이터:', debugInfo.studentData);
+            console.log('버전:', debugInfo.version);
+            console.groupEnd();
+            
+            alert(`Dashboard Debug Info (v5.1.0 - Option A):\n\n초기화: ${debugInfo.isInitialized}\n단계: ${debugInfo.initializationStep}\n학생: ${debugInfo.studentData?.name || 'N/A'}\n\n자세한 정보는 콘솔을 확인하세요.`);
+        };
+
+        // 전역 변수로 노출 (dashboard.js와의 호환성)
+        window.ModuleStatusTracker = ModuleStatusTracker;
+        window.navigateToPage = navigateToPage;
+        
+        console.log('✅ Dashboard v5.1.0 초기화 스크립트 로딩 완료 - Option A 방식');
     </script>
 </body>
 </html>
