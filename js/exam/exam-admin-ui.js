@@ -1,7 +1,13 @@
 /**
- * 📝 수료평가 시스템 - 관리자 UI 모듈 v5.1.0
+ * 📝 수료평가 시스템 - 관리자 UI 모듈 v5.1.1
  * 문제 관리, 시험 결과 조회 UI 관리
  * 기존 시스템과 완전 분리된 독립 모듈
+ * 
+ * v5.1.1 업데이트:
+ * - CSS Grid 기반 개선된 문제 추가 모달 UI
+ * - 단답형 복수 정답 기능 구현
+ * - 콤마로 구분된 정답 입력 및 검증 로직
+ * - 모바일 반응형 최적화
  */
 
 class ExamAdminUI {
@@ -9,7 +15,7 @@ class ExamAdminUI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamAdminUI',
-            version: '5.1.0',
+            version: '5.1.1',
             lastUpdate: new Date().toISOString()
         };
         this.currentView = 'questions'; // questions, results, settings
@@ -23,7 +29,7 @@ class ExamAdminUI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamAdminUI v5.1.0 초기화 시작...');
+            console.log('🔄 ExamAdminUI v5.1.1 초기화 시작...');
             
             // 필수 모듈 확인
             if (!window.ExamAdminAPI) {
@@ -37,7 +43,7 @@ class ExamAdminUI {
             await this.showQuestionsView();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamAdminUI v5.1.0 초기화 완료');
+            console.log('✅ ExamAdminUI v5.1.1 초기화 완료');
             return true;
             
         } catch (error) {
@@ -153,7 +159,7 @@ class ExamAdminUI {
             
             // 페이지네이션 렌더링
             this.renderPagination(result);
-            
+
             this.showLoading(false);
             
         } catch (error) {
@@ -248,7 +254,7 @@ class ExamAdminUI {
     }
 
     /**
-     * 📋 문제 카드 생성
+     * 📋 문제 카드 생성 (복수 정답 표시 개선)
      */
     createQuestionCard(question) {
         const typeText = question.question_type === 'multiple_choice' ? '객관식' : '단답형';
@@ -272,11 +278,27 @@ class ExamAdminUI {
                 </div>
             `;
         } else {
-            optionsHTML = `
-                <div class="exam-question-answer">
-                    <strong>정답:</strong> ${question.correct_answer}
-                </div>
-            `;
+            // 🎯 복수 정답 표시 개선
+            const answers = question.correct_answer;
+            const isMultipleAnswers = answers && answers.includes(',');
+            
+            if (isMultipleAnswers) {
+                const answerList = answers.split(',').map(ans => ans.trim()).filter(ans => ans);
+                optionsHTML = `
+                    <div class="exam-question-answer">
+                        <strong>정답 (복수):</strong>
+                        <div class="exam-multiple-answers-list">
+                            ${answerList.map(answer => `<span class="exam-answer-tag">${answer}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                optionsHTML = `
+                    <div class="exam-question-answer">
+                        <strong>정답:</strong> ${question.correct_answer}
+                    </div>
+                `;
+            }
         }
 
         return `
@@ -466,12 +488,22 @@ class ExamAdminUI {
     }
 
     /**
-     * 📝 문제 추가/수정 모달 표시
+     * 📝 문제 추가/수정 모달 표시 (개선된 UI 적용)
      */
     showQuestionModal(questionData = null) {
         const isEdit = !!questionData;
         const modalTitle = isEdit ? '문제 수정' : '새 문제 추가';
         const saveButtonText = isEdit ? '수정하기' : '추가하기';
+        
+        // 🎯 복수 정답 데이터 파싱
+        let isMultipleAnswers = false;
+        let multipleAnswers = '';
+        if (questionData && questionData.question_type === 'short_answer' && questionData.correct_answer) {
+            if (questionData.correct_answer.includes(',')) {
+                isMultipleAnswers = true;
+                multipleAnswers = questionData.correct_answer;
+            }
+        }
         
         const modalHTML = `
             <div class="exam-modal-overlay" id="question-modal">
@@ -484,49 +516,93 @@ class ExamAdminUI {
                     </div>
                     <div class="exam-modal-body">
                         <form id="question-form">
-                            <div class="exam-form-group">
-                                <label for="question-text">문제 내용 *</label>
-                                <textarea id="question-text" name="question_text" rows="3" 
-                                         placeholder="문제 내용을 입력하세요..." required>${questionData?.question_text || ''}</textarea>
-                            </div>
-                            
-                            <div class="exam-form-row">
-                                <div class="exam-form-group">
-                                    <label for="question-type">문제 유형 *</label>
-                                    <select id="question-type" name="question_type" required onchange="examAdminUI.handleQuestionTypeChange()">
-                                        <option value="">선택하세요</option>
-                                        <option value="multiple_choice" ${questionData?.question_type === 'multiple_choice' ? 'selected' : ''}>객관식</option>
-                                        <option value="short_answer" ${questionData?.question_type === 'short_answer' ? 'selected' : ''}>단답형</option>
-                                    </select>
+                            <!-- 🎯 CSS Grid 기반 개선된 레이아웃 -->
+                            <div class="exam-form-container">
+                                <!-- 문제 내용 영역 (70% 비율) -->
+                                <div class="exam-form-question-content">
+                                    <div class="exam-form-group">
+                                        <label for="question-text">문제 내용 *</label>
+                                        <textarea id="question-text" name="question_text" 
+                                                 class="exam-form-textarea"
+                                                 placeholder="문제 내용을 입력하세요..." 
+                                                 required>${questionData?.question_text || ''}</textarea>
+                                    </div>
                                 </div>
                                 
-                                <div class="exam-form-group">
-                                    <label for="question-points">배점 *</label>
-                                    <input type="number" id="question-points" name="points" min="1" max="10" 
-                                           value="${questionData?.points || 1}" required>
+                                <!-- 메타 정보 행 (30% 비율) -->
+                                <div class="exam-form-meta-row">
+                                    <div class="exam-form-group">
+                                        <label for="question-type">문제 유형 *</label>
+                                        <select id="question-type" name="question_type" 
+                                               class="exam-form-select" required 
+                                               onchange="examAdminUI.handleQuestionTypeChange()">
+                                            <option value="">선택하세요</option>
+                                            <option value="multiple_choice" ${questionData?.question_type === 'multiple_choice' ? 'selected' : ''}>객관식</option>
+                                            <option value="short_answer" ${questionData?.question_type === 'short_answer' ? 'selected' : ''}>단답형</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="exam-form-group">
+                                        <label for="question-points">배점 *</label>
+                                        <input type="number" id="question-points" name="points" 
+                                               class="exam-form-input" min="1" max="10" 
+                                               value="${questionData?.points || 1}" required>
+                                    </div>
+                                    
+                                    <div class="exam-form-group">
+                                        <label class="exam-checkbox-label">
+                                            <input type="checkbox" id="is-active" name="is_active" 
+                                                   ${questionData?.is_active !== false ? 'checked' : ''}>
+                                            <span class="exam-checkbox-custom"></span>
+                                            활성화
+                                        </label>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <div id="options-container" style="display: none;">
-                                <label>선택지 *</label>
-                                <div id="options-list"></div>
-                                <button type="button" class="exam-btn exam-btn-secondary exam-btn-sm" onclick="examAdminUI.addOption()">
-                                    <i data-lucide="plus"></i> 선택지 추가
-                                </button>
-                            </div>
-                            
-                            <div class="exam-form-group">
-                                <label for="correct-answer">정답 *</label>
-                                <input type="text" id="correct-answer" name="correct_answer" 
-                                       placeholder="정답을 입력하세요..." value="${questionData?.correct_answer || ''}" required>
-                            </div>
-                            
-                            <div class="exam-form-group">
-                                <label class="exam-checkbox-label">
-                                    <input type="checkbox" id="is-active" name="is_active" ${questionData?.is_active !== false ? 'checked' : ''}>
-                                    <span class="exam-checkbox-custom"></span>
-                                    문제 활성화
-                                </label>
+                                
+                                <!-- 객관식 선택지 영역 -->
+                                <div id="options-container" style="display: none;">
+                                    <div class="exam-form-group">
+                                        <label>선택지 *</label>
+                                        <div id="options-list"></div>
+                                        <div class="exam-options-actions">
+                                            <button type="button" class="exam-btn exam-btn-secondary exam-btn-sm" 
+                                                    onclick="examAdminUI.addOption()">
+                                                <i data-lucide="plus"></i> 선택지 추가
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 🎯 정답 입력 영역 (복수 정답 기능 포함) -->
+                                <div class="exam-form-answer-section">
+                                    <!-- 단답형 복수 정답 설정 -->
+                                    <div id="multiple-answers-container" style="display: none;">
+                                        <div class="exam-multiple-answers-toggle ${isMultipleAnswers ? 'active' : ''}">
+                                            <label class="exam-checkbox-label">
+                                                <input type="checkbox" id="allow-multiple-answers" 
+                                                       ${isMultipleAnswers ? 'checked' : ''}
+                                                       onchange="examAdminUI.toggleMultipleAnswers()">
+                                                <span class="exam-checkbox-custom"></span>
+                                                복수 정답 허용 (콤마로 구분)
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 정답 입력 -->
+                                    <div class="exam-form-group">
+                                        <label for="correct-answer">정답 *</label>
+                                        <div class="exam-answer-input-container">
+                                            <input type="text" id="correct-answer" name="correct_answer" 
+                                                   class="exam-form-input"
+                                                   placeholder="정답을 입력하세요..." 
+                                                   value="${isMultipleAnswers ? multipleAnswers : (questionData?.correct_answer || '')}" 
+                                                   required>
+                                            <div id="answer-input-help" class="exam-answer-input-help">
+                                                단일 정답을 입력하세요.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -552,25 +628,86 @@ class ExamAdminUI {
                     this.addOption(option);
                 });
             }
+        } else if (questionData?.question_type === 'short_answer') {
+            this.handleQuestionTypeChange();
+            if (isMultipleAnswers) {
+                this.updateAnswerInputHelp(true);
+            }
         }
     }
 
     /**
-     * 📝 문제 유형 변경 처리
+     * 📝 문제 유형 변경 처리 (복수 정답 UI 개선)
      */
     handleQuestionTypeChange() {
         const questionType = document.getElementById('question-type').value;
         const optionsContainer = document.getElementById('options-container');
+        const multipleAnswersContainer = document.getElementById('multiple-answers-container');
         const correctAnswerInput = document.getElementById('correct-answer');
         
         if (questionType === 'multiple_choice') {
+            // 객관식: 선택지 컨테이너 표시, 복수 정답 숨김
             optionsContainer.style.display = 'block';
+            multipleAnswersContainer.style.display = 'none';
             correctAnswerInput.placeholder = '선택지 중 정답을 입력하세요...';
-        } else {
-            optionsContainer.style.display = 'none';
-            correctAnswerInput.placeholder = '정답을 입력하세요...';
-            // 기존 선택지 모두 제거
+            this.updateAnswerInputHelp(false);
+            
+            // 기존 선택지 제거
             document.getElementById('options-list').innerHTML = '';
+            
+        } else if (questionType === 'short_answer') {
+            // 단답형: 복수 정답 컨테이너 표시, 선택지 숨김
+            optionsContainer.style.display = 'none';
+            multipleAnswersContainer.style.display = 'block';
+            correctAnswerInput.placeholder = '정답을 입력하세요...';
+            
+            // 복수 정답 체크박스 상태에 따라 도움말 업데이트
+            const allowMultiple = document.getElementById('allow-multiple-answers')?.checked || false;
+            this.updateAnswerInputHelp(allowMultiple);
+            
+        } else {
+            // 선택 안함: 모두 숨김
+            optionsContainer.style.display = 'none';
+            multipleAnswersContainer.style.display = 'none';
+            correctAnswerInput.placeholder = '정답을 입력하세요...';
+            this.updateAnswerInputHelp(false);
+        }
+    }
+
+    /**
+     * 🎯 복수 정답 허용 토글
+     */
+    toggleMultipleAnswers() {
+        const checkbox = document.getElementById('allow-multiple-answers');
+        const container = checkbox.closest('.exam-multiple-answers-toggle');
+        const isChecked = checkbox.checked;
+        
+        // UI 상태 업데이트
+        container.classList.toggle('active', isChecked);
+        this.updateAnswerInputHelp(isChecked);
+        
+        // 정답 입력 필드 초기화 (선택사항)
+        const answerInput = document.getElementById('correct-answer');
+        if (!isChecked && answerInput.value.includes(',')) {
+            // 복수 정답 비활성화 시 첫 번째 정답만 유지
+            const firstAnswer = answerInput.value.split(',')[0].trim();
+            answerInput.value = firstAnswer;
+        }
+    }
+
+    /**
+     * 🎯 정답 입력 도움말 업데이트
+     */
+    updateAnswerInputHelp(isMultipleAnswers) {
+        const helpElement = document.getElementById('answer-input-help');
+        if (!helpElement) return;
+        
+        if (isMultipleAnswers) {
+            helpElement.textContent = '복수 정답을 콤마(,)로 구분하여 입력하세요. 예: 정답1, 정답2, 정답3';
+            helpElement.classList.add('multiple-active');
+        } else {
+            helpElement.textContent = '단일 정답을 입력하세요.';
+            helpElement.classList.remove('multiple-active');
         }
     }
 
@@ -583,8 +720,11 @@ class ExamAdminUI {
         
         const optionHTML = `
             <div class="exam-option-item">
-                <input type="text" class="exam-option-input" placeholder="선택지 ${optionIndex + 1}" value="${value}" required>
-                <button type="button" class="exam-btn exam-btn-sm exam-btn-danger" onclick="this.parentElement.remove()">
+                <input type="text" class="exam-option-input" 
+                       placeholder="선택지 ${optionIndex + 1}" 
+                       value="${value}" required>
+                <button type="button" class="exam-option-remove" 
+                        onclick="this.parentElement.remove(); examAdminUI.updateLucideIcons();">
                     <i data-lucide="minus"></i>
                 </button>
             </div>
@@ -595,7 +735,7 @@ class ExamAdminUI {
     }
 
     /**
-     * 💾 문제 저장
+     * 💾 문제 저장 (복수 정답 처리 로직 포함)
      */
     async saveQuestion(questionId = null) {
         try {
@@ -616,11 +756,43 @@ class ExamAdminUI {
                 }
             }
             
+            // 🎯 복수 정답 처리
+            let correctAnswer = formData.get('correct_answer').trim();
+            if (questionType === 'short_answer') {
+                const allowMultiple = document.getElementById('allow-multiple-answers')?.checked || false;
+                
+                if (allowMultiple) {
+                    // 복수 정답 검증 및 정리
+                    if (!correctAnswer.includes(',')) {
+                        this.showError('복수 정답을 허용하려면 콤마(,)로 구분된 정답을 입력해주세요.');
+                        return;
+                    }
+                    
+                    // 정답 정리: 공백 제거, 빈 값 필터링, 중복 제거
+                    const answers = correctAnswer.split(',')
+                        .map(ans => ans.trim())
+                        .filter(ans => ans)
+                        .filter((ans, index, arr) => arr.indexOf(ans) === index); // 중복 제거
+                    
+                    if (answers.length < 2) {
+                        this.showError('복수 정답은 최소 2개 이상이어야 합니다.');
+                        return;
+                    }
+                    
+                    correctAnswer = answers.join(', '); // 깔끔하게 정리된 형태로 저장
+                } else {
+                    // 단일 정답인 경우 콤마 제거
+                    if (correctAnswer.includes(',')) {
+                        correctAnswer = correctAnswer.split(',')[0].trim();
+                    }
+                }
+            }
+            
             const questionData = {
                 question_text: formData.get('question_text'),
                 question_type: questionType,
                 options: options,
-                correct_answer: formData.get('correct_answer'),
+                correct_answer: correctAnswer,
                 points: parseInt(formData.get('points')),
                 is_active: formData.get('is_active') === 'on'
             };
@@ -693,7 +865,7 @@ class ExamAdminUI {
      * 🗑️ 문제 삭제
      */
     async deleteQuestion(questionId) {
-        if (!confirm('정말로 이 문제를 삭제하시겠습니까?\n\n이미 시험에 사용된 문제는 삭제할 수 없습니다.')) {
+        if (!confirm('정말로 이 문제를 삭제하시겠습니까?\\n\\n이미 시험에 사용된 문제는 삭제할 수 없습니다.')) {
             return;
         }
         
@@ -891,5 +1063,5 @@ class ExamAdminUI {
 if (typeof window !== 'undefined') {
     window.ExamAdminUI = new ExamAdminUI();
     window.examAdminUI = window.ExamAdminUI; // 편의를 위한 소문자 별칭
-    console.log('🎨 ExamAdminUI v5.1.0 모듈 로드됨');
+    console.log('🎨 ExamAdminUI v5.1.1 모듈 로드됨 - 복수 정답 기능 포함');
 }
