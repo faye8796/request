@@ -6,14 +6,14 @@
     <title>세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=5.1.0">
-    <link rel="stylesheet" href="../css/student.css?v=5.1.0">
+    <link rel="stylesheet" href="../css/main.css?v=5.2.0">
+    <link rel="stylesheet" href="../css/student.css?v=5.2.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
     <!-- Supabase JavaScript Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=5.1.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js?v=5.2.0"></script>
 
     <!-- Dashboard 전용 스타일 -->
     <style>
@@ -358,24 +358,24 @@
     <!-- JavaScript Files -->
     
     <!-- 핵심 설정 -->
-    <script src="../js/config.js?v=5.1.0"></script>
-    <script src="../js/utils.js?v=5.1.0"></script>
-    <script src="../js/auth.js?v=5.1.0"></script>
+    <script src="../js/config.js?v=5.2.0"></script>
+    <script src="../js/utils.js?v=5.2.0"></script>
+    <script src="../js/auth.js?v=5.2.0"></script>
 
     <!-- Supabase 모듈들 -->
-    <script src="../js/supabase/supabase-core.js?v=5.1.0"></script>
-    <script src="../js/supabase/supabase-student.js?v=5.1.0"></script>
-    <script src="../js/supabase/supabase-admin.js?v=5.1.0"></script>
-    <script src="../js/supabase-client.js?v=5.1.0"></script>
+    <script src="../js/supabase/supabase-core.js?v=5.2.0"></script>
+    <script src="../js/supabase/supabase-student.js?v=5.2.0"></script>
+    <script src="../js/supabase/supabase-admin.js?v=5.2.0"></script>
+    <script src="../js/supabase-client.js?v=5.2.0"></script>
 
     <!-- 학생 기능 모듈들 -->
-    <script src="../js/student/api-helper.js?v=5.1.0"></script>
-    <script src="../js/student/notification-system.js?v=5.1.0"></script>
-    <script src="../js/student/dashboard.js?v=5.1.0"></script>
+    <script src="../js/student/api-helper.js?v=5.2.0"></script>
+    <script src="../js/student/notification-system.js?v=5.2.0"></script>
+    <script src="../js/student/dashboard.js?v=5.2.0"></script>
     
-    <!-- 대시보드 초기화 - v5.2.0 국내교육 프로그램 추가 -->
+    <!-- 대시보드 초기화 - v5.2.0 수료평가 시스템 추가 -->
     <script>
-        console.log('🎯 Dashboard v5.2.0 - 국내교육 프로그램 추가 버전 시작');
+        console.log('🎯 Dashboard v5.2.0 - 수료평가 시스템 추가 버전 시작');
         
         // 모듈 상태 추적 및 학생 정보 관리 통합 시스템
         const ModuleStatusTracker = {
@@ -497,13 +497,14 @@
                 }
             },
 
-            // 기본 기능 설정 (DB 로딩 실패 시 사용)
+            // 🆕 v5.2.0 기본 기능 설정 (수료평가 시스템 추가)
             getDefaultFeatureSettings() {
                 return [
                     { feature_name: 'institute_info', feature_title: '파견학당 정보', is_active: true, display_order: 1 },
                     { feature_name: 'domestic_program', feature_title: '국내교육 프로그램 안내', is_active: false, display_order: 2 },
-                    { feature_name: 'flight_request', feature_title: '항공권 구매 신청', is_active: false, display_order: 3 },
-                    { feature_name: 'equipment_request', feature_title: '문화교구 신청', is_active: false, display_order: 4 }
+                    { feature_name: 'exam', feature_title: '수료평가', is_active: true, display_order: 3 },
+                    { feature_name: 'flight_request', feature_title: '항공권 구매 신청', is_active: false, display_order: 4 },
+                    { feature_name: 'equipment_request', feature_title: '문화교구 신청', is_active: true, display_order: 5 }
                 ];
             },
 
@@ -555,9 +556,9 @@
                 this.showSystemMessage(message, 'error');
             },
 
-            // 🆕 v5.2.0 메뉴 항목 로드 (DB 기반 동적 생성)
+            // 🆕 v5.2.0 메뉴 항목 로드 (수료평가 시스템 포함)
             loadMenuItems() {
-                console.log('📋 메뉴 항목 로딩 시작... (v5.2.0)');
+                console.log('📋 메뉴 항목 로딩 시작... (v5.2.0 - 수료평가 포함)');
                 const menuGrid = document.getElementById('menuGrid');
                 if (!menuGrid) return;
 
@@ -580,11 +581,11 @@
                     lucide.createIcons();
                 }
                 
-                console.log('✅ 메뉴 항목 로딩 완료 (v5.2.0)');
+                console.log('✅ 메뉴 항목 로딩 완료 (v5.2.0 - 수료평가 포함)');
                 this.showSystemReady();
             },
 
-            // 🆕 메뉴 카드 설정 가져오기
+            // 🆕 v5.2.0 메뉴 카드 설정 가져오기 (수료평가 추가)
             getMenuCardConfig(feature) {
                 const configs = {
                     'institute_info': {
@@ -602,6 +603,14 @@
                         url: './domestic-program.html',
                         buttonText: '확인하기',
                         buttonIcon: 'arrow-right'
+                    },
+                    'exam': {
+                        icon: 'file-text',
+                        title: '수료평가',
+                        description: '문화인턴 과정 수료를 위한 평가에 응시할 수 있습니다.',
+                        url: './exam.html',
+                        buttonText: '응시하기',
+                        buttonIcon: 'play'
                     },
                     'flight_request': {
                         icon: 'plane',
@@ -637,14 +646,12 @@
                 let cardClass = 'menu-card';
                 let cardOnClick = '';
                 let buttonState = '';
-                let badge = '';
                 
                 if (isActive) {
                     cardClass += ' available';
                     cardOnClick = `onclick="navigateToPage('${url}')"`;
                 } else {
-                    cardClass += ' coming-soon'; // 'disabled' → 'coming-soon' 변경
-                    badge = '<span class="coming-soon-badge">Coming Soon</span>';
+                    cardClass += ' coming-soon';
                     buttonState = 'disabled';
                 }
                 
@@ -670,7 +677,7 @@
                     systemStatus.innerHTML = `
                         <div class="alert alert-success">
                             <strong>🚀 시스템이 정상적으로 초기화되었습니다! (v5.2.0)</strong><br>
-                            국내교육 프로그램이 추가되어 모든 기능을 사용할 수 있습니다.
+                            수료평가 시스템이 추가되어 모든 기능을 사용할 수 있습니다.
                         </div>
                     `;
                     
@@ -682,7 +689,7 @@
                 
                 this.isInitialized = true;
                 this.initializationStep = 'complete';
-                console.log('🎉 대시보드 초기화 완전 완료 - v5.2.0 국내교육 프로그램 포함');
+                console.log('🎉 대시보드 초기화 완전 완료 - v5.2.0 수료평가 시스템 포함');
             },
 
             // 시스템 메시지 표시
@@ -715,7 +722,7 @@
                     modules: this.modules,
                     studentData: this.studentData,
                     featureSettings: this.featureSettings,
-                    version: 'v5.2.0 - 국내교육 프로그램 추가'
+                    version: 'v5.2.0 - 수료평가 시스템 추가'
                 };
             }
         };
@@ -764,7 +771,7 @@
         // DOMContentLoaded 이벤트 핸들러 - 즉시 시작
         document.addEventListener('DOMContentLoaded', function() {
             try {
-                console.log('🎯 DOMContentLoaded - v5.2.0 국내교육 프로그램 포함 초기화 시작');
+                console.log('🎯 DOMContentLoaded - v5.2.0 수료평가 시스템 포함 초기화 시작');
                 
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
@@ -858,7 +865,7 @@
         window.ModuleStatusTracker = ModuleStatusTracker;
         window.navigateToPage = navigateToPage;
         
-        console.log('✅ Dashboard v5.2.0 초기화 스크립트 로딩 완료 - 국내교육 프로그램 추가');
+        console.log('✅ Dashboard v5.2.0 초기화 스크립트 로딩 완료 - 수료평가 시스템 추가');
     </script>
 </body>
 </html>
