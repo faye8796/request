@@ -5,15 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2025 세종학당 문화인턴 국내교육 - 세종학당 문화인턴 지원 시스템</title>
     
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=5.0.0">
-    <link rel="stylesheet" href="../css/student.css?v=5.0.0">
-    
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
-    <!-- Supabase JavaScript Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
 
     <style>
         * {
@@ -41,21 +34,20 @@
         }
 
         .header h1 {
-            color: white;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            color: #667eea;
             font-size: 2.5rem;
             font-weight: 700;
             margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 1rem;
-        }
-
-        .header p {
-            color: rgba(255,255,255,0.9);
-            font-size: 1.1rem;
-            margin-bottom: 20px;
         }
 
         .overview-card {
@@ -205,78 +197,86 @@
             min-height: 45px;
         }
 
-        .multi-track-item {
-            padding: 0;
-        }
-        
-        .multi-track {
-            display: block;
-            padding: 25px;
+        /* 분과별 교육 카드 스타일 개선 */
+        .division-education {
             background: rgba(118, 75, 162, 0.05);
-            border-radius: 10px;
-            margin: 0;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
         }
 
-        .track-container {
-            display: flex;
-            align-items: stretch;
+        .division-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .division-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #764ba2;
+            margin-bottom: 10px;
+        }
+
+        .division-subtitle {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .division-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
             margin-bottom: 20px;
         }
 
-        .track-container:last-child {
-            margin-bottom: 0;
+        .division-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid rgba(118, 75, 162, 0.2);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .track-time {
-            flex: 0 0 140px;
+        .division-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .division-card-header {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .division-time {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            border-radius: 10px;
-            padding: 15px 10px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-align: center;
-        }
-
-        .track-content {
-            flex: 1;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-        }
-
-        .track-item {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            border: 1px solid rgba(118, 75, 162, 0.2);
-            text-align: center;
-        }
-
-        .track-title {
+            padding: 8px 12px;
+            border-radius: 8px;
             font-size: 0.8rem;
-            color: #764ba2;
             font-weight: 600;
-            margin-bottom: 8px;
         }
 
-        .track-subject {
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #333;
-            line-height: 1.3;
+        .division-track {
+            background: rgba(118, 75, 162, 0.1);
+            color: #764ba2;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
 
-        .location-note {
-            margin-top: 15px;
+        .division-content {
             text-align: center;
-            color: #666;
-            font-size: 0.9rem;
-            font-style: italic;
+        }
+
+        .division-subject {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            line-height: 1.4;
         }
 
         .navigation-section {
@@ -308,38 +308,6 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
 
-        .nav-btn.secondary {
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
-        }
-
-        .nav-btn.secondary:hover {
-            background: #667eea;
-            color: white;
-        }
-
-        .loading-state {
-            text-align: center;
-            padding: 3rem;
-            color: white;
-        }
-
-        .loading-spinner {
-            width: 3rem;
-            height: 3rem;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top: 4px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -362,28 +330,15 @@
                 padding: 8px;
             }
 
-            .track-content {
+            .division-grid {
                 grid-template-columns: 1fr;
-                gap: 10px;
-            }
-
-            .track-container {
-                flex-direction: column;
                 gap: 15px;
             }
 
-            .track-time {
-                flex: none;
-                padding: 10px;
-            }
-
-            .multi-track {
-                padding: 15px;
-                margin: 0;
-            }
-
-            .multi-track-item {
-                padding: 0;
+            .division-card-header {
+                flex-direction: column;
+                gap: 8px;
+                align-items: center;
             }
 
             .overview-grid {
@@ -420,477 +375,369 @@
 </head>
 <body>
     <div class="container">
-        <!-- 로딩 상태 -->
-        <div id="loadingState" class="loading-state">
-            <div class="loading-spinner"></div>
-            <p>교육 프로그램을 준비하는 중입니다...</p>
+        <div class="header">
+            <h1>
+                <i data-lucide="graduation-cap"></i>
+                2025 세종학당 문화인턴 국내교육
+            </h1>
         </div>
 
-        <!-- 메인 콘텐츠 -->
-        <div id="mainContent" style="display: none;">
-            <div class="header">
-                <h1>
-                    <i data-lucide="graduation-cap"></i>
-                    2025 세종학당 문화인턴 국내교육
-                </h1>
-            </div>
-
-            <div class="overview-card">
-                <h3 class="overview-title">
-                    <i data-lucide="clipboard-list"></i>
-                    교육 개요
-                </h3>
-                <div class="overview-grid">
-                    <div class="overview-item">
-                        <div class="label">교육 기간</div>
-                        <div class="value">7월 6~9일(3박 4일)</div>
-                    </div>
-                    <div class="overview-item">
-                        <div class="label">교육 장소</div>
-                        <div class="value">서울대 시흥캠퍼스</div>
-                    </div>
-                    <div class="overview-item">
-                        <div class="label">숙박 시설</div>
-                        <div class="value">연수동</div>
-                    </div>
-                    <div class="overview-item">
-                        <div class="label">식사 장소</div>
-                        <div class="value">S-LOUNGE</div>
-                    </div>
+        <div class="overview-card">
+            <h3 class="overview-title">
+                <i data-lucide="clipboard-list"></i>
+                교육 개요
+            </h3>
+            <div class="overview-grid">
+                <div class="overview-item">
+                    <div class="label">교육 기간</div>
+                    <div class="value">7월 6~9일(3박 4일)</div>
+                </div>
+                <div class="overview-item">
+                    <div class="label">교육 장소</div>
+                    <div class="value">서울대 시흥캠퍼스</div>
+                </div>
+                <div class="overview-item">
+                    <div class="label">숙박 시설</div>
+                    <div class="value">연수동</div>
+                </div>
+                <div class="overview-item">
+                    <div class="label">식사 장소</div>
+                    <div class="value">S-LOUNGE</div>
                 </div>
             </div>
+        </div>
 
-            <!-- 1일차 -->
-            <div class="day-section">
-                <div class="day-header">
-                    <div class="day-title">1일차 - 7월 6일</div>
-                    <div class="day-subtitle">오리엔테이션 및 기초 교육</div>
+        <!-- 1일차 -->
+        <div class="day-section">
+            <div class="day-header">
+                <div class="day-title">1일차 - 7월 6일</div>
+                <div class="day-subtitle">오리엔테이션 및 기초 교육</div>
+            </div>
+            <div class="schedule-container">
+                <div class="schedule-item">
+                    <div class="time-slot">09:30~10:00</div>
+                    <div class="program-content">
+                        <div class="program-title">참가자 버스 탑승 및 출석 확인</div>
+                    </div>
+                    <div class="location">용산역 1번 출구</div>
                 </div>
-                <div class="schedule-container">
-                    <div class="schedule-item">
-                        <div class="time-slot">09:30~10:00</div>
-                        <div class="program-content">
-                            <div class="program-title">참가자 버스 탑승 및 출석 확인</div>
-                        </div>
-                        <div class="location">용산역 1번 출구</div>
+                <div class="schedule-item">
+                    <div class="time-slot">10:00~11:30</div>
+                    <div class="program-content">
+                        <div class="program-title">용산역 → 서울대 시흥캠퍼스 이동</div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">10:00~11:30</div>
-                        <div class="program-content">
-                            <div class="program-title">용산역 → 서울대 시흥캠퍼스 이동</div>
-                        </div>
-                        <div class="location">-</div>
+                    <div class="location">-</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">11:30~13:00</div>
+                    <div class="program-content">
+                        <div class="program-title">점심 식사</div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">11:30~13:00</div>
-                        <div class="program-content">
-                            <div class="program-title">점심 식사</div>
-                        </div>
-                        <div class="location">S-LOUNGE</div>
+                    <div class="location">S-LOUNGE</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">13:00~13:40</div>
+                    <div class="program-content">
+                        <div class="program-title">개회식</div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">13:00~13:40</div>
-                        <div class="program-content">
-                            <div class="program-title">개회식</div>
-                        </div>
-                        <div class="location">교육동 109호</div>
+                    <div class="location">교육동 109호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">13:40~15:00</div>
+                    <div class="program-content">
+                        <div class="program-title">세종학당 이해 교육</div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">13:40~15:00</div>
-                        <div class="program-content">
-                            <div class="program-title">세종학당 이해 교육</div>
-                        </div>
-                        <div class="location">교육동 109호</div>
+                    <div class="location">교육동 109호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">15:00~16:30</div>
+                    <div class="program-content">
+                        <div class="program-title">문화인턴 지침 교육</div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">15:00~16:30</div>
-                        <div class="program-content">
-                            <div class="program-title">문화인턴 지침 교육</div>
-                        </div>
-                        <div class="location">교육동 109호</div>
+                    <div class="location">교육동 109호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">16:30~16:50</div>
+                    <div class="program-content">
+                        <div class="program-title">2024 문화인턴 사례 발표</div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">16:30~16:50</div>
-                        <div class="program-content">
-                            <div class="program-title">2024 문화인턴 사례 발표</div>
-                        </div>
-                        <div class="location">교육동 109호</div>
+                    <div class="location">교육동 109호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">16:50~18:00</div>
+                    <div class="program-content">
+                        <div class="program-title">문화인턴 선배와의 만남</div>
+                        <div class="program-detail">('24년 문화인턴)</div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">16:50~18:00</div>
-                        <div class="program-content">
-                            <div class="program-title">문화인턴 선배와의 만남</div>
-                            <div class="program-detail">('24년 문화인턴)</div>
-                        </div>
-                        <div class="location">교육동 109호</div>
+                    <div class="location">교육동 109호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">19:00~20:30</div>
+                    <div class="program-content">
+                        <div class="program-title">저녁 만찬</div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">19:00~20:30</div>
-                        <div class="program-content">
-                            <div class="program-title">저녁 만찬</div>
-                        </div>
-                        <div class="location">S-LOUNGE</div>
+                    <div class="location">S-LOUNGE</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">20:30~</div>
+                    <div class="program-content">
+                        <div class="program-title">숙소 체크인 후 휴식</div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">20:30~</div>
-                        <div class="program-content">
-                            <div class="program-title">숙소 체크인 후 휴식</div>
-                        </div>
-                        <div class="location">연수동</div>
-                    </div>
+                    <div class="location">연수동</div>
                 </div>
             </div>
+        </div>
 
-            <!-- 2일차 -->
-            <div class="day-section">
-                <div class="day-header">
-                    <div class="day-title">2일차 - 7월 7일</div>
-                    <div class="day-subtitle">실무 교육 및 분과별 전문 교육</div>
+        <!-- 2일차 -->
+        <div class="day-section">
+            <div class="day-header">
+                <div class="day-title">2일차 - 7월 7일</div>
+                <div class="day-subtitle">실무 교육 및 분과별 전문 교육</div>
+            </div>
+            <div class="schedule-container">
+                <div class="schedule-item">
+                    <div class="time-slot">09:00~09:30</div>
+                    <div class="program-content">
+                        <div class="program-title">해외 체류 안전교육 (영상 강의)</div>
+                    </div>
+                    <div class="location">교육동 806호</div>
                 </div>
-                <div class="schedule-container">
-                    <div class="schedule-item">
-                        <div class="time-slot">09:00~09:30</div>
-                        <div class="program-content">
-                            <div class="program-title">해외 체류 안전교육 (영상 강의)</div>
-                        </div>
-                        <div class="location">교육동 806호</div>
+                <div class="schedule-item">
+                    <div class="time-slot">09:30~11:00</div>
+                    <div class="program-content">
+                        <div class="program-title">문화인턴 행정실무 교육</div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">09:30~11:00</div>
-                        <div class="program-content">
-                            <div class="program-title">문화인턴 행정실무 교육</div>
-                        </div>
-                        <div class="location">교육동 806호</div>
+                    <div class="location">교육동 806호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">11:00~12:30</div>
+                    <div class="program-content">
+                        <div class="program-title">문화예술 강의 계획 및 운영</div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">11:00~12:30</div>
-                        <div class="program-content">
-                            <div class="program-title">문화예술 강의 계획 및 운영</div>
-                        </div>
-                        <div class="location">교육동 806호</div>
+                    <div class="location">교육동 806호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">12:30~14:00</div>
+                    <div class="program-content">
+                        <div class="program-title">점심 식사</div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">12:30~14:00</div>
-                        <div class="program-content">
-                            <div class="program-title">점심 식사</div>
-                        </div>
-                        <div class="location">S-LOUNGE</div>
-                    </div>
-                    
-                    <div class="schedule-item multi-track-item">
-                        <div class="multi-track">
-                            <div class="track-container">
-                                <div class="track-time">14:00~16:00</div>
-                                <div class="track-content">
-                                    <div class="track-item">
-                                        <div class="track-title">1분과 - 806호</div>
-                                        <div class="track-subject">케이뷰티 문화수업 교수법</div>
-                                    </div>
-                                    <div class="track-item">
-                                        <div class="track-title">2분과 - 102호</div>
-                                        <div class="track-subject">전통음악 문화수업 교수법</div>
-                                    </div>
-                                    <div class="track-item">
-                                        <div class="track-title">3분과 - 103호</div>
-                                        <div class="track-subject">자개공예 원데이클래스 교수법</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="track-container">
-                                <div class="track-time">16:00~18:00</div>
-                                <div class="track-content">
-                                    <div class="track-item">
-                                        <div class="track-title">1분과 - 806호</div>
-                                        <div class="track-subject">케이팝 문화수업 교수법</div>
-                                    </div>
-                                    <div class="track-item">
-                                        <div class="track-title">2분과 - 102호</div>
-                                        <div class="track-subject">전통음악 문화수업 교수법</div>
-                                    </div>
-                                    <div class="track-item">
-                                        <div class="track-title">3분과 - 103호</div>
-                                        <div class="track-subject">자개공예 원데이클래스 교수법</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="location-note">※ 분과별로 해당 강의실에서 진행</div>
-                        </div>
-                    </div>
-
-                    <div class="schedule-item">
-                        <div class="time-slot">18:00~</div>
-                        <div class="program-content">
-                            <div class="program-title">저녁 식사 및 휴식</div>
-                        </div>
-                        <div class="location">S-LOUNGE</div>
-                    </div>
+                    <div class="location">S-LOUNGE</div>
                 </div>
             </div>
 
-            <!-- 3일차 -->
-            <div class="day-section">
-                <div class="day-header">
-                    <div class="day-title">3일차 - 7월 8일</div>
-                    <div class="day-subtitle">계획서 작성 및 문화 이해 교육</div>
+            <!-- 분과별 교육 -->
+            <div class="division-education">
+                <div class="division-header">
+                    <div class="division-title">분과별 전문 교육</div>
+                    <div class="division-subtitle">3개 분과로 나누어 진행되는 문화수업 교수법 교육</div>
                 </div>
-                <div class="schedule-container">
-                    <div class="schedule-item">
-                        <div class="time-slot">09:00~10:30</div>
-                        <div class="program-content">
-                            <div class="program-title">문화인턴 활동계획서 작성</div>
+
+                <div class="division-grid">
+                    <div class="division-card">
+                        <div class="division-card-header">
+                            <div class="division-time">14:00~16:00</div>
+                            <div class="division-track">1분과 - 806호</div>
                         </div>
-                        <div class="location">교육동 806호</div>
+                        <div class="division-content">
+                            <div class="division-subject">케이뷰티 문화수업 교수법</div>
+                        </div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">10:30~12:30</div>
-                        <div class="program-content">
-                            <div class="program-title">상호문화이해 교육</div>
+                    <div class="division-card">
+                        <div class="division-card-header">
+                            <div class="division-time">14:00~16:00</div>
+                            <div class="division-track">2분과 - 102호</div>
                         </div>
-                        <div class="location">교육동 806호</div>
+                        <div class="division-content">
+                            <div class="division-subject">전통음악 문화수업 교수법</div>
+                        </div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">12:30~14:00</div>
-                        <div class="program-content">
-                            <div class="program-title">점심 식사</div>
+                    <div class="division-card">
+                        <div class="division-card-header">
+                            <div class="division-time">14:00~16:00</div>
+                            <div class="division-track">3분과 - 103호</div>
                         </div>
-                        <div class="location">S-LOUNGE</div>
+                        <div class="division-content">
+                            <div class="division-subject">자개공예 원데이클래스 교수법</div>
+                        </div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">14:00~15:30</div>
-                        <div class="program-content">
-                            <div class="program-title">한국어·한국문화 교육의 이해</div>
+                </div>
+
+                <div class="division-grid">
+                    <div class="division-card">
+                        <div class="division-card-header">
+                            <div class="division-time">16:00~18:00</div>
+                            <div class="division-track">1분과 - 806호</div>
                         </div>
-                        <div class="location">교육동 806호</div>
+                        <div class="division-content">
+                            <div class="division-subject">케이팝 문화수업 교수법</div>
+                        </div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">15:30~17:00</div>
-                        <div class="program-content">
-                            <div class="program-title">학습자 상담 및 지도 교육</div>
+                    <div class="division-card">
+                        <div class="division-card-header">
+                            <div class="division-time">16:00~18:00</div>
+                            <div class="division-track">2분과 - 102호</div>
                         </div>
-                        <div class="location">교육동 806호</div>
+                        <div class="division-content">
+                            <div class="division-subject">전통음악 문화수업 교수법</div>
+                        </div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">17:00~18:00</div>
-                        <div class="program-content">
-                            <div class="program-title">[조별 활동] 문화수업 교안 작성</div>
+                    <div class="division-card">
+                        <div class="division-card-header">
+                            <div class="division-time">16:00~18:00</div>
+                            <div class="division-track">3분과 - 103호</div>
                         </div>
-                        <div class="location">교육동 806호</div>
-                    </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">18:00~</div>
-                        <div class="program-content">
-                            <div class="program-title">저녁 식사 및 휴식</div>
+                        <div class="division-content">
+                            <div class="division-subject">자개공예 원데이클래스 교수법</div>
                         </div>
-                        <div class="location">S-LOUNGE</div>
                     </div>
                 </div>
             </div>
 
-            <!-- 4일차 -->
-            <div class="day-section">
-                <div class="day-header">
-                    <div class="day-title">4일차 - 7월 9일</div>
-                    <div class="day-subtitle">최종 평가 및 수료</div>
-                </div>
-                <div class="schedule-container">
-                    <div class="schedule-item">
-                        <div class="time-slot">09:00~10:30</div>
-                        <div class="program-content">
-                            <div class="program-title">해외체류안전교육 (대면 강의)</div>
-                        </div>
-                        <div class="location">교육동 109호</div>
+            <div class="schedule-container">
+                <div class="schedule-item">
+                    <div class="time-slot">18:00~</div>
+                    <div class="program-content">
+                        <div class="program-title">저녁 식사 및 휴식</div>
                     </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">10:30~12:30</div>
-                        <div class="program-content">
-                            <div class="program-title">온라인 도구를 활용한 강의 운영 방법</div>
-                        </div>
-                        <div class="location">교육동 109호</div>
-                    </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">12:30~13:00</div>
-                        <div class="program-content">
-                            <div class="program-title">수료 평가</div>
-                        </div>
-                        <div class="location">교육동 109호</div>
-                    </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">13:00~14:00</div>
-                        <div class="program-content">
-                            <div class="program-title">점심 식사</div>
-                        </div>
-                        <div class="location">S-LOUNGE</div>
-                    </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">14:00~15:00</div>
-                        <div class="program-content">
-                            <div class="program-title">교안 발표</div>
-                        </div>
-                        <div class="location">교육동 109호</div>
-                    </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">15:00~16:00</div>
-                        <div class="program-content">
-                            <div class="program-title">파견 일정 안내 및 폐회</div>
-                        </div>
-                        <div class="location">교육동 109호</div>
-                    </div>
-                    <div class="schedule-item">
-                        <div class="time-slot">16:00~17:30</div>
-                        <div class="program-content">
-                            <div class="program-title">용산역 이동 및 해산</div>
-                        </div>
-                        <div class="location">-</div>
-                    </div>
+                    <div class="location">S-LOUNGE</div>
                 </div>
             </div>
+        </div>
 
-            <!-- 네비게이션 -->
-            <div class="navigation-section">
-                <a href="./dashboard.html" class="nav-btn">
-                    <i data-lucide="arrow-left"></i>
-                    대시보드로 돌아가기
-                </a>
-                <a href="./institute-info.html" class="nav-btn secondary">
-                    <i data-lucide="building"></i>
-                    파견학당 정보 보기
-                </a>
+        <!-- 3일차 -->
+        <div class="day-section">
+            <div class="day-header">
+                <div class="day-title">3일차 - 7월 8일</div>
+                <div class="day-subtitle">활동 계획서 작성 및 한국문화 교수법 이해</div>
             </div>
+            <div class="schedule-container">
+                <div class="schedule-item">
+                    <div class="time-slot">09:00~10:30</div>
+                    <div class="program-content">
+                        <div class="program-title">문화인턴 활동계획서 작성</div>
+                    </div>
+                    <div class="location">교육동 806호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">10:30~12:30</div>
+                    <div class="program-content">
+                        <div class="program-title">상호문화이해 교육</div>
+                    </div>
+                    <div class="location">교육동 806호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">12:30~14:00</div>
+                    <div class="program-content">
+                        <div class="program-title">점심 식사</div>
+                    </div>
+                    <div class="location">S-LOUNGE</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">14:00~15:30</div>
+                    <div class="program-content">
+                        <div class="program-title">한국어·한국문화 교육의 이해</div>
+                    </div>
+                    <div class="location">교육동 806호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">15:30~17:00</div>
+                    <div class="program-content">
+                        <div class="program-title">학습자 상담 및 지도 교육</div>
+                    </div>
+                    <div class="location">교육동 806호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">17:00~18:00</div>
+                    <div class="program-content">
+                        <div class="program-title">[조별 활동] 문화수업 교안 작성</div>
+                    </div>
+                    <div class="location">교육동 806호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">18:00~</div>
+                    <div class="program-content">
+                        <div class="program-title">저녁 식사 및 휴식</div>
+                    </div>
+                    <div class="location">S-LOUNGE</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4일차 -->
+        <div class="day-section">
+            <div class="day-header">
+                <div class="day-title">4일차 - 7월 9일</div>
+                <div class="day-subtitle">최종 평가 및 수료</div>
+            </div>
+            <div class="schedule-container">
+                <div class="schedule-item">
+                    <div class="time-slot">09:00~10:30</div>
+                    <div class="program-content">
+                        <div class="program-title">해외체류안전교육 (대면 강의)</div>
+                    </div>
+                    <div class="location">교육동 109호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">10:30~12:30</div>
+                    <div class="program-content">
+                        <div class="program-title">온라인 도구를 활용한 강의 운영 방법</div>
+                    </div>
+                    <div class="location">교육동 109호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">12:30~13:00</div>
+                    <div class="program-content">
+                        <div class="program-title">수료 평가</div>
+                    </div>
+                    <div class="location">교육동 109호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">13:00~14:00</div>
+                    <div class="program-content">
+                        <div class="program-title">점심 식사</div>
+                    </div>
+                    <div class="location">S-LOUNGE</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">14:00~15:00</div>
+                    <div class="program-content">
+                        <div class="program-title">교안 발표</div>
+                    </div>
+                    <div class="location">교육동 109호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">15:00~16:00</div>
+                    <div class="program-content">
+                        <div class="program-title">파견 일정 안내 및 폐회</div>
+                    </div>
+                    <div class="location">교육동 109호</div>
+                </div>
+                <div class="schedule-item">
+                    <div class="time-slot">16:00~17:30</div>
+                    <div class="program-content">
+                        <div class="program-title">용산역 이동 및 해산</div>
+                    </div>
+                    <div class="location">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 네비게이션 -->
+        <div class="navigation-section">
+            <a href="./dashboard.html" class="nav-btn">
+                <i data-lucide="arrow-left"></i>
+                대시보드로 돌아가기
+            </a>
         </div>
     </div>
 
-    <!-- JavaScript Files -->
-    <script src="../js/config.js?v=5.0.0"></script>
-    <script src="../js/utils.js?v=5.0.0"></script>
-    <script src="../js/auth.js?v=5.0.0"></script>
-    <script src="../js/supabase/supabase-core.js?v=5.0.0"></script>
-    <script src="../js/supabase/supabase-student.js?v=5.0.0"></script>
-    <script src="../js/supabase-client.js?v=5.0.0"></script>
-
     <script>
-        console.log('🎓 2025 세종학당 문화인턴 국내교육 페이지 v2.1.0 시작');
-
-        // 페이지 초기화
-        let isPageInitialized = false;
-
-        // 학생 인증 확인
-        async function checkStudentAuth() {
-            try {
-                const studentData = localStorage.getItem('currentStudent');
-                if (!studentData) {
-                    throw new Error('로그인이 필요합니다.');
-                }
-
-                const student = JSON.parse(studentData);
-                if (!student.id || !student.name) {
-                    throw new Error('사용자 정보가 올바르지 않습니다.');
-                }
-
-                console.log('✅ 학생 인증 확인 완료:', student.name);
-                return student;
-            } catch (error) {
-                console.error('❌ 학생 인증 실패:', error);
-                
-                setTimeout(() => {
-                    alert(error.message + ' 다시 로그인해주세요.');
-                    window.location.href = '../index.html';
-                }, 1500);
-                
-                throw error;
-            }
-        }
-
-        // 페이지 초기화
-        async function initializePage() {
-            try {
-                if (isPageInitialized) return;
-
-                console.log('🔄 국내교육 프로그램 페이지 초기화 시작...');
-
-                // 1. 학생 인증 확인
-                await checkStudentAuth();
-
-                // 2. 아이콘 초기화
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                    console.log('✅ 아이콘 초기화 완료');
-                }
-
-                // 3. UI 표시
-                await showMainContent();
-
-                // 4. 초기화 완료
-                isPageInitialized = true;
-                console.log('✅ 국내교육 프로그램 페이지 초기화 완료');
-
-            } catch (error) {
-                console.error('❌ 페이지 초기화 실패:', error);
-                showErrorState(error.message);
-            }
-        }
-
-        // 메인 콘텐츠 표시
-        async function showMainContent() {
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    const loadingState = document.getElementById('loadingState');
-                    const mainContent = document.getElementById('mainContent');
-
-                    if (loadingState) {
-                        loadingState.style.display = 'none';
-                    }
-                    if (mainContent) {
-                        mainContent.style.display = 'block';
-                    }
-
-                    // 아이콘 다시 초기화
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
-
-                    console.log('✅ 메인 콘텐츠 표시 완료');
-                    resolve();
-                }, 1000); // 1초 로딩 시뮬레이션
-            });
-        }
-
-        // 에러 상태 표시
-        function showErrorState(message) {
-            const loadingState = document.getElementById('loadingState');
-            if (loadingState) {
-                loadingState.innerHTML = `
-                    <div style="color: #e53e3e;">
-                        <i data-lucide="alert-circle" style="width: 3rem; height: 3rem; margin: 0 auto 1rem; display: block;"></i>
-                        <p><strong>오류가 발생했습니다</strong></p>
-                        <p>${message}</p>
-                        <button onclick="window.location.href='./dashboard.html'" 
-                                style="margin-top: 1rem; padding: 0.5rem 1rem; background: #e53e3e; color: white; border: none; border-radius: 0.5rem; cursor: pointer;">
-                            대시보드로 돌아가기
-                        </button>
-                    </div>
-                `;
-                
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            }
-        }
-
-        // DOMContentLoaded 이벤트
+        // 아이콘 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎓 DOM 로드 완료 - 국내교육 프로그램 페이지 초기화 시작');
-            initializePage();
-        });
-
-        // 페이지 가시성 변경 감지 (탭 전환 시 재초기화)
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden && !isPageInitialized) {
-                console.log('🎓 페이지 재활성화 - 초기화 재시도');
-                initializePage();
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
             }
         });
-
-        console.log('🎓 2025 세종학당 문화인턴 국내교육 페이지 스크립트 로드 완료');
     </script>
 </body>
 </html>
