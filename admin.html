@@ -656,7 +656,7 @@
                         <span class="new-feature-badge">NEW</span>
                     </h2>
                     <div class="feature-list" id="featureList">
-                        <!-- 로딩 상태 -->
+                        <!-- 🔄 AdminFeatureSettings 모듈에서 자동 로딩 -->
                         <div class="feature-item">
                             <div class="feature-info">
                                 <div class="feature-icon">
@@ -664,7 +664,7 @@
                                 </div>
                                 <div class="feature-details">
                                     <h4>기능 설정 로딩 중...</h4>
-                                    <p>v5.2.1 시스템 초기화 중입니다.</p>
+                                    <p>v5.2.1 AdminFeatureSettings 모듈 초기화 중입니다.</p>
                                 </div>
                             </div>
                             <div class="feature-controls">
@@ -797,9 +797,10 @@
     <script src="js/admin/admin-budget.js?v=5.2.1"></script>
     <script src="js/admin/admin-lesson-plans.js?v=5.2.1"></script>
     <script src="js/admin/admin-applications.js?v=5.2.1"></script>
+    <!-- 🆕 AdminFeatureSettings 모듈 (자동 초기화) -->
     <script src="js/admin/admin-features.js?v=5.2.1"></script>
     
-    <!-- 🔧 5단계: 관리자 페이지 초기화 및 테스트 - v5.2.1 -->
+    <!-- 🔧 5단계: 관리자 페이지 핵심 시스템 - v5.2.1 -->
     <script>
         // 🔇 로그 제어 시스템 (v5.2.1)
         const LogController = {
@@ -926,6 +927,7 @@
                             • 통합 관리: Core + Student + Admin 모듈 완전 로드<br>
                             • 관리자 권한: 모든 기능 접근 가능<br>
                             • 🔇 로그 제어: 프로덕션/개발 모드 지원<br>
+                            • ✅ AdminFeatureSettings 모듈 연동 완료<br>
                             • 호환성: 기존 관리자 코드 100% 호환 보장
                         </div>
                     `;
@@ -962,210 +964,12 @@
                 LogController.log('📊 통합 매니저 상태 리포트 (관리자 v5.2.1):', healthReport);
             }
 
-            // 관리자 시스템 확인
-            if (window.AdminManager) {
+            // 관리자 시스템 확인 (AdminFeatureSettings 포함)
+            if (window.AdminManager || window.AdminFeatureSettings) {
                 AdminModuleStatusTracker.updateStatus('adminSystem', true);
                 LogController.log('✅ AdminManager 시스템 로드 완료');
             }
         }
-
-        // 🆕 v5.2.1 기능 설정 로드 및 관리 - 로그 제어 적용
-        const FeatureSettingsManager = {
-            features: [],
-            isLoaded: false,
-
-            // 기능 설정 로드
-            async loadFeatureSettings() {
-                try {
-                    LogController.log('⚙️ 기능 설정 로딩 시작... (v5.2.1)');
-                    
-                    if (window.SupabaseAPI && typeof window.SupabaseAPI.getFeatureSettings === 'function') {
-                        const result = await window.SupabaseAPI.getFeatureSettings();
-                        
-                        if (result && result.success && result.data) {
-                            this.features = result.data;
-                            this.isLoaded = true;
-                            this.renderFeatureSettings();
-                            LogController.log('✅ 기능 설정 로딩 완료 (v5.2.1):', this.features);
-                        } else {
-                            throw new Error('기능 설정을 가져올 수 없습니다.');
-                        }
-                    } else {
-                        throw new Error('SupabaseAPI를 찾을 수 없습니다.');
-                    }
-                } catch (error) {
-                    LogController.error('❌ 기능 설정 로딩 실패 (v5.2.1):', error);
-                    this.showErrorState(error.message);
-                }
-            },
-
-            // 기능 설정 UI 렌더링
-            renderFeatureSettings() {
-                const featureList = document.getElementById('featureList');
-                if (!featureList) return;
-
-                // display_order로 정렬
-                const sortedFeatures = [...this.features].sort((a, b) => a.display_order - b.display_order);
-                
-                let html = '';
-                sortedFeatures.forEach(feature => {
-                    const iconConfig = this.getFeatureIcon(feature.feature_name);
-                    const isActive = feature.is_active;
-                    
-                    html += `
-                        <div class="feature-item ${isActive ? 'active' : 'inactive'}">
-                            <div class="feature-info">
-                                <div class="feature-icon ${isActive ? 'active' : 'inactive'}">
-                                    <i data-lucide="${iconConfig.icon}"></i>
-                                </div>
-                                <div class="feature-details">
-                                    <h4>${feature.feature_title}</h4>
-                                    <p>${iconConfig.description}</p>
-                                    ${feature.feature_name === 'domestic_program' ? '<span class="new-feature-badge" style="position: static; margin-left: 0.5rem;">NEW</span>' : ''}
-                                    ${feature.feature_name === 'exam' ? '<span class="new-feature-badge" style="position: static; margin-left: 0.5rem;">NEW</span>' : ''}
-                                </div>
-                            </div>
-                            <div class="feature-controls">
-                                <span class="feature-status ${isActive ? 'active' : 'inactive'}">
-                                    ${isActive ? '활성화' : '비활성화'}
-                                </span>
-                                <div class="toggle-switch ${isActive ? 'active' : ''}" 
-                                     onclick="FeatureSettingsManager.toggleFeature('${feature.feature_name}', ${!isActive})">
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                featureList.innerHTML = html;
-                
-                // 아이콘 재초기화
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            },
-
-            // 🆕 v5.2.1 기능별 아이콘 및 설명 가져오기 (수료평가 추가)
-            getFeatureIcon(featureName) {
-                const configs = {
-                    'institute_info': {
-                        icon: 'building',
-                        description: '학생들이 파견학당 정보를 확인할 수 있는 기능입니다.'
-                    },
-                    'domestic_program': {
-                        icon: 'graduation-cap',
-                        description: '파견 전 국내교육 프로그램 정보를 제공하는 새로운 기능입니다.'
-                    },
-                    'exam': {
-                        icon: 'clipboard-check',
-                        description: '학생들이 문화인턴 과정 수료평가에 응시할 수 있는 기능입니다.'
-                    },
-                    'flight_request': {
-                        icon: 'plane',
-                        description: '학생들이 항공권 구매를 신청할 수 있는 기능입니다.'
-                    },
-                    'equipment_request': {
-                        icon: 'package',
-                        description: '학생들이 문화교구 구매를 신청할 수 있는 기능입니다.'
-                    }
-                };
-                
-                return configs[featureName] || { icon: 'settings', description: '시스템 기능입니다.' };
-            },
-
-            // 기능 토글 - 로그 제어 적용
-            async toggleFeature(featureName, newState) {
-                try {
-                    LogController.log(`🔄 기능 토글: ${featureName} → ${newState}`);
-                    
-                    if (window.SupabaseAPI && typeof window.SupabaseAPI.updateFeatureSetting === 'function') {
-                        const result = await window.SupabaseAPI.updateFeatureSetting(featureName, newState);
-                        
-                        if (result && result.success) {
-                            // 로컬 상태 업데이트
-                            const feature = this.features.find(f => f.feature_name === featureName);
-                            if (feature) {
-                                feature.is_active = newState;
-                            }
-                            
-                            // UI 재렌더링
-                            this.renderFeatureSettings();
-                            
-                            LogController.log(`✅ 기능 토글 완료: ${featureName} → ${newState}`);
-                            
-                            // 성공 메시지 표시
-                            const featureTitle = feature?.feature_title || (
-                                featureName === 'domestic_program' ? '국내교육 프로그램' :
-                                featureName === 'exam' ? '수료평가' : featureName
-                            );
-                            this.showSuccessMessage(`${featureTitle}이 ${newState ? '활성화' : '비활성화'}되었습니다.`);
-                        } else {
-                            throw new Error(result?.message || '기능 설정 업데이트에 실패했습니다.');
-                        }
-                    } else {
-                        throw new Error('SupabaseAPI를 찾을 수 없습니다.');
-                    }
-                } catch (error) {
-                    LogController.error('❌ 기능 토글 실패:', error);
-                    alert(`기능 설정 변경에 실패했습니다: ${error.message}`);
-                    
-                    // UI 재렌더링으로 원상태 복구
-                    this.renderFeatureSettings();
-                }
-            },
-
-            // 에러 상태 표시
-            showErrorState(message) {
-                const featureList = document.getElementById('featureList');
-                if (featureList) {
-                    featureList.innerHTML = `
-                        <div class="feature-item">
-                            <div class="feature-info">
-                                <div class="feature-icon" style="background: #fc8181;">
-                                    <i data-lucide="alert-circle"></i>
-                                </div>
-                                <div class="feature-details">
-                                    <h4>기능 설정 로딩 실패</h4>
-                                    <p>${message}</p>
-                                </div>
-                            </div>
-                            <div class="feature-controls">
-                                <button onclick="FeatureSettingsManager.loadFeatureSettings()" 
-                                        style="padding: 0.5rem 1rem; background: #667eea; color: white; border: none; border-radius: 0.5rem; cursor: pointer;">
-                                    다시 시도
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
-                }
-            },
-
-            // 성공 메시지 표시
-            showSuccessMessage(message) {
-                const systemStatus = document.getElementById('systemStatus');
-                if (systemStatus) {
-                    systemStatus.innerHTML = `
-                        <div class="alert alert-success">
-                            <i data-lucide="check-circle"></i>
-                            <div><strong>${message}</strong></div>
-                        </div>
-                    `;
-                    
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
-                    
-                    // 3초 후 제거
-                    setTimeout(() => {
-                        systemStatus.innerHTML = '';
-                    }, 3000);
-                }
-            }
-        };
 
         // 전역 네임스페이스로 충돌 방지
         window.AdminPageController = (function() {
@@ -1366,8 +1170,8 @@
                     const check = () => {
                         attempts++;
                         
-                        if (window.AdminManager && typeof window.AdminManager.init === 'function') {
-                            LogController.log('✅ AdminManager 준비 완료');
+                        if (window.AdminManager || window.AdminFeatureSettings) {
+                            LogController.log('✅ AdminManager/AdminFeatureSettings 준비 완료');
                             resolve();
                         } else if (attempts >= maxAttempts) {
                             LogController.warn('⚠️ AdminManager를 찾을 수 없지만 계속 진행합니다.');
@@ -1470,15 +1274,15 @@
                 if (loginPage) loginPage.classList.remove('active');
                 if (adminPage) adminPage.classList.add('active');
                 
-                // 🆕 v5.2.1 기능 설정 로드
-                await FeatureSettingsManager.loadFeatureSettings();
+                // 🆕 AdminFeatureSettings 모듈이 자동으로 초기화됨
+                // (별도 호출 불필요)
                 
                 // 아이콘 재초기화
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
 
-                LogController.log('✅ 관리자 대시보드 표시 완료 (v5.2.1)');
+                LogController.log('✅ 관리자 대시보드 표시 완료 (v5.2.1) - AdminFeatureSettings 자동 연동');
             }
 
             // 로그아웃 처리 (v5.2.1)
@@ -1541,13 +1345,11 @@
             };
         })();
 
-        // 전역으로 FeatureSettingsManager 노출
-        window.FeatureSettingsManager = FeatureSettingsManager;
-
         LogController.system('🔐 관리자 v5.2.1 시스템 스크립트 로드 완료');
-        LogController.system('📦 아키텍처: Core + Student + Admin + 통합매니저 + 관리자모듈');
+        LogController.system('📦 아키텍처: Core + Student + Admin + 통합매니저 + AdminFeatureSettings');
         LogController.system('🆕 v5.2.1: 수료평가 관리 시스템 추가');
         LogController.system('🔇 로그 제어: 프로덕션/개발 모드 지원 추가');
+        LogController.system('✅ 모듈화 구조: admin-features.js 모듈 자동 연동 완료');
         LogController.system('🔧 기존 관리자 코드 100% 호환성 보장 + 성능 최적화');
     </script>
 </body>
