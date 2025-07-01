@@ -1,5 +1,5 @@
 /**
- * 📚 수료평가 시스템 - 학생 API 모듈 v5.2.0
+ * 📚 수료평가 시스템 - 학생 API 모듈 v5.2.1
  * 학생용 수료평가 응시를 위한 API 모듈
  * 완전 독립된 학생 전용 모듈
  */
@@ -9,7 +9,7 @@ class ExamStudentAPI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamStudentAPI',
-            version: '5.2.0',
+            version: '5.2.1',
             lastUpdate: new Date().toISOString()
         };
         this.supabaseClient = null;
@@ -21,7 +21,7 @@ class ExamStudentAPI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamStudentAPI v5.2.0 초기화 시작...');
+            console.log('🔄 ExamStudentAPI v5.2.1 초기화 시작...');
             
             // Supabase 클라이언트 확인
             if (!window.supabase) {
@@ -43,7 +43,7 @@ class ExamStudentAPI {
             await this.testConnection();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamStudentAPI v5.2.0 초기화 완료');
+            console.log('✅ ExamStudentAPI v5.2.1 초기화 완료');
             return true;
             
         } catch (error) {
@@ -187,25 +187,32 @@ class ExamStudentAPI {
     }
 
     /**
-     * 📚 이전 응시 기록 확인
+     * 📚 이전 응시 기록 확인 (수정됨 - 406 오류 해결)
      */
     async getPreviousSession() {
         try {
+            console.log('📚 이전 응시 기록 확인 중...');
+            
             const { data, error } = await this.supabaseClient
                 .from('exam_sessions')
                 .select('*')
                 .eq('student_id', this.currentStudentId)
                 .order('submitted_at', { ascending: false })
-                .limit(1)
-                .single();
+                .limit(1);
             
-            if (error && error.code === 'PGRST116') {
-                // 레코드가 없음 (첫 응시)
+            if (error) {
+                console.error('❌ 이전 응시 기록 조회 오류:', error);
                 return null;
             }
             
-            if (error) throw error;
-            return data;
+            // 데이터가 없으면 null 반환 (첫 응시)
+            if (!data || data.length === 0) {
+                console.log('✅ 첫 응시 학생 - 이전 기록 없음');
+                return null;
+            }
+            
+            console.log('✅ 이전 응시 기록 발견:', data[0]);
+            return data[0];
             
         } catch (error) {
             console.error('❌ 이전 응시 기록 확인 실패:', error);
@@ -226,7 +233,7 @@ class ExamStudentAPI {
                 .from('exam_questions')
                 .select('id, question_text, question_type, options, points')
                 .eq('is_active', true)
-                .order('id', { ascending: true }); // 문제 순서 고정
+                .order('order_index', { ascending: true }); // 순서 기반 정렬로 변경
             
             if (error) throw error;
             
@@ -337,7 +344,7 @@ class ExamStudentAPI {
                 .from('exam_questions')
                 .select('id, question_text, question_type, correct_answer, points')
                 .eq('is_active', true)
-                .order('id', { ascending: true });
+                .order('order_index', { ascending: true });
             
             if (error) throw error;
             return data;
@@ -349,7 +356,7 @@ class ExamStudentAPI {
     }
 
     /**
-     * 🎯 자동 채점 로직
+     * 🎯 자동 채점 로직 (복수 정답 지원)
      */
     gradeAnswers(questions, answers) {
         const details = [];
@@ -364,11 +371,17 @@ class ExamStudentAPI {
             maxScore += question.points;
             
             if (userAnswer) {
-                // 정답 비교 (대소문자 무시, 공백 제거)
-                const correctAnswer = question.correct_answer.trim().toLowerCase();
+                // 정답 처리 - 콤마로 구분된 복수 정답 지원
+                const correctAnswers = question.correct_answer
+                    .split(',')
+                    .map(answer => answer.trim().toLowerCase())
+                    .filter(answer => answer.length > 0);
+                
                 const studentAnswer = userAnswer.trim().toLowerCase();
                 
-                isCorrect = correctAnswer === studentAnswer;
+                // 복수 정답 중 하나라도 일치하면 정답
+                isCorrect = correctAnswers.includes(studentAnswer);
+                
                 if (isCorrect) {
                     pointsEarned = question.points;
                     totalScore += pointsEarned;
@@ -518,5 +531,5 @@ class ExamStudentAPI {
 // 전역에 모듈 등록
 if (typeof window !== 'undefined') {
     window.ExamStudentAPI = new ExamStudentAPI();
-    console.log('📚 ExamStudentAPI v5.2.0 모듈 로드됨');
+    console.log('📚 ExamStudentAPI v5.2.1 모듈 로드됨');
 }
