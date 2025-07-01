@@ -1,0 +1,979 @@
+/**
+ * 🎨 수료평가 시스템 - 학생용 스타일시트 v5.2.0
+ * 학생용 수료평가 응시 화면 전용 CSS
+ * 완전 독립된 학생 전용 스타일 시스템
+ */
+
+/* ==================== CSS 변수 정의 ==================== */
+:root {
+    /* 학생용 컬러 팔레트 */
+    --exam-student-primary: #3b82f6;
+    --exam-student-primary-dark: #2563eb;
+    --exam-student-secondary: #64748b;
+    --exam-student-success: #10b981;
+    --exam-student-error: #ef4444;
+    --exam-student-warning: #f59e0b;
+    --exam-student-info: #06b6d4;
+    
+    /* 그레이 스케일 */
+    --exam-student-gray-50: #f8fafc;
+    --exam-student-gray-100: #f1f5f9;
+    --exam-student-gray-200: #e2e8f0;
+    --exam-student-gray-300: #cbd5e1;
+    --exam-student-gray-400: #94a3b8;
+    --exam-student-gray-500: #64748b;
+    --exam-student-gray-600: #475569;
+    --exam-student-gray-700: #334155;
+    --exam-student-gray-800: #1e293b;
+    --exam-student-gray-900: #0f172a;
+    
+    /* 배경 및 텍스트 */
+    --exam-student-bg: #ffffff;
+    --exam-student-bg-secondary: #f8fafc;
+    --exam-student-text: #0f172a;
+    --exam-student-text-secondary: #64748b;
+    
+    /* 간격 */
+    --exam-student-space-1: 0.25rem;
+    --exam-student-space-2: 0.5rem;
+    --exam-student-space-3: 0.75rem;
+    --exam-student-space-4: 1rem;
+    --exam-student-space-5: 1.25rem;
+    --exam-student-space-6: 1.5rem;
+    --exam-student-space-8: 2rem;
+    --exam-student-space-10: 2.5rem;
+    --exam-student-space-12: 3rem;
+    
+    /* 테두리 반경 */
+    --exam-student-radius: 0.5rem;
+    --exam-student-radius-lg: 0.75rem;
+    --exam-student-radius-xl: 1rem;
+    
+    /* 그림자 */
+    --exam-student-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --exam-student-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --exam-student-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    
+    /* 전환 효과 */
+    --exam-student-transition: all 0.3s ease;
+}
+
+/* ==================== 기본 레이아웃 ==================== */
+.exam-student-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: var(--exam-student-space-6);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.exam-student-content {
+    max-width: 900px;
+    margin: 0 auto;
+    background: var(--exam-student-bg);
+    border-radius: var(--exam-student-radius-xl);
+    box-shadow: var(--exam-student-shadow-lg);
+    overflow: hidden;
+}
+
+/* ==================== 헤더 ==================== */
+.exam-student-header {
+    background: var(--exam-student-primary);
+    color: white;
+    padding: var(--exam-student-space-8);
+    text-align: center;
+}
+
+.exam-student-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 var(--exam-student-space-2) 0;
+}
+
+.exam-student-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.exam-student-info {
+    margin-top: var(--exam-student-space-4);
+    padding: var(--exam-student-space-4);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--exam-student-radius);
+    font-size: 0.95rem;
+}
+
+/* ==================== 뷰 컨테이너 ==================== */
+.exam-student-view {
+    display: none;
+    padding: var(--exam-student-space-8);
+}
+
+.exam-student-view.active {
+    display: block;
+}
+
+/* ==================== 로딩 화면 ==================== */
+.exam-loading-view {
+    text-align: center;
+    padding: var(--exam-student-space-12);
+}
+
+.exam-loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 3px solid var(--exam-student-gray-200);
+    border-top: 3px solid var(--exam-student-primary);
+    border-radius: 50%;
+    animation: exam-spin 1s linear infinite;
+    margin: 0 auto var(--exam-student-space-4);
+}
+
+.exam-loading-text {
+    font-size: 1.1rem;
+    color: var(--exam-student-text-secondary);
+}
+
+@keyframes exam-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ==================== 응시 전 화면 ==================== */
+.eligibility-status {
+    padding: var(--exam-student-space-6);
+    border-radius: var(--exam-student-radius-lg);
+    margin-bottom: var(--exam-student-space-6);
+    text-align: center;
+}
+
+.eligibility-status.eligible {
+    background: #dcfce7;
+    border: 2px solid var(--exam-student-success);
+    color: #166534;
+}
+
+.eligibility-status.not-eligible {
+    background: #fef2f2;
+    border: 2px solid var(--exam-student-error);
+    color: #991b1b;
+}
+
+.eligibility-status h3 {
+    margin: 0 0 var(--exam-student-space-2) 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.eligibility-status p {
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* ==================== 버튼 스타일 ==================== */
+.exam-student-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--exam-student-space-2);
+    padding: var(--exam-student-space-3) var(--exam-student-space-6);
+    border: none;
+    border-radius: var(--exam-student-radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--exam-student-transition);
+    text-decoration: none;
+}
+
+.exam-student-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.exam-student-btn-primary {
+    background: var(--exam-student-primary);
+    color: white;
+}
+
+.exam-student-btn-primary:hover:not(:disabled) {
+    background: var(--exam-student-primary-dark);
+    transform: translateY(-1px);
+}
+
+.exam-student-btn-secondary {
+    background: var(--exam-student-gray-100);
+    color: var(--exam-student-text);
+    border: 1px solid var(--exam-student-gray-300);
+}
+
+.exam-student-btn-secondary:hover:not(:disabled) {
+    background: var(--exam-student-gray-200);
+}
+
+.exam-student-btn-success {
+    background: var(--exam-student-success);
+    color: white;
+}
+
+.exam-student-btn-success:hover:not(:disabled) {
+    background: #059669;
+}
+
+.exam-student-btn-error {
+    background: var(--exam-student-error);
+    color: white;
+}
+
+.exam-student-btn-error:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+.exam-student-btn-lg {
+    padding: var(--exam-student-space-4) var(--exam-student-space-8);
+    font-size: 1.1rem;
+}
+
+/* ==================== 이전 응시 결과 ==================== */
+.previous-results {
+    margin-top: var(--exam-student-space-8);
+}
+
+.previous-results h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 var(--exam-student-space-4) 0;
+    color: var(--exam-student-text);
+}
+
+.results-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exam-student-space-4);
+}
+
+.result-card {
+    padding: var(--exam-student-space-4);
+    border-radius: var(--exam-student-radius-lg);
+    border: 2px solid;
+}
+
+.result-card.passed {
+    background: #dcfce7;
+    border-color: var(--exam-student-success);
+}
+
+.result-card.failed {
+    background: #fef2f2;
+    border-color: var(--exam-student-error);
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--exam-student-space-2);
+}
+
+.result-status {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.result-card.passed .result-status {
+    color: #166534;
+}
+
+.result-card.failed .result-status {
+    color: #991b1b;
+}
+
+.result-date {
+    font-size: 0.85rem;
+    color: var(--exam-student-text-secondary);
+}
+
+.result-score {
+    display: flex;
+    align-items: center;
+    gap: var(--exam-student-space-2);
+    margin-bottom: var(--exam-student-space-3);
+}
+
+.score {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.percentage {
+    font-size: 0.9rem;
+    color: var(--exam-student-text-secondary);
+}
+
+.view-detail-btn {
+    padding: var(--exam-student-space-2) var(--exam-student-space-4);
+    font-size: 0.85rem;
+    background: transparent;
+    border: 1px solid;
+    border-radius: var(--exam-student-radius);
+    cursor: pointer;
+    transition: var(--exam-student-transition);
+}
+
+.result-card.passed .view-detail-btn {
+    border-color: var(--exam-student-success);
+    color: #166534;
+}
+
+.result-card.passed .view-detail-btn:hover {
+    background: var(--exam-student-success);
+    color: white;
+}
+
+.result-card.failed .view-detail-btn {
+    border-color: var(--exam-student-error);
+    color: #991b1b;
+}
+
+.result-card.failed .view-detail-btn:hover {
+    background: var(--exam-student-error);
+    color: white;
+}
+
+/* ==================== 시험 응시 화면 ==================== */
+.exam-progress {
+    background: var(--exam-student-gray-100);
+    padding: var(--exam-student-space-4);
+    border-bottom: 1px solid var(--exam-student-gray-200);
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--exam-student-space-3);
+}
+
+.progress-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--exam-student-text);
+}
+
+.progress-text {
+    font-size: 0.9rem;
+    color: var(--exam-student-text-secondary);
+}
+
+.progress-bar-container {
+    background: var(--exam-student-gray-200);
+    border-radius: var(--exam-student-radius);
+    height: 8px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: var(--exam-student-primary);
+    border-radius: var(--exam-student-radius);
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+/* ==================== 문제 표시 영역 ==================== */
+.exam-question-container {
+    padding: var(--exam-student-space-8);
+}
+
+.question-header {
+    margin-bottom: var(--exam-student-space-6);
+}
+
+.question-number {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--exam-student-primary);
+    margin-bottom: var(--exam-student-space-2);
+}
+
+.question-text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--exam-student-text);
+    margin: 0;
+}
+
+/* ==================== 답안 입력 영역 ==================== */
+.answer-container {
+    margin-bottom: var(--exam-student-space-8);
+}
+
+/* 객관식 답안 */
+.answer-multiple-choice {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exam-student-space-3);
+}
+
+.answer-option {
+    display: flex;
+    align-items: center;
+    gap: var(--exam-student-space-3);
+    padding: var(--exam-student-space-4);
+    border: 2px solid var(--exam-student-gray-200);
+    border-radius: var(--exam-student-radius-lg);
+    cursor: pointer;
+    transition: var(--exam-student-transition);
+}
+
+.answer-option:hover {
+    border-color: var(--exam-student-primary);
+    background: var(--exam-student-gray-50);
+}
+
+.answer-option input[type="radio"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: var(--exam-student-primary);
+}
+
+.answer-option input[type="radio"]:checked + .option-text {
+    font-weight: 600;
+    color: var(--exam-student-primary);
+}
+
+.answer-option:has(input[type="radio"]:checked) {
+    border-color: var(--exam-student-primary);
+    background: #eff6ff;
+}
+
+.option-text {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--exam-student-text);
+}
+
+/* 단답형 답안 */
+.answer-short-answer {
+    max-width: 500px;
+}
+
+.answer-input {
+    width: 100%;
+    padding: var(--exam-student-space-4);
+    border: 2px solid var(--exam-student-gray-200);
+    border-radius: var(--exam-student-radius-lg);
+    font-size: 1rem;
+    transition: var(--exam-student-transition);
+    background: var(--exam-student-bg);
+}
+
+.answer-input:focus {
+    outline: none;
+    border-color: var(--exam-student-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.answer-hint {
+    margin-top: var(--exam-student-space-2);
+    font-size: 0.85rem;
+    color: var(--exam-student-text-secondary);
+}
+
+/* ==================== 네비게이션 버튼 ==================== */
+.exam-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--exam-student-space-6);
+    border-top: 1px solid var(--exam-student-gray-200);
+    background: var(--exam-student-gray-50);
+}
+
+.nav-left,
+.nav-right {
+    display: flex;
+    gap: var(--exam-student-space-3);
+}
+
+/* ==================== 결과 화면 ==================== */
+.exam-result-container {
+    text-align: center;
+    padding: var(--exam-student-space-8);
+}
+
+.result-summary-card {
+    padding: var(--exam-student-space-8);
+    border-radius: var(--exam-student-radius-xl);
+    margin-bottom: var(--exam-student-space-8);
+}
+
+.result-summary-card.passed {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    border: 3px solid var(--exam-student-success);
+}
+
+.result-summary-card.failed {
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+    border: 3px solid var(--exam-student-error);
+}
+
+.result-icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto var(--exam-student-space-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.result-summary-card.passed .result-icon {
+    background: var(--exam-student-success);
+    color: white;
+}
+
+.result-summary-card.failed .result-icon {
+    background: var(--exam-student-error);
+    color: white;
+}
+
+.result-icon i {
+    width: 2rem;
+    height: 2rem;
+}
+
+.result-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 var(--exam-student-space-4) 0;
+}
+
+.result-summary-card.passed .result-title {
+    color: #166534;
+}
+
+.result-summary-card.failed .result-title {
+    color: #991b1b;
+}
+
+.result-score-display {
+    margin-bottom: var(--exam-student-space-4);
+}
+
+.score-main {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: var(--exam-student-space-2);
+}
+
+.result-summary-card.passed .score-main {
+    color: #166534;
+}
+
+.result-summary-card.failed .score-main {
+    color: #991b1b;
+}
+
+.score-percentage {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--exam-student-text-secondary);
+}
+
+.result-info {
+    color: var(--exam-student-text-secondary);
+    font-size: 0.9rem;
+}
+
+.result-info p {
+    margin: var(--exam-student-space-1) 0;
+}
+
+/* ==================== 상세 결과 ==================== */
+.result-details-container {
+    text-align: left;
+    margin-top: var(--exam-student-space-8);
+}
+
+.result-details-container h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 var(--exam-student-space-4) 0;
+    color: var(--exam-student-text);
+}
+
+.details-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exam-student-space-4);
+}
+
+.detail-item {
+    padding: var(--exam-student-space-4);
+    border-radius: var(--exam-student-radius-lg);
+    border: 2px solid;
+}
+
+.detail-item.correct {
+    background: #dcfce7;
+    border-color: var(--exam-student-success);
+}
+
+.detail-item.incorrect {
+    background: #fef2f2;
+    border-color: var(--exam-student-error);
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--exam-student-space-3);
+}
+
+.question-num {
+    font-weight: 600;
+    color: var(--exam-student-text);
+}
+
+.detail-score {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.detail-item.correct .detail-score {
+    color: #166534;
+}
+
+.detail-item.incorrect .detail-score {
+    color: #991b1b;
+}
+
+.detail-status {
+    display: flex;
+    align-items: center;
+    gap: var(--exam-student-space-1);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.detail-item.correct .detail-status {
+    color: #166534;
+}
+
+.detail-item.incorrect .detail-status {
+    color: #991b1b;
+}
+
+.detail-content {
+    font-size: 0.9rem;
+}
+
+.question-text {
+    font-weight: 500;
+    margin-bottom: var(--exam-student-space-3);
+    color: var(--exam-student-text);
+}
+
+.answers {
+    display: flex;
+    flex-direction: column;
+    gap: var(--exam-student-space-2);
+}
+
+.correct-answer,
+.student-answer {
+    margin: 0;
+    padding: var(--exam-student-space-2);
+    border-radius: var(--exam-student-radius);
+}
+
+.correct-answer {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.student-answer {
+    background: rgba(100, 116, 139, 0.1);
+    border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+/* ==================== 토스트 알림 ==================== */
+.exam-toast-container {
+    position: fixed;
+    top: var(--exam-student-space-4);
+    right: var(--exam-student-space-4);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: var(--exam-student-space-2);
+}
+
+.exam-toast {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--exam-student-space-4);
+    border-radius: var(--exam-student-radius-lg);
+    box-shadow: var(--exam-student-shadow-lg);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    max-width: 400px;
+    min-width: 300px;
+}
+
+.exam-toast.show {
+    transform: translateX(0);
+}
+
+.exam-toast.hide {
+    transform: translateX(100%);
+}
+
+.exam-toast-success {
+    background: #dcfce7;
+    border: 1px solid var(--exam-student-success);
+    color: #166534;
+}
+
+.exam-toast-error {
+    background: #fef2f2;
+    border: 1px solid var(--exam-student-error);
+    color: #991b1b;
+}
+
+.exam-toast-warning {
+    background: #fef3c7;
+    border: 1px solid var(--exam-student-warning);
+    color: #92400e;
+}
+
+.exam-toast-info {
+    background: #ecfeff;
+    border: 1px solid var(--exam-student-info);
+    color: #0e7490;
+}
+
+.exam-toast-content {
+    display: flex;
+    align-items: center;
+    gap: var(--exam-student-space-2);
+}
+
+.exam-toast-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+}
+
+.exam-toast-message {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.exam-toast-close {
+    background: none;
+    border: none;
+    padding: var(--exam-student-space-1);
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.exam-toast-close:hover {
+    opacity: 1;
+}
+
+.exam-toast-close i {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* ==================== 오류 화면 ==================== */
+.error-view {
+    text-align: center;
+    padding: var(--exam-student-space-12);
+}
+
+.error-icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto var(--exam-student-space-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--exam-student-error);
+    color: white;
+}
+
+.error-icon i {
+    width: 2rem;
+    height: 2rem;
+}
+
+.error-view h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--exam-student-text);
+    margin: 0 0 var(--exam-student-space-4) 0;
+}
+
+.error-view p {
+    color: var(--exam-student-text-secondary);
+    margin-bottom: var(--exam-student-space-6);
+    line-height: 1.5;
+}
+
+.retry-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--exam-student-space-2);
+    padding: var(--exam-student-space-3) var(--exam-student-space-6);
+    background: var(--exam-student-primary);
+    color: white;
+    border: none;
+    border-radius: var(--exam-student-radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--exam-student-transition);
+}
+
+.retry-btn:hover {
+    background: var(--exam-student-primary-dark);
+}
+
+/* ==================== 접근성 지원 ==================== */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* 강조 효과 */
+.exam-highlight {
+    animation: exam-highlight 2s ease-in-out;
+}
+
+@keyframes exam-highlight {
+    0%, 100% { background-color: transparent; }
+    50% { background-color: rgba(59, 130, 246, 0.1); }
+}
+
+/* ==================== 반응형 디자인 ==================== */
+@media (max-width: 768px) {
+    .exam-student-container {
+        padding: var(--exam-student-space-4);
+    }
+    
+    .exam-student-header {
+        padding: var(--exam-student-space-6);
+    }
+    
+    .exam-student-title {
+        font-size: 1.5rem;
+    }
+    
+    .exam-student-view {
+        padding: var(--exam-student-space-6);
+    }
+    
+    .exam-question-container {
+        padding: var(--exam-student-space-6);
+    }
+    
+    .exam-navigation {
+        flex-direction: column;
+        gap: var(--exam-student-space-4);
+        padding: var(--exam-student-space-4);
+    }
+    
+    .nav-left,
+    .nav-right {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .result-summary-card {
+        padding: var(--exam-student-space-6);
+    }
+    
+    .result-title {
+        font-size: 1.5rem;
+    }
+    
+    .score-main {
+        font-size: 2rem;
+    }
+    
+    .exam-toast-container {
+        left: var(--exam-student-space-4);
+        right: var(--exam-student-space-4);
+    }
+    
+    .exam-toast {
+        min-width: auto;
+        max-width: none;
+    }
+    
+    .detail-header {
+        flex-direction: column;
+        gap: var(--exam-student-space-2);
+        align-items: flex-start;
+    }
+    
+    .answers {
+        gap: var(--exam-student-space-3);
+    }
+}
+
+@media (max-width: 480px) {
+    .exam-student-container {
+        padding: var(--exam-student-space-2);
+    }
+    
+    .exam-student-view {
+        padding: var(--exam-student-space-4);
+    }
+    
+    .result-header {
+        flex-direction: column;
+        gap: var(--exam-student-space-1);
+        align-items: flex-start;
+    }
+    
+    .result-score {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--exam-student-space-1);
+    }
+}
+
+/* ==================== 인쇄 스타일 ==================== */
+@media print {
+    .exam-student-container {
+        background: white;
+        padding: 0;
+    }
+    
+    .exam-student-content {
+        box-shadow: none;
+    }
+    
+    .exam-navigation,
+    .exam-toast-container,
+    .exam-student-btn {
+        display: none !important;
+    }
+    
+    .exam-student-view {
+        display: block !important;
+        padding: var(--exam-student-space-4);
+    }
+}
