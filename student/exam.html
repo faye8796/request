@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수료평가 응시 - 세종학당 문화인턴 지원 시스템 v5.2.0</title>
+    
+    <!-- 학생용 수료평가 전용 CSS -->
+    <link rel="stylesheet" href="../css/exam-student.css?v=5.2.0">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Supabase JavaScript Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="exam-student-container">
+        <div class="exam-student-content">
+            <!-- 헤더 섹션 -->
+            <div class="exam-student-header">
+                <h1 class="exam-student-title">수료평가 응시</h1>
+                <p class="exam-student-subtitle">King Sejong Institute Cultural Intern Completion Exam</p>
+                <div class="exam-student-info" id="student-info">
+                    <p id="student-name">로그인한 학생 정보를 불러오는 중...</p>
+                </div>
+            </div>
+
+            <!-- 메인 컨테이너 -->
+            <div id="exam-main-container">
+                
+                <!-- 로딩 화면 -->
+                <div id="loading-view" class="exam-student-view exam-loading-view">
+                    <div class="exam-loading-spinner"></div>
+                    <p class="exam-loading-text">시스템을 초기화하는 중입니다...</p>
+                </div>
+
+                <!-- 응시 전 화면 -->
+                <div id="pre-exam-view" class="exam-student-view">
+                    <!-- 응시 자격 상태 -->
+                    <div id="eligibility-status" class="eligibility-status">
+                        <h3>응시 자격 확인 중...</h3>
+                        <p id="eligibility-message">잠시만 기다려주세요.</p>
+                    </div>
+
+                    <!-- 시험 시작 버튼 -->
+                    <div style="text-align: center; margin-bottom: 2rem;">
+                        <button id="start-exam-btn" class="exam-student-btn exam-student-btn-primary exam-student-btn-lg" disabled>
+                            <i data-lucide="play"></i>
+                            응시 자격 확인 중...
+                        </button>
+                    </div>
+
+                    <!-- 수료평가 안내 -->
+                    <div style="background: #f8fafc; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; margin-bottom: 2rem;">
+                        <h3 style="margin: 0 0 1rem 0; color: #334155; font-size: 1.1rem;">
+                            <i data-lucide="info" style="width: 1.25rem; height: 1.25rem; margin-right: 0.5rem; vertical-align: text-top;"></i>
+                            수료평가 안내
+                        </h3>
+                        <ul style="margin: 0; padding-left: 1.25rem; color: #64748b; line-height: 1.6;">
+                            <li>객관식과 단답형 문제로 구성되어 있습니다</li>
+                            <li>합격 기준은 70점 이상입니다</li>
+                            <li>시험 중 브라우저를 새로고침해도 답안이 자동 저장됩니다</li>
+                            <li>모든 문제에 답변한 후 제출하시기 바랍니다</li>
+                            <li>제출 후에는 즉시 결과를 확인할 수 있습니다</li>
+                        </ul>
+                    </div>
+
+                    <!-- 이전 응시 결과 -->
+                    <div id="previous-results-container"></div>
+                </div>
+
+                <!-- 시험 응시 화면 -->
+                <div id="exam-view" class="exam-student-view">
+                    <!-- 진행률 표시 -->
+                    <div id="exam-progress" class="exam-progress">
+                        <div class="progress-header">
+                            <span class="progress-title">시험 진행률</span>
+                            <span id="progress-text" class="progress-text">0 / 0</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div id="progress-bar" class="progress-bar"></div>
+                        </div>
+                    </div>
+
+                    <!-- 문제 표시 영역 -->
+                    <div id="question-container" class="exam-question-container">
+                        <div class="question-header">
+                            <div id="question-number" class="question-number">문제 1</div>
+                            <p id="question-text" class="question-text">문제를 불러오는 중입니다...</p>
+                        </div>
+
+                        <!-- 답안 입력 영역 -->
+                        <div id="answer-container" class="answer-container">
+                            <!-- 동적으로 생성됩니다 -->
+                        </div>
+                    </div>
+
+                    <!-- 네비게이션 버튼 -->
+                    <div class="exam-navigation">
+                        <div class="nav-left">
+                            <button id="prev-btn" class="exam-student-btn exam-student-btn-secondary">
+                                <i data-lucide="chevron-left"></i>
+                                이전 문제
+                            </button>
+                        </div>
+                        <div class="nav-right">
+                            <button id="next-btn" class="exam-student-btn exam-student-btn-primary">
+                                다음 문제
+                                <i data-lucide="chevron-right"></i>
+                            </button>
+                            <button id="submit-btn" class="exam-student-btn exam-student-btn-success" style="display: none;">
+                                <i data-lucide="check"></i>
+                                시험 제출
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 결과 화면 -->
+                <div id="result-view" class="exam-student-view">
+                    <!-- 결과 요약 -->
+                    <div id="result-summary" class="exam-result-container">
+                        <!-- 동적으로 생성됩니다 -->
+                    </div>
+
+                    <!-- 상세 결과 -->
+                    <div id="result-details">
+                        <!-- 동적으로 생성됩니다 -->
+                    </div>
+
+                    <!-- 액션 버튼들 -->
+                    <div style="text-align: center; margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <button id="back-to-dashboard-btn" class="exam-student-btn exam-student-btn-primary">
+                            <i data-lucide="home"></i>
+                            대시보드로 돌아가기
+                        </button>
+                        <button id="retake-btn" class="exam-student-btn exam-student-btn-secondary" style="display: none;">
+                            <i data-lucide="refresh-cw"></i>
+                            다시 응시하기
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 모듈들 -->
+    
+    <!-- 1. 기본 설정 및 Supabase -->
+    <script src="../js/config.js?v=5.2.0"></script>
+    <script>
+        // Supabase 클라이언트 초기화
+        if (window.CONFIG && window.CONFIG.SUPABASE) {
+            window.supabase = supabase.createClient(
+                window.CONFIG.SUPABASE.URL,
+                window.CONFIG.SUPABASE.ANON_KEY
+            );
+            console.log('✅ Supabase 클라이언트 초기화 완료');
+        } else {
+            console.error('❌ CONFIG 정보를 찾을 수 없습니다.');
+        }
+    </script>
+
+    <!-- 2. 학생용 수료평가 전용 모듈들 -->
+    <script src="../js/exam/exam-student-utils.js?v=5.2.0"></script>
+    <script src="../js/exam/exam-student-api.js?v=5.2.0"></script>
+    <script src="../js/exam/exam-student-ui.js?v=5.2.0"></script>
+
+    <!-- 3. 메인 초기화 스크립트 -->
+    <script>
+        /**
+         * 📚 학생용 수료평가 응시 시스템 메인 스크립트 v5.2.0
+         * 완전히 독립된 학생용 수료평가 시스템
+         */
+
+        console.log('📚 학생용 수료평가 응시 시스템 v5.2.0 초기화 시작');
+
+        /**
+         * 🔐 학생 인증 확인
+         */
+        function checkStudentAuthentication() {
+            console.log('🔐 학생 인증 확인 중...');
+            
+            const currentStudent = localStorage.getItem('currentStudent');
+            if (!currentStudent) {
+                console.warn('⚠️ 학생 세션이 없습니다');
+                alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
+                window.location.href = '../index.html';
+                return false;
+            }
+
+            try {
+                const studentData = JSON.parse(currentStudent);
+                if (!studentData.id || !studentData.name) {
+                    throw new Error('학생 데이터가 불완전합니다');
+                }
+
+                // 학생 정보 표시
+                updateStudentInfoDisplay(studentData);
+
+                console.log('✅ 학생 인증 확인 완료:', studentData.name);
+                return true;
+            } catch (error) {
+                console.error('❌ 학생 데이터 파싱 오류:', error);
+                alert('로그인 정보가 손상되었습니다. 다시 로그인해주세요.');
+                localStorage.clear();
+                window.location.href = '../index.html';
+                return false;
+            }
+        }
+
+        /**
+         * 👤 학생 정보 표시 업데이트
+         */
+        function updateStudentInfoDisplay(studentData) {
+            const studentNameElement = document.getElementById('student-name');
+            if (studentNameElement) {
+                const institute = studentData.sejong_institute || '세종학당';
+                const field = studentData.field || '문화 분야';
+                studentNameElement.textContent = `${studentData.name}님 • ${institute} • ${field}`;
+            }
+        }
+
+        /**
+         * 🚀 시스템 초기화
+         */
+        async function initializeExamSystem() {
+            try {
+                // 1. 학생 인증 확인
+                if (!checkStudentAuthentication()) {
+                    return;
+                }
+
+                // 2. 모듈 초기화 대기
+                console.log('⏳ 모듈 초기화 대기 중...');
+                let retryCount = 0;
+                const maxRetries = 50; // 5초 대기
+
+                while (retryCount < maxRetries) {
+                    if (window.ExamStudentUtils && 
+                        window.ExamStudentAPI && 
+                        window.ExamStudentUI) {
+                        break;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    retryCount++;
+                }
+
+                if (retryCount >= maxRetries) {
+                    throw new Error('모듈 로드 타임아웃');
+                }
+
+                // 3. 모듈 순차 초기화
+                console.log('🔄 수료평가 모듈 초기화 시작...');
+                
+                await window.ExamStudentUtils.initialize();
+                await window.ExamStudentAPI.initialize();
+                await window.ExamStudentUI.initialize();
+
+                // 4. Lucide 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+
+                console.log('🎉 학생용 수료평가 응시 시스템 v5.2.0 초기화 완료!');
+
+            } catch (error) {
+                console.error('💥 수료평가 시스템 초기화 실패:', error);
+                
+                // 오류 화면 표시
+                const mainContainer = document.getElementById('exam-main-container');
+                if (mainContainer) {
+                    mainContainer.innerHTML = `
+                        <div class="error-view">
+                            <div class="error-icon">
+                                <i data-lucide="alert-circle"></i>
+                            </div>
+                            <h2>시스템 초기화 실패</h2>
+                            <p>수료평가 시스템을 초기화하는 중 오류가 발생했습니다.<br>
+                            페이지를 새로고침하거나 관리자에게 문의하세요.</p>
+                            <p style="font-size: 0.9rem; color: #64748b; margin-top: 1rem;">
+                                오류 내용: ${error.message}
+                            </p>
+                            <button class="retry-btn" onclick="location.reload()">
+                                <i data-lucide="refresh-cw"></i>
+                                페이지 새로고침
+                            </button>
+                            <button class="exam-student-btn exam-student-btn-secondary" 
+                                    onclick="window.location.href='./dashboard.html'" 
+                                    style="margin-left: 1rem;">
+                                <i data-lucide="home"></i>
+                                대시보드로 돌아가기
+                            </button>
+                        </div>
+                    `;
+                    
+                    // 아이콘 초기화
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            }
+        }
+
+        /**
+         * 🔧 개발자 디버그 도구
+         */
+        function enableDebugMode() {
+            // Ctrl + Shift + D로 디버그 모드 활성화
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                    e.preventDefault();
+                    
+                    const debugMode = !window.ExamStudentUtils?.isDebugMode();
+                    localStorage.setItem('examDebugMode', debugMode.toString());
+                    
+                    console.log(`🔧 디버그 모드 ${debugMode ? '활성화' : '비활성화'}됨`);
+                    
+                    if (debugMode) {
+                        console.group('🐛 수료평가 시스템 디버그 정보 v5.2.0');
+                        console.log('모듈 상태:', {
+                            ExamStudentUtils: window.ExamStudentUtils?.getModuleStatus?.(),
+                            ExamStudentAPI: window.ExamStudentAPI?.getModuleStatus?.(),
+                            ExamStudentUI: window.ExamStudentUI?.getModuleStatus?.()
+                        });
+                        console.log('학생 정보:', window.ExamStudentAPI?.getCurrentStudentInfo?.());
+                        console.log('시험 상태:', window.ExamStudentUI?.examState);
+                        console.groupEnd();
+                        
+                        window.ExamStudentUtils?.showToast('디버그 모드가 활성화되었습니다. 콘솔을 확인하세요.', 'info');
+                    } else {
+                        window.ExamStudentUtils?.showToast('디버그 모드가 비활성화되었습니다.', 'info');
+                    }
+                }
+            });
+        }
+
+        /**
+         * ⚠️ 페이지 이탈 경고 설정
+         */
+        function setupPageUnloadWarning() {
+            let examInProgress = false;
+            
+            // 시험 상태 추적
+            const originalStartExam = window.ExamStudentUI?.startExam;
+            if (originalStartExam) {
+                window.ExamStudentUI.startExam = function() {
+                    examInProgress = true;
+                    return originalStartExam.call(this);
+                };
+            }
+            
+            const originalSubmitExam = window.ExamStudentUI?.submitExam;
+            if (originalSubmitExam) {
+                window.ExamStudentUI.submitExam = function() {
+                    examInProgress = false;
+                    return originalSubmitExam.call(this);
+                };
+            }
+            
+            // 페이지 이탈 경고
+            window.addEventListener('beforeunload', function(e) {
+                if (examInProgress || (window.ExamStudentUI?.examState?.status === 'taking')) {
+                    e.preventDefault();
+                    e.returnValue = '시험을 진행 중입니다. 페이지를 나가면 답안이 저장되지 않을 수 있습니다.';
+                    return e.returnValue;
+                }
+            });
+        }
+
+        /**
+         * 🏁 DOMContentLoaded 이벤트
+         */
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('📚 학생용 수료평가 응시 시스템 v5.2.0 시작');
+            
+            try {
+                // 시스템 초기화
+                await initializeExamSystem();
+                
+                // 디버그 도구 활성화
+                enableDebugMode();
+                
+                // 페이지 이탈 경고 설정
+                setupPageUnloadWarning();
+                
+                console.log('✅ 모든 초기화 작업 완료');
+                
+            } catch (error) {
+                console.error('❌ 초기화 중 예상치 못한 오류:', error);
+            }
+        });
+
+        /**
+         * 🌐 전역 오류 처리
+         */
+        window.addEventListener('error', function(e) {
+            console.error('🚨 전역 오류 감지:', e.error);
+            
+            if (window.ExamStudentUtils) {
+                window.ExamStudentUtils.handleError(e.error, '예상치 못한 오류');
+            }
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('🚨 처리되지 않은 Promise 거부:', e.reason);
+            
+            if (window.ExamStudentUtils) {
+                window.ExamStudentUtils.handleError(e.reason, 'Promise 오류');
+            }
+        });
+
+        console.log('📚 학생용 수료평가 응시 시스템 v5.2.0 스크립트 로드 완료');
+    </script>
+
+    <!-- 4. 페이지별 메타 정보 -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "EducationalOccupationalProgram",
+        "name": "세종학당 문화인턴 수료평가",
+        "description": "세종학당 문화인턴 과정의 수료평가 응시 시스템",
+        "provider": {
+            "@type": "EducationalOrganization",
+            "name": "세종학당재단"
+        },
+        "educationalCredentialAwarded": "수료증"
+    }
+    </script>
+
+    <!-- 5. 접근성 개선을 위한 추가 스타일 -->
+    <style>
+        /* 고대비 모드 지원 */
+        @media (prefers-contrast: high) {
+            :root {
+                --exam-student-primary: #0066cc;
+                --exam-student-success: #009900;
+                --exam-student-error: #cc0000;
+                --exam-student-text: #000000;
+                --exam-student-bg: #ffffff;
+            }
+            
+            .exam-student-btn {
+                border: 2px solid currentColor;
+            }
+        }
+        
+        /* 애니메이션 감소 설정 */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            
+            .exam-loading-spinner {
+                animation: none;
+                border: 3px solid var(--exam-student-gray-400);
+            }
+        }
+        
+        /* 포커스 표시 개선 */
+        *:focus {
+            outline: 2px solid var(--exam-student-primary);
+            outline-offset: 2px;
+        }
+        
+        .exam-student-btn:focus {
+            outline: 3px solid var(--exam-student-primary);
+            outline-offset: 3px;
+        }
+    </style>
+</body>
+</html>
