@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>세종학당 문화인턴 지원 시스템 - 관리자 v5.2.0</title>
+    <title>세종학당 문화인턴 지원 시스템 - 관리자 v5.2.1</title>
     
-    <!-- CSS Files - v5.2.0 국내교육 프로그램 추가 -->
-    <link rel="stylesheet" href="css/main.css?v=5.2.0">
-    <link rel="stylesheet" href="css/login.css?v=5.2.0">
+    <!-- CSS Files - v5.2.1 수료평가 관리 추가 -->
+    <link rel="stylesheet" href="css/main.css?v=5.2.1">
+    <link rel="stylesheet" href="css/login.css?v=5.2.1">
     
     <!-- 관리자 대시보드 전용 스타일 -->
     <style>
@@ -62,7 +62,7 @@
             color: #cbd5e0;
         }
 
-        /* 🆕 v5.2.0 모듈 로딩 상태 표시 */
+        /* 🆕 v5.2.1 모듈 로딩 상태 표시 */
         .module-status {
             background: #1a202c;
             color: white;
@@ -519,8 +519,8 @@
             <div class="login-container">
                 <div class="login-card">
                     <div class="login-header">
-                        <h1>세종학당 문화인턴 지원 시스템 v5.2.0</h1>
-                        <p>Cultural Intern Support System - Administrator (국내교육 프로그램 추가)</p>
+                        <h1>세종학당 문화인턴 지원 시스템 v5.2.1</h1>
+                        <p>Cultural Intern Support System - Administrator (수료평가 관리 추가)</p>
                     </div>
 
                     <div id="adminLogin" class="login-form active">
@@ -543,8 +543,8 @@
                 <!-- 헤더 섹션 -->
                 <div class="dashboard-header">
                     <div class="welcome-section">
-                        <h1 class="welcome-title">관리자 대시보드 v5.2.0</h1>
-                        <p class="welcome-subtitle">Cultural Intern Support System - Administrator (국내교육 프로그램 추가)</p>
+                        <h1 class="welcome-title">관리자 대시보드 v5.2.1</h1>
+                        <p class="welcome-subtitle">Cultural Intern Support System - Administrator (수료평가 관리 추가)</p>
                     </div>
                     
                     <div class="admin-info">
@@ -552,9 +552,9 @@
                         <p>세종학당 문화인턴 지원 시스템을 관리할 수 있습니다.</p>
                     </div>
 
-                    <!-- 🆕 v5.2.0 모듈 로딩 상태 표시 -->
+                    <!-- 🆕 v5.2.1 모듈 로딩 상태 표시 -->
                     <div class="module-status" id="moduleStatus">
-                        <h4>📦 모듈 로딩 상태 (v5.2.0 국내교육 프로그램 포함)</h4>
+                        <h4>📦 모듈 로딩 상태 (v5.2.1 수료평가 관리 포함)</h4>
                         <div class="module-item">
                             <span>SupabaseCore (5.6KB)</span>
                             <span class="status-icon status-loading" id="status-core">⏳</span>
@@ -597,7 +597,7 @@
                                 </div>
                                 <div class="feature-details">
                                     <h4>기능 설정 로딩 중...</h4>
-                                    <p>v5.2.0 시스템 초기화 중입니다.</p>
+                                    <p>v5.2.1 시스템 초기화 중입니다.</p>
                                 </div>
                             </div>
                             <div class="feature-controls">
@@ -657,6 +657,22 @@
                         </button>
                     </div>
 
+                    <!-- 🆕 수료평가 관리 -->
+                    <div class="menu-card" onclick="navigateToExamManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="clipboard-check"></i>
+                        </div>
+                        <h2 class="menu-title">수료평가 관리</h2>
+                        <p class="menu-description">
+                            문제 출제, 시험 결과 조회 및<br>
+                            평가 설정을 관리할 수 있습니다.
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
+
                     <!-- 🆕 국가별 안전정보 관리 -->
                     <div class="menu-card" onclick="navigateToCountrySafetyManagement()">
                         <div class="menu-icon">
@@ -690,33 +706,33 @@
         시스템 초기화 중...
     </div>
 
-    <!-- 🚀 JavaScript Files - v5.2.0 시스템 -->
+    <!-- 🚀 JavaScript Files - v5.2.1 시스템 -->
     
     <!-- 🔧 1단계: 핵심 라이브러리 -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
     <!-- 🔧 2단계: 핵심 설정 (필수) -->
-    <script src="js/config.js?v=5.2.0"></script>
-    <script src="js/utils.js?v=5.2.0"></script>
-    <script src="js/auth.js?v=5.2.0"></script>
+    <script src="js/config.js?v=5.2.1"></script>
+    <script src="js/utils.js?v=5.2.1"></script>
+    <script src="js/auth.js?v=5.2.1"></script>
 
     <!-- 🔧 3단계: Supabase 모듈들 (순서 중요!) -->
-    <script src="js/supabase/supabase-core.js?v=5.2.0"></script>
-    <script src="js/supabase/supabase-student.js?v=5.2.0"></script>
-    <script src="js/supabase/supabase-admin.js?v=5.2.0"></script>
-    <script src="js/supabase-client.js?v=5.2.0"></script>
+    <script src="js/supabase/supabase-core.js?v=5.2.1"></script>
+    <script src="js/supabase/supabase-student.js?v=5.2.1"></script>
+    <script src="js/supabase/supabase-admin.js?v=5.2.1"></script>
+    <script src="js/supabase-client.js?v=5.2.1"></script>
     
     <!-- 🔧 4단계: 관리자 모듈들 (필요한 경우만) -->
-    <script src="js/admin/admin-core.js?v=5.2.0"></script>
-    <script src="js/admin/admin-utils.js?v=5.2.0"></script>
-    <script src="js/admin/admin-modals.js?v=5.2.0"></script>
-    <script src="js/admin/admin-budget.js?v=5.2.0"></script>
-    <script src="js/admin/admin-lesson-plans.js?v=5.2.0"></script>
-    <script src="js/admin/admin-applications.js?v=5.2.0"></script>
-    <script src="js/admin/admin-features.js?v=5.2.0"></script>
+    <script src="js/admin/admin-core.js?v=5.2.1"></script>
+    <script src="js/admin/admin-utils.js?v=5.2.1"></script>
+    <script src="js/admin/admin-modals.js?v=5.2.1"></script>
+    <script src="js/admin/admin-budget.js?v=5.2.1"></script>
+    <script src="js/admin/admin-lesson-plans.js?v=5.2.1"></script>
+    <script src="js/admin/admin-applications.js?v=5.2.1"></script>
+    <script src="js/admin/admin-features.js?v=5.2.1"></script>
     
-    <!-- 🔧 5단계: 관리자 페이지 초기화 및 테스트 - v5.2.0 -->
+    <!-- 🔧 5단계: 관리자 페이지 초기화 및 테스트 - v5.2.1 -->
     <script>
         // 🔧 모듈 상태 추적 객체 (관리자용)
         const AdminModuleStatusTracker = {
@@ -757,8 +773,8 @@
                 if (systemStatus) {
                     systemStatus.innerHTML = `
                         <div class="alert alert-success">
-                            <strong>🔐 관리자 시스템 v5.2.0 초기화 완료!</strong><br>
-                            • 🆕 국내교육 프로그램 기능 관리 추가<br>
+                            <strong>🔐 관리자 시스템 v5.2.1 초기화 완료!</strong><br>
+                            • 🆕 수료평가 관리 시스템 추가<br>
                             • 통합 관리: Core + Student + Admin 모듈 완전 로드<br>
                             • 관리자 권한: 모든 기능 접근 가능<br>
                             • 호환성: 기존 관리자 코드 100% 호환 보장
@@ -791,7 +807,7 @@
                 
                 // 통합 매니저 상태 리포트 로그
                 const healthReport = window.SupabaseAPI.getHealthReport();
-                console.log('📊 통합 매니저 상태 리포트 (관리자 v5.2.0):', healthReport);
+                console.log('📊 통합 매니저 상태 리포트 (관리자 v5.2.1):', healthReport);
             }
 
             // 관리자 시스템 확인
@@ -800,7 +816,7 @@
             }
         }
 
-        // 🆕 v5.2.0 기능 설정 로드 및 관리
+        // 🆕 v5.2.1 기능 설정 로드 및 관리
         const FeatureSettingsManager = {
             features: [],
             isLoaded: false,
@@ -808,7 +824,7 @@
             // 기능 설정 로드
             async loadFeatureSettings() {
                 try {
-                    console.log('⚙️ 기능 설정 로딩 시작... (v5.2.0)');
+                    console.log('⚙️ 기능 설정 로딩 시작... (v5.2.1)');
                     
                     if (window.SupabaseAPI && typeof window.SupabaseAPI.getFeatureSettings === 'function') {
                         const result = await window.SupabaseAPI.getFeatureSettings();
@@ -817,7 +833,7 @@
                             this.features = result.data;
                             this.isLoaded = true;
                             this.renderFeatureSettings();
-                            console.log('✅ 기능 설정 로딩 완료 (v5.2.0):', this.features);
+                            console.log('✅ 기능 설정 로딩 완료 (v5.2.1):', this.features);
                         } else {
                             throw new Error('기능 설정을 가져올 수 없습니다.');
                         }
@@ -825,7 +841,7 @@
                         throw new Error('SupabaseAPI를 찾을 수 없습니다.');
                     }
                 } catch (error) {
-                    console.error('❌ 기능 설정 로딩 실패 (v5.2.0):', error);
+                    console.error('❌ 기능 설정 로딩 실패 (v5.2.1):', error);
                     this.showErrorState(error.message);
                 }
             },
@@ -853,6 +869,7 @@
                                     <h4>${feature.feature_title}</h4>
                                     <p>${iconConfig.description}</p>
                                     ${feature.feature_name === 'domestic_program' ? '<span class="new-feature-badge" style="position: static; margin-left: 0.5rem;">NEW</span>' : ''}
+                                    ${feature.feature_name === 'exam' ? '<span class="new-feature-badge" style="position: static; margin-left: 0.5rem;">NEW</span>' : ''}
                                 </div>
                             </div>
                             <div class="feature-controls">
@@ -875,7 +892,7 @@
                 }
             },
 
-            // 기능별 아이콘 및 설명 가져오기
+            // 🆕 v5.2.1 기능별 아이콘 및 설명 가져오기 (수료평가 추가)
             getFeatureIcon(featureName) {
                 const configs = {
                     'institute_info': {
@@ -885,6 +902,10 @@
                     'domestic_program': {
                         icon: 'graduation-cap',
                         description: '파견 전 국내교육 프로그램 정보를 제공하는 새로운 기능입니다.'
+                    },
+                    'exam': {
+                        icon: 'clipboard-check',
+                        description: '학생들이 문화인턴 과정 수료평가에 응시할 수 있는 기능입니다.'
                     },
                     'flight_request': {
                         icon: 'plane',
@@ -920,7 +941,11 @@
                             console.log(`✅ 기능 토글 완료: ${featureName} → ${newState}`);
                             
                             // 성공 메시지 표시
-                            this.showSuccessMessage(`${featureName === 'domestic_program' ? '국내교육 프로그램' : feature?.feature_title || featureName}이 ${newState ? '활성화' : '비활성화'}되었습니다.`);
+                            const featureTitle = feature?.feature_title || (
+                                featureName === 'domestic_program' ? '국내교육 프로그램' :
+                                featureName === 'exam' ? '수료평가' : featureName
+                            );
+                            this.showSuccessMessage(`${featureTitle}이 ${newState ? '활성화' : '비활성화'}되었습니다.`);
                         } else {
                             throw new Error(result?.message || '기능 설정 업데이트에 실패했습니다.');
                         }
@@ -1039,10 +1064,10 @@
                 }
             };
 
-            // 안전한 초기화 함수 (v5.2.0)
+            // 안전한 초기화 함수 (v5.2.1)
             async function safeInitialize() {
                 try {
-                    InitManager.show('관리자 시스템 v5.2.0 초기화 중...');
+                    InitManager.show('관리자 시스템 v5.2.1 초기화 중...');
                     
                     // 1. 필수 객체들이 로드될 때까지 대기
                     await waitForEssentials();
@@ -1054,7 +1079,7 @@
                         InitManager.show('아이콘 초기화 완료');
                     }
                     
-                    // 🆕 v5.2.0 모듈 로딩 감지 시작
+                    // 🆕 v5.2.1 모듈 로딩 감지 시작
                     checkAdminModuleLoading();
 
                     // 주기적으로 모듈 상태 확인 (최대 15초)
@@ -1080,7 +1105,7 @@
                     
                     // 5. 관리자 앱 초기화
                     await initializeAdminApp();
-                    InitManager.success('관리자 시스템 v5.2.0 초기화 완료');
+                    InitManager.success('관리자 시스템 v5.2.1 초기화 완료');
                     
                     // 초기화 상태 업데이트
                     adminInitState.supabaseInitialized = true;
@@ -1202,7 +1227,7 @@
 
             // 관리자 앱 초기화
             async function initializeAdminApp() {
-                console.log('🔐 관리자 앱 초기화 시작 (v5.2.0)');
+                console.log('🔐 관리자 앱 초기화 시작 (v5.2.1)');
                 
                 const adminSession = localStorage.getItem('adminSession');
                 if (adminSession) {
@@ -1213,7 +1238,7 @@
                 }
 
                 setupAdminLoginEvents();
-                console.log('✅ 관리자 앱 초기화 완료 (v5.2.0)');
+                console.log('✅ 관리자 앱 초기화 완료 (v5.2.1)');
             }
 
             // 관리자 로그인 이벤트 설정
@@ -1234,7 +1259,7 @@
                 }
             }
 
-            // 관리자 로그인 처리 (v5.2.0)
+            // 관리자 로그인 처리 (v5.2.1)
             async function handleAdminLogin() {
                 const code = document.getElementById('adminCode').value.trim();
                 
@@ -1250,7 +1275,7 @@
                     loginBtn.innerHTML = '<i data-lucide="loader-2"></i> 로그인 중...';
                     loginBtn.disabled = true;
 
-                    // 🚀 v5.2.0 관리자 인증 시도
+                    // 🚀 v5.2.1 관리자 인증 시도
                     const result = await SupabaseAPI.authenticateAdmin(code);
                     
                     if (result && result.success) {
@@ -1261,13 +1286,13 @@
                         // 대시보드로 전환
                         await showAdminDashboard();
                         
-                        console.log('✅ 관리자 로그인 성공 (v5.2.0):', result.data);
+                        console.log('✅ 관리자 로그인 성공 (v5.2.1):', result.data);
                     } else {
                         alert(result?.message || '관리자 인증에 실패했습니다.');
                     }
                     
                 } catch (error) {
-                    console.error('❌ 관리자 로그인 오류 (v5.2.0):', error);
+                    console.error('❌ 관리자 로그인 오류 (v5.2.1):', error);
                     alert('로그인 처리 중 오류가 발생했습니다.');
                 } finally {
                     // 버튼 상태 복구
@@ -1289,7 +1314,7 @@
                 if (loginPage) loginPage.classList.remove('active');
                 if (adminPage) adminPage.classList.add('active');
                 
-                // 🆕 v5.2.0 기능 설정 로드
+                // 🆕 v5.2.1 기능 설정 로드
                 await FeatureSettingsManager.loadFeatureSettings();
                 
                 // 아이콘 재초기화
@@ -1297,10 +1322,10 @@
                     lucide.createIcons();
                 }
 
-                console.log('✅ 관리자 대시보드 표시 완료 (v5.2.0)');
+                console.log('✅ 관리자 대시보드 표시 완료 (v5.2.1)');
             }
 
-            // 로그아웃 처리 (v5.2.0)
+            // 로그아웃 처리 (v5.2.1)
             function handleLogout() {
                 if (confirm('로그아웃하시겠습니까?')) {
                     localStorage.removeItem('adminSession');
@@ -1310,12 +1335,12 @@
                         window.SupabaseAPI.logout();
                     }
                     
-                    console.log('✅ 관리자 로그아웃 완료 (v5.2.0)');
+                    console.log('✅ 관리자 로그아웃 완료 (v5.2.1)');
                     window.location.reload();
                 }
             }
 
-            // 네비게이션 함수들
+            // 🆕 v5.2.1 네비게이션 함수들 (수료평가 관리 추가)
             function navigateToInstituteManagement() {
                 window.location.href = 'admin/institute-management.html';
             }
@@ -1328,6 +1353,10 @@
                 window.location.href = 'admin/equipment-management.html';
             }
 
+            function navigateToExamManagement() {
+                window.location.href = 'admin/exam-management.html';
+            }
+
             function navigateToCountrySafetyManagement() {
                 window.location.href = 'admin/country-safety-management.html';
             }
@@ -1338,6 +1367,7 @@
             window.navigateToInstituteManagement = navigateToInstituteManagement;
             window.navigateToFlightManagement = navigateToFlightManagement;
             window.navigateToEquipmentManagement = navigateToEquipmentManagement;
+            window.navigateToExamManagement = navigateToExamManagement;
             window.navigateToCountrySafetyManagement = navigateToCountrySafetyManagement;
 
             // DOMContentLoaded 이벤트 리스너
@@ -1350,6 +1380,7 @@
                 navigateToInstituteManagement,
                 navigateToFlightManagement,
                 navigateToEquipmentManagement,
+                navigateToExamManagement,
                 navigateToCountrySafetyManagement
             };
         })();
@@ -1357,9 +1388,9 @@
         // 전역으로 FeatureSettingsManager 노출
         window.FeatureSettingsManager = FeatureSettingsManager;
 
-        console.log('🔐 관리자 v5.2.0 시스템 스크립트 로드 완료');
+        console.log('🔐 관리자 v5.2.1 시스템 스크립트 로드 완료');
         console.log('📦 아키텍처: Core + Student + Admin + 통합매니저 + 관리자모듈');
-        console.log('🆕 v5.2.0: 국내교육 프로그램 기능 관리 추가');
+        console.log('🆕 v5.2.1: 수료평가 관리 시스템 추가');
         console.log('🔧 기존 관리자 코드 100% 호환성 보장 + 성능 최적화');
     </script>
 </body>
