@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수료평가 관리 시스템 - 세종학당 문화인턴 지원 시스템 v5.1.0</title>
+    
+    <!-- 수료평가 전용 CSS -->
+    <link rel="stylesheet" href="../css/exam-admin.css?v=5.1.0">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Supabase JavaScript Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="exam-management-container">
+        <!-- 헤더 섹션 -->
+        <div class="exam-header">
+            <div class="exam-header-content">
+                <div class="exam-header-title">
+                    <h1>수료평가 관리 시스템 v5.1.0</h1>
+                    <p>문화인턴 수료평가 문제 관리, 시험 결과 조회 및 설정을 통합 관리할 수 있습니다.</p>
+                    <div class="exam-alert">
+                        <i data-lucide="shield-check"></i>
+                        <strong>v5.1.0 NEW!</strong> 객관식/단답형 문제 관리, 시험 결과 분석, 재시험 관리 기능이 새로 추가되었습니다.
+                    </div>
+                </div>
+                <button class="exam-btn exam-btn-secondary" onclick="goBackToDashboard()">
+                    <i data-lucide="arrow-left"></i>
+                    대시보드로 돌아가기
+                </button>
+            </div>
+        </div>
+
+        <!-- 네비게이션 탭 -->
+        <div class="exam-nav-container">
+            <div class="exam-nav-tabs">
+                <a href="#" class="exam-nav-tab active" data-view="questions">
+                    <i data-lucide="file-question"></i>
+                    문제 관리
+                </a>
+                <a href="#" class="exam-nav-tab" data-view="results">
+                    <i data-lucide="bar-chart"></i>
+                    시험 결과
+                </a>
+                <a href="#" class="exam-nav-tab" data-view="settings">
+                    <i data-lucide="settings"></i>
+                    시험 설정
+                </a>
+            </div>
+        </div>
+
+        <!-- 통계 섹션 -->
+        <div class="exam-stats-section">
+            <!-- 문제 관리 뷰 통계 -->
+            <div class="exam-stat-card questions" id="questions-stats" style="display: block;">
+                <div class="exam-stat-header">
+                    <div class="exam-stat-icon">
+                        <i data-lucide="file-question"></i>
+                    </div>
+                </div>
+                <div class="exam-stat-number" id="total-questions">-</div>
+                <p class="exam-stat-label">총 문제 수</p>
+            </div>
+            
+            <div class="exam-stat-card active" id="active-questions-stats" style="display: block;">
+                <div class="exam-stat-header">
+                    <div class="exam-stat-icon">
+                        <i data-lucide="check-circle"></i>
+                    </div>
+                </div>
+                <div class="exam-stat-number" id="active-questions">-</div>
+                <p class="exam-stat-label">활성 문제</p>
+            </div>
+            
+            <div class="exam-stat-card inactive" id="inactive-questions-stats" style="display: block;">
+                <div class="exam-stat-header">
+                    <div class="exam-stat-icon">
+                        <i data-lucide="eye-off"></i>
+                    </div>
+                </div>
+                <div class="exam-stat-number" id="inactive-questions">-</div>
+                <p class="exam-stat-label">비활성 문제</p>
+            </div>
+
+            <!-- 시험 결과 뷰 통계 -->
+            <div class="exam-stat-card sessions" id="sessions-stats" style="display: none;">
+                <div class="exam-stat-header">
+                    <div class="exam-stat-icon">
+                        <i data-lucide="users"></i>
+                    </div>
+                </div>
+                <div class="exam-stat-number" id="total-sessions">-</div>
+                <p class="exam-stat-label">총 응시자</p>
+            </div>
+            
+            <div class="exam-stat-card passed" id="passed-stats" style="display: none;">
+                <div class="exam-stat-header">
+                    <div class="exam-stat-icon">
+                        <i data-lucide="check-circle"></i>
+                    </div>
+                </div>
+                <div class="exam-stat-number" id="passed-sessions">-</div>
+                <p class="exam-stat-label">합격자</p>
+            </div>
+            
+            <div class="exam-stat-card failed" id="failed-stats" style="display: none;">
+                <div class="exam-stat-header">
+                    <div class="exam-stat-icon">
+                        <i data-lucide="x-circle"></i>
+                    </div>
+                </div>
+                <div class="exam-stat-number" id="failed-sessions">-</div>
+                <p class="exam-stat-label">불합격자</p>
+            </div>
+            
+            <div class="exam-stat-card sessions" id="pass-rate-stats" style="display: none;">
+                <div class="exam-stat-header">
+                    <div class="exam-stat-icon">
+                        <i data-lucide="trending-up"></i>
+                    </div>
+                </div>
+                <div class="exam-stat-number" id="pass-rate">-</div>
+                <p class="exam-stat-label">합격률</p>
+            </div>
+            
+            <div class="exam-stat-card sessions" id="avg-score-stats" style="display: none;">
+                <div class="exam-stat-header">
+                    <div class="exam-stat-icon">
+                        <i data-lucide="target"></i>
+                    </div>
+                </div>
+                <div class="exam-stat-number" id="average-score">-</div>
+                <p class="exam-stat-label">평균 점수</p>
+            </div>
+        </div>
+
+        <!-- 필터 및 액션 섹션 -->
+        <div class="exam-filters-section">
+            <!-- 문제 관리 뷰 필터 -->
+            <div class="exam-filters-grid" id="questions-filters">
+                <div class="exam-search-box">
+                    <input type="text" class="exam-search-input" id="question-search" 
+                           placeholder="문제 내용으로 검색...">
+                    <i data-lucide="search" class="exam-search-icon"></i>
+                </div>
+                <select class="exam-filter-select" id="question-type-filter">
+                    <option value="all">모든 유형</option>
+                    <option value="multiple_choice">객관식</option>
+                    <option value="short_answer">단답형</option>
+                </select>
+                <button class="exam-btn exam-btn-success" id="add-question-btn">
+                    <i data-lucide="plus"></i>
+                    문제 추가
+                </button>
+                <button class="exam-btn exam-btn-primary" id="refresh-button">
+                    <i data-lucide="refresh-cw"></i>
+                    새로고침
+                </button>
+            </div>
+
+            <!-- 시험 결과 뷰 필터 -->
+            <div class="exam-filters-grid" id="results-filters" style="display: none;">
+                <div class="exam-search-box">
+                    <input type="text" class="exam-search-input" id="result-search" 
+                           placeholder="학생 이름으로 검색...">
+                    <i data-lucide="search" class="exam-search-icon"></i>
+                </div>
+                <select class="exam-filter-select" id="pass-status-filter">
+                    <option value="all">전체</option>
+                    <option value="passed">합격</option>
+                    <option value="failed">불합격</option>
+                </select>
+                <button class="exam-btn exam-btn-primary" id="refresh-results-button">
+                    <i data-lucide="refresh-cw"></i>
+                    새로고침
+                </button>
+            </div>
+        </div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <div id="exam-main-content">
+            <!-- 로딩 상태 -->
+            <div class="exam-loading" id="loading-spinner" style="display: none;">
+                <div class="exam-loading-spinner"></div>
+                <span>데이터를 불러오는 중...</span>
+            </div>
+
+            <!-- 문제 목록 뷰 -->
+            <div id="questions-view" style="display: block;">
+                <div id="questions-list">
+                    <!-- 문제 카드들이 동적으로 생성됩니다 -->
+                </div>
+            </div>
+
+            <!-- 시험 결과 뷰 -->
+            <div id="results-view" style="display: none;">
+                <div id="results-list">
+                    <!-- 결과 카드들이 동적으로 생성됩니다 -->
+                </div>
+            </div>
+
+            <!-- 시험 설정 뷰 -->
+            <div id="settings-view" style="display: none;">
+                <div class="exam-settings-container">
+                    <div class="exam-setting-card">
+                        <div class="exam-setting-header">
+                            <h3>
+                                <i data-lucide="target"></i>
+                                합격 기준 설정
+                            </h3>
+                            <p>수료평가 합격을 위한 최소 점수를 설정합니다.</p>
+                        </div>
+                        <div class="exam-setting-body">
+                            <div class="exam-form-group">
+                                <label for="pass-score-input">합격 기준 점수 (%)</label>
+                                <input type="number" id="pass-score-input" min="0" max="100" 
+                                       class="exam-form-input" placeholder="70">
+                                <div class="exam-form-help">0~100 사이의 값을 입력하세요. (예: 70% 이상 합격)</div>
+                            </div>
+                            <button class="exam-btn exam-btn-primary" onclick="updatePassScore()">
+                                <i data-lucide="save"></i>
+                                저장
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="exam-setting-card">
+                        <div class="exam-setting-header">
+                            <h3>
+                                <i data-lucide="power"></i>
+                                시험 활성화 설정
+                            </h3>
+                            <p>수료평가 시스템의 활성화 여부를 설정합니다.</p>
+                        </div>
+                        <div class="exam-setting-body">
+                            <div class="exam-form-group">
+                                <label class="exam-checkbox-label">
+                                    <input type="checkbox" id="exam-active-checkbox">
+                                    <span class="exam-checkbox-custom"></span>
+                                    시험 시스템 활성화
+                                </label>
+                                <div class="exam-form-help">비활성화 시 학생들은 수료평가에 응시할 수 없습니다.</div>
+                            </div>
+                            <button class="exam-btn exam-btn-primary" onclick="updateExamActive()">
+                                <i data-lucide="save"></i>
+                                저장
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="exam-setting-card">
+                        <div class="exam-setting-header">
+                            <h3>
+                                <i data-lucide="info"></i>
+                                시스템 정보
+                            </h3>
+                            <p>수료평가 시스템의 현재 상태 정보입니다.</p>
+                        </div>
+                        <div class="exam-setting-body">
+                            <div class="exam-system-info">
+                                <div class="exam-info-item">
+                                    <span class="exam-info-label">시스템 버전:</span>
+                                    <span class="exam-info-value">v5.1.0</span>
+                                </div>
+                                <div class="exam-info-item">
+                                    <span class="exam-info-label">최종 업데이트:</span>
+                                    <span class="exam-info-value">2025-07-01</span>
+                                </div>
+                                <div class="exam-info-item">
+                                    <span class="exam-info-label">지원 문제 유형:</span>
+                                    <span class="exam-info-value">객관식, 단답형</span>
+                                </div>
+                                <div class="exam-info-item">
+                                    <span class="exam-info-label">데이터베이스:</span>
+                                    <span class="exam-info-value">Supabase PostgreSQL</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 페이지네이션 -->
+            <div id="pagination-container">
+                <!-- 페이지네이션이 동적으로 생성됩니다 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 모듈들 -->
+    <!-- 1. 기본 설정 및 Supabase -->
+    <script src="../js/config.js?v=5.1.0"></script>
+    <script>
+        // Supabase 클라이언트 초기화
+        if (window.CONFIG && window.CONFIG.SUPABASE) {
+            window.supabase = supabase.createClient(
+                window.CONFIG.SUPABASE.URL,
+                window.CONFIG.SUPABASE.ANON_KEY
+            );
+            console.log('✅ Supabase 클라이언트 초기화 완료');
+        } else {
+            console.error('❌ CONFIG 정보를 찾을 수 없습니다.');
+        }
+    </script>
+
+    <!-- 2. 수료평가 전용 모듈들 -->
+    <script src="../js/exam/exam-validation.js?v=5.1.0"></script>
+    <script src="../js/exam/exam-admin-utils.js?v=5.1.0"></script>
+    <script src="../js/exam/exam-admin-api.js?v=5.1.0"></script>
+    <script src="../js/exam/exam-admin-ui.js?v=5.1.0"></script>
+
+    <script>
+        /**
+         * 📝 수료평가 관리 시스템 메인 스크립트 v5.1.0
+         * 완전히 독립된 수료평가 시스템
+         */
+
+        console.log('🎯 수료평가 관리 시스템 v5.1.0 초기화 시작');
+
+        /**
+         * 🔐 관리자 권한 확인
+         */
+        function checkAdminAuthentication() {
+            console.log('🔐 관리자 권한 확인 중...');
+            
+            const adminSession = localStorage.getItem('adminSession');
+            if (!adminSession) {
+                console.warn('⚠️ 관리자 세션이 없습니다');
+                alert('관리자 로그인이 필요합니다.');
+                window.location.href = '../admin.html';
+                return false;
+            }
+
+            console.log('✅ 관리자 권한 확인 완료');
+            return true;
+        }
+
+        /**
+         * 🏠 대시보드로 돌아가기
+         */
+        function goBackToDashboard() {
+            console.log('🔙 대시보드로 돌아가기');
+            window.location.href = '../admin.html';
+        }
+
+        /**
+         * 🎯 합격 기준 점수 업데이트
+         */
+        async function updatePassScore() {
+            const input = document.getElementById('pass-score-input');
+            const value = parseInt(input.value);
+            
+            if (isNaN(value) || value < 0 || value > 100) {
+                window.ExamAdminUtils.showToast('0~100 사이의 값을 입력해주세요.', 'error');
+                return;
+            }
+            
+            try {
+                await window.ExamAdminAPI.updateExamSetting('pass_score', value);
+                window.ExamAdminUtils.showToast('합격 기준 점수가 업데이트되었습니다.', 'success');
+            } catch (error) {
+                console.error('❌ 합격 기준 점수 업데이트 실패:', error);
+                window.ExamAdminUtils.showToast('업데이트에 실패했습니다.', 'error');
+            }
+        }
+
+        /**
+         * 🔄 시험 활성화 설정 업데이트
+         */
+        async function updateExamActive() {
+            const checkbox = document.getElementById('exam-active-checkbox');
+            const isActive = checkbox.checked;
+            
+            try {
+                await window.ExamAdminAPI.updateExamSetting('exam_active', isActive);
+                window.ExamAdminUtils.showToast(
+                    `시험 시스템이 ${isActive ? '활성화' : '비활성화'}되었습니다.`, 
+                    'success'
+                );
+            } catch (error) {
+                console.error('❌ 시험 활성화 설정 업데이트 실패:', error);
+                window.ExamAdminUtils.showToast('업데이트에 실패했습니다.', 'error');
+            }
+        }
+
+        /**
+         * 📊 시험 설정 로드
+         */
+        async function loadExamSettings() {
+            try {
+                const settings = await window.ExamAdminAPI.getExamSettings();
+                
+                // 합격 기준 점수 설정
+                const passScoreInput = document.getElementById('pass-score-input');
+                if (passScoreInput && settings.pass_score) {
+                    passScoreInput.value = settings.pass_score;
+                }
+                
+                // 시험 활성화 설정
+                const examActiveCheckbox = document.getElementById('exam-active-checkbox');
+                if (examActiveCheckbox && settings.exam_active !== undefined) {
+                    examActiveCheckbox.checked = settings.exam_active === 'true' || settings.exam_active === true;
+                }
+                
+                console.log('✅ 시험 설정 로드 완료:', settings);
+            } catch (error) {
+                console.error('❌ 시험 설정 로드 실패:', error);
+            }
+        }
+
+        /**
+         * 🚀 시스템 초기화
+         */
+        async function initializeExamSystem() {
+            try {
+                // 1. 관리자 권한 확인
+                if (!checkAdminAuthentication()) {
+                    return;
+                }
+
+                // 2. 모듈 초기화 대기
+                console.log('⏳ 모듈 초기화 대기 중...');
+                let retryCount = 0;
+                const maxRetries = 30; // 3초 대기
+
+                while (retryCount < maxRetries) {
+                    if (window.ExamAdminAPI && 
+                        window.ExamAdminUI && 
+                        window.ExamAdminUtils && 
+                        window.ExamValidation) {
+                        break;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    retryCount++;
+                }
+
+                if (retryCount >= maxRetries) {
+                    throw new Error('모듈 로드 타임아웃');
+                }
+
+                // 3. 모듈 순차 초기화
+                console.log('🔄 수료평가 모듈 초기화 시작...');
+                
+                await window.ExamValidation.initialize();
+                await window.ExamAdminUtils.initialize();
+                await window.ExamAdminAPI.initialize();
+                await window.ExamAdminUI.initialize();
+
+                // 4. 시험 설정 로드
+                await loadExamSettings();
+
+                // 5. Lucide 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+
+                console.log('🎉 수료평가 관리 시스템 v5.1.0 초기화 완료!');
+
+            } catch (error) {
+                console.error('💥 수료평가 시스템 초기화 실패:', error);
+                alert('시스템 초기화에 실패했습니다. 페이지를 새로고침하거나 관리자에게 문의하세요.');
+            }
+        }
+
+        /**
+         * 🏁 DOMContentLoaded 이벤트
+         */
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('📋 수료평가 관리 시스템 v5.1.0 시작');
+            await initializeExamSystem();
+        });
+
+        /**
+         * 🔧 개발자 디버그 키보드 단축키
+         */
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'E') {
+                e.preventDefault();
+                console.log('🛠️ 수료평가 시스템 v5.1.0 디버그 정보');
+                console.log('모듈 상태:', {
+                    ExamValidation: window.ExamValidation?.getModuleStatus?.(),
+                    ExamAdminUtils: window.ExamAdminUtils?.getModuleStatus?.(),
+                    ExamAdminAPI: window.ExamAdminAPI?.getModuleStatus?.(),
+                    ExamAdminUI: window.ExamAdminUI?.getModuleStatus?.()
+                });
+            }
+        });
+
+        console.log('📝 수료평가 관리 시스템 v5.1.0 스크립트 로드 완료');
+    </script>
+
+    <!-- 설정 뷰 전용 스타일 -->
+    <style>
+        .exam-settings-container {
+            display: flex;
+            flex-direction: column;
+            gap: var(--exam-space-6);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .exam-setting-card {
+            background: var(--exam-white);
+            border-radius: var(--exam-radius-lg);
+            border: 1px solid var(--exam-gray-200);
+            overflow: hidden;
+            box-shadow: var(--exam-shadow);
+            transition: var(--exam-transition);
+        }
+
+        .exam-setting-card:hover {
+            box-shadow: var(--exam-shadow-md);
+            border-color: var(--exam-gray-300);
+        }
+
+        .exam-setting-header {
+            padding: var(--exam-space-6);
+            background: var(--exam-gray-50);
+            border-bottom: 1px solid var(--exam-gray-200);
+        }
+
+        .exam-setting-header h3 {
+            display: flex;
+            align-items: center;
+            gap: var(--exam-space-2);
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--exam-gray-900);
+            margin: 0 0 var(--exam-space-2) 0;
+        }
+
+        .exam-setting-header h3 i {
+            width: 1.25rem;
+            height: 1.25rem;
+            color: var(--exam-primary);
+        }
+
+        .exam-setting-header p {
+            color: var(--exam-gray-600);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .exam-setting-body {
+            padding: var(--exam-space-6);
+        }
+
+        .exam-form-help {
+            font-size: 0.875rem;
+            color: var(--exam-gray-500);
+            margin-top: var(--exam-space-2);
+            line-height: 1.4;
+        }
+
+        .exam-system-info {
+            display: flex;
+            flex-direction: column;
+            gap: var(--exam-space-3);
+        }
+
+        .exam-info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--exam-space-3);
+            background: var(--exam-gray-50);
+            border-radius: var(--exam-radius);
+            border: 1px solid var(--exam-gray-200);
+        }
+
+        .exam-info-label {
+            font-weight: 500;
+            color: var(--exam-gray-700);
+        }
+
+        .exam-info-value {
+            font-weight: 600;
+            color: var(--exam-gray-900);
+            font-family: var(--exam-font-mono);
+        }
+
+        @media (max-width: 768px) {
+            .exam-settings-container {
+                margin: 0;
+            }
+            
+            .exam-setting-header,
+            .exam-setting-body {
+                padding: var(--exam-space-4);
+            }
+            
+            .exam-info-item {
+                flex-direction: column;
+                gap: var(--exam-space-2);
+                align-items: flex-start;
+            }
+        }
+    </style>
+</body>
+</html>
