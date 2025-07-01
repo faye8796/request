@@ -100,6 +100,56 @@
         .status-success { color: #68d391; }
         .status-error { color: #fc8181; }
 
+        /* 🔇 로그 제어 섹션 */
+        .log-control-section {
+            background: #1a202c;
+            color: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-control-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .log-mode-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .log-mode-badge.production {
+            background: #22543d;
+            color: #c6f6d5;
+        }
+
+        .log-mode-badge.development {
+            background: #d69e2e;
+            color: #faf089;
+        }
+
+        .log-toggle-btn {
+            background: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: background 0.3s ease;
+        }
+
+        .log-toggle-btn:hover {
+            background: #2d3748;
+        }
+
         /* 기능 활성화 관리 섹션 */
         .feature-settings-section {
             background: white;
@@ -509,6 +559,12 @@
             .module-status {
                 font-size: 0.75rem;
             }
+
+            .log-control-section {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -550,6 +606,17 @@
                     <div class="admin-info">
                         <h3>관리자님, 환영합니다!</h3>
                         <p>세종학당 문화인턴 지원 시스템을 관리할 수 있습니다.</p>
+                    </div>
+
+                    <!-- 🔇 로그 제어 섹션 -->
+                    <div class="log-control-section">
+                        <div class="log-control-info">
+                            <span>🔇 로그 출력 모드:</span>
+                            <span class="log-mode-badge production" id="logModeBadge">프로덕션 (최소)</span>
+                        </div>
+                        <button class="log-toggle-btn" onclick="LogController.toggleMode()">
+                            <span id="logToggleText">개발 모드 활성화</span>
+                        </button>
                     </div>
 
                     <!-- 🆕 v5.2.1 모듈 로딩 상태 표시 -->
@@ -734,7 +801,88 @@
     
     <!-- 🔧 5단계: 관리자 페이지 초기화 및 테스트 - v5.2.1 -->
     <script>
-        // 🔧 모듈 상태 추적 객체 (관리자용)
+        // 🔇 로그 제어 시스템 (v5.2.1)
+        const LogController = {
+            isProductionMode: true, // 기본값: 프로덕션 모드 (로그 최소화)
+            
+            // 로그 출력 함수 (모드에 따라 제어)
+            log(...args) {
+                if (!this.isProductionMode) {
+                    console.log(...args);
+                }
+            },
+            
+            info(...args) {
+                if (!this.isProductionMode) {
+                    console.info(...args);
+                }
+            },
+            
+            warn(...args) {
+                // 경고는 항상 출력
+                console.warn(...args);
+            },
+            
+            error(...args) {
+                // 에러는 항상 출력
+                console.error(...args);
+            },
+            
+            // 중요한 시스템 메시지 (항상 출력)
+            system(...args) {
+                console.log(...args);
+            },
+            
+            // 모드 토글
+            toggleMode() {
+                this.isProductionMode = !this.isProductionMode;
+                this.updateUI();
+                
+                if (this.isProductionMode) {
+                    this.system('🔇 프로덕션 모드 활성화 - 로그 출력 최소화');
+                } else {
+                    this.system('🔧 개발 모드 활성화 - 상세 로그 출력');
+                }
+                
+                // 설정 저장
+                localStorage.setItem('adminLogMode', this.isProductionMode ? 'production' : 'development');
+            },
+            
+            // UI 업데이트
+            updateUI() {
+                const badge = document.getElementById('logModeBadge');
+                const toggleText = document.getElementById('logToggleText');
+                
+                if (badge && toggleText) {
+                    if (this.isProductionMode) {
+                        badge.textContent = '프로덕션 (최소)';
+                        badge.className = 'log-mode-badge production';
+                        toggleText.textContent = '개발 모드 활성화';
+                    } else {
+                        badge.textContent = '개발 (상세)';
+                        badge.className = 'log-mode-badge development';
+                        toggleText.textContent = '프로덕션 모드 활성화';
+                    }
+                }
+            },
+            
+            // 초기화
+            init() {
+                // 저장된 설정 로드
+                const savedMode = localStorage.getItem('adminLogMode');
+                if (savedMode) {
+                    this.isProductionMode = savedMode === 'production';
+                }
+                
+                this.updateUI();
+                this.system('🔇 로그 제어 시스템 초기화 완료 -', this.isProductionMode ? '프로덕션 모드' : '개발 모드');
+            }
+        };
+
+        // 전역으로 LogController 노출
+        window.LogController = LogController;
+
+        // 🔧 모듈 상태 추적 객체 (관리자용) - 로그 제어 적용
         const AdminModuleStatusTracker = {
             modules: {
                 core: { name: 'SupabaseCore', loaded: false, size: '5.6KB' },
@@ -777,6 +925,7 @@
                             • 🆕 수료평가 관리 시스템 추가<br>
                             • 통합 관리: Core + Student + Admin 모듈 완전 로드<br>
                             • 관리자 권한: 모든 기능 접근 가능<br>
+                            • 🔇 로그 제어: 프로덕션/개발 모드 지원<br>
                             • 호환성: 기존 관리자 코드 100% 호환 보장
                         </div>
                     `;
@@ -784,39 +933,43 @@
             }
         };
 
-        // 🔧 모듈 로딩 감지 함수 (관리자용)
+        // 🔧 모듈 로딩 감지 함수 (관리자용) - 로그 제어 적용
         function checkAdminModuleLoading() {
             // SupabaseCore 확인
             if (window.SupabaseCore) {
                 AdminModuleStatusTracker.updateStatus('core', true);
+                LogController.log('✅ SupabaseCore 모듈 로드 완료');
             }
 
             // SupabaseStudent 확인
             if (window.SupabaseStudent) {
                 AdminModuleStatusTracker.updateStatus('student', true);
+                LogController.log('✅ SupabaseStudent 모듈 로드 완료');
             }
 
             // SupabaseAdmin 확인
             if (window.SupabaseAdmin) {
                 AdminModuleStatusTracker.updateStatus('admin', true);
+                LogController.log('✅ SupabaseAdmin 모듈 로드 완료');
             }
 
             // 통합 매니저 확인
             if (window.SupabaseAPI && window.SupabaseAPI.getHealthReport) {
                 AdminModuleStatusTracker.updateStatus('unified', true);
                 
-                // 통합 매니저 상태 리포트 로그
+                // 통합 매니저 상태 리포트 로그 (프로덕션 모드에서는 숨김)
                 const healthReport = window.SupabaseAPI.getHealthReport();
-                console.log('📊 통합 매니저 상태 리포트 (관리자 v5.2.1):', healthReport);
+                LogController.log('📊 통합 매니저 상태 리포트 (관리자 v5.2.1):', healthReport);
             }
 
             // 관리자 시스템 확인
             if (window.AdminManager) {
                 AdminModuleStatusTracker.updateStatus('adminSystem', true);
+                LogController.log('✅ AdminManager 시스템 로드 완료');
             }
         }
 
-        // 🆕 v5.2.1 기능 설정 로드 및 관리
+        // 🆕 v5.2.1 기능 설정 로드 및 관리 - 로그 제어 적용
         const FeatureSettingsManager = {
             features: [],
             isLoaded: false,
@@ -824,7 +977,7 @@
             // 기능 설정 로드
             async loadFeatureSettings() {
                 try {
-                    console.log('⚙️ 기능 설정 로딩 시작... (v5.2.1)');
+                    LogController.log('⚙️ 기능 설정 로딩 시작... (v5.2.1)');
                     
                     if (window.SupabaseAPI && typeof window.SupabaseAPI.getFeatureSettings === 'function') {
                         const result = await window.SupabaseAPI.getFeatureSettings();
@@ -833,7 +986,7 @@
                             this.features = result.data;
                             this.isLoaded = true;
                             this.renderFeatureSettings();
-                            console.log('✅ 기능 설정 로딩 완료 (v5.2.1):', this.features);
+                            LogController.log('✅ 기능 설정 로딩 완료 (v5.2.1):', this.features);
                         } else {
                             throw new Error('기능 설정을 가져올 수 없습니다.');
                         }
@@ -841,7 +994,7 @@
                         throw new Error('SupabaseAPI를 찾을 수 없습니다.');
                     }
                 } catch (error) {
-                    console.error('❌ 기능 설정 로딩 실패 (v5.2.1):', error);
+                    LogController.error('❌ 기능 설정 로딩 실패 (v5.2.1):', error);
                     this.showErrorState(error.message);
                 }
             },
@@ -920,10 +1073,10 @@
                 return configs[featureName] || { icon: 'settings', description: '시스템 기능입니다.' };
             },
 
-            // 기능 토글
+            // 기능 토글 - 로그 제어 적용
             async toggleFeature(featureName, newState) {
                 try {
-                    console.log(`🔄 기능 토글: ${featureName} → ${newState}`);
+                    LogController.log(`🔄 기능 토글: ${featureName} → ${newState}`);
                     
                     if (window.SupabaseAPI && typeof window.SupabaseAPI.updateFeatureSetting === 'function') {
                         const result = await window.SupabaseAPI.updateFeatureSetting(featureName, newState);
@@ -938,7 +1091,7 @@
                             // UI 재렌더링
                             this.renderFeatureSettings();
                             
-                            console.log(`✅ 기능 토글 완료: ${featureName} → ${newState}`);
+                            LogController.log(`✅ 기능 토글 완료: ${featureName} → ${newState}`);
                             
                             // 성공 메시지 표시
                             const featureTitle = feature?.feature_title || (
@@ -953,7 +1106,7 @@
                         throw new Error('SupabaseAPI를 찾을 수 없습니다.');
                     }
                 } catch (error) {
-                    console.error('❌ 기능 토글 실패:', error);
+                    LogController.error('❌ 기능 토글 실패:', error);
                     alert(`기능 설정 변경에 실패했습니다: ${error.message}`);
                     
                     // UI 재렌더링으로 원상태 복구
@@ -1037,7 +1190,7 @@
                         this.status.className = `init-status ${type}`;
                         this.status.style.display = 'block';
                     }
-                    console.log(`🔄 ${message}`);
+                    LogController.log(`🔄 ${message}`);
                 },
                 
                 hide() {
@@ -1064,9 +1217,12 @@
                 }
             };
 
-            // 안전한 초기화 함수 (v5.2.1)
+            // 안전한 초기화 함수 (v5.2.1) - 로그 제어 적용
             async function safeInitialize() {
                 try {
+                    // 🔇 로그 제어 시스템 먼저 초기화
+                    LogController.init();
+                    
                     InitManager.show('관리자 시스템 v5.2.1 초기화 중...');
                     
                     // 1. 필수 객체들이 로드될 때까지 대기
@@ -1091,7 +1247,7 @@
 
                         if (checkCount >= maxChecks) {
                             clearInterval(checkInterval);
-                            console.warn('⚠️ 모듈 로딩 타임아웃 (15초) - 일부 모듈이 로드되지 않았을 수 있음');
+                            LogController.warn('⚠️ 모듈 로딩 타임아웃 (15초) - 일부 모듈이 로드되지 않았을 수 있음');
                         }
                     }, 100);
                     
@@ -1112,7 +1268,7 @@
                     adminInitState.adminManagerReady = true;
                     
                 } catch (error) {
-                    console.error('❌ 관리자 시스템 초기화 실패:', error);
+                    LogController.error('❌ 관리자 시스템 초기화 실패:', error);
                     
                     // 재시도 로직
                     if (adminInitState.retryCount < adminInitState.maxRetries) {
@@ -1149,7 +1305,7 @@
                         const hasSupabase = window.supabase && typeof window.supabase.createClient === 'function';
                         
                         if (hasConfig && hasSupabase) {
-                            console.log('✅ 관리자 필수 객체 로드 완료');
+                            LogController.log('✅ 관리자 필수 객체 로드 완료');
                             adminInitState.configLoaded = true;
                             resolve();
                         } else if (attempts >= maxAttempts) {
@@ -1177,16 +1333,16 @@
                         
                         if (window.SupabaseAPI && typeof window.SupabaseAPI.init === 'function') {
                             try {
-                                console.log('🔗 관리자 SupabaseAPI 초기화 중...');
+                                LogController.log('🔗 관리자 SupabaseAPI 초기화 중...');
                                 const success = await window.SupabaseAPI.init();
                                 
                                 if (success) {
-                                    console.log('✅ 관리자 SupabaseAPI 초기화 완료');
+                                    LogController.log('✅ 관리자 SupabaseAPI 초기화 완료');
                                     resolve();
                                     return;
                                 }
                             } catch (error) {
-                                console.warn(`⚠️ 관리자 SupabaseAPI 초기화 시도 ${attempts}/${maxAttempts} 실패:`, error.message);
+                                LogController.warn(`⚠️ 관리자 SupabaseAPI 초기화 시도 ${attempts}/${maxAttempts} 실패:`, error.message);
                             }
                         }
                         
@@ -1211,10 +1367,10 @@
                         attempts++;
                         
                         if (window.AdminManager && typeof window.AdminManager.init === 'function') {
-                            console.log('✅ AdminManager 준비 완료');
+                            LogController.log('✅ AdminManager 준비 완료');
                             resolve();
                         } else if (attempts >= maxAttempts) {
-                            console.warn('⚠️ AdminManager를 찾을 수 없지만 계속 진행합니다.');
+                            LogController.warn('⚠️ AdminManager를 찾을 수 없지만 계속 진행합니다.');
                             resolve(); // AdminManager가 없어도 기본 기능은 동작하도록
                         } else {
                             setTimeout(check, 100);
@@ -1227,18 +1383,18 @@
 
             // 관리자 앱 초기화
             async function initializeAdminApp() {
-                console.log('🔐 관리자 앱 초기화 시작 (v5.2.1)');
+                LogController.log('🔐 관리자 앱 초기화 시작 (v5.2.1)');
                 
                 const adminSession = localStorage.getItem('adminSession');
                 if (adminSession) {
-                    console.log('📋 기존 관리자 세션 발견');
+                    LogController.log('📋 기존 관리자 세션 발견');
                     await showAdminDashboard();
                 } else {
-                    console.log('🔐 관리자 세션 없음, 로그인 페이지 표시');
+                    LogController.log('🔐 관리자 세션 없음, 로그인 페이지 표시');
                 }
 
                 setupAdminLoginEvents();
-                console.log('✅ 관리자 앱 초기화 완료 (v5.2.1)');
+                LogController.log('✅ 관리자 앱 초기화 완료 (v5.2.1)');
             }
 
             // 관리자 로그인 이벤트 설정
@@ -1259,7 +1415,7 @@
                 }
             }
 
-            // 관리자 로그인 처리 (v5.2.1)
+            // 관리자 로그인 처리 (v5.2.1) - 로그 제어 적용
             async function handleAdminLogin() {
                 const code = document.getElementById('adminCode').value.trim();
                 
@@ -1286,13 +1442,13 @@
                         // 대시보드로 전환
                         await showAdminDashboard();
                         
-                        console.log('✅ 관리자 로그인 성공 (v5.2.1):', result.data);
+                        LogController.system('✅ 관리자 로그인 성공 (v5.2.1):', result.data.name || '관리자');
                     } else {
                         alert(result?.message || '관리자 인증에 실패했습니다.');
                     }
                     
                 } catch (error) {
-                    console.error('❌ 관리자 로그인 오류 (v5.2.1):', error);
+                    LogController.error('❌ 관리자 로그인 오류 (v5.2.1):', error);
                     alert('로그인 처리 중 오류가 발생했습니다.');
                 } finally {
                     // 버튼 상태 복구
@@ -1322,7 +1478,7 @@
                     lucide.createIcons();
                 }
 
-                console.log('✅ 관리자 대시보드 표시 완료 (v5.2.1)');
+                LogController.log('✅ 관리자 대시보드 표시 완료 (v5.2.1)');
             }
 
             // 로그아웃 처리 (v5.2.1)
@@ -1335,7 +1491,7 @@
                         window.SupabaseAPI.logout();
                     }
                     
-                    console.log('✅ 관리자 로그아웃 완료 (v5.2.1)');
+                    LogController.system('✅ 관리자 로그아웃 완료 (v5.2.1)');
                     window.location.reload();
                 }
             }
@@ -1388,10 +1544,11 @@
         // 전역으로 FeatureSettingsManager 노출
         window.FeatureSettingsManager = FeatureSettingsManager;
 
-        console.log('🔐 관리자 v5.2.1 시스템 스크립트 로드 완료');
-        console.log('📦 아키텍처: Core + Student + Admin + 통합매니저 + 관리자모듈');
-        console.log('🆕 v5.2.1: 수료평가 관리 시스템 추가');
-        console.log('🔧 기존 관리자 코드 100% 호환성 보장 + 성능 최적화');
+        LogController.system('🔐 관리자 v5.2.1 시스템 스크립트 로드 완료');
+        LogController.system('📦 아키텍처: Core + Student + Admin + 통합매니저 + 관리자모듈');
+        LogController.system('🆕 v5.2.1: 수료평가 관리 시스템 추가');
+        LogController.system('🔇 로그 제어: 프로덕션/개발 모드 지원 추가');
+        LogController.system('🔧 기존 관리자 코드 100% 호환성 보장 + 성능 최적화');
     </script>
 </body>
 </html>
