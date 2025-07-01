@@ -1,5 +1,5 @@
 /**
- * 🎨 수료평가 시스템 - 학생 UI 관리 모듈 v5.2.0
+ * 🎨 수료평가 시스템 - 학생 UI 관리 모듈 v5.2.1
  * 학생용 수료평가 응시 인터페이스 관리
  * 완전 독립된 학생 전용 UI 모듈
  */
@@ -9,7 +9,7 @@ class ExamStudentUI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamStudentUI',
-            version: '5.2.0',
+            version: '5.2.1',
             lastUpdate: new Date().toISOString()
         };
         
@@ -31,7 +31,7 @@ class ExamStudentUI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamStudentUI v5.2.0 초기화 시작...');
+            console.log('🔄 ExamStudentUI v5.2.1 초기화 시작...');
             
             // DOM 요소 캐시
             this.cacheElements();
@@ -43,7 +43,7 @@ class ExamStudentUI {
             await this.checkEligibilityAndRender();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamStudentUI v5.2.0 초기화 완료');
+            console.log('✅ ExamStudentUI v5.2.1 초기화 완료');
             return true;
             
         } catch (error) {
@@ -350,7 +350,7 @@ class ExamStudentUI {
         let html = '';
         
         if (question.question_type === 'multiple_choice') {
-            // 객관식
+            // 객관식 - question.id에 따옴표 추가하여 문자열 리터럴로 전달
             html = `
                 <div class="answer-multiple-choice">
                     ${question.options.map((option, index) => `
@@ -359,21 +359,21 @@ class ExamStudentUI {
                                    name="question_${question.id}" 
                                    value="${option}"
                                    ${currentAnswer === option ? 'checked' : ''}
-                                   onchange="window.ExamStudentUI.saveAnswer(${question.id}, this.value)">
+                                   onchange="window.ExamStudentUI.saveAnswer('${question.id}', this.value)">
                             <span class="option-text">${option}</span>
                         </label>
                     `).join('')}
                 </div>
             `;
         } else {
-            // 단답형
+            // 단답형 - question.id에 따옴표 추가하여 문자열 리터럴로 전달
             html = `
                 <div class="answer-short-answer">
                     <input type="text" 
                            class="answer-input"
                            placeholder="답안을 입력하세요"
                            value="${currentAnswer}"
-                           oninput="window.ExamStudentUI.saveAnswer(${question.id}, this.value)"
+                           oninput="window.ExamStudentUI.saveAnswer('${question.id}', this.value)"
                            maxlength="100">
                     <div class="answer-hint">
                         단답형 문제입니다. 정확한 답안을 입력해주세요.
@@ -795,5 +795,5 @@ class ExamStudentUI {
 // 전역에 모듈 등록
 if (typeof window !== 'undefined') {
     window.ExamStudentUI = new ExamStudentUI();
-    console.log('🎨 ExamStudentUI v5.2.0 모듈 로드됨');
+    console.log('🎨 ExamStudentUI v5.2.1 모듈 로드됨');
 }
