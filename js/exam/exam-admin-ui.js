@@ -1,13 +1,13 @@
 /**
- * 📝 수료평가 시스템 - 관리자 UI 모듈 v5.1.1
+ * 📝 수료평가 시스템 - 관리자 UI 모듈 v5.1.2
  * 문제 관리, 시험 결과 조회 UI 관리
  * 기존 시스템과 완전 분리된 독립 모듈
  * 
- * v5.1.1 업데이트:
- * - CSS Grid 기반 개선된 문제 추가 모달 UI
- * - 단답형 복수 정답 기능 구현
- * - 콤마로 구분된 정답 입력 및 검증 로직
- * - 모바일 반응형 최적화
+ * v5.1.2 업데이트:
+ * - 문제 순서 관리 UI 완성
+ * - 순서 정보 표시 및 순서 변경 버튼 추가
+ * - moveQuestionUp/Down 이벤트 핸들러 구현
+ * - 실시간 순서 정보 업데이트
  */
 
 class ExamAdminUI {
@@ -15,13 +15,14 @@ class ExamAdminUI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamAdminUI',
-            version: '5.1.1',
+            version: '5.1.2',
             lastUpdate: new Date().toISOString()
         };
         this.currentView = 'questions'; // questions, results, settings
         this.currentPage = 1;
         this.currentFilters = {};
         this.selectedQuestions = new Set();
+        this.totalQuestions = 0; // 순서 관리를 위한 전체 문제 수
     }
 
     /**
@@ -29,7 +30,7 @@ class ExamAdminUI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamAdminUI v5.1.1 초기화 시작...');
+            console.log('🔄 ExamAdminUI v5.1.2 초기화 시작...');
             
             // 필수 모듈 확인
             if (!window.ExamAdminAPI) {
@@ -43,7 +44,7 @@ class ExamAdminUI {
             await this.showQuestionsView();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamAdminUI v5.1.1 초기화 완료');
+            console.log('✅ ExamAdminUI v5.1.2 초기화 완료');
             return true;
             
         } catch (error) {
@@ -143,13 +144,17 @@ class ExamAdminUI {
         try {
             this.showLoading(true);
             
-            // 문제 목록 조회
+            // 🎯 순서 관리를 위해 orderBy를 order_index로 설정
             const result = await window.ExamAdminAPI.getQuestions({
                 page: this.currentPage,
                 limit: 10,
                 search: this.getSearchKeyword(),
-                type: this.getTypeFilter()
+                type: this.getTypeFilter(),
+                orderBy: 'order_index' // 순서대로 정렬
             });
+
+            // 전체 문제 수 캐시 (순서 관리용)
+            this.totalQuestions = result.total || 0;
 
             // 통계 업데이트
             await this.updateQuestionStats();
@@ -254,12 +259,17 @@ class ExamAdminUI {
     }
 
     /**
-     * 📋 문제 카드 생성 (복수 정답 표시 개선)
+     * 📋 문제 카드 생성 (순서 관리 UI 추가)
      */
     createQuestionCard(question) {
         const typeText = question.question_type === 'multiple_choice' ? '객관식' : '단답형';
         const statusClass = question.is_active ? 'active' : 'inactive';
         const statusText = question.is_active ? '활성' : '비활성';
+        
+        // 🎯 순서 정보 계산
+        const currentOrder = question.order_index || 1;
+        const isFirst = currentOrder === 1;
+        const isLast = currentOrder >= this.totalQuestions;
         
         let optionsHTML = '';
         if (question.question_type === 'multiple_choice' && question.options) {
@@ -308,18 +318,39 @@ class ExamAdminUI {
                         <span class="exam-question-type">${typeText}</span>
                         <span class="exam-question-points">${question.points}점</span>
                         <span class="exam-question-status ${statusClass}">${statusText}</span>
+                        <span class="exam-question-order">순서: ${currentOrder}/${this.totalQuestions}</span>
                     </div>
                     <div class="exam-question-actions">
-                        <button class="exam-btn exam-btn-sm exam-btn-secondary" onclick="examAdminUI.editQuestion('${question.id}')">
-                            <i data-lucide="edit"></i>
-                        </button>
-                        <button class="exam-btn exam-btn-sm ${question.is_active ? 'exam-btn-warning' : 'exam-btn-success'}" 
-                                onclick="examAdminUI.toggleQuestionActive('${question.id}', ${!question.is_active})">
-                            <i data-lucide="${question.is_active ? 'eye-off' : 'eye'}"></i>
-                        </button>
-                        <button class="exam-btn exam-btn-sm exam-btn-danger" onclick="examAdminUI.deleteQuestion('${question.id}')">
-                            <i data-lucide="trash-2"></i>
-                        </button>
+                        <!-- 🎯 순서 관리 버튼 추가 -->
+                        <div class="exam-question-order-controls">
+                            <button class="exam-btn exam-btn-sm exam-btn-secondary ${isFirst ? 'disabled' : ''}" 
+                                    onclick="examAdminUI.moveQuestionUp('${question.id}')" 
+                                    ${isFirst ? 'disabled' : ''} 
+                                    title="위로 이동">
+                                <i data-lucide="chevron-up"></i>
+                            </button>
+                            <button class="exam-btn exam-btn-sm exam-btn-secondary ${isLast ? 'disabled' : ''}" 
+                                    onclick="examAdminUI.moveQuestionDown('${question.id}')" 
+                                    ${isLast ? 'disabled' : ''} 
+                                    title="아래로 이동">
+                                <i data-lucide="chevron-down"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- 기존 액션 버튼들 -->
+                        <div class="exam-question-basic-controls">
+                            <button class="exam-btn exam-btn-sm exam-btn-secondary" onclick="examAdminUI.editQuestion('${question.id}')" title="수정">
+                                <i data-lucide="edit"></i>
+                            </button>
+                            <button class="exam-btn exam-btn-sm ${question.is_active ? 'exam-btn-warning' : 'exam-btn-success'}" 
+                                    onclick="examAdminUI.toggleQuestionActive('${question.id}', ${!question.is_active})"
+                                    title="${question.is_active ? '비활성화' : '활성화'}">
+                                <i data-lucide="${question.is_active ? 'eye-off' : 'eye'}"></i>
+                            </button>
+                            <button class="exam-btn exam-btn-sm exam-btn-danger" onclick="examAdminUI.deleteQuestion('${question.id}')" title="삭제">
+                                <i data-lucide="trash-2"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="exam-question-content">
@@ -484,6 +515,54 @@ class ExamAdminUI {
             await this.showQuestionsView();
         } else if (this.currentView === 'results') {
             await this.showResultsView();
+        }
+    }
+
+    // ==================== 🎯 문제 순서 관리 이벤트 핸들러 (신규) ====================
+
+    /**
+     * 🔼 문제를 위로 이동
+     */
+    async moveQuestionUp(questionId) {
+        try {
+            console.log('🔼 문제를 위로 이동:', questionId);
+            
+            await window.ExamAdminAPI.moveQuestionUp(questionId);
+            this.showSuccess('문제가 위로 이동되었습니다.');
+            
+            // 목록 새로고침
+            await this.showQuestionsView();
+            
+        } catch (error) {
+            console.error('❌ 문제 위로 이동 실패:', error);
+            if (error.message.includes('첫 번째')) {
+                this.showInfo('이미 첫 번째 문제입니다.');
+            } else {
+                this.showError('문제 순서 변경에 실패했습니다.');
+            }
+        }
+    }
+
+    /**
+     * 🔽 문제를 아래로 이동
+     */
+    async moveQuestionDown(questionId) {
+        try {
+            console.log('🔽 문제를 아래로 이동:', questionId);
+            
+            await window.ExamAdminAPI.moveQuestionDown(questionId);
+            this.showSuccess('문제가 아래로 이동되었습니다.');
+            
+            // 목록 새로고침
+            await this.showQuestionsView();
+            
+        } catch (error) {
+            console.error('❌ 문제 아래로 이동 실패:', error);
+            if (error.message.includes('마지막')) {
+                this.showInfo('이미 마지막 문제입니다.');
+            } else {
+                this.showError('문제 순서 변경에 실패했습니다.');
+            }
         }
     }
 
@@ -1063,5 +1142,5 @@ class ExamAdminUI {
 if (typeof window !== 'undefined') {
     window.ExamAdminUI = new ExamAdminUI();
     window.examAdminUI = window.ExamAdminUI; // 편의를 위한 소문자 별칭
-    console.log('🎨 ExamAdminUI v5.1.1 모듈 로드됨 - 복수 정답 기능 포함');
+    console.log('🎨 ExamAdminUI v5.1.2 모듈 로드됨 - 문제 순서 관리 기능 포함');
 }
