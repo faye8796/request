@@ -1,7 +1,12 @@
 /**
- * 📝 수료평가 시스템 - 관리자 전용 스타일시트 v5.1.0
+ * 📝 수료평가 시스템 - 관리자 전용 스타일시트 v5.1.1
  * 기존 시스템과 완전 분리된 독립 스타일
  * 문제 관리, 시험 결과 조회를 위한 현대적인 UI
+ * 
+ * v5.1.1 업데이트:
+ * - 문제 추가 모달 CSS Grid 레이아웃 최적화
+ * - 복수 정답 기능 UI 스타일 추가
+ * - 모바일 반응형 디자인 강화
  */
 
 /* ==================== 기본 설정 ==================== */
@@ -702,7 +707,7 @@
     background: var(--exam-white);
     border-radius: var(--exam-radius-lg);
     box-shadow: var(--exam-shadow-xl);
-    max-width: 600px;
+    max-width: 700px; /* 모달 크기 증가 */
     width: 100%;
     max-height: 90vh;
     overflow: hidden;
@@ -779,12 +784,64 @@
     background: var(--exam-gray-50);
 }
 
-/* ==================== 폼 스타일 ==================== */
+/* ==================== 폼 스타일 (개선된 Grid 레이아웃) ==================== */
 
 .exam-form-group {
     margin-bottom: var(--exam-space-5);
 }
 
+/* 🎯 새로운 CSS Grid 기반 폼 레이아웃 */
+.exam-form-container {
+    display: grid;
+    gap: var(--exam-space-5);
+}
+
+/* 문제 내용 영역 - 70% 비율 */
+.exam-form-question-content {
+    grid-column: 1 / -1;
+}
+
+/* 메타 정보 행 - 30% 비율 */
+.exam-form-meta-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 120px; /* 유형, 배점, 배점 입력 */
+    gap: var(--exam-space-4);
+    align-items: end;
+}
+
+/* 정답 관련 영역 */
+.exam-form-answer-section {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: var(--exam-space-4);
+}
+
+/* 복수 정답 설정 영역 */
+.exam-form-multiple-answers {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--exam-space-4);
+    align-items: start;
+}
+
+/* 정답 입력 영역 개선 */
+.exam-answer-input-container {
+    position: relative;
+}
+
+.exam-answer-input-help {
+    font-size: 0.75rem;
+    color: var(--exam-gray-500);
+    margin-top: var(--exam-space-1);
+    font-style: italic;
+}
+
+.exam-answer-input-help.multiple-active {
+    color: var(--exam-primary);
+    font-weight: 500;
+}
+
+/* 기존 form-row 클래스 개선 */
 .exam-form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -827,7 +884,8 @@
 
 .exam-form-textarea {
     resize: vertical;
-    min-height: 100px;
+    min-height: 120px; /* 문제 내용 영역 높이 증가 */
+    line-height: 1.5;
 }
 
 /* 체크박스 스타일 */
@@ -856,6 +914,7 @@
     justify-content: center;
     transition: var(--exam-transition);
     position: relative;
+    flex-shrink: 0;
 }
 
 .exam-checkbox-label input[type="checkbox"]:checked + .exam-checkbox-custom {
@@ -870,7 +929,26 @@
     font-weight: 600;
 }
 
-/* 선택지 입력 */
+/* 🎯 복수 정답 허용 체크박스 특별 스타일 */
+.exam-multiple-answers-toggle {
+    padding: var(--exam-space-3);
+    background: var(--exam-gray-50);
+    border: 1px solid var(--exam-gray-200);
+    border-radius: var(--exam-radius);
+    transition: var(--exam-transition);
+}
+
+.exam-multiple-answers-toggle.active {
+    background: var(--exam-primary-light);
+    border-color: var(--exam-primary);
+}
+
+.exam-multiple-answers-toggle .exam-checkbox-label {
+    margin-bottom: 0;
+    font-weight: 600;
+}
+
+/* 선택지 입력 영역 개선 */
 .exam-option-item {
     display: flex;
     gap: var(--exam-space-2);
@@ -880,10 +958,50 @@
 
 .exam-option-input {
     flex: 1;
-    padding: var(--exam-space-2) var(--exam-space-3);
-    border: 1px solid var(--exam-gray-300);
-    border-radius: var(--exam-radius-sm);
-    font-size: 0.875rem;
+    padding: var(--exam-space-3) var(--exam-space-4);
+    border: 2px solid var(--exam-gray-200);
+    border-radius: var(--exam-radius);
+    font-size: 1rem;
+    transition: var(--exam-transition);
+}
+
+.exam-option-input:focus {
+    outline: none;
+    border-color: var(--exam-primary);
+    box-shadow: 0 0 0 3px var(--exam-primary-light);
+}
+
+/* 선택지 제거 버튼 개선 */
+.exam-option-remove {
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--exam-danger);
+    color: var(--exam-white);
+    border: none;
+    border-radius: var(--exam-radius);
+    cursor: pointer;
+    transition: var(--exam-transition);
+}
+
+.exam-option-remove:hover {
+    background: var(--exam-danger-hover);
+    transform: scale(1.05);
+}
+
+.exam-option-remove i {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* 선택지 추가 버튼 영역 */
+.exam-options-actions {
+    margin-top: var(--exam-space-3);
+    padding-top: var(--exam-space-3);
+    border-top: 1px solid var(--exam-gray-200);
 }
 
 /* ==================== 페이지네이션 ==================== */
@@ -1082,7 +1200,7 @@
     height: 1rem;
 }
 
-/* ==================== 반응형 디자인 ==================== */
+/* ==================== 반응형 디자인 (개선됨) ==================== */
 
 @media (max-width: 768px) {
     .exam-management-container {
@@ -1140,6 +1258,16 @@
         justify-content: space-between;
     }
     
+    /* 🎯 모달 폼 반응형 개선 */
+    .exam-form-meta-row {
+        grid-template-columns: 1fr;
+        gap: var(--exam-space-3);
+    }
+    
+    .exam-form-multiple-answers {
+        grid-template-columns: 1fr;
+    }
+    
     .exam-form-row {
         grid-template-columns: 1fr;
     }
@@ -1147,6 +1275,7 @@
     .exam-modal {
         margin: var(--exam-space-4);
         max-height: calc(100vh - 2rem);
+        max-width: none;
     }
     
     .exam-modal-header,
@@ -1179,6 +1308,11 @@
     
     .exam-modal-footer {
         flex-direction: column;
+    }
+    
+    /* 모바일에서 문제 텍스트 영역 최적화 */
+    .exam-form-textarea {
+        min-height: 100px;
     }
 }
 
@@ -1237,7 +1371,8 @@
 .exam-form-textarea:focus,
 .exam-form-select:focus,
 .exam-nav-tab:focus,
-.exam-pagination-btn:focus {
+.exam-pagination-btn:focus,
+.exam-option-input:focus {
     outline: 2px solid var(--exam-primary);
     outline-offset: 2px;
 }
