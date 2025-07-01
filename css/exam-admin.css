@@ -1,12 +1,11 @@
 /**
- * 📝 수료평가 시스템 - 관리자 전용 스타일시트 v5.1.1
+ * 📝 수료평가 시스템 - 관리자 전용 스타일시트 v5.1.2
  * 기존 시스템과 완전 분리된 독립 스타일
  * 문제 관리, 시험 결과 조회를 위한 현대적인 UI
  * 
- * v5.1.1 업데이트:
- * - 문제 추가 모달 CSS Grid 레이아웃 최적화
- * - 복수 정답 기능 UI 스타일 추가
- * - 모바일 반응형 디자인 강화
+ * v5.1.2 업데이트:
+ * - 복수 정답 태그 스타일 추가
+ * - 문제 카드 복수 정답 표시 완성
  */
 
 /* ==================== 기본 설정 ==================== */
@@ -564,6 +563,32 @@
     padding: var(--exam-space-3);
     color: var(--exam-success);
     font-weight: 600;
+}
+
+/* 🎯 복수 정답 표시 스타일 */
+.exam-multiple-answers-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--exam-space-2);
+    margin-top: var(--exam-space-2);
+}
+
+.exam-answer-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--exam-space-1) var(--exam-space-3);
+    background: var(--exam-success);
+    color: var(--exam-white);
+    border-radius: var(--exam-radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid var(--exam-success-hover);
+    box-shadow: var(--exam-shadow-sm);
+}
+
+.exam-answer-tag:not(:last-child)::after {
+    content: '';
+    margin-left: var(--exam-space-2);
 }
 
 /* ==================== 시험 결과 카드 ==================== */
@@ -1292,6 +1317,16 @@
     .exam-toast {
         min-width: auto;
         max-width: none;
+    }
+    
+    /* 복수 정답 태그 모바일 최적화 */
+    .exam-multiple-answers-list {
+        gap: var(--exam-space-1);
+    }
+    
+    .exam-answer-tag {
+        font-size: 0.6875rem;
+        padding: var(--exam-space-1) var(--exam-space-2);
     }
 }
 
