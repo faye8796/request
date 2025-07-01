@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>수료평가 응시 - 세종학당 문화인턴 지원 시스템 v5.2.0</title>
+    <title>수료평가 응시 - 세종학당 문화인턴 지원 시스템 v5.2.1</title>
     
     <!-- 학생용 수료평가 전용 CSS -->
-    <link rel="stylesheet" href="../css/exam-student.css?v=5.2.0">
+    <link rel="stylesheet" href="../css/exam-student.css?v=5.2.1">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -149,7 +149,7 @@
     <!-- JavaScript 모듈들 -->
     
     <!-- 1. 기본 설정 및 Supabase -->
-    <script src="../js/config.js?v=5.2.0"></script>
+    <script src="../js/config.js?v=5.2.1"></script>
     <script>
         // Supabase 클라이언트 초기화
         if (window.CONFIG && window.CONFIG.SUPABASE) {
@@ -164,18 +164,18 @@
     </script>
 
     <!-- 2. 학생용 수료평가 전용 모듈들 -->
-    <script src="../js/exam/exam-student-utils.js?v=5.2.0"></script>
-    <script src="../js/exam/exam-student-api.js?v=5.2.0"></script>
-    <script src="../js/exam/exam-student-ui.js?v=5.2.0"></script>
+    <script src="../js/exam/exam-student-utils.js?v=5.2.1"></script>
+    <script src="../js/exam/exam-student-api.js?v=5.2.1"></script>
+    <script src="../js/exam/exam-student-ui.js?v=5.2.1"></script>
 
     <!-- 3. 메인 초기화 스크립트 -->
     <script>
         /**
-         * 📚 학생용 수료평가 응시 시스템 메인 스크립트 v5.2.0
+         * 📚 학생용 수료평가 응시 시스템 메인 스크립트 v5.2.1
          * 완전히 독립된 학생용 수료평가 시스템
          */
 
-        console.log('📚 학생용 수료평가 응시 시스템 v5.2.0 초기화 시작');
+        console.log('📚 학생용 수료평가 응시 시스템 v5.2.1 초기화 시작');
 
         /**
          * 🔐 학생 인증 확인
@@ -264,7 +264,7 @@
                     lucide.createIcons();
                 }
 
-                console.log('🎉 학생용 수료평가 응시 시스템 v5.2.0 초기화 완료!');
+                console.log('🎉 학생용 수료평가 응시 시스템 v5.2.1 초기화 완료!');
 
             } catch (error) {
                 console.error('💥 수료평가 시스템 초기화 실패:', error);
@@ -319,7 +319,7 @@
                     console.log(`🔧 디버그 모드 ${debugMode ? '활성화' : '비활성화'}됨`);
                     
                     if (debugMode) {
-                        console.group('🐛 수료평가 시스템 디버그 정보 v5.2.0');
+                        console.group('🐛 수료평가 시스템 디버그 정보 v5.2.1');
                         console.log('모듈 상태:', {
                             ExamStudentUtils: window.ExamStudentUtils?.getModuleStatus?.(),
                             ExamStudentAPI: window.ExamStudentAPI?.getModuleStatus?.(),
@@ -374,7 +374,7 @@
          * 🏁 DOMContentLoaded 이벤트
          */
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('📚 학생용 수료평가 응시 시스템 v5.2.0 시작');
+            console.log('📚 학생용 수료평가 응시 시스템 v5.2.1 시작');
             
             try {
                 // 시스템 초기화
@@ -412,7 +412,7 @@
             }
         });
 
-        console.log('📚 학생용 수료평가 응시 시스템 v5.2.0 스크립트 로드 완료');
+        console.log('📚 학생용 수료평가 응시 시스템 v5.2.1 스크립트 로드 완료');
     </script>
 
     <!-- 4. 페이지별 메타 정보 -->
