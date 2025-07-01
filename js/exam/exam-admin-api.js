@@ -1,7 +1,12 @@
 /**
- * 📝 수료평가 시스템 - 관리자 API 모듈 v5.1.0
+ * 📝 수료평가 시스템 - 관리자 API 모듈 v5.1.1
  * 수료평가 문제 관리, 시험 결과 조회를 위한 API 모듈
  * 기존 시스템과 완전 분리된 독립 모듈
+ * 
+ * v5.1.1 업데이트:
+ * - 문제 순서 관리 API 기능 추가
+ * - order_index 기반 정렬 지원
+ * - 문제 이동 및 순서 변경 API
  */
 
 class ExamAdminAPI {
@@ -9,7 +14,7 @@ class ExamAdminAPI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamAdminAPI',
-            version: '5.1.0',
+            version: '5.1.1',
             lastUpdate: new Date().toISOString()
         };
         this.supabaseClient = null;
@@ -20,7 +25,7 @@ class ExamAdminAPI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamAdminAPI v5.1.0 초기화 시작...');
+            console.log('🔄 ExamAdminAPI v5.1.1 초기화 시작...');
             
             // Supabase 클라이언트 확인
             if (!window.supabase) {
@@ -33,7 +38,7 @@ class ExamAdminAPI {
             await this.testConnection();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamAdminAPI v5.1.0 초기화 완료');
+            console.log('✅ ExamAdminAPI v5.1.1 초기화 완료');
             return true;
             
         } catch (error) {
@@ -66,7 +71,7 @@ class ExamAdminAPI {
     // ==================== 문제 관리 API ====================
 
     /**
-     * 📋 모든 문제 조회 (페이지네이션)
+     * 📋 모든 문제 조회 (페이지네이션) - 순서 지원
      */
     async getQuestions(options = {}) {
         try {
@@ -75,7 +80,8 @@ class ExamAdminAPI {
                 limit = 10,
                 search = '',
                 type = null,
-                activeOnly = false
+                activeOnly = false,
+                orderBy = 'order_index' // 기본적으로 순서대로 정렬
             } = options;
             
             let query = this.supabaseClient
@@ -97,13 +103,17 @@ class ExamAdminAPI {
                 query = query.ilike('question_text', `%${search.trim()}%`);
             }
             
+            // 정렬 설정
+            if (orderBy === 'order_index') {
+                query = query.order('order_index', { ascending: true });
+            } else {
+                query = query.order('created_at', { ascending: false });
+            }
+            
             // 페이지네이션
             const from = (page - 1) * limit;
             const to = from + limit - 1;
             query = query.range(from, to);
-            
-            // 정렬 (최신순)
-            query = query.order('id', { ascending: false });
             
             const { data, error, count } = await query;
             
@@ -119,6 +129,32 @@ class ExamAdminAPI {
             
         } catch (error) {
             console.error('❌ 문제 조회 실패:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 📋 순서대로 정렬된 문제 목록 조회
+     */
+    async getQuestionsOrdered(activeOnly = false) {
+        try {
+            let query = this.supabaseClient
+                .from('exam_questions')
+                .select('id, question_text, question_type, order_index, is_active, points')
+                .order('order_index', { ascending: true });
+            
+            if (activeOnly) {
+                query = query.eq('is_active', true);
+            }
+            
+            const { data, error } = await query;
+            
+            if (error) throw error;
+            
+            return data || [];
+            
+        } catch (error) {
+            console.error('❌ 순서별 문제 조회 실패:', error);
             throw error;
         }
     }
@@ -143,6 +179,7 @@ class ExamAdminAPI {
                         correct_answer: questionData.correct_answer.trim(),
                         points: parseInt(questionData.points) || 1,
                         is_active: questionData.is_active !== false
+                        // order_index는 트리거에서 자동 설정됨
                     }
                 ])
                 .select()
@@ -251,6 +288,166 @@ class ExamAdminAPI {
             
         } catch (error) {
             console.error('❌ 문제 활성화 토글 실패:', error);
+            throw error;
+        }
+    }
+
+    // ==================== 🎯 문제 순서 관리 API (신규) ====================
+
+    /**
+     * 🔼 문제를 위로 이동
+     */
+    async moveQuestionUp(questionId) {
+        try {
+            console.log('🔼 문제를 위로 이동:', questionId);
+            
+            // 현재 문제의 순서 조회
+            const { data: currentQuestion, error: currentError } = await this.supabaseClient
+                .from('exam_questions')
+                .select('order_index')
+                .eq('id', questionId)
+                .single();
+            
+            if (currentError) throw currentError;
+            
+            const currentOrder = currentQuestion.order_index;
+            
+            // 이미 첫 번째인 경우
+            if (currentOrder <= 1) {
+                throw new Error('이미 첫 번째 문제입니다.');
+            }
+            
+            // 위 문제와 순서 교체
+            const newOrder = currentOrder - 1;
+            
+            return await this.reorderQuestion(questionId, newOrder);
+            
+        } catch (error) {
+            console.error('❌ 문제 위로 이동 실패:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 🔽 문제를 아래로 이동
+     */
+    async moveQuestionDown(questionId) {
+        try {
+            console.log('🔽 문제를 아래로 이동:', questionId);
+            
+            // 현재 문제의 순서와 최대 순서 조회
+            const { data: currentQuestion, error: currentError } = await this.supabaseClient
+                .from('exam_questions')
+                .select('order_index')
+                .eq('id', questionId)
+                .single();
+            
+            if (currentError) throw currentError;
+            
+            const { data: maxData, error: maxError } = await this.supabaseClient
+                .from('exam_questions')
+                .select('order_index')
+                .order('order_index', { ascending: false })
+                .limit(1)
+                .single();
+            
+            if (maxError) throw maxError;
+            
+            const currentOrder = currentQuestion.order_index;
+            const maxOrder = maxData.order_index;
+            
+            // 이미 마지막인 경우
+            if (currentOrder >= maxOrder) {
+                throw new Error('이미 마지막 문제입니다.');
+            }
+            
+            // 아래 문제와 순서 교체
+            const newOrder = currentOrder + 1;
+            
+            return await this.reorderQuestion(questionId, newOrder);
+            
+        } catch (error) {
+            console.error('❌ 문제 아래로 이동 실패:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 🔄 문제 순서 변경 (DB 함수 호출)
+     */
+    async reorderQuestion(questionId, newOrder) {
+        try {
+            console.log('🔄 문제 순서 변경:', questionId, newOrder);
+            
+            const { data, error } = await this.supabaseClient
+                .rpc('reorder_exam_question', {
+                    question_id: questionId,
+                    new_order: newOrder
+                });
+            
+            if (error) throw error;
+            
+            console.log('✅ 문제 순서 변경 성공:', questionId, newOrder);
+            return true;
+            
+        } catch (error) {
+            console.error('❌ 문제 순서 변경 실패:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 🔄 모든 문제 순서 초기화
+     */
+    async resetQuestionOrders() {
+        try {
+            console.log('🔄 문제 순서 초기화 시작...');
+            
+            const { data, error } = await this.supabaseClient
+                .rpc('reset_question_orders');
+            
+            if (error) throw error;
+            
+            console.log('✅ 문제 순서 초기화 완료');
+            return true;
+            
+        } catch (error) {
+            console.error('❌ 문제 순서 초기화 실패:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 📊 문제 순서 정보 조회
+     */
+    async getQuestionOrderInfo(questionId) {
+        try {
+            const { data: question, error: questionError } = await this.supabaseClient
+                .from('exam_questions')
+                .select('order_index')
+                .eq('id', questionId)
+                .single();
+            
+            if (questionError) throw questionError;
+            
+            const { data: totalData, error: totalError } = await this.supabaseClient
+                .from('exam_questions')
+                .select('order_index')
+                .order('order_index', { ascending: false })
+                .limit(1)
+                .single();
+            
+            if (totalError) throw totalError;
+            
+            return {
+                currentOrder: question.order_index,
+                totalQuestions: totalData.order_index,
+                canMoveUp: question.order_index > 1,
+                canMoveDown: question.order_index < totalData.order_index
+            };
+            
+        } catch (error) {
+            console.error('❌ 문제 순서 정보 조회 실패:', error);
             throw error;
         }
     }
@@ -502,5 +699,5 @@ class ExamAdminAPI {
 // 전역에 모듈 등록
 if (typeof window !== 'undefined') {
     window.ExamAdminAPI = new ExamAdminAPI();
-    console.log('📝 ExamAdminAPI v5.1.0 모듈 로드됨');
+    console.log('📝 ExamAdminAPI v5.1.1 모듈 로드됨 - 문제 순서 관리 기능 포함');
 }
