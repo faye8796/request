@@ -1,7 +1,11 @@
 /**
- * 🎨 수료평가 시스템 - 학생용 스타일시트 v6.1.0
+ * 🎨 수료평가 시스템 - 학생용 스타일시트 v6.2.0
  * 학생용 수료평가 응시 화면 전용 CSS
  * 완전 독립된 학생 전용 스타일 시스템
+ * 
+ * v6.2.0 업데이트:
+ * - 과목명(subject) 표시 스타일 추가
+ * - question-subject 클래스 스타일 구현
  * 
  * v6.1.0 업데이트:
  * - 결과 화면에서 정답 비공개 처리를 위한 result-notice 스타일 추가
@@ -397,6 +401,28 @@
     font-weight: 700;
     color: var(--exam-student-primary);
     margin-bottom: var(--exam-student-space-2);
+}
+
+/* 📚 과목명 표시 스타일 (v6.2.0 신규) */
+.question-subject {
+    display: flex;
+    align-items: center;
+    gap: var(--exam-student-space-2);
+    margin: var(--exam-student-space-3) 0;
+    padding: var(--exam-student-space-3) var(--exam-student-space-4);
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #0ea5e9;
+    border-radius: var(--exam-student-radius-lg);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #0369a1;
+}
+
+.question-subject i {
+    width: 1rem;
+    height: 1rem;
+    color: #0ea5e9;
+    flex-shrink: 0;
 }
 
 .question-text {
@@ -946,6 +972,13 @@
     
     .exam-question-container {
         padding: var(--exam-student-space-6);
+    }
+    
+    /* 📚 과목명 모바일 최적화 (v6.2.0) */
+    .question-subject {
+        font-size: 0.85rem;
+        padding: var(--exam-student-space-2) var(--exam-student-space-3);
+        margin: var(--exam-student-space-2) 0;
     }
     
     .exam-navigation {
