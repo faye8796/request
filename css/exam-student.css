@@ -1,7 +1,11 @@
 /**
- * 🎨 수료평가 시스템 - 학생용 스타일시트 v5.2.0
+ * 🎨 수료평가 시스템 - 학생용 스타일시트 v6.1.0
  * 학생용 수료평가 응시 화면 전용 CSS
  * 완전 독립된 학생 전용 스타일 시스템
+ * 
+ * v6.1.0 업데이트:
+ * - 결과 화면에서 정답 비공개 처리를 위한 result-notice 스타일 추가
+ * - 보안 강화된 결과 표시 UI 개선
  */
 
 /* ==================== CSS 변수 정의 ==================== */
@@ -589,6 +593,62 @@
     margin: var(--exam-student-space-1) 0;
 }
 
+/* 🎯 재시험 안내 정보 (v6.1.0 신규) */
+.retake-info {
+    margin-top: var(--exam-student-space-4);
+    padding: var(--exam-student-space-3);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--exam-student-error);
+    border-radius: var(--exam-student-radius);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.result-summary-card.failed .retake-info {
+    color: #991b1b;
+}
+
+/* ==================== 🎯 결과 알림 영역 (v6.1.0 신규 - 정답 비공개) ==================== */
+.result-notice {
+    text-align: center;
+    padding: var(--exam-student-space-8);
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 2px solid var(--exam-student-info);
+    border-radius: var(--exam-student-radius-xl);
+    margin-top: var(--exam-student-space-6);
+}
+
+.result-notice .notice-icon {
+    width: 3rem;
+    height: 3rem;
+    margin: 0 auto var(--exam-student-space-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--exam-student-info);
+    color: white;
+}
+
+.result-notice .notice-icon i {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.result-notice h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #0c4a6e;
+    margin: 0 0 var(--exam-student-space-3) 0;
+}
+
+.result-notice p {
+    font-size: 0.95rem;
+    color: #0369a1;
+    margin: var(--exam-student-space-2) 0;
+    line-height: 1.5;
+}
+
 /* ==================== 상세 결과 ==================== */
 .result-details-container {
     text-align: left;
@@ -931,6 +991,24 @@
     .answers {
         gap: var(--exam-student-space-3);
     }
+    
+    /* 🎯 결과 알림 영역 모바일 최적화 */
+    .result-notice {
+        padding: var(--exam-student-space-6);
+    }
+    
+    .result-notice .notice-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+    
+    .result-notice h3 {
+        font-size: 1.1rem;
+    }
+    
+    .result-notice p {
+        font-size: 0.9rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -952,6 +1030,12 @@
         flex-direction: column;
         align-items: flex-start;
         gap: var(--exam-student-space-1);
+    }
+    
+    /* 결과 알림 영역 추가 모바일 최적화 */
+    .result-notice {
+        padding: var(--exam-student-space-4);
+        margin-top: var(--exam-student-space-4);
     }
 }
 
