@@ -1,7 +1,12 @@
 /**
- * 📝 수료평가 시스템 - 관리자 API 모듈 v5.1.2
+ * 📝 수료평가 시스템 - 관리자 API 모듈 v6.1.0
  * 수료평가 문제 관리, 시험 결과 조회를 위한 API 모듈
  * 기존 시스템과 완전 분리된 독립 모듈
+ * 
+ * v6.1.0 업데이트:
+ * - 문제 관리에 subject(대주제/과목명) 필드 지원 추가
+ * - createQuestion, updateQuestion API에서 subject 처리
+ * - 데이터 검증 로직 확장
  * 
  * v5.1.2 업데이트:
  * - getQuestionById() 메서드 추가 - 문제 수정 버튼 오류 해결
@@ -15,7 +20,7 @@ class ExamAdminAPI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamAdminAPI',
-            version: '5.1.2',
+            version: '6.1.0',
             lastUpdate: new Date().toISOString()
         };
         this.supabaseClient = null;
@@ -26,7 +31,7 @@ class ExamAdminAPI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamAdminAPI v5.1.2 초기화 시작...');
+            console.log('🔄 ExamAdminAPI v6.1.0 초기화 시작...');
             
             // Supabase 클라이언트 확인
             if (!window.supabase) {
@@ -39,7 +44,7 @@ class ExamAdminAPI {
             await this.testConnection();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamAdminAPI v5.1.2 초기화 완료');
+            console.log('✅ ExamAdminAPI v6.1.0 초기화 완료');
             return true;
             
         } catch (error) {
@@ -99,9 +104,9 @@ class ExamAdminAPI {
                 query = query.eq('question_type', type);
             }
             
-            // 검색
+            // 검색 (문제 내용 또는 대주제 검색)
             if (search.trim()) {
-                query = query.ilike('question_text', `%${search.trim()}%`);
+                query = query.or(`question_text.ilike.%${search.trim()}%,subject.ilike.%${search.trim()}%`);
             }
             
             // 정렬 설정
@@ -141,7 +146,7 @@ class ExamAdminAPI {
         try {
             let query = this.supabaseClient
                 .from('exam_questions')
-                .select('id, question_text, question_type, order_index, is_active, points')
+                .select('id, question_text, question_type, subject, order_index, is_active, points')
                 .order('order_index', { ascending: true });
             
             if (activeOnly) {
@@ -190,7 +195,7 @@ class ExamAdminAPI {
     }
 
     /**
-     * ➕ 새 문제 생성
+     * ➕ 새 문제 생성 (v6.1.0: subject 필드 지원)
      */
     async createQuestion(questionData) {
         try {
@@ -205,6 +210,7 @@ class ExamAdminAPI {
                     {
                         question_text: questionData.question_text.trim(),
                         question_type: questionData.question_type,
+                        subject: questionData.subject ? questionData.subject.trim() : null, // 대주제 추가
                         options: questionData.options || null,
                         correct_answer: questionData.correct_answer.trim(),
                         points: parseInt(questionData.points) || 1,
@@ -227,7 +233,7 @@ class ExamAdminAPI {
     }
 
     /**
-     * ✏️ 문제 수정
+     * ✏️ 문제 수정 (v6.1.0: subject 필드 지원)
      */
     async updateQuestion(questionId, updateData) {
         try {
@@ -241,6 +247,7 @@ class ExamAdminAPI {
                 .update({
                     question_text: updateData.question_text.trim(),
                     question_type: updateData.question_type,
+                    subject: updateData.subject ? updateData.subject.trim() : null, // 대주제 추가
                     options: updateData.options || null,
                     correct_answer: updateData.correct_answer.trim(),
                     points: parseInt(updateData.points) || 1,
@@ -683,10 +690,32 @@ class ExamAdminAPI {
         }
     }
 
+    /**
+     * ⚙️ 여러 시험 설정 한번에 업데이트 (v6.1.0 신규)
+     */
+    async updateExamSettings(settings) {
+        try {
+            console.log('⚙️ 시험 설정 일괄 업데이트:', settings);
+            
+            const promises = Object.entries(settings).map(([key, value]) => 
+                this.updateExamSetting(key, value)
+            );
+            
+            await Promise.all(promises);
+            
+            console.log('✅ 시험 설정 일괄 업데이트 성공');
+            return true;
+            
+        } catch (error) {
+            console.error('❌ 시험 설정 일괄 업데이트 실패:', error);
+            throw error;
+        }
+    }
+
     // ==================== 유틸리티 함수 ====================
 
     /**
-     * 🔍 문제 데이터 검증
+     * 🔍 문제 데이터 검증 (v6.1.0: subject 필드 검증 추가)
      */
     validateQuestionData(data) {
         if (!data.question_text || !data.question_text.trim()) {
@@ -695,6 +724,11 @@ class ExamAdminAPI {
         
         if (!data.question_type || !['multiple_choice', 'short_answer'].includes(data.question_type)) {
             throw new Error('올바른 문제 유형을 선택해주세요.');
+        }
+        
+        // subject 필드는 선택사항이므로 별도 검증하지 않음
+        if (data.subject && data.subject.trim().length > 100) {
+            throw new Error('대주제는 100자 이내로 입력해주세요.');
         }
         
         if (!data.correct_answer || !data.correct_answer.trim()) {
@@ -729,5 +763,5 @@ class ExamAdminAPI {
 // 전역에 모듈 등록
 if (typeof window !== 'undefined') {
     window.ExamAdminAPI = new ExamAdminAPI();
-    console.log('📝 ExamAdminAPI v5.1.2 모듈 로드됨 - 문제 수정 버튼 오류 해결');
+    console.log('📝 ExamAdminAPI v6.1.0 모듈 로드됨 - subject 필드 지원 추가');
 }
