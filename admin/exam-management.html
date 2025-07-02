@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>수료평가 관리 시스템 - 세종학당 문화인턴 지원 시스템 v5.1.0</title>
+    <title>수료평가 관리 시스템 - 세종학당 문화인턴 지원 시스템 v5.1.3</title>
     
     <!-- 수료평가 전용 CSS -->
-    <link rel="stylesheet" href="../css/exam-admin.css?v=5.1.0">
+    <link rel="stylesheet" href="../css/exam-admin.css?v=5.1.3">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -20,11 +20,11 @@
         <div class="exam-header">
             <div class="exam-header-content">
                 <div class="exam-header-title">
-                    <h1>수료평가 관리 시스템 v5.1.0</h1>
+                    <h1>수료평가 관리 시스템 v5.1.3</h1>
                     <p>문화인턴 수료평가 문제 관리, 시험 결과 조회 및 설정을 통합 관리할 수 있습니다.</p>
                     <div class="exam-alert">
                         <i data-lucide="shield-check"></i>
-                        <strong>v5.1.0 NEW!</strong> 객관식/단답형 문제 관리, 시험 결과 분석, 재시험 관리 기능이 새로 추가되었습니다.
+                        <strong>v5.1.3 UPDATE!</strong> 문제 수정 버튼 오류 해결, 객관식/단답형 문제 관리, 시험 결과 분석, 재시험 관리 기능이 안정적으로 동작합니다.
                     </div>
                 </div>
                 <button class="exam-btn exam-btn-secondary" onclick="goBackToDashboard()">
@@ -263,11 +263,11 @@
                             <div class="exam-system-info">
                                 <div class="exam-info-item">
                                     <span class="exam-info-label">시스템 버전:</span>
-                                    <span class="exam-info-value">v5.1.0</span>
+                                    <span class="exam-info-value">v5.1.3</span>
                                 </div>
                                 <div class="exam-info-item">
                                     <span class="exam-info-label">최종 업데이트:</span>
-                                    <span class="exam-info-value">2025-07-01</span>
+                                    <span class="exam-info-value">2025-07-02</span>
                                 </div>
                                 <div class="exam-info-item">
                                     <span class="exam-info-label">지원 문제 유형:</span>
@@ -276,6 +276,10 @@
                                 <div class="exam-info-item">
                                     <span class="exam-info-label">데이터베이스:</span>
                                     <span class="exam-info-value">Supabase PostgreSQL</span>
+                                </div>
+                                <div class="exam-info-item">
+                                    <span class="exam-info-label">수정사항:</span>
+                                    <span class="exam-info-value">문제 수정 버튼 오류 해결</span>
                                 </div>
                             </div>
                         </div>
@@ -292,7 +296,7 @@
 
     <!-- JavaScript 모듈들 -->
     <!-- 1. 기본 설정 및 Supabase -->
-    <script src="../js/config.js?v=5.1.0"></script>
+    <script src="../js/config.js?v=5.1.3"></script>
     <script>
         // Supabase 클라이언트 초기화
         if (window.CONFIG && window.CONFIG.SUPABASE) {
@@ -307,18 +311,19 @@
     </script>
 
     <!-- 2. 수료평가 전용 모듈들 -->
-    <script src="../js/exam/exam-validation.js?v=5.1.0"></script>
-    <script src="../js/exam/exam-admin-utils.js?v=5.1.0"></script>
-    <script src="../js/exam/exam-admin-api.js?v=5.1.0"></script>
-    <script src="../js/exam/exam-admin-ui.js?v=5.1.0"></script>
+    <script src="../js/exam/exam-validation.js?v=5.1.3"></script>
+    <script src="../js/exam/exam-admin-utils.js?v=5.1.3"></script>
+    <script src="../js/exam/exam-admin-api.js?v=5.1.3"></script>
+    <script src="../js/exam/exam-admin-ui.js?v=5.1.3"></script>
 
     <script>
         /**
-         * 📝 수료평가 관리 시스템 메인 스크립트 v5.1.0
+         * 📝 수료평가 관리 시스템 메인 스크립트 v5.1.3
          * 완전히 독립된 수료평가 시스템
+         * 🐛 v5.1.3: 문제 수정 버튼 오류 해결
          */
 
-        console.log('🎯 수료평가 관리 시스템 v5.1.0 초기화 시작');
+        console.log('🎯 수료평가 관리 시스템 v5.1.3 초기화 시작');
 
         /**
          * 🔐 관리자 권한 확인
@@ -457,7 +462,7 @@
                     lucide.createIcons();
                 }
 
-                console.log('🎉 수료평가 관리 시스템 v5.1.0 초기화 완료!');
+                console.log('🎉 수료평가 관리 시스템 v5.1.3 초기화 완료! - 문제 수정 버튼 오류 해결');
 
             } catch (error) {
                 console.error('💥 수료평가 시스템 초기화 실패:', error);
@@ -469,7 +474,7 @@
          * 🏁 DOMContentLoaded 이벤트
          */
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('📋 수료평가 관리 시스템 v5.1.0 시작');
+            console.log('📋 수료평가 관리 시스템 v5.1.3 시작');
             await initializeExamSystem();
         });
 
@@ -479,7 +484,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.shiftKey && e.key === 'E') {
                 e.preventDefault();
-                console.log('🛠️ 수료평가 시스템 v5.1.0 디버그 정보');
+                console.log('🛠️ 수료평가 시스템 v5.1.3 디버그 정보');
                 console.log('모듈 상태:', {
                     ExamValidation: window.ExamValidation?.getModuleStatus?.(),
                     ExamAdminUtils: window.ExamAdminUtils?.getModuleStatus?.(),
@@ -489,7 +494,7 @@
             }
         });
 
-        console.log('📝 수료평가 관리 시스템 v5.1.0 스크립트 로드 완료');
+        console.log('📝 수료평가 관리 시스템 v5.1.3 스크립트 로드 완료 - 문제 수정 버튼 오류 해결');
     </script>
 
     <!-- 설정 뷰 전용 스타일 -->
