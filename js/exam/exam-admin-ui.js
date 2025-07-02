@@ -1,7 +1,12 @@
 /**
- * 📝 수료평가 시스템 - 관리자 UI 모듈 v5.1.4
+ * 📝 수료평가 시스템 - 관리자 UI 모듈 v5.1.5
  * 문제 관리, 시험 결과 조회 UI 관리
  * 기존 시스템과 완전 분리된 독립 모듈
+ * 
+ * v5.1.5 업데이트:
+ * - 🐛 renderSettingsForm() 메서드 추가 - 시험 설정 탭 오류 해결
+ * - "this.renderSettingsForm is not a function" 오류 완전 수정
+ * - 합격 기준 점수 설정 UI 구현
  * 
  * v5.1.4 업데이트:
  * - 🛠️ switchView() 함수에서 HTML 요소 display 속성 변경 로직 추가
@@ -20,7 +25,7 @@ class ExamAdminUI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamAdminUI',
-            version: '5.1.4',
+            version: '5.1.5',
             lastUpdate: new Date().toISOString()
         };
         this.currentView = 'questions'; // questions, results, settings
@@ -35,7 +40,7 @@ class ExamAdminUI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamAdminUI v5.1.4 초기화 시작...');
+            console.log('🔄 ExamAdminUI v5.1.5 초기화 시작...');
             
             // 필수 모듈 확인
             if (!window.ExamAdminAPI) {
@@ -49,7 +54,7 @@ class ExamAdminUI {
             await this.showQuestionsView();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamAdminUI v5.1.4 초기화 완료');
+            console.log('✅ ExamAdminUI v5.1.5 초기화 완료');
             return true;
             
         } catch (error) {
@@ -611,6 +616,138 @@ class ExamAdminUI {
         this.updateLucideIcons();
     }
 
+    /**
+     * ⚙️ 설정 폼 렌더링 - 🐛 v5.1.5에서 추가된 누락 메서드
+     */
+    renderSettingsForm(settings) {
+        const container = document.getElementById('settings-content');
+        if (!container) return;
+
+        const settingsHTML = `
+            <div class="exam-settings-container">
+                <div class="exam-settings-header">
+                    <h3><i data-lucide="settings"></i> 수료평가 설정</h3>
+                    <p>수료평가 시스템의 기본 설정을 관리합니다.</p>
+                </div>
+                
+                <form id="exam-settings-form" class="exam-settings-form">
+                    <div class="exam-settings-section">
+                        <h4><i data-lucide="target"></i> 합격 기준</h4>
+                        <div class="exam-form-group">
+                            <label for="passing-score">합격 기준 점수 (%)</label>
+                            <div class="exam-input-with-unit">
+                                <input type="number" 
+                                       id="passing-score" 
+                                       name="passing_score" 
+                                       class="exam-form-input" 
+                                       min="0" 
+                                       max="100" 
+                                       value="${settings?.passing_score || 70}" 
+                                       required>
+                                <span class="exam-input-unit">%</span>
+                            </div>
+                            <div class="exam-form-help">
+                                학생이 수료평가에 합격하기 위한 최소 점수를 설정합니다. (기본값: 70%)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="exam-settings-section">
+                        <h4><i data-lucide="clock"></i> 시험 설정</h4>
+                        <div class="exam-form-group">
+                            <label for="time-limit">시험 제한 시간 (분)</label>
+                            <div class="exam-input-with-unit">
+                                <input type="number" 
+                                       id="time-limit" 
+                                       name="time_limit" 
+                                       class="exam-form-input" 
+                                       min="10" 
+                                       max="180" 
+                                       value="${settings?.time_limit || 60}" 
+                                       required>
+                                <span class="exam-input-unit">분</span>
+                            </div>
+                            <div class="exam-form-help">
+                                학생이 수료평가를 완료할 수 있는 최대 시간을 설정합니다. (기본값: 60분)
+                            </div>
+                        </div>
+
+                        <div class="exam-form-group">
+                            <label class="exam-checkbox-label">
+                                <input type="checkbox" 
+                                       id="allow-retake" 
+                                       name="allow_retake" 
+                                       ${settings?.allow_retake !== false ? 'checked' : ''}>
+                                <span class="exam-checkbox-custom"></span>
+                                재시험 허용
+                            </label>
+                            <div class="exam-form-help">
+                                불합격한 학생의 재시험을 허용할지 설정합니다.
+                            </div>
+                        </div>
+
+                        <div class="exam-form-group">
+                            <label for="max-attempts">최대 시도 횟수</label>
+                            <select id="max-attempts" name="max_attempts" class="exam-form-select">
+                                <option value="1" ${settings?.max_attempts === 1 ? 'selected' : ''}>1회</option>
+                                <option value="2" ${settings?.max_attempts === 2 ? 'selected' : ''}>2회</option>
+                                <option value="3" ${(settings?.max_attempts || 3) === 3 ? 'selected' : ''}>3회</option>
+                                <option value="5" ${settings?.max_attempts === 5 ? 'selected' : ''}>5회</option>
+                                <option value="-1" ${settings?.max_attempts === -1 ? 'selected' : ''}>무제한</option>
+                            </select>
+                            <div class="exam-form-help">
+                                학생이 시험에 응시할 수 있는 최대 횟수를 설정합니다.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="exam-settings-section">
+                        <h4><i data-lucide="shield"></i> 보안 설정</h4>
+                        <div class="exam-form-group">
+                            <label class="exam-checkbox-label">
+                                <input type="checkbox" 
+                                       id="shuffle-questions" 
+                                       name="shuffle_questions" 
+                                       ${settings?.shuffle_questions !== false ? 'checked' : ''}>
+                                <span class="exam-checkbox-custom"></span>
+                                문제 순서 무작위화
+                            </label>
+                            <div class="exam-form-help">
+                                각 학생에게 문제를 무작위 순서로 출제합니다.
+                            </div>
+                        </div>
+
+                        <div class="exam-form-group">
+                            <label class="exam-checkbox-label">
+                                <input type="checkbox" 
+                                       id="shuffle-options" 
+                                       name="shuffle_options" 
+                                       ${settings?.shuffle_options !== false ? 'checked' : ''}>
+                                <span class="exam-checkbox-custom"></span>
+                                객관식 선택지 무작위화
+                            </label>
+                            <div class="exam-form-help">
+                                객관식 문제의 선택지 순서를 무작위로 배치합니다.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="exam-settings-actions">
+                        <button type="button" class="exam-btn exam-btn-secondary" onclick="examAdminUI.resetSettings()">
+                            <i data-lucide="refresh-cw"></i> 기본값으로 초기화
+                        </button>
+                        <button type="button" class="exam-btn exam-btn-primary" onclick="examAdminUI.saveSettings()">
+                            <i data-lucide="save"></i> 설정 저장
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        container.innerHTML = settingsHTML;
+        this.updateLucideIcons();
+    }
+
     // ==================== 이벤트 핸들러 ====================
 
     /**
@@ -684,6 +821,74 @@ class ExamAdminUI {
             } else {
                 this.showError('문제 순서 변경에 실패했습니다.');
             }
+        }
+    }
+
+    // ==================== ⚙️ 설정 관리 핸들러 (v5.1.5 신규) ====================
+
+    /**
+     * 💾 설정 저장
+     */
+    async saveSettings() {
+        try {
+            const form = document.getElementById('exam-settings-form');
+            const formData = new FormData(form);
+            
+            const settings = {
+                passing_score: parseInt(formData.get('passing_score')),
+                time_limit: parseInt(formData.get('time_limit')),
+                allow_retake: formData.get('allow_retake') === 'on',
+                max_attempts: parseInt(formData.get('max_attempts')),
+                shuffle_questions: formData.get('shuffle_questions') === 'on',
+                shuffle_options: formData.get('shuffle_options') === 'on'
+            };
+            
+            this.showLoading(true);
+            
+            await window.ExamAdminAPI.updateExamSettings(settings);
+            this.showSuccess('설정이 저장되었습니다.');
+            
+            this.showLoading(false);
+            
+        } catch (error) {
+            console.error('❌ 설정 저장 실패:', error);
+            this.showError('설정 저장에 실패했습니다.');
+            this.showLoading(false);
+        }
+    }
+
+    /**
+     * 🔄 설정 초기화
+     */
+    async resetSettings() {
+        if (!confirm('설정을 기본값으로 초기화하시겠습니까?')) {
+            return;
+        }
+        
+        try {
+            this.showLoading(true);
+            
+            const defaultSettings = {
+                passing_score: 70,
+                time_limit: 60,
+                allow_retake: true,
+                max_attempts: 3,
+                shuffle_questions: true,
+                shuffle_options: true
+            };
+            
+            await window.ExamAdminAPI.updateExamSettings(defaultSettings);
+            this.showSuccess('설정이 기본값으로 초기화되었습니다.');
+            
+            // 설정 폼 다시 렌더링
+            await this.showSettingsView();
+            
+            this.showLoading(false);
+            
+        } catch (error) {
+            console.error('❌ 설정 초기화 실패:', error);
+            this.showError('설정 초기화에 실패했습니다.');
+            this.showLoading(false);
         }
     }
 
@@ -1256,5 +1461,5 @@ class ExamAdminUI {
 if (typeof window !== 'undefined') {
     window.ExamAdminUI = new ExamAdminUI();
     window.examAdminUI = window.ExamAdminUI; // 편의를 위한 소문자 별칭
-    console.log('🎨 ExamAdminUI v5.1.4 모듈 로드됨 - 뷰 전환 오류 수정');
+    console.log('🎨 ExamAdminUI v5.1.5 모듈 로드됨 - renderSettingsForm 메서드 추가');
 }
