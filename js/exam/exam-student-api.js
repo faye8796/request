@@ -1,7 +1,11 @@
 /**
- * 📚 수료평가 시스템 - 학생 API 모듈 v5.2.1
+ * 📚 수료평가 시스템 - 학생 API 모듈 v6.2.1
  * 학생용 수료평가 응시를 위한 API 모듈
  * 완전 독립된 학생 전용 모듈
+ * 
+ * v6.2.1 업데이트:
+ * - getExamQuestions()에서 subject 컬럼 누락 문제 수정
+ * - 과목명 표시 기능 완전 활성화
  */
 
 class ExamStudentAPI {
@@ -9,7 +13,7 @@ class ExamStudentAPI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamStudentAPI',
-            version: '5.2.1',
+            version: '6.2.1',
             lastUpdate: new Date().toISOString()
         };
         this.supabaseClient = null;
@@ -21,7 +25,7 @@ class ExamStudentAPI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamStudentAPI v5.2.1 초기화 시작...');
+            console.log('🔄 ExamStudentAPI v6.2.1 초기화 시작...');
             
             // Supabase 클라이언트 확인
             if (!window.supabase) {
@@ -43,7 +47,7 @@ class ExamStudentAPI {
             await this.testConnection();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamStudentAPI v5.2.1 초기화 완료');
+            console.log('✅ ExamStudentAPI v6.2.1 초기화 완료 - subject 컬럼 수정');
             return true;
             
         } catch (error) {
@@ -223,7 +227,7 @@ class ExamStudentAPI {
     // ==================== 시험 문제 관리 ====================
 
     /**
-     * 📋 활성 문제 조회 (시험 시작)
+     * 📋 활성 문제 조회 (시험 시작) - v6.2.1: subject 컬럼 추가
      */
     async getExamQuestions() {
         try {
@@ -231,7 +235,7 @@ class ExamStudentAPI {
             
             const { data, error } = await this.supabaseClient
                 .from('exam_questions')
-                .select('id, question_text, question_type, options, points')
+                .select('id, question_text, question_type, options, points, subject') // ✅ subject 컬럼 추가!
                 .eq('is_active', true)
                 .order('order_index', { ascending: true }); // 순서 기반 정렬로 변경
             
@@ -242,6 +246,7 @@ class ExamStudentAPI {
             }
             
             console.log(`✅ 시험 문제 조회 완료: ${data.length}개 문제`);
+            console.log('📚 과목명 정보:', data.map(q => ({ id: q.id, subject: q.subject })));
             return data;
             
         } catch (error) {
@@ -531,5 +536,5 @@ class ExamStudentAPI {
 // 전역에 모듈 등록
 if (typeof window !== 'undefined') {
     window.ExamStudentAPI = new ExamStudentAPI();
-    console.log('📚 ExamStudentAPI v5.2.1 모듈 로드됨');
+    console.log('📚 ExamStudentAPI v6.2.1 모듈 로드됨 - subject 컬럼 수정');
 }
