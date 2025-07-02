@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>여권정보 등록 - 세종학당 문화인턴</title>
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/passport-info.css">
+    <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <a href="../index.html" class="logo">
+                    <img src="../images/logo.png" alt="세종학당 로고" class="logo-img">
+                </a>
+                <div class="nav-menu">
+                    <a href="student.html" class="nav-link">메인</a>
+                    <a href="#" class="nav-link" id="logoutBtn">로그아웃</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        <!-- 상단 안내 배너 -->
+        <div class="info-banner">
+            <div class="banner-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 7C4 5.89543 4.89543 5 6 5H18C19.1046 5 20 5.89543 20 7V17C20 18.1046 19.1046 19 18 19H6C4.89543 19 4 18.1046 4 17V7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 11H8.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 11H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 15H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="banner-content">
+                <h1 class="banner-title">여권정보 등록</h1>
+                <p class="banner-description">항공권 신청을 위해 여권정보를 등록해주세요. 등록된 정보는 안전하게 보호됩니다.</p>
+            </div>
+        </div>
+
+        <!-- 로딩 상태 -->
+        <div id="loadingState" class="loading-state">
+            <div class="spinner"></div>
+            <p>여권정보를 불러오는 중...</p>
+        </div>
+
+        <!-- 여권정보 폼 -->
+        <div id="passportForm" class="passport-form" style="display: none;">
+            <form id="passportInfoForm">
+                <!-- 기본 정보 섹션 -->
+                <div class="form-section">
+                    <h2 class="section-title">기본 정보</h2>
+                    
+                    <div class="form-group">
+                        <label for="passportNumber" class="form-label required">여권번호</label>
+                        <input type="text" id="passportNumber" name="passportNumber" class="form-input" 
+                               placeholder="예: M12345678" required pattern="[A-Z][0-9]{8}" 
+                               title="대문자 1자리 + 숫자 8자리 형식으로 입력해주세요">
+                        <span class="form-hint">대문자 1자리 + 숫자 8자리</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nameEnglish" class="form-label required">영문 이름</label>
+                        <input type="text" id="nameEnglish" name="nameEnglish" class="form-input" 
+                               placeholder="예: HONG GILDONG" required pattern="[A-Z\s]+" 
+                               title="대문자 영문만 입력 가능합니다">
+                        <span class="form-hint">여권상 영문 이름을 정확히 입력해주세요 (대문자)</span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="issueDate" class="form-label required">발급일</label>
+                            <input type="date" id="issueDate" name="issueDate" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="expiryDate" class="form-label required">만료일</label>
+                            <input type="date" id="expiryDate" name="expiryDate" class="form-input" required>
+                            <span id="expiryWarning" class="form-warning" style="display: none;"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 여권 사본 업로드 섹션 -->
+                <div class="form-section">
+                    <h2 class="section-title">여권 사본</h2>
+                    
+                    <div class="upload-container">
+                        <input type="file" id="passportImage" name="passportImage" accept="image/*" class="file-input">
+                        <label for="passportImage" class="upload-label">
+                            <div class="upload-content">
+                                <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C19.9609 20.7893 19.4696 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <p class="upload-text">클릭하여 여권 사본 업로드</p>
+                                <p class="upload-hint">JPG, PNG 형식 (최대 5MB)</p>
+                            </div>
+                        </label>
+                        
+                        <!-- 이미지 미리보기 -->
+                        <div id="imagePreview" class="image-preview" style="display: none;">
+                            <img id="previewImg" src="" alt="여권 사본 미리보기">
+                            <button type="button" id="removeImage" class="remove-image">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 버튼 그룹 -->
+                <div class="button-group">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='student.html'">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 12H5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        뒤로가기
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M16 3H20V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 14L20 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span id="submitBtnText">저장하기</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 에러 메시지 -->
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <!-- 성공 메시지 -->
+        <div id="successMessage" class="success-message" style="display: none;"></div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2024 세종학당재단. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript 모듈 -->
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        window.supabaseUrl = 'https://aazvopacnbbkvusihqva.supabase.co';
+        window.supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3MjgzMjMsImV4cCI6MjA1MTMwNDMyM30.QUfGRc-LzCI6IYDVN7e1l2HwzONGLVmfN15ShTg62Po';
+        window.supabase = createClient(window.supabaseUrl, window.supabaseKey);
+    </script>
+    <script src="../js/student/passport-info-api.js"></script>
+    <script src="../js/student/passport-info-ui.js"></script>
+</body>
+</html>
