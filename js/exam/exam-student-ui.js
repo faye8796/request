@@ -1,7 +1,11 @@
 /**
- * 🎨 수료평가 시스템 - 학생 UI 관리 모듈 v6.1.0
+ * 🎨 수료평가 시스템 - 학생 UI 관리 모듈 v6.2.0
  * 학생용 수료평가 응시 인터페이스 관리
  * 완전 독립된 학생 전용 UI 모듈
+ * 
+ * v6.2.0 업데이트:
+ * - 학생 응시 화면에서 과목명(subject) 표시 기능 추가
+ * - showCurrentQuestion() 함수에 과목 표시 로직 추가
  * 
  * v6.1.0 업데이트:
  * - 결과 화면에서 정답 비공개 처리 (보안 강화)
@@ -13,7 +17,7 @@ class ExamStudentUI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamStudentUI',
-            version: '6.1.0',
+            version: '6.2.0',
             lastUpdate: new Date().toISOString()
         };
         
@@ -35,7 +39,7 @@ class ExamStudentUI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamStudentUI v6.1.0 초기화 시작...');
+            console.log('🔄 ExamStudentUI v6.2.0 초기화 시작...');
             
             // DOM 요소 캐시
             this.cacheElements();
@@ -47,7 +51,7 @@ class ExamStudentUI {
             await this.checkEligibilityAndRender();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamStudentUI v6.1.0 초기화 완료');
+            console.log('✅ ExamStudentUI v6.2.0 초기화 완료 - 과목명 표시 기능 추가');
             return true;
             
         } catch (error) {
@@ -82,6 +86,8 @@ class ExamStudentUI {
             progressText: document.getElementById('progress-text'),
             questionContainer: document.getElementById('question-container'),
             questionNumber: document.getElementById('question-number'),
+            questionSubject: document.getElementById('question-subject'), // 🆕 v6.2.0: 과목명 요소 추가
+            questionSubjectText: document.getElementById('question-subject-text'), // 🆕 v6.2.0
             questionText: document.getElementById('question-text'),
             answerContainer: document.getElementById('answer-container'),
             prevBtn: document.getElementById('prev-btn'),
@@ -323,7 +329,7 @@ class ExamStudentUI {
     }
 
     /**
-     * 📝 현재 문제 표시
+     * 📝 현재 문제 표시 (v6.2.0: 과목명 표시 기능 추가)
      */
     showCurrentQuestion() {
         const question = this.examState.questions[this.examState.currentQuestionIndex];
@@ -334,6 +340,19 @@ class ExamStudentUI {
             this.elements.questionNumber.textContent = `문제 ${this.examState.currentQuestionIndex + 1}`;
         }
         
+        // 🆕 v6.2.0: 과목명 표시
+        if (this.elements.questionSubject && this.elements.questionSubjectText) {
+            if (question.subject && question.subject.trim()) {
+                // 과목명이 있으면 표시
+                this.elements.questionSubjectText.textContent = question.subject;
+                this.elements.questionSubject.style.display = 'flex';
+                console.log(`📚 과목명 표시: ${question.subject}`);
+            } else {
+                // 과목명이 없으면 숨기기
+                this.elements.questionSubject.style.display = 'none';
+            }
+        }
+        
         // 문제 내용
         if (this.elements.questionText) {
             this.elements.questionText.textContent = question.question_text;
@@ -341,6 +360,11 @@ class ExamStudentUI {
         
         // 답안 입력 영역
         this.renderAnswerContainer(question);
+        
+        // 아이콘 업데이트
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     }
 
     /**
@@ -773,5 +797,5 @@ class ExamStudentUI {
 // 전역에 모듈 등록
 if (typeof window !== 'undefined') {
     window.ExamStudentUI = new ExamStudentUI();
-    console.log('🎨 ExamStudentUI v6.1.0 모듈 로드됨');
+    console.log('🎨 ExamStudentUI v6.2.0 모듈 로드됨 - 과목명 표시 기능 추가');
 }
