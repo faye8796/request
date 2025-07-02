@@ -1,338 +1,328 @@
-/**
- * 항공권 관리 UI 모듈 v5.3.0
- * 항공권 신청 관련 모든 UI 렌더링을 담당
- */
+// flight-management-ui.js - 관리자용 항공권 관리 UI (6단계 상세 기능 포함)
 
-window.FlightManagementUI = (function() {
-    'use strict';
+import { FlightManagementAPI } from './flight-management-api.js';
+import './flight-management-modals.js';
 
-    console.log('🎨 FlightManagementUI 모듈 로드 시작');
+export class FlightManagementUI {
+    constructor() {
+        this.api = new FlightManagementAPI();
+        this.currentFilter = 'all';
+        this.currentSort = { field: 'created_at', order: 'desc' };
+        this.requests = [];
+        this.init();
+    }
 
-    // 항공권 신청 목록 렌더링
-    function renderFlightRequests(requests) {
-        const container = document.getElementById('flightApplications');
-        if (!container) return;
+    init() {
+        this.setupEventListeners();
+        this.loadRequests();
+    }
 
-        if (!requests || requests.length === 0) {
-            container.innerHTML = '<div class="no-results">항공권 신청 내역이 없습니다.</div>';
+    setupEventListeners() {
+        // 필터 이벤트
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.currentFilter = btn.dataset.filter;
+                this.filterRequests();
+            });
+        });
+
+        // 검색 이벤트
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.searchRequests(e.target.value);
+            });
+        }
+
+        // 정렬 이벤트
+        const sortSelect = document.getElementById('sortSelect');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', (e) => {
+                const [field, order] = e.target.value.split('-');
+                this.currentSort = { field, order };
+                this.sortRequests();
+            });
+        }
+    }
+
+    async loadRequests() {
+        this.showLoading();
+        try {
+            this.requests = await this.api.getAllRequests();
+            this.renderRequests(this.requests);
+            this.updateStats();
+        } catch (error) {
+            console.error('Error loading requests:', error);
+            this.showError('항공권 신청 목록을 불러오는 중 오류가 발생했습니다.');
+        }
+    }
+
+    renderRequests(requests) {
+        const tbody = document.getElementById('requestsTableBody');
+        if (!tbody) return;
+
+        if (requests.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="no-data">
+                        <div class="no-data-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                            </svg>
+                        </div>
+                        <p>항공권 신청 내역이 없습니다.</p>
+                    </td>
+                </tr>
+            `;
             return;
         }
 
-        container.innerHTML = requests.map(request => createFlightRequestCard(request)).join('');
-        
-        // Lucide 아이콘 재생성
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
+        tbody.innerHTML = requests.map(request => `
+            <tr data-id="${request.id}">
+                <td>${new Date(request.created_at).toLocaleDateString('ko-KR')}</td>
+                <td>
+                    <div class="user-info">
+                        <strong>${request.user_profiles.name}</strong>
+                        <small>${request.user_profiles.university}</small>
+                    </div>
+                </td>
+                <td>${request.user_profiles.institute_info?.name_ko || '-'}</td>
+                <td>
+                    <span class="badge ${request.purchase_type === 'direct' ? 'badge-info' : 'badge-warning'}">
+                        ${request.purchase_type === 'direct' ? '직접구매' : '구매대행'}
+                    </span>
+                </td>
+                <td>${new Date(request.departure_date).toLocaleDateString('ko-KR')}</td>
+                <td>${new Date(request.return_date).toLocaleDateString('ko-KR')}</td>
+                <td>
+                    <span class="status-badge status-${request.status}">
+                        ${this.getStatusText(request.status)}
+                    </span>
+                </td>
+                <td class="actions">
+                    ${this.renderActions(request)}
+                </td>
+            </tr>
+        `).join('');
+
+        // 액션 버튼 이벤트 바인딩
+        this.bindActionEvents();
     }
 
-    // 항공권 신청 카드 생성
-    function createFlightRequestCard(request) {
-        const userName = request.user_profiles?.name || '알 수 없음';
-        const institute = request.user_profiles?.sejong_institute || '미설정';
-        const field = request.user_profiles?.field || '미설정';
-        const submittedDate = formatDate(request.created_at);
-        const departureDate = formatDate(request.departure_date);
-        const returnDate = formatDate(request.return_date);
-        const statusInfo = getStatusInfo(request.status);
-        const purchaseTypeText = request.purchase_type === 'direct' ? '직접구매' : '구매대행';
-        const purchaseTypeClass = request.purchase_type === 'direct' ? 'direct' : 'agency';
+    renderActions(request) {
+        const actions = [];
 
-        return `
-            <div class="flight-request-card" onclick="showDetailModal('${request.id}')">
-                <div class="flight-request-header">
-                    <div class="student-info">
-                        <h3>${escapeHtml(userName)}</h3>
-                        <p class="student-details">${escapeHtml(institute)} • ${escapeHtml(field)}</p>
-                    </div>
-                    <div class="request-meta">
-                        <span class="purchase-type ${purchaseTypeClass}">
-                            <i data-lucide="${request.purchase_type === 'direct' ? 'credit-card' : 'building'}"></i>
-                            ${purchaseTypeText}
-                        </span>
-                        <span class="status-badge ${statusInfo.class}">
-                            ${statusInfo.text}
-                        </span>
-                    </div>
-                </div>
-                
-                <div class="flight-request-body">
-                    <div class="flight-info">
-                        <div class="flight-route">
-                            <div class="airport">
-                                <i data-lucide="plane-takeoff"></i>
-                                <span>${escapeHtml(request.departure_airport)}</span>
-                            </div>
-                            <div class="route-arrow">→</div>
-                            <div class="airport">
-                                <i data-lucide="plane-landing"></i>
-                                <span>${escapeHtml(request.arrival_airport)}</span>
-                            </div>
-                        </div>
-                        <div class="flight-dates">
-                            <span class="date-item">출국: ${departureDate}</span>
-                            <span class="date-separator">•</span>
-                            <span class="date-item">귀국: ${returnDate}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="request-footer">
-                        <span class="submission-date">
-                            <i data-lucide="calendar"></i>
-                            신청일: ${submittedDate}
-                        </span>
-                        ${request.status === 'rejected' && request.rejection_reason ? 
-                            `<span class="rejection-reason">
-                                <i data-lucide="alert-circle"></i>
-                                ${escapeHtml(request.rejection_reason)}
-                            </span>` : ''}
-                    </div>
-                </div>
-                
-                <div class="flight-request-actions">
-                    <button class="btn-icon" title="상세보기">
-                        <i data-lucide="eye"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-    }
+        // 상세보기는 항상 표시
+        actions.push(`
+            <button class="btn-icon" 
+                    title="상세보기" 
+                    onclick="window.flightModals.showDetailModal(${JSON.stringify(request).replace(/"/g, '&quot;')})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+            </button>
+        `);
 
-    // 상세 모달 렌더링
-    function renderDetailModal(request) {
-        const modalBody = document.getElementById('modalBody');
-        const modalFooter = document.getElementById('modalFooter');
-        
-        if (!modalBody || !modalFooter) return;
+        // 여권정보 보기
+        actions.push(`
+            <button class="btn-icon" 
+                    title="여권정보" 
+                    onclick="window.flightModals.showPassportModal('${request.user_id}')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+            </button>
+        `);
 
-        const userName = request.user_profiles?.name || '알 수 없음';
-        const email = request.user_profiles?.email || '알 수 없음';
-        const institute = request.user_profiles?.sejong_institute || '미설정';
-        const field = request.user_profiles?.field || '미설정';
-        const dispatchDuration = request.user_profiles?.dispatch_duration || '미설정';
-        const statusInfo = getStatusInfo(request.status);
-        const purchaseTypeText = request.purchase_type === 'direct' ? '직접구매' : '구매대행';
-
-        // 모달 본문
-        modalBody.innerHTML = `
-            <div class="detail-section">
-                <h3>학생 정보</h3>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label>이름</label>
-                        <span>${escapeHtml(userName)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>이메일</label>
-                        <span>${escapeHtml(email)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>파견 학당</label>
-                        <span>${escapeHtml(institute)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>분야</label>
-                        <span>${escapeHtml(field)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>파견 기간</label>
-                        <span>${dispatchDuration}일</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="detail-section">
-                <h3>항공편 정보</h3>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label>구매 방식</label>
-                        <span>${purchaseTypeText}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>출발 공항</label>
-                        <span>${escapeHtml(request.departure_airport)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>도착 공항</label>
-                        <span>${escapeHtml(request.arrival_airport)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>출국일</label>
-                        <span>${formatDate(request.departure_date)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>귀국일</label>
-                        <span>${formatDate(request.return_date)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>체류 기간</label>
-                        <span>${calculateStayDuration(request.departure_date, request.return_date)}일</span>
-                    </div>
-                </div>
-            </div>
-
-            ${request.passport_info ? `
-            <div class="detail-section">
-                <h3>여권 정보</h3>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label>영문명</label>
-                        <span>${escapeHtml(request.passport_info.name_english)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>여권번호</label>
-                        <span>${escapeHtml(request.passport_info.passport_number)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>발급일</label>
-                        <span>${formatDate(request.passport_info.issue_date)}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>만료일</label>
-                        <span>${formatDate(request.passport_info.expiry_date)}</span>
-                    </div>
-                </div>
-            </div>
-            ` : '<div class="detail-section"><p class="no-data">여권 정보가 등록되지 않았습니다.</p></div>'}
-
-            <div class="detail-section">
-                <h3>제출 서류</h3>
-                <div class="document-list">
-                    ${request.flight_image_url ? 
-                        `<a href="${request.flight_image_url}" target="_blank" class="document-link">
-                            <i data-lucide="file-image"></i>
-                            항공권 정보 이미지
-                        </a>` : ''}
-                    ${request.purchase_link ? 
-                        `<a href="${request.purchase_link}" target="_blank" class="document-link">
-                            <i data-lucide="external-link"></i>
-                            구매처 링크
-                        </a>` : ''}
-                    ${request.receipt_url ? 
-                        `<a href="${request.receipt_url}" target="_blank" class="document-link">
-                            <i data-lucide="receipt"></i>
-                            영수증
-                        </a>` : ''}
-                    ${request.ticket_url ? 
-                        `<a href="${request.ticket_url}" target="_blank" class="document-link">
-                            <i data-lucide="ticket"></i>
-                            항공권
-                        </a>` : ''}
-                    ${request.admin_ticket_url ? 
-                        `<a href="${request.admin_ticket_url}" target="_blank" class="document-link">
-                            <i data-lucide="ticket"></i>
-                            구매대행 항공권
-                        </a>` : ''}
-                </div>
-            </div>
-
-            <div class="detail-section">
-                <h3>처리 상태</h3>
-                <div class="status-info">
-                    <span class="status-badge ${statusInfo.class}">${statusInfo.text}</span>
-                    ${request.rejection_reason ? 
-                        `<p class="rejection-detail">반려 사유: ${escapeHtml(request.rejection_reason)}</p>` : ''}
-                    <p class="timestamp">신청일: ${formatDateTime(request.created_at)}</p>
-                    <p class="timestamp">최종 수정: ${formatDateTime(request.updated_at)}</p>
-                </div>
-            </div>
-        `;
-
-        // 모달 푸터 (액션 버튼)
-        modalFooter.innerHTML = '';
-        
+        // 상태별 액션 버튼
         if (request.status === 'pending') {
-            modalFooter.innerHTML = `
-                <button class="btn secondary" onclick="closeDetailModal()">닫기</button>
-                <button class="btn danger" onclick="rejectRequest('${request.id}')">
-                    <i data-lucide="x-circle"></i>
-                    반려
+            // 승인 버튼
+            actions.push(`
+                <button class="btn-icon btn-success" 
+                        title="승인" 
+                        onclick="window.flightModals.showApproveModal(${JSON.stringify(request).replace(/"/g, '&quot;')})">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
                 </button>
-                <button class="btn primary" onclick="approveRequest('${request.id}')">
-                    <i data-lucide="check-circle"></i>
-                    승인
+            `);
+
+            // 반려 버튼
+            actions.push(`
+                <button class="btn-icon btn-danger" 
+                        title="반려" 
+                        onclick="window.flightModals.showRejectModal(${JSON.stringify(request).replace(/"/g, '&quot;')})">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
                 </button>
-            `;
-        } else if (request.status === 'approved' && request.purchase_type === 'agency' && !request.admin_ticket_url) {
-            modalFooter.innerHTML = `
-                <button class="btn secondary" onclick="closeDetailModal()">닫기</button>
-                <button class="btn primary" onclick="showUploadTicketModal('${request.id}')">
-                    <i data-lucide="upload"></i>
-                    항공권 등록
-                </button>
-            `;
-        } else {
-            modalFooter.innerHTML = `
-                <button class="btn primary" onclick="closeDetailModal()">닫기</button>
-            `;
+            `);
         }
 
-        // Lucide 아이콘 재생성
-        setTimeout(() => {
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
+        // 구매대행이고 승인된 상태에서 아직 항공권이 등록되지 않은 경우
+        if (request.purchase_type === 'agency' && 
+            request.status === 'approved' && 
+            !request.admin_ticket_url) {
+            actions.push(`
+                <button class="btn-icon btn-primary" 
+                        title="항공권 등록" 
+                        onclick="window.flightModals.showUploadTicketModal(${JSON.stringify(request).replace(/"/g, '&quot;')})">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </button>
+            `);
+        }
+
+        return actions.join('');
+    }
+
+    bindActionEvents() {
+        // window.flightModals를 통해 모달 기능에 접근
+        if (window.flightManagementUI) {
+            window.flightManagementUI = this;
+        }
+    }
+
+    filterRequests() {
+        let filtered = [...this.requests];
+
+        // 필터 적용
+        if (this.currentFilter === 'direct') {
+            filtered = filtered.filter(r => r.purchase_type === 'direct');
+        } else if (this.currentFilter === 'agency') {
+            filtered = filtered.filter(r => r.purchase_type === 'agency');
+        } else if (this.currentFilter === 'pending') {
+            filtered = filtered.filter(r => r.status === 'pending');
+        } else if (this.currentFilter === 'approved') {
+            filtered = filtered.filter(r => r.status === 'approved');
+        } else if (this.currentFilter === 'completed') {
+            filtered = filtered.filter(r => r.status === 'completed');
+        }
+
+        this.renderRequests(filtered);
+    }
+
+    searchRequests(query) {
+        if (!query) {
+            this.filterRequests();
+            return;
+        }
+
+        const filtered = this.requests.filter(request => {
+            const searchFields = [
+                request.user_profiles.name,
+                request.user_profiles.university,
+                request.user_profiles.institute_info?.name_ko,
+                request.departure_airport,
+                request.arrival_airport
+            ];
+
+            return searchFields.some(field => 
+                field && field.toLowerCase().includes(query.toLowerCase())
+            );
+        });
+
+        this.renderRequests(filtered);
+    }
+
+    sortRequests() {
+        const sorted = [...this.requests].sort((a, b) => {
+            let aVal, bVal;
+
+            switch (this.currentSort.field) {
+                case 'created_at':
+                    aVal = new Date(a.created_at);
+                    bVal = new Date(b.created_at);
+                    break;
+                case 'departure_date':
+                    aVal = new Date(a.departure_date);
+                    bVal = new Date(b.departure_date);
+                    break;
+                case 'name':
+                    aVal = a.user_profiles.name;
+                    bVal = b.user_profiles.name;
+                    break;
+                default:
+                    return 0;
             }
-        }, 100);
+
+            if (this.currentSort.order === 'asc') {
+                return aVal > bVal ? 1 : -1;
+            } else {
+                return aVal < bVal ? 1 : -1;
+            }
+        });
+
+        this.renderRequests(sorted);
     }
 
-    // 상태 정보 가져오기
-    function getStatusInfo(status) {
-        const statusMap = {
-            'pending': { text: '승인대기', class: 'pending' },
-            'approved': { text: '승인됨', class: 'approved' },
-            'rejected': { text: '반려됨', class: 'rejected' },
-            'completed': { text: '완료', class: 'completed' }
+    updateStats() {
+        const stats = {
+            total: this.requests.length,
+            pending: this.requests.filter(r => r.status === 'pending').length,
+            approved: this.requests.filter(r => r.status === 'approved').length,
+            completed: this.requests.filter(r => r.status === 'completed').length,
+            direct: this.requests.filter(r => r.purchase_type === 'direct').length,
+            agency: this.requests.filter(r => r.purchase_type === 'agency').length
         };
-        return statusMap[status] || { text: '알 수 없음', class: '' };
-    }
 
-    // 체류 기간 계산
-    function calculateStayDuration(departureDate, returnDate) {
-        const departure = new Date(departureDate);
-        const returnDay = new Date(returnDate);
-        const diffTime = Math.abs(returnDay - departure);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays;
-    }
-
-    // 날짜 포맷
-    function formatDate(dateString) {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
+        // 통계 업데이트
+        Object.entries(stats).forEach(([key, value]) => {
+            const elem = document.getElementById(`stat-${key}`);
+            if (elem) elem.textContent = value;
         });
     }
 
-    // 날짜/시간 포맷
-    function formatDateTime(dateString) {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+    getStatusText(status) {
+        const statusMap = {
+            'pending': '대기중',
+            'approved': '승인됨',
+            'rejected': '반려됨',
+            'completed': '완료'
+        };
+        return statusMap[status] || status;
     }
 
-    // HTML 이스케이프
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    showLoading() {
+        const tbody = document.getElementById('requestsTableBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="loading">
+                        <div class="spinner"></div>
+                        <p>데이터를 불러오는 중...</p>
+                    </td>
+                </tr>
+            `;
+        }
     }
 
-    // Public API
-    return {
-        renderFlightRequests,
-        renderDetailModal
-    };
+    showError(message) {
+        const tbody = document.getElementById('requestsTableBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="error">
+                        <div class="error-icon">⚠️</div>
+                        <p>${message}</p>
+                        <button class="btn btn-primary" onclick="location.reload()">
+                            다시 시도
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+}
 
-})();
-
-console.log('✅ FlightManagementUI 모듈 로드 완료');
+// 전역 인스턴스 생성
+window.flightManagementUI = new FlightManagementUI();

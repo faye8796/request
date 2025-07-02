@@ -3,565 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>항공권 구매 신청 관리 - 세종학당 문화인턴 지원 시스템</title>
-    
-    <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=5.3.0">
-    <link rel="stylesheet" href="../css/admin.css?v=5.3.0">
-    <link rel="stylesheet" href="../css/flight-management.css?v=5.3.0">
-    
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
-    <!-- Supabase JavaScript Client -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <title>항공권 관리 - 세종학당 문화인턴 관리 시스템</title>
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/flight-management.css">
 </head>
 <body>
-    <div class="flight-management-container">
-        <!-- 헤더 섹션 -->
-        <div class="management-header">
-            <div class="header-content">
-                <div class="header-title">
-                    <h1>항공권 구매 신청 관리</h1>
-                    <p>학생들의 항공권 구매 신청을 검토하고 승인 처리를 진행할 수 있습니다.</p>
-                </div>
-                <div class="header-actions">
-                    <button class="back-btn" onclick="goBackToDashboard()">
-                        <i data-lucide="arrow-left"></i>
-                        대시보드로 돌아가기
-                    </button>
-                </div>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="admin.html" class="nav-logo">세종학당 관리자</a>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="institute-management.html" class="nav-link">학당 관리</a>
+                </li>
+                <li class="nav-item">
+                    <a href="equipment-management.html" class="nav-link">교구 신청 관리</a>
+                </li>
+                <li class="nav-item">
+                    <a href="flight-management.html" class="nav-link active">항공권 관리</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" onclick="logout()">로그아웃</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="page-header">
+            <h1 class="page-title">항공권 신청 관리</h1>
+        </div>
+
+        <!-- 통계 섹션 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">전체 신청</div>
+                <div class="stat-value" id="stat-total">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">대기중</div>
+                <div class="stat-value" id="stat-pending">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">승인됨</div>
+                <div class="stat-value" id="stat-approved">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">완료</div>
+                <div class="stat-value" id="stat-completed">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">직접구매</div>
+                <div class="stat-value" id="stat-direct">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">구매대행</div>
+                <div class="stat-value" id="stat-agency">0</div>
             </div>
         </div>
 
-        <!-- 로딩 상태 -->
-        <div id="loadingState" class="loading-state">
-            <div class="loading-spinner"></div>
-            <p>데이터를 불러오는 중...</p>
-        </div>
-
-        <!-- 에러 상태 -->
-        <div id="errorState" class="error-state" style="display: none;">
-            <p>데이터를 불러올 수 없습니다.</p>
-            <button class="btn primary" onclick="retryDataLoad()">다시 시도</button>
-        </div>
-
-        <!-- 메인 콘텐츠 -->
-        <div id="mainContent" style="display: none;">
-            <!-- 핵심 운영 통계 카드 -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <i data-lucide="plane" class="stat-icon blue"></i>
-                    <div class="stat-info">
-                        <p class="stat-label">전체 신청</p>
-                        <p id="totalCount" class="stat-value">0</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <i data-lucide="clock" class="stat-icon orange"></i>
-                    <div class="stat-info">
-                        <p class="stat-label">대기중</p>
-                        <p id="pendingCount" class="stat-value">0</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <i data-lucide="check-circle" class="stat-icon green"></i>
-                    <div class="stat-info">
-                        <p class="stat-label">승인됨</p>
-                        <p id="approvedCount" class="stat-value">0</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <i data-lucide="x-circle" class="stat-icon red"></i>
-                    <div class="stat-info">
-                        <p class="stat-label">반려됨</p>
-                        <p id="rejectedCount" class="stat-value">0</p>
-                    </div>
-                </div>
+        <!-- 필터 및 검색 -->
+        <div class="controls-section">
+            <div class="filter-group">
+                <button class="filter-btn active" data-filter="all">전체</button>
+                <button class="filter-btn" data-filter="direct">직접구매</button>
+                <button class="filter-btn" data-filter="agency">구매대행</button>
+                <button class="filter-btn" data-filter="pending">대기중</button>
+                <button class="filter-btn" data-filter="approved">승인됨</button>
+                <button class="filter-btn" data-filter="completed">완료</button>
             </div>
-
-            <!-- 필터 탭 -->
-            <div class="filter-tabs">
-                <button class="filter-tab active" data-filter="all">
-                    전체
-                    <span class="tab-count" id="allCount">0</span>
-                </button>
-                <button class="filter-tab" data-filter="direct">
-                    직접구매
-                    <span class="tab-count" id="directCount">0</span>
-                </button>
-                <button class="filter-tab" data-filter="agency">
-                    구매대행
-                    <span class="tab-count" id="agencyCount">0</span>
-                </button>
-            </div>
-
-            <!-- 검색 -->
-            <div class="search-container">
-                <div class="search-box">
-                    <i data-lucide="search" class="search-icon"></i>
-                    <input type="text" id="searchInput" placeholder="학생 이름으로 검색...">
-                </div>
-            </div>
-
-            <!-- 항공권 신청 목록 -->
-            <div id="flightApplications" class="flight-applications">
-                <!-- 동적으로 생성될 항공권 신청 목록 -->
+            <div class="search-group">
+                <input type="text" 
+                       id="searchInput" 
+                       class="search-input" 
+                       placeholder="이름, 학교, 학당, 공항으로 검색">
+                <select id="sortSelect" class="sort-select">
+                    <option value="created_at-desc">최신 신청순</option>
+                    <option value="created_at-asc">오래된 신청순</option>
+                    <option value="departure_date-asc">출국일 빠른순</option>
+                    <option value="departure_date-desc">출국일 늦은순</option>
+                    <option value="name-asc">이름순</option>
+                </select>
             </div>
         </div>
-    </div>
 
-    <!-- 상세 보기 모달 -->
-    <div id="detailModal" class="modal" style="display: none;">
-        <div class="modal-content flight-detail-modal">
-            <div class="modal-header">
-                <h2>항공권 신청 상세 정보</h2>
-                <button class="modal-close" onclick="closeDetailModal()">
-                    <i data-lucide="x"></i>
-                </button>
-            </div>
-            <div id="modalBody" class="modal-body">
-                <!-- 동적으로 채워질 내용 -->
-            </div>
-            <div id="modalFooter" class="modal-footer">
-                <!-- 동적으로 채워질 액션 버튼들 -->
-            </div>
+        <!-- 테이블 -->
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>신청일</th>
+                        <th>신청자</th>
+                        <th>파견 학당</th>
+                        <th>구매 방식</th>
+                        <th>출국일</th>
+                        <th>귀국일</th>
+                        <th>상태</th>
+                        <th width="180">작업</th>
+                    </tr>
+                </thead>
+                <tbody id="requestsTableBody">
+                    <!-- 동적으로 생성 -->
+                </tbody>
+            </table>
         </div>
-    </div>
+    </main>
 
-    <!-- 구매대행 항공권 등록 모달 -->
-    <div id="uploadTicketModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>구매대행 항공권 등록</h2>
-                <button class="modal-close" onclick="closeUploadTicketModal()">
-                    <i data-lucide="x"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>항공권 파일 업로드</label>
-                    <input type="file" id="ticketFileInput" accept=".pdf,.jpg,.jpeg,.png" class="file-input">
-                    <p class="form-help">PDF, JPG, PNG 형식 (최대 10MB)</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn secondary" onclick="closeUploadTicketModal()">취소</button>
-                <button class="btn primary" onclick="uploadAdminTicket()">
-                    <i data-lucide="upload"></i>
-                    업로드
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- JavaScript Files -->
-    <!-- 1. 기본 설정 모듈 -->
-    <script src="../js/config.js?v=5.3.0"></script>
-    <script src="../js/auth.js?v=5.3.0"></script>
-    <script src="../js/utils.js?v=5.3.0"></script>
-    
-    <!-- 2. Supabase 모듈들 -->
-    <script src="../js/supabase/supabase-core.js?v=5.3.0"></script>
-    <script src="../js/supabase/supabase-student.js?v=5.3.0"></script>
-    <script src="../js/supabase/supabase-admin.js?v=5.3.0"></script>
-    <script src="../js/supabase-client.js?v=5.3.0"></script>
-    
-    <!-- 3. 항공권 관리 모듈들 -->
-    <script src="../js/admin/flight-management-api.js?v=5.3.0"></script>
-    <script src="../js/admin/flight-management-ui.js?v=5.3.0"></script>
-    
-    <script>
-        // 전역 변수
-        let currentFilter = 'all';
-        let currentSearchTerm = '';
-        let selectedRequestId = null;
-
-        // 페이지 초기화
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('✈️ 항공권 관리 페이지 초기화 시작');
-            
-            try {
-                // Lucide 아이콘 초기화
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-
-                // 관리자 인증 확인
-                if (!checkAdminAuthentication()) {
-                    return;
-                }
-                
-                // 항공권 관리 초기화
-                await initializeFlightManagement();
-                
-            } catch (error) {
-                console.error('❌ 항공권 관리 페이지 초기화 오류:', error);
-                showErrorState();
-            }
-        });
-
-        // 관리자 인증 확인
-        function checkAdminAuthentication() {
-            console.log('🔐 관리자 인증 확인 중...');
-            
-            const adminSession = localStorage.getItem('adminSession');
-            if (!adminSession) {
-                console.warn('⚠️ 관리자 세션이 없습니다');
-                alert('관리자 로그인이 필요합니다.');
-                window.location.href = '../admin.html';
-                return false;
-            }
-
-            console.log('✅ 관리자 인증 확인됨');
-            return true;
-        }
-
-        // 항공권 관리 초기화
-        async function initializeFlightManagement() {
-            console.log('🚀 항공권 관리 시스템 초기화 중...');
-            
-            try {
-                showLoadingState();
-
-                // Supabase 클라이언트 초기화 대기
-                await waitForSupabaseClient();
-
-                // FlightManagementAPI 초기화 대기
-                await waitForFlightManagementAPI();
-
-                // 데이터 로드
-                await loadAllData();
-
-                // 이벤트 리스너 설정
-                setupEventListeners();
-
-                // 성공시 메인 콘텐츠 표시
-                showMainContent();
-                
-                console.log('✅ 항공권 관리 시스템 초기화 완료');
-
-            } catch (error) {
-                console.error('❌ 항공권 관리 초기화 실패:', error);
-                showErrorState(error.message);
+    <script type="module">
+        import { supabase } from '../js/shared/supabaseClient.js';
+        
+        // 로그아웃 함수
+        window.logout = async function() {
+            const { error } = await supabase.auth.signOut();
+            if (!error) {
+                window.location.href = '../index.html';
             }
         }
 
-        // Supabase 클라이언트 초기화 대기
-        function waitForSupabaseClient() {
-            return new Promise((resolve, reject) => {
-                let attempts = 0;
-                const maxAttempts = 50;
-
-                const checkSupabase = () => {
-                    attempts++;
-                    
-                    if (window.SupabaseAPI) {
-                        console.log('✅ Supabase 클라이언트 준비됨');
-                        resolve();
-                    } else if (attempts >= maxAttempts) {
-                        reject(new Error('Supabase 클라이언트 초기화 시간 초과'));
-                    } else {
-                        setTimeout(checkSupabase, 100);
-                    }
-                };
-
-                checkSupabase();
-            });
-        }
-
-        // FlightManagementAPI 초기화 대기
-        function waitForFlightManagementAPI() {
-            return new Promise((resolve, reject) => {
-                let attempts = 0;
-                const maxAttempts = 30;
-
-                const checkAPI = () => {
-                    attempts++;
-                    
-                    if (window.FlightManagementAPI) {
-                        console.log('✅ FlightManagementAPI 준비됨');
-                        resolve();
-                    } else if (attempts >= maxAttempts) {
-                        reject(new Error('FlightManagementAPI 초기화 시간 초과'));
-                    } else {
-                        setTimeout(checkAPI, 100);
-                    }
-                };
-
-                checkAPI();
-            });
-        }
-
-        // 모든 데이터 로드
-        async function loadAllData() {
-            console.log('📊 데이터 로드 시작...');
-
-            try {
-                // 통계 로드
-                await loadStatistics();
-                
-                // 항공권 신청 목록 로드
-                await loadFlightRequests();
-
-                console.log('✅ 모든 데이터 로드 완료');
-
-            } catch (error) {
-                console.error('❌ 데이터 로드 실패:', error);
-                throw error;
-            }
-        }
-
-        // 통계 로드
-        async function loadStatistics() {
-            try {
-                const stats = await FlightManagementAPI.getStatistics();
-                
-                updateElementText('#totalCount', stats.total);
-                updateElementText('#pendingCount', stats.pending);
-                updateElementText('#approvedCount', stats.approved);
-                updateElementText('#rejectedCount', stats.rejected);
-                updateElementText('#allCount', stats.total);
-                updateElementText('#directCount', stats.direct);
-                updateElementText('#agencyCount', stats.agency);
-
-                console.log('📊 통계 데이터 로드 완료:', stats);
-
-            } catch (error) {
-                console.error('❌ 통계 데이터 로드 실패:', error);
-            }
-        }
-
-        // 항공권 신청 목록 로드
-        async function loadFlightRequests() {
-            try {
-                const requests = await FlightManagementAPI.getFlightRequests(currentFilter, currentSearchTerm);
-                
-                if (window.FlightManagementUI) {
-                    FlightManagementUI.renderFlightRequests(requests);
-                }
-
-                console.log(`📋 항공권 신청 목록 로드 완료: ${requests.length}건`);
-
-            } catch (error) {
-                console.error('❌ 항공권 신청 목록 로드 실패:', error);
-                document.getElementById('flightApplications').innerHTML = 
-                    '<div class="no-results">항공권 신청 목록을 불러올 수 없습니다.</div>';
-            }
-        }
-
-        // 이벤트 리스너 설정
-        function setupEventListeners() {
-            console.log('🔧 이벤트 리스너 설정 중...');
-
-            // 필터 탭
-            document.querySelectorAll('.filter-tab').forEach(tab => {
-                tab.addEventListener('click', handleFilterChange);
-            });
-
-            // 검색
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', debounce(handleSearch, 300));
-            }
-
-            console.log('✅ 이벤트 리스너 설정 완료');
-        }
-
-        // 필터 변경 처리
-        function handleFilterChange(event) {
-            const filter = event.currentTarget.dataset.filter;
-            if (filter === currentFilter) return;
-
-            // 활성 탭 변경
-            document.querySelectorAll('.filter-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.currentTarget.classList.add('active');
-
-            currentFilter = filter;
-            loadFlightRequests();
-        }
-
-        // 검색 처리
-        function handleSearch(event) {
-            currentSearchTerm = event.target.value.trim();
-            loadFlightRequests();
-        }
-
-        // 대시보드로 돌아가기
-        function goBackToDashboard() {
-            console.log('🔙 대시보드로 돌아가기');
-            window.location.href = '../admin.html';
-        }
-
-        // 데이터 재시도
-        function retryDataLoad() {
-            initializeFlightManagement();
-        }
-
-        // 상세 보기 모달
-        async function showDetailModal(requestId) {
-            try {
-                selectedRequestId = requestId;
-                const request = await FlightManagementAPI.getFlightRequestDetail(requestId);
-                
-                if (window.FlightManagementUI) {
-                    FlightManagementUI.renderDetailModal(request);
-                }
-                
-                document.getElementById('detailModal').style.display = 'flex';
-            } catch (error) {
-                console.error('❌ 상세 정보 로드 실패:', error);
-                alert('상세 정보를 불러올 수 없습니다.');
-            }
-        }
-
-        function closeDetailModal() {
-            document.getElementById('detailModal').style.display = 'none';
-            selectedRequestId = null;
-        }
-
-        // 구매대행 티켓 업로드 모달
-        function showUploadTicketModal(requestId) {
-            selectedRequestId = requestId;
-            document.getElementById('uploadTicketModal').style.display = 'flex';
-        }
-
-        function closeUploadTicketModal() {
-            document.getElementById('uploadTicketModal').style.display = 'none';
-            document.getElementById('ticketFileInput').value = '';
-            selectedRequestId = null;
-        }
-
-        async function uploadAdminTicket() {
-            const fileInput = document.getElementById('ticketFileInput');
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                alert('파일을 선택해주세요.');
+        // 인증 체크
+        async function checkAuth() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                window.location.href = '../index.html';
                 return;
             }
 
-            try {
-                showLoadingState();
-                
-                await FlightManagementAPI.uploadAdminTicket(selectedRequestId, file);
-                
-                alert('항공권이 성공적으로 등록되었습니다.');
-                closeUploadTicketModal();
-                await loadFlightRequests();
-                
-            } catch (error) {
-                console.error('❌ 항공권 업로드 실패:', error);
-                alert('항공권 업로드에 실패했습니다.');
-            } finally {
-                showMainContent();
+            // 관리자 권한 체크
+            const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('user_type')
+                .eq('id', user.id)
+                .single();
+
+            if (!profile || profile.user_type !== 'admin') {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '../index.html';
             }
         }
 
-        // 승인 처리
-        async function approveRequest(requestId) {
-            if (!confirm('이 신청을 승인하시겠습니까?')) return;
-            
-            try {
-                showLoadingState();
-                
-                await FlightManagementAPI.updateRequestStatus(requestId, 'approved');
-                
-                alert('신청이 승인되었습니다.');
-                closeDetailModal();
-                await loadAllData();
-                
-            } catch (error) {
-                console.error('❌ 승인 처리 실패:', error);
-                alert('승인 처리에 실패했습니다.');
-            } finally {
-                showMainContent();
-            }
-        }
-
-        // 반려 처리
-        async function rejectRequest(requestId) {
-            const reason = prompt('반려 사유를 입력해주세요:');
-            if (!reason) return;
-            
-            try {
-                showLoadingState();
-                
-                await FlightManagementAPI.updateRequestStatus(requestId, 'rejected', reason);
-                
-                alert('신청이 반려되었습니다.');
-                closeDetailModal();
-                await loadAllData();
-                
-            } catch (error) {
-                console.error('❌ 반려 처리 실패:', error);
-                alert('반려 처리에 실패했습니다.');
-            } finally {
-                showMainContent();
-            }
-        }
-
-        // UI 상태 관리 함수들
-        function showLoadingState() {
-            document.getElementById('loadingState').style.display = 'block';
-            document.getElementById('errorState').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'none';
-        }
-
-        function showErrorState(message = '') {
-            document.getElementById('loadingState').style.display = 'none';
-            document.getElementById('errorState').style.display = 'block';
-            document.getElementById('mainContent').style.display = 'none';
-            
-            if (message) {
-                const errorElement = document.querySelector('#errorState p');
-                if (errorElement) {
-                    errorElement.textContent = `오류: ${message}`;
-                }
-            }
-        }
-
-        function showMainContent() {
-            document.getElementById('loadingState').style.display = 'none';
-            document.getElementById('errorState').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
-            
-            // 아이콘 재생성
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-        }
-
-        // 유틸리티 함수들
-        function updateElementText(selector, text) {
-            const element = document.querySelector(selector);
-            if (element) {
-                element.textContent = text;
-            }
-        }
-
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // 전역 함수로 노출
-        window.showDetailModal = showDetailModal;
-        window.closeDetailModal = closeDetailModal;
-        window.showUploadTicketModal = showUploadTicketModal;
-        window.closeUploadTicketModal = closeUploadTicketModal;
-        window.uploadAdminTicket = uploadAdminTicket;
-        window.approveRequest = approveRequest;
-        window.rejectRequest = rejectRequest;
+        // 페이지 로드 시 실행
+        checkAuth();
     </script>
+    
+    <!-- 항공권 관리 UI 모듈 -->
+    <script type="module" src="../js/admin/flight-management-ui.js"></script>
 </body>
 </html>
