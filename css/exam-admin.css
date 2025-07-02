@@ -1,7 +1,12 @@
 /**
- * 📝 수료평가 시스템 - 관리자 전용 스타일시트 v5.1.2
+ * 📝 수료평가 시스템 - 관리자 전용 스타일시트 v6.1.0
  * 기존 시스템과 완전 분리된 독립 스타일
  * 문제 관리, 시험 결과 조회를 위한 현대적인 UI
+ * 
+ * v6.1.0 업데이트:
+ * - subject(대주제/과목명) 필드 표시를 위한 스타일 추가
+ * - 문제 카드 대주제 표시 스타일
+ * - 문제 추가/수정 모달 대주제 입력 필드 스타일
  * 
  * v5.1.2 업데이트:
  * - 복수 정답 태그 스타일 추가
@@ -48,6 +53,11 @@
     --exam-gray-700: #374151;
     --exam-gray-800: #1f2937;
     --exam-gray-900: #111827;
+    
+    /* 대주제 전용 색상 (v6.1.0 신규) */
+    --exam-subject: #8b5cf6;
+    --exam-subject-hover: #7c3aed;
+    --exam-subject-light: #ede9fe;
     
     /* 폰트 설정 */
     --exam-font-sans: system-ui, -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
@@ -474,6 +484,26 @@
     align-items: center;
 }
 
+/* 🎯 대주제 표시 스타일 (v6.1.0 신규) */
+.exam-question-subject {
+    background: var(--exam-subject);
+    color: var(--exam-white);
+    padding: var(--exam-space-1) var(--exam-space-3);
+    border-radius: var(--exam-radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    box-shadow: var(--exam-shadow-sm);
+    border: 1px solid var(--exam-subject-hover);
+}
+
+.exam-question-subject:empty {
+    display: none;
+}
+
 .exam-question-type {
     background: var(--exam-info);
     color: var(--exam-white);
@@ -509,9 +539,34 @@
     color: var(--exam-warning);
 }
 
+/* 🎯 문제 순서 표시 개선 */
+.exam-question-order {
+    background: var(--exam-gray-200);
+    color: var(--exam-gray-700);
+    padding: var(--exam-space-1) var(--exam-space-3);
+    border-radius: var(--exam-radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: var(--exam-font-mono);
+}
+
 .exam-question-actions {
     display: flex;
     gap: var(--exam-space-2);
+}
+
+/* 🎯 문제 순서 관리 컨트롤 개선 */
+.exam-question-order-controls {
+    display: flex;
+    gap: var(--exam-space-1);
+    margin-right: var(--exam-space-2);
+    padding-right: var(--exam-space-2);
+    border-right: 1px solid var(--exam-gray-300);
+}
+
+.exam-question-basic-controls {
+    display: flex;
+    gap: var(--exam-space-1);
 }
 
 .exam-question-content {
@@ -821,6 +876,47 @@
     gap: var(--exam-space-5);
 }
 
+/* 🎯 대주제 입력 영역 (v6.1.0 신규) */
+.exam-form-subject-row {
+    grid-column: 1 / -1;
+    background: var(--exam-subject-light);
+    border: 1px solid var(--exam-subject);
+    border-radius: var(--exam-radius);
+    padding: var(--exam-space-4);
+}
+
+.exam-form-subject-row .exam-form-group {
+    margin-bottom: 0;
+}
+
+.exam-form-subject-row label {
+    color: var(--exam-subject);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: var(--exam-space-2);
+}
+
+.exam-form-subject-row label::before {
+    content: '🎯';
+    font-size: 1rem;
+}
+
+.exam-form-subject-row input {
+    border-color: var(--exam-subject);
+    background: var(--exam-white);
+}
+
+.exam-form-subject-row input:focus {
+    border-color: var(--exam-subject-hover);
+    box-shadow: 0 0 0 3px var(--exam-subject-light);
+}
+
+.exam-form-subject-row .exam-form-help {
+    color: var(--exam-subject-hover);
+    font-weight: 500;
+}
+
 /* 문제 내용 영역 - 70% 비율 */
 .exam-form-question-content {
     grid-column: 1 / -1;
@@ -911,6 +1007,13 @@
     resize: vertical;
     min-height: 120px; /* 문제 내용 영역 높이 증가 */
     line-height: 1.5;
+}
+
+.exam-form-help {
+    font-size: 0.75rem;
+    color: var(--exam-gray-500);
+    margin-top: var(--exam-space-1);
+    line-height: 1.4;
 }
 
 /* 체크박스 스타일 */
@@ -1283,6 +1386,17 @@
         justify-content: space-between;
     }
     
+    /* 🎯 대주제 표시 모바일 최적화 */
+    .exam-question-meta {
+        flex-wrap: wrap;
+        gap: var(--exam-space-2);
+    }
+    
+    .exam-question-subject {
+        font-size: 0.6875rem;
+        padding: var(--exam-space-1) var(--exam-space-2);
+    }
+    
     /* 🎯 모달 폼 반응형 개선 */
     .exam-form-meta-row {
         grid-template-columns: 1fr;
@@ -1349,6 +1463,11 @@
     .exam-form-textarea {
         min-height: 100px;
     }
+    
+    /* 대주제 입력 영역 모바일 최적화 */
+    .exam-form-subject-row {
+        padding: var(--exam-space-3);
+    }
 }
 
 /* ==================== 프린트 스타일 ==================== */
@@ -1394,6 +1513,7 @@
         --exam-success: #008000;
         --exam-danger: #ff0000;
         --exam-warning: #ff8c00;
+        --exam-subject: #800080;
     }
 }
 
