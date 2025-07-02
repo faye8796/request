@@ -1,7 +1,12 @@
 /**
- * 📝 수료평가 시스템 - 관리자 UI 모듈 v5.1.5
+ * 📝 수료평가 시스템 - 관리자 UI 모듈 v6.1.0
  * 문제 관리, 시험 결과 조회 UI 관리
  * 기존 시스템과 완전 분리된 독립 모듈
+ * 
+ * v6.1.0 업데이트:
+ * - 문제 관리에 subject(대주제/과목명) 필드 UI 지원 추가
+ * - 문제 추가/수정 모달에 대주제 입력 필드 추가
+ * - 문제 카드에 대주제 정보 표시
  * 
  * v5.1.5 업데이트:
  * - 🐛 renderSettingsForm() 메서드 추가 - 시험 설정 탭 오류 해결
@@ -25,7 +30,7 @@ class ExamAdminUI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamAdminUI',
-            version: '5.1.5',
+            version: '6.1.0',
             lastUpdate: new Date().toISOString()
         };
         this.currentView = 'questions'; // questions, results, settings
@@ -40,7 +45,7 @@ class ExamAdminUI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamAdminUI v5.1.5 초기화 시작...');
+            console.log('🔄 ExamAdminUI v6.1.0 초기화 시작...');
             
             // 필수 모듈 확인
             if (!window.ExamAdminAPI) {
@@ -54,7 +59,7 @@ class ExamAdminUI {
             await this.showQuestionsView();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamAdminUI v5.1.5 초기화 완료');
+            console.log('✅ ExamAdminUI v6.1.0 초기화 완료');
             return true;
             
         } catch (error) {
@@ -385,7 +390,7 @@ class ExamAdminUI {
     }
 
     /**
-     * 📋 문제 카드 생성 (순서 관리 UI 추가)
+     * 📋 문제 카드 생성 (v6.1.0: subject 필드 표시 추가)
      */
     createQuestionCard(question) {
         const typeText = question.question_type === 'multiple_choice' ? '객관식' : '단답형';
@@ -396,6 +401,10 @@ class ExamAdminUI {
         const currentOrder = question.order_index || 1;
         const isFirst = currentOrder === 1;
         const isLast = currentOrder >= this.totalQuestions;
+        
+        // 🎯 대주제 표시 (v6.1.0 신규)
+        const subjectDisplay = question.subject ? 
+            `<span class="exam-question-subject">${question.subject}</span>` : '';
         
         let optionsHTML = '';
         if (question.question_type === 'multiple_choice' && question.options) {
@@ -441,6 +450,7 @@ class ExamAdminUI {
             <div class="exam-question-card" data-id="${question.id}">
                 <div class="exam-question-header">
                     <div class="exam-question-meta">
+                        ${subjectDisplay}
                         <span class="exam-question-type">${typeText}</span>
                         <span class="exam-question-points">${question.points}점</span>
                         <span class="exam-question-status ${statusClass}">${statusText}</span>
@@ -893,7 +903,7 @@ class ExamAdminUI {
     }
 
     /**
-     * 📝 문제 추가/수정 모달 표시 (개선된 UI 적용)
+     * 📝 문제 추가/수정 모달 표시 (v6.1.0: subject 필드 추가)
      */
     showQuestionModal(questionData = null) {
         const isEdit = !!questionData;
@@ -923,6 +933,21 @@ class ExamAdminUI {
                         <form id="question-form">
                             <!-- 🎯 CSS Grid 기반 개선된 레이아웃 -->
                             <div class="exam-form-container">
+                                <!-- 🎯 대주제 입력 영역 (v6.1.0 신규) -->
+                                <div class="exam-form-subject-row">
+                                    <div class="exam-form-group">
+                                        <label for="question-subject">대주제 (과목명)</label>
+                                        <input type="text" id="question-subject" name="subject" 
+                                               class="exam-form-input"
+                                               placeholder="예: 상호문화이해, 한국문화, 언어교육 등" 
+                                               value="${questionData?.subject || ''}"
+                                               maxlength="100">
+                                        <div class="exam-form-help">
+                                            문제의 대주제나 과목명을 입력하세요. (선택사항)
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <!-- 문제 내용 영역 (70% 비율) -->
                                 <div class="exam-form-question-content">
                                     <div class="exam-form-group">
@@ -1140,7 +1165,7 @@ class ExamAdminUI {
     }
 
     /**
-     * 💾 문제 저장 (복수 정답 처리 로직 포함)
+     * 💾 문제 저장 (v6.1.0: subject 필드 처리 추가)
      */
     async saveQuestion(questionId = null) {
         try {
@@ -1196,6 +1221,7 @@ class ExamAdminUI {
             const questionData = {
                 question_text: formData.get('question_text'),
                 question_type: questionType,
+                subject: formData.get('subject') || null, // 🎯 대주제 필드 추가 (v6.1.0)
                 options: options,
                 correct_answer: correctAnswer,
                 points: parseInt(formData.get('points')),
@@ -1461,5 +1487,5 @@ class ExamAdminUI {
 if (typeof window !== 'undefined') {
     window.ExamAdminUI = new ExamAdminUI();
     window.examAdminUI = window.ExamAdminUI; // 편의를 위한 소문자 별칭
-    console.log('🎨 ExamAdminUI v5.1.5 모듈 로드됨 - renderSettingsForm 메서드 추가');
+    console.log('🎨 ExamAdminUI v6.1.0 모듈 로드됨 - subject 필드 지원 추가');
 }
