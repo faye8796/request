@@ -6,165 +6,15 @@
     <title>항공권 구매 신청 관리 - 세종학당 문화인턴 지원 시스템</title>
     
     <!-- CSS Files -->
-    <link rel="stylesheet" href="../css/main.css?v=4.2.0">
-    <link rel="stylesheet" href="../css/admin.css?v=4.2.0">
+    <link rel="stylesheet" href="../css/main.css?v=5.3.0">
+    <link rel="stylesheet" href="../css/admin.css?v=5.3.0">
+    <link rel="stylesheet" href="../css/flight-management.css?v=5.3.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
-    <!-- Supabase JavaScript Client - Fixed CDN URL -->
+    <!-- Supabase JavaScript Client -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
-    <style>
-        .flight-management-container {
-            min-height: 100vh;
-            background: #f7fafc;
-            padding: 2rem;
-        }
-
-        .management-header {
-            background: white;
-            border-radius: 1rem;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .header-title h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #2d3748;
-            margin: 0 0 0.5rem 0;
-        }
-
-        .header-title p {
-            color: #718096;
-            margin: 0;
-        }
-
-        .coming-soon-section {
-            background: white;
-            border-radius: 1rem;
-            padding: 4rem 2rem;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        .coming-soon-icon {
-            width: 6rem;
-            height: 6rem;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            margin: 0 auto 2rem;
-        }
-
-        .coming-soon-icon i {
-            width: 3rem;
-            height: 3rem;
-        }
-
-        .coming-soon-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #2d3748;
-            margin-bottom: 1rem;
-        }
-
-        .coming-soon-description {
-            font-size: 1.1rem;
-            color: #718096;
-            line-height: 1.6;
-            max-width: 600px;
-            margin: 0 auto 2rem;
-        }
-
-        .back-btn {
-            background: #e2e8f0;
-            color: #4a5568;
-            border: none;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .back-btn:hover {
-            background: #cbd5e0;
-        }
-
-        /* v4.2 호환성 수정 알림 */
-        .module-fix-notice {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 0.75rem;
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .module-fix-notice i {
-            width: 20px;
-            height: 20px;
-            flex-shrink: 0;
-        }
-
-        .module-fix-notice .notice-content {
-            flex: 1;
-        }
-
-        .module-fix-notice .notice-title {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-
-        .module-fix-notice .notice-text {
-            font-size: 0.9rem;
-            opacity: 0.9;
-            margin: 0;
-        }
-
-        @media (max-width: 768px) {
-            .flight-management-container {
-                padding: 1rem;
-            }
-
-            .management-header {
-                padding: 1.5rem;
-            }
-
-            .header-content {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .coming-soon-section {
-                padding: 3rem 1.5rem;
-            }
-
-            .coming-soon-title {
-                font-size: 1.5rem;
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="flight-management-container">
@@ -175,73 +25,183 @@
                     <h1>항공권 구매 신청 관리</h1>
                     <p>학생들의 항공권 구매 신청을 검토하고 승인 처리를 진행할 수 있습니다.</p>
                 </div>
-                <button class="back-btn" onclick="goBackToDashboard()">
-                    <i data-lucide="arrow-left"></i>
-                    대시보드로 돌아가기
+                <div class="header-actions">
+                    <button class="back-btn" onclick="goBackToDashboard()">
+                        <i data-lucide="arrow-left"></i>
+                        대시보드로 돌아가기
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 로딩 상태 -->
+        <div id="loadingState" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>데이터를 불러오는 중...</p>
+        </div>
+
+        <!-- 에러 상태 -->
+        <div id="errorState" class="error-state" style="display: none;">
+            <p>데이터를 불러올 수 없습니다.</p>
+            <button class="btn primary" onclick="retryDataLoad()">다시 시도</button>
+        </div>
+
+        <!-- 메인 콘텐츠 -->
+        <div id="mainContent" style="display: none;">
+            <!-- 핵심 운영 통계 카드 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i data-lucide="plane" class="stat-icon blue"></i>
+                    <div class="stat-info">
+                        <p class="stat-label">전체 신청</p>
+                        <p id="totalCount" class="stat-value">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i data-lucide="clock" class="stat-icon orange"></i>
+                    <div class="stat-info">
+                        <p class="stat-label">대기중</p>
+                        <p id="pendingCount" class="stat-value">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i data-lucide="check-circle" class="stat-icon green"></i>
+                    <div class="stat-info">
+                        <p class="stat-label">승인됨</p>
+                        <p id="approvedCount" class="stat-value">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i data-lucide="x-circle" class="stat-icon red"></i>
+                    <div class="stat-info">
+                        <p class="stat-label">반려됨</p>
+                        <p id="rejectedCount" class="stat-value">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 필터 탭 -->
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-filter="all">
+                    전체
+                    <span class="tab-count" id="allCount">0</span>
+                </button>
+                <button class="filter-tab" data-filter="direct">
+                    직접구매
+                    <span class="tab-count" id="directCount">0</span>
+                </button>
+                <button class="filter-tab" data-filter="agency">
+                    구매대행
+                    <span class="tab-count" id="agencyCount">0</span>
                 </button>
             </div>
-        </div>
 
-        <!-- v4.2 호환성 수정 알림 -->
-        <div class="module-fix-notice">
-            <i data-lucide="check-circle"></i>
-            <div class="notice-content">
-                <div class="notice-title">✅ v4.2 모듈화 시스템 호환성 수정 완료!</div>
-                <p class="notice-text">Supabase 모듈 로딩 순서가 수정되어 항공권 관리 페이지가 정상 동작합니다.</p>
+            <!-- 검색 -->
+            <div class="search-container">
+                <div class="search-box">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="학생 이름으로 검색...">
+                </div>
             </div>
-        </div>
 
-        <!-- Coming Soon 섹션 -->
-        <div class="coming-soon-section">
-            <div class="coming-soon-icon">
-                <i data-lucide="plane"></i>
+            <!-- 항공권 신청 목록 -->
+            <div id="flightApplications" class="flight-applications">
+                <!-- 동적으로 생성될 항공권 신청 목록 -->
             </div>
-            <h2 class="coming-soon-title">항공권 관리 기능 준비 중</h2>
-            <p class="coming-soon-description">
-                학생들의 항공권 구매 신청을 체계적으로 관리할 수 있는 기능을 개발 중입니다.<br>
-                출발지/도착지 설정, 여행 일정 관리, 승인 처리 등의 기능이 포함될 예정입니다.
-            </p>
-            <button class="btn primary" onclick="goBackToDashboard()">
-                <i data-lucide="arrow-left"></i>
-                대시보드로 돌아가기
-            </button>
         </div>
     </div>
 
-    <!-- 🔧 v4.2 모듈화 시스템 호환 JavaScript Files -->
+    <!-- 상세 보기 모달 -->
+    <div id="detailModal" class="modal" style="display: none;">
+        <div class="modal-content flight-detail-modal">
+            <div class="modal-header">
+                <h2>항공권 신청 상세 정보</h2>
+                <button class="modal-close" onclick="closeDetailModal()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div id="modalBody" class="modal-body">
+                <!-- 동적으로 채워질 내용 -->
+            </div>
+            <div id="modalFooter" class="modal-footer">
+                <!-- 동적으로 채워질 액션 버튼들 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 구매대행 항공권 등록 모달 -->
+    <div id="uploadTicketModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>구매대행 항공권 등록</h2>
+                <button class="modal-close" onclick="closeUploadTicketModal()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>항공권 파일 업로드</label>
+                    <input type="file" id="ticketFileInput" accept=".pdf,.jpg,.jpeg,.png" class="file-input">
+                    <p class="form-help">PDF, JPG, PNG 형식 (최대 10MB)</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeUploadTicketModal()">취소</button>
+                <button class="btn primary" onclick="uploadAdminTicket()">
+                    <i data-lucide="upload"></i>
+                    업로드
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
     <!-- 1. 기본 설정 모듈 -->
-    <script src="../js/config.js?v=4.2.0"></script>
-    <script src="../js/auth.js?v=4.2.0"></script>
-    <script src="../js/utils.js?v=4.2.0"></script>
+    <script src="../js/config.js?v=5.3.0"></script>
+    <script src="../js/auth.js?v=5.3.0"></script>
+    <script src="../js/utils.js?v=5.3.0"></script>
     
-    <!-- 2. Supabase 모듈들 (의존성 순서 중요!) -->
-    <script src="../js/supabase/supabase-core.js?v=4.2.0"></script>
-    <script src="../js/supabase/supabase-student.js?v=4.2.0"></script>
-    <script src="../js/supabase/supabase-admin.js?v=4.2.0"></script>
-    <script src="../js/supabase-client.js?v=4.2.0"></script>
+    <!-- 2. Supabase 모듈들 -->
+    <script src="../js/supabase/supabase-core.js?v=5.3.0"></script>
+    <script src="../js/supabase/supabase-student.js?v=5.3.0"></script>
+    <script src="../js/supabase/supabase-admin.js?v=5.3.0"></script>
+    <script src="../js/supabase-client.js?v=5.3.0"></script>
     
-    <!-- 🆕 모듈화된 Admin 파일들 (기본 모듈들만) -->
-    <!-- 핵심 파일들 먼저 로드 -->
-    <script src="../js/admin/admin-core.js?v=4.2.0"></script>
-    <script src="../js/admin/admin-utils.js?v=4.2.0"></script>
-    <script src="../js/admin/admin-modals.js?v=4.2.0"></script>
-    
-    <!-- 항공권 관리에 필요한 모듈들 (추후 확장 시) -->
-    <script src="../js/admin/admin-applications.js?v=4.2.0"></script>
+    <!-- 3. 항공권 관리 모듈들 -->
+    <script src="../js/admin/flight-management-api.js?v=5.3.0"></script>
+    <script src="../js/admin/flight-management-ui.js?v=5.3.0"></script>
     
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🛫 항공권 관리 페이지 초기화 (v4.2 호환)');
-            
-            // Lucide 아이콘 초기화
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
+        // 전역 변수
+        let currentFilter = 'all';
+        let currentSearchTerm = '';
+        let selectedRequestId = null;
 
-            // 관리자 인증 확인
-            checkAdminAuthentication();
+        // 페이지 초기화
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('✈️ 항공권 관리 페이지 초기화 시작');
+            
+            try {
+                // Lucide 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+
+                // 관리자 인증 확인
+                if (!checkAdminAuthentication()) {
+                    return;
+                }
+                
+                // 항공권 관리 초기화
+                await initializeFlightManagement();
+                
+            } catch (error) {
+                console.error('❌ 항공권 관리 페이지 초기화 오류:', error);
+                showErrorState();
+            }
         });
 
+        // 관리자 인증 확인
         function checkAdminAuthentication() {
             console.log('🔐 관리자 인증 확인 중...');
             
@@ -250,32 +210,358 @@
                 console.warn('⚠️ 관리자 세션이 없습니다');
                 alert('관리자 로그인이 필요합니다.');
                 window.location.href = '../admin.html';
-                return;
+                return false;
             }
 
             console.log('✅ 관리자 인증 확인됨');
+            return true;
         }
 
+        // 항공권 관리 초기화
+        async function initializeFlightManagement() {
+            console.log('🚀 항공권 관리 시스템 초기화 중...');
+            
+            try {
+                showLoadingState();
+
+                // Supabase 클라이언트 초기화 대기
+                await waitForSupabaseClient();
+
+                // FlightManagementAPI 초기화 대기
+                await waitForFlightManagementAPI();
+
+                // 데이터 로드
+                await loadAllData();
+
+                // 이벤트 리스너 설정
+                setupEventListeners();
+
+                // 성공시 메인 콘텐츠 표시
+                showMainContent();
+                
+                console.log('✅ 항공권 관리 시스템 초기화 완료');
+
+            } catch (error) {
+                console.error('❌ 항공권 관리 초기화 실패:', error);
+                showErrorState(error.message);
+            }
+        }
+
+        // Supabase 클라이언트 초기화 대기
+        function waitForSupabaseClient() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 50;
+
+                const checkSupabase = () => {
+                    attempts++;
+                    
+                    if (window.SupabaseAPI) {
+                        console.log('✅ Supabase 클라이언트 준비됨');
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        reject(new Error('Supabase 클라이언트 초기화 시간 초과'));
+                    } else {
+                        setTimeout(checkSupabase, 100);
+                    }
+                };
+
+                checkSupabase();
+            });
+        }
+
+        // FlightManagementAPI 초기화 대기
+        function waitForFlightManagementAPI() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 30;
+
+                const checkAPI = () => {
+                    attempts++;
+                    
+                    if (window.FlightManagementAPI) {
+                        console.log('✅ FlightManagementAPI 준비됨');
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        reject(new Error('FlightManagementAPI 초기화 시간 초과'));
+                    } else {
+                        setTimeout(checkAPI, 100);
+                    }
+                };
+
+                checkAPI();
+            });
+        }
+
+        // 모든 데이터 로드
+        async function loadAllData() {
+            console.log('📊 데이터 로드 시작...');
+
+            try {
+                // 통계 로드
+                await loadStatistics();
+                
+                // 항공권 신청 목록 로드
+                await loadFlightRequests();
+
+                console.log('✅ 모든 데이터 로드 완료');
+
+            } catch (error) {
+                console.error('❌ 데이터 로드 실패:', error);
+                throw error;
+            }
+        }
+
+        // 통계 로드
+        async function loadStatistics() {
+            try {
+                const stats = await FlightManagementAPI.getStatistics();
+                
+                updateElementText('#totalCount', stats.total);
+                updateElementText('#pendingCount', stats.pending);
+                updateElementText('#approvedCount', stats.approved);
+                updateElementText('#rejectedCount', stats.rejected);
+                updateElementText('#allCount', stats.total);
+                updateElementText('#directCount', stats.direct);
+                updateElementText('#agencyCount', stats.agency);
+
+                console.log('📊 통계 데이터 로드 완료:', stats);
+
+            } catch (error) {
+                console.error('❌ 통계 데이터 로드 실패:', error);
+            }
+        }
+
+        // 항공권 신청 목록 로드
+        async function loadFlightRequests() {
+            try {
+                const requests = await FlightManagementAPI.getFlightRequests(currentFilter, currentSearchTerm);
+                
+                if (window.FlightManagementUI) {
+                    FlightManagementUI.renderFlightRequests(requests);
+                }
+
+                console.log(`📋 항공권 신청 목록 로드 완료: ${requests.length}건`);
+
+            } catch (error) {
+                console.error('❌ 항공권 신청 목록 로드 실패:', error);
+                document.getElementById('flightApplications').innerHTML = 
+                    '<div class="no-results">항공권 신청 목록을 불러올 수 없습니다.</div>';
+            }
+        }
+
+        // 이벤트 리스너 설정
+        function setupEventListeners() {
+            console.log('🔧 이벤트 리스너 설정 중...');
+
+            // 필터 탭
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.addEventListener('click', handleFilterChange);
+            });
+
+            // 검색
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', debounce(handleSearch, 300));
+            }
+
+            console.log('✅ 이벤트 리스너 설정 완료');
+        }
+
+        // 필터 변경 처리
+        function handleFilterChange(event) {
+            const filter = event.currentTarget.dataset.filter;
+            if (filter === currentFilter) return;
+
+            // 활성 탭 변경
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            currentFilter = filter;
+            loadFlightRequests();
+        }
+
+        // 검색 처리
+        function handleSearch(event) {
+            currentSearchTerm = event.target.value.trim();
+            loadFlightRequests();
+        }
+
+        // 대시보드로 돌아가기
         function goBackToDashboard() {
             console.log('🔙 대시보드로 돌아가기');
             window.location.href = '../admin.html';
         }
 
-        // 키보드 단축키 (개발자용)
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'd') {
-                e.preventDefault();
-                console.log('🛠️ 항공권 관리 페이지 - v4.2 디버그 정보');
-                console.log('모듈 상태:', {
-                    SupabaseCore: !!window.SupabaseCore,
-                    SupabaseAdmin: !!window.SupabaseAdmin,
-                    SupabaseAPI: !!window.SupabaseAPI,
-                    AdminManager: !!window.AdminManager
-                });
-            }
-        });
+        // 데이터 재시도
+        function retryDataLoad() {
+            initializeFlightManagement();
+        }
 
-        console.log('🛫 항공권 관리 v4.2 호환 스크립트 로드 완료');
+        // 상세 보기 모달
+        async function showDetailModal(requestId) {
+            try {
+                selectedRequestId = requestId;
+                const request = await FlightManagementAPI.getFlightRequestDetail(requestId);
+                
+                if (window.FlightManagementUI) {
+                    FlightManagementUI.renderDetailModal(request);
+                }
+                
+                document.getElementById('detailModal').style.display = 'flex';
+            } catch (error) {
+                console.error('❌ 상세 정보 로드 실패:', error);
+                alert('상세 정보를 불러올 수 없습니다.');
+            }
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').style.display = 'none';
+            selectedRequestId = null;
+        }
+
+        // 구매대행 티켓 업로드 모달
+        function showUploadTicketModal(requestId) {
+            selectedRequestId = requestId;
+            document.getElementById('uploadTicketModal').style.display = 'flex';
+        }
+
+        function closeUploadTicketModal() {
+            document.getElementById('uploadTicketModal').style.display = 'none';
+            document.getElementById('ticketFileInput').value = '';
+            selectedRequestId = null;
+        }
+
+        async function uploadAdminTicket() {
+            const fileInput = document.getElementById('ticketFileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('파일을 선택해주세요.');
+                return;
+            }
+
+            try {
+                showLoadingState();
+                
+                await FlightManagementAPI.uploadAdminTicket(selectedRequestId, file);
+                
+                alert('항공권이 성공적으로 등록되었습니다.');
+                closeUploadTicketModal();
+                await loadFlightRequests();
+                
+            } catch (error) {
+                console.error('❌ 항공권 업로드 실패:', error);
+                alert('항공권 업로드에 실패했습니다.');
+            } finally {
+                showMainContent();
+            }
+        }
+
+        // 승인 처리
+        async function approveRequest(requestId) {
+            if (!confirm('이 신청을 승인하시겠습니까?')) return;
+            
+            try {
+                showLoadingState();
+                
+                await FlightManagementAPI.updateRequestStatus(requestId, 'approved');
+                
+                alert('신청이 승인되었습니다.');
+                closeDetailModal();
+                await loadAllData();
+                
+            } catch (error) {
+                console.error('❌ 승인 처리 실패:', error);
+                alert('승인 처리에 실패했습니다.');
+            } finally {
+                showMainContent();
+            }
+        }
+
+        // 반려 처리
+        async function rejectRequest(requestId) {
+            const reason = prompt('반려 사유를 입력해주세요:');
+            if (!reason) return;
+            
+            try {
+                showLoadingState();
+                
+                await FlightManagementAPI.updateRequestStatus(requestId, 'rejected', reason);
+                
+                alert('신청이 반려되었습니다.');
+                closeDetailModal();
+                await loadAllData();
+                
+            } catch (error) {
+                console.error('❌ 반려 처리 실패:', error);
+                alert('반려 처리에 실패했습니다.');
+            } finally {
+                showMainContent();
+            }
+        }
+
+        // UI 상태 관리 함수들
+        function showLoadingState() {
+            document.getElementById('loadingState').style.display = 'block';
+            document.getElementById('errorState').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'none';
+        }
+
+        function showErrorState(message = '') {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+            document.getElementById('mainContent').style.display = 'none';
+            
+            if (message) {
+                const errorElement = document.querySelector('#errorState p');
+                if (errorElement) {
+                    errorElement.textContent = `오류: ${message}`;
+                }
+            }
+        }
+
+        function showMainContent() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            
+            // 아이콘 재생성
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // 유틸리티 함수들
+        function updateElementText(selector, text) {
+            const element = document.querySelector(selector);
+            if (element) {
+                element.textContent = text;
+            }
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 전역 함수로 노출
+        window.showDetailModal = showDetailModal;
+        window.closeDetailModal = closeDetailModal;
+        window.showUploadTicketModal = showUploadTicketModal;
+        window.closeUploadTicketModal = closeUploadTicketModal;
+        window.uploadAdminTicket = uploadAdminTicket;
+        window.approveRequest = approveRequest;
+        window.rejectRequest = rejectRequest;
     </script>
 </body>
 </html>
