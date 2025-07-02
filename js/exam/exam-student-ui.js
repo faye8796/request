@@ -1,7 +1,11 @@
 /**
- * 🎨 수료평가 시스템 - 학생 UI 관리 모듈 v5.2.1
+ * 🎨 수료평가 시스템 - 학생 UI 관리 모듈 v6.1.0
  * 학생용 수료평가 응시 인터페이스 관리
  * 완전 독립된 학생 전용 UI 모듈
+ * 
+ * v6.1.0 업데이트:
+ * - 결과 화면에서 정답 비공개 처리 (보안 강화)
+ * - 점수와 합격여부만 표시
  */
 
 class ExamStudentUI {
@@ -9,7 +13,7 @@ class ExamStudentUI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamStudentUI',
-            version: '5.2.1',
+            version: '6.1.0',
             lastUpdate: new Date().toISOString()
         };
         
@@ -31,7 +35,7 @@ class ExamStudentUI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamStudentUI v5.2.1 초기화 시작...');
+            console.log('🔄 ExamStudentUI v6.1.0 초기화 시작...');
             
             // DOM 요소 캐시
             this.cacheElements();
@@ -43,7 +47,7 @@ class ExamStudentUI {
             await this.checkEligibilityAndRender();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamStudentUI v5.2.1 초기화 완료');
+            console.log('✅ ExamStudentUI v6.1.0 초기화 완료');
             return true;
             
         } catch (error) {
@@ -497,24 +501,40 @@ class ExamStudentUI {
     }
 
     /**
-     * 🏆 결과 화면 렌더링
+     * 🏆 결과 화면 렌더링 (v6.1.0: 정답 비공개)
      */
     renderResultView(result) {
         this.hideAllViews();
         
         if (!this.elements.resultView) return;
         
-        // 결과 요약
+        // 결과 요약만 표시 (상세 결과 제거)
         this.renderResultSummary(result);
         
-        // 상세 결과
-        this.renderResultDetails(result);
+        // 상세 결과 영역 비우기 (정답 비공개)
+        if (this.elements.resultDetails) {
+            this.elements.resultDetails.innerHTML = `
+                <div class="result-notice">
+                    <div class="notice-icon">
+                        <i data-lucide="info"></i>
+                    </div>
+                    <h3>수료평가 완료</h3>
+                    <p>수료평가가 완료되었습니다.</p>
+                    <p>자세한 결과는 관리자에게 문의하시기 바랍니다.</p>
+                </div>
+            `;
+        }
         
         this.elements.resultView.style.display = 'block';
+        
+        // 아이콘 초기화
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     }
 
     /**
-     * 📊 결과 요약 렌더링
+     * 📊 결과 요약 렌더링 (v6.1.0: 점수와 합격여부만 표시)
      */
     renderResultSummary(result) {
         if (!this.elements.resultSummary) return;
@@ -541,50 +561,15 @@ class ExamStudentUI {
                     <p>합격 기준: ${result.passScore}%</p>
                     <p>제출 시간: ${date}</p>
                 </div>
+                ${!result.passStatus ? `
+                    <div class="retake-info">
+                        <p>불합격 시 재시험이 가능합니다.</p>
+                    </div>
+                ` : ''}
             </div>
         `;
         
         this.elements.resultSummary.innerHTML = html;
-    }
-
-    /**
-     * 📋 상세 결과 렌더링
-     */
-    renderResultDetails(result) {
-        if (!this.elements.resultDetails || !result.details) return;
-        
-        const html = `
-            <div class="result-details-container">
-                <h3>문제별 상세 결과</h3>
-                <div class="details-list">
-                    ${result.details.map((detail, index) => `
-                        <div class="detail-item ${detail.isCorrect ? 'correct' : 'incorrect'}">
-                            <div class="detail-header">
-                                <span class="question-num">문제 ${index + 1}</span>
-                                <span class="detail-score">${detail.pointsEarned}/${detail.maxPoints}점</span>
-                                <span class="detail-status">
-                                    <i data-lucide="${detail.isCorrect ? 'check' : 'x'}"></i>
-                                    ${detail.isCorrect ? '정답' : '오답'}
-                                </span>
-                            </div>
-                            <div class="detail-content">
-                                <p class="question-text">${detail.questionText}</p>
-                                <div class="answers">
-                                    <p class="correct-answer">
-                                        <strong>정답:</strong> ${detail.correctAnswer}
-                                    </p>
-                                    <p class="student-answer">
-                                        <strong>내 답안:</strong> ${detail.studentAnswer || '(미답변)'}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-        
-        this.elements.resultDetails.innerHTML = html;
     }
 
     // ==================== 유틸리티 함수 ====================
@@ -748,7 +733,7 @@ class ExamStudentUI {
     }
 
     /**
-     * 👁️ 결과 상세보기
+     * 👁️ 결과 상세보기 (v6.1.0: 정답 비공개)
      */
     async viewResultDetail(sessionId) {
         try {
@@ -756,7 +741,7 @@ class ExamStudentUI {
             
             const details = await window.ExamStudentAPI.getSessionDetails(sessionId);
             
-            // 상세 결과를 결과 화면에 표시
+            // 상세 결과를 결과 화면에 표시 (정답 정보 제외)
             const resultData = {
                 sessionId: details.session.id,
                 totalScore: details.session.total_score,
@@ -765,15 +750,8 @@ class ExamStudentUI {
                     Math.round((details.session.total_score / details.session.max_score) * 100) : 0,
                 passStatus: details.session.pass_status,
                 passScore: await window.ExamStudentAPI.getPassScore(),
-                submittedAt: details.session.submitted_at,
-                details: details.details.map(detail => ({
-                    questionText: detail.exam_questions.question_text,
-                    correctAnswer: detail.exam_questions.correct_answer,
-                    studentAnswer: detail.student_answer,
-                    isCorrect: detail.is_correct,
-                    pointsEarned: detail.points_earned,
-                    maxPoints: detail.exam_questions.points
-                }))
+                submittedAt: details.session.submitted_at
+                // details 필드 제거 - 정답 정보 비공개
             };
             
             this.renderResultView(resultData);
@@ -795,5 +773,5 @@ class ExamStudentUI {
 // 전역에 모듈 등록
 if (typeof window !== 'undefined') {
     window.ExamStudentUI = new ExamStudentUI();
-    console.log('🎨 ExamStudentUI v5.2.1 모듈 로드됨');
+    console.log('🎨 ExamStudentUI v6.1.0 모듈 로드됨');
 }
