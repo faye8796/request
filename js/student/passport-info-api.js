@@ -1,10 +1,11 @@
-// passport-info-api.js - 여권정보 API 통신 모듈
+// passport-info-api.js - 여권정보 API 통신 모듈 v7.0.0
+// Storage 유틸리티 통합 버전
 
 class PassportAPI {
     constructor() {
         this.supabase = window.supabase;
         this.user = null;
-        this.bucketName = 'passports';
+        this.storageUtils = window.StorageUtils;
     }
 
     // 현재 사용자 정보 가져오기
@@ -42,72 +43,7 @@ class PassportAPI {
         }
     }
 
-    // 여권 이미지 업로드
-    async uploadPassportImage(file) {
-        try {
-            if (!this.user) await this.getCurrentUser();
-
-            // 파일 크기 체크 (5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                throw new Error('파일 크기는 5MB를 초과할 수 없습니다.');
-            }
-
-            // 파일 확장자 체크
-            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-            if (!allowedTypes.includes(file.type)) {
-                throw new Error('JPG, PNG 형식의 이미지만 업로드 가능합니다.');
-            }
-
-            const timestamp = Date.now();
-            const fileName = `${this.user.id}_${timestamp}_${file.name}`;
-            const filePath = `${this.user.id}/${fileName}`;
-
-            const { data, error } = await this.supabase.storage
-                .from(this.bucketName)
-                .upload(filePath, file, {
-                    upsert: true,
-                    contentType: file.type
-                });
-
-            if (error) throw error;
-
-            // 공개 URL 생성
-            const { data: { publicUrl } } = this.supabase.storage
-                .from(this.bucketName)
-                .getPublicUrl(filePath);
-
-            return publicUrl;
-        } catch (error) {
-            console.error('이미지 업로드 실패:', error);
-            throw error;
-        }
-    }
-
-    // 기존 이미지 삭제
-    async deleteOldImage(imageUrl) {
-        try {
-            if (!imageUrl) return;
-
-            // URL에서 파일 경로 추출
-            const urlParts = imageUrl.split('/');
-            const bucketIndex = urlParts.indexOf(this.bucketName);
-            if (bucketIndex === -1) return;
-
-            const filePath = urlParts.slice(bucketIndex + 1).join('/');
-
-            const { error } = await this.supabase.storage
-                .from(this.bucketName)
-                .remove([filePath]);
-
-            if (error) {
-                console.warn('기존 이미지 삭제 실패:', error);
-            }
-        } catch (error) {
-            console.warn('이미지 삭제 중 오류:', error);
-        }
-    }
-
-    // 여권정보 저장 (생성 또는 수정)
+    // 여권정보 저장 (생성 또는 수정) - Storage 유틸리티 사용
     async savePassportInfo(passportData, imageFile = null) {
         try {
             if (!this.user) await this.getCurrentUser();
@@ -120,10 +56,24 @@ class PassportAPI {
             if (imageFile) {
                 // 기존 이미지 삭제
                 if (imageUrl) {
-                    await this.deleteOldImage(imageUrl);
+                    const filePath = this.storageUtils.extractFilePathFromUrl(
+                        imageUrl, 
+                        this.storageUtils.BUCKETS.PASSPORTS
+                    );
+                    if (filePath) {
+                        await this.storageUtils.deleteFile(
+                            this.storageUtils.BUCKETS.PASSPORTS, 
+                            filePath
+                        );
+                    }
                 }
-                // 새 이미지 업로드
-                imageUrl = await this.uploadPassportImage(imageFile);
+                
+                // 새 이미지 업로드 (StorageUtils 사용)
+                const uploadResult = await this.storageUtils.uploadPassportImage(
+                    imageFile, 
+                    this.user.id
+                );
+                imageUrl = uploadResult.publicUrl;
             }
 
             const dataToSave = {
@@ -185,7 +135,29 @@ class PassportAPI {
 
         return { valid: true };
     }
+
+    // 파일 유효성 검증 (StorageUtils 활용)
+    validateFile(file) {
+        try {
+            return this.storageUtils.validateFile(file, 'image');
+        } catch (error) {
+            console.error('파일 검증 실패:', error);
+            throw error;
+        }
+    }
+
+    // 이미지 미리보기 생성 (StorageUtils 활용)
+    async createImagePreview(file) {
+        try {
+            return await this.storageUtils.createImagePreview(file);
+        } catch (error) {
+            console.error('이미지 미리보기 생성 실패:', error);
+            throw error;
+        }
+    }
 }
 
 // 전역 인스턴스 생성
 window.passportAPI = new PassportAPI();
+
+console.log('✅ PassportAPI v7.0.0 로드 완료 - Storage 유틸리티 통합');
