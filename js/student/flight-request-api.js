@@ -1,306 +1,224 @@
-// flight-request-api.js - 항공권 신청 API 함수
+// flight-request-api.js - 항공권 신청 API 통신 모듈
 
-// API 객체
-const flightRequestAPI = {
-    // 현재 사용자의 프로필 정보 가져오기
+class FlightRequestAPI {
+    constructor() {
+        this.supabase = window.supabase;
+        this.user = null;
+        this.bucketName = 'flight-images';
+    }
+
+    // 현재 사용자 정보 가져오기
+    async getCurrentUser() {
+        try {
+            const { data: { user }, error } = await this.supabase.auth.getUser();
+            if (error) throw error;
+            this.user = user;
+            return user;
+        } catch (error) {
+            console.error('사용자 정보 조회 실패:', error);
+            throw error;
+        }
+    }
+
+    // 사용자 프로필 정보 가져오기
     async getUserProfile() {
         try {
-            const user = await checkAuth();
-            if (!user) throw new Error('인증되지 않은 사용자입니다.');
-
-            const { data, error } = await supabase
+            if (!this.user) await this.getCurrentUser();
+            
+            const { data, error } = await this.supabase
                 .from('user_profiles')
                 .select('*')
-                .eq('id', user.id)
+                .eq('id', this.user.id)
                 .single();
 
             if (error) throw error;
-            return { success: true, data };
+            return data;
         } catch (error) {
-            console.error('사용자 프로필 조회 오류:', error);
-            return { success: false, error: error.message };
+            console.error('사용자 프로필 조회 실패:', error);
+            throw error;
         }
-    },
+    }
 
-    // 현재 사용자의 항공권 신청 현황 조회
-    async getMyFlightRequest() {
+    // 여권정보 확인
+    async checkPassportInfo() {
         try {
-            const user = await checkAuth();
-            if (!user) throw new Error('인증되지 않은 사용자입니다.');
+            if (!this.user) await this.getCurrentUser();
+            
+            const { data, error } = await this.supabase
+                .from('passport_info')
+                .select('*')
+                .eq('user_id', this.user.id)
+                .single();
 
-            const { data, error } = await supabase
+            if (error && error.code !== 'PGRST116') {
+                throw error;
+            }
+
+            return data;
+        } catch (error) {
+            console.error('여권정보 확인 실패:', error);
+            throw error;
+        }
+    }
+
+    // 기존 항공권 신청 조회
+    async getExistingRequest() {
+        try {
+            if (!this.user) await this.getCurrentUser();
+            
+            const { data, error } = await this.supabase
                 .from('flight_requests')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('user_id', this.user.id)
                 .order('created_at', { ascending: false })
                 .limit(1)
-                .maybeSingle();
-
-            if (error) throw error;
-            return { success: true, data };
-        } catch (error) {
-            console.error('항공권 신청 조회 오류:', error);
-            return { success: false, error: error.message };
-        }
-    },
-
-    // 항공권 신청서 제출
-    async submitFlightRequest(formData) {
-        try {
-            const user = await checkAuth();
-            if (!user) throw new Error('인증되지 않은 사용자입니다.');
-
-            // 이미지 업로드
-            let flightImageUrl = null;
-            if (formData.flightImage) {
-                const uploadResult = await this.uploadFlightImage(formData.flightImage);
-                if (!uploadResult.success) {
-                    throw new Error('이미지 업로드 실패: ' + uploadResult.error);
-                }
-                flightImageUrl = uploadResult.url;
-            }
-
-            // 신청서 데이터 준비
-            const requestData = {
-                user_id: user.id,
-                purchase_type: formData.purchaseType,
-                departure_date: formData.departureDate,
-                return_date: formData.returnDate,
-                departure_airport: formData.departureAirport,
-                arrival_airport: formData.arrivalAirport,
-                flight_image_url: flightImageUrl,
-                purchase_link: formData.purchaseLink || null,
-                status: 'pending',
-                version: 1
-            };
-
-            // 데이터베이스에 저장
-            const { data, error } = await supabase
-                .from('flight_requests')
-                .insert([requestData])
-                .select()
                 .single();
 
-            if (error) throw error;
-            return { success: true, data };
-        } catch (error) {
-            console.error('항공권 신청 제출 오류:', error);
-            return { success: false, error: error.message };
-        }
-    },
-
-    // 항공권 신청서 수정 (반려 후 재제출)
-    async updateFlightRequest(requestId, formData) {
-        try {
-            const user = await checkAuth();
-            if (!user) throw new Error('인증되지 않은 사용자입니다.');
-
-            // 이미지가 변경된 경우 새로 업로드
-            let flightImageUrl = formData.existingImageUrl;
-            if (formData.flightImage && formData.imageChanged) {
-                const uploadResult = await this.uploadFlightImage(formData.flightImage);
-                if (!uploadResult.success) {
-                    throw new Error('이미지 업로드 실패: ' + uploadResult.error);
-                }
-                flightImageUrl = uploadResult.url;
+            if (error && error.code !== 'PGRST116') {
+                throw error;
             }
 
-            // 업데이트 데이터 준비
-            const updateData = {
-                purchase_type: formData.purchaseType,
-                departure_date: formData.departureDate,
-                return_date: formData.returnDate,
-                departure_airport: formData.departureAirport,
-                arrival_airport: formData.arrivalAirport,
-                flight_image_url: flightImageUrl,
-                purchase_link: formData.purchaseLink || null,
-                status: 'pending',
-                rejection_reason: null, // 반려 사유 초기화
-                version: formData.version + 1,
-                updated_at: new Date().toISOString()
-            };
-
-            // 데이터베이스 업데이트
-            const { data, error } = await supabase
-                .from('flight_requests')
-                .update(updateData)
-                .eq('id', requestId)
-                .eq('user_id', user.id)
-                .eq('status', 'rejected') // 반려된 상태에서만 수정 가능
-                .select()
-                .single();
-
-            if (error) throw error;
-            return { success: true, data };
+            return data;
         } catch (error) {
-            console.error('항공권 신청 수정 오류:', error);
-            return { success: false, error: error.message };
+            console.error('기존 신청 조회 실패:', error);
+            return null;
         }
-    },
-
-    // 항공권 신청 삭제
-    async deleteFlightRequest(requestId) {
-        try {
-            const user = await checkAuth();
-            if (!user) throw new Error('인증되지 않은 사용자입니다.');
-
-            const { error } = await supabase
-                .from('flight_requests')
-                .delete()
-                .eq('id', requestId)
-                .eq('user_id', user.id)
-                .in('status', ['pending', 'rejected']); // pending 또는 rejected 상태에서만 삭제 가능
-
-            if (error) throw error;
-            return { success: true };
-        } catch (error) {
-            console.error('항공권 신청 삭제 오류:', error);
-            return { success: false, error: error.message };
-        }
-    },
+    }
 
     // 항공권 이미지 업로드
     async uploadFlightImage(file) {
         try {
-            const user = await checkAuth();
-            if (!user) throw new Error('인증되지 않은 사용자입니다.');
+            if (!this.user) await this.getCurrentUser();
 
-            // 파일 검증
-            if (!window.flightRequestUtils.fileUtils.validateFileSize(file)) {
-                throw new Error('파일 크기는 10MB 이하여야 합니다.');
+            // 파일 크기 체크 (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                throw new Error('파일 크기는 5MB를 초과할 수 없습니다.');
             }
 
-            if (!window.flightRequestUtils.fileUtils.validateFileType(file)) {
-                throw new Error('지원하지 않는 파일 형식입니다.');
+            // 파일 확장자 체크
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!allowedTypes.includes(file.type)) {
+                throw new Error('JPG, PNG 형식의 이미지만 업로드 가능합니다.');
             }
 
-            // 파일명 생성
-            const fileName = window.flightRequestUtils.fileUtils.generateFileName(user.id, file.name);
-            const filePath = `flight-images/${fileName}`;
+            const timestamp = Date.now();
+            const fileName = `${this.user.id}_${timestamp}_${file.name}`;
+            const filePath = `${this.user.id}/${fileName}`;
 
-            // 스토리지에 업로드
-            const { data, error } = await supabase.storage
-                .from('flight-documents')
+            const { data, error } = await this.supabase.storage
+                .from(this.bucketName)
                 .upload(filePath, file, {
-                    cacheControl: '3600',
-                    upsert: false
+                    upsert: true,
+                    contentType: file.type
                 });
 
             if (error) throw error;
 
-            // 공개 URL 가져오기
-            const { data: { publicUrl } } = supabase.storage
-                .from('flight-documents')
+            // 공개 URL 생성
+            const { data: { publicUrl } } = this.supabase.storage
+                .from(this.bucketName)
                 .getPublicUrl(filePath);
 
-            return { success: true, url: publicUrl };
+            return publicUrl;
         } catch (error) {
-            console.error('이미지 업로드 오류:', error);
-            return { success: false, error: error.message };
-        }
-    },
-
-    // 영수증 업로드 (직접구매용)
-    async uploadReceipt(requestId, file) {
-        try {
-            const user = await checkAuth();
-            if (!user) throw new Error('인증되지 않은 사용자입니다.');
-
-            // 파일 업로드
-            const fileName = window.flightRequestUtils.fileUtils.generateFileName(user.id, file.name);
-            const filePath = `receipts/${fileName}`;
-
-            const { data, error } = await supabase.storage
-                .from('flight-documents')
-                .upload(filePath, file);
-
-            if (error) throw error;
-
-            // 공개 URL 가져오기
-            const { data: { publicUrl } } = supabase.storage
-                .from('flight-documents')
-                .getPublicUrl(filePath);
-
-            // 신청서 업데이트
-            const { error: updateError } = await supabase
-                .from('flight_requests')
-                .update({ 
-                    receipt_url: publicUrl,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', requestId)
-                .eq('user_id', user.id);
-
-            if (updateError) throw updateError;
-
-            return { success: true, url: publicUrl };
-        } catch (error) {
-            console.error('영수증 업로드 오류:', error);
-            return { success: false, error: error.message };
-        }
-    },
-
-    // 항공권 업로드 (직접구매용)
-    async uploadTicket(requestId, file) {
-        try {
-            const user = await checkAuth();
-            if (!user) throw new Error('인증되지 않은 사용자입니다.');
-
-            // 파일 업로드
-            const fileName = window.flightRequestUtils.fileUtils.generateFileName(user.id, file.name);
-            const filePath = `tickets/${fileName}`;
-
-            const { data, error } = await supabase.storage
-                .from('flight-documents')
-                .upload(filePath, file);
-
-            if (error) throw error;
-
-            // 공개 URL 가져오기
-            const { data: { publicUrl } } = supabase.storage
-                .from('flight-documents')
-                .getPublicUrl(filePath);
-
-            // 신청서 업데이트
-            const { error: updateError } = await supabase
-                .from('flight_requests')
-                .update({ 
-                    ticket_url: publicUrl,
-                    status: 'completed',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', requestId)
-                .eq('user_id', user.id);
-
-            if (updateError) throw updateError;
-
-            return { success: true, url: publicUrl };
-        } catch (error) {
-            console.error('항공권 업로드 오류:', error);
-            return { success: false, error: error.message };
-        }
-    },
-
-    // 여권 정보 조회
-    async getPassportInfo() {
-        try {
-            const user = await checkAuth();
-            if (!user) throw new Error('인증되지 않은 사용자입니다.');
-
-            const { data, error } = await supabase
-                .from('passport_info')
-                .select('*')
-                .eq('user_id', user.id)
-                .maybeSingle();
-
-            if (error) throw error;
-            return { success: true, data };
-        } catch (error) {
-            console.error('여권 정보 조회 오류:', error);
-            return { success: false, error: error.message };
+            console.error('이미지 업로드 실패:', error);
+            throw error;
         }
     }
-};
 
-// 전역 객체로 노출
-window.flightRequestAPI = flightRequestAPI;
+    // 항공권 신청 생성
+    async createFlightRequest(requestData, imageFile) {
+        try {
+            if (!this.user) await this.getCurrentUser();
+
+            // 이미지 업로드
+            const imageUrl = await this.uploadFlightImage(imageFile);
+
+            const dataToSave = {
+                user_id: this.user.id,
+                purchase_type: requestData.purchase_type,
+                departure_date: requestData.departure_date,
+                return_date: requestData.return_date,
+                departure_airport: requestData.departure_airport,
+                arrival_airport: requestData.arrival_airport,
+                flight_image_url: imageUrl,
+                purchase_link: requestData.purchase_link || null,
+                status: 'pending'
+            };
+
+            const { data, error } = await this.supabase
+                .from('flight_requests')
+                .insert([dataToSave])
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('항공권 신청 생성 실패:', error);
+            throw error;
+        }
+    }
+
+    // 항공권 신청 수정
+    async updateFlightRequest(requestId, requestData, imageFile = null) {
+        try {
+            if (!this.user) await this.getCurrentUser();
+
+            let updateData = {
+                purchase_type: requestData.purchase_type,
+                departure_date: requestData.departure_date,
+                return_date: requestData.return_date,
+                departure_airport: requestData.departure_airport,
+                arrival_airport: requestData.arrival_airport,
+                purchase_link: requestData.purchase_link || null,
+                updated_at: new Date().toISOString(),
+                version: requestData.version + 1
+            };
+
+            // 새 이미지가 있으면 업로드
+            if (imageFile) {
+                const imageUrl = await this.uploadFlightImage(imageFile);
+                updateData.flight_image_url = imageUrl;
+            }
+
+            const { data, error } = await this.supabase
+                .from('flight_requests')
+                .update(updateData)
+                .eq('id', requestId)
+                .eq('user_id', this.user.id)
+                .eq('status', 'pending') // pending 상태일 때만 수정 가능
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('항공권 신청 수정 실패:', error);
+            throw error;
+        }
+    }
+
+    // 항공권 신청 삭제 (미승인 상태일 때만)
+    async deleteFlightRequest(requestId) {
+        try {
+            if (!this.user) await this.getCurrentUser();
+
+            const { error } = await this.supabase
+                .from('flight_requests')
+                .delete()
+                .eq('id', requestId)
+                .eq('user_id', this.user.id)
+                .eq('status', 'rejected'); // rejected 상태일 때만 삭제 가능
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error('항공권 신청 삭제 실패:', error);
+            throw error;
+        }
+    }
+}
+
+// 전역 인스턴스 생성
+window.flightRequestAPI = new FlightRequestAPI();

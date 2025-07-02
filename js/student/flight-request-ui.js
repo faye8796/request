@@ -1,633 +1,428 @@
-// flight-request-ui.js - 항공권 신청 UI 관리
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈
 
-// 전역 변수
-let currentRequest = null;
-let userProfile = null;
-let isEditMode = false;
-
-// 초기화 함수
-async function initializeFlightRequest() {
-    try {
-        showLoading('flightStatusContainer');
-        
-        // 사용자 프로필 로드
-        const profileResult = await flightRequestAPI.getUserProfile();
-        if (profileResult.success) {
-            userProfile = profileResult.data;
-            // 파견 기간 표시
-            if (userProfile.dispatch_duration) {
-                document.getElementById('dispatchDuration').textContent = userProfile.dispatch_duration;
-            }
-        }
-
-        // 현재 신청 현황 로드
-        await loadFlightStatus();
-        
-        // 이벤트 리스너 설정
-        setupEventListeners();
-        
-    } catch (error) {
-        console.error('초기화 오류:', error);
-        showError('flightStatusContainer', '데이터를 불러오는 중 오류가 발생했습니다.');
+class FlightRequestUI {
+    constructor() {
+        this.api = window.flightRequestAPI;
+        this.utils = window.FlightRequestUtils;
+        this.elements = this.initElements();
+        this.imageFile = null;
+        this.userProfile = null;
+        this.existingRequest = null;
+        this.init();
     }
-}
 
-// 신청 현황 로드
-async function loadFlightStatus() {
-    const result = await flightRequestAPI.getMyFlightRequest();
-    
-    if (result.success) {
-        currentRequest = result.data;
-        
-        if (currentRequest) {
-            // 신청 내역이 있는 경우
-            renderFlightStatus(currentRequest);
+    initElements() {
+        return {
+            // 로딩/컨텐츠
+            loadingState: document.getElementById('loadingState'),
+            mainContent: document.getElementById('mainContent'),
+            passportAlert: document.getElementById('passportAlert'),
+            existingRequest: document.getElementById('existingRequest'),
+            requestForm: document.getElementById('requestForm'),
             
-            // 상태에 따라 폼 표시 여부 결정
-            if (currentRequest.status === 'rejected') {
-                // 반려된 경우 수정 가능
-                showFlightForm(true);
-                fillFormData(currentRequest);
+            // 폼 요소
+            form: document.getElementById('flightRequestForm'),
+            purchaseType: document.getElementsByName('purchaseType'),
+            departureDate: document.getElementById('departureDate'),
+            returnDate: document.getElementById('returnDate'),
+            durationMessage: document.getElementById('durationMessage'),
+            departureAirport: document.getElementById('departureAirport'),
+            arrivalAirport: document.getElementById('arrivalAirport'),
+            purchaseLink: document.getElementById('purchaseLink'),
+            purchaseLinkGroup: document.getElementById('purchaseLinkGroup'),
+            flightImage: document.getElementById('flightImage'),
+            imagePreview: document.getElementById('imagePreview'),
+            previewImg: document.getElementById('previewImg'),
+            removeImage: document.getElementById('removeImage'),
+            submitBtn: document.getElementById('submitBtn'),
+            submitBtnText: document.getElementById('submitBtnText'),
+            
+            // 메시지
+            errorMessage: document.getElementById('errorMessage'),
+            successMessage: document.getElementById('successMessage'),
+            logoutBtn: document.getElementById('logoutBtn')
+        };
+    }
+
+    async init() {
+        try {
+            // 이벤트 리스너 설정
+            this.setupEventListeners();
+            
+            // 초기 데이터 로드
+            await this.loadInitialData();
+        } catch (error) {
+            console.error('초기화 오류:', error);
+            this.utils.showError('시스템 초기화 중 오류가 발생했습니다.');
+        }
+    }
+
+    setupEventListeners() {
+        // 폼 제출
+        this.elements.form.addEventListener('submit', (e) => this.handleSubmit(e));
+
+        // 구매 방식 변경
+        this.elements.purchaseType.forEach(radio => {
+            radio.addEventListener('change', () => this.handlePurchaseTypeChange());
+        });
+
+        // 날짜 변경
+        this.elements.departureDate.addEventListener('change', () => this.validateDuration());
+        this.elements.returnDate.addEventListener('change', () => this.validateDuration());
+
+        // 이미지 업로드
+        this.elements.flightImage.addEventListener('change', (e) => this.handleImageUpload(e));
+        this.elements.removeImage.addEventListener('click', () => this.removeImage());
+
+        // 로그아웃
+        this.elements.logoutBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            await this.api.supabase.auth.signOut();
+            window.location.href = '../index.html';
+        });
+
+        // 오늘 날짜로 최소값 설정
+        const today = new Date().toISOString().split('T')[0];
+        this.elements.departureDate.min = today;
+        this.elements.returnDate.min = today;
+    }
+
+    async loadInitialData() {
+        try {
+            this.showLoading(true);
+
+            // 사용자 프로필 가져오기
+            this.userProfile = await this.api.getUserProfile();
+            
+            // 여권정보 확인
+            const passportInfo = await this.api.checkPassportInfo();
+            
+            if (!passportInfo) {
+                // 여권정보가 없으면 알림 표시
+                this.showPassportAlert();
             } else {
-                // 그 외의 경우 폼 숨김
-                hideFlightForm();
+                // 기존 신청 확인
+                this.existingRequest = await this.api.getExistingRequest();
+                
+                if (this.existingRequest) {
+                    if (this.existingRequest.status === 'rejected') {
+                        // 반려된 경우 수정 폼 표시
+                        this.showRequestForm(true);
+                        this.populateForm(this.existingRequest);
+                    } else {
+                        // 기존 신청 내역 표시
+                        this.showExistingRequest();
+                    }
+                } else {
+                    // 새 신청 폼 표시
+                    this.showRequestForm(false);
+                }
             }
-        } else {
-            // 신청 내역이 없는 경우
-            renderNoRequest();
-            showFlightForm(false);
+        } catch (error) {
+            console.error('초기 데이터 로드 실패:', error);
+            this.utils.showError('데이터를 불러오는 중 오류가 발생했습니다.');
+        } finally {
+            this.showLoading(false);
         }
-    } else {
-        showError('flightStatusContainer', '신청 현황을 불러올 수 없습니다.');
     }
-}
 
-// 신청 현황 렌더링
-function renderFlightStatus(request) {
-    const container = document.getElementById('flightStatusContainer');
-    const { 
-        statusUtils, 
-        purchaseTypeUtils, 
-        dateUtils, 
-        airportUtils 
-    } = window.flightRequestUtils;
-    
-    const statusClass = statusUtils.getStatusBadgeClass(request.status);
-    const statusText = statusUtils.getStatusText(request.status);
-    const statusIcon = statusUtils.getStatusIcon(request.status);
-    const purchaseTypeText = purchaseTypeUtils.getPurchaseTypeText(request.purchase_type);
-    const purchaseTypeIcon = purchaseTypeUtils.getPurchaseTypeIcon(request.purchase_type);
-    
-    // 날짜 계산
-    const days = dateUtils.getDaysBetween(request.departure_date, request.return_date);
-    
-    let html = `
-        <div class="status-card">
-            <div class="status-header">
-                <h3>
-                    <i data-lucide="${statusIcon}" class="icon"></i>
-                    현재 신청 상태
-                </h3>
-                <span class="badge ${statusClass}">${statusText}</span>
-            </div>
-            
-            <div class="status-content">
-                <div class="info-grid">
-                    <div class="info-item">
+    showLoading(show) {
+        this.elements.loadingState.style.display = show ? 'flex' : 'none';
+        this.elements.mainContent.style.display = show ? 'none' : 'block';
+    }
+
+    showPassportAlert() {
+        this.elements.passportAlert.style.display = 'flex';
+        this.elements.requestForm.style.display = 'none';
+        this.elements.existingRequest.style.display = 'none';
+    }
+
+    showRequestForm(isUpdate) {
+        this.elements.passportAlert.style.display = 'none';
+        this.elements.requestForm.style.display = 'block';
+        this.elements.existingRequest.style.display = 'none';
+        
+        if (isUpdate) {
+            this.elements.submitBtnText.textContent = '수정하기';
+        } else {
+            this.elements.submitBtnText.textContent = '신청하기';
+        }
+    }
+
+    showExistingRequest() {
+        this.elements.passportAlert.style.display = 'none';
+        this.elements.requestForm.style.display = 'none';
+        this.elements.existingRequest.style.display = 'block';
+        
+        // 기존 신청 내역 렌더링
+        this.renderExistingRequest();
+    }
+
+    renderExistingRequest() {
+        const request = this.existingRequest;
+        const statusInfo = this.utils.getStatusInfo(request.status);
+        
+        let html = `
+            <div class="request-status-card">
+                <div class="request-header">
+                    <h2>항공권 신청 현황</h2>
+                    <span class="status-badge ${statusInfo.class}">${statusInfo.text}</span>
+                </div>
+                
+                <div class="request-info">
+                    <div class="info-group">
                         <label>구매 방식</label>
-                        <span>
-                            <i data-lucide="${purchaseTypeIcon}" class="icon"></i>
-                            ${purchaseTypeText}
-                        </span>
+                        <p>${this.utils.getPurchaseTypeText(request.purchase_type)}</p>
                     </div>
-                    <div class="info-item">
-                        <label>출국일</label>
-                        <span>${formatDate(request.departure_date)}</span>
+                    <div class="info-group">
+                        <label>여행 기간</label>
+                        <p>${this.utils.formatDate(request.departure_date)} ~ ${this.utils.formatDate(request.return_date)}</p>
                     </div>
-                    <div class="info-item">
-                        <label>귀국일</label>
-                        <span>${formatDate(request.return_date)}</span>
+                    <div class="info-group">
+                        <label>경로</label>
+                        <p>${request.departure_airport} → ${request.arrival_airport}</p>
                     </div>
-                    <div class="info-item">
-                        <label>체류 기간</label>
-                        <span>${days}일</span>
+                    <div class="info-group">
+                        <label>신청일</label>
+                        <p>${this.utils.formatDateTime(request.created_at)}</p>
                     </div>
-                    <div class="info-item">
-                        <label>출발 공항</label>
-                        <span>${airportUtils.formatAirport(request.departure_airport)}</span>
-                    </div>
-                    <div class="info-item">
-                        <label>도착 공항</label>
-                        <span>${request.arrival_airport}</span>
-                    </div>
-                </div>
-    `;
-    
-    // 상태별 추가 정보
-    if (request.status === 'rejected' && request.rejection_reason) {
-        html += `
-            <div class="rejection-info">
-                <i data-lucide="alert-circle" class="icon"></i>
-                <div>
-                    <strong>반려 사유:</strong>
-                    <p>${request.rejection_reason}</p>
-                </div>
-            </div>
         `;
-    }
-    
-    // 구매대행이고 승인된 경우 관리자 항공권 다운로드
-    if (request.purchase_type === 'agency' && request.status === 'approved' && request.admin_ticket_url) {
-        html += `
-            <div class="download-section">
-                <h4>항공권 다운로드</h4>
-                <a href="${request.admin_ticket_url}" class="btn btn-primary" download>
-                    <i data-lucide="download" class="icon"></i>
-                    항공권 다운로드
-                </a>
-            </div>
-        `;
-    }
-    
-    // 직접구매이고 승인된 경우 영수증/항공권 업로드
-    if (request.purchase_type === 'direct' && request.status === 'approved') {
-        html += renderDirectPurchaseUpload(request);
-    }
-    
-    // 액션 버튼
-    html += `
-            <div class="status-actions">
-    `;
-    
-    if (request.status === 'pending') {
-        html += `
-                <button class="btn btn-danger" onclick="cancelFlightRequest('${request.id}')">
-                    <i data-lucide="x" class="icon"></i>
-                    신청 취소
-                </button>
-        `;
-    } else if (request.status === 'rejected') {
-        html += `
-                <button class="btn btn-primary" onclick="editFlightRequest()">
-                    <i data-lucide="edit" class="icon"></i>
-                    수정하여 재제출
-                </button>
-                <button class="btn btn-danger" onclick="deleteFlightRequest('${request.id}')">
-                    <i data-lucide="trash-2" class="icon"></i>
-                    신청서 삭제
-                </button>
-        `;
-    }
-    
-    html += `
-            </div>
-        </div>
-    </div>
-    `;
-    
-    container.innerHTML = html;
-    lucide.createIcons();
-}
-
-// 직접구매 업로드 섹션 렌더링
-function renderDirectPurchaseUpload(request) {
-    let html = '<div class="upload-section">';
-    
-    // 영수증 업로드
-    if (!request.receipt_url) {
-        html += `
-            <div class="upload-item">
-                <h4>영수증 업로드</h4>
-                <p>항공권 구매 영수증을 업로드해주세요.</p>
-                <input type="file" id="receiptFile" accept="image/*,.pdf" style="display: none;">
-                <button class="btn btn-secondary" onclick="document.getElementById('receiptFile').click()">
-                    <i data-lucide="upload" class="icon"></i>
-                    영수증 선택
-                </button>
-            </div>
-        `;
-    } else {
-        html += `
-            <div class="upload-item completed">
-                <h4>
-                    <i data-lucide="check-circle" class="icon"></i>
-                    영수증 업로드 완료
-                </h4>
-                <a href="${request.receipt_url}" target="_blank">영수증 보기</a>
-            </div>
-        `;
-    }
-    
-    // 항공권 업로드
-    if (!request.ticket_url) {
-        html += `
-            <div class="upload-item">
-                <h4>항공권 업로드</h4>
-                <p>구매한 항공권을 업로드해주세요.</p>
-                <input type="file" id="ticketFile" accept="image/*,.pdf" style="display: none;">
-                <button class="btn btn-secondary" onclick="document.getElementById('ticketFile').click()">
-                    <i data-lucide="upload" class="icon"></i>
-                    항공권 선택
-                </button>
-            </div>
-        `;
-    } else {
-        html += `
-            <div class="upload-item completed">
-                <h4>
-                    <i data-lucide="check-circle" class="icon"></i>
-                    항공권 업로드 완료
-                </h4>
-                <a href="${request.ticket_url}" target="_blank">항공권 보기</a>
-            </div>
-        `;
-    }
-    
-    html += '</div>';
-    return html;
-}
-
-// 신청 내역 없음 렌더링
-function renderNoRequest() {
-    const container = document.getElementById('flightStatusContainer');
-    container.innerHTML = `
-        <div class="empty-state">
-            <i data-lucide="plane" class="icon"></i>
-            <h3>신청 내역이 없습니다</h3>
-            <p>아래 양식을 작성하여 항공권을 신청해주세요.</p>
-        </div>
-    `;
-    lucide.createIcons();
-}
-
-// 폼 표시/숨김
-function showFlightForm(isEdit = false) {
-    const formSection = document.getElementById('flightFormSection');
-    formSection.style.display = 'block';
-    isEditMode = isEdit;
-    
-    if (isEdit) {
-        formSection.querySelector('h2').innerHTML = `
-            <i data-lucide="edit" class="icon"></i>
-            항공권 신청서 수정
-        `;
-    }
-    
-    lucide.createIcons();
-}
-
-function hideFlightForm() {
-    document.getElementById('flightFormSection').style.display = 'none';
-}
-
-// 폼 데이터 채우기 (수정 모드)
-function fillFormData(request) {
-    const form = document.getElementById('flightRequestForm');
-    
-    // 구매 방식
-    form.querySelector(`input[name="purchaseType"][value="${request.purchase_type}"]`).checked = true;
-    
-    // 날짜
-    form.departureDate.value = request.departure_date;
-    form.returnDate.value = request.return_date;
-    
-    // 공항
-    if (form.departureAirport.querySelector(`option[value="${request.departure_airport}"]`)) {
-        form.departureAirport.value = request.departure_airport;
-    } else {
-        form.departureAirport.value = 'other';
-        document.getElementById('departureAirportOther').value = request.departure_airport;
-        document.getElementById('departureAirportOther').style.display = 'block';
-    }
-    
-    form.arrivalAirport.value = request.arrival_airport;
-    
-    // 구매처 링크
-    if (request.purchase_link) {
-        form.purchaseLink.value = request.purchase_link;
-    }
-    
-    // 날짜 변경 시 파견기간 재검증
-    validateDates();
-}
-
-// 이벤트 리스너 설정
-function setupEventListeners() {
-    const form = document.getElementById('flightRequestForm');
-    
-    // 폼 제출
-    form.addEventListener('submit', handleFormSubmit);
-    
-    // 출발 공항 선택
-    document.getElementById('departureAirport').addEventListener('change', function(e) {
-        const otherInput = document.getElementById('departureAirportOther');
-        if (e.target.value === 'other') {
-            otherInput.style.display = 'block';
-            otherInput.required = true;
-        } else {
-            otherInput.style.display = 'none';
-            otherInput.required = false;
-            otherInput.value = '';
-        }
-    });
-    
-    // 날짜 변경 시 검증
-    document.getElementById('departureDate').addEventListener('change', validateDates);
-    document.getElementById('returnDate').addEventListener('change', validateDates);
-    
-    // 파일 선택
-    document.getElementById('flightImage').addEventListener('change', handleFileSelect);
-    
-    // 직접구매 파일 업로드 (있는 경우)
-    const receiptFile = document.getElementById('receiptFile');
-    if (receiptFile) {
-        receiptFile.addEventListener('change', (e) => handleReceiptUpload(e.target.files[0]));
-    }
-    
-    const ticketFile = document.getElementById('ticketFile');
-    if (ticketFile) {
-        ticketFile.addEventListener('change', (e) => handleTicketUpload(e.target.files[0]));
-    }
-}
-
-// 날짜 검증
-function validateDates() {
-    const departureDate = document.getElementById('departureDate').value;
-    const returnDate = document.getElementById('returnDate').value;
-    const { dateUtils, formValidation } = window.flightRequestUtils;
-    
-    if (!departureDate || !returnDate) return;
-    
-    // 과거 날짜 체크
-    if (dateUtils.isPastDate(departureDate)) {
-        formValidation.showError('departureDate', '출국일은 오늘 이후여야 합니다.');
-        return;
-    } else {
-        formValidation.clearError('departureDate');
-    }
-    
-    // 날짜 순서 체크
-    if (!dateUtils.isValidDateRange(departureDate, returnDate)) {
-        formValidation.showError('returnDate', '귀국일은 출국일 이후여야 합니다.');
-        return;
-    } else {
-        formValidation.clearError('returnDate');
-    }
-    
-    // 파견 기간 체크
-    const days = dateUtils.getDaysBetween(departureDate, returnDate);
-    if (!window.flightRequestUtils.validateDispatchDuration(days)) {
-        formValidation.showError('returnDate', 
-            `파견 기간은 90일, 100일, 112일, 120일 중 하나여야 합니다. (현재: ${days}일)`);
-    } else {
-        formValidation.clearError('returnDate');
-    }
-}
-
-// 파일 선택 처리
-function handleFileSelect(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const { fileUtils, formValidation } = window.flightRequestUtils;
-    
-    // 파일 검증
-    if (!fileUtils.validateFileSize(file)) {
-        formValidation.showError('flightImage', '파일 크기는 10MB 이하여야 합니다.');
-        e.target.value = '';
-        return;
-    }
-    
-    if (!fileUtils.validateFileType(file)) {
-        formValidation.showError('flightImage', '이미지 파일(JPG, PNG) 또는 PDF만 업로드 가능합니다.');
-        e.target.value = '';
-        return;
-    }
-    
-    formValidation.clearError('flightImage');
-    
-    // 미리보기 생성
-    fileUtils.createImagePreview(file, (preview) => {
-        if (preview) {
-            const previewDiv = document.getElementById('flightImagePreview');
-            previewDiv.querySelector('img').src = preview;
-            previewDiv.style.display = 'block';
-        }
-    });
-}
-
-// 이미지 제거
-function removeFlightImage() {
-    document.getElementById('flightImage').value = '';
-    document.getElementById('flightImagePreview').style.display = 'none';
-}
-
-// 폼 제출 처리
-async function handleFormSubmit(e) {
-    e.preventDefault();
-    
-    const form = e.target;
-    const { formValidation, notificationUtils } = window.flightRequestUtils;
-    
-    // 기본 검증
-    if (!formValidation.validateRequired(form)) {
-        notificationUtils.showError('필수 항목을 모두 입력해주세요.');
-        return;
-    }
-    
-    // URL 검증
-    if (form.purchaseLink.value && !formValidation.isValidUrl(form.purchaseLink.value)) {
-        formValidation.showError('purchaseLink', '올바른 URL 형식이 아닙니다.');
-        return;
-    }
-    
-    // 날짜 검증
-    validateDates();
-    if (form.querySelector('.error')) {
-        notificationUtils.showError('입력 내용을 확인해주세요.');
-        return;
-    }
-    
-    // 폼 데이터 수집
-    const formData = {
-        purchaseType: form.querySelector('input[name="purchaseType"]:checked').value,
-        departureDate: form.departureDate.value,
-        returnDate: form.returnDate.value,
-        departureAirport: form.departureAirport.value === 'other' 
-            ? form.departureAirportOther.value 
-            : form.departureAirport.value,
-        arrivalAirport: form.arrivalAirport.value,
-        purchaseLink: form.purchaseLink.value,
-        flightImage: form.flightImage.files[0]
-    };
-    
-    // 제출 버튼 비활성화
-    const submitButton = form.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
-    submitButton.innerHTML = '<i data-lucide="loader-2" class="icon spin"></i> 제출 중...';
-    lucide.createIcons();
-    
-    try {
-        let result;
         
-        if (isEditMode && currentRequest) {
-            // 수정 모드
-            formData.existingImageUrl = currentRequest.flight_image_url;
-            formData.imageChanged = form.flightImage.files.length > 0;
-            formData.version = currentRequest.version;
-            
-            result = await flightRequestAPI.updateFlightRequest(currentRequest.id, formData);
-        } else {
-            // 신규 제출
-            result = await flightRequestAPI.submitFlightRequest(formData);
+        if (request.status === 'rejected' && request.rejection_reason) {
+            html += `
+                    <div class="info-group">
+                        <label class="text-danger">반려 사유</label>
+                        <p class="text-danger">${request.rejection_reason}</p>
+                    </div>
+            `;
         }
         
-        if (result.success) {
-            notificationUtils.showSuccess(
-                isEditMode ? '신청서가 수정되었습니다.' : '신청서가 제출되었습니다.'
-            );
-            
-            // 폼 초기화 및 현황 새로고침
-            form.reset();
-            await loadFlightStatus();
-        } else {
-            throw new Error(result.error);
+        html += `
+                </div>
+                
+                <div class="request-actions">
+        `;
+        
+        if (request.status === 'pending') {
+            html += `
+                    <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
+                        뒤로가기
+                    </button>
+            `;
+        } else if (request.status === 'rejected') {
+            html += `
+                    <button class="btn btn-danger" onclick="flightRequestUI.deleteRequest('${request.id}')">
+                        삭제하고 재신청
+                    </button>
+            `;
         }
-    } catch (error) {
-        console.error('제출 오류:', error);
-        notificationUtils.showError(error.message || '제출 중 오류가 발생했습니다.');
-    } finally {
-        submitButton.disabled = false;
-        submitButton.innerHTML = '<i data-lucide="send" class="icon"></i> 신청서 제출';
-        lucide.createIcons();
+        
+        html += `
+                </div>
+            </div>
+        `;
+        
+        this.elements.existingRequest.innerHTML = html;
+    }
+
+    populateForm(request) {
+        // 구매 방식
+        const purchaseTypeRadio = Array.from(this.elements.purchaseType)
+            .find(radio => radio.value === request.purchase_type);
+        if (purchaseTypeRadio) purchaseTypeRadio.checked = true;
+        
+        // 날짜
+        this.elements.departureDate.value = request.departure_date;
+        this.elements.returnDate.value = request.return_date;
+        
+        // 공항
+        this.elements.departureAirport.value = request.departure_airport;
+        this.elements.arrivalAirport.value = request.arrival_airport;
+        
+        // 구매 링크
+        if (request.purchase_link) {
+            this.elements.purchaseLink.value = request.purchase_link;
+        }
+        
+        // 구매 방식에 따른 UI 업데이트
+        this.handlePurchaseTypeChange();
+        
+        // 파견 기간 검증
+        this.validateDuration();
+    }
+
+    handlePurchaseTypeChange() {
+        const selectedType = Array.from(this.elements.purchaseType)
+            .find(radio => radio.checked)?.value;
+        
+        if (selectedType === 'direct') {
+            this.elements.purchaseLinkGroup.style.display = 'block';
+        } else {
+            this.elements.purchaseLinkGroup.style.display = 'none';
+            this.elements.purchaseLink.value = '';
+        }
+    }
+
+    validateDuration() {
+        const departureDate = this.elements.departureDate.value;
+        const returnDate = this.elements.returnDate.value;
+        
+        if (!departureDate || !returnDate) {
+            this.elements.durationMessage.textContent = '';
+            return true;
+        }
+        
+        const dateValidation = this.utils.validateDates(departureDate, returnDate);
+        if (!dateValidation.valid) {
+            this.elements.durationMessage.textContent = dateValidation.message;
+            this.elements.durationMessage.style.color = '#dc3545';
+            return false;
+        }
+        
+        const duration = this.utils.calculateDuration(departureDate, returnDate);
+        const dispatchDuration = this.userProfile?.dispatch_duration || 90;
+        const durationValidation = this.utils.validateDispatchDuration(duration, dispatchDuration);
+        
+        if (!durationValidation.valid) {
+            this.elements.durationMessage.textContent = durationValidation.message;
+            this.elements.durationMessage.style.color = '#dc3545';
+            return false;
+        }
+        
+        this.elements.durationMessage.textContent = `파견 기간: ${duration}일`;
+        this.elements.durationMessage.style.color = '#28a745';
+        return true;
+    }
+
+    handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // 파일 유효성 검사
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        if (!allowedTypes.includes(file.type)) {
+            this.utils.showError('JPG, PNG 형식의 이미지만 업로드 가능합니다.');
+            event.target.value = '';
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            this.utils.showError('파일 크기는 5MB를 초과할 수 없습니다.');
+            event.target.value = '';
+            return;
+        }
+
+        this.imageFile = file;
+
+        // 미리보기 표시
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.elements.previewImg.src = e.target.result;
+            this.elements.imagePreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    removeImage() {
+        this.imageFile = null;
+        this.elements.flightImage.value = '';
+        this.elements.imagePreview.style.display = 'none';
+        this.elements.previewImg.src = '';
+    }
+
+    async handleSubmit(event) {
+        event.preventDefault();
+
+        // 날짜 및 기간 검증
+        if (!this.validateDuration()) {
+            return;
+        }
+
+        // 이미지 확인 (새 신청 또는 이미지 변경 시 필수)
+        const isUpdate = this.existingRequest && this.existingRequest.status === 'rejected';
+        if (!isUpdate && !this.imageFile) {
+            this.utils.showError('항공권 정보 이미지를 업로드해주세요.');
+            return;
+        }
+
+        try {
+            this.setLoading(true);
+
+            const selectedType = Array.from(this.elements.purchaseType)
+                .find(radio => radio.checked)?.value;
+
+            const requestData = {
+                purchase_type: selectedType,
+                departure_date: this.elements.departureDate.value,
+                return_date: this.elements.returnDate.value,
+                departure_airport: this.elements.departureAirport.value.trim(),
+                arrival_airport: this.elements.arrivalAirport.value.trim(),
+                purchase_link: selectedType === 'direct' ? this.elements.purchaseLink.value.trim() : null
+            };
+
+            let result;
+            if (isUpdate) {
+                requestData.version = this.existingRequest.version;
+                result = await this.api.updateFlightRequest(
+                    this.existingRequest.id,
+                    requestData,
+                    this.imageFile
+                );
+                this.utils.showSuccess('항공권 신청이 성공적으로 수정되었습니다.');
+            } else {
+                result = await this.api.createFlightRequest(requestData, this.imageFile);
+                this.utils.showSuccess('항공권 신청이 성공적으로 접수되었습니다.');
+            }
+
+            // 3초 후 메인 페이지로 이동
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 3000);
+
+        } catch (error) {
+            console.error('신청 실패:', error);
+            this.utils.showError(error.message || '신청 중 오류가 발생했습니다.');
+        } finally {
+            this.setLoading(false);
+        }
+    }
+
+    async deleteRequest(requestId) {
+        if (!confirm('정말로 반려된 신청을 삭제하고 다시 신청하시겠습니까?')) {
+            return;
+        }
+
+        try {
+            this.setLoading(true);
+            await this.api.deleteFlightRequest(requestId);
+            
+            // 페이지 새로고침
+            window.location.reload();
+        } catch (error) {
+            console.error('삭제 실패:', error);
+            this.utils.showError('신청 삭제 중 오류가 발생했습니다.');
+            this.setLoading(false);
+        }
+    }
+
+    setLoading(loading) {
+        this.elements.submitBtn.disabled = loading;
+        const isUpdate = this.existingRequest && this.existingRequest.status === 'rejected';
+        this.elements.submitBtnText.textContent = loading ? '처리 중...' : 
+            (isUpdate ? '수정하기' : '신청하기');
     }
 }
 
-// 신청 취소
-async function cancelFlightRequest(requestId) {
-    if (!confirm('정말로 신청을 취소하시겠습니까?')) return;
-    
-    const result = await flightRequestAPI.deleteFlightRequest(requestId);
-    
-    if (result.success) {
-        window.flightRequestUtils.notificationUtils.showSuccess('신청이 취소되었습니다.');
-        await loadFlightStatus();
-    } else {
-        window.flightRequestUtils.notificationUtils.showError('신청 취소 중 오류가 발생했습니다.');
-    }
-}
-
-// 신청서 삭제
-async function deleteFlightRequest(requestId) {
-    if (!confirm('신청서를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.')) return;
-    
-    const result = await flightRequestAPI.deleteFlightRequest(requestId);
-    
-    if (result.success) {
-        window.flightRequestUtils.notificationUtils.showSuccess('신청서가 삭제되었습니다.');
-        await loadFlightStatus();
-    } else {
-        window.flightRequestUtils.notificationUtils.showError('삭제 중 오류가 발생했습니다.');
-    }
-}
-
-// 수정 모드 진입
-function editFlightRequest() {
-    showFlightForm(true);
-    fillFormData(currentRequest);
-    
-    // 스크롤 이동
-    document.getElementById('flightFormSection').scrollIntoView({ behavior: 'smooth' });
-}
-
-// 영수증 업로드 처리
-async function handleReceiptUpload(file) {
-    if (!file || !currentRequest) return;
-    
-    const { fileUtils, notificationUtils } = window.flightRequestUtils;
-    
-    // 파일 검증
-    if (!fileUtils.validateFileSize(file) || !fileUtils.validateFileType(file)) {
-        notificationUtils.showError('올바른 파일을 선택해주세요.');
-        return;
-    }
-    
-    const result = await flightRequestAPI.uploadReceipt(currentRequest.id, file);
-    
-    if (result.success) {
-        notificationUtils.showSuccess('영수증이 업로드되었습니다.');
-        await loadFlightStatus();
-    } else {
-        notificationUtils.showError('업로드 중 오류가 발생했습니다.');
-    }
-}
-
-// 항공권 업로드 처리
-async function handleTicketUpload(file) {
-    if (!file || !currentRequest) return;
-    
-    const { fileUtils, notificationUtils } = window.flightRequestUtils;
-    
-    // 파일 검증
-    if (!fileUtils.validateFileSize(file) || !fileUtils.validateFileType(file)) {
-        notificationUtils.showError('올바른 파일을 선택해주세요.');
-        return;
-    }
-    
-    const result = await flightRequestAPI.uploadTicket(currentRequest.id, file);
-    
-    if (result.success) {
-        notificationUtils.showSuccess('항공권이 업로드되었습니다.');
-        await loadFlightStatus();
-    } else {
-        notificationUtils.showError('업로드 중 오류가 발생했습니다.');
-    }
-}
-
-// 폼 초기화
-function resetForm() {
-    const form = document.getElementById('flightRequestForm');
-    form.reset();
-    removeFlightImage();
-    
-    // 에러 메시지 제거
-    form.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
-    form.querySelectorAll('.error-message').forEach(el => el.remove());
-    
-    // 기타 공항 입력 숨김
-    document.getElementById('departureAirportOther').style.display = 'none';
-}
-
-// 유틸리티 함수들
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-    const weekday = weekdays[date.getDay()];
-    
-    return `${year}년 ${month}월 ${day}일 (${weekday})`;
-}
-
-function showLoading(containerId) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = `
-        <div class="loading">
-            <i data-lucide="loader-2" class="icon spin"></i>
-            로딩 중...
-        </div>
-    `;
-    lucide.createIcons();
-}
-
-function showError(containerId, message) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = `
-        <div class="error-message">
-            <i data-lucide="alert-circle" class="icon"></i>
-            ${message}
-        </div>
-    `;
-    lucide.createIcons();
-}
+// 페이지 로드 시 초기화
+document.addEventListener('DOMContentLoaded', () => {
+    // 인증 체크
+    window.supabase.auth.getUser().then(({ data: { user }, error }) => {
+        if (!user) {
+            window.location.href = '../index.html';
+            return;
+        }
+        
+        // UI 초기화
+        window.flightRequestUI = new FlightRequestUI();
+    });
+});
