@@ -1,12 +1,16 @@
 /**
- * 항공권 관리 API 모듈 v5.3.0
+ * 항공권 관리 API 모듈 v7.0.0
  * 항공권 신청 관련 모든 API 통신을 담당
+ * Storage 유틸리티 통합 버전
  */
 
 window.FlightManagementAPI = (function() {
     'use strict';
 
-    console.log('📡 FlightManagementAPI 모듈 로드 시작');
+    console.log('📡 FlightManagementAPI v7.0.0 모듈 로드 시작');
+
+    // StorageUtils 참조
+    const storageUtils = window.StorageUtils;
 
     // 통계 데이터 가져오기
     async function getStatistics() {
@@ -102,7 +106,8 @@ window.FlightManagementAPI = (function() {
                         passport_number,
                         name_english,
                         issue_date,
-                        expiry_date
+                        expiry_date,
+                        image_url
                     )
                 `)
                 .eq('id', requestId)
@@ -151,32 +156,19 @@ window.FlightManagementAPI = (function() {
         }
     }
 
-    // 구매대행 항공권 업로드
+    // 구매대행 항공권 업로드 (Storage 유틸리티 사용)
     async function uploadAdminTicket(requestId, file) {
         try {
             console.log('📤 구매대행 항공권 업로드 중...', { requestId, file: file.name });
             
-            // 파일 업로드
-            const fileName = `admin-tickets/${requestId}/${Date.now()}_${file.name}`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('flight-documents')
-                .upload(fileName, file, {
-                    cacheControl: '3600',
-                    upsert: false
-                });
-
-            if (uploadError) throw uploadError;
-
-            // 공개 URL 가져오기
-            const { data: { publicUrl } } = supabase.storage
-                .from('flight-documents')
-                .getPublicUrl(fileName);
+            // StorageUtils를 사용한 파일 업로드
+            const uploadResult = await storageUtils.uploadAdminTicket(file, requestId);
 
             // 데이터베이스 업데이트
             const { data, error } = await supabase
                 .from('flight_requests')
                 .update({
-                    admin_ticket_url: publicUrl,
+                    admin_ticket_url: uploadResult.publicUrl,
                     status: 'completed',
                     updated_at: new Date().toISOString()
                 })
@@ -217,46 +209,25 @@ window.FlightManagementAPI = (function() {
         }
     }
 
-    // Storage 버킷 생성 확인
-    async function ensureStorageBucket() {
+    // 파일 유효성 검증 (StorageUtils 활용)
+    function validateFile(file, fileType = 'document') {
         try {
-            console.log('🗄️ Storage 버킷 확인 중...');
-            
-            const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-            
-            if (listError) {
-                console.error('❌ 버킷 목록 조회 실패:', listError);
-                return;
-            }
-
-            const bucketExists = buckets.some(bucket => bucket.name === 'flight-documents');
-            
-            if (!bucketExists) {
-                console.log('📦 flight-documents 버킷 생성 중...');
-                
-                const { data, error } = await supabase.storage.createBucket('flight-documents', {
-                    public: true,
-                    allowedMimeTypes: ['image/jpeg', 'image/png', 'application/pdf']
-                });
-
-                if (error) {
-                    console.error('❌ 버킷 생성 실패:', error);
-                } else {
-                    console.log('✅ 버킷 생성 성공:', data);
-                }
-            } else {
-                console.log('✅ flight-documents 버킷이 이미 존재합니다');
-            }
-
+            return storageUtils.validateFile(file, fileType);
         } catch (error) {
-            console.error('❌ Storage 버킷 확인 실패:', error);
+            console.error('파일 검증 실패:', error);
+            throw error;
         }
+    }
+
+    // 파일 크기 포맷팅 (StorageUtils 활용)
+    function formatFileSize(bytes) {
+        return storageUtils.formatFileSize(bytes);
     }
 
     // 초기화
     async function init() {
-        console.log('🚀 FlightManagementAPI 초기화');
-        await ensureStorageBucket();
+        console.log('🚀 FlightManagementAPI v7.0.0 초기화');
+        // Storage 버킷 초기화는 StorageUtils에서 자동으로 처리
     }
 
     // 모듈 초기화
@@ -269,9 +240,11 @@ window.FlightManagementAPI = (function() {
         getFlightRequestDetail,
         updateRequestStatus,
         uploadAdminTicket,
-        getPassportInfo
+        getPassportInfo,
+        validateFile,
+        formatFileSize
     };
 
 })();
 
-console.log('✅ FlightManagementAPI 모듈 로드 완료');
+console.log('✅ FlightManagementAPI v7.0.0 모듈 로드 완료 - Storage 유틸리티 통합');
