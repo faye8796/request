@@ -1,7 +1,12 @@
 /**
- * 📝 수료평가 시스템 - 관리자 UI 모듈 v5.1.3
+ * 📝 수료평가 시스템 - 관리자 UI 모듈 v5.1.4
  * 문제 관리, 시험 결과 조회 UI 관리
  * 기존 시스템과 완전 분리된 독립 모듈
+ * 
+ * v5.1.4 업데이트:
+ * - 🛠️ switchView() 함수에서 HTML 요소 display 속성 변경 로직 추가
+ * - 시험 결과 탭에서 올바른 학생 응시 결과 데이터 표시 보장
+ * - 통계 카드 및 필터 영역 표시/숨김 로직 개선
  * 
  * v5.1.3 업데이트:
  * - editQuestion() 함수 수정 - getQuestionById API 사용
@@ -15,7 +20,7 @@ class ExamAdminUI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamAdminUI',
-            version: '5.1.3',
+            version: '5.1.4',
             lastUpdate: new Date().toISOString()
         };
         this.currentView = 'questions'; // questions, results, settings
@@ -30,7 +35,7 @@ class ExamAdminUI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamAdminUI v5.1.3 초기화 시작...');
+            console.log('🔄 ExamAdminUI v5.1.4 초기화 시작...');
             
             // 필수 모듈 확인
             if (!window.ExamAdminAPI) {
@@ -44,7 +49,7 @@ class ExamAdminUI {
             await this.showQuestionsView();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamAdminUI v5.1.3 초기화 완료');
+            console.log('✅ ExamAdminUI v5.1.4 초기화 완료');
             return true;
             
         } catch (error) {
@@ -84,6 +89,28 @@ class ExamAdminUI {
             this.handleSearch();
         });
 
+        // 결과 검색
+        const resultSearchInput = document.getElementById('result-search');
+        if (resultSearchInput) {
+            resultSearchInput.addEventListener('input', this.debounce(() => {
+                this.handleSearch();
+            }, 300));
+        }
+
+        // 합격 상태 필터
+        document.getElementById('pass-status-filter')?.addEventListener('change', () => {
+            this.handleSearch();
+        });
+
+        // 새로고침 버튼들
+        document.getElementById('refresh-button')?.addEventListener('click', () => {
+            this.showQuestionsView();
+        });
+
+        document.getElementById('refresh-results-button')?.addEventListener('click', () => {
+            this.showResultsView();
+        });
+
         // 모달 닫기
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('exam-modal-overlay')) {
@@ -104,14 +131,21 @@ class ExamAdminUI {
     // ==================== 뷰 관리 ====================
 
     /**
-     * 🔄 뷰 전환
+     * 🔄 뷰 전환 - 🛠️ v5.1.4에서 HTML 요소 display 속성 변경 로직 추가
      */
     async switchView(view) {
         try {
+            console.log('🔄 뷰 전환:', this.currentView, '→', view);
+            
             // 탭 활성화 상태 변경
             document.querySelectorAll('.exam-nav-tab').forEach(tab => {
                 tab.classList.toggle('active', tab.dataset.view === view);
             });
+
+            // 🛠️ HTML 요소들의 display 속성 변경
+            this.hideAllViews();
+            this.hideAllStats();
+            this.hideAllFilters();
 
             this.currentView = view;
             this.currentPage = 1;
@@ -119,21 +153,108 @@ class ExamAdminUI {
             // 뷰별 콘텐츠 표시
             switch (view) {
                 case 'questions':
+                    this.showViewElement('questions-view');
+                    this.showStatsElements(['questions-stats', 'active-questions-stats', 'inactive-questions-stats']);
+                    this.showFilterElement('questions-filters');
                     await this.showQuestionsView();
                     break;
                 case 'results':
+                    this.showViewElement('results-view');
+                    this.showStatsElements(['sessions-stats', 'passed-stats', 'failed-stats', 'pass-rate-stats', 'avg-score-stats']);
+                    this.showFilterElement('results-filters');
                     await this.showResultsView();
                     break;
                 case 'settings':
+                    this.showViewElement('settings-view');
+                    // 설정 뷰는 통계나 필터가 없음
                     await this.showSettingsView();
                     break;
                 default:
+                    this.showViewElement('questions-view');
+                    this.showStatsElements(['questions-stats', 'active-questions-stats', 'inactive-questions-stats']);
+                    this.showFilterElement('questions-filters');
                     await this.showQuestionsView();
             }
+
+            console.log('✅ 뷰 전환 완료:', view);
 
         } catch (error) {
             console.error('❌ 뷰 전환 실패:', error);
             this.showError('뷰 전환 중 오류가 발생했습니다.');
+        }
+    }
+
+    /**
+     * 🙈 모든 뷰 숨기기
+     */
+    hideAllViews() {
+        const views = ['questions-view', 'results-view', 'settings-view'];
+        views.forEach(viewId => {
+            const element = document.getElementById(viewId);
+            if (element) {
+                element.style.display = 'none';
+            }
+        });
+    }
+
+    /**
+     * 👁️ 특정 뷰 보이기
+     */
+    showViewElement(viewId) {
+        const element = document.getElementById(viewId);
+        if (element) {
+            element.style.display = 'block';
+        }
+    }
+
+    /**
+     * 🙈 모든 통계 카드 숨기기
+     */
+    hideAllStats() {
+        const stats = [
+            'questions-stats', 'active-questions-stats', 'inactive-questions-stats',
+            'sessions-stats', 'passed-stats', 'failed-stats', 'pass-rate-stats', 'avg-score-stats'
+        ];
+        stats.forEach(statId => {
+            const element = document.getElementById(statId);
+            if (element) {
+                element.style.display = 'none';
+            }
+        });
+    }
+
+    /**
+     * 👁️ 특정 통계 카드들 보이기
+     */
+    showStatsElements(statIds) {
+        statIds.forEach(statId => {
+            const element = document.getElementById(statId);
+            if (element) {
+                element.style.display = 'block';
+            }
+        });
+    }
+
+    /**
+     * 🙈 모든 필터 영역 숨기기
+     */
+    hideAllFilters() {
+        const filters = ['questions-filters', 'results-filters'];
+        filters.forEach(filterId => {
+            const element = document.getElementById(filterId);
+            if (element) {
+                element.style.display = 'none';
+            }
+        });
+    }
+
+    /**
+     * 👁️ 특정 필터 영역 보이기
+     */
+    showFilterElement(filterId) {
+        const element = document.getElementById(filterId);
+        if (element) {
+            element.style.display = 'block';
         }
     }
 
@@ -1135,5 +1256,5 @@ class ExamAdminUI {
 if (typeof window !== 'undefined') {
     window.ExamAdminUI = new ExamAdminUI();
     window.examAdminUI = window.ExamAdminUI; // 편의를 위한 소문자 별칭
-    console.log('🎨 ExamAdminUI v5.1.3 모듈 로드됨 - 문제 수정 버튼 오류 해결');
+    console.log('🎨 ExamAdminUI v5.1.4 모듈 로드됨 - 뷰 전환 오류 수정');
 }
