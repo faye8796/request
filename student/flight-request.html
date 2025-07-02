@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>항공권 신청 - 세종학당재단 문화인턴</title>
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/student.css">
+    <link rel="stylesheet" href="../css/flight-request.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <header class="header">
+            <h1>
+                <i data-lucide="plane" class="icon"></i>
+                항공권 신청
+            </h1>
+            <button class="btn-logout" onclick="handleLogout()">
+                <i data-lucide="log-out" class="icon"></i>
+                로그아웃
+            </button>
+        </header>
+
+        <!-- 네비게이션 -->
+        <nav class="nav">
+            <a href="dashboard.html" class="nav-link">
+                <i data-lucide="home" class="icon"></i>
+                대시보드
+            </a>
+            <a href="passport-info.html" class="nav-link">
+                <i data-lucide="credit-card" class="icon"></i>
+                여권정보
+            </a>
+            <a href="flight-request.html" class="nav-link active">
+                <i data-lucide="plane" class="icon"></i>
+                항공권 신청
+            </a>
+        </nav>
+
+        <!-- 메인 콘텐츠 -->
+        <main class="main-content">
+            <!-- 신청 현황 섹션 -->
+            <section class="flight-status-section">
+                <h2>
+                    <i data-lucide="clipboard-list" class="icon"></i>
+                    신청 현황
+                </h2>
+                <div id="flightStatusContainer" class="status-container">
+                    <div class="loading">
+                        <i data-lucide="loader-2" class="icon spin"></i>
+                        로딩 중...
+                    </div>
+                </div>
+            </section>
+
+            <!-- 신청 폼 섹션 -->
+            <section id="flightFormSection" class="flight-form-section" style="display: none;">
+                <h2>
+                    <i data-lucide="file-plus" class="icon"></i>
+                    항공권 신청서 작성
+                </h2>
+                
+                <form id="flightRequestForm" class="flight-form">
+                    <!-- 구매 방식 선택 -->
+                    <div class="form-group">
+                        <label class="required">구매 방식</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="purchaseType" value="direct" required>
+                                <span>직접 구매</span>
+                                <small>본인이 직접 항공권을 구매합니다</small>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="purchaseType" value="agency" required>
+                                <span>구매 대행</span>
+                                <small>재단에서 항공권 구매를 대행합니다</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 파견 기간 정보 -->
+                    <div class="info-box">
+                        <i data-lucide="info" class="icon"></i>
+                        <div>
+                            <strong>파견 기간:</strong> <span id="dispatchDuration">-</span>일
+                            <br>
+                            <small>출국일과 귀국일 선택 시 파견 기간이 자동으로 검증됩니다.</small>
+                        </div>
+                    </div>
+
+                    <!-- 여행 날짜 -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="departureDate" class="required">출국일</label>
+                            <input type="date" id="departureDate" name="departureDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="returnDate" class="required">귀국일</label>
+                            <input type="date" id="returnDate" name="returnDate" required>
+                        </div>
+                    </div>
+
+                    <!-- 공항 정보 -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="departureAirport" class="required">출발 공항</label>
+                            <select id="departureAirport" name="departureAirport" required>
+                                <option value="">선택하세요</option>
+                                <option value="ICN">인천국제공항 (ICN)</option>
+                                <option value="GMP">김포국제공항 (GMP)</option>
+                                <option value="PUS">김해국제공항 (PUS)</option>
+                                <option value="CJU">제주국제공항 (CJU)</option>
+                                <option value="TAE">대구국제공항 (TAE)</option>
+                                <option value="other">기타 (직접 입력)</option>
+                            </select>
+                            <input type="text" id="departureAirportOther" name="departureAirportOther" 
+                                   placeholder="공항명과 코드를 입력하세요" style="display: none; margin-top: 8px;">
+                        </div>
+                        <div class="form-group">
+                            <label for="arrivalAirport" class="required">도착 공항</label>
+                            <input type="text" id="arrivalAirport" name="arrivalAirport" 
+                                   placeholder="예: 베이징 서우두 국제공항 (PEK)" required>
+                        </div>
+                    </div>
+
+                    <!-- 항공권 정보 이미지 -->
+                    <div class="form-group">
+                        <label for="flightImage" class="required">항공권 정보 이미지</label>
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="flightImage" name="flightImage" 
+                                   accept="image/*,.pdf" required>
+                            <div class="file-upload-info">
+                                <i data-lucide="upload" class="icon"></i>
+                                <span>파일을 선택하거나 여기로 드래그하세요</span>
+                                <small>지원 형식: JPG, PNG, PDF (최대 10MB)</small>
+                            </div>
+                        </div>
+                        <div id="flightImagePreview" class="image-preview" style="display: none;">
+                            <img src="" alt="항공권 이미지 미리보기">
+                            <button type="button" class="btn-remove" onclick="removeFlightImage()">
+                                <i data-lucide="x" class="icon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 구매처 링크 -->
+                    <div class="form-group">
+                        <label for="purchaseLink">구매처 링크</label>
+                        <input type="url" id="purchaseLink" name="purchaseLink" 
+                               placeholder="https://example.com/flight-booking">
+                        <small>항공권을 구매한 웹사이트 주소를 입력하세요 (선택사항)</small>
+                    </div>
+
+                    <!-- 제출 버튼 -->
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                            <i data-lucide="x" class="icon"></i>
+                            초기화
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-lucide="send" class="icon"></i>
+                            신청서 제출
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 공통 스크립트 -->
+    <script src="../js/common.js"></script>
+    <script src="../js/auth.js"></script>
+    <!-- 항공권 신청 스크립트 -->
+    <script src="../js/student/flight-request-utils.js"></script>
+    <script src="../js/student/flight-request-api.js"></script>
+    <script src="../js/student/flight-request-ui.js"></script>
+    <script>
+        // 페이지 초기화
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            
+            // 인증 확인
+            const user = await checkAuth();
+            if (!user) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // 항공권 신청 초기화
+            await initializeFlightRequest();
+        });
+    </script>
+</body>
+</html>
