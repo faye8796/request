@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>수료평가 응시 - 세종학당 문화인턴 지원 시스템 v5.2.1</title>
+    <title>수료평가 응시 - 세종학당 문화인턴 지원 시스템 v6.2.0</title>
     
     <!-- 학생용 수료평가 전용 CSS -->
-    <link rel="stylesheet" href="../css/exam-student.css?v=5.2.1">
+    <link rel="stylesheet" href="../css/exam-student.css?v=6.2.0">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -87,6 +87,10 @@
                     <div id="question-container" class="exam-question-container">
                         <div class="question-header">
                             <div id="question-number" class="question-number">문제 1</div>
+                            <div id="question-subject" class="question-subject" style="display: none;">
+                                <i data-lucide="book-open"></i>
+                                <span id="question-subject-text">과목명</span>
+                            </div>
                             <p id="question-text" class="question-text">문제를 불러오는 중입니다...</p>
                         </div>
 
@@ -149,7 +153,7 @@
     <!-- JavaScript 모듈들 -->
     
     <!-- 1. 기본 설정 및 Supabase -->
-    <script src="../js/config.js?v=5.2.1"></script>
+    <script src="../js/config.js?v=6.2.0"></script>
     <script>
         // Supabase 클라이언트 초기화
         if (window.CONFIG && window.CONFIG.SUPABASE) {
@@ -164,18 +168,19 @@
     </script>
 
     <!-- 2. 학생용 수료평가 전용 모듈들 -->
-    <script src="../js/exam/exam-student-utils.js?v=5.2.1"></script>
-    <script src="../js/exam/exam-student-api.js?v=5.2.1"></script>
-    <script src="../js/exam/exam-student-ui.js?v=5.2.1"></script>
+    <script src="../js/exam/exam-student-utils.js?v=6.2.0"></script>
+    <script src="../js/exam/exam-student-api.js?v=6.2.0"></script>
+    <script src="../js/exam/exam-student-ui.js?v=6.2.0"></script>
 
     <!-- 3. 메인 초기화 스크립트 -->
     <script>
         /**
-         * 📚 학생용 수료평가 응시 시스템 메인 스크립트 v5.2.1
+         * 📚 학생용 수료평가 응시 시스템 메인 스크립트 v6.2.0
          * 완전히 독립된 학생용 수료평가 시스템
+         * v6.2.0 업데이트: 과목명 표시 기능 추가
          */
 
-        console.log('📚 학생용 수료평가 응시 시스템 v5.2.1 초기화 시작');
+        console.log('📚 학생용 수료평가 응시 시스템 v6.2.0 초기화 시작');
 
         /**
          * 🔐 학생 인증 확인
@@ -264,7 +269,7 @@
                     lucide.createIcons();
                 }
 
-                console.log('🎉 학생용 수료평가 응시 시스템 v5.2.1 초기화 완료!');
+                console.log('🎉 학생용 수료평가 응시 시스템 v6.2.0 초기화 완료! - 과목명 표시 기능 추가');
 
             } catch (error) {
                 console.error('💥 수료평가 시스템 초기화 실패:', error);
@@ -319,7 +324,7 @@
                     console.log(`🔧 디버그 모드 ${debugMode ? '활성화' : '비활성화'}됨`);
                     
                     if (debugMode) {
-                        console.group('🐛 수료평가 시스템 디버그 정보 v5.2.1');
+                        console.group('🐛 수료평가 시스템 디버그 정보 v6.2.0');
                         console.log('모듈 상태:', {
                             ExamStudentUtils: window.ExamStudentUtils?.getModuleStatus?.(),
                             ExamStudentAPI: window.ExamStudentAPI?.getModuleStatus?.(),
@@ -374,7 +379,7 @@
          * 🏁 DOMContentLoaded 이벤트
          */
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('📚 학생용 수료평가 응시 시스템 v5.2.1 시작');
+            console.log('📚 학생용 수료평가 응시 시스템 v6.2.0 시작');
             
             try {
                 // 시스템 초기화
@@ -412,7 +417,7 @@
             }
         });
 
-        console.log('📚 학생용 수료평가 응시 시스템 v5.2.1 스크립트 로드 완료');
+        console.log('📚 학생용 수료평가 응시 시스템 v6.2.0 스크립트 로드 완료 - 과목명 표시 기능 추가');
     </script>
 
     <!-- 4. 페이지별 메타 정보 -->
@@ -472,6 +477,36 @@
         .exam-student-btn:focus {
             outline: 3px solid var(--exam-student-primary);
             outline-offset: 3px;
+        }
+
+        /* 📚 과목명 표시 스타일 (v6.2.0 신규) */
+        .question-subject {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.75rem 0;
+            padding: 0.5rem 0.75rem;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #0ea5e9;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #0369a1;
+        }
+
+        .question-subject i {
+            width: 1rem;
+            height: 1rem;
+            color: #0ea5e9;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .question-subject {
+                font-size: 0.85rem;
+                padding: 0.4rem 0.6rem;
+                margin: 0.5rem 0;
+            }
         }
     </style>
 </body>
