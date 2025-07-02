@@ -204,7 +204,7 @@ class PassportUI {
 
             // 3초 후 메인 페이지로 이동
             setTimeout(() => {
-                window.location.href = 'student.html';
+                window.location.href = 'dashboard.html';
             }, 3000);
 
         } catch (error) {
