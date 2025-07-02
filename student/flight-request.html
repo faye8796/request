@@ -207,6 +207,113 @@
         </div>
     </footer>
 
+    <!-- 항공권 제출 모달 -->
+    <div id="ticketSubmitModal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">항공권 제출</h2>
+                <button type="button" class="modal-close" onclick="flightRequestUI.closeModal('ticketSubmitModal')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="ticketSubmitForm">
+                <div class="modal-body">
+                    <p class="modal-description">구매하신 항공권을 업로드해주세요.</p>
+                    
+                    <div class="upload-container">
+                        <input type="file" id="ticketFile" accept="application/pdf,image/*" class="file-input" required>
+                        <label for="ticketFile" class="upload-label">
+                            <div class="upload-content">
+                                <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <p class="upload-text">클릭하여 항공권 업로드</p>
+                                <p class="upload-hint">PDF, JPG, PNG 형식 (최대 10MB)</p>
+                            </div>
+                        </label>
+                        
+                        <div id="ticketPreview" class="file-preview" style="display: none;">
+                            <div class="file-info">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <div>
+                                    <p id="ticketFileName" class="file-name"></p>
+                                    <p id="ticketFileSize" class="file-size"></p>
+                                </div>
+                            </div>
+                            <button type="button" class="remove-file" onclick="flightRequestUI.removeFile('ticket')">제거</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="flightRequestUI.closeModal('ticketSubmitModal')">취소</button>
+                    <button type="submit" class="btn btn-primary">제출하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 영수증 제출 모달 -->
+    <div id="receiptSubmitModal" class="modal" style="display: none;">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">영수증 제출</h2>
+                <button type="button" class="modal-close" onclick="flightRequestUI.closeModal('receiptSubmitModal')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="receiptSubmitForm">
+                <div class="modal-body">
+                    <p class="modal-description">항공권 구매 영수증을 업로드해주세요.</p>
+                    
+                    <div class="upload-container">
+                        <input type="file" id="receiptFile" accept="application/pdf,image/*" class="file-input" required>
+                        <label for="receiptFile" class="upload-label">
+                            <div class="upload-content">
+                                <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M10 9H9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <p class="upload-text">클릭하여 영수증 업로드</p>
+                                <p class="upload-hint">PDF, JPG, PNG 형식 (최대 10MB)</p>
+                            </div>
+                        </label>
+                        
+                        <div id="receiptPreview" class="file-preview" style="display: none;">
+                            <div class="file-info">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <div>
+                                    <p id="receiptFileName" class="file-name"></p>
+                                    <p id="receiptFileSize" class="file-size"></p>
+                                </div>
+                            </div>
+                            <button type="button" class="remove-file" onclick="flightRequestUI.removeFile('receipt')">제거</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="flightRequestUI.closeModal('receiptSubmitModal')">취소</button>
+                    <button type="submit" class="btn btn-primary">제출하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- JavaScript 모듈 -->
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
