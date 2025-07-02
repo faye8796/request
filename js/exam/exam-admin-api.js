@@ -1,10 +1,11 @@
 /**
- * 📝 수료평가 시스템 - 관리자 API 모듈 v5.1.1
+ * 📝 수료평가 시스템 - 관리자 API 모듈 v5.1.2
  * 수료평가 문제 관리, 시험 결과 조회를 위한 API 모듈
  * 기존 시스템과 완전 분리된 독립 모듈
  * 
- * v5.1.1 업데이트:
- * - 문제 순서 관리 API 기능 추가
+ * v5.1.2 업데이트:
+ * - getQuestionById() 메서드 추가 - 문제 수정 버튼 오류 해결
+ * - 문제 순서 관리 API 기능 (v5.1.1 포함)
  * - order_index 기반 정렬 지원
  * - 문제 이동 및 순서 변경 API
  */
@@ -14,7 +15,7 @@ class ExamAdminAPI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamAdminAPI',
-            version: '5.1.1',
+            version: '5.1.2',
             lastUpdate: new Date().toISOString()
         };
         this.supabaseClient = null;
@@ -25,7 +26,7 @@ class ExamAdminAPI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamAdminAPI v5.1.1 초기화 시작...');
+            console.log('🔄 ExamAdminAPI v5.1.2 초기화 시작...');
             
             // Supabase 클라이언트 확인
             if (!window.supabase) {
@@ -38,7 +39,7 @@ class ExamAdminAPI {
             await this.testConnection();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamAdminAPI v5.1.1 초기화 완료');
+            console.log('✅ ExamAdminAPI v5.1.2 초기화 완료');
             return true;
             
         } catch (error) {
@@ -155,6 +156,35 @@ class ExamAdminAPI {
             
         } catch (error) {
             console.error('❌ 순서별 문제 조회 실패:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 🎯 ID로 단일 문제 조회 (문제 수정용)
+     */
+    async getQuestionById(questionId) {
+        try {
+            console.log('🔍 문제 ID로 조회:', questionId);
+            
+            const { data, error } = await this.supabaseClient
+                .from('exam_questions')
+                .select('*')
+                .eq('id', questionId)
+                .single();
+            
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    throw new Error('문제를 찾을 수 없습니다.');
+                }
+                throw error;
+            }
+            
+            console.log('✅ 문제 조회 성공:', questionId);
+            return data;
+            
+        } catch (error) {
+            console.error('❌ 문제 조회 실패:', error);
             throw error;
         }
     }
@@ -699,5 +729,5 @@ class ExamAdminAPI {
 // 전역에 모듈 등록
 if (typeof window !== 'undefined') {
     window.ExamAdminAPI = new ExamAdminAPI();
-    console.log('📝 ExamAdminAPI v5.1.1 모듈 로드됨 - 문제 순서 관리 기능 포함');
+    console.log('📝 ExamAdminAPI v5.1.2 모듈 로드됨 - 문제 수정 버튼 오류 해결');
 }
