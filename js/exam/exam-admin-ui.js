@@ -1,13 +1,13 @@
 /**
- * 📝 수료평가 시스템 - 관리자 UI 모듈 v5.1.2
+ * 📝 수료평가 시스템 - 관리자 UI 모듈 v5.1.3
  * 문제 관리, 시험 결과 조회 UI 관리
  * 기존 시스템과 완전 분리된 독립 모듈
  * 
- * v5.1.2 업데이트:
- * - 문제 순서 관리 UI 완성
- * - 순서 정보 표시 및 순서 변경 버튼 추가
- * - moveQuestionUp/Down 이벤트 핸들러 구현
- * - 실시간 순서 정보 업데이트
+ * v5.1.3 업데이트:
+ * - editQuestion() 함수 수정 - getQuestionById API 사용
+ * - 문제 수정 버튼 "문제를 찾을 수 없습니다" 오류 해결
+ * - 문제 순서 관리 UI 완성 (v5.1.2 포함)
+ * - 실시간 순서 정보 업데이트 (v5.1.2 포함)
  */
 
 class ExamAdminUI {
@@ -15,7 +15,7 @@ class ExamAdminUI {
         this.moduleStatus = {
             initialized: false,
             name: 'ExamAdminUI',
-            version: '5.1.2',
+            version: '5.1.3',
             lastUpdate: new Date().toISOString()
         };
         this.currentView = 'questions'; // questions, results, settings
@@ -30,7 +30,7 @@ class ExamAdminUI {
      */
     async initialize() {
         try {
-            console.log('🔄 ExamAdminUI v5.1.2 초기화 시작...');
+            console.log('🔄 ExamAdminUI v5.1.3 초기화 시작...');
             
             // 필수 모듈 확인
             if (!window.ExamAdminAPI) {
@@ -44,7 +44,7 @@ class ExamAdminUI {
             await this.showQuestionsView();
             
             this.moduleStatus.initialized = true;
-            console.log('✅ ExamAdminUI v5.1.2 초기화 완료');
+            console.log('✅ ExamAdminUI v5.1.3 초기화 완료');
             return true;
             
         } catch (error) {
@@ -900,23 +900,16 @@ class ExamAdminUI {
     // ==================== 문제 관리 액션 ====================
 
     /**
-     * ✏️ 문제 수정
+     * ✏️ 문제 수정 - 🎯 수정된 함수
      */
     async editQuestion(questionId) {
         try {
-            // 문제 상세 정보 조회
-            const result = await window.ExamAdminAPI.getQuestions({ 
-                page: 1, 
-                limit: 1,
-                search: questionId
-            });
+            console.log('✏️ 문제 수정 시작:', questionId);
             
-            const question = result.questions.find(q => q.id === questionId);
-            if (!question) {
-                this.showError('문제를 찾을 수 없습니다.');
-                return;
-            }
+            // 🎯 새로운 getQuestionById API 사용
+            const question = await window.ExamAdminAPI.getQuestionById(questionId);
             
+            console.log('✅ 문제 조회 성공:', question);
             this.showQuestionModal(question);
             
         } catch (error) {
@@ -1142,5 +1135,5 @@ class ExamAdminUI {
 if (typeof window !== 'undefined') {
     window.ExamAdminUI = new ExamAdminUI();
     window.examAdminUI = window.ExamAdminUI; // 편의를 위한 소문자 별칭
-    console.log('🎨 ExamAdminUI v5.1.2 모듈 로드됨 - 문제 순서 관리 기능 포함');
+    console.log('🎨 ExamAdminUI v5.1.3 모듈 로드됨 - 문제 수정 버튼 오류 해결');
 }
