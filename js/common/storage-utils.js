@@ -1,25 +1,26 @@
 /**
- * Storage 유틸리티 모듈 v8.1.1
+ * Storage 유틸리티 모듈 v8.1.2
  * 파일 업로드 및 Storage 관리를 위한 공통 유틸리티
- * 항공권 신청 시스템 - v8.1.1 실제 버킷명 수정
+ * 항공권 신청 시스템 - Storage API 오류 수정 버전
  * 
- * v8.1.1 핵심 수정사항:
- * - 실제 DB 버킷명과 일치하도록 수정
- * - 불필요한 버킷 생성 시도 제거
- * - 기존 버킷 활용으로 안정성 향상
+ * v8.1.2 핵심 수정사항:
+ * - 불필요한 버킷 확인 제거 (Storage API 인증 오류 방지)
+ * - 지연 초기화 제거 (필요 시에만 API 호출)
+ * - 실제 사용 시점에서만 Storage API 호출
+ * - console.log 출력 최소화
  */
 
 window.StorageUtils = (function() {
     'use strict';
 
-    console.log('📦 StorageUtils 모듈 로드 시작 v8.1.1 (실제 버킷명 수정)');
+    console.log('📦 StorageUtils 모듈 로드 시작 v8.1.2 (Storage API 오류 수정)');
 
-    // 🔧 v8.1.1 실제 DB에 존재하는 버킷명으로 수정
+    // 실제 DB에 존재하는 버킷명
     const BUCKETS = {
-        FLIGHT_IMAGES: 'flight-images',      // ✅ 존재함 (public)
-        RECEIPTS: 'receipt-files',           // 🔧 수정: 'receipts' → 'receipt-files'
-        PASSPORTS: 'passports',              // ✅ 존재함 (public)
-        FLIGHT_TICKETS: 'flight-tickets'     // ✅ 존재함 (public - 이미 생성됨)
+        FLIGHT_IMAGES: 'flight-images',      // 학생 참고용 이미지 (사용자별 디렉토리)
+        RECEIPTS: 'receipt-files',           // 영수증 파일
+        PASSPORTS: 'passports',              // 여권 사본
+        FLIGHT_TICKETS: 'flight-tickets'     // 최종 항공권 통합 관리
     };
 
     // 파일 타입별 설정
@@ -36,7 +37,7 @@ window.StorageUtils = (function() {
         }
     };
 
-    // 🆕 v8.1.0 최적화된 파일명 생성 규칙
+    // v8.1.0 최적화된 파일명 생성 규칙
     const FILE_NAMING = {
         // flight-images: 사용자 ID별 디렉토리 구조
         flightImage: (userId, imageIndex) => 
@@ -46,18 +47,17 @@ window.StorageUtils = (function() {
         passport: (userId, timestamp, originalName) => 
             `passport_${userId}_${timestamp}.${getFileExtension(originalName)}`,
         
-        // 🆕 flight-tickets: 통합된 최종 항공권 파일명
+        // flight-tickets: 통합된 최종 항공권 파일명
         flightTicket: (userId) => 
             `${userId}_tickets`,
         
-        // receipts: 기존 방식 유지 (버킷명만 수정)
+        // receipts: 기존 방식 유지
         receipt: (userId, requestId, timestamp, originalName) => 
             `receipt_${userId}_${requestId}_${timestamp}.${getFileExtension(originalName)}`
     };
 
     // Supabase 인스턴스 관리
     let supabaseInstance = null;
-    let initializationAttempted = false;
 
     /**
      * Supabase 인스턴스 가져오기 (안전한 방식)
@@ -71,18 +71,15 @@ window.StorageUtils = (function() {
         // 2. window.SupabaseAPI 확인
         if (window.SupabaseAPI && window.SupabaseAPI.supabase) {
             supabaseInstance = window.SupabaseAPI.supabase;
-            console.log('✅ SupabaseAPI에서 인스턴스 획득');
             return supabaseInstance;
         }
 
         // 3. window.supabase 확인 (레거시)
         if (window.supabase) {
             supabaseInstance = window.supabase;
-            console.log('✅ window.supabase에서 인스턴스 획득');
             return supabaseInstance;
         }
 
-        console.warn('⚠️ Supabase 인스턴스를 찾을 수 없습니다');
         return null;
     }
 
@@ -92,7 +89,7 @@ window.StorageUtils = (function() {
     function setSupabaseInstance(instance) {
         if (instance && typeof instance === 'object') {
             supabaseInstance = instance;
-            console.log('✅ Supabase 인스턴스 수동 설정 완료');
+            console.log('✅ StorageUtils Supabase 인스턴스 설정 완료');
             return true;
         }
         console.error('❌ 유효하지 않은 Supabase 인스턴스');
@@ -132,93 +129,17 @@ window.StorageUtils = (function() {
     }
 
     /**
-     * 🔧 v8.1.1 수정: 버킷 존재 확인만 (생성하지 않음)
-     * 모든 필요한 버킷들이 이미 존재하므로 확인만 수행
-     */
-    async function checkBucket(bucketName) {
-        try {
-            console.log(`🗄️ ${bucketName} 버킷 존재 확인 중...`);
-            
-            const supabase = getSupabaseInstance();
-            if (!supabase) {
-                console.error('❌ Supabase 인스턴스가 없습니다');
-                return false;
-            }
-
-            if (!supabase.storage) {
-                console.error('❌ Supabase storage가 없습니다');
-                return false;
-            }
-            
-            const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-            
-            if (listError) {
-                console.error('버킷 목록 조회 실패:', listError);
-                return false;
-            }
-
-            const bucketExists = buckets.some(bucket => bucket.name === bucketName);
-            
-            if (bucketExists) {
-                console.log(`✅ ${bucketName} 버킷 존재 확인됨`);
-                return true;
-            } else {
-                console.warn(`⚠️ ${bucketName} 버킷이 존재하지 않습니다`);
-                return false;
-            }
-
-        } catch (error) {
-            console.error(`❌ ${bucketName} 버킷 확인 실패:`, error);
-            return false;
-        }
-    }
-
-    /**
-     * 🔧 v8.1.1 수정: 모든 필수 버킷 존재 확인만
-     * 버킷 생성 시도 제거 - 이미 모든 버킷이 존재함
-     */
-    async function checkAllBuckets() {
-        console.log('🚀 Storage 버킷 존재 확인 시작... (v8.1.1)');
-        
-        if (initializationAttempted) {
-            console.log('⚠️ 이미 확인이 시도되었습니다');
-            return false;
-        }
-        
-        initializationAttempted = true;
-
-        // Supabase 인스턴스 확인
-        const supabase = getSupabaseInstance();
-        if (!supabase) {
-            console.error('❌ Supabase 인스턴스를 찾을 수 없어 버킷 확인을 건너뜁니다');
-            return false;
-        }
-        
-        const results = await Promise.all(
-            Object.values(BUCKETS).map(bucketName => checkBucket(bucketName))
-        );
-        
-        const allExist = results.every(result => result === true);
-        
-        if (allExist) {
-            console.log('✅ v8.1.1 모든 필수 Storage 버킷 존재 확인 완료');
-        } else {
-            console.warn('⚠️ 일부 Storage 버킷이 존재하지 않습니다');
-        }
-        
-        return allExist;
-    }
-
-    /**
-     * 파일 업로드 (범용)
+     * 파일 업로드 (범용) - 실제 사용 시에만 호출
      */
     async function uploadFile(file, bucketName, filePath, options = {}) {
         try {
-            console.log(`📤 파일 업로드 시작: ${file.name} → ${bucketName}/${filePath}`);
-            
             const supabase = getSupabaseInstance();
             if (!supabase) {
-                throw new Error('Supabase 인스턴스가 없습니다');
+                throw new Error('Supabase 클라이언트를 사용할 수 없습니다');
+            }
+
+            if (!supabase.storage) {
+                throw new Error('Supabase Storage를 사용할 수 없습니다');
             }
             
             const uploadOptions = {
@@ -232,14 +153,15 @@ window.StorageUtils = (function() {
                 .from(bucketName)
                 .upload(filePath, file, uploadOptions);
 
-            if (error) throw error;
+            if (error) {
+                console.error(`Storage 업로드 오류 (${bucketName}/${filePath}):`, error);
+                throw error;
+            }
 
-            // 🔧 v8.1.1: 모든 버킷이 public이므로 일반 public URL 사용
+            // 모든 버킷이 public이므로 일반 public URL 사용
             const { data: { publicUrl } } = supabase.storage
                 .from(bucketName)
                 .getPublicUrl(filePath);
-
-            console.log(`✅ 파일 업로드 성공: ${publicUrl}`);
             
             return {
                 success: true,
@@ -254,7 +176,7 @@ window.StorageUtils = (function() {
     }
 
     /**
-     * 🆕 v8.1.0 항공권 이미지 업로드 (사용자별 디렉토리)
+     * 항공권 이미지 업로드 (사용자별 디렉토리)
      */
     async function uploadFlightImage(file, userId, imageIndex = 1) {
         try {
@@ -289,7 +211,7 @@ window.StorageUtils = (function() {
     }
 
     /**
-     * 🆕 v8.1.0 최종 항공권 업로드 (통합 버킷)
+     * 최종 항공권 업로드 (통합 버킷)
      */
     async function uploadFlightTicket(file, userId) {
         try {
@@ -328,11 +250,15 @@ window.StorageUtils = (function() {
      */
     async function deleteFile(bucketName, filePath) {
         try {
-            console.log(`🗑️ 파일 삭제 시작: ${bucketName}/${filePath}`);
-            
             const supabase = getSupabaseInstance();
             if (!supabase) {
-                throw new Error('Supabase 인스턴스가 없습니다');
+                console.warn('⚠️ Supabase 클라이언트가 없어 파일 삭제를 건너뜁니다');
+                return false;
+            }
+
+            if (!supabase.storage) {
+                console.warn('⚠️ Supabase Storage가 없어 파일 삭제를 건너뜁니다');
+                return false;
             }
             
             const { error } = await supabase.storage
@@ -340,38 +266,40 @@ window.StorageUtils = (function() {
                 .remove([filePath]);
 
             if (error) {
-                console.warn('파일 삭제 실패:', error);
+                console.warn('파일 삭제 실패 (계속 진행):', error);
                 return false;
             }
 
-            console.log('✅ 파일 삭제 성공');
             return true;
 
         } catch (error) {
-            console.error('❌ 파일 삭제 오류:', error);
+            console.warn('❌ 파일 삭제 오류 (계속 진행):', error);
             return false;
         }
     }
 
     /**
-     * 🆕 v8.1.0 사용자별 항공권 이미지 목록 조회
+     * 사용자별 항공권 이미지 목록 조회
      */
     async function listUserFlightImages(userId) {
         try {
             const supabase = getSupabaseInstance();
-            if (!supabase) {
-                throw new Error('Supabase 인스턴스가 없습니다');
+            if (!supabase || !supabase.storage) {
+                return [];
             }
 
             const { data, error } = await supabase.storage
                 .from(BUCKETS.FLIGHT_IMAGES)
                 .list(userId);
 
-            if (error) throw error;
+            if (error) {
+                console.warn('항공권 이미지 목록 조회 실패:', error);
+                return [];
+            }
 
             return data || [];
         } catch (error) {
-            console.error('❌ 사용자 항공권 이미지 목록 조회 실패:', error);
+            console.warn('❌ 사용자 항공권 이미지 목록 조회 실패:', error);
             return [];
         }
     }
@@ -423,24 +351,23 @@ window.StorageUtils = (function() {
         });
     }
 
-    // 🔧 v8.1.1 수정: 초기화 함수 (지연 실행)
-    async function delayedInitialize() {
-        console.log('🚀 Storage 버킷 지연 확인 중... (v8.1.1)');
+    /**
+     * v8.1.2: 기본 상태 확인 (Storage API 호출 없음)
+     */
+    function checkStorageAvailability() {
+        const supabase = getSupabaseInstance();
         
-        // Supabase 인스턴스 로딩 대기 (최대 10초)
-        let waitCount = 0;
-        while (!getSupabaseInstance() && waitCount < 100) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            waitCount++;
-        }
-        
-        if (getSupabaseInstance()) {
-            console.log('✅ Supabase 인스턴스 확인됨 - v8.1.1 버킷 확인 시작');
-            return await checkAllBuckets();
-        } else {
-            console.warn('⚠️ Supabase 인스턴스 로딩 타임아웃 - 버킷 확인 건너뜀');
+        if (!supabase) {
+            console.warn('⚠️ Supabase 클라이언트 없음');
             return false;
         }
+
+        if (!supabase.storage) {
+            console.warn('⚠️ Supabase Storage 없음');
+            return false;
+        }
+
+        return true;
     }
 
     // Public API
@@ -452,6 +379,7 @@ window.StorageUtils = (function() {
         // 인스턴스 관리
         setSupabaseInstance,
         getSupabaseInstance,
+        checkStorageAvailability,
         
         // 유틸리티
         validateFile,
@@ -463,33 +391,18 @@ window.StorageUtils = (function() {
         uploadFile,
         uploadFlightImage,
         uploadPassportImage,
-        uploadFlightTicket,  // 🆕 v8.1.0 통합 항공권
+        uploadFlightTicket,
         uploadReceipt,
-        
-        // 🆕 v8.1.0 새로운 기능
-        listUserFlightImages,
         
         // 파일 관리
         deleteFile,
+        listUserFlightImages,
         
-        // 🔧 v8.1.1 수정: 확인만 수행
-        checkAllBuckets,
-        delayedInitialize,
-        
-        // 레거시 호환성 (기존 코드와 호환을 위해 유지)
-        initializeAllBuckets: checkAllBuckets
+        // 레거시 호환성 (기존 코드 호환)
+        checkAllBuckets: checkStorageAvailability,
+        delayedInitialize: checkStorageAvailability,
+        initializeAllBuckets: checkStorageAvailability
     };
-
-    // 🔧 v8.1.1 수정: 지연 확인 실행 (5초 후)
-    setTimeout(async () => {
-        if (!initializationAttempted) {
-            try {
-                await delayedInitialize();
-            } catch (error) {
-                console.error('❌ v8.1.1 지연 확인 실패:', error);
-            }
-        }
-    }, 5000);
 
     return api;
 
@@ -503,4 +416,4 @@ window.initStorageUtils = function(supabaseInstance) {
     return false;
 };
 
-console.log('✅ StorageUtils 모듈 v8.1.1 로드 완료 (실제 버킷명 수정)');
+console.log('✅ StorageUtils 모듈 v8.1.2 로드 완료 (Storage API 오류 수정)');
