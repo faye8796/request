@@ -1,20 +1,26 @@
 /**
- * Storage 유틸리티 모듈 v1.0.0
+ * Storage 유틸리티 모듈 v1.1.0
  * 파일 업로드 및 Storage 관리를 위한 공통 유틸리티
  * 항공권 신청 시스템 7단계 - Storage 설정 및 파일 업로드
+ * 
+ * v1.1.0 개선사항:
+ * - Supabase 인스턴스 초기화 문제 해결
+ * - 안전한 모듈 로딩 및 초기화 시스템
+ * - 오류 처리 강화
  */
 
 window.StorageUtils = (function() {
     'use strict';
 
-    console.log('📦 StorageUtils 모듈 로드 시작 v1.0.0');
+    console.log('📦 StorageUtils 모듈 로드 시작 v1.1.0');
 
     // Storage 버킷 설정
     const BUCKETS = {
         FLIGHT_IMAGES: 'flight-images',      // 항공권 이미지
         RECEIPTS: 'receipts',                // 영수증 (기존 활용)
         PASSPORTS: 'passports',              // 여권 사본
-        ADMIN_TICKETS: 'admin-tickets'       // 관리자 등록 항공권
+        ADMIN_TICKETS: 'admin-tickets',      // 관리자 등록 항공권
+        FLIGHT_DOCUMENTS: 'flight-documents' // 항공권 관련 문서
     };
 
     // 파일 타입별 설정
@@ -43,8 +49,49 @@ window.StorageUtils = (function() {
             `receipt_${userId}_${requestId}_${timestamp}.${getFileExtension(originalName)}`
     };
 
-    // Supabase 인스턴스
-    const supabase = window.supabase;
+    // Supabase 인스턴스 관리
+    let supabaseInstance = null;
+    let initializationAttempted = false;
+
+    /**
+     * Supabase 인스턴스 가져오기 (안전한 방식)
+     */
+    function getSupabaseInstance() {
+        // 1. 직접 설정된 인스턴스 확인
+        if (supabaseInstance) {
+            return supabaseInstance;
+        }
+
+        // 2. window.SupabaseAPI 확인
+        if (window.SupabaseAPI && window.SupabaseAPI.supabase) {
+            supabaseInstance = window.SupabaseAPI.supabase;
+            console.log('✅ SupabaseAPI에서 인스턴스 획득');
+            return supabaseInstance;
+        }
+
+        // 3. window.supabase 확인 (레거시)
+        if (window.supabase) {
+            supabaseInstance = window.supabase;
+            console.log('✅ window.supabase에서 인스턴스 획득');
+            return supabaseInstance;
+        }
+
+        console.warn('⚠️ Supabase 인스턴스를 찾을 수 없습니다');
+        return null;
+    }
+
+    /**
+     * Supabase 인스턴스 수동 설정
+     */
+    function setSupabaseInstance(instance) {
+        if (instance && typeof instance === 'object') {
+            supabaseInstance = instance;
+            console.log('✅ Supabase 인스턴스 수동 설정 완료');
+            return true;
+        }
+        console.error('❌ 유효하지 않은 Supabase 인스턴스');
+        return false;
+    }
 
     /**
      * 파일 확장자 추출
@@ -84,6 +131,17 @@ window.StorageUtils = (function() {
     async function ensureBucket(bucketName) {
         try {
             console.log(`🗄️ ${bucketName} 버킷 확인 중...`);
+            
+            const supabase = getSupabaseInstance();
+            if (!supabase) {
+                console.error('❌ Supabase 인스턴스가 없습니다');
+                return false;
+            }
+
+            if (!supabase.storage) {
+                console.error('❌ Supabase storage가 없습니다');
+                return false;
+            }
             
             const { data: buckets, error: listError } = await supabase.storage.listBuckets();
             
@@ -126,6 +184,20 @@ window.StorageUtils = (function() {
     async function initializeAllBuckets() {
         console.log('🚀 Storage 버킷 초기화 시작...');
         
+        if (initializationAttempted) {
+            console.log('⚠️ 이미 초기화가 시도되었습니다');
+            return false;
+        }
+        
+        initializationAttempted = true;
+
+        // Supabase 인스턴스 확인
+        const supabase = getSupabaseInstance();
+        if (!supabase) {
+            console.error('❌ Supabase 인스턴스를 찾을 수 없어 버킷 초기화를 건너뜁니다');
+            return false;
+        }
+        
         const results = await Promise.all(
             Object.values(BUCKETS).map(bucketName => ensureBucket(bucketName))
         );
@@ -147,6 +219,11 @@ window.StorageUtils = (function() {
     async function uploadFile(file, bucketName, filePath, options = {}) {
         try {
             console.log(`📤 파일 업로드 시작: ${file.name} → ${bucketName}/${filePath}`);
+            
+            const supabase = getSupabaseInstance();
+            if (!supabase) {
+                throw new Error('Supabase 인스턴스가 없습니다');
+            }
             
             const uploadOptions = {
                 cacheControl: '3600',
@@ -235,7 +312,7 @@ window.StorageUtils = (function() {
     }
 
     /**
-     * 영수증 업로드
+     * 영수증 업로드 (직접구매 시 사용)
      */
     async function uploadReceipt(file, userId, requestId) {
         try {
@@ -258,6 +335,11 @@ window.StorageUtils = (function() {
     async function deleteFile(bucketName, filePath) {
         try {
             console.log(`🗑️ 파일 삭제 시작: ${bucketName}/${filePath}`);
+            
+            const supabase = getSupabaseInstance();
+            if (!supabase) {
+                throw new Error('Supabase 인스턴스가 없습니다');
+            }
             
             const { error } = await supabase.storage
                 .from(bucketName)
@@ -324,15 +406,35 @@ window.StorageUtils = (function() {
         });
     }
 
-    // 초기화
-    console.log('🚀 Storage 버킷 초기화 중...');
-    initializeAllBuckets().catch(console.error);
+    // 초기화 함수 (지연 실행)
+    async function delayedInitialize() {
+        console.log('🚀 Storage 버킷 지연 초기화 중...');
+        
+        // Supabase 인스턴스 로딩 대기 (최대 10초)
+        let waitCount = 0;
+        while (!getSupabaseInstance() && waitCount < 100) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            waitCount++;
+        }
+        
+        if (getSupabaseInstance()) {
+            console.log('✅ Supabase 인스턴스 확인됨 - 버킷 초기화 시작');
+            return await initializeAllBuckets();
+        } else {
+            console.warn('⚠️ Supabase 인스턴스 로딩 타임아웃 - 버킷 초기화 건너뜀');
+            return false;
+        }
+    }
 
     // Public API
-    return {
+    const api = {
         // 상수
         BUCKETS,
         FILE_CONFIG,
+        
+        // 인스턴스 관리
+        setSupabaseInstance,
+        getSupabaseInstance,
         
         // 유틸리티
         validateFile,
@@ -351,9 +453,31 @@ window.StorageUtils = (function() {
         deleteFile,
         
         // 초기화
-        initializeAllBuckets
+        initializeAllBuckets,
+        delayedInitialize
     };
+
+    // 지연 초기화 실행 (5초 후)
+    setTimeout(async () => {
+        if (!initializationAttempted) {
+            try {
+                await delayedInitialize();
+            } catch (error) {
+                console.error('❌ 지연 초기화 실패:', error);
+            }
+        }
+    }, 5000);
+
+    return api;
 
 })();
 
-console.log('✅ StorageUtils 모듈 로드 완료');
+// 외부에서 Supabase 인스턴스 설정 가능하도록 전역 함수 제공
+window.initStorageUtils = function(supabaseInstance) {
+    if (window.StorageUtils && window.StorageUtils.setSupabaseInstance) {
+        return window.StorageUtils.setSupabaseInstance(supabaseInstance);
+    }
+    return false;
+};
+
+console.log('✅ StorageUtils 모듈 v1.1.0 로드 완료');
