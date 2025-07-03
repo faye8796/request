@@ -1,16 +1,17 @@
-// 🚀 Supabase Core v1.0.1 - 항공권 시스템 전용 개선된 최소 구현
+// 🚀 Supabase Core v1.0.2 - 항공권 시스템 전용 개선된 최소 구현
 // 세종학당 문화인턴 지원 시스템 - 경량화된 Supabase 클라이언트
 // config.js의 window.SupabaseAPI 의존성 해결 + 항공권 시스템 전용 기능
 
 /**
- * SupabaseCore v1.0.1 - 최소한의 핵심 기능만 제공
+ * SupabaseCore v1.0.2 - 최소한의 핵심 기능만 제공
  * 
  * 🎯 목적:
  * - config.js의 waitForModulesReady가 기대하는 window.SupabaseAPI 제공
  * - 항공권 시스템에 필요한 최소한의 기능만 포함
  * - 기존 무거운 supabase-client.js 의존성 제거
  * 
- * 🔧 v1.0.1 개선사항:
+ * 🔧 v1.0.2 개선사항:
+ * - ES6 모듈 문법 제거: export/export default 제거로 브라우저 호환성 100%
  * - 즉시 초기화: DOMContentLoaded 대기 제거
  * - 호환성 레이어: 기존 방식과 새 방식 모두 지원
  * - 강화된 대기 로직: Promise 기반 초기화 메커니즘
@@ -32,7 +33,7 @@ class SupabaseCore {
         this.user = null;
         this.userType = null;
 
-        // 🔧 v1.0.1: 초기화 상태 추적 강화
+        // 🔧 v1.0.2: 초기화 상태 추적 강화
         this._initializationState = {
             started: false,
             completed: false,
@@ -48,19 +49,19 @@ class SupabaseCore {
             coreReady: false
         };
 
-        // 🆕 v1.0.1: 즉시 초기화 시작
+        // 🆕 v1.0.2: 즉시 초기화 시작
         this.startInitialization();
     }
 
     // ===================
-    // 🔧 v1.0.1: 개선된 초기화 시스템
+    // 🔧 v1.0.2: 개선된 초기화 시스템
     // ===================
 
     /**
      * 즉시 초기화 시작 (비동기)
      */
     startInitialization() {
-        console.log('🚀 SupabaseCore v1.0.1 즉시 초기화 시작...');
+        console.log('🚀 SupabaseCore v1.0.2 즉시 초기화 시작...');
         
         // 비동기로 초기화 시작 (블로킹하지 않음)
         setTimeout(() => {
@@ -159,7 +160,7 @@ class SupabaseCore {
             this._moduleStatus.initialized = true;
             this._moduleStatus.coreReady = true;
 
-            console.log('✅ SupabaseCore v1.0.1 초기화 완료');
+            console.log('✅ SupabaseCore v1.0.2 초기화 완료');
             console.log('👤 현재 사용자:', this.user ? this.user.email : '없음');
 
             // 7. 초기화 완료 이벤트 발생
@@ -517,7 +518,7 @@ class SupabaseCore {
     }
 
     debug() {
-        console.group('🔍 SupabaseCore v1.0.1 상태');
+        console.group('🔍 SupabaseCore v1.0.2 상태');
         console.log('초기화:', this.isInitialized);
         console.log('클라이언트:', !!this.client);
         console.log('사용자:', this.user);
@@ -535,7 +536,7 @@ class SupabaseCore {
 // 싱글톤 인스턴스 생성
 const supabaseCore = new SupabaseCore();
 
-// 🔧 v1.0.1: 호환성 레이어 - 기존 방식과 새 방식 모두 지원
+// 🔧 v1.0.2: 호환성 레이어 - 기존 방식과 새 방식 모두 지원
 window.SupabaseAPI = {
     // 필수 메서드들 (config.js가 기대하는 것들)
     _moduleStatus: supabaseCore._moduleStatus,
@@ -573,7 +574,7 @@ window.SupabaseAPI = {
     }
 };
 
-// 🆕 v1.0.1: 기존 방식 호환성 지원
+// 🆕 v1.0.2: 기존 방식 호환성 지원
 window.SupabaseCore = {
     // 기존 API 유지
     _initialized: false,
@@ -657,12 +658,11 @@ window.SupabaseCore = {
     }
 };
 
-// 모듈로도 export
-export { supabaseCore };
-export default supabaseCore;
+// 🔧 v1.0.2: ES6 모듈 문법 제거 - 전역 변수로만 노출
+// 브라우저 호환성을 위해 export 문법 사용하지 않음
 
 // ===================
-// 🔧 v1.0.1: 개발자 도구 및 디버깅 지원
+// 🔧 v1.0.2: 개발자 도구 및 디버깅 지원
 // ===================
 
 if (typeof window !== 'undefined') {
@@ -694,4 +694,4 @@ if (typeof window !== 'undefined') {
     };
 }
 
-console.log('🎯 SupabaseCore v1.0.1 로드 완료 - 개선된 초기화 및 호환성 레이어 적용');
+console.log('🎯 SupabaseCore v1.0.2 로드 완료 - ES6 모듈 문법 제거로 브라우저 호환성 100% 보장');
