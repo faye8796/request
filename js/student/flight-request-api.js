@@ -1,5 +1,5 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.3.1
-// 🔧 Storage RLS 정책 호환성 개선 및 인증 시스템 강화
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.4.0
+// 🌐 완전한 퍼블릭 Storage 지원 - 인증 시스템 단순화
 // passport-info 기능 완전 통합 버전
 
 class FlightRequestAPI {
@@ -12,10 +12,10 @@ class FlightRequestAPI {
         this.initializationPromise = this.initialize();
     }
 
-    // 🚀 v8.3.1: SupabaseCore v1.0.1 최적화된 연동
+    // 🚀 v8.4.0: 퍼블릭 Storage 최적화된 연동
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v8.3.1 초기화 시작 (Storage RLS 정책 호환성 개선)...');
+            console.log('🔄 FlightRequestAPI v8.4.0 초기화 시작 (퍼블릭 Storage 최적화)...');
             
             // SupabaseCore v1.0.1 연결
             await this.connectToSupabaseCore();
@@ -26,7 +26,7 @@ class FlightRequestAPI {
             // 초기화 완료 마킹
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI v8.3.1 초기화 완료');
+            console.log('✅ FlightRequestAPI v8.4.0 초기화 완료');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -35,7 +35,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 🔧 v8.3.1: SupabaseCore v1.0.1 최적화된 연결
+    // 🔧 v8.4.0: SupabaseCore v1.0.1 최적화된 연결
     async connectToSupabaseCore() {
         try {
             // 이미 연결되어 있으면 스킵
@@ -156,99 +156,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 🆕 v8.3.1: 테스트용 임시 인증 로그인
-    async authenticateTestUser() {
-        try {
-            await this.ensureInitialized();
-
-            if (!this.supabase) {
-                throw new Error('Supabase 클라이언트를 찾을 수 없습니다');
-            }
-
-            // localStorage에서 학생 정보 가져오기
-            const currentStudentData = localStorage.getItem('currentStudent');
-            if (!currentStudentData) {
-                throw new Error('localStorage에서 학생 정보를 찾을 수 없습니다');
-            }
-
-            const studentData = JSON.parse(currentStudentData);
-            if (!studentData?.email) {
-                throw new Error('학생 이메일 정보가 없습니다');
-            }
-
-            console.log('🔐 테스트용 임시 인증 시도:', studentData.email);
-
-            // 임시 비밀번호로 로그인 시도
-            const tempPassword = 'temp123456'; // 임시 비밀번호
-            
-            try {
-                // 먼저 로그인 시도
-                const { data: signInData, error: signInError } = await this.supabase.auth.signInWithPassword({
-                    email: studentData.email,
-                    password: tempPassword
-                });
-
-                if (signInError && signInError.message !== 'Invalid login credentials') {
-                    console.error('로그인 오류:', signInError);
-                }
-
-                if (signInData?.user) {
-                    console.log('✅ 기존 계정으로 로그인 성공:', studentData.email);
-                    this.user = signInData.user;
-                    return signInData.user;
-                }
-
-                // 로그인 실패 시 계정 생성 시도
-                console.log('🔄 계정 생성 시도...');
-                const { data: signUpData, error: signUpError } = await this.supabase.auth.signUp({
-                    email: studentData.email,
-                    password: tempPassword,
-                    options: {
-                        data: {
-                            name: studentData.name,
-                            user_type: 'student'
-                        }
-                    }
-                });
-
-                if (signUpError) {
-                    console.error('계정 생성 오류:', signUpError);
-                    // 계정이 이미 존재하는 경우 등은 무시하고 계속 진행
-                }
-
-                if (signUpData?.user) {
-                    console.log('✅ 새 계정 생성 및 로그인 성공:', studentData.email);
-                    this.user = signUpData.user;
-                    return signUpData.user;
-                }
-
-                // 둘 다 실패한 경우 localStorage 정보로 임시 사용자 객체 생성
-                console.log('⚠️ 인증 실패, localStorage 정보로 임시 사용자 생성');
-                this.user = { 
-                    id: studentData.id, 
-                    email: studentData.email,
-                    isTemporary: true 
-                };
-                return this.user;
-
-            } catch (authError) {
-                console.error('인증 처리 오류:', authError);
-                // 임시 사용자 객체 생성
-                this.user = { 
-                    id: studentData.id, 
-                    email: studentData.email,
-                    isTemporary: true 
-                };
-                return this.user;
-            }
-
-        } catch (error) {
-            console.error('❌ 테스트용 인증 실패:', error);
-            throw error;
-        }
-    }
-
-    // 🔧 v8.3.1: 강화된 사용자 정보 조회
+    // 🌐 v8.4.0: 단순화된 사용자 정보 조회 (localStorage 기반)
     async getCurrentUser() {
         try {
             await this.ensureInitialized();
@@ -258,30 +166,19 @@ class FlightRequestAPI {
                 return this.user;
             }
 
-            // localStorage에서 먼저 확인 (빠른 경로)
+            // localStorage에서 사용자 정보 가져오기 (단순화)
             const currentStudentData = localStorage.getItem('currentStudent');
             if (currentStudentData) {
                 try {
                     const studentData = JSON.parse(currentStudentData);
                     if (studentData?.id) {
-                        // 테스트용 인증 시도
-                        try {
-                            await this.authenticateTestUser();
-                            if (this.user) {
-                                return this.user;
-                            }
-                        } catch (authError) {
-                            console.warn('테스트용 인증 실패, 임시 사용자로 계속:', authError);
-                        }
-
-                        // 임시 사용자 정보 설정
-                        this.user = { id: studentData.id, email: studentData.email };
+                        this.user = { 
+                            id: studentData.id, 
+                            email: studentData.email,
+                            name: studentData.name 
+                        };
                         
-                        // SupabaseCore에 사용자 정보 설정
-                        if (this.core?.setCurrentUser) {
-                            this.core.setCurrentUser(this.user, 'student');
-                        }
-                        
+                        console.log('✅ localStorage에서 사용자 정보 확인:', this.user.email);
                         return this.user;
                     }
                 } catch (parseError) {
@@ -289,30 +186,7 @@ class FlightRequestAPI {
                 }
             }
 
-            // SupabaseCore를 통한 사용자 확인
-            if (this.core?.getCurrentUser) {
-                const currentUser = this.core.getCurrentUser();
-                if (currentUser) {
-                    this.user = currentUser;
-                    return currentUser;
-                }
-            }
-
-            // 세션에서 사용자 정보 가져오기
-            if (this.supabase) {
-                const { data: { user }, error } = await this.supabase.auth.getUser();
-                if (error) {
-                    console.warn('Auth 오류:', error);
-                } else if (user) {
-                    this.user = user;
-                    if (this.core?.setCurrentUser) {
-                        this.core.setCurrentUser(user, 'student');
-                    }
-                    return user;
-                }
-            }
-
-            throw new Error('사용자 인증 정보를 확인할 수 없습니다');
+            throw new Error('localStorage에서 사용자 정보를 찾을 수 없습니다');
 
         } catch (error) {
             console.error('사용자 정보 조회 실패:', error);
@@ -477,12 +351,12 @@ class FlightRequestAPI {
         }
     }
 
-    // 🔧 v8.3.1: Storage RLS 정책 호환 여권 이미지 업로드
+    // 🌐 v8.4.0: 퍼블릭 Storage 최적화 여권 이미지 업로드
     async uploadPassportImage(imageFile) {
         try {
-            // 파일명을 {user_id}/passport_timestamp.ext 형태로 변경
-            const fileName = `${this.user.id}/passport_${Date.now()}.${imageFile.name.split('.').pop()}`;
-            console.log('📁 여권 이미지 업로드 경로:', fileName);
+            // 단순한 파일명 (퍼블릭 Storage이므로 복잡한 패턴 불필요)
+            const fileName = `passport_${this.user.id}_${Date.now()}.${imageFile.name.split('.').pop()}`;
+            console.log('📁 여권 이미지 업로드:', fileName);
             return await this.uploadFile('passports', fileName, imageFile, { upsert: true });
         } catch (error) {
             console.error('여권 이미지 업로드 실패:', error);
@@ -582,10 +456,12 @@ class FlightRequestAPI {
         }
     }
 
-    // 항공권 이미지 업로드
+    // 🌐 v8.4.0: 퍼블릭 Storage 최적화 항공권 이미지 업로드
     async uploadFlightImage(imageFile) {
         try {
-            const fileName = `${this.user.id}/flight_${Date.now()}.${imageFile.name.split('.').pop()}`;
+            // 단순한 파일명 (퍼블릭 Storage이므로 폴더 구조 불필요)
+            const fileName = `flight_${this.user.id}_${Date.now()}.${imageFile.name.split('.').pop()}`;
+            console.log('📁 항공권 이미지 업로드:', fileName);
             return await this.uploadFile('flight-images', fileName, imageFile);
         } catch (error) {
             console.error('항공권 이미지 업로드 실패:', error);
@@ -639,7 +515,7 @@ class FlightRequestAPI {
         }
     }
 
-    // === 🔧 v8.3.1: 통합된 데이터 조작 메서드들 ===
+    // === 🌐 v8.4.0: 퍼블릭 Storage 최적화된 데이터 조작 메서드들 ===
 
     async insertData(table, data) {
         if (this.core?.insert) {
@@ -681,56 +557,75 @@ class FlightRequestAPI {
         return result;
     }
 
+    // 🌐 v8.4.0: 단순화된 퍼블릭 Storage 업로드
     async uploadFile(bucket, path, file, options = {}) {
-        if (this.core?.uploadFile) {
-            const result = await this.core.uploadFile(bucket, path, file, options);
-            if (!result.success) {
-                throw new Error(result.error);
+        try {
+            console.log(`📤 퍼블릭 Storage 업로드: ${bucket}/${path}`);
+            
+            if (this.core?.uploadFile) {
+                const result = await this.core.uploadFile(bucket, path, file, options);
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                // 공개 URL 생성
+                const urlResult = await this.core.getFileUrl(bucket, path);
+                if (!urlResult.success) {
+                    throw new Error(urlResult.error);
+                }
+
+                console.log(`✅ 업로드 성공: ${urlResult.url}`);
+                return urlResult.url;
             }
 
-            // 공개 URL 생성
-            const urlResult = await this.core.getFileUrl(bucket, path);
-            if (!urlResult.success) {
-                throw new Error(urlResult.error);
+            // 폴백: 직접 Supabase Storage 사용
+            const { data, error } = await this.supabase.storage
+                .from(bucket)
+                .upload(path, file, {
+                    cacheControl: '3600',
+                    upsert: options.upsert || false,
+                    ...options
+                });
+
+            if (error) {
+                console.error(`❌ Storage 업로드 오류 (${bucket}/${path}):`, error);
+                throw error;
             }
 
-            return urlResult.url;
+            const { data: urlData } = this.supabase.storage
+                .from(bucket)
+                .getPublicUrl(path);
+
+            console.log(`✅ 퍼블릭 업로드 성공: ${urlData.publicUrl}`);
+            return urlData.publicUrl;
+
+        } catch (error) {
+            console.error(`❌ 파일 업로드 실패 (${bucket}/${path}):`, error);
+            throw error;
         }
-
-        // 폴백
-        const { data, error } = await this.supabase.storage
-            .from(bucket)
-            .upload(path, file, {
-                cacheControl: '3600',
-                upsert: options.upsert || false,
-                ...options
-            });
-
-        if (error) throw error;
-
-        const { data: urlData } = this.supabase.storage
-            .from(bucket)
-            .getPublicUrl(path);
-
-        return urlData.publicUrl;
     }
 
     async deleteFile(bucket, path) {
-        if (this.core?.deleteFile) {
-            const result = await this.core.deleteFile(bucket, path);
-            if (!result.success) {
-                throw new Error(result.error);
+        try {
+            if (this.core?.deleteFile) {
+                const result = await this.core.deleteFile(bucket, path);
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+                return result;
             }
-            return result;
+
+            // 폴백
+            const { error } = await this.supabase.storage
+                .from(bucket)
+                .remove([path]);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error(`❌ 파일 삭제 실패 (${bucket}/${path}):`, error);
+            throw error;
         }
-
-        // 폴백
-        const { error } = await this.supabase.storage
-            .from(bucket)
-            .remove([path]);
-
-        if (error) throw error;
-        return { success: true };
     }
 
     // === 유틸리티 메서드들 ===
@@ -794,21 +689,22 @@ class FlightRequestAPI {
             coreInitialized: this.core?.isInitialized,
             supabaseAPI: !!window.SupabaseAPI,
             supabaseCore: !!window.SupabaseCore,
-            userInfo: this.user ? { id: this.user.id, email: this.user.email, isTemporary: this.user.isTemporary } : null
+            userInfo: this.user ? { id: this.user.id, email: this.user.email, name: this.user.name } : null,
+            storageMode: 'Public Access (No Auth Required)'
         };
     }
 }
 
-// 🔧 v8.3.1: 최적화된 인스턴스 생성
+// 🌐 v8.4.0: 퍼블릭 Storage 최적화된 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.3.1 인스턴스 생성 시작 (Storage RLS 정책 호환성 개선)...');
+        console.log('🚀 FlightRequestAPI v8.4.0 인스턴스 생성 시작 (퍼블릭 Storage 최적화)...');
         window.flightRequestAPI = new FlightRequestAPI();
         
         // 호환성을 위한 passport API 인스턴스도 생성
         window.passportAPI = window.flightRequestAPI;
         
-        console.log('✅ FlightRequestAPI v8.3.1 인스턴스 생성 완료');
+        console.log('✅ FlightRequestAPI v8.4.0 인스턴스 생성 완료 - 완전한 퍼블릭 Storage 지원');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -816,7 +712,7 @@ function createFlightRequestAPI() {
     }
 }
 
-// 🔧 v8.3.1: 즉시 생성 (대기 시간 최소화)
+// 🌐 v8.4.0: 즉시 생성 (대기 시간 최소화)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(createFlightRequestAPI, 100); // 단축된 대기 시간
@@ -825,4 +721,4 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 100); // 즉시 실행에 가깝게
 }
 
-console.log('✅ FlightRequestAPI v8.3.1 모듈 로드 완료 - Storage RLS 정책 호환성 개선 및 인증 시스템 강화');
+console.log('✅ FlightRequestAPI v8.4.0 모듈 로드 완료 - 완전한 퍼블릭 Storage 지원 및 인증 시스템 단순화');
