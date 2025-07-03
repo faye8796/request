@@ -1,10 +1,10 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.3.0 
-// passport-info UI 기능 완전 통합 버전
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.3.1 
+// passport-info UI 기능 완전 통합 버전 (API 대기 로직 강화)
 
 class FlightRequestUI {
     constructor() {
-        this.api = window.flightRequestAPI;
-        this.utils = window.FlightRequestUtils;
+        this.api = null;
+        this.utils = null;
         this.elements = this.initElements();
         this.imageFile = null;
         this.ticketFile = null;
@@ -16,7 +16,9 @@ class FlightRequestUI {
         this.passportImageFile = null;
         this.existingPassportImageUrl = null;
         
-        this.init();
+        // 초기화 상태
+        this.isInitialized = false;
+        this.initializationPromise = this.init();
     }
 
     initElements() {
@@ -86,14 +88,78 @@ class FlightRequestUI {
 
     async init() {
         try {
+            console.log('🔄 FlightRequestUI 초기화 시작...');
+            
+            // API 및 유틸리티 대기
+            await this.waitForDependencies();
+            
             // 이벤트 리스너 설정
             this.setupEventListeners();
             
             // 🎯 Equipment-request 구조 참고: 여권정보 상태 확인 후 페이지 분기
             await this.checkPassportInfoAndSetPage();
+            
+            this.isInitialized = true;
+            console.log('✅ FlightRequestUI 초기화 완료 v8.3.1');
         } catch (error) {
-            console.error('초기화 오류:', error);
-            this.utils.showError('시스템 초기화 중 오류가 발생했습니다.');
+            console.error('❌ FlightRequestUI 초기화 오류:', error);
+            this.showError('시스템 초기화 중 오류가 발생했습니다.');
+        }
+    }
+
+    // 🆕 의존성 대기 로직 강화
+    async waitForDependencies(timeout = 20000) {
+        const startTime = Date.now();
+        
+        return new Promise((resolve, reject) => {
+            const check = () => {
+                // API 및 Utils 확인
+                const apiReady = window.flightRequestAPI && window.flightRequestAPI.isInitialized;
+                const utilsReady = window.FlightRequestUtils;
+                
+                if (apiReady && utilsReady) {
+                    this.api = window.flightRequestAPI;
+                    this.utils = window.FlightRequestUtils;
+                    console.log('✅ FlightRequestUI 의존성 로드 완료');
+                    resolve();
+                    return;
+                }
+                
+                if (Date.now() - startTime > timeout) {
+                    const error = new Error('의존성 로딩 시간 초과');
+                    console.error('❌ FlightRequestUI 의존성 시간 초과:', {
+                        api: !!window.flightRequestAPI,
+                        apiInitialized: window.flightRequestAPI?.isInitialized,
+                        utils: !!window.FlightRequestUtils,
+                        timeout: timeout
+                    });
+                    reject(error);
+                    return;
+                }
+                
+                setTimeout(check, 100);
+            };
+            
+            check();
+        });
+    }
+
+    // 초기화 보장
+    async ensureInitialized() {
+        if (this.isInitialized) {
+            return true;
+        }
+
+        if (!this.initializationPromise) {
+            this.initializationPromise = this.init();
+        }
+
+        try {
+            await this.initializationPromise;
+            return this.isInitialized;
+        } catch (error) {
+            console.error('❌ UI 초기화 보장 실패:', error);
+            throw error;
         }
     }
 
@@ -101,6 +167,11 @@ class FlightRequestUI {
     async checkPassportInfoAndSetPage() {
         try {
             console.log('🔍 여권정보 상태 확인 시작');
+            
+            // API 초기화 확인
+            if (!this.api) {
+                throw new Error('API가 초기화되지 않았습니다');
+            }
             
             // 사용자 프로필 가져오기
             this.userProfile = await this.api.getUserProfile();
@@ -152,6 +223,9 @@ class FlightRequestUI {
         try {
             console.log('🔧 여권정보 UI 초기화 시작');
             
+            // API 초기화 확인
+            await this.ensureInitialized();
+            
             // 여권정보 이벤트 리스너 설정
             this.setupPassportEventListeners();
             
@@ -187,17 +261,33 @@ class FlightRequestUI {
             this.elements.expiryDate.addEventListener('change', () => this.validatePassportExpiryDate());
         }
 
-        // 영문 이름 대문자 변환
+        // 영문 이름 대문자 변환 및 실시간 검증
         if (this.elements.nameEnglish) {
             this.elements.nameEnglish.addEventListener('input', (e) => {
+                // 대문자 변환
                 e.target.value = e.target.value.toUpperCase();
+                
+                // 영문과 띄어쓰기만 허용
+                e.target.value = e.target.value.replace(/[^A-Z\s]/g, '');
+                
+                // 연속된 띄어쓰기 제거
+                e.target.value = e.target.value.replace(/\s{2,}/g, ' ');
             });
         }
 
-        // 여권번호 대문자 변환
+        // 여권번호 대문자 변환 및 형식 검증
         if (this.elements.passportNumber) {
             this.elements.passportNumber.addEventListener('input', (e) => {
+                // 대문자 변환
                 e.target.value = e.target.value.toUpperCase();
+                
+                // 여권번호 형식만 허용 (대문자 1자리 + 숫자 8자리)
+                e.target.value = e.target.value.replace(/[^A-Z0-9]/g, '');
+                
+                // 최대 9자리 제한
+                if (e.target.value.length > 9) {
+                    e.target.value = e.target.value.substring(0, 9);
+                }
             });
         }
 
@@ -216,6 +306,11 @@ class FlightRequestUI {
     async loadExistingPassportData() {
         try {
             this.showPassportLoading(true);
+            
+            if (!this.api) {
+                throw new Error('API가 초기화되지 않았습니다');
+            }
+            
             const passportInfo = await this.api.getPassportInfo();
 
             if (passportInfo) {
@@ -312,7 +407,7 @@ class FlightRequestUI {
 
     // 여권 만료일 검증
     validatePassportExpiryDate() {
-        if (!this.elements.expiryDate || !this.elements.expiryWarning) return true;
+        if (!this.elements.expiryDate || !this.elements.expiryWarning || !this.api) return true;
         
         const expiryDate = this.elements.expiryDate.value;
         if (!expiryDate) return true;
@@ -341,20 +436,27 @@ class FlightRequestUI {
     async handlePassportSubmit(event) {
         event.preventDefault();
 
-        // 만료일 검증
-        const validation = this.api.validateExpiryDate(this.elements.expiryDate?.value);
-        if (!validation.valid) {
-            this.showError(validation.message);
-            return;
-        }
-
-        // 이미지 확인 (신규 등록 시 필수)
-        if (!this.passportImageFile && !this.existingPassportImageUrl) {
-            this.showError('여권 사본을 업로드해주세요.');
-            return;
-        }
-
         try {
+            // API 초기화 확인
+            await this.ensureInitialized();
+            
+            if (!this.api) {
+                throw new Error('API가 초기화되지 않았습니다');
+            }
+
+            // 만료일 검증
+            const validation = this.api.validateExpiryDate(this.elements.expiryDate?.value);
+            if (!validation.valid) {
+                this.showError(validation.message);
+                return;
+            }
+
+            // 이미지 확인 (신규 등록 시 필수)
+            if (!this.passportImageFile && !this.existingPassportImageUrl) {
+                this.showError('여권 사본을 업로드해주세요.');
+                return;
+            }
+
             this.setPassportLoading(true);
 
             const passportData = {
@@ -430,6 +532,9 @@ class FlightRequestUI {
     // 🆕 항공권 신청 데이터 로드 (기존 loadInitialData에서 분리)
     async loadFlightRequestData() {
         try {
+            // API 초기화 확인
+            await this.ensureInitialized();
+            
             this.showLoading(true);
 
             // 기존 신청 확인
@@ -450,7 +555,11 @@ class FlightRequestUI {
             }
         } catch (error) {
             console.error('항공권 신청 데이터 로드 실패:', error);
-            this.utils.showError('데이터를 불러오는 중 오류가 발생했습니다.');
+            if (this.utils) {
+                this.utils.showError('데이터를 불러오는 중 오류가 발생했습니다.');
+            } else {
+                this.showError('데이터를 불러오는 중 오류가 발생했습니다.');
+            }
         } finally {
             this.showLoading(false);
         }
@@ -573,7 +682,7 @@ class FlightRequestUI {
     }
 
     renderExistingRequest() {
-        if (!this.existingRequest || !this.elements.existingRequest) return;
+        if (!this.existingRequest || !this.elements.existingRequest || !this.utils) return;
         
         const request = this.existingRequest;
         const statusInfo = this.utils.getStatusInfo(request.status);
@@ -807,7 +916,7 @@ class FlightRequestUI {
     }
 
     validateDuration() {
-        if (!this.elements.departureDate || !this.elements.returnDate || !this.elements.durationMessage) {
+        if (!this.elements.departureDate || !this.elements.returnDate || !this.elements.durationMessage || !this.utils) {
             return true;
         }
         
@@ -848,13 +957,21 @@ class FlightRequestUI {
         // 파일 유효성 검사
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
         if (!allowedTypes.includes(file.type)) {
-            this.utils.showError('JPG, PNG 형식의 이미지만 업로드 가능합니다.');
+            if (this.utils) {
+                this.utils.showError('JPG, PNG 형식의 이미지만 업로드 가능합니다.');
+            } else {
+                this.showError('JPG, PNG 형식의 이미지만 업로드 가능합니다.');
+            }
             event.target.value = '';
             return;
         }
 
         if (file.size > 5 * 1024 * 1024) {
-            this.utils.showError('파일 크기는 5MB를 초과할 수 없습니다.');
+            if (this.utils) {
+                this.utils.showError('파일 크기는 5MB를 초과할 수 없습니다.');
+            } else {
+                this.showError('파일 크기는 5MB를 초과할 수 없습니다.');
+            }
             event.target.value = '';
             return;
         }
@@ -894,13 +1011,21 @@ class FlightRequestUI {
         // 파일 유효성 검사
         const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
         if (!allowedTypes.includes(file.type)) {
-            this.utils.showError('PDF, JPG, PNG 형식만 업로드 가능합니다.');
+            if (this.utils) {
+                this.utils.showError('PDF, JPG, PNG 형식만 업로드 가능합니다.');
+            } else {
+                this.showError('PDF, JPG, PNG 형식만 업로드 가능합니다.');
+            }
             event.target.value = '';
             return;
         }
 
         if (file.size > 10 * 1024 * 1024) {
-            this.utils.showError('파일 크기는 10MB를 초과할 수 없습니다.');
+            if (this.utils) {
+                this.utils.showError('파일 크기는 10MB를 초과할 수 없습니다.');
+            } else {
+                this.showError('파일 크기는 10MB를 초과할 수 없습니다.');
+            }
             event.target.value = '';
             return;
         }
@@ -910,7 +1035,7 @@ class FlightRequestUI {
             if (this.elements.ticketFileName) {
                 this.elements.ticketFileName.textContent = file.name;
             }
-            if (this.elements.ticketFileSize) {
+            if (this.elements.ticketFileSize && this.utils) {
                 this.elements.ticketFileSize.textContent = this.utils.formatFileSize(file.size);
             }
             if (this.elements.ticketPreview) {
@@ -921,7 +1046,7 @@ class FlightRequestUI {
             if (this.elements.receiptFileName) {
                 this.elements.receiptFileName.textContent = file.name;
             }
-            if (this.elements.receiptFileSize) {
+            if (this.elements.receiptFileSize && this.utils) {
                 this.elements.receiptFileSize.textContent = this.utils.formatFileSize(file.size);
             }
             if (this.elements.receiptPreview) {
@@ -969,19 +1094,26 @@ class FlightRequestUI {
     async handleSubmit(event) {
         event.preventDefault();
 
-        // 날짜 및 기간 검증
-        if (!this.validateDuration()) {
-            return;
-        }
-
-        // 이미지 확인 (새 신청 또는 이미지 변경 시 필수)
-        const isUpdate = this.existingRequest && (this.existingRequest.status === 'pending' || this.existingRequest.status === 'rejected');
-        if (!isUpdate && !this.imageFile) {
-            this.utils.showError('항공권 정보 이미지를 업로드해주세요.');
-            return;
-        }
-
         try {
+            // API 초기화 확인
+            await this.ensureInitialized();
+
+            // 날짜 및 기간 검증
+            if (!this.validateDuration()) {
+                return;
+            }
+
+            // 이미지 확인 (새 신청 또는 이미지 변경 시 필수)
+            const isUpdate = this.existingRequest && (this.existingRequest.status === 'pending' || this.existingRequest.status === 'rejected');
+            if (!isUpdate && !this.imageFile) {
+                if (this.utils) {
+                    this.utils.showError('항공권 정보 이미지를 업로드해주세요.');
+                } else {
+                    this.showError('항공권 정보 이미지를 업로드해주세요.');
+                }
+                return;
+            }
+
             this.setLoading(true);
 
             const selectedType = Array.from(this.elements.purchaseType || [])
@@ -1005,10 +1137,18 @@ class FlightRequestUI {
                     requestData,
                     this.imageFile
                 );
-                this.utils.showSuccess('항공권 신청이 성공적으로 수정되었습니다.');
+                if (this.utils) {
+                    this.utils.showSuccess('항공권 신청이 성공적으로 수정되었습니다.');
+                } else {
+                    this.showSuccess('항공권 신청이 성공적으로 수정되었습니다.');
+                }
             } else {
                 result = await this.api.createFlightRequest(requestData, this.imageFile);
-                this.utils.showSuccess('항공권 신청이 성공적으로 접수되었습니다.');
+                if (this.utils) {
+                    this.utils.showSuccess('항공권 신청이 성공적으로 접수되었습니다.');
+                } else {
+                    this.showSuccess('항공권 신청이 성공적으로 접수되었습니다.');
+                }
             }
 
             // 3초 후 메인 페이지로 이동
@@ -1018,7 +1158,11 @@ class FlightRequestUI {
 
         } catch (error) {
             console.error('신청 실패:', error);
-            this.utils.showError(error.message || '신청 중 오류가 발생했습니다.');
+            if (this.utils) {
+                this.utils.showError(error.message || '신청 중 오류가 발생했습니다.');
+            } else {
+                this.showError(error.message || '신청 중 오류가 발생했습니다.');
+            }
         } finally {
             this.setLoading(false);
         }
@@ -1028,17 +1172,28 @@ class FlightRequestUI {
         event.preventDefault();
 
         if (!this.ticketFile) {
-            this.utils.showError('항공권 파일을 선택해주세요.');
+            if (this.utils) {
+                this.utils.showError('항공권 파일을 선택해주세요.');
+            } else {
+                this.showError('항공권 파일을 선택해주세요.');
+            }
             return;
         }
 
         try {
+            // API 초기화 확인
+            await this.ensureInitialized();
+            
             this.setLoading(true);
 
             // 항공권 파일 업로드 및 DB 업데이트
             await this.api.submitTicket(this.existingRequest.id, this.ticketFile);
             
-            this.utils.showSuccess('항공권이 성공적으로 제출되었습니다.');
+            if (this.utils) {
+                this.utils.showSuccess('항공권이 성공적으로 제출되었습니다.');
+            } else {
+                this.showSuccess('항공권이 성공적으로 제출되었습니다.');
+            }
             this.closeModal('ticketSubmitModal');
             
             // 데이터 새로고침
@@ -1048,7 +1203,11 @@ class FlightRequestUI {
 
         } catch (error) {
             console.error('항공권 제출 실패:', error);
-            this.utils.showError('항공권 제출 중 오류가 발생했습니다.');
+            if (this.utils) {
+                this.utils.showError('항공권 제출 중 오류가 발생했습니다.');
+            } else {
+                this.showError('항공권 제출 중 오류가 발생했습니다.');
+            }
         } finally {
             this.setLoading(false);
         }
@@ -1058,17 +1217,28 @@ class FlightRequestUI {
         event.preventDefault();
 
         if (!this.receiptFile) {
-            this.utils.showError('영수증 파일을 선택해주세요.');
+            if (this.utils) {
+                this.utils.showError('영수증 파일을 선택해주세요.');
+            } else {
+                this.showError('영수증 파일을 선택해주세요.');
+            }
             return;
         }
 
         try {
+            // API 초기화 확인
+            await this.ensureInitialized();
+            
             this.setLoading(true);
 
             // 영수증 파일 업로드 및 DB 업데이트
             await this.api.submitReceipt(this.existingRequest.id, this.receiptFile);
             
-            this.utils.showSuccess('영수증이 성공적으로 제출되었습니다.');
+            if (this.utils) {
+                this.utils.showSuccess('영수증이 성공적으로 제출되었습니다.');
+            } else {
+                this.showSuccess('영수증이 성공적으로 제출되었습니다.');
+            }
             this.closeModal('receiptSubmitModal');
             
             // 데이터 새로고침
@@ -1078,7 +1248,11 @@ class FlightRequestUI {
 
         } catch (error) {
             console.error('영수증 제출 실패:', error);
-            this.utils.showError('영수증 제출 중 오류가 발생했습니다.');
+            if (this.utils) {
+                this.utils.showError('영수증 제출 중 오류가 발생했습니다.');
+            } else {
+                this.showError('영수증 제출 중 오류가 발생했습니다.');
+            }
         } finally {
             this.setLoading(false);
         }
@@ -1090,6 +1264,9 @@ class FlightRequestUI {
         }
 
         try {
+            // API 초기화 확인
+            await this.ensureInitialized();
+            
             this.setLoading(true);
             await this.api.deleteFlightRequest(requestId);
             
@@ -1097,7 +1274,11 @@ class FlightRequestUI {
             window.location.reload();
         } catch (error) {
             console.error('삭제 실패:', error);
-            this.utils.showError('신청 삭제 중 오류가 발생했습니다.');
+            if (this.utils) {
+                this.utils.showError('신청 삭제 중 오류가 발생했습니다.');
+            } else {
+                this.showError('신청 삭제 중 오류가 발생했습니다.');
+            }
             this.setLoading(false);
         }
     }
@@ -1138,45 +1319,23 @@ class FlightRequestUI {
             alert(message);
         }
     }
+
+    // 성공 메시지 표시
+    showSuccess(message) {
+        if (this.elements.successMessage) {
+            this.elements.successMessage.textContent = message;
+            this.elements.successMessage.style.display = 'block';
+            
+            // 5초 후 자동 숨김
+            setTimeout(() => {
+                this.elements.successMessage.style.display = 'none';
+            }, 5000);
+        } else {
+            // 폴백: alert 사용
+            alert(message);
+        }
+    }
 }
 
-// 페이지 로드 시 초기화 - localStorage 기반 인증으로 변경
-document.addEventListener('DOMContentLoaded', () => {
-    try {
-        console.log('🎯 항공권 신청 페이지 초기화 시작 - passport-info 완전 통합 v8.3.0');
-        
-        // localStorage 기반 인증 체크
-        const studentData = localStorage.getItem('currentStudent');
-        if (!studentData) {
-            console.log('❌ localStorage에 학생 정보가 없음 - 로그인 페이지로 이동');
-            window.location.href = '../index.html';
-            return;
-        }
-
-        try {
-            const student = JSON.parse(studentData);
-            if (!student.id || !student.name) {
-                throw new Error('학생 데이터가 불완전합니다.');
-            }
-            
-            console.log('✅ 학생 인증 성공:', student.name);
-            
-            // UI 초기화
-            window.flightRequestUI = new FlightRequestUI();
-            
-        } catch (parseError) {
-            console.error('❌ 학생 정보 파싱 오류:', parseError);
-            localStorage.removeItem('currentStudent');
-            alert('로그인 정보가 손상되었습니다. 다시 로그인해주세요.');
-            window.location.href = '../index.html';
-        }
-        
-    } catch (error) {
-        console.error('❌ 페이지 초기화 오류:', error);
-        alert('페이지 로딩 중 오류가 발생했습니다.');
-        window.location.href = '../index.html';
-    }
-});
-
-// 🆕 PassportInfoUI 호환성을 위한 전역 클래스 별칭
-window.PassportInfoUI = FlightRequestUI;
+// 페이지 로드 시 초기화 제거 - HTML에서 모듈 로딩 완료 후 초기화
+console.log('✅ FlightRequestUI v8.3.1 모듈 로드 완료 - passport-info 완전 통합 (API 대기 로직 강화)');
