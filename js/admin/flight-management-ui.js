@@ -1,20 +1,46 @@
-// flight-management-ui.js - 관리자용 항공권 관리 UI (6단계 상세 기능 포함)
+// flight-management-ui.js - 관리자용 항공권 관리 UI v1.1.0
+// v1.1.0: ES6 import 제거 및 안전한 모듈 참조 방식 적용
 
-import { FlightManagementAPI } from './flight-management-api.js';
-import './flight-management-modals.js';
-
-export class FlightManagementUI {
+class FlightManagementUI {
     constructor() {
-        this.api = new FlightManagementAPI();
+        this.api = null;
         this.currentFilter = 'all';
         this.currentSort = { field: 'created_at', order: 'desc' };
         this.requests = [];
+        this.initializeAPI();
         this.init();
     }
 
-    init() {
+    // API 초기화
+    async initializeAPI() {
+        // FlightManagementAPI 인스턴스 생성 대기
+        let attempts = 0;
+        while (!window.FlightManagementAPI && attempts < 50) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        if (window.FlightManagementAPI) {
+            this.api = new window.FlightManagementAPI();
+            console.log('✅ FlightManagementAPI 연결 완료');
+        } else {
+            console.warn('⚠️ FlightManagementAPI를 찾을 수 없습니다');
+        }
+    }
+
+    async init() {
         this.setupEventListeners();
+        // API 초기화 대기 후 데이터 로드
+        await this.waitForAPI();
         this.loadRequests();
+    }
+
+    async waitForAPI() {
+        let attempts = 0;
+        while (!this.api && attempts < 50) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
     }
 
     setupEventListeners() {
@@ -51,13 +77,52 @@ export class FlightManagementUI {
     async loadRequests() {
         this.showLoading();
         try {
-            this.requests = await this.api.getAllRequests();
+            if (this.api) {
+                this.requests = await this.api.getAllRequests();
+            } else {
+                // Fallback: 직접 Supabase 호출
+                const supabase = this.getSupabase();
+                if (supabase) {
+                    const { data, error } = await supabase
+                        .from('flight_requests')
+                        .select(`
+                            *,
+                            user_profiles!inner(
+                                id,
+                                name,
+                                email,
+                                university,
+                                institute_info(
+                                    name_ko
+                                )
+                            )
+                        `)
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+                    this.requests = data || [];
+                } else {
+                    throw new Error('API와 Supabase 모두 사용할 수 없습니다');
+                }
+            }
+
             this.renderRequests(this.requests);
             this.updateStats();
         } catch (error) {
             console.error('Error loading requests:', error);
             this.showError('항공권 신청 목록을 불러오는 중 오류가 발생했습니다.');
         }
+    }
+
+    // Supabase 인스턴스 안전하게 가져오기
+    getSupabase() {
+        if (window.SupabaseAPI && window.SupabaseAPI.supabase) {
+            return window.SupabaseAPI.supabase;
+        }
+        if (window.supabase) {
+            return window.supabase;
+        }
+        return null;
     }
 
     renderRequests(requests) {
@@ -67,7 +132,7 @@ export class FlightManagementUI {
         if (requests.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="no-data">
+                    <td colspan="8" class="no-data">
                         <div class="no-data-icon">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -119,7 +184,7 @@ export class FlightManagementUI {
         actions.push(`
             <button class="btn-icon" 
                     title="상세보기" 
-                    onclick="window.flightModals.showDetailModal(${JSON.stringify(request).replace(/"/g, '&quot;')})">
+                    onclick="window.flightModals?.showDetailModal(${JSON.stringify(request).replace(/"/g, '&quot;')})">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                     <circle cx="12" cy="12" r="3"></circle>
@@ -131,7 +196,7 @@ export class FlightManagementUI {
         actions.push(`
             <button class="btn-icon" 
                     title="여권정보" 
-                    onclick="window.flightModals.showPassportModal('${request.user_id}')">
+                    onclick="window.flightModals?.showPassportModal('${request.user_id}')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                     <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
@@ -145,7 +210,7 @@ export class FlightManagementUI {
             actions.push(`
                 <button class="btn-icon btn-success" 
                         title="승인" 
-                        onclick="window.flightModals.showApproveModal(${JSON.stringify(request).replace(/"/g, '&quot;')})">
+                        onclick="window.flightModals?.showApproveModal(${JSON.stringify(request).replace(/"/g, '&quot;')})">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
@@ -156,7 +221,7 @@ export class FlightManagementUI {
             actions.push(`
                 <button class="btn-icon btn-danger" 
                         title="반려" 
-                        onclick="window.flightModals.showRejectModal(${JSON.stringify(request).replace(/"/g, '&quot;')})">
+                        onclick="window.flightModals?.showRejectModal(${JSON.stringify(request).replace(/"/g, '&quot;')})">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -172,7 +237,7 @@ export class FlightManagementUI {
             actions.push(`
                 <button class="btn-icon btn-primary" 
                         title="항공권 등록" 
-                        onclick="window.flightModals.showUploadTicketModal(${JSON.stringify(request).replace(/"/g, '&quot;')})">
+                        onclick="window.flightModals?.showUploadTicketModal(${JSON.stringify(request).replace(/"/g, '&quot;')})">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="17 8 12 3 7 8"></polyline>
@@ -297,7 +362,7 @@ export class FlightManagementUI {
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="loading">
+                    <td colspan="8" class="loading">
                         <div class="spinner"></div>
                         <p>데이터를 불러오는 중...</p>
                     </td>
@@ -311,7 +376,7 @@ export class FlightManagementUI {
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="error">
+                    <td colspan="8" class="error">
                         <div class="error-icon">⚠️</div>
                         <p>${message}</p>
                         <button class="btn btn-primary" onclick="location.reload()">
@@ -324,5 +389,18 @@ export class FlightManagementUI {
     }
 }
 
-// 전역 인스턴스 생성
-window.flightManagementUI = new FlightManagementUI();
+// 전역 인스턴스 생성 (페이지 로드 후)
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof window !== 'undefined') {
+        window.FlightManagementUI = FlightManagementUI;
+        window.flightManagementUI = new FlightManagementUI();
+        console.log('✅ FlightManagementUI v1.1.0 초기화 완료');
+    }
+});
+
+// ES6 모듈로도 내보내기
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { FlightManagementUI };
+}
+
+console.log('✅ FlightManagementUI v1.1.0 로드 완료 - ES6 import 제거 및 안전 참조');
