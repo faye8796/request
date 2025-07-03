@@ -7,8 +7,6 @@
     <link rel="stylesheet" href="../css/flight-request.css">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <!-- Supabase JavaScript Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <!-- 로딩 상태 -->
@@ -398,65 +396,93 @@
         </div>
     </div>
 
-    <!-- 🔧 Improved Supabase Initialization Script -->
-    <script type="module">
-        // 전역 에러 핸들러
-        window.addEventListener('error', function(event) {
-            console.error('❌ 전역 스크립트 오류:', {
-                message: event.message,
-                filename: event.filename,
-                lineno: event.lineno
-            });
+    <!-- 🚀 v8.1.2 아키텍처 개선: 관리자 페이지와 동일한 모듈 구조 적용 -->
+    <!-- 1. Supabase JavaScript 라이브러리 (CDN 버전 구체화) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
+
+    <!-- 2. CONFIG 로드 -->
+    <script src="../js/config.js"></script>
+    
+    <!-- 3. 필수 Supabase 모듈 로드 -->
+    <script src="../js/supabase/supabase-core.js"></script>
+    
+    <!-- 4. Utils 로드 -->
+    <script src="../js/utils.js"></script>
+    
+    <!-- 5. Storage Utils 로드 -->
+    <script src="../js/common/storage-utils.js"></script>
+
+    <!-- 6. 인증 체크 및 초기화 스크립트 -->
+    <script>
+        console.log('🚀 항공권 신청 페이지 v8.1.2 초기화 시작 (아키텍처 개선)...');
+
+        // 인증 체크
+        async function checkAuth() {
+            try {
+                console.log('🔐 사용자 인증 확인 중...');
+                
+                // SupabaseCore 초기화 대기
+                let waitCount = 0;
+                while (!window.SupabaseCore?.supabase && waitCount < 200) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    waitCount++;
+                }
+
+                const supabase = window.SupabaseCore?.supabase;
+                if (!supabase) {
+                    console.error('❌ SupabaseCore 인스턴스를 찾을 수 없습니다');
+                    return false;
+                }
+
+                console.log('✅ SupabaseCore 인스턴스 확인 완료');
+
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    console.log('✅ 사용자 인증 확인:', user.email);
+                    return true;
+                } else {
+                    console.log('⚠️ 인증되지 않은 사용자 - localStorage 확인');
+                    
+                    // localStorage에서 학생 정보 확인
+                    const currentStudentData = localStorage.getItem('currentStudent');
+                    if (currentStudentData) {
+                        console.log('✅ localStorage에서 학생 정보 확인됨');
+                        return true;
+                    }
+                    
+                    console.log('❌ 사용자 정보 없음');
+                    return false;
+                }
+
+            } catch (error) {
+                console.error('❌ 인증 확인 오류:', error);
+                return false;
+            }
+        }
+
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('📄 DOM 로드 완료 (v8.1.2 아키텍처 개선)');
+            
+            const authResult = await checkAuth();
+            if (authResult) {
+                console.log('✅ 항공권 신청 페이지 v8.1.2 인증 확인 완료');
+            } else {
+                console.log('⚠️ 인증 실패 - 기본 기능만 사용 가능');
+            }
         });
 
-        // Supabase 클라이언트 초기화
-        try {
-            const { createClient } = supabase;
-            
-            window.supabaseUrl = 'https://aazvopacnbbkvusihqva.supabase.co';
-            window.supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU3MjgzMjMsImV4cCI6MjA1MTMwNDMyM30.QUfGRc-LzCI6IYDVN7e1l2HwzONGLVmfN15ShTg62Po';
-            
-            window.supabase = createClient(window.supabaseUrl, window.supabaseKey);
-            
-            console.log('✅ Supabase 클라이언트 초기화 완료');
-            
-            // 초기화 상태 확인
-            window.supabaseReady = true;
-            
-            // DOM 로드 후 앱 표시
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initializeApp);
+        // StorageUtils 초기화
+        setTimeout(async () => {
+            if (window.StorageUtils && window.SupabaseCore?.supabase) {
+                window.StorageUtils.setSupabaseInstance(window.SupabaseCore.supabase);
+                console.log('✅ StorageUtils 인스턴스 설정 완료');
             } else {
-                initializeApp();
+                console.log('⚠️ StorageUtils 또는 SupabaseCore 인스턴스 없음');
             }
-            
-        } catch (error) {
-            console.error('❌ Supabase 초기화 실패:', error);
-            showError('시스템 초기화에 실패했습니다.');
-        }
+        }, 2000);
 
-        function initializeApp() {
-            // 전역 로딩 상태 숨기기 및 앱 표시
-            const globalLoading = document.getElementById('globalLoadingState');
-            const app = document.getElementById('app');
-            
-            if (globalLoading) globalLoading.style.display = 'none';
-            if (app) app.style.display = 'block';
-            
-            // Lucide 아이콘 초기화
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-            
-            // 네비게이션 설정
-            setupNavigation();
-            
-            // 사용자 정보 표시
-            updateUserInfo();
-            
-            console.log('✅ 항공권 신청 페이지 초기화 완료 (passport-info 통합)');
-        }
-
+        // 네비게이션 설정
         function setupNavigation() {
             // 대시보드로 돌아가기 버튼들
             const backBtns = document.querySelectorAll('#backToDashboard, #backToDashboardFromPassport');
@@ -502,7 +528,6 @@
                 flightRequestPage.classList.remove('active');
                 passportInfoPage.classList.add('active');
                 
-                // 여권정보 UI는 FlightRequestUI 내부에서 자동 초기화됨
                 console.log('🔄 여권정보 페이지로 전환 완료');
             }
         }
@@ -529,6 +554,7 @@
         // 전역 함수로 노출
         window.showPassportInfoPage = showPassportInfoPage;
         window.showFlightRequestPage = showFlightRequestPage;
+        window.setupNavigation = setupNavigation;
 
         function updateUserInfo() {
             try {
@@ -555,7 +581,6 @@
 
                     // 여권정보 페이지 헤더
                     const passportWelcomeEl = document.getElementById('passportWelcome');
-                    const passportDetailsEl = document.getElementById('passportDetails');
                     
                     if (passportWelcomeEl && studentData.name) {
                         passportWelcomeEl.textContent = `${studentData.name}님의 여권정보 등록`;
@@ -582,11 +607,42 @@
 
         // 전역 함수로 노출
         window.showError = showError;
+        window.updateUserInfo = updateUserInfo;
+
+        // DOM 초기화 완료 후 실행
+        function initializeApp() {
+            // 전역 로딩 상태 숨기기 및 앱 표시
+            const globalLoading = document.getElementById('globalLoadingState');
+            const app = document.getElementById('app');
+            
+            if (globalLoading) globalLoading.style.display = 'none';
+            if (app) app.style.display = 'block';
+            
+            // Lucide 아이콘 초기화
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+            // 네비게이션 설정
+            setupNavigation();
+            
+            // 사용자 정보 표시
+            updateUserInfo();
+            
+            console.log('✅ 항공권 신청 페이지 초기화 완료 (v8.1.2 아키텍처 개선)');
+        }
+
+        // DOM 로드 후 앱 표시
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
     </script>
 
-    <!-- JavaScript 모듈 로드 -->
+    <!-- 7. JavaScript 모듈 로드 -->
     <script>
-        // 🔧 향상된 모듈 로딩 및 초기화 시스템
+        // 🔧 향상된 모듈 로딩 및 초기화 시스템 (v8.1.2 아키텍처 개선)
         let modulesLoaded = {
             storageUtils: false,
             flightRequestAPI: false,
@@ -600,8 +656,10 @@
 
         function checkAllModulesLoaded() {
             const allLoaded = Object.values(modulesLoaded).every(Boolean);
-            if (allLoaded && window.supabaseReady) {
-                console.log('✅ 모든 모듈 로드 완료 및 Supabase 준비됨');
+            const supabaseCoreReady = !!(window.SupabaseCore && window.SupabaseCore._initialized);
+            
+            if (allLoaded && supabaseCoreReady) {
+                console.log('✅ 모든 모듈 로드 완료 및 SupabaseCore 준비됨');
                 clearTimeout(initializationTimer);
                 
                 // 약간의 지연 후 초기화 (모든 리소스가 확실히 로드되도록)
@@ -611,7 +669,7 @@
             } else {
                 console.log('⏳ 모듈 로딩 대기중...', {
                     modules: modulesLoaded,
-                    supabaseReady: window.supabaseReady
+                    supabaseCoreReady: supabaseCoreReady
                 });
                 
                 // 재시도 로직
@@ -642,16 +700,16 @@
                     throw new Error('FlightRequestAPI가 로드되지 않았습니다');
                 }
                 
-                if (!window.supabase) {
-                    console.error('❌ Supabase 클라이언트가 없습니다');
-                    throw new Error('Supabase 클라이언트가 초기화되지 않았습니다');
+                if (!window.SupabaseCore?.supabase) {
+                    console.error('❌ SupabaseCore 클라이언트가 없습니다');
+                    throw new Error('SupabaseCore 클라이언트가 초기화되지 않았습니다');
                 }
                 
-                // FlightRequestUI 초기화 (passport-info 통합 버전)
+                // FlightRequestUI 초기화 (v8.1.2 아키텍처 개선)
                 if (typeof FlightRequestUI !== 'undefined') {
                     console.log('🚀 FlightRequestUI 초기화 시작...');
                     window.flightRequestUI = new FlightRequestUI();
-                    console.log('✅ FlightRequestUI 초기화 완료 (passport-info 통합)');
+                    console.log('✅ FlightRequestUI 초기화 완료 (v8.1.2 아키텍처 개선)');
                 } else {
                     console.error('❌ FlightRequestUI 클래스를 찾을 수 없습니다');
                     throw new Error('FlightRequestUI 클래스가 로드되지 않았습니다');
@@ -672,7 +730,7 @@
         setTimeout(() => {
             if (!window.flightRequestUI) {
                 console.warn('⚠️ 10초 후에도 초기화되지 않음 - 강제 초기화 시도');
-                if (typeof FlightRequestUI !== 'undefined' && window.supabase) {
+                if (typeof FlightRequestUI !== 'undefined' && window.SupabaseCore?.supabase) {
                     try {
                         window.flightRequestUI = new FlightRequestUI();
                         console.log('✅ 강제 초기화 성공');
@@ -686,13 +744,8 @@
             }
         }, 10000);
     </script>
-
-    <!-- Storage 유틸리티 모듈 -->
-    <script src="../js/common/storage-utils.js" 
-            onload="modulesLoaded.storageUtils = true; console.log('✅ Storage Utils 로드 완료'); checkAllModulesLoaded();"
-            onerror="handleModuleError('Storage Utils', event)"></script>
     
-    <!-- Flight Request 모듈들 (passport-info 통합) -->
+    <!-- 8. Flight Request 모듈들 (v8.1.2 아키텍처 개선 - SupabaseCore 사용) -->
     <script src="../js/student/flight-request-api.js"
             onload="modulesLoaded.flightRequestAPI = true; console.log('✅ Flight Request API 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request API', event)"></script>
@@ -704,5 +757,14 @@
     <script src="../js/student/flight-request-ui.js"
             onload="modulesLoaded.flightRequestUI = true; console.log('✅ Flight Request UI 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request UI', event)"></script>
+
+    <!-- Lucide Icons 초기화 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
 </body>
 </html>
