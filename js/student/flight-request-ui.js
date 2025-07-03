@@ -1,4 +1,4 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.1.1
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.2.0 (통합 구조 완성)
 
 class FlightRequestUI {
     constructor() {
@@ -65,12 +65,91 @@ class FlightRequestUI {
             // 이벤트 리스너 설정
             this.setupEventListeners();
             
-            // 초기 데이터 로드
-            await this.loadInitialData();
+            // 🎯 Equipment-request 구조 참고: 여권정보 상태 확인 후 페이지 분기
+            await this.checkPassportInfoAndSetPage();
         } catch (error) {
             console.error('초기화 오류:', error);
             this.utils.showError('시스템 초기화 중 오류가 발생했습니다.');
         }
+    }
+
+    // 🆕 Equipment-request 구조 참고: 여권정보 확인 및 페이지 분기
+    async checkPassportInfoAndSetPage() {
+        try {
+            console.log('🔍 여권정보 상태 확인 시작');
+            
+            // 사용자 프로필 가져오기
+            this.userProfile = await this.api.getUserProfile();
+            
+            // 여권정보 확인
+            const passportInfo = await this.api.checkPassportInfo();
+            
+            if (!passportInfo) {
+                // 여권정보가 없으면 여권정보 등록 페이지 표시
+                console.log('❌ 여권정보 없음 - 여권정보 등록 페이지로 이동');
+                this.showPassportInfoPage();
+            } else {
+                // 여권정보가 있으면 항공권 신청 페이지 표시
+                console.log('✅ 여권정보 확인됨 - 항공권 신청 페이지 표시');
+                this.showFlightRequestPage();
+                
+                // 기존 신청 확인 및 UI 업데이트
+                await this.loadFlightRequestData();
+            }
+        } catch (error) {
+            console.error('❌ 여권정보 확인 오류:', error);
+            // 오류 발생 시 여권정보 등록 페이지로 이동
+            this.showPassportInfoPage();
+        }
+    }
+
+    // 여권정보 등록 페이지 표시
+    showPassportInfoPage() {
+        if (typeof window.showPassportInfoPage === 'function') {
+            window.showPassportInfoPage();
+        }
+    }
+
+    // 항공권 신청 페이지 표시
+    showFlightRequestPage() {
+        if (typeof window.showFlightRequestPage === 'function') {
+            window.showFlightRequestPage();
+        }
+    }
+
+    // 🆕 항공권 신청 데이터 로드 (기존 loadInitialData에서 분리)
+    async loadFlightRequestData() {
+        try {
+            this.showLoading(true);
+
+            // 기존 신청 확인
+            this.existingRequest = await this.api.getExistingRequest();
+            
+            if (this.existingRequest) {
+                if (this.existingRequest.status === 'rejected') {
+                    // 반려된 경우 수정 폼 표시
+                    this.showRequestForm(true);
+                    this.populateForm(this.existingRequest);
+                } else {
+                    // 기존 신청 내역 표시
+                    this.showExistingRequest();
+                }
+            } else {
+                // 새 신청 폼 표시
+                this.showRequestForm(false);
+            }
+        } catch (error) {
+            console.error('항공권 신청 데이터 로드 실패:', error);
+            this.utils.showError('데이터를 불러오는 중 오류가 발생했습니다.');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    // 🆕 외부에서 호출 가능한 데이터 새로고침 (여권정보 등록 후)
+    async loadInitialData() {
+        console.log('🔄 데이터 새로고침 시작');
+        await this.checkPassportInfoAndSetPage();
     }
 
     setupEventListeners() {
@@ -128,45 +207,6 @@ class FlightRequestUI {
         }
         if (this.elements.returnDate) {
             this.elements.returnDate.min = today;
-        }
-    }
-
-    async loadInitialData() {
-        try {
-            this.showLoading(true);
-
-            // 사용자 프로필 가져오기
-            this.userProfile = await this.api.getUserProfile();
-            
-            // 여권정보 확인
-            const passportInfo = await this.api.checkPassportInfo();
-            
-            if (!passportInfo) {
-                // 여권정보가 없으면 알림 표시
-                this.showPassportAlert();
-            } else {
-                // 기존 신청 확인
-                this.existingRequest = await this.api.getExistingRequest();
-                
-                if (this.existingRequest) {
-                    if (this.existingRequest.status === 'rejected') {
-                        // 반려된 경우 수정 폼 표시
-                        this.showRequestForm(true);
-                        this.populateForm(this.existingRequest);
-                    } else {
-                        // 기존 신청 내역 표시
-                        this.showExistingRequest();
-                    }
-                } else {
-                    // 새 신청 폼 표시
-                    this.showRequestForm(false);
-                }
-            }
-        } catch (error) {
-            console.error('초기 데이터 로드 실패:', error);
-            this.utils.showError('데이터를 불러오는 중 오류가 발생했습니다.');
-        } finally {
-            this.showLoading(false);
         }
     }
 
@@ -777,7 +817,7 @@ class FlightRequestUI {
 // 페이지 로드 시 초기화 - localStorage 기반 인증으로 변경
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        console.log('🎯 항공권 신청 페이지 초기화 시작 - localStorage 인증 기반');
+        console.log('🎯 항공권 신청 페이지 초기화 시작 - localStorage 인증 기반 v8.2.0');
         
         // localStorage 기반 인증 체크
         const studentData = localStorage.getItem('currentStudent');
