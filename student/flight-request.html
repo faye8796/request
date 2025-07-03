@@ -396,15 +396,15 @@
         </div>
     </div>
 
-    <!-- 🚀 v8.2.0 새로운 SupabaseCore 모듈 시스템 적용 -->
+    <!-- 🔧 v8.2.1 안정성 우선 모듈 시스템 (경로 수정) -->
     <!-- 1. Supabase JavaScript 라이브러리 (CDN 버전 구체화) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
 
     <!-- 2. CONFIG 로드 -->
     <script src="../js/config.js"></script>
     
-    <!-- 3. 🚀 새로운 경량화된 SupabaseCore v1.0.0 로드 -->
-    <script src="../js/common/supabase-core.js"></script>
+    <!-- 3. 🔧 기존 안정적인 SupabaseCore 로드 (올바른 경로) -->
+    <script src="../js/supabase/supabase-core.js"></script>
     
     <!-- 4. Utils 로드 -->
     <script src="../js/utils.js"></script>
@@ -414,29 +414,34 @@
 
     <!-- 6. 인증 체크 및 초기화 스크립트 -->
     <script>
-        console.log('🚀 항공권 신청 페이지 v8.2.0 초기화 시작 (새로운 SupabaseCore 적용)...');
+        console.log('🚀 항공권 신청 페이지 v8.2.1 초기화 시작 (안정성 우선 모드)...');
 
         // 인증 체크
         async function checkAuth() {
             try {
                 console.log('🔐 사용자 인증 확인 중...');
                 
-                // 새로운 SupabaseCore 초기화 대기
+                // 기존 안정적인 SupabaseCore 대기
                 let waitCount = 0;
-                while (!window.SupabaseAPI?.core?.isInitialized && waitCount < 200) {
+                while (!window.SupabaseCore?._initialized && waitCount < 200) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                     waitCount++;
                 }
 
-                const core = window.SupabaseAPI?.core;
-                if (!core || !core.isInitialized) {
-                    console.error('❌ 새로운 SupabaseCore 인스턴스를 찾을 수 없습니다');
+                const core = window.SupabaseCore;
+                if (!core || !core._initialized) {
+                    console.error('❌ SupabaseCore 인스턴스를 찾을 수 없습니다');
                     return false;
                 }
 
-                console.log('✅ 새로운 SupabaseCore 인스턴스 확인 완료');
+                console.log('✅ SupabaseCore 인스턴스 확인 완료');
 
-                const supabase = core.getClient();
+                const supabase = core.client;
+                if (!supabase) {
+                    console.error('❌ Supabase 클라이언트를 찾을 수 없습니다');
+                    return false;
+                }
+
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user) {
                     console.log('✅ 사용자 인증 확인:', user.email);
@@ -463,11 +468,11 @@
 
         // 페이지 로드 시 실행
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('📄 DOM 로드 완료 (v8.2.0 새로운 SupabaseCore 적용)');
+            console.log('📄 DOM 로드 완료 (v8.2.1 안정성 우선 모드)');
             
             const authResult = await checkAuth();
             if (authResult) {
-                console.log('✅ 항공권 신청 페이지 v8.2.0 인증 확인 완료');
+                console.log('✅ 항공권 신청 페이지 v8.2.1 인증 확인 완료');
             } else {
                 console.log('⚠️ 인증 실패 - 기본 기능만 사용 가능');
             }
@@ -475,12 +480,12 @@
 
         // StorageUtils 초기화
         setTimeout(async () => {
-            if (window.StorageUtils && window.SupabaseAPI?.core?.isInitialized) {
-                const supabase = window.SupabaseAPI.core.getClient();
+            if (window.StorageUtils && window.SupabaseCore?._initialized) {
+                const supabase = window.SupabaseCore.client;
                 window.StorageUtils.setSupabaseInstance(supabase);
-                console.log('✅ StorageUtils 인스턴스 설정 완료 (새로운 SupabaseCore)');
+                console.log('✅ StorageUtils 인스턴스 설정 완료 (안정적 방식)');
             } else {
-                console.log('⚠️ StorageUtils 또는 새로운 SupabaseCore 인스턴스 없음');
+                console.log('⚠️ StorageUtils 또는 SupabaseCore 인스턴스 없음');
             }
         }, 2000);
 
@@ -631,7 +636,7 @@
             // 사용자 정보 표시
             updateUserInfo();
             
-            console.log('✅ 항공권 신청 페이지 초기화 완료 (v8.2.0 새로운 SupabaseCore 적용)');
+            console.log('✅ 항공권 신청 페이지 초기화 완료 (v8.2.1 안정성 우선 모드)');
         }
 
         // DOM 로드 후 앱 표시
@@ -642,7 +647,7 @@
         }
     </script>
 
-    <!-- 7. 🚀 v8.2.0 새로운 SupabaseCore 모듈 로딩 시스템 -->
+    <!-- 7. 🔧 v8.2.1 안정성 우선 모듈 로딩 시스템 -->
     <script>
         let modulesLoaded = {
             flightRequestAPI: false,
@@ -654,36 +659,36 @@
         const MAX_INIT_ATTEMPTS = 3;
         let initializationTimer = null;
 
-        // 🚀 v8.2.0: 새로운 SupabaseCore를 사용한 모듈 체크 함수
+        // 🔧 v8.2.1: 안정성 우선 모듈 체크 함수
         function checkAllModulesLoaded() {
             const allLoaded = Object.values(modulesLoaded).every(Boolean);
-            const supabaseCoreReady = !!(window.SupabaseAPI && window.SupabaseAPI.core && window.SupabaseAPI.core.isInitialized);
+            const supabaseCoreReady = !!(window.SupabaseCore && window.SupabaseCore._initialized);
             
-            console.log('📦 v8.2.0 모듈 로딩 상태 확인:', {
+            console.log('📦 v8.2.1 모듈 로딩 상태 확인:', {
                 modules: modulesLoaded,
                 supabaseCoreReady: supabaseCoreReady
             });
             
             if (allLoaded && supabaseCoreReady) {
-                console.log('✅ v8.2.0 모든 모듈 로드 완료 및 새로운 SupabaseCore 준비 완료');
+                console.log('✅ v8.2.1 모든 모듈 로드 완료 및 SupabaseCore 준비 완료');
                 clearTimeout(initializationTimer);
                 
                 // 즉시 초기화
                 initializeFlightRequestSystem();
             } else {
-                console.log('⏳ v8.2.0 모듈 로딩 대기중...');
+                console.log('⏳ v8.2.1 모듈 로딩 대기중...');
                 
                 // 재시도 로직
                 if (initializationAttempts < MAX_INIT_ATTEMPTS) {
                     initializationAttempts++;
                     initializationTimer = setTimeout(() => {
                         if (!window.flightRequestUI) {
-                            console.log(`🔄 v8.2.0 초기화 재시도 ${initializationAttempts}/${MAX_INIT_ATTEMPTS}`);
+                            console.log(`🔄 v8.2.1 초기화 재시도 ${initializationAttempts}/${MAX_INIT_ATTEMPTS}`);
                             checkAllModulesLoaded();
                         }
                     }, 500);
                 } else {
-                    console.error('❌ v8.2.0 모듈 초기화 최대 재시도 횟수 초과');
+                    console.error('❌ v8.2.1 모듈 초기화 최대 재시도 횟수 초과');
                     showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
                 }
             }
@@ -691,7 +696,7 @@
 
         function initializeFlightRequestSystem() {
             try {
-                console.log('🚀 v8.2.0 FlightRequestSystem 초기화 시작...');
+                console.log('🚀 v8.2.1 FlightRequestSystem 초기화 시작...');
                 
                 // 전역 로딩 상태 숨기기
                 const globalLoading = document.getElementById('globalLoadingState');
@@ -703,22 +708,22 @@
                     throw new Error('FlightRequestAPI가 로드되지 않았습니다');
                 }
                 
-                if (!window.SupabaseAPI?.core?.isInitialized) {
-                    console.error('❌ 새로운 SupabaseCore가 초기화되지 않았습니다');
-                    throw new Error('새로운 SupabaseCore가 초기화되지 않았습니다');
+                if (!window.SupabaseCore?._initialized) {
+                    console.error('❌ SupabaseCore가 초기화되지 않았습니다');
+                    throw new Error('SupabaseCore가 초기화되지 않았습니다');
                 }
                 
-                // FlightRequestUI 초기화 (v8.2.0)
+                // FlightRequestUI 초기화 (v8.2.1)
                 if (typeof FlightRequestUI !== 'undefined') {
                     console.log('🚀 FlightRequestUI 초기화 시작...');
                     window.flightRequestUI = new FlightRequestUI();
-                    console.log('✅ FlightRequestUI 초기화 완료 (v8.2.0)');
+                    console.log('✅ FlightRequestUI 초기화 완료 (v8.2.1)');
                 } else {
                     console.error('❌ FlightRequestUI 클래스를 찾을 수 없습니다');
                     throw new Error('FlightRequestUI 클래스가 로드되지 않았습니다');
                 }
             } catch (error) {
-                console.error('❌ v8.2.0 항공권 요청 시스템 초기화 실패:', error);
+                console.error('❌ v8.2.1 항공권 요청 시스템 초기화 실패:', error);
                 showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
             }
         }
@@ -729,16 +734,16 @@
             showError(`${moduleName} 모듈을 불러올 수 없습니다. 페이지를 새로고침해주세요.`);
         }
 
-        // 🚀 v8.2.0: 타임아웃 시간 단축 및 안전장치
+        // 🔧 v8.2.1: 타임아웃 시간 단축 및 안전장치
         setTimeout(() => {
             if (!window.flightRequestUI) {
-                console.warn('⚠️ v8.2.0: 3초 후에도 초기화되지 않음 - 최종 확인');
-                if (typeof FlightRequestUI !== 'undefined' && window.SupabaseAPI?.core?.isInitialized) {
+                console.warn('⚠️ v8.2.1: 3초 후에도 초기화되지 않음 - 최종 확인');
+                if (typeof FlightRequestUI !== 'undefined' && window.SupabaseCore?._initialized) {
                     try {
                         window.flightRequestUI = new FlightRequestUI();
-                        console.log('✅ v8.2.0 최종 초기화 성공');
+                        console.log('✅ v8.2.1 최종 초기화 성공');
                     } catch (error) {
-                        console.error('❌ v8.2.0 최종 초기화 실패:', error);
+                        console.error('❌ v8.2.1 최종 초기화 실패:', error);
                         showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
                     }
                 } else {
@@ -748,17 +753,17 @@
         }, 3000);
     </script>
     
-    <!-- 8. Flight Request 모듈들 (v8.2.0) -->
+    <!-- 8. Flight Request 모듈들 (v8.2.1) -->
     <script src="../js/student/flight-request-api.js"
-            onload="modulesLoaded.flightRequestAPI = true; console.log('✅ v8.2.0 Flight Request API 로드 완료'); checkAllModulesLoaded();"
+            onload="modulesLoaded.flightRequestAPI = true; console.log('✅ v8.2.1 Flight Request API 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request API', event)"></script>
     
     <script src="../js/student/flight-request-utils.js"
-            onload="modulesLoaded.flightRequestUtils = true; console.log('✅ v8.2.0 Flight Request Utils 로드 완료'); checkAllModulesLoaded();"
+            onload="modulesLoaded.flightRequestUtils = true; console.log('✅ v8.2.1 Flight Request Utils 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request Utils', event)"></script>
     
     <script src="../js/student/flight-request-ui.js"
-            onload="modulesLoaded.flightRequestUI = true; console.log('✅ v8.2.0 Flight Request UI 로드 완료'); checkAllModulesLoaded();"
+            onload="modulesLoaded.flightRequestUI = true; console.log('✅ v8.2.1 Flight Request UI 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request UI', event)"></script>
 
     <!-- Lucide Icons 초기화 -->
