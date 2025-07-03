@@ -1,31 +1,32 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.1.2
-// 🏗️ 아키텍처 개선: SupabaseCore 모듈 사용으로 변경
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.2.0
+// 🚀 새로운 SupabaseCore v1.0.0 연동 버전
 // passport-info 기능 완전 통합 버전
 
 class FlightRequestAPI {
     constructor() {
         this.user = null;
         this.supabase = null;
+        this.core = null;
         this.storageUtils = null;
         this.isInitialized = false;
         this.initializationPromise = this.initialize();
     }
 
-    // 🏗️ v8.1.2: SupabaseCore 사용으로 초기화 개선
+    // 🚀 v8.2.0: 새로운 SupabaseCore v1.0.0 연동
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v8.1.2 초기화 시작 (SupabaseCore 연동)...');
+            console.log('🔄 FlightRequestAPI v8.2.0 초기화 시작 (새로운 SupabaseCore 연동)...');
             
-            // SupabaseCore 대기 및 연결
+            // 새로운 SupabaseCore 대기 및 연결
             await this.waitForSupabaseCore();
             
-            // StorageUtils 확인 및 대기
+            // StorageUtils 확인 및 대기 (선택적)
             await this.waitForStorageUtils();
 
             // 초기화 완료 마킹
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI v8.1.2 초기화 완료 (SupabaseCore 연동)');
+            console.log('✅ FlightRequestAPI v8.2.0 초기화 완료 (새로운 SupabaseCore 연동)');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -34,26 +35,27 @@ class FlightRequestAPI {
         }
     }
 
-    // 🏗️ v8.1.2: SupabaseCore 대기 로직 (기존 window.supabase 대신)
+    // 🚀 v8.2.0: 새로운 SupabaseCore 대기 로직
     async waitForSupabaseCore(timeout = 15000) {
         const startTime = Date.now();
         
         return new Promise((resolve, reject) => {
             const check = () => {
-                // SupabaseCore 모듈과 초기화 상태 확인
-                if (window.SupabaseCore && window.SupabaseCore._initialized && window.SupabaseCore.supabase) {
-                    this.supabase = window.SupabaseCore.supabase;
-                    console.log('✅ SupabaseCore 모듈 연결 성공');
-                    resolve(window.SupabaseCore.supabase);
+                // 새로운 window.SupabaseAPI와 core 인스턴스 확인
+                if (window.SupabaseAPI && window.SupabaseAPI.core && window.SupabaseAPI.core.isInitialized) {
+                    this.core = window.SupabaseAPI.core;
+                    this.supabase = this.core.getClient();
+                    console.log('✅ 새로운 SupabaseCore v1.0.0 연결 성공');
+                    resolve(this.supabase);
                     return;
                 }
                 
                 if (Date.now() - startTime > timeout) {
-                    const error = new Error('SupabaseCore 모듈 로딩 시간 초과');
+                    const error = new Error('새로운 SupabaseCore 로딩 시간 초과');
                     console.error('❌ SupabaseCore 초기화 시간 초과:', {
-                        supabseCore: !!window.SupabaseCore,
-                        initialized: window.SupabaseCore?._initialized,
-                        client: !!window.SupabaseCore?.supabase,
+                        supabaseAPI: !!window.SupabaseAPI,
+                        core: !!window.SupabaseAPI?.core,
+                        initialized: window.SupabaseAPI?.core?.isInitialized,
                         timeout: timeout
                     });
                     reject(error);
@@ -67,11 +69,11 @@ class FlightRequestAPI {
         });
     }
 
-    // StorageUtils 대기 (개선된 버전)
-    async waitForStorageUtils(timeout = 10000) {
+    // StorageUtils 대기 (선택적)
+    async waitForStorageUtils(timeout = 5000) {
         const startTime = Date.now();
         
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             const check = () => {
                 if (window.StorageUtils) {
                     this.storageUtils = window.StorageUtils;
@@ -96,7 +98,7 @@ class FlightRequestAPI {
 
     // 초기화 보장 (강화된 버전)
     async ensureInitialized() {
-        if (this.isInitialized) {
+        if (this.isInitialized && this.core && this.core.isInitialized) {
             return true;
         }
 
@@ -117,13 +119,13 @@ class FlightRequestAPI {
         }
     }
 
-    // 🏗️ v8.1.2: SupabaseCore를 통한 안전한 사용자 정보 조회
+    // 🚀 v8.2.0: 새로운 SupabaseCore를 통한 안전한 사용자 정보 조회
     async getCurrentUser() {
         try {
             await this.ensureInitialized();
             
-            if (!this.supabase) {
-                throw new Error('SupabaseCore 클라이언트가 초기화되지 않았습니다');
+            if (!this.core) {
+                throw new Error('SupabaseCore가 초기화되지 않았습니다');
             }
 
             // localStorage에서 먼저 확인
@@ -133,6 +135,8 @@ class FlightRequestAPI {
                     const studentData = JSON.parse(currentStudentData);
                     if (studentData && studentData.id) {
                         this.user = { id: studentData.id, email: studentData.email };
+                        // SupabaseCore에도 사용자 정보 설정
+                        this.core.setCurrentUser(this.user, 'student');
                         return this.user;
                     }
                 } catch (parseError) {
@@ -141,6 +145,13 @@ class FlightRequestAPI {
             }
 
             // SupabaseCore를 통한 인증 확인
+            const currentUser = this.core.getCurrentUser();
+            if (currentUser) {
+                this.user = currentUser;
+                return currentUser;
+            }
+
+            // 세션에서 사용자 정보 가져오기
             const { data: { user }, error } = await this.supabase.auth.getUser();
             if (error) {
                 console.warn('SupabaseCore Auth 오류:', error);
@@ -148,6 +159,9 @@ class FlightRequestAPI {
             }
             
             this.user = user;
+            if (user) {
+                this.core.setCurrentUser(user, 'student');
+            }
             return user;
         } catch (error) {
             console.error('사용자 정보 조회 실패:', error);
@@ -155,7 +169,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 사용자 프로필 정보 가져오기
+    // 사용자 프로필 정보 가져오기 (SupabaseCore 사용)
     async getUserProfile() {
         try {
             await this.ensureInitialized();
@@ -166,14 +180,14 @@ class FlightRequestAPI {
                 throw new Error('사용자 정보가 없습니다');
             }
 
-            const { data, error } = await this.supabase
-                .from('user_profiles')
-                .select('*')
-                .eq('id', this.user.id)
-                .single();
+            // SupabaseCore의 select 메서드 사용
+            const result = await this.core.select('user_profiles', '*', { id: this.user.id });
+            
+            if (!result.success) {
+                throw new Error(result.error);
+            }
 
-            if (error) throw error;
-            return data;
+            return result.data && result.data.length > 0 ? result.data[0] : null;
         } catch (error) {
             console.error('사용자 프로필 조회 실패:', error);
             throw error;
@@ -182,7 +196,7 @@ class FlightRequestAPI {
 
     // === 🆕 PASSPORT INFO 기능 통합 ===
 
-    // 기존 여권정보 조회 (완전한 정보 반환)
+    // 기존 여권정보 조회 (SupabaseCore 사용)
     async getPassportInfo() {
         try {
             await this.ensureInitialized();
@@ -193,17 +207,17 @@ class FlightRequestAPI {
                 throw new Error('사용자 정보가 없습니다');
             }
 
-            const { data, error } = await this.supabase
-                .from('passport_info')
-                .select('*')
-                .eq('user_id', this.user.id)
-                .single();
-
-            if (error && error.code !== 'PGRST116') {
-                throw error;
+            // SupabaseCore의 select 메서드 사용
+            const result = await this.core.select('passport_info', '*', { user_id: this.user.id });
+            
+            if (!result.success) {
+                if (result.error.includes('PGRST116')) {
+                    return null; // 데이터 없음
+                }
+                throw new Error(result.error);
             }
 
-            return data;
+            return result.data && result.data.length > 0 ? result.data[0] : null;
         } catch (error) {
             console.error('여권정보 조회 실패:', error);
             throw error;
@@ -221,7 +235,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 여권정보 저장 (생성 또는 수정) - Storage 유틸리티 사용
+    // 여권정보 저장 (SupabaseCore 사용)
     async savePassportInfo(passportData, imageFile = null) {
         try {
             await this.ensureInitialized();
@@ -240,33 +254,24 @@ class FlightRequestAPI {
             if (imageFile) {
                 // 기존 이미지 삭제
                 if (imageUrl && this.storageUtils) {
-                    const filePath = this.storageUtils.extractFilePathFromUrl(
-                        imageUrl, 
-                        this.storageUtils.BUCKETS.PASSPORTS
-                    );
-                    if (filePath) {
-                        await this.storageUtils.deleteFile(
-                            this.storageUtils.BUCKETS.PASSPORTS, 
-                            filePath
+                    try {
+                        const filePath = this.storageUtils.extractFilePathFromUrl(
+                            imageUrl, 
+                            this.storageUtils.BUCKETS.PASSPORTS
                         );
+                        if (filePath) {
+                            await this.storageUtils.deleteFile(
+                                this.storageUtils.BUCKETS.PASSPORTS, 
+                                filePath
+                            );
+                        }
+                    } catch (deleteError) {
+                        console.warn('기존 이미지 삭제 실패 (계속 진행):', deleteError);
                     }
                 }
                 
-                // 새 이미지 업로드 (StorageUtils 사용 또는 폴백)
-                if (this.storageUtils) {
-                    try {
-                        const uploadResult = await this.storageUtils.uploadPassportImage(
-                            imageFile, 
-                            this.user.id
-                        );
-                        imageUrl = uploadResult.publicUrl;
-                    } catch (storageError) {
-                        console.warn('StorageUtils 업로드 실패, 기본 업로드 시도:', storageError);
-                        imageUrl = await this.fallbackPassportImageUpload(imageFile);
-                    }
-                } else {
-                    imageUrl = await this.fallbackPassportImageUpload(imageFile);
-                }
+                // 새 이미지 업로드 (SupabaseCore 사용)
+                imageUrl = await this.uploadPassportImage(imageFile);
             }
 
             const dataToSave = {
@@ -280,26 +285,23 @@ class FlightRequestAPI {
             };
 
             if (existingInfo) {
-                // 수정
-                const { data, error } = await this.supabase
-                    .from('passport_info')
-                    .update(dataToSave)
-                    .eq('id', existingInfo.id)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                return { data, isUpdate: true };
+                // 수정 (SupabaseCore 사용)
+                const result = await this.core.update('passport_info', dataToSave, { id: existingInfo.id });
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+                
+                return { data: result.data[0], isUpdate: true };
             } else {
-                // 생성
-                const { data, error } = await this.supabase
-                    .from('passport_info')
-                    .insert([dataToSave])
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                return { data, isUpdate: false };
+                // 생성 (SupabaseCore 사용)
+                const result = await this.core.insert('passport_info', dataToSave);
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+                
+                return { data: result.data[0], isUpdate: false };
             }
         } catch (error) {
             console.error('여권정보 저장 실패:', error);
@@ -307,27 +309,28 @@ class FlightRequestAPI {
         }
     }
 
-    // 폴백 여권 이미지 업로드 함수
-    async fallbackPassportImageUpload(imageFile) {
+    // 여권 이미지 업로드 (SupabaseCore 사용)
+    async uploadPassportImage(imageFile) {
         try {
             const fileName = `passport_${this.user.id}_${Date.now()}.${imageFile.name.split('.').pop()}`;
             
-            const { data, error } = await this.supabase.storage
-                .from('passports')
-                .upload(fileName, imageFile, {
-                    cacheControl: '3600',
-                    upsert: true
-                });
+            // SupabaseCore의 uploadFile 사용
+            const result = await this.core.uploadFile('passports', fileName, imageFile, { upsert: true });
+            
+            if (!result.success) {
+                throw new Error(result.error);
+            }
 
-            if (error) throw error;
+            // 공개 URL 생성
+            const urlResult = await this.core.getFileUrl('passports', fileName);
+            
+            if (!urlResult.success) {
+                throw new Error(urlResult.error);
+            }
 
-            const { data: { publicUrl } } = this.supabase.storage
-                .from('passports')
-                .getPublicUrl(data.path);
-
-            return publicUrl;
+            return urlResult.url;
         } catch (error) {
-            console.error('폴백 여권 이미지 업로드 실패:', error);
+            console.error('여권 이미지 업로드 실패:', error);
             throw error;
         }
     }
@@ -354,7 +357,7 @@ class FlightRequestAPI {
         return { valid: true };
     }
 
-    // 이미지 미리보기 생성 (StorageUtils 활용)
+    // 이미지 미리보기 생성
     async createImagePreview(file) {
         try {
             if (this.storageUtils) {
@@ -376,7 +379,7 @@ class FlightRequestAPI {
 
     // === FLIGHT REQUEST 기능 ===
 
-    // 기존 항공권 신청 조회
+    // 기존 항공권 신청 조회 (SupabaseCore 사용)
     async getExistingRequest() {
         try {
             await this.ensureInitialized();
@@ -387,6 +390,7 @@ class FlightRequestAPI {
                 throw new Error('사용자 정보가 없습니다');
             }
 
+            // SupabaseCore 직접 사용 (order by 지원)
             const { data, error } = await this.supabase
                 .from('flight_requests')
                 .select('*')
@@ -406,7 +410,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 항공권 신청 생성 (안전한 Storage 업로드)
+    // 항공권 신청 생성 (SupabaseCore 사용)
     async createFlightRequest(requestData, imageFile) {
         try {
             await this.ensureInitialized();
@@ -419,19 +423,9 @@ class FlightRequestAPI {
 
             let imageUrl = null;
 
-            // 이미지 업로드 (StorageUtils 사용 또는 폴백)
+            // 이미지 업로드
             if (imageFile) {
-                if (this.storageUtils) {
-                    try {
-                        const uploadResult = await this.storageUtils.uploadFlightImage(imageFile, this.user.id);
-                        imageUrl = uploadResult.publicUrl;
-                    } catch (storageError) {
-                        console.warn('StorageUtils 업로드 실패, 기본 업로드 시도:', storageError);
-                        imageUrl = await this.fallbackImageUpload(imageFile);
-                    }
-                } else {
-                    imageUrl = await this.fallbackImageUpload(imageFile);
-                }
+                imageUrl = await this.uploadFlightImage(imageFile);
             }
 
             const dataToSave = {
@@ -446,46 +440,47 @@ class FlightRequestAPI {
                 status: 'pending'
             };
 
-            const { data, error } = await this.supabase
-                .from('flight_requests')
-                .insert([dataToSave])
-                .select()
-                .single();
+            // SupabaseCore의 insert 사용
+            const result = await this.core.insert('flight_requests', dataToSave);
+            
+            if (!result.success) {
+                throw new Error(result.error);
+            }
 
-            if (error) throw error;
-            return data;
+            return result.data[0];
         } catch (error) {
             console.error('항공권 신청 생성 실패:', error);
             throw error;
         }
     }
 
-    // 폴백 이미지 업로드 함수
-    async fallbackImageUpload(imageFile) {
+    // 항공권 이미지 업로드 (SupabaseCore 사용)
+    async uploadFlightImage(imageFile) {
         try {
             const fileName = `${this.user.id}/flight_${Date.now()}.${imageFile.name.split('.').pop()}`;
             
-            const { data, error } = await this.supabase.storage
-                .from('flight-images')
-                .upload(fileName, imageFile, {
-                    cacheControl: '3600',
-                    upsert: false
-                });
+            // SupabaseCore의 uploadFile 사용
+            const result = await this.core.uploadFile('flight-images', fileName, imageFile);
+            
+            if (!result.success) {
+                throw new Error(result.error);
+            }
 
-            if (error) throw error;
+            // 공개 URL 생성
+            const urlResult = await this.core.getFileUrl('flight-images', fileName);
+            
+            if (!urlResult.success) {
+                throw new Error(urlResult.error);
+            }
 
-            const { data: { publicUrl } } = this.supabase.storage
-                .from('flight-images')
-                .getPublicUrl(data.path);
-
-            return publicUrl;
+            return urlResult.url;
         } catch (error) {
-            console.error('폴백 이미지 업로드 실패:', error);
+            console.error('항공권 이미지 업로드 실패:', error);
             throw error;
         }
     }
 
-    // 항공권 신청 수정
+    // 항공권 신청 수정 (SupabaseCore 사용)
     async updateFlightRequest(requestId, requestData, imageFile = null) {
         try {
             await this.ensureInitialized();
@@ -510,19 +505,10 @@ class FlightRequestAPI {
 
             // 새 이미지가 있으면 업로드
             if (imageFile) {
-                if (this.storageUtils) {
-                    try {
-                        const uploadResult = await this.storageUtils.uploadFlightImage(imageFile, this.user.id);
-                        updateData.flight_image_url = uploadResult.publicUrl;
-                    } catch (storageError) {
-                        console.warn('StorageUtils 업로드 실패, 기본 업로드 시도:', storageError);
-                        updateData.flight_image_url = await this.fallbackImageUpload(imageFile);
-                    }
-                } else {
-                    updateData.flight_image_url = await this.fallbackImageUpload(imageFile);
-                }
+                updateData.flight_image_url = await this.uploadFlightImage(imageFile);
             }
 
+            // 복잡한 조건이 있는 업데이트는 직접 supabase 사용
             const { data, error } = await this.supabase
                 .from('flight_requests')
                 .update(updateData)
@@ -551,27 +537,26 @@ class FlightRequestAPI {
                 throw new Error('사용자 정보가 없습니다');
             }
 
-            // 파일 업로드
+            // 파일 업로드 (SupabaseCore 사용)
             const fileName = `${this.user.id}_tickets`;
             
-            const { data, error } = await this.supabase.storage
-                .from('flight-tickets')
-                .upload(fileName, ticketFile, {
-                    cacheControl: '3600',
-                    upsert: true
-                });
+            const uploadResult = await this.core.uploadFile('flight-tickets', fileName, ticketFile, { upsert: true });
+            
+            if (!uploadResult.success) {
+                throw new Error(uploadResult.error);
+            }
 
-            if (error) throw error;
+            const urlResult = await this.core.getFileUrl('flight-tickets', fileName);
+            
+            if (!urlResult.success) {
+                throw new Error(urlResult.error);
+            }
 
-            const { data: { publicUrl } } = this.supabase.storage
-                .from('flight-tickets')
-                .getPublicUrl(data.path);
-
-            // DB 업데이트
+            // DB 업데이트는 복잡한 조건이므로 직접 supabase 사용
             const { data: updateData, error: updateError } = await this.supabase
                 .from('flight_requests')
                 .update({
-                    ticket_url: publicUrl,
+                    ticket_url: urlResult.url,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', requestId)
@@ -606,27 +591,26 @@ class FlightRequestAPI {
                 throw new Error('사용자 정보가 없습니다');
             }
 
-            // 파일 업로드
+            // 파일 업로드 (SupabaseCore 사용)
             const fileName = `receipt_${this.user.id}_${requestId}_${Date.now()}.${receiptFile.name.split('.').pop()}`;
             
-            const { data, error } = await this.supabase.storage
-                .from('receipt-files')
-                .upload(fileName, receiptFile, {
-                    cacheControl: '3600',
-                    upsert: false
-                });
+            const uploadResult = await this.core.uploadFile('receipt-files', fileName, receiptFile);
+            
+            if (!uploadResult.success) {
+                throw new Error(uploadResult.error);
+            }
 
-            if (error) throw error;
+            const urlResult = await this.core.getFileUrl('receipt-files', fileName);
+            
+            if (!urlResult.success) {
+                throw new Error(urlResult.error);
+            }
 
-            const { data: { publicUrl } } = this.supabase.storage
-                .from('receipt-files')
-                .getPublicUrl(data.path);
-
-            // DB 업데이트
+            // DB 업데이트는 복잡한 조건이므로 직접 supabase 사용
             const { data: updateData, error: updateError } = await this.supabase
                 .from('flight_requests')
                 .update({
-                    receipt_url: publicUrl,
+                    receipt_url: urlResult.url,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', requestId)
@@ -650,7 +634,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 신청 상태 업데이트
+    // 신청 상태 업데이트 (SupabaseCore 사용)
     async updateRequestStatus(requestId, status) {
         try {
             await this.ensureInitialized();
@@ -661,26 +645,28 @@ class FlightRequestAPI {
                 throw new Error('사용자 정보가 없습니다');
             }
 
-            const { data, error } = await this.supabase
-                .from('flight_requests')
-                .update({
-                    status: status,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', requestId)
-                .eq('user_id', this.user.id)
-                .select()
-                .single();
+            const updateData = {
+                status: status,
+                updated_at: new Date().toISOString()
+            };
 
-            if (error) throw error;
-            return data;
+            const result = await this.core.update('flight_requests', updateData, { 
+                id: requestId, 
+                user_id: this.user.id 
+            });
+            
+            if (!result.success) {
+                throw new Error(result.error);
+            }
+
+            return result.data[0];
         } catch (error) {
             console.error('상태 업데이트 실패:', error);
             throw error;
         }
     }
 
-    // 항공권 신청 삭제
+    // 항공권 신청 삭제 (SupabaseCore 사용)
     async deleteFlightRequest(requestId) {
         try {
             await this.ensureInitialized();
@@ -692,17 +678,19 @@ class FlightRequestAPI {
             }
 
             // 먼저 신청 정보를 가져와서 이미지 URL 확인
-            const { data: request, error: fetchError } = await this.supabase
-                .from('flight_requests')
-                .select('flight_image_url')
-                .eq('id', requestId)
-                .eq('user_id', this.user.id)
-                .single();
+            const requestResult = await this.core.select('flight_requests', 'flight_image_url', { 
+                id: requestId, 
+                user_id: this.user.id 
+            });
+            
+            if (!requestResult.success) {
+                throw new Error(requestResult.error);
+            }
 
-            if (fetchError) throw fetchError;
+            const request = requestResult.data[0];
 
             // 이미지 파일 삭제 시도 (실패해도 계속 진행)
-            if (request.flight_image_url) {
+            if (request?.flight_image_url) {
                 try {
                     if (this.storageUtils) {
                         const filePath = this.storageUtils.extractFilePathFromUrl(
@@ -712,13 +700,18 @@ class FlightRequestAPI {
                         if (filePath) {
                             await this.storageUtils.deleteFile('flight-images', filePath);
                         }
+                    } else {
+                        // SupabaseCore를 통한 삭제
+                        const pathParts = request.flight_image_url.split('/');
+                        const fileName = pathParts[pathParts.length - 1];
+                        await this.core.deleteFile('flight-images', fileName);
                     }
                 } catch (deleteError) {
                     console.warn('이미지 파일 삭제 실패 (계속 진행):', deleteError);
                 }
             }
 
-            // DB에서 삭제
+            // DB에서 삭제 (복잡한 조건이므로 직접 supabase 사용)
             const { error } = await this.supabase
                 .from('flight_requests')
                 .delete()
@@ -734,7 +727,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 파일 유효성 검증 (passport와 flight 모두 지원)
+    // 파일 유효성 검증
     validateFile(file, fileType = 'image') {
         try {
             if (this.storageUtils) {
@@ -752,8 +745,7 @@ class FlightRequestAPI {
             }
 
             if (!allowedTypes.includes(file.type)) {
-                throw new Error(`지원하지 않는 파일 형식입니다. (${allowedTypes.join(', ')})`);
-            }
+                throw new Error(`지원하지 않는 파일 형식입니다. (${allowedTypes.join(', ')})`);\n            }
 
             return { isValid: true };
         } catch (error) {
@@ -763,16 +755,16 @@ class FlightRequestAPI {
     }
 }
 
-// 🏗️ v8.1.2: SupabaseCore 의존성을 고려한 안전한 인스턴스 생성
+// 🚀 v8.2.0: 새로운 SupabaseCore 의존성을 고려한 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.1.2 인스턴스 생성 시작 (SupabaseCore 연동)...');
+        console.log('🚀 FlightRequestAPI v8.2.0 인스턴스 생성 시작 (새로운 SupabaseCore 연동)...');
         window.flightRequestAPI = new FlightRequestAPI();
         
         // 호환성을 위한 passport API 인스턴스도 생성
         window.passportAPI = window.flightRequestAPI;
         
-        console.log('✅ FlightRequestAPI v8.1.2 인스턴스 생성 완료 - SupabaseCore 연동');
+        console.log('✅ FlightRequestAPI v8.2.0 인스턴스 생성 완료 - 새로운 SupabaseCore 연동');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -780,13 +772,13 @@ function createFlightRequestAPI() {
     }
 }
 
-// 🏗️ v8.1.2: SupabaseCore 로딩 후 지연 실행
+// 🚀 v8.2.0: 새로운 SupabaseCore 로딩 후 지연 실행
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(createFlightRequestAPI, 500); // SupabaseCore 로딩 대기
+        setTimeout(createFlightRequestAPI, 1000); // 새로운 SupabaseCore 로딩 대기
     });
 } else {
-    setTimeout(createFlightRequestAPI, 500);
+    setTimeout(createFlightRequestAPI, 1000);
 }
 
-console.log('✅ FlightRequestAPI v8.1.2 모듈 로드 완료 - SupabaseCore 연동 방식으로 아키텍처 개선');
+console.log('✅ FlightRequestAPI v8.2.0 모듈 로드 완료 - 새로운 SupabaseCore v1.0.0 연동');
