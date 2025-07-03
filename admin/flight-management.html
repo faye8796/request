@@ -108,7 +108,7 @@
         </div>
     </main>
 
-    <!-- 필수 스크립트들 -->
+    <!-- 필수 스크립트들 (순서 중요) -->
     <!-- 1. CONFIG 로드 -->
     <script src="../js/config.js"></script>
     
@@ -120,71 +120,96 @@
     <!-- 3. Utils 로드 -->
     <script src="../js/utils.js"></script>
     
-    <!-- 4. Storage Utils 로드 (수정된 버전) -->
-    <script>
-        // Supabase client 확인 및 Storage utils 초기화
-        (async function initStorageUtils() {
-            console.log('🔧 Storage Utils 초기화 시작...');
-            
-            // SupabaseAPI 초기화 대기
-            let waitCount = 0;
-            while (!window.SupabaseAPI?.supabase && waitCount < 100) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                waitCount++;
-            }
-            
-            if (window.SupabaseAPI?.supabase) {
-                console.log('✅ SupabaseAPI 확인됨 - Storage Utils 로드');
-                
-                // StorageUtils에 supabase 인스턴스 전달
-                if (window.StorageUtils) {
-                    window.StorageUtils.supabase = window.SupabaseAPI.supabase;
-                    console.log('✅ StorageUtils에 Supabase 인스턴스 설정 완료');
-                }
-            } else {
-                console.error('❌ SupabaseAPI 초기화 실패 - Storage Utils 로드 불가');
-            }
-        })();
-    </script>
+    <!-- 4. Storage Utils 로드 -->
     <script src="../js/common/storage-utils.js"></script>
+    
+    <!-- 5. 항공권 관리 모듈들 로드 -->
+    <script src="../js/admin/flight-management-api.js"></script>
+    <script src="../js/admin/flight-management-modals.js"></script>
+    <script src="../js/admin/flight-management-ui.js"></script>
 
-    <script type="module">
-        import { supabase } from '../js/supabase-client.js';
-        
+    <!-- 6. 초기화 및 인증 스크립트 -->
+    <script>
+        console.log('🚀 항공권 관리 페이지 초기화 시작...');
+
         // 로그아웃 함수
         window.logout = async function() {
-            const { error } = await supabase.auth.signOut();
-            if (!error) {
+            try {
+                const supabase = window.SupabaseAPI?.supabase || window.supabase;
+                if (supabase) {
+                    const { error } = await supabase.auth.signOut();
+                    if (!error) {
+                        window.location.href = '../index.html';
+                    }
+                } else {
+                    window.location.href = '../index.html';
+                }
+            } catch (error) {
+                console.error('로그아웃 오류:', error);
                 window.location.href = '../index.html';
             }
         }
 
         // 인증 체크
         async function checkAuth() {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                window.location.href = '../index.html';
-                return;
-            }
+            try {
+                // SupabaseAPI 초기화 대기
+                let waitCount = 0;
+                while (!window.SupabaseAPI?.supabase && waitCount < 100) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    waitCount++;
+                }
 
-            // 관리자 권한 체크
-            const { data: profile } = await supabase
-                .from('user_profiles')
-                .select('user_type')
-                .eq('id', user.id)
-                .single();
+                const supabase = window.SupabaseAPI?.supabase || window.supabase;
+                if (!supabase) {
+                    console.error('Supabase 인스턴스를 찾을 수 없습니다');
+                    window.location.href = '../index.html';
+                    return;
+                }
 
-            if (!profile || profile.user_type !== 'admin') {
-                alert('관리자 권한이 필요합니다.');
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    console.log('인증되지 않은 사용자');
+                    window.location.href = '../index.html';
+                    return;
+                }
+
+                console.log('✅ 사용자 인증 확인:', user.email);
+
+                // 관리자 권한 체크
+                const { data: profile } = await supabase
+                    .from('user_profiles')
+                    .select('user_type')
+                    .eq('id', user.id)
+                    .single();
+
+                if (!profile || profile.user_type !== 'admin') {
+                    alert('관리자 권한이 필요합니다.');
+                    window.location.href = '../index.html';
+                    return;
+                }
+
+                console.log('✅ 관리자 권한 확인');
+            } catch (error) {
+                console.error('인증 확인 오류:', error);
                 window.location.href = '../index.html';
             }
         }
 
         // 페이지 로드 시 실행
-        checkAuth();
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('📄 DOM 로드 완료');
+            await checkAuth();
+            console.log('✅ 항공권 관리 페이지 초기화 완료');
+        });
+
+        // StorageUtils 초기화 (지연 실행)
+        setTimeout(async () => {
+            if (window.StorageUtils && window.SupabaseAPI?.supabase) {
+                window.StorageUtils.setSupabaseInstance(window.SupabaseAPI.supabase);
+                console.log('✅ StorageUtils Supabase 인스턴스 설정 완료');
+            }
+        }, 2000);
     </script>
-    
-    <!-- 항공권 관리 UI 모듈 -->
-    <script type="module" src="../js/admin/flight-management-ui.js"></script>
 </body>
 </html>
