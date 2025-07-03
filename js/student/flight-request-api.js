@@ -1,5 +1,6 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.3.1
-// passport-info 기능 완전 통합 버전 (초기화 로직 강화)
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.1.2
+// 🏗️ 아키텍처 개선: SupabaseCore 모듈 사용으로 변경
+// passport-info 기능 완전 통합 버전
 
 class FlightRequestAPI {
     constructor() {
@@ -10,13 +11,13 @@ class FlightRequestAPI {
         this.initializationPromise = this.initialize();
     }
 
-    // 안전한 초기화 (강화된 버전)
+    // 🏗️ v8.1.2: SupabaseCore 사용으로 초기화 개선
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI 초기화 시작...');
+            console.log('🔄 FlightRequestAPI v8.1.2 초기화 시작 (SupabaseCore 연동)...');
             
-            // Supabase 클라이언트 확인 및 대기
-            await this.waitForSupabase();
+            // SupabaseCore 대기 및 연결
+            await this.waitForSupabaseCore();
             
             // StorageUtils 확인 및 대기
             await this.waitForStorageUtils();
@@ -24,7 +25,7 @@ class FlightRequestAPI {
             // 초기화 완료 마킹
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI 초기화 완료 (passport-info 통합) v8.3.1');
+            console.log('✅ FlightRequestAPI v8.1.2 초기화 완료 (SupabaseCore 연동)');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -33,25 +34,26 @@ class FlightRequestAPI {
         }
     }
 
-    // Supabase 클라이언트 대기 (개선된 버전)
-    async waitForSupabase(timeout = 15000) {
+    // 🏗️ v8.1.2: SupabaseCore 대기 로직 (기존 window.supabase 대신)
+    async waitForSupabaseCore(timeout = 15000) {
         const startTime = Date.now();
         
         return new Promise((resolve, reject) => {
             const check = () => {
-                // window.supabase와 supabaseReady 플래그 모두 확인
-                if (window.supabase && window.supabaseReady) {
-                    this.supabase = window.supabase;
-                    console.log('✅ Supabase 클라이언트 연결 성공');
-                    resolve(window.supabase);
+                // SupabaseCore 모듈과 초기화 상태 확인
+                if (window.SupabaseCore && window.SupabaseCore._initialized && window.SupabaseCore.supabase) {
+                    this.supabase = window.SupabaseCore.supabase;
+                    console.log('✅ SupabaseCore 모듈 연결 성공');
+                    resolve(window.SupabaseCore.supabase);
                     return;
                 }
                 
                 if (Date.now() - startTime > timeout) {
-                    const error = new Error('Supabase 클라이언트 로딩 시간 초과');
-                    console.error('❌ Supabase 초기화 시간 초과:', {
-                        supabase: !!window.supabase,
-                        supabaseReady: !!window.supabaseReady,
+                    const error = new Error('SupabaseCore 모듈 로딩 시간 초과');
+                    console.error('❌ SupabaseCore 초기화 시간 초과:', {
+                        supabseCore: !!window.SupabaseCore,
+                        initialized: window.SupabaseCore?._initialized,
+                        client: !!window.SupabaseCore?.supabase,
                         timeout: timeout
                     });
                     reject(error);
@@ -115,13 +117,13 @@ class FlightRequestAPI {
         }
     }
 
-    // 현재 사용자 정보 가져오기 (안전한 버전)
+    // 🏗️ v8.1.2: SupabaseCore를 통한 안전한 사용자 정보 조회
     async getCurrentUser() {
         try {
             await this.ensureInitialized();
             
             if (!this.supabase) {
-                throw new Error('Supabase 클라이언트가 초기화되지 않았습니다');
+                throw new Error('SupabaseCore 클라이언트가 초기화되지 않았습니다');
             }
 
             // localStorage에서 먼저 확인
@@ -138,10 +140,10 @@ class FlightRequestAPI {
                 }
             }
 
-            // Supabase Auth 확인
+            // SupabaseCore를 통한 인증 확인
             const { data: { user }, error } = await this.supabase.auth.getUser();
             if (error) {
-                console.warn('Supabase Auth 오류:', error);
+                console.warn('SupabaseCore Auth 오류:', error);
                 throw new Error('사용자 인증 정보를 확인할 수 없습니다');
             }
             
@@ -761,16 +763,16 @@ class FlightRequestAPI {
     }
 }
 
-// 전역 인스턴스 생성 (즉시 실행하지 않고 함수로 래핑)
+// 🏗️ v8.1.2: SupabaseCore 의존성을 고려한 안전한 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI 인스턴스 생성 시작...');
+        console.log('🚀 FlightRequestAPI v8.1.2 인스턴스 생성 시작 (SupabaseCore 연동)...');
         window.flightRequestAPI = new FlightRequestAPI();
         
         // 호환성을 위한 passport API 인스턴스도 생성
         window.passportAPI = window.flightRequestAPI;
         
-        console.log('✅ FlightRequestAPI v8.3.1 인스턴스 생성 완료 - passport-info 기능 완전 통합');
+        console.log('✅ FlightRequestAPI v8.1.2 인스턴스 생성 완료 - SupabaseCore 연동');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -778,13 +780,13 @@ function createFlightRequestAPI() {
     }
 }
 
-// 지연 실행 - DOM이 준비되고 Supabase가 초기화된 후 실행
+// 🏗️ v8.1.2: SupabaseCore 로딩 후 지연 실행
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(createFlightRequestAPI, 100);
+        setTimeout(createFlightRequestAPI, 500); // SupabaseCore 로딩 대기
     });
 } else {
-    setTimeout(createFlightRequestAPI, 100);
+    setTimeout(createFlightRequestAPI, 500);
 }
 
-console.log('✅ FlightRequestAPI v8.3.1 모듈 로드 완료 - passport-info 기능 완전 통합 (초기화 대기)');
+console.log('✅ FlightRequestAPI v8.1.2 모듈 로드 완료 - SupabaseCore 연동 방식으로 아키텍처 개선');
