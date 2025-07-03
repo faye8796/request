@@ -1,5 +1,5 @@
-// flight-management-modals.js - 관리자용 항공권 관리 모달 시스템 v1.2.0
-// v1.2.0: ES6 export 구문 제거 및 브라우저 호환성 개선
+// flight-management-modals.js - 관리자용 항공권 관리 모달 시스템 v8.2.0
+// v8.2.0: 직접 모듈 최적화 - SupabaseCore 직접 사용
 
 class FlightManagementModals {
     constructor() {
@@ -17,14 +17,24 @@ class FlightManagementModals {
         }
     }
 
-    // Supabase 인스턴스 안전하게 가져오기
+    // v8.2.0: Supabase 인스턴스 안전하게 가져오기 (SupabaseCore 우선)
     getSupabase() {
-        if (window.SupabaseAPI && window.SupabaseAPI.supabase) {
-            return window.SupabaseAPI.supabase;
+        // 🆕 v8.2.0: SupabaseCore 직접 사용 (최우선)
+        if (window.SupabaseCore && window.SupabaseCore.supabase) {
+            return window.SupabaseCore.supabase;
         }
+        
+        // 2순위: SupabaseAdmin을 통한 접근
+        if (window.SupabaseAdmin && window.SupabaseAdmin.core?.supabase) {
+            return window.SupabaseAdmin.core.supabase;
+        }
+        
+        // 3순위: 레거시 호환성
         if (window.supabase) {
             return window.supabase;
         }
+        
+        console.warn('⚠️ v8.2.0 Supabase 인스턴스를 찾을 수 없습니다');
         return null;
     }
 
@@ -395,7 +405,7 @@ class FlightManagementModals {
         this.openModal('uploadTicketModal');
     }
 
-    // 여권정보 조회 모달 표시
+    // 여권정보 조회 모달 표시 (v8.2.0 SupabaseCore 직접 사용)
     async showPassportModal(userId) {
         const content = document.getElementById('passportModalContent');
         content.innerHTML = '<div class="loading">여권 정보를 불러오는 중...</div>';
@@ -404,7 +414,7 @@ class FlightManagementModals {
         try {
             const supabase = this.getSupabase();
             if (!supabase) {
-                throw new Error('Supabase 인스턴스를 찾을 수 없습니다');
+                throw new Error('v8.2.0 Supabase 인스턴스를 찾을 수 없습니다');
             }
 
             const { data: passportInfo, error } = await supabase
@@ -460,7 +470,7 @@ class FlightManagementModals {
                 </div>
             `;
         } catch (error) {
-            console.error('Error fetching passport info:', error);
+            console.error('v8.2.0 Error fetching passport info:', error);
             content.innerHTML = `
                 <div class="error-message">
                     여권 정보를 불러오는 중 오류가 발생했습니다.
@@ -469,7 +479,7 @@ class FlightManagementModals {
         }
     }
 
-    // 승인 처리
+    // 승인 처리 (v8.2.0 SupabaseCore 직접 사용)
     async confirmApprove() {
         if (!this.currentRequest) return;
 
@@ -478,7 +488,7 @@ class FlightManagementModals {
                 await this.api.updateRequestStatus(this.currentRequest.id, 'approved');
             } else {
                 const supabase = this.getSupabase();
-                if (!supabase) throw new Error('Supabase 인스턴스를 찾을 수 없습니다');
+                if (!supabase) throw new Error('v8.2.0 Supabase 인스턴스를 찾을 수 없습니다');
 
                 const { error } = await supabase
                     .from('flight_requests')
@@ -499,12 +509,12 @@ class FlightManagementModals {
                 window.flightManagementUI.loadRequests();
             }
         } catch (error) {
-            console.error('Error approving request:', error);
+            console.error('v8.2.0 Error approving request:', error);
             alert('승인 처리 중 오류가 발생했습니다.');
         }
     }
 
-    // 반려 처리
+    // 반려 처리 (v8.2.0 SupabaseCore 직접 사용)
     async confirmReject() {
         if (!this.currentRequest) return;
 
@@ -519,7 +529,7 @@ class FlightManagementModals {
                 await this.api.updateRequestStatus(this.currentRequest.id, 'rejected', rejectionReason);
             } else {
                 const supabase = this.getSupabase();
-                if (!supabase) throw new Error('Supabase 인스턴스를 찾을 수 없습니다');
+                if (!supabase) throw new Error('v8.2.0 Supabase 인스턴스를 찾을 수 없습니다');
 
                 const { error } = await supabase
                     .from('flight_requests')
@@ -541,12 +551,12 @@ class FlightManagementModals {
                 window.flightManagementUI.loadRequests();
             }
         } catch (error) {
-            console.error('Error rejecting request:', error);
+            console.error('v8.2.0 Error rejecting request:', error);
             alert('반려 처리 중 오류가 발생했습니다.');
         }
     }
 
-    // 관리자 항공권 업로드
+    // 관리자 항공권 업로드 (v8.2.0 SupabaseCore 직접 사용)
     async uploadAdminTicket() {
         if (!this.currentRequest) return;
 
@@ -573,11 +583,11 @@ class FlightManagementModals {
                 // API를 통한 업로드
                 await this.api.uploadAdminTicket(this.currentRequest.id, file);
             } else {
-                // 직접 업로드 (fallback)
+                // v8.2.0: 직접 업로드 (fallback) - SupabaseCore 사용
                 const supabase = this.getSupabase();
-                if (!supabase) throw new Error('Supabase 인스턴스를 찾을 수 없습니다');
+                if (!supabase) throw new Error('v8.2.0 Supabase 인스턴스를 찾을 수 없습니다');
 
-                // flight-tickets 버켓에 업로드 (v8.1.0 구조)
+                // flight-tickets 버켓에 업로드 (v8.1.0 구조 유지)
                 const fileName = `${this.currentRequest.user_id}_tickets`;
                 const { data, error: uploadError } = await supabase.storage
                     .from('flight-tickets')
@@ -610,7 +620,7 @@ class FlightManagementModals {
                 window.flightManagementUI.loadRequests();
             }
         } catch (error) {
-            console.error('Error uploading admin ticket:', error);
+            console.error('v8.2.0 Error uploading admin ticket:', error);
             alert('항공권 등록 중 오류가 발생했습니다.');
         }
     }
@@ -647,11 +657,11 @@ class FlightManagementModals {
     }
 }
 
-// 전역 객체에 등록 (ES6 export 대신)
+// 전역 객체에 등록
 if (typeof window !== 'undefined') {
     window.FlightManagementModals = FlightManagementModals;
     window.flightModals = new FlightManagementModals();
-    console.log('✅ FlightManagementModals v1.2.0 전역 등록 완료');
+    console.log('✅ FlightManagementModals v8.2.0 전역 등록 완료 (직접 모듈 최적화)');
 }
 
-console.log('✅ FlightManagementModals v1.2.0 로드 완료 - ES6 export 제거, 브라우저 호환성 개선');
+console.log('✅ FlightManagementModals v8.2.0 로드 완료 - 직접 모듈 최적화 및 SupabaseCore 직접 사용');
