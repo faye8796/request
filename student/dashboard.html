@@ -373,9 +373,9 @@
     <script src="../js/student/notification-system.js?v=5.2.0"></script>
     <script src="../js/student/dashboard.js?v=5.2.0"></script>
     
-    <!-- 대시보드 초기화 - v7.0.0 여권정보 등록 추가 -->
+    <!-- 대시보드 초기화 - v8.1.0 항공권 신청 활성화 버전 -->
     <script>
-        console.log('🎯 Dashboard v7.0.0 - 여권정보 등록 시스템 추가 버전 시작');
+        console.log('🎯 Dashboard v8.1.0 - 항공권 신청 시스템 활성화 버전 시작');
         
         // 모듈 상태 추적 및 학생 정보 관리 통합 시스템
         const ModuleStatusTracker = {
@@ -497,15 +497,15 @@
                 }
             },
 
-            // 🆕 v7.0.0 기본 기능 설정 (여권정보 등록 추가)
+            // 🆕 v8.1.0 기본 기능 설정 (항공권 신청 활성화)
             getDefaultFeatureSettings() {
                 return [
                     { feature_name: 'institute_info', feature_title: '파견학당 정보', is_active: true, display_order: 1 },
                     { feature_name: 'domestic_program', feature_title: '국내교육 프로그램 안내', is_active: false, display_order: 2 },
-                    { feature_name: 'exam', feature_title: '수료평가', is_active: true, display_order: 3 },
+                    { feature_name: 'exam', feature_title: '수료평가', is_active: false, display_order: 3 },
                     { feature_name: 'passport_info', feature_title: '여권정보 등록', is_active: true, display_order: 4 },
-                    { feature_name: 'flight_request', feature_title: '항공권 구매 신청', is_active: false, display_order: 5 },
-                    { feature_name: 'equipment_request', feature_title: '문화교구 신청', is_active: true, display_order: 6 }
+                    { feature_name: 'flight_request', feature_title: '항공권 구매 신청', is_active: true, display_order: 5 },
+                    { feature_name: 'equipment_request', feature_title: '문화교구 신청', is_active: false, display_order: 6 }
                 ];
             },
 
@@ -557,9 +557,9 @@
                 this.showSystemMessage(message, 'error');
             },
 
-            // 🆕 v7.0.0 메뉴 항목 로드 (여권정보 등록 포함)
+            // 🆕 v8.1.0 메뉴 항목 로드 (항공권 신청 활성화)
             loadMenuItems() {
-                console.log('📋 메뉴 항목 로딩 시작... (v7.0.0 - 여권정보 등록 포함)');
+                console.log('📋 메뉴 항목 로딩 시작... (v8.1.0 - 항공권 신청 활성화)');
                 const menuGrid = document.getElementById('menuGrid');
                 if (!menuGrid) return;
 
@@ -582,11 +582,11 @@
                     lucide.createIcons();
                 }
                 
-                console.log('✅ 메뉴 항목 로딩 완료 (v7.0.0 - 여권정보 등록 포함)');
+                console.log('✅ 메뉴 항목 로딩 완료 (v8.1.0 - 항공권 신청 활성화)');
                 this.showSystemReady();
             },
 
-            // 🆕 v7.0.0 메뉴 카드 설정 가져오기 (여권정보 등록 추가)
+            // 🆕 v8.1.0 메뉴 카드 설정 가져오기 (항공권 신청 활성화)
             getMenuCardConfig(feature) {
                 const configs = {
                     'institute_info': {
@@ -685,8 +685,8 @@
                 if (systemStatus) {
                     systemStatus.innerHTML = `
                         <div class="alert alert-success">
-                            <strong>🚀 시스템이 정상적으로 초기화되었습니다! (v7.0.0)</strong><br>
-                            여권정보 등록 시스템이 추가되어 모든 기능을 사용할 수 있습니다.
+                            <strong>🚀 시스템이 정상적으로 초기화되었습니다! (v8.1.0)</strong><br>
+                            항공권 신청 시스템이 활성화되어 모든 기능을 사용할 수 있습니다.
                         </div>
                     `;
                     
@@ -698,7 +698,7 @@
                 
                 this.isInitialized = true;
                 this.initializationStep = 'complete';
-                console.log('🎉 대시보드 초기화 완전 완료 - v7.0.0 여권정보 등록 시스템 포함');
+                console.log('🎉 대시보드 초기화 완전 완료 - v8.1.0 항공권 신청 시스템 활성화');
             },
 
             // 시스템 메시지 표시
@@ -731,7 +731,7 @@
                     modules: this.modules,
                     studentData: this.studentData,
                     featureSettings: this.featureSettings,
-                    version: 'v7.0.0 - 여권정보 등록 시스템 추가'
+                    version: 'v8.1.0 - 항공권 신청 시스템 활성화'
                 };
             }
         };
@@ -780,7 +780,7 @@
         // DOMContentLoaded 이벤트 핸들러 - 즉시 시작
         document.addEventListener('DOMContentLoaded', function() {
             try {
-                console.log('🎯 DOMContentLoaded - v7.0.0 여권정보 등록 시스템 포함 초기화 시작');
+                console.log('🎯 DOMContentLoaded - v8.1.0 항공권 신청 시스템 활성화 초기화 시작');
                 
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
@@ -858,7 +858,7 @@
         // 전역 디버그 함수
         window.showDashboardDebug = function() {
             const debugInfo = ModuleStatusTracker.getDebugInfo();
-            console.group('🔍 Dashboard Debug Info - v7.0.0');
+            console.group('🔍 Dashboard Debug Info - v8.1.0');
             console.log('초기화 상태:', debugInfo.isInitialized);
             console.log('현재 단계:', debugInfo.initializationStep);
             console.log('모듈 상태:', debugInfo.modules);
@@ -867,14 +867,14 @@
             console.log('버전:', debugInfo.version);
             console.groupEnd();
             
-            alert(`Dashboard Debug Info (v7.0.0):\n\n초기화: ${debugInfo.isInitialized}\n단계: ${debugInfo.initializationStep}\n학생: ${debugInfo.studentData?.name || 'N/A'}\n기능: ${debugInfo.featureSettings?.length || 0}개\n\n자세한 정보는 콘솔을 확인하세요.`);
+            alert(`Dashboard Debug Info (v8.1.0):\n\n초기화: ${debugInfo.isInitialized}\n단계: ${debugInfo.initializationStep}\n학생: ${debugInfo.studentData?.name || 'N/A'}\n기능: ${debugInfo.featureSettings?.length || 0}개\n\n자세한 정보는 콘솔을 확인하세요.`);
         };
 
         // 전역 변수로 노출 (dashboard.js와의 호환성)
         window.ModuleStatusTracker = ModuleStatusTracker;
         window.navigateToPage = navigateToPage;
         
-        console.log('✅ Dashboard v7.0.0 초기화 스크립트 로딩 완료 - 여권정보 등록 시스템 추가');
+        console.log('✅ Dashboard v8.1.0 초기화 스크립트 로딩 완료 - 항공권 신청 시스템 활성화');
     </script>
 </body>
 </html>
