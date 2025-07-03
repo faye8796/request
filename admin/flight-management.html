@@ -33,7 +33,7 @@
             <h1 class="page-title">항공권 신청 관리</h1>
             <!-- 디버깅 정보 표시 -->
             <div id="debugInfo" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 12px;">
-                <strong>디버깅 모드:</strong> <span id="debugStatus">초기화 중...</span>
+                <strong>v8.2.0 직접 모듈 최적화:</strong> <span id="debugStatus">초기화 중...</span>
             </div>
         </div>
 
@@ -112,17 +112,17 @@
         </div>
     </main>
 
-    <!-- 🚀 중요: Supabase JavaScript 라이브러리 먼저 로드 (CDN 버전 구체화) -->
+    <!-- 🚀 Supabase JavaScript 라이브러리 (CDN 버전 구체화) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
 
-    <!-- 필수 스크립트들 (순서 중요) -->
+    <!-- 🆕 v8.2.0 직접 모듈 최적화: 필요한 모듈만 로드 -->
     <!-- 1. CONFIG 로드 -->
     <script src="../js/config.js"></script>
     
-    <!-- 2. Supabase 모듈들 -->
+    <!-- 2. 필수 Supabase 모듈들만 로드 (가벼운 구조) -->
     <script src="../js/supabase/supabase-core.js"></script>
     <script src="../js/supabase/supabase-admin.js"></script>
-    <script src="../js/supabase-client.js"></script>
+    <!-- supabase-client.js 제거: 직접 모듈 사용으로 최적화 -->
     
     <!-- 3. Utils 로드 -->
     <script src="../js/utils.js"></script>
@@ -135,9 +135,9 @@
     <script src="../js/admin/flight-management-modals.js"></script>
     <script src="../js/admin/flight-management-ui.js"></script>
 
-    <!-- 6. 초기화 및 인증 스크립트 -->
+    <!-- 6. 초기화 및 인증 스크립트 (v8.2.0 직접 모듈 최적화) -->
     <script>
-        console.log('🚀 항공권 관리 페이지 초기화 시작...');
+        console.log('🚀 항공권 관리 페이지 v8.2.0 초기화 시작 (직접 모듈 최적화)...');
 
         // 디버깅 상태 업데이트 함수
         function updateDebugStatus(status) {
@@ -147,10 +147,10 @@
             }
         }
 
-        // 로그아웃 함수
+        // 로그아웃 함수 (SupabaseCore 직접 사용)
         window.logout = async function() {
-            try {
-                const supabase = window.SupabaseAPI?.supabase || window.supabase;
+            try {\n                // v8.2.0: SupabaseCore 직접 사용
+                const supabase = window.SupabaseCore?.supabase;
                 if (supabase) {
                     const { error } = await supabase.auth.signOut();
                     if (!error) {
@@ -165,39 +165,36 @@
             }
         }
 
-        // 인증 체크 (자동 리다이렉트 비활성화)
+        // 인증 체크 (v8.2.0 SupabaseCore 직접 사용)
         async function checkAuth() {
             try {
-                updateDebugStatus('Supabase 초기화 대기 중...');
+                updateDebugStatus('SupabaseCore 초기화 대기 중...');
                 
-                // SupabaseAPI 초기화 대기 (시간 연장)
+                // v8.2.0: SupabaseCore 직접 초기화 대기
                 let waitCount = 0;
-                while (!window.SupabaseAPI?.supabase && waitCount < 200) {
+                while (!window.SupabaseCore?.supabase && waitCount < 200) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                     waitCount++;
                     
                     if (waitCount % 10 === 0) {
-                        updateDebugStatus(`Supabase 대기 중... (${waitCount/10}초)`);
+                        updateDebugStatus(`SupabaseCore 대기 중... (${waitCount/10}초)`);
                     }
                 }
 
-                const supabase = window.SupabaseAPI?.supabase || window.supabase;
+                const supabase = window.SupabaseCore?.supabase;
                 if (!supabase) {
-                    console.error('❌ Supabase 인스턴스를 찾을 수 없습니다');
-                    updateDebugStatus('❌ Supabase 인스턴스 없음 - 자동 리다이렉트 비활성화됨');
-                    // 자동 리다이렉트 비활성화
-                    // window.location.href = '../index.html';
+                    console.error('❌ SupabaseCore 인스턴스를 찾을 수 없습니다');
+                    updateDebugStatus('❌ SupabaseCore 인스턴스 없음 - 디버깅 모드');
                     return false;
                 }
 
+                console.log('✅ SupabaseCore 인스턴스 확인 완료');
                 updateDebugStatus('사용자 인증 확인 중...');
 
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) {
                     console.log('❌ 인증되지 않은 사용자');
-                    updateDebugStatus('❌ 미인증 사용자 - 자동 리다이렉트 비활성화됨');
-                    // 자동 리다이렉트 비활성화
-                    // window.location.href = '../index.html';
+                    updateDebugStatus('❌ 미인증 사용자 - 디버깅 모드');
                     return false;
                 }
 
@@ -213,49 +210,44 @@
 
                 if (!profile || profile.user_type !== 'admin') {
                     console.error('❌ 관리자 권한 없음');
-                    updateDebugStatus('❌ 관리자 권한 없음 - 자동 리다이렉트 비활성화됨');
-                    // alert('관리자 권한이 필요합니다.');
-                    // 자동 리다이렉트 비활성화
-                    // window.location.href = '../index.html';
+                    updateDebugStatus('❌ 관리자 권한 없음 - 디버깅 모드');
                     return false;
                 }
 
                 console.log('✅ 관리자 권한 확인');
-                updateDebugStatus('✅ 인증 완료');
+                updateDebugStatus('✅ v8.2.0 인증 완료 (직접 모듈)');
                 return true;
 
             } catch (error) {
                 console.error('❌ 인증 확인 오류:', error);
-                updateDebugStatus(`❌ 인증 오류: ${error.message} - 자동 리다이렉트 비활성화됨`);
-                // 자동 리다이렉트 비활성화
-                // window.location.href = '../index.html';
+                updateDebugStatus(`❌ 인증 오류: ${error.message} - 디버깅 모드`);
                 return false;
             }
         }
 
         // 페이지 로드 시 실행
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('📄 DOM 로드 완료');
+            console.log('📄 DOM 로드 완료 (v8.2.0)');
             
             const authResult = await checkAuth();
             if (authResult) {
-                console.log('✅ 항공권 관리 페이지 초기화 완료');
-                updateDebugStatus('✅ 초기화 완료 - 정상 작동');
+                console.log('✅ 항공권 관리 페이지 v8.2.0 초기화 완료');
+                updateDebugStatus('✅ v8.2.0 초기화 완료 - 직접 모듈 최적화');
             } else {
-                console.log('⚠️ 인증 실패 - 디버깅 모드에서 계속 진행');
-                updateDebugStatus('⚠️ 인증 실패 - 디버깅 모드');
+                console.log('⚠️ 인증 실패 - v8.2.0 디버깅 모드에서 계속 진행');
+                updateDebugStatus('⚠️ 인증 실패 - v8.2.0 디버깅 모드');
             }
         });
 
-        // StorageUtils 초기화 (지연 실행)
+        // StorageUtils 초기화 (v8.2.0 SupabaseCore 직접 사용)
         setTimeout(async () => {
-            if (window.StorageUtils && window.SupabaseAPI?.supabase) {
-                window.StorageUtils.setSupabaseInstance(window.SupabaseAPI.supabase);
-                console.log('✅ StorageUtils Supabase 인스턴스 설정 완료');
+            if (window.StorageUtils && window.SupabaseCore?.supabase) {
+                window.StorageUtils.setSupabaseInstance(window.SupabaseCore.supabase);
+                console.log('✅ v8.2.0 StorageUtils SupabaseCore 인스턴스 설정 완료');
             } else {
-                console.log('⚠️ StorageUtils 또는 Supabase 인스턴스 없음');
+                console.log('⚠️ v8.2.0 StorageUtils 또는 SupabaseCore 인스턴스 없음');
             }
-        }, 3000);
+        }, 2000); // 더 빠른 초기화
     </script>
 </body>
 </html>
