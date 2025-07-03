@@ -1,19 +1,22 @@
 /**
- * 항공권 관리 API 모듈 v7.2.0
+ * 항공권 관리 API 모듈 v7.3.0
  * 항공권 신청 관련 모든 API 통신을 담당
  * Storage 유틸리티 통합 버전
  * 
- * v7.2.0 개선사항:
- * - ES6 export 구문 제거 (브라우저 호환성 개선)
- * - 전역 객체 등록 방식으로 통일
- * - 모듈 로딩 에러 해결
+ * v7.3.0 개선사항:
+ * - Supabase 초기화 실패 시 안전 처리 강화
+ * - null 체크 및 에러 처리 개선
+ * - 더 긴 초기화 대기 시간 적용
+ * - 디버깅 로그 강화
  */
 
 class FlightManagementAPI {
     constructor() {
-        console.log('📡 FlightManagementAPI v7.2.0 클래스 초기화 시작');
+        console.log('📡 FlightManagementAPI v7.3.0 클래스 초기화 시작');
         this.storageUtils = null;
         this.supabase = null;
+        this.isInitialized = false;
+        this.initError = null;
         this.init();
     }
 
@@ -27,13 +30,18 @@ class FlightManagementAPI {
             // StorageUtils 확인 및 설정
             this.setupStorageUtils();
             
+            this.isInitialized = true;
             console.log('✅ FlightManagementAPI 초기화 완료');
         } catch (error) {
             console.error('❌ FlightManagementAPI 초기화 실패:', error);
+            this.initError = error;
+            this.isInitialized = false;
         }
     }
 
     async setupSupabase() {
+        console.log('🔍 Supabase 인스턴스 설정 시작...');
+        
         // 1. SupabaseAPI 확인
         if (window.SupabaseAPI && window.SupabaseAPI.supabase) {
             this.supabase = window.SupabaseAPI.supabase;
@@ -48,28 +56,38 @@ class FlightManagementAPI {
             return;
         }
 
-        // 3. 초기화 대기 (최대 10초)
+        // 3. 초기화 대기 (최대 30초로 연장)
+        console.log('⏳ Supabase 인스턴스 초기화 대기 중...');
         let waitCount = 0;
-        while (!this.supabase && waitCount < 100) {
+        const maxWait = 300; // 30초
+        
+        while (!this.supabase && waitCount < maxWait) {
             await new Promise(resolve => setTimeout(resolve, 100));
             
             if (window.SupabaseAPI && window.SupabaseAPI.supabase) {
                 this.supabase = window.SupabaseAPI.supabase;
-                console.log('✅ 대기 후 SupabaseAPI에서 인스턴스 획득');
+                console.log(`✅ 대기 후 SupabaseAPI에서 인스턴스 획득 (${waitCount * 100}ms)`);
                 return;
             }
             
             if (window.supabase) {
                 this.supabase = window.supabase;
-                console.log('✅ 대기 후 window.supabase에서 인스턴스 획득');
+                console.log(`✅ 대기 후 window.supabase에서 인스턴스 획득 (${waitCount * 100}ms)`);
                 return;
             }
             
             waitCount++;
+            
+            // 5초마다 상태 로그
+            if (waitCount % 50 === 0) {
+                console.log(`⏳ Supabase 대기 중... (${waitCount / 10}초)`);
+            }
         }
 
         if (!this.supabase) {
-            throw new Error('Supabase 인스턴스를 찾을 수 없습니다');
+            const errorMsg = `Supabase 인스턴스를 찾을 수 없습니다 (${maxWait * 100}ms 대기 후)`;
+            console.error('❌', errorMsg);
+            throw new Error(errorMsg);
         }
     }
 
@@ -82,12 +100,24 @@ class FlightManagementAPI {
         }
     }
 
+    // Supabase 인스턴스 안전 체크
+    checkSupabaseInstance() {
+        if (!this.supabase) {
+            const error = new Error('Supabase 인스턴스가 초기화되지 않았습니다');
+            console.error('❌', error.message);
+            throw error;
+        }
+        return this.supabase;
+    }
+
     // 통계 데이터 가져오기
     async getStatistics() {
         try {
             console.log('📊 항공권 신청 통계 조회 중...');
+            
+            const supabase = this.checkSupabaseInstance();
 
-            const { data: requests, error } = await this.supabase
+            const { data: requests, error } = await supabase
                 .from('flight_requests')
                 .select('status, purchase_type');
 
@@ -115,9 +145,18 @@ class FlightManagementAPI {
     // 항공권 신청 목록 가져오기
     async getAllRequests() {
         try {
-            console.log('📋 항공권 신청 목록 조회 중...');
+            console.log('📋 항공권 신청 목록 조회 시작...');
             
-            const { data, error } = await this.supabase
+            // 초기화 상태 확인
+            if (!this.isInitialized) {
+                console.warn('⚠️ API가 아직 초기화되지 않았습니다. 재시도 중...');
+                await this.init();
+            }
+            
+            const supabase = this.checkSupabaseInstance();
+            console.log('✅ Supabase 인스턴스 확인 완료');
+
+            const { data, error } = await supabase
                 .from('flight_requests')
                 .select(`
                     *,
@@ -133,13 +172,25 @@ class FlightManagementAPI {
                 `)
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
+            if (error) {
+                console.error('❌ 쿼리 실행 오류:', error);
+                throw error;
+            }
 
             console.log(`✅ 항공권 신청 목록 조회 성공: ${data?.length || 0}건`);
             return data || [];
 
         } catch (error) {
             console.error('❌ 항공권 신청 목록 조회 실패:', error);
+            
+            // 상세 에러 정보 로깅
+            console.error('🔍 에러 상세 정보:', {
+                isInitialized: this.isInitialized,
+                hasSupabase: !!this.supabase,
+                initError: this.initError,
+                error: error
+            });
+            
             throw error;
         }
     }
@@ -149,7 +200,9 @@ class FlightManagementAPI {
         try {
             console.log('🔍 항공권 신청 상세 정보 조회 중...', requestId);
             
-            const { data, error } = await this.supabase
+            const supabase = this.checkSupabaseInstance();
+            
+            const { data, error } = await supabase
                 .from('flight_requests')
                 .select(`
                     *,
@@ -182,6 +235,8 @@ class FlightManagementAPI {
         try {
             console.log('🔄 신청 상태 업데이트 중...', { requestId, status, rejectionReason });
             
+            const supabase = this.checkSupabaseInstance();
+            
             const updateData = {
                 status,
                 updated_at: new Date().toISOString()
@@ -191,7 +246,7 @@ class FlightManagementAPI {
                 updateData.rejection_reason = rejectionReason;
             }
 
-            const { data, error } = await this.supabase
+            const { data, error } = await supabase
                 .from('flight_requests')
                 .update(updateData)
                 .eq('id', requestId)
@@ -214,6 +269,8 @@ class FlightManagementAPI {
         try {
             console.log('📤 구매대행 항공권 업로드 중...', { requestId, file: file.name });
             
+            const supabase = this.checkSupabaseInstance();
+            
             if (!this.storageUtils) {
                 throw new Error('StorageUtils가 초기화되지 않았습니다');
             }
@@ -222,7 +279,7 @@ class FlightManagementAPI {
             const uploadResult = await this.storageUtils.uploadAdminTicket(file, requestId);
 
             // 데이터베이스 업데이트
-            const { data, error } = await this.supabase
+            const { data, error } = await supabase
                 .from('flight_requests')
                 .update({
                     admin_ticket_url: uploadResult.publicUrl,
@@ -249,7 +306,9 @@ class FlightManagementAPI {
         try {
             console.log('🛂 여권 정보 조회 중...', userId);
             
-            const { data, error } = await this.supabase
+            const supabase = this.checkSupabaseInstance();
+            
+            const { data, error } = await supabase
                 .from('passport_info')
                 .select('*')
                 .eq('user_id', userId)
@@ -291,12 +350,22 @@ class FlightManagementAPI {
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
+
+    // 초기화 상태 확인 메서드
+    getInitializationStatus() {
+        return {
+            isInitialized: this.isInitialized,
+            hasSupabase: !!this.supabase,
+            hasStorageUtils: !!this.storageUtils,
+            initError: this.initError
+        };
+    }
 }
 
-// 전역 객체에 등록 (ES6 export 대신)
+// 전역 객체에 등록
 if (typeof window !== 'undefined') {
     window.FlightManagementAPI = FlightManagementAPI;
-    console.log('✅ FlightManagementAPI v7.2.0 전역 등록 완료');
+    console.log('✅ FlightManagementAPI v7.3.0 전역 등록 완료');
 }
 
-console.log('✅ FlightManagementAPI v7.2.0 모듈 로드 완료 - ES6 export 제거, 전역 등록 방식');
+console.log('✅ FlightManagementAPI v7.3.0 모듈 로드 완료 - 안전성 강화 및 디버깅 개선');
