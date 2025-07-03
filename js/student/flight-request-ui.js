@@ -1,4 +1,4 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.1.1
 
 class FlightRequestUI {
     constructor() {
@@ -56,8 +56,7 @@ class FlightRequestUI {
             
             // 메시지
             errorMessage: document.getElementById('errorMessage'),
-            successMessage: document.getElementById('successMessage'),
-            logoutBtn: document.getElementById('logoutBtn')
+            successMessage: document.getElementById('successMessage')
         };
     }
 
@@ -75,39 +74,61 @@ class FlightRequestUI {
     }
 
     setupEventListeners() {
-        // 폼 제출
-        this.elements.form.addEventListener('submit', (e) => this.handleSubmit(e));
-        this.elements.ticketSubmitForm.addEventListener('submit', (e) => this.handleTicketSubmit(e));
-        this.elements.receiptSubmitForm.addEventListener('submit', (e) => this.handleReceiptSubmit(e));
+        // DOM 요소 null 체크 강화
+        if (this.elements.form) {
+            this.elements.form.addEventListener('submit', (e) => this.handleSubmit(e));
+        }
+        
+        if (this.elements.ticketSubmitForm) {
+            this.elements.ticketSubmitForm.addEventListener('submit', (e) => this.handleTicketSubmit(e));
+        }
+        
+        if (this.elements.receiptSubmitForm) {
+            this.elements.receiptSubmitForm.addEventListener('submit', (e) => this.handleReceiptSubmit(e));
+        }
 
         // 구매 방식 변경
-        this.elements.purchaseType.forEach(radio => {
-            radio.addEventListener('change', () => this.handlePurchaseTypeChange());
-        });
+        if (this.elements.purchaseType && this.elements.purchaseType.length > 0) {
+            this.elements.purchaseType.forEach(radio => {
+                radio.addEventListener('change', () => this.handlePurchaseTypeChange());
+            });
+        }
 
         // 날짜 변경
-        this.elements.departureDate.addEventListener('change', () => this.validateDuration());
-        this.elements.returnDate.addEventListener('change', () => this.validateDuration());
+        if (this.elements.departureDate) {
+            this.elements.departureDate.addEventListener('change', () => this.validateDuration());
+        }
+        
+        if (this.elements.returnDate) {
+            this.elements.returnDate.addEventListener('change', () => this.validateDuration());
+        }
 
         // 이미지 업로드
-        this.elements.flightImage.addEventListener('change', (e) => this.handleImageUpload(e));
-        this.elements.removeImage.addEventListener('click', () => this.removeImage());
+        if (this.elements.flightImage) {
+            this.elements.flightImage.addEventListener('change', (e) => this.handleImageUpload(e));
+        }
+        
+        if (this.elements.removeImage) {
+            this.elements.removeImage.addEventListener('click', () => this.removeImage());
+        }
 
         // 파일 업로드
-        this.elements.ticketFile.addEventListener('change', (e) => this.handleFileUpload(e, 'ticket'));
-        this.elements.receiptFile.addEventListener('change', (e) => this.handleFileUpload(e, 'receipt'));
-
-        // 로그아웃
-        this.elements.logoutBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            await this.api.supabase.auth.signOut();
-            window.location.href = '../index.html';
-        });
+        if (this.elements.ticketFile) {
+            this.elements.ticketFile.addEventListener('change', (e) => this.handleFileUpload(e, 'ticket'));
+        }
+        
+        if (this.elements.receiptFile) {
+            this.elements.receiptFile.addEventListener('change', (e) => this.handleFileUpload(e, 'receipt'));
+        }
 
         // 오늘 날짜로 최소값 설정
         const today = new Date().toISOString().split('T')[0];
-        this.elements.departureDate.min = today;
-        this.elements.returnDate.min = today;
+        if (this.elements.departureDate) {
+            this.elements.departureDate.min = today;
+        }
+        if (this.elements.returnDate) {
+            this.elements.returnDate.min = today;
+        }
     }
 
     async loadInitialData() {
@@ -150,38 +171,60 @@ class FlightRequestUI {
     }
 
     showLoading(show) {
-        this.elements.loadingState.style.display = show ? 'flex' : 'none';
-        this.elements.mainContent.style.display = show ? 'none' : 'block';
+        if (this.elements.loadingState) {
+            this.elements.loadingState.style.display = show ? 'flex' : 'none';
+        }
+        if (this.elements.mainContent) {
+            this.elements.mainContent.style.display = show ? 'none' : 'block';
+        }
     }
 
     showPassportAlert() {
-        this.elements.passportAlert.style.display = 'flex';
-        this.elements.requestForm.style.display = 'none';
-        this.elements.existingRequest.style.display = 'none';
+        if (this.elements.passportAlert) {
+            this.elements.passportAlert.style.display = 'flex';
+        }
+        if (this.elements.requestForm) {
+            this.elements.requestForm.style.display = 'none';
+        }
+        if (this.elements.existingRequest) {
+            this.elements.existingRequest.style.display = 'none';
+        }
     }
 
     showRequestForm(isUpdate) {
-        this.elements.passportAlert.style.display = 'none';
-        this.elements.requestForm.style.display = 'block';
-        this.elements.existingRequest.style.display = 'none';
+        if (this.elements.passportAlert) {
+            this.elements.passportAlert.style.display = 'none';
+        }
+        if (this.elements.requestForm) {
+            this.elements.requestForm.style.display = 'block';
+        }
+        if (this.elements.existingRequest) {
+            this.elements.existingRequest.style.display = 'none';
+        }
         
-        if (isUpdate) {
-            this.elements.submitBtnText.textContent = '수정하기';
-        } else {
-            this.elements.submitBtnText.textContent = '신청하기';
+        if (this.elements.submitBtnText) {
+            this.elements.submitBtnText.textContent = isUpdate ? '수정하기' : '신청하기';
         }
     }
 
     showExistingRequest() {
-        this.elements.passportAlert.style.display = 'none';
-        this.elements.requestForm.style.display = 'none';
-        this.elements.existingRequest.style.display = 'block';
+        if (this.elements.passportAlert) {
+            this.elements.passportAlert.style.display = 'none';
+        }
+        if (this.elements.requestForm) {
+            this.elements.requestForm.style.display = 'none';
+        }
+        if (this.elements.existingRequest) {
+            this.elements.existingRequest.style.display = 'block';
+        }
         
         // 기존 신청 내역 렌더링
         this.renderExistingRequest();
     }
 
     renderExistingRequest() {
+        if (!this.existingRequest || !this.elements.existingRequest) return;
+        
         const request = this.existingRequest;
         const statusInfo = this.utils.getStatusInfo(request.status);
         
@@ -361,20 +404,30 @@ class FlightRequestUI {
 
     populateForm(request) {
         // 구매 방식
-        const purchaseTypeRadio = Array.from(this.elements.purchaseType)
-            .find(radio => radio.value === request.purchase_type);
-        if (purchaseTypeRadio) purchaseTypeRadio.checked = true;
+        if (this.elements.purchaseType && this.elements.purchaseType.length > 0) {
+            const purchaseTypeRadio = Array.from(this.elements.purchaseType)
+                .find(radio => radio.value === request.purchase_type);
+            if (purchaseTypeRadio) purchaseTypeRadio.checked = true;
+        }
         
         // 날짜
-        this.elements.departureDate.value = request.departure_date;
-        this.elements.returnDate.value = request.return_date;
+        if (this.elements.departureDate) {
+            this.elements.departureDate.value = request.departure_date;
+        }
+        if (this.elements.returnDate) {
+            this.elements.returnDate.value = request.return_date;
+        }
         
         // 공항
-        this.elements.departureAirport.value = request.departure_airport;
-        this.elements.arrivalAirport.value = request.arrival_airport;
+        if (this.elements.departureAirport) {
+            this.elements.departureAirport.value = request.departure_airport;
+        }
+        if (this.elements.arrivalAirport) {
+            this.elements.arrivalAirport.value = request.arrival_airport;
+        }
         
         // 구매 링크
-        if (request.purchase_link) {
+        if (request.purchase_link && this.elements.purchaseLink) {
             this.elements.purchaseLink.value = request.purchase_link;
         }
         
@@ -386,18 +439,28 @@ class FlightRequestUI {
     }
 
     handlePurchaseTypeChange() {
+        if (!this.elements.purchaseType || this.elements.purchaseType.length === 0) return;
+        
         const selectedType = Array.from(this.elements.purchaseType)
             .find(radio => radio.checked)?.value;
         
-        if (selectedType === 'direct') {
-            this.elements.purchaseLinkGroup.style.display = 'block';
-        } else {
-            this.elements.purchaseLinkGroup.style.display = 'none';
-            this.elements.purchaseLink.value = '';
+        if (this.elements.purchaseLinkGroup) {
+            if (selectedType === 'direct') {
+                this.elements.purchaseLinkGroup.style.display = 'block';
+            } else {
+                this.elements.purchaseLinkGroup.style.display = 'none';
+                if (this.elements.purchaseLink) {
+                    this.elements.purchaseLink.value = '';
+                }
+            }
         }
     }
 
     validateDuration() {
+        if (!this.elements.departureDate || !this.elements.returnDate || !this.elements.durationMessage) {
+            return true;
+        }
+        
         const departureDate = this.elements.departureDate.value;
         const returnDate = this.elements.returnDate.value;
         
@@ -451,17 +514,27 @@ class FlightRequestUI {
         // 미리보기 표시
         const reader = new FileReader();
         reader.onload = (e) => {
-            this.elements.previewImg.src = e.target.result;
-            this.elements.imagePreview.style.display = 'block';
+            if (this.elements.previewImg) {
+                this.elements.previewImg.src = e.target.result;
+            }
+            if (this.elements.imagePreview) {
+                this.elements.imagePreview.style.display = 'block';
+            }
         };
         reader.readAsDataURL(file);
     }
 
     removeImage() {
         this.imageFile = null;
-        this.elements.flightImage.value = '';
-        this.elements.imagePreview.style.display = 'none';
-        this.elements.previewImg.src = '';
+        if (this.elements.flightImage) {
+            this.elements.flightImage.value = '';
+        }
+        if (this.elements.imagePreview) {
+            this.elements.imagePreview.style.display = 'none';
+        }
+        if (this.elements.previewImg) {
+            this.elements.previewImg.src = '';
+        }
     }
 
     handleFileUpload(event, type) {
@@ -484,26 +557,46 @@ class FlightRequestUI {
 
         if (type === 'ticket') {
             this.ticketFile = file;
-            this.elements.ticketFileName.textContent = file.name;
-            this.elements.ticketFileSize.textContent = this.utils.formatFileSize(file.size);
-            this.elements.ticketPreview.style.display = 'flex';
+            if (this.elements.ticketFileName) {
+                this.elements.ticketFileName.textContent = file.name;
+            }
+            if (this.elements.ticketFileSize) {
+                this.elements.ticketFileSize.textContent = this.utils.formatFileSize(file.size);
+            }
+            if (this.elements.ticketPreview) {
+                this.elements.ticketPreview.style.display = 'flex';
+            }
         } else if (type === 'receipt') {
             this.receiptFile = file;
-            this.elements.receiptFileName.textContent = file.name;
-            this.elements.receiptFileSize.textContent = this.utils.formatFileSize(file.size);
-            this.elements.receiptPreview.style.display = 'flex';
+            if (this.elements.receiptFileName) {
+                this.elements.receiptFileName.textContent = file.name;
+            }
+            if (this.elements.receiptFileSize) {
+                this.elements.receiptFileSize.textContent = this.utils.formatFileSize(file.size);
+            }
+            if (this.elements.receiptPreview) {
+                this.elements.receiptPreview.style.display = 'flex';
+            }
         }
     }
 
     removeFile(type) {
         if (type === 'ticket') {
             this.ticketFile = null;
-            this.elements.ticketFile.value = '';
-            this.elements.ticketPreview.style.display = 'none';
+            if (this.elements.ticketFile) {
+                this.elements.ticketFile.value = '';
+            }
+            if (this.elements.ticketPreview) {
+                this.elements.ticketPreview.style.display = 'none';
+            }
         } else if (type === 'receipt') {
             this.receiptFile = null;
-            this.elements.receiptFile.value = '';
-            this.elements.receiptPreview.style.display = 'none';
+            if (this.elements.receiptFile) {
+                this.elements.receiptFile.value = '';
+            }
+            if (this.elements.receiptPreview) {
+                this.elements.receiptPreview.style.display = 'none';
+            }
         }
     }
 
@@ -541,16 +634,16 @@ class FlightRequestUI {
         try {
             this.setLoading(true);
 
-            const selectedType = Array.from(this.elements.purchaseType)
-                .find(radio => radio.checked)?.value;
+            const selectedType = Array.from(this.elements.purchaseType || [])
+                .find(radio => radio.checked)?.value || 'direct';
 
             const requestData = {
                 purchase_type: selectedType,
-                departure_date: this.elements.departureDate.value,
-                return_date: this.elements.returnDate.value,
-                departure_airport: this.elements.departureAirport.value.trim(),
-                arrival_airport: this.elements.arrivalAirport.value.trim(),
-                purchase_link: selectedType === 'direct' ? this.elements.purchaseLink.value.trim() : null
+                departure_date: this.elements.departureDate?.value || '',
+                return_date: this.elements.returnDate?.value || '',
+                departure_airport: this.elements.departureAirport?.value?.trim() || '',
+                arrival_airport: this.elements.arrivalAirport?.value?.trim() || '',
+                purchase_link: selectedType === 'direct' ? this.elements.purchaseLink?.value?.trim() || null : null
             };
 
             let result;
@@ -660,10 +753,15 @@ class FlightRequestUI {
     }
 
     setLoading(loading) {
-        this.elements.submitBtn.disabled = loading;
+        if (this.elements.submitBtn) {
+            this.elements.submitBtn.disabled = loading;
+        }
+        
         const isUpdate = this.existingRequest && (this.existingRequest.status === 'pending' || this.existingRequest.status === 'rejected');
-        this.elements.submitBtnText.textContent = loading ? '처리 중...' : 
-            (isUpdate ? '수정하기' : '신청하기');
+        if (this.elements.submitBtnText) {
+            this.elements.submitBtnText.textContent = loading ? '처리 중...' : 
+                (isUpdate ? '수정하기' : '신청하기');
+        }
         
         // 모달 버튼도 처리
         const modalButtons = document.querySelectorAll('.modal .btn-primary');
