@@ -1,7 +1,12 @@
 /**
- * 항공권 관리 API 모듈 v8.2.0
+ * 항공권 관리 API 모듈 v8.2.1
  * 항공권 신청 관련 모든 API 통신을 담당
+ * v8.2.1: 데이터베이스 컬럼 매핑 수정 - university → sejong_institute
  * v8.2.0: 직접 모듈 최적화 - SupabaseCore 직접 사용
+ * 
+ * v8.2.1 긴급 수정사항:
+ * - university 컬럼 참조 오류 수정 → sejong_institute 사용
+ * - getAllRequests 및 getFlightRequestDetail 메서드 수정
  * 
  * v8.2.0 개선사항:
  * - supabase-client.js 의존성 제거
@@ -13,7 +18,7 @@
 
 class FlightManagementAPI {
     constructor() {
-        console.log('📡 FlightManagementAPI v8.2.0 클래스 초기화 시작 (직접 모듈 최적화)');
+        console.log('📡 FlightManagementAPI v8.2.1 클래스 초기화 시작 (데이터베이스 컬럼 매핑 수정)');
         this.storageUtils = null;
         this.supabase = null;
         this.isInitialized = false;
@@ -23,7 +28,7 @@ class FlightManagementAPI {
 
     async init() {
         try {
-            console.log('🚀 FlightManagementAPI v8.2.0 초기화 중... (직접 모듈 최적화)');
+            console.log('🚀 FlightManagementAPI v8.2.1 초기화 중... (데이터베이스 컬럼 매핑 수정)');
             
             // Supabase 인스턴스 확인 및 설정
             await this.setupSupabase();
@@ -32,40 +37,40 @@ class FlightManagementAPI {
             this.setupStorageUtils();
             
             this.isInitialized = true;
-            console.log('✅ FlightManagementAPI v8.2.0 초기화 완료 (직접 모듈 최적화)');
+            console.log('✅ FlightManagementAPI v8.2.1 초기화 완료 (데이터베이스 컬럼 매핑 수정)');
         } catch (error) {
-            console.error('❌ FlightManagementAPI v8.2.0 초기화 실패:', error);
+            console.error('❌ FlightManagementAPI v8.2.1 초기화 실패:', error);
             this.initError = error;
             this.isInitialized = false;
         }
     }
 
     async setupSupabase() {
-        console.log('🔍 v8.2.0 Supabase 인스턴스 설정 시작 (직접 모듈 최적화)...');
+        console.log('🔍 v8.2.1 Supabase 인스턴스 설정 시작 (데이터베이스 컬럼 매핑 수정)...');
         
         // 🆕 v8.2.0: SupabaseCore 직접 사용 (최우선)
         if (window.SupabaseCore && window.SupabaseCore.supabase) {
             this.supabase = window.SupabaseCore.supabase;
-            console.log('✅ v8.2.0 SupabaseCore에서 직접 인스턴스 획득');
+            console.log('✅ v8.2.1 SupabaseCore에서 직접 인스턴스 획득');
             return;
         }
 
         // 2순위: SupabaseAdmin을 통한 접근
         if (window.SupabaseAdmin && window.SupabaseAdmin.core?.supabase) {
             this.supabase = window.SupabaseAdmin.core.supabase;
-            console.log('✅ v8.2.0 SupabaseAdmin.core에서 인스턴스 획득');
+            console.log('✅ v8.2.1 SupabaseAdmin.core에서 인스턴스 획득');
             return;
         }
 
         // 3순위: window.supabase 확인 (레거시 호환성)
         if (window.supabase && window.supabase.from) {
             this.supabase = window.supabase;
-            console.log('✅ v8.2.0 window.supabase에서 인스턴스 획득 (레거시)');
+            console.log('✅ v8.2.1 window.supabase에서 인스턴스 획득 (레거시)');
             return;
         }
 
         // 4순위: 초기화 대기 (최대 30초로 연장)
-        console.log('⏳ v8.2.0 SupabaseCore 초기화 대기 중...');
+        console.log('⏳ v8.2.1 SupabaseCore 초기화 대기 중...');
         let waitCount = 0;
         const maxWait = 300; // 30초
         
@@ -75,21 +80,21 @@ class FlightManagementAPI {
             // SupabaseCore 우선 확인
             if (window.SupabaseCore && window.SupabaseCore.supabase) {
                 this.supabase = window.SupabaseCore.supabase;
-                console.log(`✅ v8.2.0 대기 후 SupabaseCore에서 인스턴스 획득 (${waitCount * 100}ms)`);
+                console.log(`✅ v8.2.1 대기 후 SupabaseCore에서 인스턴스 획득 (${waitCount * 100}ms)`);
                 return;
             }
             
             // SupabaseAdmin 확인
             if (window.SupabaseAdmin && window.SupabaseAdmin.core?.supabase) {
                 this.supabase = window.SupabaseAdmin.core.supabase;
-                console.log(`✅ v8.2.0 대기 후 SupabaseAdmin에서 인스턴스 획득 (${waitCount * 100}ms)`);
+                console.log(`✅ v8.2.1 대기 후 SupabaseAdmin에서 인스턴스 획득 (${waitCount * 100}ms)`);
                 return;
             }
             
             // 레거시 window.supabase 확인
             if (window.supabase && window.supabase.from) {
                 this.supabase = window.supabase;
-                console.log(`✅ v8.2.0 대기 후 window.supabase에서 인스턴스 획득 (${waitCount * 100}ms)`);
+                console.log(`✅ v8.2.1 대기 후 window.supabase에서 인스턴스 획득 (${waitCount * 100}ms)`);
                 return;
             }
             
@@ -97,12 +102,12 @@ class FlightManagementAPI {
             
             // 5초마다 상태 로그
             if (waitCount % 50 === 0) {
-                console.log(`⏳ v8.2.0 Supabase 대기 중... (${waitCount / 10}초)`);
+                console.log(`⏳ v8.2.1 Supabase 대기 중... (${waitCount / 10}초)`);
             }
         }
 
         if (!this.supabase) {
-            const errorMsg = `v8.2.0 Supabase 인스턴스를 찾을 수 없습니다 (${maxWait * 100}ms 대기 후)`;
+            const errorMsg = `v8.2.1 Supabase 인스턴스를 찾을 수 없습니다 (${maxWait * 100}ms 대기 후)`;
             console.error('❌', errorMsg);
             throw new Error(errorMsg);
         }
@@ -111,23 +116,23 @@ class FlightManagementAPI {
     setupStorageUtils() {
         if (window.StorageUtils) {
             this.storageUtils = window.StorageUtils;
-            console.log('✅ v8.2.0 StorageUtils 연결 완료');
+            console.log('✅ v8.2.1 StorageUtils 연결 완료');
         } else {
-            console.warn('⚠️ v8.2.0 StorageUtils를 찾을 수 없습니다');
+            console.warn('⚠️ v8.2.1 StorageUtils를 찾을 수 없습니다');
         }
     }
 
     // Supabase 인스턴스 안전 체크
     checkSupabaseInstance() {
         if (!this.supabase) {
-            const error = new Error('v8.2.0 Supabase 인스턴스가 초기화되지 않았습니다');
+            const error = new Error('v8.2.1 Supabase 인스턴스가 초기화되지 않았습니다');
             console.error('❌', error.message);
             throw error;
         }
         
         // v8.2.0: from 메서드 존재 여부도 확인
         if (!this.supabase.from) {
-            const error = new Error('v8.2.0 Supabase 인스턴스에 from 메서드가 없습니다');
+            const error = new Error('v8.2.1 Supabase 인스턴스에 from 메서드가 없습니다');
             console.error('❌', error.message);
             throw error;
         }
@@ -138,7 +143,7 @@ class FlightManagementAPI {
     // 통계 데이터 가져오기
     async getStatistics() {
         try {
-            console.log('📊 v8.2.0 항공권 신청 통계 조회 중...');
+            console.log('📊 v8.2.1 항공권 신청 통계 조회 중...');
             
             const supabase = this.checkSupabaseInstance();
 
@@ -158,30 +163,30 @@ class FlightManagementAPI {
                 agency: requests.filter(r => r.purchase_type === 'agency').length
             };
 
-            console.log('✅ v8.2.0 통계 조회 성공:', stats);
+            console.log('✅ v8.2.1 통계 조회 성공:', stats);
             return stats;
 
         } catch (error) {
-            console.error('❌ v8.2.0 통계 조회 실패:', error);
+            console.error('❌ v8.2.1 통계 조회 실패:', error);
             throw error;
         }
     }
 
-    // 항공권 신청 목록 가져오기 (수정됨 - institute_info JOIN 제거)
+    // 항공권 신청 목록 가져오기 (v8.2.1 수정: university → sejong_institute)
     async getAllRequests() {
         try {
-            console.log('📋 v8.2.0 항공권 신청 목록 조회 시작...');
+            console.log('📋 v8.2.1 항공권 신청 목록 조회 시작...');
             
             // 초기화 상태 확인
             if (!this.isInitialized) {
-                console.warn('⚠️ v8.2.0 API가 아직 초기화되지 않았습니다. 재시도 중...');
+                console.warn('⚠️ v8.2.1 API가 아직 초기화되지 않았습니다. 재시도 중...');
                 await this.init();
             }
             
             const supabase = this.checkSupabaseInstance();
-            console.log('✅ v8.2.0 Supabase 인스턴스 확인 완료');
+            console.log('✅ v8.2.1 Supabase 인스턴스 확인 완료');
 
-            // 🔧 수정: institute_info 잘못된 JOIN 제거, 필요한 사용자 정보만 조회
+            // 🔧 v8.2.1 수정: university → sejong_institute 컬럼명 수정
             const { data, error } = await supabase
                 .from('flight_requests')
                 .select(`
@@ -190,25 +195,25 @@ class FlightManagementAPI {
                         id,
                         name,
                         email,
-                        university,
+                        sejong_institute,
                         dispatch_duration
                     )
                 `)
                 .order('created_at', { ascending: false });
 
             if (error) {
-                console.error('❌ v8.2.0 쿼리 실행 오류:', error);
+                console.error('❌ v8.2.1 쿼리 실행 오류:', error);
                 throw error;
             }
 
-            console.log(`✅ v8.2.0 항공권 신청 목록 조회 성공: ${data?.length || 0}건`);
+            console.log(`✅ v8.2.1 항공권 신청 목록 조회 성공: ${data?.length || 0}건`);
             return data || [];
 
         } catch (error) {
-            console.error('❌ v8.2.0 항공권 신청 목록 조회 실패:', error);
+            console.error('❌ v8.2.1 항공권 신청 목록 조회 실패:', error);
             
             // 상세 에러 정보 로깅
-            console.error('🔍 v8.2.0 에러 상세 정보:', {
+            console.error('🔍 v8.2.1 에러 상세 정보:', {
                 isInitialized: this.isInitialized,
                 hasSupabase: !!this.supabase,
                 hasFromMethod: !!(this.supabase && this.supabase.from),
@@ -220,14 +225,14 @@ class FlightManagementAPI {
         }
     }
 
-    // 항공권 신청 상세 정보 가져오기 (수정됨 - institute_info JOIN 제거)
+    // 항공권 신청 상세 정보 가져오기 (v8.2.1 수정: university → sejong_institute)
     async getFlightRequestDetail(requestId) {
         try {
-            console.log('🔍 v8.2.0 항공권 신청 상세 정보 조회 중...', requestId);
+            console.log('🔍 v8.2.1 항공권 신청 상세 정보 조회 중...', requestId);
             
             const supabase = this.checkSupabaseInstance();
             
-            // 🔧 수정: institute_info 잘못된 JOIN 제거, 필요한 사용자 정보만 조회
+            // 🔧 v8.2.1 수정: university → sejong_institute 컬럼명 수정
             const { data, error } = await supabase
                 .from('flight_requests')
                 .select(`
@@ -236,7 +241,7 @@ class FlightManagementAPI {
                         id,
                         name,
                         email,
-                        university,
+                        sejong_institute,
                         dispatch_duration
                     )
                 `)
@@ -245,11 +250,11 @@ class FlightManagementAPI {
 
             if (error) throw error;
 
-            console.log('✅ v8.2.0 상세 정보 조회 성공:', data);
+            console.log('✅ v8.2.1 상세 정보 조회 성공:', data);
             return data;
 
         } catch (error) {
-            console.error('❌ v8.2.0 상세 정보 조회 실패:', error);
+            console.error('❌ v8.2.1 상세 정보 조회 실패:', error);
             throw error;
         }
     }
@@ -257,7 +262,7 @@ class FlightManagementAPI {
     // 신청 상태 업데이트
     async updateRequestStatus(requestId, status, rejectionReason = null) {
         try {
-            console.log('🔄 v8.2.0 신청 상태 업데이트 중...', { requestId, status, rejectionReason });
+            console.log('🔄 v8.2.1 신청 상태 업데이트 중...', { requestId, status, rejectionReason });
             
             const supabase = this.checkSupabaseInstance();
             
@@ -279,11 +284,11 @@ class FlightManagementAPI {
 
             if (error) throw error;
 
-            console.log('✅ v8.2.0 상태 업데이트 성공:', data);
+            console.log('✅ v8.2.1 상태 업데이트 성공:', data);
             return data;
 
         } catch (error) {
-            console.error('❌ v8.2.0 상태 업데이트 실패:', error);
+            console.error('❌ v8.2.1 상태 업데이트 실패:', error);
             throw error;
         }
     }
@@ -291,12 +296,12 @@ class FlightManagementAPI {
     // 구매대행 항공권 업로드 (Storage 유틸리티 사용)
     async uploadAdminTicket(requestId, file) {
         try {
-            console.log('📤 v8.2.0 구매대행 항공권 업로드 중...', { requestId, file: file.name });
+            console.log('📤 v8.2.1 구매대행 항공권 업로드 중...', { requestId, file: file.name });
             
             const supabase = this.checkSupabaseInstance();
             
             if (!this.storageUtils) {
-                throw new Error('v8.2.0 StorageUtils가 초기화되지 않았습니다');
+                throw new Error('v8.2.1 StorageUtils가 초기화되지 않았습니다');
             }
             
             // StorageUtils를 사용한 파일 업로드
@@ -316,11 +321,11 @@ class FlightManagementAPI {
 
             if (error) throw error;
 
-            console.log('✅ v8.2.0 항공권 업로드 성공:', data);
+            console.log('✅ v8.2.1 항공권 업로드 성공:', data);
             return data;
 
         } catch (error) {
-            console.error('❌ v8.2.0 항공권 업로드 실패:', error);
+            console.error('❌ v8.2.1 항공권 업로드 실패:', error);
             throw error;
         }
     }
@@ -328,7 +333,7 @@ class FlightManagementAPI {
     // 여권 정보 가져오기
     async getPassportInfo(userId) {
         try {
-            console.log('🛂 v8.2.0 여권 정보 조회 중...', userId);
+            console.log('🛂 v8.2.1 여권 정보 조회 중...', userId);
             
             const supabase = this.checkSupabaseInstance();
             
@@ -340,11 +345,11 @@ class FlightManagementAPI {
 
             if (error && error.code !== 'PGRST116') throw error; // PGRST116: no rows returned
 
-            console.log('✅ v8.2.0 여권 정보 조회 성공:', data);
+            console.log('✅ v8.2.1 여권 정보 조회 성공:', data);
             return data;
 
         } catch (error) {
-            console.error('❌ v8.2.0 여권 정보 조회 실패:', error);
+            console.error('❌ v8.2.1 여권 정보 조회 실패:', error);
             throw error;
         }
     }
@@ -353,11 +358,11 @@ class FlightManagementAPI {
     validateFile(file, fileType = 'document') {
         try {
             if (!this.storageUtils) {
-                throw new Error('v8.2.0 StorageUtils가 초기화되지 않았습니다');
+                throw new Error('v8.2.1 StorageUtils가 초기화되지 않았습니다');
             }
             return this.storageUtils.validateFile(file, fileType);
         } catch (error) {
-            console.error('v8.2.0 파일 검증 실패:', error);
+            console.error('v8.2.1 파일 검증 실패:', error);
             throw error;
         }
     }
@@ -378,14 +383,17 @@ class FlightManagementAPI {
     // 초기화 상태 확인 메서드
     getInitializationStatus() {
         return {
-            version: 'v8.2.0 (직접 모듈 최적화)',
+            version: 'v8.2.1 (데이터베이스 컬럼 매핑 수정)',
             isInitialized: this.isInitialized,
             hasSupabase: !!this.supabase,
             hasFromMethod: !!(this.supabase && this.supabase.from),
             hasStorageUtils: !!this.storageUtils,
             initError: this.initError,
             architecture: 'SupabaseCore 직접 사용',
-            fixedIssues: ['institute_info 잘못된 JOIN 오류 수정 (2025-07-03)']
+            fixedIssues: [
+                'institute_info 잘못된 JOIN 오류 수정 (2025-07-03)',
+                'university → sejong_institute 컬럼 매핑 수정 (2025-07-03)'
+            ]
         };
     }
 }
@@ -393,7 +401,7 @@ class FlightManagementAPI {
 // 전역 객체에 등록
 if (typeof window !== 'undefined') {
     window.FlightManagementAPI = FlightManagementAPI;
-    console.log('✅ FlightManagementAPI v8.2.0 전역 등록 완료 (직접 모듈 최적화)');
+    console.log('✅ FlightManagementAPI v8.2.1 전역 등록 완료 (데이터베이스 컬럼 매핑 수정)');
 }
 
-console.log('✅ FlightManagementAPI v8.2.0 모듈 로드 완료 - 직접 모듈 최적화 및 안정성 강화 (institute_info JOIN 오류 수정)');
+console.log('✅ FlightManagementAPI v8.2.1 모듈 로드 완료 - 데이터베이스 컬럼 매핑 수정 완료 (university → sejong_institute)');
