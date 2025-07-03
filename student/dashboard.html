@@ -156,6 +156,25 @@
             font-weight: 600;
         }
 
+        /* 🆕 테스트 사용자 전용 스타일 */
+        .menu-card.test-user-enabled {
+            border-color: #e53e3e;
+            background: linear-gradient(135deg, #fff 0%, #fef5e7 100%);
+        }
+
+        .menu-card.test-user-enabled::after {
+            content: 'TEST MODE';
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #e53e3e;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
         .menu-icon {
             width: 4rem;
             height: 4rem;
@@ -373,9 +392,9 @@
     <script src="../js/student/notification-system.js?v=5.2.0"></script>
     <script src="../js/student/dashboard.js?v=5.2.0"></script>
     
-    <!-- 대시보드 초기화 - v8.1.0 항공권 신청 활성화 버전 -->
+    <!-- 대시보드 초기화 - v8.1.1 테스트 사용자 지원 버전 -->
     <script>
-        console.log('🎯 Dashboard v8.1.0 - 항공권 신청 시스템 활성화 버전 시작');
+        console.log('🎯 Dashboard v8.1.1 - 테스트 사용자 지원 버전 시작');
         
         // 모듈 상태 추적 및 학생 정보 관리 통합 시스템
         const ModuleStatusTracker = {
@@ -390,6 +409,12 @@
             studentData: null, // 학생 정보 저장
             initializationStep: 'loading', // loading → modules → student → menu → complete
             featureSettings: null, // 기능 설정 저장
+
+            // 🆕 v8.1.1 테스트 사용자 확인 함수
+            isTestUser() {
+                if (!this.studentData) return false;
+                return this.studentData.name === '이가짜' || this.studentData.email === 'test@example.com';
+            },
 
             // 상태 업데이트 (무한루프 해결)
             updateStatus(moduleKey, isLoaded) {
@@ -441,6 +466,11 @@
                     }
 
                     this.studentData = studentData;
+                    
+                    // 🆕 v8.1.1 테스트 사용자 확인 로그
+                    if (this.isTestUser()) {
+                        console.log('🧪 테스트 사용자 감지: 모든 기능이 활성화됩니다.');
+                    }
                     
                     // UI 업데이트
                     this.updateStudentInfoUI(studentData);
@@ -497,7 +527,7 @@
                 }
             },
 
-            // 🆕 v8.1.0 기본 기능 설정 (항공권 신청 활성화)
+            // 🆕 v8.1.1 기본 기능 설정 (항공권 신청 활성화)
             getDefaultFeatureSettings() {
                 return [
                     { feature_name: 'institute_info', feature_title: '파견학당 정보', is_active: true, display_order: 1 },
@@ -514,7 +544,14 @@
                 try {
                     const studentNameElement = document.getElementById('studentName');
                     if (studentNameElement) {
-                        studentNameElement.textContent = `${student.name}님, 안녕하세요!`;
+                        let nameDisplay = `${student.name}님, 안녕하세요!`;
+                        
+                        // 🆕 v8.1.1 테스트 사용자 표시
+                        if (this.isTestUser()) {
+                            nameDisplay += ' 🧪 [테스트 모드]';
+                        }
+                        
+                        studentNameElement.textContent = nameDisplay;
                         studentNameElement.className = ''; // loading 클래스 제거
                     }
                     
@@ -522,14 +559,22 @@
                     if (studentDetailsElement) {
                         const institute = student.sejong_institute || '세종학당';
                         const field = student.field || '문화 분야';
-                        studentDetailsElement.textContent = `${institute} • ${field}`;
+                        let detailsDisplay = `${institute} • ${field}`;
+                        
+                        // 🆕 v8.1.1 테스트 사용자 추가 정보
+                        if (this.isTestUser()) {
+                            detailsDisplay += ' (모든 기능 활성화됨)';
+                        }
+                        
+                        studentDetailsElement.textContent = detailsDisplay;
                         studentDetailsElement.className = ''; // loading 클래스 제거
                     }
                     
                     console.log('✅ 학생 정보 UI 업데이트 완료:', {
                         name: student.name,
                         institute: student.sejong_institute,
-                        field: student.field
+                        field: student.field,
+                        isTestUser: this.isTestUser()
                     });
                     
                 } catch (error) {
@@ -557,9 +602,9 @@
                 this.showSystemMessage(message, 'error');
             },
 
-            // 🆕 v8.1.0 메뉴 항목 로드 (항공권 신청 활성화)
+            // 🆕 v8.1.1 메뉴 항목 로드 (테스트 사용자 지원)
             loadMenuItems() {
-                console.log('📋 메뉴 항목 로딩 시작... (v8.1.0 - 항공권 신청 활성화)');
+                console.log('📋 메뉴 항목 로딩 시작... (v8.1.1 - 테스트 사용자 지원)');
                 const menuGrid = document.getElementById('menuGrid');
                 if (!menuGrid) return;
 
@@ -582,11 +627,11 @@
                     lucide.createIcons();
                 }
                 
-                console.log('✅ 메뉴 항목 로딩 완료 (v8.1.0 - 항공권 신청 활성화)');
+                console.log('✅ 메뉴 항목 로딩 완료 (v8.1.1 - 테스트 사용자 지원)');
                 this.showSystemReady();
             },
 
-            // 🆕 v8.1.0 메뉴 카드 설정 가져오기 (항공권 신청 활성화)
+            // 🆕 v8.1.1 메뉴 카드 설정 가져오기 (테스트 사용자 지원)
             getMenuCardConfig(feature) {
                 const configs = {
                     'institute_info': {
@@ -641,23 +686,41 @@
 
                 const config = configs[feature.feature_name];
                 if (config) {
-                    config.isActive = feature.is_active;
+                    // 🆕 v8.1.1 테스트 사용자의 경우 모든 기능 활성화
+                    if (this.isTestUser()) {
+                        config.isActive = true;
+                        config.isTestUserOverride = true;
+                        console.log(`🧪 테스트 사용자: ${feature.feature_name} 기능 강제 활성화`);
+                    } else {
+                        config.isActive = feature.is_active;
+                        config.isTestUserOverride = false;
+                    }
+                    
                     config.featureName = feature.feature_name;
                     return config;
                 }
                 return null;
             },
 
-            // 🆕 메뉴 카드 HTML 생성 (Coming Soon 스타일 적용)
+            // 🆕 v8.1.1 메뉴 카드 HTML 생성 (테스트 사용자 지원)
             generateMenuCardHTML(config) {
-                const { icon, title, description, url, buttonText, buttonIcon, isActive, featureName } = config;
+                const { 
+                    icon, title, description, url, buttonText, buttonIcon, 
+                    isActive, featureName, isTestUserOverride 
+                } = config;
                 
                 let cardClass = 'menu-card';
                 let cardOnClick = '';
                 let buttonState = '';
                 
                 if (isActive) {
-                    cardClass += ' available';
+                    if (isTestUserOverride) {
+                        // 🆕 v8.1.1 테스트 사용자가 활성화한 기능
+                        cardClass += ' test-user-enabled';
+                    } else {
+                        // 일반적으로 활성화된 기능
+                        cardClass += ' available';
+                    }
                     cardOnClick = `onclick="navigateToPage('${url}')"`;
                 } else {
                     cardClass += ' coming-soon';
@@ -683,10 +746,18 @@
             showSystemReady() {
                 const systemStatus = document.getElementById('systemStatus');
                 if (systemStatus) {
+                    let statusMessage = '🚀 시스템이 정상적으로 초기화되었습니다! (v8.1.1)';
+                    
+                    // 🆕 v8.1.1 테스트 사용자 메시지
+                    if (this.isTestUser()) {
+                        statusMessage = '🧪 테스트 모드가 활성화되었습니다! 모든 기능을 사용할 수 있습니다. (v8.1.1)';
+                    } else {
+                        statusMessage += '<br>항공권 신청 시스템이 활성화되어 모든 기능을 사용할 수 있습니다.';
+                    }
+                    
                     systemStatus.innerHTML = `
                         <div class="alert alert-success">
-                            <strong>🚀 시스템이 정상적으로 초기화되었습니다! (v8.1.0)</strong><br>
-                            항공권 신청 시스템이 활성화되어 모든 기능을 사용할 수 있습니다.
+                            <strong>${statusMessage}</strong>
                         </div>
                     `;
                     
@@ -698,7 +769,7 @@
                 
                 this.isInitialized = true;
                 this.initializationStep = 'complete';
-                console.log('🎉 대시보드 초기화 완전 완료 - v8.1.0 항공권 신청 시스템 활성화');
+                console.log('🎉 대시보드 초기화 완전 완료 - v8.1.1 테스트 사용자 지원');
             },
 
             // 시스템 메시지 표시
@@ -731,7 +802,8 @@
                     modules: this.modules,
                     studentData: this.studentData,
                     featureSettings: this.featureSettings,
-                    version: 'v8.1.0 - 항공권 신청 시스템 활성화'
+                    isTestUser: this.isTestUser(),
+                    version: 'v8.1.1 - 테스트 사용자 지원'
                 };
             }
         };
@@ -780,7 +852,7 @@
         // DOMContentLoaded 이벤트 핸들러 - 즉시 시작
         document.addEventListener('DOMContentLoaded', function() {
             try {
-                console.log('🎯 DOMContentLoaded - v8.1.0 항공권 신청 시스템 활성화 초기화 시작');
+                console.log('🎯 DOMContentLoaded - v8.1.1 테스트 사용자 지원 초기화 시작');
                 
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
@@ -858,23 +930,24 @@
         // 전역 디버그 함수
         window.showDashboardDebug = function() {
             const debugInfo = ModuleStatusTracker.getDebugInfo();
-            console.group('🔍 Dashboard Debug Info - v8.1.0');
+            console.group('🔍 Dashboard Debug Info - v8.1.1');
             console.log('초기화 상태:', debugInfo.isInitialized);
             console.log('현재 단계:', debugInfo.initializationStep);
             console.log('모듈 상태:', debugInfo.modules);
             console.log('학생 데이터:', debugInfo.studentData);
             console.log('기능 설정:', debugInfo.featureSettings);
+            console.log('테스트 사용자:', debugInfo.isTestUser);
             console.log('버전:', debugInfo.version);
             console.groupEnd();
             
-            alert(`Dashboard Debug Info (v8.1.0):\n\n초기화: ${debugInfo.isInitialized}\n단계: ${debugInfo.initializationStep}\n학생: ${debugInfo.studentData?.name || 'N/A'}\n기능: ${debugInfo.featureSettings?.length || 0}개\n\n자세한 정보는 콘솔을 확인하세요.`);
+            alert(`Dashboard Debug Info (v8.1.1):\\n\\n초기화: ${debugInfo.isInitialized}\\n단계: ${debugInfo.initializationStep}\\n학생: ${debugInfo.studentData?.name || 'N/A'}\\n기능: ${debugInfo.featureSettings?.length || 0}개\\n테스트 사용자: ${debugInfo.isTestUser}\\n\\n자세한 정보는 콘솔을 확인하세요.`);
         };
 
         // 전역 변수로 노출 (dashboard.js와의 호환성)
         window.ModuleStatusTracker = ModuleStatusTracker;
         window.navigateToPage = navigateToPage;
         
-        console.log('✅ Dashboard v8.1.0 초기화 스크립트 로딩 완료 - 항공권 신청 시스템 활성화');
+        console.log('✅ Dashboard v8.1.1 초기화 스크립트 로딩 완료 - 테스트 사용자 지원');
     </script>
 </body>
 </html>
