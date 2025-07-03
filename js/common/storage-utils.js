@@ -1,28 +1,25 @@
 /**
- * Storage 유틸리티 모듈 v8.1.0
+ * Storage 유틸리티 모듈 v8.1.1
  * 파일 업로드 및 Storage 관리를 위한 공통 유틸리티
- * 항공권 신청 시스템 - v8.1.0 Storage 구조 최적화
+ * 항공권 신청 시스템 - v8.1.1 실제 버킷명 수정
  * 
- * v8.1.0 핵심 개선사항:
- * - Storage 버킷 구조 최적화 (7개 → 4개)
- * - flight-images에 사용자 ID별 디렉토리 구조 도입
- * - admin-tickets, flight-documents 제거 → flight-tickets 통합
- * - 파일명 규칙 단순화 및 체계화
+ * v8.1.1 핵심 수정사항:
+ * - 실제 DB 버킷명과 일치하도록 수정
+ * - 불필요한 버킷 생성 시도 제거
+ * - 기존 버킷 활용으로 안정성 향상
  */
 
 window.StorageUtils = (function() {
     'use strict';
 
-    console.log('📦 StorageUtils 모듈 로드 시작 v8.1.0 (Storage 최적화)');
+    console.log('📦 StorageUtils 모듈 로드 시작 v8.1.1 (실제 버킷명 수정)');
 
-    // 🆕 v8.1.0 최적화된 Storage 버킷 설정
+    // 🔧 v8.1.1 실제 DB에 존재하는 버킷명으로 수정
     const BUCKETS = {
-        FLIGHT_IMAGES: 'flight-images',      // 학생 참고용 이미지 (사용자별 디렉토리)
-        RECEIPTS: 'receipts',                // 영수증 (기존 활용)
-        PASSPORTS: 'passports',              // 여권 사본
-        FLIGHT_TICKETS: 'flight-tickets'     // 🆕 최종 항공권 통합 버킷
-        // ❌ admin-tickets 제거 (v8.1.0)
-        // ❌ flight-documents 제거 (v8.1.0)
+        FLIGHT_IMAGES: 'flight-images',      // ✅ 존재함 (public)
+        RECEIPTS: 'receipt-files',           // 🔧 수정: 'receipts' → 'receipt-files'
+        PASSPORTS: 'passports',              // ✅ 존재함 (public)
+        FLIGHT_TICKETS: 'flight-tickets'     // ✅ 존재함 (public - 이미 생성됨)
     };
 
     // 파일 타입별 설정
@@ -53,7 +50,7 @@ window.StorageUtils = (function() {
         flightTicket: (userId) => 
             `${userId}_tickets`,
         
-        // receipts: 기존 방식 유지
+        // receipts: 기존 방식 유지 (버킷명만 수정)
         receipt: (userId, requestId, timestamp, originalName) => 
             `receipt_${userId}_${requestId}_${timestamp}.${getFileExtension(originalName)}`
     };
@@ -135,11 +132,12 @@ window.StorageUtils = (function() {
     }
 
     /**
-     * Storage 버킷 존재 확인 및 생성
+     * 🔧 v8.1.1 수정: 버킷 존재 확인만 (생성하지 않음)
+     * 모든 필요한 버킷들이 이미 존재하므로 확인만 수행
      */
-    async function ensureBucket(bucketName) {
+    async function checkBucket(bucketName) {
         try {
-            console.log(`🗄️ ${bucketName} 버킷 확인 중...`);
+            console.log(`🗄️ ${bucketName} 버킷 존재 확인 중...`);
             
             const supabase = getSupabaseInstance();
             if (!supabase) {
@@ -161,28 +159,13 @@ window.StorageUtils = (function() {
 
             const bucketExists = buckets.some(bucket => bucket.name === bucketName);
             
-            if (!bucketExists) {
-                console.log(`📦 ${bucketName} 버킷 생성 중...`);
-                
-                // 🆕 v8.1.0: flight-tickets는 private, 나머지는 public
-                const isPrivate = bucketName === BUCKETS.FLIGHT_TICKETS;
-                
-                const { data, error } = await supabase.storage.createBucket(bucketName, {
-                    public: !isPrivate,
-                    allowedMimeTypes: ['image/jpeg', 'image/png', 'application/pdf']
-                });
-
-                if (error) {
-                    console.error(`❌ ${bucketName} 버킷 생성 실패:`, error);
-                    return false;
-                } else {
-                    console.log(`✅ ${bucketName} 버킷 생성 성공 (${isPrivate ? 'private' : 'public'})`);
-                    return true;
-                }
+            if (bucketExists) {
+                console.log(`✅ ${bucketName} 버킷 존재 확인됨`);
+                return true;
+            } else {
+                console.warn(`⚠️ ${bucketName} 버킷이 존재하지 않습니다`);
+                return false;
             }
-            
-            console.log(`✅ ${bucketName} 버킷이 이미 존재합니다`);
-            return true;
 
         } catch (error) {
             console.error(`❌ ${bucketName} 버킷 확인 실패:`, error);
@@ -191,13 +174,14 @@ window.StorageUtils = (function() {
     }
 
     /**
-     * 🆕 v8.1.0 최적화된 모든 필수 버킷 초기화
+     * 🔧 v8.1.1 수정: 모든 필수 버킷 존재 확인만
+     * 버킷 생성 시도 제거 - 이미 모든 버킷이 존재함
      */
-    async function initializeAllBuckets() {
-        console.log('🚀 Storage 버킷 초기화 시작... (v8.1.0 최적화)');
+    async function checkAllBuckets() {
+        console.log('🚀 Storage 버킷 존재 확인 시작... (v8.1.1)');
         
         if (initializationAttempted) {
-            console.log('⚠️ 이미 초기화가 시도되었습니다');
+            console.log('⚠️ 이미 확인이 시도되었습니다');
             return false;
         }
         
@@ -206,23 +190,23 @@ window.StorageUtils = (function() {
         // Supabase 인스턴스 확인
         const supabase = getSupabaseInstance();
         if (!supabase) {
-            console.error('❌ Supabase 인스턴스를 찾을 수 없어 버킷 초기화를 건너뜁니다');
+            console.error('❌ Supabase 인스턴스를 찾을 수 없어 버킷 확인을 건너뜁니다');
             return false;
         }
         
         const results = await Promise.all(
-            Object.values(BUCKETS).map(bucketName => ensureBucket(bucketName))
+            Object.values(BUCKETS).map(bucketName => checkBucket(bucketName))
         );
         
-        const allSuccess = results.every(result => result === true);
+        const allExist = results.every(result => result === true);
         
-        if (allSuccess) {
-            console.log('✅ v8.1.0 최적화된 Storage 버킷 초기화 완료 (4개 버킷)');
+        if (allExist) {
+            console.log('✅ v8.1.1 모든 필수 Storage 버킷 존재 확인 완료');
         } else {
-            console.warn('⚠️ 일부 Storage 버킷 초기화 실패');
+            console.warn('⚠️ 일부 Storage 버킷이 존재하지 않습니다');
         }
         
-        return allSuccess;
+        return allExist;
     }
 
     /**
@@ -250,22 +234,10 @@ window.StorageUtils = (function() {
 
             if (error) throw error;
 
-            // 🆕 v8.1.0: flight-tickets는 private이므로 signed URL 생성
-            let publicUrl;
-            if (bucketName === BUCKETS.FLIGHT_TICKETS) {
-                const { data: { signedUrl }, error: urlError } = await supabase.storage
-                    .from(bucketName)
-                    .createSignedUrl(filePath, 60 * 60 * 24); // 24시간 유효
-                
-                if (urlError) throw urlError;
-                publicUrl = signedUrl;
-            } else {
-                // public 버킷은 기존 방식
-                const { data: { publicUrl: url } } = supabase.storage
-                    .from(bucketName)
-                    .getPublicUrl(filePath);
-                publicUrl = url;
-            }
+            // 🔧 v8.1.1: 모든 버킷이 public이므로 일반 public URL 사용
+            const { data: { publicUrl } } = supabase.storage
+                .from(bucketName)
+                .getPublicUrl(filePath);
 
             console.log(`✅ 파일 업로드 성공: ${publicUrl}`);
             
@@ -451,9 +423,9 @@ window.StorageUtils = (function() {
         });
     }
 
-    // 초기화 함수 (지연 실행)
+    // 🔧 v8.1.1 수정: 초기화 함수 (지연 실행)
     async function delayedInitialize() {
-        console.log('🚀 Storage 버킷 지연 초기화 중... (v8.1.0)');
+        console.log('🚀 Storage 버킷 지연 확인 중... (v8.1.1)');
         
         // Supabase 인스턴스 로딩 대기 (최대 10초)
         let waitCount = 0;
@@ -463,10 +435,10 @@ window.StorageUtils = (function() {
         }
         
         if (getSupabaseInstance()) {
-            console.log('✅ Supabase 인스턴스 확인됨 - v8.1.0 버킷 초기화 시작');
-            return await initializeAllBuckets();
+            console.log('✅ Supabase 인스턴스 확인됨 - v8.1.1 버킷 확인 시작');
+            return await checkAllBuckets();
         } else {
-            console.warn('⚠️ Supabase 인스턴스 로딩 타임아웃 - 버킷 초기화 건너뜀');
+            console.warn('⚠️ Supabase 인스턴스 로딩 타임아웃 - 버킷 확인 건너뜀');
             return false;
         }
     }
@@ -500,18 +472,21 @@ window.StorageUtils = (function() {
         // 파일 관리
         deleteFile,
         
-        // 초기화
-        initializeAllBuckets,
-        delayedInitialize
+        // 🔧 v8.1.1 수정: 확인만 수행
+        checkAllBuckets,
+        delayedInitialize,
+        
+        // 레거시 호환성 (기존 코드와 호환을 위해 유지)
+        initializeAllBuckets: checkAllBuckets
     };
 
-    // 지연 초기화 실행 (5초 후)
+    // 🔧 v8.1.1 수정: 지연 확인 실행 (5초 후)
     setTimeout(async () => {
         if (!initializationAttempted) {
             try {
                 await delayedInitialize();
             } catch (error) {
-                console.error('❌ v8.1.0 지연 초기화 실패:', error);
+                console.error('❌ v8.1.1 지연 확인 실패:', error);
             }
         }
     }, 5000);
@@ -528,4 +503,4 @@ window.initStorageUtils = function(supabaseInstance) {
     return false;
 };
 
-console.log('✅ StorageUtils 모듈 v8.1.0 로드 완료 (Storage 구조 최적화)');
+console.log('✅ StorageUtils 모듈 v8.1.1 로드 완료 (실제 버킷명 수정)');
