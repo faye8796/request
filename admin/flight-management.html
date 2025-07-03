@@ -18,9 +18,6 @@
                         대시보드로 돌아가기
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a href="#" class="nav-link" onclick="logout()">로그아웃</a>
-                </li>
             </ul>
         </div>
     </nav>
@@ -141,25 +138,6 @@
             const debugElement = document.getElementById('debugStatus');
             if (debugElement) {
                 debugElement.textContent = status;
-            }
-        }
-
-        // 로그아웃 함수 (SupabaseCore 직접 사용)
-        window.logout = async function() {
-            try {
-                // v8.2.0: SupabaseCore 직접 사용
-                const supabase = window.SupabaseCore?.supabase;
-                if (supabase) {
-                    const { error } = await supabase.auth.signOut();
-                    if (!error) {
-                        window.location.href = '../index.html';
-                    }
-                } else {
-                    window.location.href = '../index.html';
-                }
-            } catch (error) {
-                console.error('로그아웃 오류:', error);
-                window.location.href = '../index.html';
             }
         }
 
