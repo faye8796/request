@@ -1,4 +1,5 @@
-// flight-management-modals.js - 관리자용 항공권 관리 모달 시스템 v8.2.0
+// flight-management-modals.js - 관리자용 항공권 관리 모달 시스템 v8.1.0
+// v8.1.0: Storage 구조 최적화 적용 - flight-tickets 통합 버킷 사용
 // v8.2.0: 직접 모듈 최적화 - SupabaseCore 직접 사용
 
 class FlightManagementModals {
@@ -19,7 +20,7 @@ class FlightManagementModals {
 
     // v8.2.0: Supabase 인스턴스 안전하게 가져오기 (SupabaseCore 우선)
     getSupabase() {
-        // 🆕 v8.2.0: SupabaseCore 직접 사용 (최우선)
+        // SupabaseCore 직접 사용 (최우선)
         if (window.SupabaseCore && window.SupabaseCore.supabase) {
             return window.SupabaseCore.supabase;
         }
@@ -34,7 +35,7 @@ class FlightManagementModals {
             return window.supabase;
         }
         
-        console.warn('⚠️ v8.2.0 Supabase 인스턴스를 찾을 수 없습니다');
+        console.warn('⚠️ v8.1.0 Supabase 인스턴스를 찾을 수 없습니다');
         return null;
     }
 
@@ -125,11 +126,11 @@ class FlightManagementModals {
                 </div>
             </div>
 
-            <!-- 구매대행 항공권 등록 모달 -->
+            <!-- 🆕 v8.1.0 구매대행 항공권 등록 모달 (flight-tickets 통합 버킷) -->
             <div id="uploadTicketModal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2>항공권 등록</h2>
+                        <h2>최종 항공권 등록</h2>
                         <button class="close-btn" onclick="window.flightModals.closeModal('uploadTicketModal')">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -138,12 +139,12 @@ class FlightManagementModals {
                         </button>
                     </div>
                     <div class="modal-body">
-                        <p class="info-message">구매대행 항공권을 등록해주세요.</p>
+                        <p class="info-message">구매대행 완료된 최종 항공권을 등록해주세요.</p>
                         <div class="request-summary" id="uploadSummary">
                             <!-- 동적으로 요약 정보 추가 -->
                         </div>
                         <div class="form-group">
-                            <label for="adminTicketFile">항공권 파일 <span class="required">*</span></label>
+                            <label for="adminTicketFile">최종 항공권 파일 <span class="required">*</span></label>
                             <input 
                                 type="file" 
                                 id="adminTicketFile" 
@@ -151,18 +152,18 @@ class FlightManagementModals {
                                 accept=".pdf,.jpg,.jpeg,.png"
                                 required
                             >
-                            <small class="form-text">PDF, JPG, PNG 형식 (최대 10MB)</small>
+                            <small class="form-text">PDF, JPG, PNG 형식 (최대 10MB) • v8.1.0 flight-tickets 통합 버킷에 저장</small>
                         </div>
                         <div id="uploadProgress" class="upload-progress" style="display: none;">
                             <div class="progress-bar">
                                 <div class="progress-fill"></div>
                             </div>
-                            <span class="progress-text">업로드 중...</span>
+                            <span class="progress-text">v8.1.0 최적화된 Storage에 업로드 중...</span>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-secondary" onclick="window.flightModals.closeModal('uploadTicketModal')">취소</button>
-                        <button class="btn btn-primary" onclick="window.flightModals.uploadAdminTicket()">등록</button>
+                        <button class="btn btn-primary" onclick="window.flightModals.uploadFinalTicket()">등록 완료</button>
                     </div>
                 </div>
             </div>
@@ -231,12 +232,12 @@ class FlightManagementModals {
                         <span>${request.user_profiles.name}</span>
                     </div>
                     <div class="detail-item">
-                        <label>학교:</label>
-                        <span>${request.user_profiles.university}</span>
+                        <label>파견 학당:</label>
+                        <span>${request.user_profiles.sejong_institute || '-'}</span>
                     </div>
                     <div class="detail-item">
-                        <label>파견 학당:</label>
-                        <span>${request.user_profiles.institute_info?.name_ko || '-'}</span>
+                        <label>파견 기간:</label>
+                        <span>${request.user_profiles.dispatch_duration || '-'}일</span>
                     </div>
                 </div>
 
@@ -328,9 +329,9 @@ class FlightManagementModals {
                         ` : ''}
                         ${request.admin_ticket_url ? `
                             <div class="attachment-item">
-                                <label>관리자 등록 항공권:</label>
+                                <label>최종 등록 항공권:</label>
                                 <a href="${request.admin_ticket_url}" target="_blank" class="btn btn-sm btn-outline">
-                                    항공권 보기
+                                    <span class="badge badge-success">v8.1.0</span> 최종 항공권 보기
                                 </a>
                             </div>
                         ` : ''}
@@ -349,7 +350,7 @@ class FlightManagementModals {
         
         summary.innerHTML = `
             <div class="summary-item">
-                <strong>신청자:</strong> ${request.user_profiles.name} (${request.user_profiles.university})
+                <strong>신청자:</strong> ${request.user_profiles.name} (${request.user_profiles.sejong_institute})
             </div>
             <div class="summary-item">
                 <strong>구매 방식:</strong> ${request.purchase_type === 'direct' ? '직접구매' : '구매대행'}
@@ -369,7 +370,7 @@ class FlightManagementModals {
         
         summary.innerHTML = `
             <div class="summary-item">
-                <strong>신청자:</strong> ${request.user_profiles.name} (${request.user_profiles.university})
+                <strong>신청자:</strong> ${request.user_profiles.name} (${request.user_profiles.sejong_institute})
             </div>
             <div class="summary-item">
                 <strong>구매 방식:</strong> ${request.purchase_type === 'direct' ? '직접구매' : '구매대행'}
@@ -383,20 +384,23 @@ class FlightManagementModals {
         this.openModal('rejectModal');
     }
 
-    // 구매대행 항공권 등록 모달 표시
+    // 🆕 v8.1.0 최종 항공권 등록 모달 표시 (flight-tickets 통합 버킷)
     showUploadTicketModal(request) {
         this.currentRequest = request;
         const summary = document.getElementById('uploadSummary');
         
         summary.innerHTML = `
             <div class="summary-item">
-                <strong>신청자:</strong> ${request.user_profiles.name} (${request.user_profiles.university})
+                <strong>신청자:</strong> ${request.user_profiles.name} (${request.user_profiles.sejong_institute})
             </div>
             <div class="summary-item">
                 <strong>여행 기간:</strong> ${new Date(request.departure_date).toLocaleDateString('ko-KR')} ~ ${new Date(request.return_date).toLocaleDateString('ko-KR')}
             </div>
             <div class="summary-item">
                 <strong>출발/도착:</strong> ${request.departure_airport} → ${request.arrival_airport}
+            </div>
+            <div class="summary-item">
+                <strong>Storage:</strong> <span class="badge badge-info">v8.1.0 flight-tickets 통합 버킷</span>
             </div>
         `;
 
@@ -405,7 +409,7 @@ class FlightManagementModals {
         this.openModal('uploadTicketModal');
     }
 
-    // 여권정보 조회 모달 표시 (v8.2.0 SupabaseCore 직접 사용)
+    // 여권정보 조회 모달 표시
     async showPassportModal(userId) {
         const content = document.getElementById('passportModalContent');
         content.innerHTML = '<div class="loading">여권 정보를 불러오는 중...</div>';
@@ -414,7 +418,7 @@ class FlightManagementModals {
         try {
             const supabase = this.getSupabase();
             if (!supabase) {
-                throw new Error('v8.2.0 Supabase 인스턴스를 찾을 수 없습니다');
+                throw new Error('v8.1.0 Supabase 인스턴스를 찾을 수 없습니다');
             }
 
             const { data: passportInfo, error } = await supabase
@@ -470,7 +474,7 @@ class FlightManagementModals {
                 </div>
             `;
         } catch (error) {
-            console.error('v8.2.0 Error fetching passport info:', error);
+            console.error('v8.1.0 Error fetching passport info:', error);
             content.innerHTML = `
                 <div class="error-message">
                     여권 정보를 불러오는 중 오류가 발생했습니다.
@@ -479,7 +483,7 @@ class FlightManagementModals {
         }
     }
 
-    // 승인 처리 (v8.2.0 SupabaseCore 직접 사용)
+    // 승인 처리
     async confirmApprove() {
         if (!this.currentRequest) return;
 
@@ -488,7 +492,7 @@ class FlightManagementModals {
                 await this.api.updateRequestStatus(this.currentRequest.id, 'approved');
             } else {
                 const supabase = this.getSupabase();
-                if (!supabase) throw new Error('v8.2.0 Supabase 인스턴스를 찾을 수 없습니다');
+                if (!supabase) throw new Error('v8.1.0 Supabase 인스턴스를 찾을 수 없습니다');
 
                 const { error } = await supabase
                     .from('flight_requests')
@@ -509,12 +513,12 @@ class FlightManagementModals {
                 window.flightManagementUI.loadRequests();
             }
         } catch (error) {
-            console.error('v8.2.0 Error approving request:', error);
+            console.error('v8.1.0 Error approving request:', error);
             alert('승인 처리 중 오류가 발생했습니다.');
         }
     }
 
-    // 반려 처리 (v8.2.0 SupabaseCore 직접 사용)
+    // 반려 처리
     async confirmReject() {
         if (!this.currentRequest) return;
 
@@ -529,7 +533,7 @@ class FlightManagementModals {
                 await this.api.updateRequestStatus(this.currentRequest.id, 'rejected', rejectionReason);
             } else {
                 const supabase = this.getSupabase();
-                if (!supabase) throw new Error('v8.2.0 Supabase 인스턴스를 찾을 수 없습니다');
+                if (!supabase) throw new Error('v8.1.0 Supabase 인스턴스를 찾을 수 없습니다');
 
                 const { error } = await supabase
                     .from('flight_requests')
@@ -551,20 +555,20 @@ class FlightManagementModals {
                 window.flightManagementUI.loadRequests();
             }
         } catch (error) {
-            console.error('v8.2.0 Error rejecting request:', error);
+            console.error('v8.1.0 Error rejecting request:', error);
             alert('반려 처리 중 오류가 발생했습니다.');
         }
     }
 
-    // 관리자 항공권 업로드 (v8.2.0 SupabaseCore 직접 사용)
-    async uploadAdminTicket() {
+    // 🆕 v8.1.0 최종 항공권 업로드 (flight-tickets 통합 버킷 사용)
+    async uploadFinalTicket() {
         if (!this.currentRequest) return;
 
         const fileInput = document.getElementById('adminTicketFile');
         const file = fileInput.files[0];
 
         if (!file) {
-            alert('항공권 파일을 선택해주세요.');
+            alert('최종 항공권 파일을 선택해주세요.');
             return;
         }
 
@@ -579,31 +583,43 @@ class FlightManagementModals {
         progressDiv.style.display = 'block';
 
         try {
-            if (this.api) {
-                // API를 통한 업로드
-                await this.api.uploadAdminTicket(this.currentRequest.id, file);
+            if (this.api && this.api.completeAgencyPurchase) {
+                // 🆕 v8.1.0: 새로운 completeAgencyPurchase 메서드 사용
+                console.log('✅ v8.1.0 새로운 API 메서드 사용: completeAgencyPurchase');
+                await this.api.completeAgencyPurchase(
+                    this.currentRequest.id, 
+                    this.currentRequest.user_id, 
+                    file
+                );
             } else {
-                // v8.2.0: 직접 업로드 (fallback) - SupabaseCore 사용
+                // Fallback: 직접 업로드 (v8.1.0 구조)
+                console.log('⚠️ v8.1.0 Fallback 업로드 방식 사용');
                 const supabase = this.getSupabase();
-                if (!supabase) throw new Error('v8.2.0 Supabase 인스턴스를 찾을 수 없습니다');
+                if (!supabase) throw new Error('v8.1.0 Supabase 인스턴스를 찾을 수 없습니다');
 
-                // flight-tickets 버켓에 업로드 (v8.1.0 구조 유지)
+                // v8.1.0: flight-tickets 통합 버킷에 업로드
                 const fileName = `${this.currentRequest.user_id}_tickets`;
                 const { data, error: uploadError } = await supabase.storage
                     .from('flight-tickets')
-                    .upload(fileName, file, { upsert: true });
+                    .upload(fileName, file, { 
+                        upsert: true,
+                        contentType: file.type
+                    });
 
                 if (uploadError) throw uploadError;
 
-                const { data: { publicUrl } } = supabase.storage
+                // v8.1.0: private 버킷이므로 signed URL 생성
+                const { data: { signedUrl }, error: urlError } = await supabase.storage
                     .from('flight-tickets')
-                    .getPublicUrl(fileName);
+                    .createSignedUrl(fileName, 60 * 60 * 24); // 24시간 유효
+
+                if (urlError) throw urlError;
 
                 // DB 업데이트
                 const { error: updateError } = await supabase
                     .from('flight_requests')
                     .update({
-                        admin_ticket_url: publicUrl,
+                        admin_ticket_url: signedUrl,
                         status: 'completed',
                         updated_at: new Date().toISOString()
                     })
@@ -613,15 +629,17 @@ class FlightManagementModals {
             }
 
             this.closeModal('uploadTicketModal');
-            this.showSuccessMessage('항공권이 성공적으로 등록되었습니다.');
+            this.showSuccessMessage('v8.1.0 최종 항공권이 성공적으로 등록되었습니다.');
             
             // 목록 새로고침
             if (window.flightManagementUI) {
                 window.flightManagementUI.loadRequests();
             }
         } catch (error) {
-            console.error('v8.2.0 Error uploading admin ticket:', error);
-            alert('항공권 등록 중 오류가 발생했습니다.');
+            console.error('v8.1.0 Error uploading final ticket:', error);
+            alert('최종 항공권 등록 중 오류가 발생했습니다.');
+        } finally {
+            progressDiv.style.display = 'none';
         }
     }
 
@@ -661,7 +679,7 @@ class FlightManagementModals {
 if (typeof window !== 'undefined') {
     window.FlightManagementModals = FlightManagementModals;
     window.flightModals = new FlightManagementModals();
-    console.log('✅ FlightManagementModals v8.2.0 전역 등록 완료 (직접 모듈 최적화)');
+    console.log('✅ FlightManagementModals v8.1.0 전역 등록 완료 (Storage 최적화)');
 }
 
-console.log('✅ FlightManagementModals v8.2.0 로드 완료 - 직접 모듈 최적화 및 SupabaseCore 직접 사용');
+console.log('✅ FlightManagementModals v8.1.0 로드 완료 - Storage 구조 최적화 및 flight-tickets 통합 버킷 적용');
