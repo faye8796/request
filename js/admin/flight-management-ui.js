@@ -1,5 +1,5 @@
-// flight-management-ui.js - 관리자용 항공권 관리 UI v1.1.0
-// v1.1.0: ES6 import 제거 및 안전한 모듈 참조 방식 적용
+// flight-management-ui.js - 관리자용 항공권 관리 UI v1.2.0
+// v1.2.0: 에러 처리 강화 및 디버깅 정보 추가
 
 class FlightManagementUI {
     constructor() {
@@ -13,16 +13,42 @@ class FlightManagementUI {
 
     // API 초기화
     async initializeAPI() {
+        console.log('🔧 FlightManagementUI - API 초기화 시작...');
+        
         // FlightManagementAPI 인스턴스 생성 대기
         let attempts = 0;
-        while (!window.FlightManagementAPI && attempts < 50) {
+        const maxAttempts = 100;
+        
+        while (!window.FlightManagementAPI && attempts < maxAttempts) {
             await new Promise(resolve => setTimeout(resolve, 100));
             attempts++;
+            
+            if (attempts % 10 === 0) {
+                console.log(`⏳ FlightManagementAPI 대기 중... (${attempts/10}초)`);
+            }
         }
 
         if (window.FlightManagementAPI) {
-            this.api = new window.FlightManagementAPI();
-            console.log('✅ FlightManagementAPI 연결 완료');
+            try {
+                this.api = new window.FlightManagementAPI();
+                console.log('✅ FlightManagementAPI 연결 완료');
+                
+                // API 초기화 상태 확인
+                setTimeout(() => {
+                    if (this.api) {
+                        const status = this.api.getInitializationStatus();
+                        console.log('📊 API 초기화 상태:', status);
+                        
+                        if (!status.isInitialized) {
+                            console.warn('⚠️ API 초기화가 완료되지 않았습니다');
+                        }
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                console.error('❌ FlightManagementAPI 생성 실패:', error);
+                this.api = null;
+            }
         } else {
             console.warn('⚠️ FlightManagementAPI를 찾을 수 없습니다');
         }
@@ -36,10 +62,19 @@ class FlightManagementUI {
     }
 
     async waitForAPI() {
+        console.log('⏳ API 준비 대기 중...');
         let attempts = 0;
-        while (!this.api && attempts < 50) {
+        const maxAttempts = 100;
+        
+        while (!this.api && attempts < maxAttempts) {
             await new Promise(resolve => setTimeout(resolve, 100));
             attempts++;
+        }
+        
+        if (this.api) {
+            console.log('✅ API 준비 완료');
+        } else {
+            console.warn('⚠️ API 준비 타임아웃');
         }
     }
 
@@ -75,42 +110,72 @@ class FlightManagementUI {
     }
 
     async loadRequests() {
+        console.log('📋 항공권 신청 목록 로드 시작...');
         this.showLoading();
+        
         try {
             if (this.api) {
+                console.log('🔄 API를 통한 데이터 로드 시도...');
+                
+                // API 상태 확인
+                const apiStatus = this.api.getInitializationStatus();
+                console.log('📊 API 상태:', apiStatus);
+                
+                if (!apiStatus.isInitialized) {
+                    throw new Error(`API가 초기화되지 않았습니다: ${apiStatus.initError?.message || '알 수 없는 오류'}`);
+                }
+                
                 this.requests = await this.api.getAllRequests();
+                console.log(`✅ API를 통한 데이터 로드 성공: ${this.requests.length}건`);
+                
             } else {
+                console.log('🔄 Fallback: 직접 Supabase 호출 시도...');
+                
                 // Fallback: 직접 Supabase 호출
                 const supabase = this.getSupabase();
-                if (supabase) {
-                    const { data, error } = await supabase
-                        .from('flight_requests')
-                        .select(`
-                            *,
-                            user_profiles!inner(
-                                id,
-                                name,
-                                email,
-                                university,
-                                institute_info(
-                                    name_ko
-                                )
-                            )
-                        `)
-                        .order('created_at', { ascending: false });
-
-                    if (error) throw error;
-                    this.requests = data || [];
-                } else {
+                if (!supabase) {
                     throw new Error('API와 Supabase 모두 사용할 수 없습니다');
                 }
+                
+                const { data, error } = await supabase
+                    .from('flight_requests')
+                    .select(`
+                        *,
+                        user_profiles!inner(
+                            id,
+                            name,
+                            email,
+                            university,
+                            institute_info(
+                                name_ko
+                            )
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                
+                this.requests = data || [];
+                console.log(`✅ 직접 호출로 데이터 로드 성공: ${this.requests.length}건`);
             }
 
             this.renderRequests(this.requests);
             this.updateStats();
+            
         } catch (error) {
-            console.error('Error loading requests:', error);
-            this.showError('항공권 신청 목록을 불러오는 중 오류가 발생했습니다.');
+            console.error('❌ 데이터 로드 실패:', error);
+            
+            // 상세 에러 정보 표시
+            const errorDetails = {
+                message: error.message,
+                hasAPI: !!this.api,
+                hasSupabase: !!this.getSupabase(),
+                apiStatus: this.api ? this.api.getInitializationStatus() : null
+            };
+            
+            console.error('🔍 에러 상세:', errorDetails);
+            
+            this.showError(`항공권 신청 목록을 불러오는 중 오류가 발생했습니다.<br><br><strong>오류 상세:</strong><br>${error.message}`);
         }
     }
 
@@ -379,8 +444,11 @@ class FlightManagementUI {
                     <td colspan="8" class="error">
                         <div class="error-icon">⚠️</div>
                         <p>${message}</p>
-                        <button class="btn btn-primary" onclick="location.reload()">
+                        <button class="btn btn-primary" onclick="window.flightManagementUI?.loadRequests()">
                             다시 시도
+                        </button>
+                        <button class="btn btn-secondary" onclick="console.log('디버깅 정보:', {api: window.flightManagementUI?.api?.getInitializationStatus(), supabase: !!window.SupabaseAPI?.supabase})">
+                            디버깅 정보 출력
                         </button>
                     </td>
                 </tr>
@@ -394,13 +462,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof window !== 'undefined') {
         window.FlightManagementUI = FlightManagementUI;
         window.flightManagementUI = new FlightManagementUI();
-        console.log('✅ FlightManagementUI v1.1.0 초기화 완료');
+        console.log('✅ FlightManagementUI v1.2.0 초기화 완료');
     }
 });
 
-// ES6 모듈로도 내보내기
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { FlightManagementUI };
-}
-
-console.log('✅ FlightManagementUI v1.1.0 로드 완료 - ES6 import 제거 및 안전 참조');
+console.log('✅ FlightManagementUI v1.2.0 로드 완료 - 에러 처리 강화 및 디버깅 개선');
