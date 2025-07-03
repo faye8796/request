@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>항공권 구매 신청 - 세종학당 문화인턴</title>
     <link rel="stylesheet" href="../css/flight-request.css">
-    <link rel="stylesheet" href="../css/passport-info.css">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <!-- Supabase JavaScript Client -->
@@ -452,7 +451,7 @@
             // 사용자 정보 표시
             updateUserInfo();
             
-            console.log('✅ 항공권 신청 페이지 초기화 완료');
+            console.log('✅ 항공권 신청 페이지 초기화 완료 (passport-info 통합)');
         }
 
         function setupNavigation() {
@@ -500,12 +499,8 @@
                 flightRequestPage.classList.remove('active');
                 passportInfoPage.classList.add('active');
                 
-                // 여권정보 매니저 초기화
-                setTimeout(() => {
-                    if (window.PassportInfoManager && typeof window.PassportInfoManager.init === 'function') {
-                        window.PassportInfoManager.init();
-                    }
-                }, 200);
+                // 여권정보 UI는 FlightRequestUI 내부에서 자동 초기화됨
+                console.log('🔄 여권정보 페이지로 전환 완료');
             }
         }
 
@@ -517,12 +512,14 @@
                 passportInfoPage.classList.remove('active');
                 flightRequestPage.classList.add('active');
                 
-                // 항공권 신청 매니저 재초기화
+                // 항공권 신청 데이터 새로고침
                 setTimeout(() => {
                     if (window.flightRequestUI && typeof window.flightRequestUI.loadInitialData === 'function') {
                         window.flightRequestUI.loadInitialData();
                     }
                 }, 200);
+                
+                console.log('🔄 항공권 신청 페이지로 전환 완료');
             }
         }
 
@@ -589,8 +586,6 @@
         // 모듈 로딩 상태 추적
         let modulesLoaded = {
             storageUtils: false,
-            passportInfoAPI: false,
-            passportInfoUI: false,
             flightRequestAPI: false,
             flightRequestUtils: false,
             flightRequestUI: false
@@ -599,7 +594,7 @@
         function checkAllModulesLoaded() {
             const allLoaded = Object.values(modulesLoaded).every(Boolean);
             if (allLoaded) {
-                console.log('✅ 모든 모듈 로드 완료');
+                console.log('✅ 모든 모듈 로드 완료 (passport-info 통합)');
                 initializeFlightRequestSystem();
             }
         }
@@ -610,14 +605,10 @@
                 const globalLoading = document.getElementById('globalLoadingState');
                 if (globalLoading) globalLoading.style.display = 'none';
                 
-                // 여권정보 매니저 초기화
-                if (typeof PassportInfoUI !== 'undefined') {
-                    window.PassportInfoManager = new PassportInfoUI();
-                }
-                
-                // FlightRequestUI 초기화
+                // FlightRequestUI 초기화 (passport-info 통합 버전)
                 if (typeof FlightRequestUI !== 'undefined') {
                     window.flightRequestUI = new FlightRequestUI();
+                    console.log('✅ FlightRequestUI 초기화 완료 (passport-info 통합)');
                 } else {
                     console.error('❌ FlightRequestUI 클래스를 찾을 수 없습니다');
                     showError('시스템 초기화에 실패했습니다.');
@@ -640,16 +631,7 @@
             onload="modulesLoaded.storageUtils = true; checkAllModulesLoaded();"
             onerror="handleModuleError('Storage Utils', event)"></script>
     
-    <!-- Passport Info 모듈들 -->
-    <script src="../js/student/passport-info-api.js"
-            onload="modulesLoaded.passportInfoAPI = true; checkAllModulesLoaded();"
-            onerror="handleModuleError('Passport Info API', event)"></script>
-    
-    <script src="../js/student/passport-info-ui.js"
-            onload="modulesLoaded.passportInfoUI = true; checkAllModulesLoaded();"
-            onerror="handleModuleError('Passport Info UI', event)"></script>
-    
-    <!-- Flight Request 모듈들 -->
+    <!-- Flight Request 모듈들 (passport-info 통합) -->
     <script src="../js/student/flight-request-api.js"
             onload="modulesLoaded.flightRequestAPI = true; checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request API', event)"></script>
@@ -661,270 +643,5 @@
     <script src="../js/student/flight-request-ui.js"
             onload="modulesLoaded.flightRequestUI = true; checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request UI', event)"></script>
-
-    <!-- 개선된 스타일 -->
-    <style>
-        /* 전역 로딩 상태 */
-        .global-loading-state {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .global-loading-state .spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid #e5e7eb;
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 1rem;
-        }
-
-        .global-loading-state p {
-            color: #6b7280;
-            font-size: 1rem;
-            margin: 0;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* 📋 Equipment-request 구조 참고한 페이지 전환 스타일 */
-        .page {
-            display: none;
-        }
-        
-        .page.active {
-            display: block;
-        }
-
-        /* 헤더 스타일 개선 */
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1.5rem 0;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .user-info h1 {
-            margin: 0 0 0.5rem 0;
-            font-size: 1.75rem;
-            font-weight: 600;
-        }
-
-        .user-info p {
-            margin: 0;
-            opacity: 0.9;
-            font-size: 1rem;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .header-actions .btn {
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 0.75rem 1.25rem;
-            border-radius: 8px;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.2s ease;
-            font-size: 0.875rem;
-            font-weight: 500;
-            white-space: nowrap;
-            cursor: pointer;
-        }
-
-        .header-actions .btn:hover {
-            background: rgba(255, 255, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.5);
-            transform: translateY(-1px);
-        }
-
-        .header-actions .btn i {
-            width: 1rem;
-            height: 1rem;
-        }
-
-        /* 컨테이너 여백 조정 */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem 1.5rem;
-        }
-
-        /* 🆕 여권정보 성공 전환 스타일 */
-        .success-transition {
-            text-align: center;
-            padding: 3rem 2rem;
-            background: linear-gradient(135deg, #f0f9ff, #ecfdf5);
-            border-radius: 12px;
-            border: 2px solid #10b981;
-        }
-
-        .success-icon {
-            margin-bottom: 1.5rem;
-        }
-
-        .success-icon i {
-            width: 4rem;
-            height: 4rem;
-            color: #10b981;
-        }
-
-        .success-transition h3 {
-            color: #047857;
-            margin: 0 0 1rem 0;
-            font-size: 1.5rem;
-        }
-
-        .success-transition p {
-            color: #065f46;
-            margin: 0 0 2rem 0;
-        }
-
-        /* 섹션 제목 개선 */
-        .section-title {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1e293b;
-        }
-
-        .section-title i {
-            width: 1.5rem;
-            height: 1.5rem;
-            color: #3b82f6;
-        }
-
-        /* 버튼 링크 스타일 */
-        .btn-link {
-            background: none;
-            border: none;
-            color: #1d4ed8;
-            text-decoration: underline;
-            cursor: pointer;
-            font-weight: 500;
-            padding: 0;
-            margin-left: 0.5rem;
-        }
-
-        .btn-link:hover {
-            color: #1e40af;
-        }
-
-        /* 반응형 디자인 */
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                gap: 1.5rem;
-                text-align: center;
-            }
-
-            .header-actions {
-                width: 100%;
-                justify-content: center;
-                flex-wrap: wrap;
-            }
-
-            .header-actions .btn {
-                flex: 1;
-                min-width: auto;
-                justify-content: center;
-            }
-
-            .user-info h1 {
-                font-size: 1.5rem;
-            }
-
-            .container {
-                padding: 1.5rem 1rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .header-actions {
-                flex-direction: column;
-                gap: 0.75rem;
-            }
-
-            .header-actions .btn {
-                width: 100%;
-            }
-        }
-
-        /* 알림 스타일 개선 */
-        .alert {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-        }
-
-        .alert-warning {
-            background: #fef3c7;
-            border: 1px solid #fbbf24;
-            color: #92400e;
-        }
-
-        .alert i {
-            width: 1.25rem;
-            height: 1.25rem;
-            flex-shrink: 0;
-            margin-top: 0.125rem;
-        }
-
-        /* 오류 및 성공 메시지 스타일 */
-        .error-message, .success-message {
-            padding: 1rem;
-            border-radius: 8px;
-            margin: 1rem 0;
-            font-weight: 500;
-        }
-
-        .error-message {
-            background: #fee2e2;
-            border: 1px solid #fca5a5;
-            color: #dc2626;
-        }
-
-        .success-message {
-            background: #dcfce7;
-            border: 1px solid #86efac;
-            color: #16a34a;
-        }
-    </style>
 </body>
 </html>
