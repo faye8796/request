@@ -64,9 +64,9 @@
                             <div class="form-group">
                                 <label for="nameEnglish" class="form-label required">영문 이름</label>
                                 <input type="text" id="nameEnglish" name="nameEnglish" class="form-input" 
-                                       placeholder="예: HONG GILDONG" required pattern="[A-Z\\s]+" 
-                                       title="대문자 영문만 입력 가능합니다">
-                                <span class="form-hint">여권상 영문 이름을 정확히 입력해주세요 (대문자)</span>
+                                       placeholder="예: HONG GILDONG" required pattern="[A-Z ]+|[A-Z]+\s[A-Z]+" 
+                                       title="대문자 영문과 띄어쓰기만 입력 가능합니다">
+                                <span class="form-hint">여권상 영문 이름을 정확히 입력해주세요 (대문자, 띄어쓰기 허용)</span>
                             </div>
 
                             <div class="form-row">
@@ -420,6 +420,9 @@
             
             console.log('✅ Supabase 클라이언트 초기화 완료');
             
+            // 초기화 상태 확인
+            window.supabaseReady = true;
+            
             // DOM 로드 후 앱 표시
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', initializeApp);
@@ -583,7 +586,7 @@
 
     <!-- JavaScript 모듈 로드 -->
     <script>
-        // 모듈 로딩 상태 추적
+        // 🔧 향상된 모듈 로딩 및 초기화 시스템
         let modulesLoaded = {
             storageUtils: false,
             flightRequestAPI: false,
@@ -591,11 +594,39 @@
             flightRequestUI: false
         };
 
+        let initializationAttempts = 0;
+        const MAX_INIT_ATTEMPTS = 5;
+        let initializationTimer = null;
+
         function checkAllModulesLoaded() {
             const allLoaded = Object.values(modulesLoaded).every(Boolean);
-            if (allLoaded) {
-                console.log('✅ 모든 모듈 로드 완료 (passport-info 통합)');
-                initializeFlightRequestSystem();
+            if (allLoaded && window.supabaseReady) {
+                console.log('✅ 모든 모듈 로드 완료 및 Supabase 준비됨');
+                clearTimeout(initializationTimer);
+                
+                // 약간의 지연 후 초기화 (모든 리소스가 확실히 로드되도록)
+                setTimeout(() => {
+                    initializeFlightRequestSystem();
+                }, 500);
+            } else {
+                console.log('⏳ 모듈 로딩 대기중...', {
+                    modules: modulesLoaded,
+                    supabaseReady: window.supabaseReady
+                });
+                
+                // 재시도 로직
+                if (initializationAttempts < MAX_INIT_ATTEMPTS) {
+                    initializationAttempts++;
+                    initializationTimer = setTimeout(() => {
+                        if (!window.flightRequestUI) {
+                            console.log(`🔄 초기화 재시도 ${initializationAttempts}/${MAX_INIT_ATTEMPTS}`);
+                            checkAllModulesLoaded();
+                        }
+                    }, 1000);
+                } else {
+                    console.error('❌ 모듈 초기화 최대 재시도 횟수 초과');
+                    showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+                }
             }
         }
 
@@ -605,43 +636,73 @@
                 const globalLoading = document.getElementById('globalLoadingState');
                 if (globalLoading) globalLoading.style.display = 'none';
                 
+                // FlightRequestUI 초기화 전 최종 확인
+                if (!window.flightRequestAPI) {
+                    console.error('❌ FlightRequestAPI가 없습니다');
+                    throw new Error('FlightRequestAPI가 로드되지 않았습니다');
+                }
+                
+                if (!window.supabase) {
+                    console.error('❌ Supabase 클라이언트가 없습니다');
+                    throw new Error('Supabase 클라이언트가 초기화되지 않았습니다');
+                }
+                
                 // FlightRequestUI 초기화 (passport-info 통합 버전)
                 if (typeof FlightRequestUI !== 'undefined') {
+                    console.log('🚀 FlightRequestUI 초기화 시작...');
                     window.flightRequestUI = new FlightRequestUI();
                     console.log('✅ FlightRequestUI 초기화 완료 (passport-info 통합)');
                 } else {
                     console.error('❌ FlightRequestUI 클래스를 찾을 수 없습니다');
-                    showError('시스템 초기화에 실패했습니다.');
+                    throw new Error('FlightRequestUI 클래스가 로드되지 않았습니다');
                 }
             } catch (error) {
                 console.error('❌ 항공권 요청 시스템 초기화 실패:', error);
-                showError('시스템 초기화에 실패했습니다.');
+                showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
             }
         }
 
         // 모듈 로드 오류 처리
         function handleModuleError(moduleName, error) {
             console.error(`❌ ${moduleName} 모듈 로드 실패:`, error);
-            showError(`${moduleName} 모듈을 불러올 수 없습니다.`);
+            showError(`${moduleName} 모듈을 불러올 수 없습니다. 페이지를 새로고침해주세요.`);
         }
+
+        // 타임아웃 설정 (10초 후 강제 초기화 시도)
+        setTimeout(() => {
+            if (!window.flightRequestUI) {
+                console.warn('⚠️ 10초 후에도 초기화되지 않음 - 강제 초기화 시도');
+                if (typeof FlightRequestUI !== 'undefined' && window.supabase) {
+                    try {
+                        window.flightRequestUI = new FlightRequestUI();
+                        console.log('✅ 강제 초기화 성공');
+                    } catch (error) {
+                        console.error('❌ 강제 초기화 실패:', error);
+                        showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+                    }
+                } else {
+                    showError('시스템 리소스 로딩에 실패했습니다. 페이지를 새로고침해주세요.');
+                }
+            }
+        }, 10000);
     </script>
 
     <!-- Storage 유틸리티 모듈 -->
     <script src="../js/common/storage-utils.js" 
-            onload="modulesLoaded.storageUtils = true; checkAllModulesLoaded();"
+            onload="modulesLoaded.storageUtils = true; console.log('✅ Storage Utils 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Storage Utils', event)"></script>
     
     <!-- Flight Request 모듈들 (passport-info 통합) -->
     <script src="../js/student/flight-request-api.js"
-            onload="modulesLoaded.flightRequestAPI = true; checkAllModulesLoaded();"
+            onload="modulesLoaded.flightRequestAPI = true; console.log('✅ Flight Request API 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request API', event)"></script>
     
     <script src="../js/student/flight-request-utils.js"
-            onload="modulesLoaded.flightRequestUtils = true; checkAllModulesLoaded();"
+            onload="modulesLoaded.flightRequestUtils = true; console.log('✅ Flight Request Utils 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request Utils', event)"></script>
     
     <script src="../js/student/flight-request-ui.js"
-            onload="modulesLoaded.flightRequestUI = true; checkAllModulesLoaded();"
+            onload="modulesLoaded.flightRequestUI = true; console.log('✅ Flight Request UI 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request UI', event)"></script>
 </body>
 </html>
