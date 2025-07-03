@@ -1,5 +1,5 @@
-// flight-management-modals.js - 관리자용 항공권 관리 모달 시스템 v1.1.0
-// v1.1.0: 경로 오류 수정 및 안전한 Supabase 인스턴스 참조
+// flight-management-modals.js - 관리자용 항공권 관리 모달 시스템 v1.2.0
+// v1.2.0: ES6 export 구문 제거 및 브라우저 호환성 개선
 
 class FlightManagementModals {
     constructor() {
@@ -577,17 +577,17 @@ class FlightManagementModals {
                 const supabase = this.getSupabase();
                 if (!supabase) throw new Error('Supabase 인스턴스를 찾을 수 없습니다');
 
-                // 간단한 파일 업로드
-                const filePath = `admin-tickets/${this.currentRequest.id}_${Date.now()}_${file.name}`;
+                // flight-tickets 버켓에 업로드 (v8.1.0 구조)
+                const fileName = `${this.currentRequest.user_id}_tickets`;
                 const { data, error: uploadError } = await supabase.storage
-                    .from('admin-tickets')
-                    .upload(filePath, file);
+                    .from('flight-tickets')
+                    .upload(fileName, file, { upsert: true });
 
                 if (uploadError) throw uploadError;
 
                 const { data: { publicUrl } } = supabase.storage
-                    .from('admin-tickets')
-                    .getPublicUrl(filePath);
+                    .from('flight-tickets')
+                    .getPublicUrl(fileName);
 
                 // DB 업데이트
                 const { error: updateError } = await supabase
@@ -647,13 +647,11 @@ class FlightManagementModals {
     }
 }
 
-// 전역 인스턴스 생성
+// 전역 객체에 등록 (ES6 export 대신)
 if (typeof window !== 'undefined') {
     window.FlightManagementModals = FlightManagementModals;
     window.flightModals = new FlightManagementModals();
+    console.log('✅ FlightManagementModals v1.2.0 전역 등록 완료');
 }
 
-// ES6 모듈로도 내보내기
-export { FlightManagementModals };
-
-console.log('✅ FlightManagementModals v1.1.0 로드 완료 - 경로 수정 및 안전 참조');
+console.log('✅ FlightManagementModals v1.2.0 로드 완료 - ES6 export 제거, 브라우저 호환성 개선');
