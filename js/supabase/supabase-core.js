@@ -1,7 +1,7 @@
-// 🚀 Supabase 핵심 공통 기능 모듈 v4.2.2
+// 🚀 Supabase 핵심 공통 기능 모듈 v4.2.3
 // 초기화, 에러 처리, 유틸리티 함수들
 // 모든 Supabase 모듈의 기반이 되는 핵심 기능들
-// 🔧 v4.2.2: setCurrentUser 함수 추가 (admin.html 인증 오류 수정)
+// 🔧 v4.2.3: CDN 사용법 수정 - 구조분해할당 방식으로 변경
 
 const SupabaseCore = {
     // Supabase 클라이언트
@@ -71,16 +71,27 @@ const SupabaseCore = {
                 throw new Error('Supabase 설정이 올바르지 않습니다.');
             }
             
-            // Supabase 클라이언트 생성
-            this.supabase = window.supabase.createClient(
+            // 🔧 v4.2.3: CDN 방식에 맞는 올바른 Supabase 클라이언트 생성
+            if (!window.supabase || !window.supabase.createClient) {
+                throw new Error('Supabase CDN이 올바르게 로드되지 않았습니다');
+            }
+
+            // CDN 공식 문서 방식: 구조분해할당 사용
+            const { createClient } = window.supabase;
+            this.supabase = createClient(
                 CONFIG.SUPABASE.URL,
                 CONFIG.SUPABASE.ANON_KEY
             );
+
+            // 생성된 클라이언트 검증 추가
+            if (!this.supabase || !this.supabase.from) {
+                throw new Error('Supabase 클라이언트 생성 실패 - from 메서드 없음');
+            }
             
             this._initialized = true;
             this._initializing = false;
             
-            console.log('✅ SupabaseCore 초기화 완료');
+            console.log('✅ SupabaseCore 초기화 완료 (v4.2.3 CDN 방식)');
             return true;
             
         } catch (error) {
@@ -295,7 +306,7 @@ const SupabaseCore = {
 
 // 🔧 v4.2.1 개선된 자동 초기화
 (async () => {
-    console.log('🚀 SupabaseCore v4.2.2 자동 초기화 시작...');
+    console.log('🚀 SupabaseCore v4.2.3 자동 초기화 시작...');
     
     // CONFIG 로드 대기 (더 여유있게)
     let waitCount = 0;
@@ -314,9 +325,9 @@ const SupabaseCore = {
     if (window.CONFIG) {
         const initSuccess = await SupabaseCore.init();
         if (initSuccess) {
-            console.log('✅ SupabaseCore v4.2.2 자동 초기화 완료');
+            console.log('✅ SupabaseCore v4.2.3 자동 초기화 완료');
         } else {
-            console.warn('⚠️ SupabaseCore v4.2.2 자동 초기화 실패');
+            console.warn('⚠️ SupabaseCore v4.2.3 자동 초기화 실패');
         }
     } else {
         console.warn('⚠️ CONFIG 로드 타임아웃 - SupabaseCore 수동 초기화 필요');
@@ -337,4 +348,4 @@ if (typeof window !== 'undefined') {
     };
 }
 
-console.log('🚀 SupabaseCore v4.2.2 loaded - 사용자 관리 함수 추가 완료');
+console.log('🚀 SupabaseCore v4.2.3 loaded - CDN 방식 수정 완료');
