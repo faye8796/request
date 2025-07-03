@@ -1,4 +1,5 @@
-/* flight-request.css - 항공권 신청 페이지 스타일 v8.1.1 */
+/* flight-request.css - 항공권 신청 페이지 스타일 v8.3.0 */
+/* passport-info 스타일 완전 통합 버전 */
 
 /* 전역 로딩 상태 */
 .global-loading-state {
@@ -30,6 +31,15 @@
     color: #6b7280;
     font-size: 1rem;
     margin: 0;
+}
+
+/* 페이지 전환 스타일 (Equipment-request 구조 참고) */
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
 }
 
 /* 헤더 스타일 개선 - equipment-request.html 스타일과 통일 */
@@ -103,7 +113,79 @@
     padding: 2rem 1.5rem;
 }
 
-/* 정보 배너 - 제거됨 (헤더에 통합) */
+/* 🆕 Passport Info 배너 (통합됨) */
+.info-banner {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    color: white;
+    padding: 2.5rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.2);
+}
+
+.banner-icon {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 1rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.banner-icon svg {
+    width: 48px;
+    height: 48px;
+    stroke-width: 1.5;
+}
+
+.banner-content {
+    flex: 1;
+}
+
+.banner-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.banner-description {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    line-height: 1.6;
+}
+
+/* 🆕 여권정보 성공 전환 스타일 */
+.success-transition {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, #f0f9ff, #ecfdf5);
+    border-radius: 12px;
+    border: 2px solid #10b981;
+}
+
+.success-icon {
+    margin-bottom: 1.5rem;
+}
+
+.success-icon i {
+    width: 4rem;
+    height: 4rem;
+    color: #10b981;
+}
+
+.success-transition h3 {
+    color: #047857;
+    margin: 0 0 1rem 0;
+    font-size: 1.5rem;
+}
+
+.success-transition p {
+    color: #065f46;
+    margin: 0 0 2rem 0;
+}
 
 /* 로딩 상태 */
 .loading-state {
@@ -163,6 +245,22 @@
 }
 
 .alert-link:hover {
+    color: #1e40af;
+}
+
+/* 버튼 링크 스타일 */
+.btn-link {
+    background: none;
+    border: none;
+    color: #1d4ed8;
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: 500;
+    padding: 0;
+    margin-left: 0.5rem;
+}
+
+.btn-link:hover {
     color: #1e40af;
 }
 
@@ -321,8 +419,9 @@
     margin: 0;
 }
 
-/* 신청 폼 */
-.request-form {
+/* 신청 폼 (flight-request와 passport-info 모두 지원) */
+.request-form,
+.passport-form {
     background: white;
     border-radius: 16px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -344,6 +443,15 @@
     font-weight: 600;
     color: #1f2937;
     margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.section-title i {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: #3b82f6;
 }
 
 .section-description {
@@ -449,10 +557,22 @@
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+.form-input:invalid {
+    border-color: #ef4444;
+}
+
 .form-hint {
     display: block;
     font-size: 0.75rem;
     color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+/* 🆕 Passport Info 전용 - 폼 경고 메시지 */
+.form-warning {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
     margin-top: 0.25rem;
 }
 
@@ -910,6 +1030,27 @@
     }
 
     .purchase-type-selector {
+        grid-template-columns: 1fr;
+    }
+
+    /* 🆕 Passport Info 반응형 */
+    .info-banner {
+        flex-direction: column;
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .banner-title {
+        font-size: 1.5rem;
+    }
+
+    .banner-description {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .form-row {
         grid-template-columns: 1fr;
     }
 }
