@@ -189,7 +189,7 @@ class FlightRequestUI {
             <div class="request-status-card">
                 <div class="request-header">
                     <h2>항공권 신청 현황</h2>
-                    <span class="status-badge ${statusInfo.class}\">${statusInfo.text}</span>
+                    <span class="status-badge ${statusInfo.class}">${statusInfo.text}</span>
                 </div>
                 
                 <div class="request-info">
@@ -676,16 +676,40 @@ class FlightRequestUI {
     }
 }
 
-// 페이지 로드 시 초기화
+// 페이지 로드 시 초기화 - localStorage 기반 인증으로 변경
 document.addEventListener('DOMContentLoaded', () => {
-    // 인증 체크
-    window.supabase.auth.getUser().then(({ data: { user }, error }) => {
-        if (!user) {
+    try {
+        console.log('🎯 항공권 신청 페이지 초기화 시작 - localStorage 인증 기반');
+        
+        // localStorage 기반 인증 체크
+        const studentData = localStorage.getItem('currentStudent');
+        if (!studentData) {
+            console.log('❌ localStorage에 학생 정보가 없음 - 로그인 페이지로 이동');
             window.location.href = '../index.html';
             return;
         }
+
+        try {
+            const student = JSON.parse(studentData);
+            if (!student.id || !student.name) {
+                throw new Error('학생 데이터가 불완전합니다.');
+            }
+            
+            console.log('✅ 학생 인증 성공:', student.name);
+            
+            // UI 초기화
+            window.flightRequestUI = new FlightRequestUI();
+            
+        } catch (parseError) {
+            console.error('❌ 학생 정보 파싱 오류:', parseError);
+            localStorage.removeItem('currentStudent');
+            alert('로그인 정보가 손상되었습니다. 다시 로그인해주세요.');
+            window.location.href = '../index.html';
+        }
         
-        // UI 초기화
-        window.flightRequestUI = new FlightRequestUI();
-    });
+    } catch (error) {
+        console.error('❌ 페이지 초기화 오류:', error);
+        alert('페이지 로딩 중 오류가 발생했습니다.');
+        window.location.href = '../index.html';
+    }
 });
