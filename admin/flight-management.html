@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>항공권 관리 - 세종학당 문화인턴 관리 시스템</title>
-    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/admin.css">
     <link rel="stylesheet" href="../css/flight-management.css">
 </head>
 <body>
@@ -108,8 +108,48 @@
         </div>
     </main>
 
+    <!-- 필수 스크립트들 -->
+    <!-- 1. CONFIG 로드 -->
+    <script src="../js/config.js"></script>
+    
+    <!-- 2. Supabase 모듈들 -->
+    <script src="../js/supabase/supabase-core.js"></script>
+    <script src="../js/supabase/supabase-admin.js"></script>
+    <script src="../js/supabase-client.js"></script>
+    
+    <!-- 3. Utils 로드 -->
+    <script src="../js/utils.js"></script>
+    
+    <!-- 4. Storage Utils 로드 (수정된 버전) -->
+    <script>
+        // Supabase client 확인 및 Storage utils 초기화
+        (async function initStorageUtils() {
+            console.log('🔧 Storage Utils 초기화 시작...');
+            
+            // SupabaseAPI 초기화 대기
+            let waitCount = 0;
+            while (!window.SupabaseAPI?.supabase && waitCount < 100) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                waitCount++;
+            }
+            
+            if (window.SupabaseAPI?.supabase) {
+                console.log('✅ SupabaseAPI 확인됨 - Storage Utils 로드');
+                
+                // StorageUtils에 supabase 인스턴스 전달
+                if (window.StorageUtils) {
+                    window.StorageUtils.supabase = window.SupabaseAPI.supabase;
+                    console.log('✅ StorageUtils에 Supabase 인스턴스 설정 완료');
+                }
+            } else {
+                console.error('❌ SupabaseAPI 초기화 실패 - Storage Utils 로드 불가');
+            }
+        })();
+    </script>
+    <script src="../js/common/storage-utils.js"></script>
+
     <script type="module">
-        import { supabase } from '../js/shared/supabaseClient.js';
+        import { supabase } from '../js/supabase-client.js';
         
         // 로그아웃 함수
         window.logout = async function() {
@@ -143,9 +183,6 @@
         // 페이지 로드 시 실행
         checkAuth();
     </script>
-    
-    <!-- Storage 유틸리티 모듈 v7.0.0 -->
-    <script src="../js/common/storage-utils.js"></script>
     
     <!-- 항공권 관리 UI 모듈 -->
     <script type="module" src="../js/admin/flight-management-ui.js"></script>
