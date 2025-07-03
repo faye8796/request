@@ -1,48 +1,109 @@
-/* flight-request.css - 항공권 신청 페이지 스타일 */
+/* flight-request.css - 항공권 신청 페이지 스타일 v8.1.1 */
 
-/* 정보 배너 */
-.info-banner {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-    color: white;
-    padding: 2.5rem;
-    border-radius: 16px;
-    margin-bottom: 2rem;
+/* 전역 로딩 상태 */
+.global-loading-state {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
     display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.2);
-}
-
-.banner-icon {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 1rem;
-    border-radius: 12px;
-    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    z-index: 9999;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.banner-icon svg {
+.global-loading-state .spinner {
     width: 48px;
     height: 48px;
-    stroke-width: 1.5;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
 }
 
-.banner-content {
-    flex: 1;
+.global-loading-state p {
+    color: #6b7280;
+    font-size: 1rem;
+    margin: 0;
 }
 
-.banner-title {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
+/* 헤더 스타일 개선 - equipment-request.html 스타일과 통일 */
+.header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.banner-description {
-    font-size: 1.1rem;
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.user-info h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+}
+
+.user-info p {
+    margin: 0;
     opacity: 0.9;
-    line-height: 1.6;
+    font-size: 1rem;
+    line-height: 1.5;
 }
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.header-actions .btn {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.header-actions .btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+}
+
+.header-actions .btn i {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* 컨테이너 여백 조정 */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+
+/* 정보 배너 - 제거됨 (헤더에 통합) */
 
 /* 로딩 상태 */
 .loading-state {
@@ -70,33 +131,39 @@
     }
 }
 
-/* 알림 메시지 */
+/* 알림 메시지 개선 */
 .alert {
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    border: 1px solid;
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 8px;
     margin-bottom: 1.5rem;
 }
 
 .alert-warning {
-    background-color: #fef3c7;
-    border-color: #fbbf24;
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
     color: #92400e;
 }
 
+.alert i {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
 .alert-link {
-    color: #1e40af;
-    font-weight: 600;
-    text-decoration: none;
-    margin-top: 0.5rem;
+    color: #1d4ed8;
+    text-decoration: underline;
+    font-weight: 500;
     display: inline-block;
+    margin-top: 0.5rem;
 }
 
 .alert-link:hover {
-    text-decoration: underline;
+    color: #1e40af;
 }
 
 /* 기존 신청 현황 */
@@ -105,6 +172,7 @@
     border-radius: 16px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     padding: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .request-header {
@@ -215,6 +283,11 @@
     height: 20px;
 }
 
+.submission-item i {
+    width: 20px;
+    height: 20px;
+}
+
 .status-check {
     color: #10b981;
 }
@@ -316,14 +389,14 @@
     border-color: #a78bfa;
 }
 
-.radio-card-content svg {
+.radio-card-content i {
     width: 40px;
     height: 40px;
     color: #6b7280;
     flex-shrink: 0;
 }
 
-.radio-card input[type="radio"]:checked + .radio-card-content svg {
+.radio-card input[type="radio"]:checked + .radio-card-content i {
     color: #6366f1;
 }
 
@@ -366,6 +439,7 @@
     font-size: 1rem;
     transition: all 0.2s;
     background-color: #f9fafb;
+    box-sizing: border-box;
 }
 
 .form-input:focus {
@@ -387,12 +461,6 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
-}
-
-@media (max-width: 640px) {
-    .form-row {
-        grid-template-columns: 1fr;
-    }
 }
 
 /* 파일 업로드 */
@@ -427,6 +495,8 @@
 .upload-icon {
     color: #9ca3af;
     margin-bottom: 1rem;
+    width: 48px;
+    height: 48px;
 }
 
 .upload-text {
@@ -478,6 +548,11 @@
     transform: scale(1.05);
 }
 
+.remove-image i {
+    width: 20px;
+    height: 20px;
+}
+
 /* 파일 미리보기 */
 .file-preview {
     background-color: #f9fafb;
@@ -496,8 +571,10 @@
     gap: 1rem;
 }
 
-.file-info svg {
+.file-info i {
     color: #6b7280;
+    width: 32px;
+    height: 32px;
 }
 
 .file-name {
@@ -549,6 +626,11 @@
     cursor: pointer;
     transition: all 0.2s;
     text-decoration: none;
+}
+
+.btn i {
+    width: 20px;
+    height: 20px;
 }
 
 .btn-primary {
@@ -632,6 +714,9 @@
     width: 100%;
     height: 100%;
     z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .modal-backdrop {
@@ -645,10 +730,7 @@
 }
 
 .modal-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    position: relative;
     background-color: white;
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
@@ -662,11 +744,11 @@
 @keyframes modalFadeIn {
     from {
         opacity: 0;
-        transform: translate(-50%, -45%);
+        transform: scale(0.95);
     }
     to {
         opacity: 1;
-        transform: translate(-50%, -50%);
+        transform: scale(1);
     }
 }
 
@@ -693,11 +775,19 @@
     color: #6b7280;
     transition: all 0.2s;
     border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .modal-close:hover {
     background-color: #f3f4f6;
     color: #1f2937;
+}
+
+.modal-close i {
+    width: 24px;
+    height: 24px;
 }
 
 .modal-body {
@@ -755,18 +845,30 @@
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-    .info-banner {
+    .header-content {
         flex-direction: column;
+        gap: 1.5rem;
         text-align: center;
-        padding: 2rem;
     }
 
-    .banner-title {
+    .header-actions {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .header-actions .btn {
+        flex: 1;
+        min-width: auto;
+        justify-content: center;
+    }
+
+    .user-info h1 {
         font-size: 1.5rem;
     }
 
-    .banner-description {
-        font-size: 1rem;
+    .container {
+        padding: 1.5rem 1rem;
     }
 
     .form-section {
@@ -801,5 +903,41 @@
 
     .modal-footer .btn {
         width: 100%;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .purchase-type-selector {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .header-actions .btn {
+        width: 100%;
+    }
+
+    .upload-content {
+        padding: 1.5rem;
+    }
+
+    .upload-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .upload-text {
+        font-size: 0.875rem;
+    }
+
+    .upload-hint {
+        font-size: 0.75rem;
     }
 }
