@@ -1,26 +1,28 @@
 /**
- * Storage 유틸리티 모듈 v1.1.0
+ * Storage 유틸리티 모듈 v8.1.0
  * 파일 업로드 및 Storage 관리를 위한 공통 유틸리티
- * 항공권 신청 시스템 7단계 - Storage 설정 및 파일 업로드
+ * 항공권 신청 시스템 - v8.1.0 Storage 구조 최적화
  * 
- * v1.1.0 개선사항:
- * - Supabase 인스턴스 초기화 문제 해결
- * - 안전한 모듈 로딩 및 초기화 시스템
- * - 오류 처리 강화
+ * v8.1.0 핵심 개선사항:
+ * - Storage 버킷 구조 최적화 (7개 → 4개)
+ * - flight-images에 사용자 ID별 디렉토리 구조 도입
+ * - admin-tickets, flight-documents 제거 → flight-tickets 통합
+ * - 파일명 규칙 단순화 및 체계화
  */
 
 window.StorageUtils = (function() {
     'use strict';
 
-    console.log('📦 StorageUtils 모듈 로드 시작 v1.1.0');
+    console.log('📦 StorageUtils 모듈 로드 시작 v8.1.0 (Storage 최적화)');
 
-    // Storage 버킷 설정
+    // 🆕 v8.1.0 최적화된 Storage 버킷 설정
     const BUCKETS = {
-        FLIGHT_IMAGES: 'flight-images',      // 항공권 이미지
+        FLIGHT_IMAGES: 'flight-images',      // 학생 참고용 이미지 (사용자별 디렉토리)
         RECEIPTS: 'receipts',                // 영수증 (기존 활용)
         PASSPORTS: 'passports',              // 여권 사본
-        ADMIN_TICKETS: 'admin-tickets',      // 관리자 등록 항공권
-        FLIGHT_DOCUMENTS: 'flight-documents' // 항공권 관련 문서
+        FLIGHT_TICKETS: 'flight-tickets'     // 🆕 최종 항공권 통합 버킷
+        // ❌ admin-tickets 제거 (v8.1.0)
+        // ❌ flight-documents 제거 (v8.1.0)
     };
 
     // 파일 타입별 설정
@@ -37,14 +39,21 @@ window.StorageUtils = (function() {
         }
     };
 
-    // 파일명 생성 규칙
+    // 🆕 v8.1.0 최적화된 파일명 생성 규칙
     const FILE_NAMING = {
-        flightImage: (userId, timestamp, originalName) => 
-            `flight_${userId}_${timestamp}.${getFileExtension(originalName)}`,
+        // flight-images: 사용자 ID별 디렉토리 구조
+        flightImage: (userId, imageIndex) => 
+            `flight_${imageIndex.toString().padStart(3, '0')}`,
+        
+        // passports: 기존 방식 유지
         passport: (userId, timestamp, originalName) => 
             `passport_${userId}_${timestamp}.${getFileExtension(originalName)}`,
-        adminTicket: (requestId, timestamp, originalName) => 
-            `ticket_${requestId}_${timestamp}.${getFileExtension(originalName)}`,
+        
+        // 🆕 flight-tickets: 통합된 최종 항공권 파일명
+        flightTicket: (userId) => 
+            `${userId}_tickets`,
+        
+        // receipts: 기존 방식 유지
         receipt: (userId, requestId, timestamp, originalName) => 
             `receipt_${userId}_${requestId}_${timestamp}.${getFileExtension(originalName)}`
     };
@@ -155,8 +164,11 @@ window.StorageUtils = (function() {
             if (!bucketExists) {
                 console.log(`📦 ${bucketName} 버킷 생성 중...`);
                 
+                // 🆕 v8.1.0: flight-tickets는 private, 나머지는 public
+                const isPrivate = bucketName === BUCKETS.FLIGHT_TICKETS;
+                
                 const { data, error } = await supabase.storage.createBucket(bucketName, {
-                    public: true,
+                    public: !isPrivate,
                     allowedMimeTypes: ['image/jpeg', 'image/png', 'application/pdf']
                 });
 
@@ -164,7 +176,7 @@ window.StorageUtils = (function() {
                     console.error(`❌ ${bucketName} 버킷 생성 실패:`, error);
                     return false;
                 } else {
-                    console.log(`✅ ${bucketName} 버킷 생성 성공`);
+                    console.log(`✅ ${bucketName} 버킷 생성 성공 (${isPrivate ? 'private' : 'public'})`);
                     return true;
                 }
             }
@@ -179,10 +191,10 @@ window.StorageUtils = (function() {
     }
 
     /**
-     * 모든 필수 버킷 초기화
+     * 🆕 v8.1.0 최적화된 모든 필수 버킷 초기화
      */
     async function initializeAllBuckets() {
-        console.log('🚀 Storage 버킷 초기화 시작...');
+        console.log('🚀 Storage 버킷 초기화 시작... (v8.1.0 최적화)');
         
         if (initializationAttempted) {
             console.log('⚠️ 이미 초기화가 시도되었습니다');
@@ -205,7 +217,7 @@ window.StorageUtils = (function() {
         const allSuccess = results.every(result => result === true);
         
         if (allSuccess) {
-            console.log('✅ 모든 Storage 버킷 초기화 완료');
+            console.log('✅ v8.1.0 최적화된 Storage 버킷 초기화 완료 (4개 버킷)');
         } else {
             console.warn('⚠️ 일부 Storage 버킷 초기화 실패');
         }
@@ -238,10 +250,22 @@ window.StorageUtils = (function() {
 
             if (error) throw error;
 
-            // 공개 URL 생성
-            const { data: { publicUrl } } = supabase.storage
-                .from(bucketName)
-                .getPublicUrl(filePath);
+            // 🆕 v8.1.0: flight-tickets는 private이므로 signed URL 생성
+            let publicUrl;
+            if (bucketName === BUCKETS.FLIGHT_TICKETS) {
+                const { data: { signedUrl }, error: urlError } = await supabase.storage
+                    .from(bucketName)
+                    .createSignedUrl(filePath, 60 * 60 * 24); // 24시간 유효
+                
+                if (urlError) throw urlError;
+                publicUrl = signedUrl;
+            } else {
+                // public 버킷은 기존 방식
+                const { data: { publicUrl: url } } = supabase.storage
+                    .from(bucketName)
+                    .getPublicUrl(filePath);
+                publicUrl = url;
+            }
 
             console.log(`✅ 파일 업로드 성공: ${publicUrl}`);
             
@@ -258,15 +282,14 @@ window.StorageUtils = (function() {
     }
 
     /**
-     * 항공권 이미지 업로드
+     * 🆕 v8.1.0 항공권 이미지 업로드 (사용자별 디렉토리)
      */
-    async function uploadFlightImage(file, userId) {
+    async function uploadFlightImage(file, userId, imageIndex = 1) {
         try {
             validateFile(file, 'image');
             
-            const timestamp = Date.now();
-            const fileName = FILE_NAMING.flightImage(userId, timestamp, file.name);
-            const filePath = `${userId}/${fileName}`;
+            const fileName = FILE_NAMING.flightImage(userId, imageIndex);
+            const filePath = `${userId}/${fileName}`; // 사용자 ID별 디렉토리
             
             return await uploadFile(file, BUCKETS.FLIGHT_IMAGES, filePath);
         } catch (error) {
@@ -284,7 +307,7 @@ window.StorageUtils = (function() {
             
             const timestamp = Date.now();
             const fileName = FILE_NAMING.passport(userId, timestamp, file.name);
-            const filePath = `${userId}/${fileName}`;
+            const filePath = fileName; // 루트 레벨
             
             return await uploadFile(file, BUCKETS.PASSPORTS, filePath);
         } catch (error) {
@@ -294,19 +317,18 @@ window.StorageUtils = (function() {
     }
 
     /**
-     * 관리자 항공권 업로드
+     * 🆕 v8.1.0 최종 항공권 업로드 (통합 버킷)
      */
-    async function uploadAdminTicket(file, requestId) {
+    async function uploadFlightTicket(file, userId) {
         try {
             validateFile(file, 'document');
             
-            const timestamp = Date.now();
-            const fileName = FILE_NAMING.adminTicket(requestId, timestamp, file.name);
-            const filePath = `${requestId}/${fileName}`;
+            const fileName = FILE_NAMING.flightTicket(userId);
+            const filePath = fileName;
             
-            return await uploadFile(file, BUCKETS.ADMIN_TICKETS, filePath);
+            return await uploadFile(file, BUCKETS.FLIGHT_TICKETS, filePath);
         } catch (error) {
-            console.error('❌ 관리자 항공권 업로드 실패:', error);
+            console.error('❌ 최종 항공권 업로드 실패:', error);
             throw error;
         }
     }
@@ -360,6 +382,29 @@ window.StorageUtils = (function() {
     }
 
     /**
+     * 🆕 v8.1.0 사용자별 항공권 이미지 목록 조회
+     */
+    async function listUserFlightImages(userId) {
+        try {
+            const supabase = getSupabaseInstance();
+            if (!supabase) {
+                throw new Error('Supabase 인스턴스가 없습니다');
+            }
+
+            const { data, error } = await supabase.storage
+                .from(BUCKETS.FLIGHT_IMAGES)
+                .list(userId);
+
+            if (error) throw error;
+
+            return data || [];
+        } catch (error) {
+            console.error('❌ 사용자 항공권 이미지 목록 조회 실패:', error);
+            return [];
+        }
+    }
+
+    /**
      * URL에서 파일 경로 추출
      */
     function extractFilePathFromUrl(url, bucketName) {
@@ -408,7 +453,7 @@ window.StorageUtils = (function() {
 
     // 초기화 함수 (지연 실행)
     async function delayedInitialize() {
-        console.log('🚀 Storage 버킷 지연 초기화 중...');
+        console.log('🚀 Storage 버킷 지연 초기화 중... (v8.1.0)');
         
         // Supabase 인스턴스 로딩 대기 (최대 10초)
         let waitCount = 0;
@@ -418,7 +463,7 @@ window.StorageUtils = (function() {
         }
         
         if (getSupabaseInstance()) {
-            console.log('✅ Supabase 인스턴스 확인됨 - 버킷 초기화 시작');
+            console.log('✅ Supabase 인스턴스 확인됨 - v8.1.0 버킷 초기화 시작');
             return await initializeAllBuckets();
         } else {
             console.warn('⚠️ Supabase 인스턴스 로딩 타임아웃 - 버킷 초기화 건너뜀');
@@ -446,8 +491,11 @@ window.StorageUtils = (function() {
         uploadFile,
         uploadFlightImage,
         uploadPassportImage,
-        uploadAdminTicket,
+        uploadFlightTicket,  // 🆕 v8.1.0 통합 항공권
         uploadReceipt,
+        
+        // 🆕 v8.1.0 새로운 기능
+        listUserFlightImages,
         
         // 파일 관리
         deleteFile,
@@ -463,7 +511,7 @@ window.StorageUtils = (function() {
             try {
                 await delayedInitialize();
             } catch (error) {
-                console.error('❌ 지연 초기화 실패:', error);
+                console.error('❌ v8.1.0 지연 초기화 실패:', error);
             }
         }
     }, 5000);
@@ -480,4 +528,4 @@ window.initStorageUtils = function(supabaseInstance) {
     return false;
 };
 
-console.log('✅ StorageUtils 모듈 v1.1.0 로드 완료');
+console.log('✅ StorageUtils 모듈 v8.1.0 로드 완료 (Storage 구조 최적화)');
