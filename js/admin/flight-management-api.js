@@ -1,5 +1,5 @@
 /**
- * 항공권 관리 API 모듈 v8.0.0
+ * 항공권 관리 API 모듈 v8.2.0
  * 항공권 신청 관련 모든 API 통신을 담당
  * v8.2.0: 직접 모듈 최적화 - SupabaseCore 직접 사용
  * 
@@ -8,6 +8,7 @@
  * - SupabaseCore 직접 접근으로 안정성 향상
  * - 더 가벼운 구조와 빠른 초기화
  * - equipment-management와 동일한 안정적 구조 적용
+ * - institute_info 잘못된 JOIN 오류 수정 (2025-07-03)
  */
 
 class FlightManagementAPI {
@@ -166,7 +167,7 @@ class FlightManagementAPI {
         }
     }
 
-    // 항공권 신청 목록 가져오기
+    // 항공권 신청 목록 가져오기 (수정됨 - institute_info JOIN 제거)
     async getAllRequests() {
         try {
             console.log('📋 v8.2.0 항공권 신청 목록 조회 시작...');
@@ -180,6 +181,7 @@ class FlightManagementAPI {
             const supabase = this.checkSupabaseInstance();
             console.log('✅ v8.2.0 Supabase 인스턴스 확인 완료');
 
+            // 🔧 수정: institute_info 잘못된 JOIN 제거, 필요한 사용자 정보만 조회
             const { data, error } = await supabase
                 .from('flight_requests')
                 .select(`
@@ -189,9 +191,7 @@ class FlightManagementAPI {
                         name,
                         email,
                         university,
-                        institute_info(
-                            name_ko
-                        )
+                        dispatch_duration
                     )
                 `)
                 .order('created_at', { ascending: false });
@@ -220,13 +220,14 @@ class FlightManagementAPI {
         }
     }
 
-    // 항공권 신청 상세 정보 가져오기
+    // 항공권 신청 상세 정보 가져오기 (수정됨 - institute_info JOIN 제거)
     async getFlightRequestDetail(requestId) {
         try {
             console.log('🔍 v8.2.0 항공권 신청 상세 정보 조회 중...', requestId);
             
             const supabase = this.checkSupabaseInstance();
             
+            // 🔧 수정: institute_info 잘못된 JOIN 제거, 필요한 사용자 정보만 조회
             const { data, error } = await supabase
                 .from('flight_requests')
                 .select(`
@@ -236,9 +237,7 @@ class FlightManagementAPI {
                         name,
                         email,
                         university,
-                        institute_info(
-                            name_ko
-                        )
+                        dispatch_duration
                     )
                 `)
                 .eq('id', requestId)
@@ -385,7 +384,8 @@ class FlightManagementAPI {
             hasFromMethod: !!(this.supabase && this.supabase.from),
             hasStorageUtils: !!this.storageUtils,
             initError: this.initError,
-            architecture: 'SupabaseCore 직접 사용'
+            architecture: 'SupabaseCore 직접 사용',
+            fixedIssues: ['institute_info 잘못된 JOIN 오류 수정 (2025-07-03)']
         };
     }
 }
@@ -396,4 +396,4 @@ if (typeof window !== 'undefined') {
     console.log('✅ FlightManagementAPI v8.2.0 전역 등록 완료 (직접 모듈 최적화)');
 }
 
-console.log('✅ FlightManagementAPI v8.2.0 모듈 로드 완료 - 직접 모듈 최적화 및 안정성 강화');
+console.log('✅ FlightManagementAPI v8.2.0 모듈 로드 완료 - 직접 모듈 최적화 및 안정성 강화 (institute_info JOIN 오류 수정)');
