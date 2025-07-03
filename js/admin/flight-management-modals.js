@@ -1,12 +1,31 @@
-// flight-management-modals.js - 관리자용 항공권 관리 모달 시스템
+// flight-management-modals.js - 관리자용 항공권 관리 모달 시스템 v1.1.0
+// v1.1.0: 경로 오류 수정 및 안전한 Supabase 인스턴스 참조
 
-import { supabase } from '../../js/shared/supabaseClient.js';
-import { uploadFileToSupabase } from '../../js/shared/utils.js';
-
-export class FlightManagementModals {
+class FlightManagementModals {
     constructor() {
         this.currentRequest = null;
+        this.api = null;
         this.initializeModals();
+        this.setupAPI();
+    }
+
+    // API 인스턴스 설정
+    setupAPI() {
+        // FlightManagementAPI 인스턴스 획득
+        if (window.FlightManagementAPI) {
+            this.api = new window.FlightManagementAPI();
+        }
+    }
+
+    // Supabase 인스턴스 안전하게 가져오기
+    getSupabase() {
+        if (window.SupabaseAPI && window.SupabaseAPI.supabase) {
+            return window.SupabaseAPI.supabase;
+        }
+        if (window.supabase) {
+            return window.supabase;
+        }
+        return null;
     }
 
     initializeModals() {
@@ -209,10 +228,6 @@ export class FlightManagementModals {
                         <label>파견 학당:</label>
                         <span>${request.user_profiles.institute_info?.name_ko || '-'}</span>
                     </div>
-                    <div class="detail-item">
-                        <label>파견 기간:</label>
-                        <span>${request.user_profiles.dispatch_duration}일</span>
-                    </div>
                 </div>
 
                 <div class="detail-section">
@@ -387,6 +402,11 @@ export class FlightManagementModals {
         this.openModal('passportModal');
 
         try {
+            const supabase = this.getSupabase();
+            if (!supabase) {
+                throw new Error('Supabase 인스턴스를 찾을 수 없습니다');
+            }
+
             const { data: passportInfo, error } = await supabase
                 .from('passport_info')
                 .select('*')
@@ -454,15 +474,22 @@ export class FlightManagementModals {
         if (!this.currentRequest) return;
 
         try {
-            const { error } = await supabase
-                .from('flight_requests')
-                .update({
-                    status: 'approved',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', this.currentRequest.id);
+            if (this.api) {
+                await this.api.updateRequestStatus(this.currentRequest.id, 'approved');
+            } else {
+                const supabase = this.getSupabase();
+                if (!supabase) throw new Error('Supabase 인스턴스를 찾을 수 없습니다');
 
-            if (error) throw error;
+                const { error } = await supabase
+                    .from('flight_requests')
+                    .update({
+                        status: 'approved',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', this.currentRequest.id);
+
+                if (error) throw error;
+            }
 
             this.closeModal('approveModal');
             this.showSuccessMessage('항공권 신청이 승인되었습니다.');
@@ -488,16 +515,23 @@ export class FlightManagementModals {
         }
 
         try {
-            const { error } = await supabase
-                .from('flight_requests')
-                .update({
-                    status: 'rejected',
-                    rejection_reason: rejectionReason,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', this.currentRequest.id);
+            if (this.api) {
+                await this.api.updateRequestStatus(this.currentRequest.id, 'rejected', rejectionReason);
+            } else {
+                const supabase = this.getSupabase();
+                if (!supabase) throw new Error('Supabase 인스턴스를 찾을 수 없습니다');
 
-            if (error) throw error;
+                const { error } = await supabase
+                    .from('flight_requests')
+                    .update({
+                        status: 'rejected',
+                        rejection_reason: rejectionReason,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', this.currentRequest.id);
+
+                if (error) throw error;
+            }
 
             this.closeModal('rejectModal');
             this.showSuccessMessage('항공권 신청이 반려되었습니다.');
@@ -535,30 +569,38 @@ export class FlightManagementModals {
         progressDiv.style.display = 'block';
 
         try {
-            // 파일 업로드
-            const filePath = `admin-tickets/${this.currentRequest.id}_${Date.now()}_${file.name}`;
-            const { url, error: uploadError } = await uploadFileToSupabase(
-                file,
-                filePath,
-                'admin-tickets',
-                (progress) => {
-                    progressFill.style.width = `${progress}%`;
-                }
-            );
+            if (this.api) {
+                // API를 통한 업로드
+                await this.api.uploadAdminTicket(this.currentRequest.id, file);
+            } else {
+                // 직접 업로드 (fallback)
+                const supabase = this.getSupabase();
+                if (!supabase) throw new Error('Supabase 인스턴스를 찾을 수 없습니다');
 
-            if (uploadError) throw uploadError;
+                // 간단한 파일 업로드
+                const filePath = `admin-tickets/${this.currentRequest.id}_${Date.now()}_${file.name}`;
+                const { data, error: uploadError } = await supabase.storage
+                    .from('admin-tickets')
+                    .upload(filePath, file);
 
-            // DB 업데이트
-            const { error: updateError } = await supabase
-                .from('flight_requests')
-                .update({
-                    admin_ticket_url: url,
-                    status: 'completed',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', this.currentRequest.id);
+                if (uploadError) throw uploadError;
 
-            if (updateError) throw updateError;
+                const { data: { publicUrl } } = supabase.storage
+                    .from('admin-tickets')
+                    .getPublicUrl(filePath);
+
+                // DB 업데이트
+                const { error: updateError } = await supabase
+                    .from('flight_requests')
+                    .update({
+                        admin_ticket_url: publicUrl,
+                        status: 'completed',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', this.currentRequest.id);
+
+                if (updateError) throw updateError;
+            }
 
             this.closeModal('uploadTicketModal');
             this.showSuccessMessage('항공권이 성공적으로 등록되었습니다.');
@@ -606,4 +648,12 @@ export class FlightManagementModals {
 }
 
 // 전역 인스턴스 생성
-window.flightModals = new FlightManagementModals();
+if (typeof window !== 'undefined') {
+    window.FlightManagementModals = FlightManagementModals;
+    window.flightModals = new FlightManagementModals();
+}
+
+// ES6 모듈로도 내보내기
+export { FlightManagementModals };
+
+console.log('✅ FlightManagementModals v1.1.0 로드 완료 - 경로 수정 및 안전 참조');
