@@ -1,5 +1,5 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.1.1
-// 안전한 Supabase 초기화 및 Storage 유틸리티 통합 버전
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.3.0
+// passport-info 기능 완전 통합 버전
 
 class FlightRequestAPI {
     constructor() {
@@ -16,7 +16,7 @@ class FlightRequestAPI {
             // StorageUtils 확인 및 대기
             await this.waitForStorageUtils();
             
-            console.log('✅ FlightRequestAPI 초기화 완료');
+            console.log('✅ FlightRequestAPI 초기화 완료 (passport-info 통합)');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -145,8 +145,10 @@ class FlightRequestAPI {
         }
     }
 
-    // 여권정보 확인
-    async checkPassportInfo() {
+    // === 🆕 PASSPORT INFO 기능 통합 ===
+
+    // 기존 여권정보 조회 (완전한 정보 반환)
+    async getPassportInfo() {
         try {
             await this.ensureInitialized();
             
@@ -168,10 +170,176 @@ class FlightRequestAPI {
 
             return data;
         } catch (error) {
+            console.error('여권정보 조회 실패:', error);
+            throw error;
+        }
+    }
+
+    // 여권정보 확인 (존재 여부만 확인)
+    async checkPassportInfo() {
+        try {
+            const passportInfo = await this.getPassportInfo();
+            return passportInfo;
+        } catch (error) {
             console.error('여권정보 확인 실패:', error);
             throw error;
         }
     }
+
+    // 여권정보 저장 (생성 또는 수정) - Storage 유틸리티 사용
+    async savePassportInfo(passportData, imageFile = null) {
+        try {
+            await this.ensureInitialized();
+            
+            if (!this.user) await this.getCurrentUser();
+            
+            if (!this.user || !this.user.id) {
+                throw new Error('사용자 정보가 없습니다');
+            }
+
+            // 기존 정보 확인
+            const existingInfo = await this.getPassportInfo();
+            let imageUrl = existingInfo?.image_url;
+
+            // 새 이미지가 있으면 업로드
+            if (imageFile) {
+                // 기존 이미지 삭제
+                if (imageUrl && this.storageUtils) {
+                    const filePath = this.storageUtils.extractFilePathFromUrl(
+                        imageUrl, 
+                        this.storageUtils.BUCKETS.PASSPORTS
+                    );
+                    if (filePath) {
+                        await this.storageUtils.deleteFile(
+                            this.storageUtils.BUCKETS.PASSPORTS, 
+                            filePath
+                        );
+                    }
+                }
+                
+                // 새 이미지 업로드 (StorageUtils 사용 또는 폴백)
+                if (this.storageUtils) {
+                    try {
+                        const uploadResult = await this.storageUtils.uploadPassportImage(
+                            imageFile, 
+                            this.user.id
+                        );
+                        imageUrl = uploadResult.publicUrl;
+                    } catch (storageError) {
+                        console.warn('StorageUtils 업로드 실패, 기본 업로드 시도:', storageError);
+                        imageUrl = await this.fallbackPassportImageUpload(imageFile);
+                    }
+                } else {
+                    imageUrl = await this.fallbackPassportImageUpload(imageFile);
+                }
+            }
+
+            const dataToSave = {
+                user_id: this.user.id,
+                passport_number: passportData.passport_number,
+                name_english: passportData.name_english,
+                issue_date: passportData.issue_date,
+                expiry_date: passportData.expiry_date,
+                image_url: imageUrl,
+                updated_at: new Date().toISOString()
+            };
+
+            if (existingInfo) {
+                // 수정
+                const { data, error } = await this.supabase
+                    .from('passport_info')
+                    .update(dataToSave)
+                    .eq('id', existingInfo.id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return { data, isUpdate: true };
+            } else {
+                // 생성
+                const { data, error } = await this.supabase
+                    .from('passport_info')
+                    .insert([dataToSave])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return { data, isUpdate: false };
+            }
+        } catch (error) {
+            console.error('여권정보 저장 실패:', error);
+            throw error;
+        }
+    }
+
+    // 폴백 여권 이미지 업로드 함수
+    async fallbackPassportImageUpload(imageFile) {
+        try {
+            const fileName = `passport_${this.user.id}_${Date.now()}.${imageFile.name.split('.').pop()}`;
+            
+            const { data, error } = await this.supabase.storage
+                .from('passports')
+                .upload(fileName, imageFile, {
+                    cacheControl: '3600',
+                    upsert: true
+                });
+
+            if (error) throw error;
+
+            const { data: { publicUrl } } = this.supabase.storage
+                .from('passports')
+                .getPublicUrl(data.path);
+
+            return publicUrl;
+        } catch (error) {
+            console.error('폴백 여권 이미지 업로드 실패:', error);
+            throw error;
+        }
+    }
+
+    // 여권 만료일 검증
+    validateExpiryDate(expiryDate) {
+        const today = new Date();
+        const expiry = new Date(expiryDate);
+        const sixMonthsFromNow = new Date();
+        sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
+
+        if (expiry < today) {
+            return { valid: false, message: '여권이 이미 만료되었습니다.' };
+        }
+
+        if (expiry < sixMonthsFromNow) {
+            const remainingDays = Math.floor((expiry - today) / (1000 * 60 * 60 * 24));
+            return { 
+                valid: true, 
+                warning: `여권 만료일이 6개월 이내입니다. (${remainingDays}일 남음)` 
+            };
+        }
+
+        return { valid: true };
+    }
+
+    // 이미지 미리보기 생성 (StorageUtils 활용)
+    async createImagePreview(file) {
+        try {
+            if (this.storageUtils) {
+                return await this.storageUtils.createImagePreview(file);
+            }
+            
+            // 폴백: 기본 FileReader 사용
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => reject(new Error('이미지 미리보기 생성 실패'));
+                reader.readAsDataURL(file);
+            });
+        } catch (error) {
+            console.error('이미지 미리보기 생성 실패:', error);
+            throw error;
+        }
+    }
+
+    // === FLIGHT REQUEST 기능 ===
 
     // 기존 항공권 신청 조회
     async getExistingRequest() {
@@ -531,7 +699,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 파일 유효성 검증
+    // 파일 유효성 검증 (passport와 flight 모두 지원)
     validateFile(file, fileType = 'image') {
         try {
             if (this.storageUtils) {
@@ -563,4 +731,7 @@ class FlightRequestAPI {
 // 전역 인스턴스 생성
 window.flightRequestAPI = new FlightRequestAPI();
 
-console.log('✅ FlightRequestAPI v8.1.1 로드 완료 - 안전한 Supabase 초기화');
+// 호환성을 위한 passport API 인스턴스도 생성
+window.passportAPI = window.flightRequestAPI;
+
+console.log('✅ FlightRequestAPI v8.3.0 로드 완료 - passport-info 기능 완전 통합');
