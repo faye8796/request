@@ -1,43 +1,60 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.3.0
-// passport-info 기능 완전 통합 버전
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.3.1
+// passport-info 기능 완전 통합 버전 (초기화 로직 강화)
 
 class FlightRequestAPI {
     constructor() {
         this.user = null;
+        this.supabase = null;
+        this.storageUtils = null;
+        this.isInitialized = false;
         this.initializationPromise = this.initialize();
     }
 
-    // 안전한 초기화
+    // 안전한 초기화 (강화된 버전)
     async initialize() {
         try {
+            console.log('🔄 FlightRequestAPI 초기화 시작...');
+            
             // Supabase 클라이언트 확인 및 대기
             await this.waitForSupabase();
             
             // StorageUtils 확인 및 대기
             await this.waitForStorageUtils();
+
+            // 초기화 완료 마킹
+            this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI 초기화 완료 (passport-info 통합)');
+            console.log('✅ FlightRequestAPI 초기화 완료 (passport-info 통합) v8.3.1');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
+            this.isInitialized = false;
             throw error;
         }
     }
 
-    // Supabase 클라이언트 대기
-    async waitForSupabase(timeout = 10000) {
+    // Supabase 클라이언트 대기 (개선된 버전)
+    async waitForSupabase(timeout = 15000) {
         const startTime = Date.now();
         
         return new Promise((resolve, reject) => {
             const check = () => {
-                if (window.supabase) {
+                // window.supabase와 supabaseReady 플래그 모두 확인
+                if (window.supabase && window.supabaseReady) {
                     this.supabase = window.supabase;
+                    console.log('✅ Supabase 클라이언트 연결 성공');
                     resolve(window.supabase);
                     return;
                 }
                 
                 if (Date.now() - startTime > timeout) {
-                    reject(new Error('Supabase 클라이언트 로딩 시간 초과'));
+                    const error = new Error('Supabase 클라이언트 로딩 시간 초과');
+                    console.error('❌ Supabase 초기화 시간 초과:', {
+                        supabase: !!window.supabase,
+                        supabaseReady: !!window.supabaseReady,
+                        timeout: timeout
+                    });
+                    reject(error);
                     return;
                 }
                 
@@ -48,7 +65,7 @@ class FlightRequestAPI {
         });
     }
 
-    // StorageUtils 대기
+    // StorageUtils 대기 (개선된 버전)
     async waitForStorageUtils(timeout = 10000) {
         const startTime = Date.now();
         
@@ -56,12 +73,13 @@ class FlightRequestAPI {
             const check = () => {
                 if (window.StorageUtils) {
                     this.storageUtils = window.StorageUtils;
+                    console.log('✅ StorageUtils 연결 성공');
                     resolve(window.StorageUtils);
                     return;
                 }
                 
                 if (Date.now() - startTime > timeout) {
-                    console.warn('⚠️ StorageUtils 로딩 시간 초과 (선택적 기능)');
+                    console.warn('⚠️ StorageUtils 로딩 시간 초과 (선택적 기능, 계속 진행)');
                     this.storageUtils = null;
                     resolve(null);
                     return;
@@ -74,12 +92,27 @@ class FlightRequestAPI {
         });
     }
 
-    // 초기화 보장
+    // 초기화 보장 (강화된 버전)
     async ensureInitialized() {
+        if (this.isInitialized) {
+            return true;
+        }
+
         if (!this.initializationPromise) {
             this.initializationPromise = this.initialize();
         }
-        return await this.initializationPromise;
+
+        try {
+            await this.initializationPromise;
+            return this.isInitialized;
+        } catch (error) {
+            console.error('❌ 초기화 보장 실패:', error);
+            // 재시도 로직
+            console.log('🔄 초기화 재시도...');
+            this.initializationPromise = this.initialize();
+            await this.initializationPromise;
+            return this.isInitialized;
+        }
     }
 
     // 현재 사용자 정보 가져오기 (안전한 버전)
@@ -728,10 +761,30 @@ class FlightRequestAPI {
     }
 }
 
-// 전역 인스턴스 생성
-window.flightRequestAPI = new FlightRequestAPI();
+// 전역 인스턴스 생성 (즉시 실행하지 않고 함수로 래핑)
+function createFlightRequestAPI() {
+    try {
+        console.log('🚀 FlightRequestAPI 인스턴스 생성 시작...');
+        window.flightRequestAPI = new FlightRequestAPI();
+        
+        // 호환성을 위한 passport API 인스턴스도 생성
+        window.passportAPI = window.flightRequestAPI;
+        
+        console.log('✅ FlightRequestAPI v8.3.1 인스턴스 생성 완료 - passport-info 기능 완전 통합');
+        return window.flightRequestAPI;
+    } catch (error) {
+        console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
+        throw error;
+    }
+}
 
-// 호환성을 위한 passport API 인스턴스도 생성
-window.passportAPI = window.flightRequestAPI;
+// 지연 실행 - DOM이 준비되고 Supabase가 초기화된 후 실행
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(createFlightRequestAPI, 100);
+    });
+} else {
+    setTimeout(createFlightRequestAPI, 100);
+}
 
-console.log('✅ FlightRequestAPI v8.3.0 로드 완료 - passport-info 기능 완전 통합');
+console.log('✅ FlightRequestAPI v8.3.1 모듈 로드 완료 - passport-info 기능 완전 통합 (초기화 대기)');
