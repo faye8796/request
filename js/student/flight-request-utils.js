@@ -59,6 +59,269 @@ const FlightRequestUtils = {
         return { valid: true };
     },
 
+    // ===========================================
+    // 🆕 가격 정보 관련 유틸리티 함수들 (v8.6.0)
+    // ===========================================
+
+    // 가격 포맷팅 (통화별)
+    formatPrice(price, currency = 'KRW') {
+        if (!price || isNaN(price)) return '';
+        
+        const numPrice = parseFloat(price);
+        const formatOptions = {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        };
+
+        // 통화별 특별 처리
+        switch (currency.toUpperCase()) {
+            case 'KRW':
+                return `₩${numPrice.toLocaleString('ko-KR', formatOptions)}`;
+            case 'USD':
+                return `$${numPrice.toLocaleString('en-US', formatOptions)}`;
+            case 'CNY':
+                return `¥${numPrice.toLocaleString('zh-CN', formatOptions)}`;
+            case 'JPY':
+                return `¥${numPrice.toLocaleString('ja-JP', formatOptions)}`;
+            case 'EUR':
+                return `€${numPrice.toLocaleString('de-DE', formatOptions)}`;
+            case 'THB':
+                return `฿${numPrice.toLocaleString('th-TH', formatOptions)}`;
+            case 'VND':
+                return `₫${numPrice.toLocaleString('vi-VN', formatOptions)}`;
+            case 'SGD':
+                return `S$${numPrice.toLocaleString('en-SG', formatOptions)}`;
+            case 'MYR':
+                return `RM${numPrice.toLocaleString('ms-MY', formatOptions)}`;
+            case 'PHP':
+                return `₱${numPrice.toLocaleString('en-PH', formatOptions)}`;
+            default:
+                return `${numPrice.toLocaleString()} ${currency}`;
+        }
+    },
+
+    // 가격 유효성 검증
+    validatePrice(price) {
+        if (!price) {
+            return {
+                valid: false,
+                message: '항공료를 입력해주세요.'
+            };
+        }
+
+        const numPrice = parseFloat(price);
+        
+        if (isNaN(numPrice)) {
+            return {
+                valid: false,
+                message: '올바른 숫자를 입력해주세요.'
+            };
+        }
+
+        if (numPrice < 0) {
+            return {
+                valid: false,
+                message: '항공료는 0 이상이어야 합니다.'
+            };
+        }
+
+        if (numPrice > 50000) {
+            return {
+                valid: false,
+                message: '항공료가 너무 높습니다. (최대 50,000)'
+            };
+        }
+
+        return { valid: true };
+    },
+
+    // 통화 코드 유효성 검증
+    validateCurrency(currency) {
+        const supportedCurrencies = this.getSupportedCurrencies();
+        const currencyCode = currency.toUpperCase();
+        
+        if (!supportedCurrencies.includes(currencyCode)) {
+            return {
+                valid: false,
+                message: `지원하지 않는 통화입니다. 지원 통화: ${supportedCurrencies.join(', ')}`
+            };
+        }
+
+        return { valid: true };
+    },
+
+    // 가격 출처 검증
+    validatePriceSource(source) {
+        if (!source || source.trim().length === 0) {
+            return {
+                valid: false,
+                message: '가격 출처를 입력해주세요.'
+            };
+        }
+
+        if (source.length > 200) {
+            return {
+                valid: false,
+                message: '가격 출처는 200자를 초과할 수 없습니다.'
+            };
+        }
+
+        return { valid: true };
+    },
+
+    // 지원 통화 목록
+    getSupportedCurrencies() {
+        return [
+            'KRW', // 한국 원
+            'USD', // 미국 달러
+            'CNY', // 중국 위안
+            'JPY', // 일본 엔
+            'EUR', // 유로
+            'THB', // 태국 바트
+            'VND', // 베트남 동
+            'SGD', // 싱가포르 달러
+            'MYR', // 말레이시아 링깃
+            'PHP', // 필리핀 페소
+            'IDR', // 인도네시아 루피아
+            'INR', // 인도 루피
+            'AUD', // 호주 달러
+            'GBP', // 영국 파운드
+            'CAD'  // 캐나다 달러
+        ];
+    },
+
+    // 통화 기호 반환
+    getCurrencySymbol(currency) {
+        const symbols = {
+            'KRW': '₩',
+            'USD': '$',
+            'CNY': '¥',
+            'JPY': '¥',
+            'EUR': '€',
+            'THB': '฿',
+            'VND': '₫',
+            'SGD': 'S$',
+            'MYR': 'RM',
+            'PHP': '₱',
+            'IDR': 'Rp',
+            'INR': '₹',
+            'AUD': 'A$',
+            'GBP': '£',
+            'CAD': 'C$'
+        };
+        return symbols[currency.toUpperCase()] || currency;
+    },
+
+    // 국가별 예상 가격 범위 (USD 기준)
+    getPriceRangeByCountry(country) {
+        const ranges = {
+            // 동아시아
+            '중국': { min: 200, max: 800, currency: 'CNY', note: '지역에 따라 차이' },
+            '일본': { min: 300, max: 1200, currency: 'JPY', note: '시기에 따라 변동' },
+            '몽골': { min: 400, max: 1000, currency: 'USD', note: '항공편 제한적' },
+            
+            // 동남아시아
+            '태국': { min: 300, max: 900, currency: 'THB', note: '방콕 기준' },
+            '베트남': { min: 250, max: 800, currency: 'VND', note: '하노이/호치민 기준' },
+            '싱가포르': { min: 400, max: 1000, currency: 'SGD', note: '허브공항' },
+            '말레이시아': { min: 300, max: 800, currency: 'MYR', note: '쿠알라룸푸르 기준' },
+            '필리핀': { min: 350, max: 900, currency: 'PHP', note: '마닐라 기준' },
+            '인도네시아': { min: 400, max: 1100, currency: 'IDR', note: '자카르타 기준' },
+            '캄보디아': { min: 400, max: 1000, currency: 'USD', note: '프놈펜 기준' },
+            '라오스': { min: 500, max: 1200, currency: 'USD', note: '비엔티안 기준' },
+            '미얀마': { min: 600, max: 1400, currency: 'USD', note: '양곤 기준' },
+            
+            // 남아시아
+            '인도': { min: 400, max: 1200, currency: 'INR', note: '델리/뭄바이 기준' },
+            '스리랑카': { min: 500, max: 1300, currency: 'USD', note: '콜롬보 기준' },
+            '방글라데시': { min: 600, max: 1400, currency: 'USD', note: '다카 기준' },
+            
+            // 중앙아시아
+            '우즈베키스탄': { min: 600, max: 1500, currency: 'USD', note: '타슈켄트 기준' },
+            '카자흐스탄': { min: 500, max: 1300, currency: 'USD', note: '알마티 기준' },
+            '키르기스스탄': { min: 700, max: 1600, currency: 'USD', note: '비슈케크 기준' },
+            
+            // 기타
+            '호주': { min: 800, max: 2000, currency: 'AUD', note: '시드니/멜버른 기준' },
+            '뉴질랜드': { min: 1000, max: 2500, currency: 'USD', note: '오클랜드 기준' }
+        };
+
+        return ranges[country] || { min: 300, max: 1500, currency: 'USD', note: '예상 범위' };
+    },
+
+    // 가격 범위 검증
+    validatePriceRange(price, currency, targetCountry) {
+        const range = this.getPriceRangeByCountry(targetCountry);
+        const numPrice = parseFloat(price);
+        
+        // USD로 변환하여 대략적인 범위 체크 (간단한 환율 적용)
+        let priceInUSD = numPrice;
+        switch (currency.toUpperCase()) {
+            case 'KRW':
+                priceInUSD = numPrice / 1300; // 대략적인 환율
+                break;
+            case 'CNY':
+                priceInUSD = numPrice / 7;
+                break;
+            case 'JPY':
+                priceInUSD = numPrice / 150;
+                break;
+            case 'EUR':
+                priceInUSD = numPrice * 1.1;
+                break;
+            case 'THB':
+                priceInUSD = numPrice / 35;
+                break;
+            case 'VND':
+                priceInUSD = numPrice / 24000;
+                break;
+            case 'SGD':
+                priceInUSD = numPrice / 1.35;
+                break;
+        }
+
+        if (priceInUSD < range.min * 0.5) {
+            return {
+                valid: false,
+                message: `가격이 예상보다 너무 낮습니다. ${targetCountry} 예상 범위: ${this.formatPrice(range.min, range.currency)} ~ ${this.formatPrice(range.max, range.currency)}`
+            };
+        }
+
+        if (priceInUSD > range.max * 2) {
+            return {
+                valid: false,
+                message: `가격이 예상보다 너무 높습니다. ${targetCountry} 예상 범위: ${this.formatPrice(range.min, range.currency)} ~ ${this.formatPrice(range.max, range.currency)}`
+            };
+        }
+
+        return { 
+            valid: true,
+            range: range
+        };
+    },
+
+    // 가격 포맷팅 + 검증 통합
+    formatPriceWithValidation(price, currency) {
+        const validation = this.validatePrice(price);
+        if (!validation.valid) {
+            return { error: validation.message };
+        }
+
+        const currencyValidation = this.validateCurrency(currency);
+        if (!currencyValidation.valid) {
+            return { error: currencyValidation.message };
+        }
+
+        return {
+            formatted: this.formatPrice(price, currency),
+            valid: true
+        };
+    },
+
+    // ===========================================
+    // 기존 유틸리티 함수들
+    // ===========================================
+
     // 상태에 따른 상태 텍스트 및 클래스
     getStatusInfo(status) {
         const statusMap = {
