@@ -530,7 +530,7 @@
         </div>
     </div>
 
-    <!-- 🔧 v8.6.1 가격 정보 추가 - 최적화된 모듈 시스템 (SupabaseCore v1.0.1) -->
+    <!-- 🔧 v8.6.1 클래스 전역 노출 수정 - 최적화된 모듈 시스템 (SupabaseCore v1.0.1) -->
     <!-- 1. Supabase JavaScript 라이브러리 (CDN 버전 구체화) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
 
@@ -546,9 +546,9 @@
     <!-- 5. Storage Utils 로드 -->
     <script src="../js/common/storage-utils.js"></script>
 
-    <!-- 6. 🔧 v8.6.1: 가격 정보 추가 - 개선된 인증 체크 및 초기화 스크립트 -->
+    <!-- 6. 🔧 v8.6.1: 클래스 전역 노출 수정 - 개선된 인증 체크 및 초기화 스크립트 -->
     <script>
-        console.log('🚀 항공권 신청 페이지 v8.6.1 초기화 시작 (FlightRequestAPI 체크 버그 수정)...');
+        console.log('🚀 항공권 신청 페이지 v8.6.1 초기화 시작 (클래스 전역 노출 수정)...');
 
         // 🆕 가격 정보 JavaScript 이벤트 처리
         document.addEventListener('DOMContentLoaded', function() {
@@ -655,7 +655,7 @@
 
         // 페이지 로드 시 실행
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('📄 DOM 로드 완료 (v8.6.1 FlightRequestAPI 체크 버그 수정)');
+            console.log('📄 DOM 로드 완료 (v8.6.1 클래스 전역 노출 수정)');
             
             const authResult = await checkAuth();
             if (authResult) {
@@ -847,7 +847,7 @@
             // 사용자 정보 표시
             updateUserInfo();
             
-            console.log('✅ 항공권 신청 페이지 초기화 완료 (v8.6.1 FlightRequestAPI 체크 버그 수정)');
+            console.log('✅ 항공권 신청 페이지 초기화 완료 (v8.6.1 클래스 전역 노출 수정)');
         }
 
         // DOM 로드 후 앱 표시
@@ -886,6 +886,7 @@
                 modules: modulesLoaded,
                 supabaseCoreReady: supabaseCoreReady,
                 flightRequestAPI: !!window.FlightRequestAPI, // 🔧 클래스 확인
+                flightRequestUI: !!window.FlightRequestUI, // 🔧 클래스 확인
                 supabaseAPI: !!window.SupabaseAPI,
                 supabaseCore: !!window.SupabaseCore
             });
@@ -931,6 +932,14 @@
                 
                 console.log('✅ v8.6.1 FlightRequestAPI 클래스 확인 완료');
                 
+                // 🔧 v8.6.1: FlightRequestUI 클래스 체크
+                if (!window.FlightRequestUI) {
+                    console.error('❌ FlightRequestUI 클래스가 없습니다');
+                    throw new Error('FlightRequestUI 클래스가 로드되지 않았습니다');
+                }
+                
+                console.log('✅ v8.6.1 FlightRequestUI 클래스 확인 완료');
+                
                 // SupabaseCore 확인 (v1.0.1 및 폴백)
                 const hasSupabaseCore = !!(window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized);
                 if (!hasSupabaseCore) {
@@ -939,14 +948,10 @@
                 }
                 
                 // FlightRequestUI 초기화 (v8.6.1)
-                if (typeof FlightRequestUI !== 'undefined') {
-                    console.log('🚀 FlightRequestUI 초기화 시작...');
-                    window.flightRequestUI = new FlightRequestUI();
-                    console.log('✅ FlightRequestUI 초기화 완료 (v8.6.1 FlightRequestAPI 체크 버그 수정)');
-                } else {
-                    console.error('❌ FlightRequestUI 클래스를 찾을 수 없습니다');
-                    throw new Error('FlightRequestUI 클래스가 로드되지 않았습니다');
-                }
+                console.log('🚀 FlightRequestUI 초기화 시작...');
+                window.flightRequestUI = new FlightRequestUI();
+                console.log('✅ FlightRequestUI 초기화 완료 (v8.6.1 클래스 전역 노출 수정)');
+                
             } catch (error) {
                 console.error('❌ v8.6.1 항공권 요청 시스템 초기화 실패:', error);
                 showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
@@ -965,7 +970,7 @@
                 console.warn('⚠️ v8.6.1: 2초 후에도 초기화되지 않음 - 최종 확인');
                 
                 // 강제 초기화 시도
-                if (typeof FlightRequestUI !== 'undefined' && window.FlightRequestAPI) {
+                if (window.FlightRequestUI && window.FlightRequestAPI) {
                     const hasSupabaseCore = !!(window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized);
                     
                     if (hasSupabaseCore) {
