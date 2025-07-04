@@ -1,5 +1,5 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.4.1
-// 🔧 여권정보 로딩 문제 해결을 위한 디버깅 및 사용자 인증 강화
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.6.1
+// 🔧 FlightRequestAPI 클래스 전역 스코프 노출 문제 해결
 // passport-info 기능 완전 통합 버전
 
 class FlightRequestAPI {
@@ -15,7 +15,7 @@ class FlightRequestAPI {
     // 🚀 v8.4.1: 퍼블릭 Storage 최적화된 연동
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v8.4.1 초기화 시작 (여권정보 로딩 문제 해결)...');
+            console.log('🔄 FlightRequestAPI v8.6.1 초기화 시작 (클래스 전역 노출 수정)...');
             
             // SupabaseCore v1.0.1 연결
             await this.connectToSupabaseCore();
@@ -26,7 +26,7 @@ class FlightRequestAPI {
             // 초기화 완료 마킹
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI v8.4.1 초기화 완료');
+            console.log('✅ FlightRequestAPI v8.6.1 초기화 완료');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -805,7 +805,7 @@ class FlightRequestAPI {
             }
 
             if (!allowedTypes.includes(file.type)) {
-                throw new Error(`지원하지 않는 파일 형식입니다. (${allowedTypes.join(', ')})`)
+                throw new Error(`지원하지 않는 파일 형식입니다. (${allowedTypes.join(', ')})`);
             }
 
             return { isValid: true };
@@ -893,16 +893,19 @@ class FlightRequestAPI {
     }
 }
 
-// 🌐 v8.4.1: 퍼블릭 Storage 최적화된 인스턴스 생성
+// 🔧 v8.6.1: FlightRequestAPI 클래스를 전역 스코프에 노출
+window.FlightRequestAPI = FlightRequestAPI;
+
+// 🌐 v8.6.1: 퍼블릭 Storage 최적화된 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.4.1 인스턴스 생성 시작 (여권정보 로딩 문제 해결)...');
+        console.log('🚀 FlightRequestAPI v8.6.1 인스턴스 생성 시작 (클래스 전역 노출 수정)...');
         window.flightRequestAPI = new FlightRequestAPI();
         
         // 호환성을 위한 passport API 인스턴스도 생성
         window.passportAPI = window.flightRequestAPI;
         
-        console.log('✅ FlightRequestAPI v8.4.1 인스턴스 생성 완료 - 여권정보 로딩 문제 해결');
+        console.log('✅ FlightRequestAPI v8.6.1 인스턴스 생성 완료 - 클래스 전역 노출 수정');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -910,7 +913,7 @@ function createFlightRequestAPI() {
     }
 }
 
-// 🌐 v8.4.1: 즉시 생성 (대기 시간 최소화)
+// 🌐 v8.6.1: 즉시 생성 (대기 시간 최소화)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(createFlightRequestAPI, 100); // 단축된 대기 시간
@@ -919,4 +922,4 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 100); // 즉시 실행에 가깝게
 }
 
-console.log('✅ FlightRequestAPI v8.4.1 모듈 로드 완료 - 여권정보 로딩 문제 해결을 위한 디버깅 및 사용자 인증 강화');
+console.log('✅ FlightRequestAPI v8.6.1 모듈 로드 완료 - 클래스 전역 스코프 노출 문제 해결');
