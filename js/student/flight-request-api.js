@@ -1,5 +1,5 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.6.1
-// 🔧 FlightRequestAPI 클래스 전역 스코프 노출 문제 해결
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.7.1
+// 🔧 406 오류 수정: .single() 메서드 문제 해결
 // passport-info 기능 완전 통합 버전
 
 class FlightRequestAPI {
@@ -15,7 +15,7 @@ class FlightRequestAPI {
     // 🚀 v8.4.1: 퍼블릭 Storage 최적화된 연동
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v8.6.1 초기화 시작 (클래스 전역 노출 수정)...');
+            console.log('🔄 FlightRequestAPI v8.7.1 초기화 시작 (406 오류 수정)...');
             
             // SupabaseCore v1.0.1 연결
             await this.connectToSupabaseCore();
@@ -26,7 +26,7 @@ class FlightRequestAPI {
             // 초기화 완료 마킹
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI v8.6.1 초기화 완료');
+            console.log('✅ FlightRequestAPI v8.7.1 초기화 완료');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -525,9 +525,10 @@ class FlightRequestAPI {
 
     // === FLIGHT REQUEST 기능 ===
 
-    // 기존 항공권 신청 조회
+    // 🔧 v8.7.1: 406 오류 수정 - .single() 문제 해결
     async getExistingRequest() {
         try {
+            console.log('🔍 [API디버그] getExistingRequest() 시작...');
             await this.ensureInitialized();
             
             if (!this.user) await this.getCurrentUser();
@@ -536,22 +537,35 @@ class FlightRequestAPI {
                 throw new Error('사용자 정보가 없습니다');
             }
 
-            // 직접 supabase 사용 (order by 지원)
+            console.log('🔍 [API디버그] 항공권 신청 조회 대상 사용자:', this.user.id);
+
+            // 🔧 v8.7.1: .single() 대신 일반 조회 사용하여 406 오류 해결
             const { data, error } = await this.supabase
                 .from('flight_requests')
                 .select('*')
                 .eq('user_id', this.user.id)
                 .order('created_at', { ascending: false })
-                .limit(1)
-                .single();
+                .limit(1);
 
-            if (error && error.code !== 'PGRST116') {
+            if (error) {
+                console.error('❌ [API디버그] 항공권 신청 조회 오류:', error);
                 throw error;
             }
 
-            return data;
+            // 결과 배열에서 첫 번째 요소 반환 (없으면 null)
+            const result = data && data.length > 0 ? data[0] : null;
+            
+            console.log('✅ [API디버그] 항공권 신청 조회 완료:', {
+                resultCount: data?.length || 0,
+                hasResult: !!result,
+                requestId: result?.id,
+                status: result?.status
+            });
+
+            return result;
+
         } catch (error) {
-            console.error('기존 신청 조회 실패:', error);
+            console.error('❌ [API디버그] getExistingRequest() 실패:', error);
             return null;
         }
     }
@@ -583,6 +597,10 @@ class FlightRequestAPI {
                 arrival_airport: requestData.arrival_airport,
                 flight_image_url: imageUrl,
                 purchase_link: requestData.purchase_link || null,
+                // 🆕 v8.7.1: 가격 정보 추가
+                ticket_price: requestData.ticket_price || null,
+                currency: requestData.currency || 'KRW',
+                price_source: requestData.price_source || null,
                 status: 'pending'
             };
 
@@ -624,6 +642,10 @@ class FlightRequestAPI {
                 departure_airport: requestData.departure_airport,
                 arrival_airport: requestData.arrival_airport,
                 purchase_link: requestData.purchase_link || null,
+                // 🆕 v8.7.1: 가격 정보 추가
+                ticket_price: requestData.ticket_price || null,
+                currency: requestData.currency || 'KRW',
+                price_source: requestData.price_source || null,
                 status: requestData.status || 'pending',
                 updated_at: new Date().toISOString(),
                 version: (requestData.version || 0) + 1
@@ -893,19 +915,19 @@ class FlightRequestAPI {
     }
 }
 
-// 🔧 v8.6.1: FlightRequestAPI 클래스를 전역 스코프에 노출
+// 🔧 v8.7.1: FlightRequestAPI 클래스를 전역 스코프에 노출
 window.FlightRequestAPI = FlightRequestAPI;
 
-// 🌐 v8.6.1: 퍼블릭 Storage 최적화된 인스턴스 생성
+// 🌐 v8.7.1: 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.6.1 인스턴스 생성 시작 (클래스 전역 노출 수정)...');
+        console.log('🚀 FlightRequestAPI v8.7.1 인스턴스 생성 시작 (406 오류 수정)...');
         window.flightRequestAPI = new FlightRequestAPI();
         
         // 호환성을 위한 passport API 인스턴스도 생성
         window.passportAPI = window.flightRequestAPI;
         
-        console.log('✅ FlightRequestAPI v8.6.1 인스턴스 생성 완료 - 클래스 전역 노출 수정');
+        console.log('✅ FlightRequestAPI v8.7.1 인스턴스 생성 완료 - 406 오류 수정');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -913,7 +935,7 @@ function createFlightRequestAPI() {
     }
 }
 
-// 🌐 v8.6.1: 즉시 생성 (대기 시간 최소화)
+// 🌐 v8.7.1: 즉시 생성 (대기 시간 최소화)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(createFlightRequestAPI, 100); // 단축된 대기 시간
@@ -922,4 +944,4 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 100); // 즉시 실행에 가깝게
 }
 
-console.log('✅ FlightRequestAPI v8.6.1 모듈 로드 완료 - 클래스 전역 스코프 노출 문제 해결');
+console.log('✅ FlightRequestAPI v8.7.1 모듈 로드 완료 - 406 오류 수정 (.single() 문제 해결)');
