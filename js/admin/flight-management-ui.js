@@ -1,5 +1,5 @@
-// flight-management-ui.js - 관리자용 항공권 관리 UI v1.2.0
-// v1.2.0: 에러 처리 강화 및 디버깅 정보 추가
+// flight-management-ui.js - 관리자용 항공권 관리 UI v1.3.0
+// v1.3.0: 가격 정보 표시 기능 추가
 
 class FlightManagementUI {
     constructor() {
@@ -13,7 +13,7 @@ class FlightManagementUI {
 
     // API 초기화
     async initializeAPI() {
-        console.log('🔧 FlightManagementUI - API 초기화 시작...');
+        console.log('🔧 FlightManagementUI v1.3.0 - API 초기화 시작...');
         
         // FlightManagementAPI 인스턴스 생성 대기
         let attempts = 0;
@@ -51,6 +51,13 @@ class FlightManagementUI {
             }
         } else {
             console.warn('⚠️ FlightManagementAPI를 찾을 수 없습니다');
+        }
+
+        // FlightRequestUtils 확인
+        if (window.FlightRequestUtils) {
+            console.log('✅ FlightRequestUtils 가격 포맷팅 기능 확인 완료');
+        } else {
+            console.warn('⚠️ FlightRequestUtils를 찾을 수 없습니다 - 가격 포맷팅 제한');
         }
     }
 
@@ -110,7 +117,7 @@ class FlightManagementUI {
     }
 
     async loadRequests() {
-        console.log('📋 항공권 신청 목록 로드 시작...');
+        console.log('📋 항공권 신청 목록 로드 시작 (v1.3.0 가격 정보 포함)...');
         this.showLoading();
         
         try {
@@ -190,6 +197,42 @@ class FlightManagementUI {
         return null;
     }
 
+    // 🆕 가격 정보 포맷팅 (v1.3.0)
+    formatPriceInfo(request) {
+        // 가격 정보가 없는 경우
+        if (!request.ticket_price || !request.currency) {
+            return '<div class="price-no-data">미입력</div>';
+        }
+
+        let formattedPrice = '';
+        
+        // FlightRequestUtils가 있으면 사용
+        if (window.FlightRequestUtils) {
+            try {
+                formattedPrice = window.FlightRequestUtils.formatPrice(request.ticket_price, request.currency);
+            } catch (error) {
+                console.warn('가격 포맷팅 오류:', error);
+                // 폴백: 간단한 포맷팅
+                formattedPrice = `${parseFloat(request.ticket_price).toLocaleString()} ${request.currency}`;
+            }
+        } else {
+            // FlightRequestUtils 없을 때 기본 포맷팅
+            formattedPrice = `${parseFloat(request.ticket_price).toLocaleString()} ${request.currency}`;
+        }
+
+        // 가격 출처 정보
+        const priceSource = request.price_source ? 
+            request.price_source.substring(0, 20) + (request.price_source.length > 20 ? '...' : '') : 
+            '출처 미기재';
+
+        return `
+            <div class="price-info">
+                <div class="price-amount">${formattedPrice}</div>
+                <div class="price-source" title="${request.price_source || '출처 미기재'}">${priceSource}</div>
+            </div>
+        `;
+    }
+
     renderRequests(requests) {
         const tbody = document.getElementById('requestsTableBody');
         if (!tbody) return;
@@ -197,7 +240,7 @@ class FlightManagementUI {
         if (requests.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="no-data">
+                    <td colspan="9" class="no-data">
                         <div class="no-data-icon">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -227,6 +270,7 @@ class FlightManagementUI {
                 </td>
                 <td>${new Date(request.departure_date).toLocaleDateString('ko-KR')}</td>
                 <td>${new Date(request.return_date).toLocaleDateString('ko-KR')}</td>
+                <td>${this.formatPriceInfo(request)}</td>
                 <td>
                     <span class="status-badge status-${request.status}">
                         ${this.getStatusText(request.status)}
@@ -381,6 +425,11 @@ class FlightManagementUI {
                     aVal = a.user_profiles.name;
                     bVal = b.user_profiles.name;
                     break;
+                case 'ticket_price':
+                    // 🆕 v1.3.0 가격 정렬 추가
+                    aVal = parseFloat(a.ticket_price) || 0;
+                    bVal = parseFloat(b.ticket_price) || 0;
+                    break;
                 default:
                     return 0;
             }
@@ -427,7 +476,7 @@ class FlightManagementUI {
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="loading">
+                    <td colspan="9" class="loading">
                         <div class="spinner"></div>
                         <p>데이터를 불러오는 중...</p>
                     </td>
@@ -441,7 +490,7 @@ class FlightManagementUI {
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="error">
+                    <td colspan="9" class="error">
                         <div class="error-icon">⚠️</div>
                         <p>${message}</p>
                         <button class="btn btn-primary" onclick="window.flightManagementUI?.loadRequests()">
@@ -462,8 +511,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof window !== 'undefined') {
         window.FlightManagementUI = FlightManagementUI;
         window.flightManagementUI = new FlightManagementUI();
-        console.log('✅ FlightManagementUI v1.2.0 초기화 완료');
+        console.log('✅ FlightManagementUI v1.3.0 초기화 완료 (가격 정보 기능 추가)');
     }
 });
 
-console.log('✅ FlightManagementUI v1.2.0 로드 완료 - 에러 처리 강화 및 디버깅 개선');
+console.log('✅ FlightManagementUI v1.3.0 로드 완료 - 가격 정보 표시 기능 추가');
