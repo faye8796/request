@@ -1,5 +1,5 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.3.2
-// 🛠️ v8.3.2: UI 로딩 문제 해결 및 여권정보 UX 개선
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.4.0
+// 🛠️ v8.4.0: 여권정보 수정 UI 개선 및 구매 링크 위치 수정
 // passport-info UI 기능 완전 통합 버전
 
 class FlightRequestUI {
@@ -16,8 +16,8 @@ class FlightRequestUI {
         // 🆕 Passport-info 관련 상태
         this.passportImageFile = null;
         this.existingPassportImageUrl = null;
-        this.existingPassportInfo = null; // 🛠️ v8.3.2: 기존 여권정보 저장
-        this.isViewMode = false; // 🛠️ v8.3.2: 여권정보 보기/편집 모드
+        this.existingPassportInfo = null; // 🛠️ v8.4.0: 기존 여권정보 저장
+        this.isViewMode = false; // 🛠️ v8.4.0: 여권정보 보기/편집 모드
         
         // 🛠️ v8.3.1: 무한 루프 방지 플래그
         this.isLoadingData = false;
@@ -54,7 +54,7 @@ class FlightRequestUI {
             passportSuccessMessage: document.getElementById('passportSuccessMessage'),
             proceedToFlightRequest: document.getElementById('proceedToFlightRequest'),
             
-            // 🛠️ v8.3.2: 여권정보 보기 모드용 요소들 추가
+            // 🛠️ v8.4.0: 여권정보 보기 모드용 요소들 추가
             passportViewContainer: null, // 동적으로 생성
             
             // 항공권 신청 폼 요소
@@ -97,7 +97,7 @@ class FlightRequestUI {
 
     async init() {
         try {
-            console.log('🔄 FlightRequestUI v8.3.2 초기화 시작 (UI 로딩 문제 해결)...');
+            console.log('🔄 FlightRequestUI v8.4.0 초기화 시작 (여권정보 수정 UI 개선)...');
             
             // API 및 유틸리티 대기
             await this.waitForDependencies();
@@ -105,12 +105,12 @@ class FlightRequestUI {
             // 이벤트 리스너 설정
             this.setupEventListeners();
             
-            // 🛠️ v8.3.2: 초기화 시 자동으로 데이터 로드 시작
+            // 🛠️ v8.4.0: 초기화 시 자동으로 데이터 로드 시작
             setTimeout(() => {
                 this.loadInitialData();
             }, 300);
             
-            console.log('✅ FlightRequestUI v8.3.2 초기화 완료 - UI 로딩 문제 해결');
+            console.log('✅ FlightRequestUI v8.4.0 초기화 완료 - 여권정보 수정 UI 개선');
             
             this.isInitialized = true;
         } catch (error) {
@@ -132,7 +132,7 @@ class FlightRequestUI {
                 if (apiReady && utilsReady) {
                     this.api = window.flightRequestAPI;
                     this.utils = window.FlightRequestUtils;
-                    console.log('✅ FlightRequestUI v8.3.2 의존성 로드 완료');
+                    console.log('✅ FlightRequestUI v8.4.0 의존성 로드 완료');
                     resolve();
                     return;
                 }
@@ -175,10 +175,10 @@ class FlightRequestUI {
         }
     }
 
-    // 🛠️ v8.3.2: 초기 데이터 로드 (UI 표시 보장)
+    // 🛠️ v8.4.0: 초기 데이터 로드 (UI 표시 보장)
     async loadInitialData() {
         try {
-            console.log('🔄 v8.3.2 초기 데이터 로드 시작 - UI 표시 보장');
+            console.log('🔄 v8.4.0 초기 데이터 로드 시작 - UI 표시 보장');
             
             // API 초기화 확인
             await this.ensureInitialized();
@@ -221,9 +221,9 @@ class FlightRequestUI {
         }
     }
 
-    // 🛠️ v8.3.2: 데이터 없이 항공권 신청 페이지 표시 (폴백)
+    // 🛠️ v8.4.0: 데이터 없이 항공권 신청 페이지 표시 (폴백)
     showFlightRequestPageWithoutData() {
-        console.log('🔄 v8.3.2 기본 항공권 신청 페이지 표시 (데이터 없음)');
+        console.log('🔄 v8.4.0 기본 항공권 신청 페이지 표시 (데이터 없음)');
         
         // 항공권 신청 페이지 표시
         this.showFlightRequestPage();
@@ -252,12 +252,12 @@ class FlightRequestUI {
         }
     }
 
-    // === 🆕 PASSPORT INFO UI 기능 통합 - v8.3.2 UX 개선 ===
+    // === 🆕 PASSPORT INFO UI 기능 통합 - v8.4.0 UX 개선 ===
 
     // 여권정보 UI 초기화
     async initializePassportInfoUI() {
         try {
-            console.log('🔧 v8.3.2 여권정보 UI 초기화 시작 (UX 개선)');
+            console.log('🔧 v8.4.0 여권정보 UI 초기화 시작 (UX 개선)');
             
             // API 초기화 확인
             await this.ensureInitialized();
@@ -268,14 +268,14 @@ class FlightRequestUI {
             // 기존 여권정보 로드 및 UI 모드 결정
             await this.loadExistingPassportDataAndSetMode();
             
-            console.log('✅ v8.3.2 여권정보 UI 초기화 완료 (UX 개선)');
+            console.log('✅ v8.4.0 여권정보 UI 초기화 완료 (UX 개선)');
         } catch (error) {
             console.error('❌ 여권정보 UI 초기화 오류:', error);
             this.showError('여권정보 UI 초기화 중 오류가 발생했습니다.');
         }
     }
 
-    // 🛠️ v8.3.2: 기존 여권정보 로드 및 모드 설정
+    // 🛠️ v8.4.0: 기존 여권정보 로드 및 모드 설정
     async loadExistingPassportDataAndSetMode() {
         try {
             this.showPassportLoading(true);
@@ -310,7 +310,7 @@ class FlightRequestUI {
         }
     }
 
-    // 🛠️ v8.3.2: 여권정보 보기 모드 표시
+    // 🛠️ v8.4.0: 여권정보 보기 모드 표시
     showPassportViewMode(passportInfo) {
         const container = document.getElementById('passportForm');
         if (!container) return;
@@ -384,7 +384,7 @@ class FlightRequestUI {
         }
     }
 
-    // 🛠️ v8.3.2: 여권정보 편집 모드 표시
+    // 🛠️ v8.4.0: 여권정보 편집 모드 표시
     showPassportEditMode() {
         // 보기 모드 컨테이너 제거
         if (this.elements.passportViewContainer) {
@@ -403,7 +403,7 @@ class FlightRequestUI {
         }
     }
 
-    // 🛠️ v8.3.2: 여권정보 보기 모드 닫기
+    // 🛠️ v8.4.0: 여권정보 보기 모드 닫기
     closePassportView() {
         console.log('🔄 여권정보 보기 닫기 - 항공권 신청 페이지로 이동');
         this.showFlightRequestPage();
@@ -414,7 +414,7 @@ class FlightRequestUI {
         }, 200);
     }
 
-    // 🛠️ v8.3.2: 여권정보 편집 모드로 전환
+    // 🛠️ v8.4.0: 여권정보 편집 모드로 전환
     editPassportInfo() {
         console.log('🔄 여권정보 편집 모드로 전환');
         this.isViewMode = false;
@@ -719,7 +719,7 @@ class FlightRequestUI {
 
         try {
             this.isLoadingData = true;
-            console.log('🔄 항공권 신청 데이터 로드 시작 (v8.3.2)');
+            console.log('🔄 항공권 신청 데이터 로드 시작 (v8.4.0)');
             
             // API 초기화 확인
             await this.ensureInitialized();
@@ -743,7 +743,7 @@ class FlightRequestUI {
                 this.showRequestForm(false);
             }
 
-            console.log('✅ 항공권 신청 데이터 로드 완료 (v8.3.2)');
+            console.log('✅ 항공권 신청 데이터 로드 완료 (v8.4.0)');
         } catch (error) {
             console.error('항공권 신청 데이터 로드 실패:', error);
             if (this.utils) {
@@ -994,20 +994,26 @@ class FlightRequestUI {
         this.validateDuration();
     }
 
+    // 🔧 v8.4.0: 구매 링크 위치 수정 - [구매 대행]일 때 표시
     handlePurchaseTypeChange() {
         if (!this.elements.purchaseType || this.elements.purchaseType.length === 0) return;
         
         const selectedType = Array.from(this.elements.purchaseType)
             .find(radio => radio.checked)?.value;
         
+        console.log('🔧 v8.4.0: 구매 방식 변경:', selectedType);
+        
         if (this.elements.purchaseLinkGroup) {
-            if (selectedType === 'direct') {
+            // 🔧 v8.4.0: [구매 대행]일 때 구매 링크 표시 (기존: direct → agency)
+            if (selectedType === 'agency') {
                 this.elements.purchaseLinkGroup.style.display = 'block';
+                console.log('✅ v8.4.0: 구매 링크 표시 (구매 대행)');
             } else {
                 this.elements.purchaseLinkGroup.style.display = 'none';
                 if (this.elements.purchaseLink) {
                     this.elements.purchaseLink.value = '';
                 }
+                console.log('✅ v8.4.0: 구매 링크 숨김 (직접 구매)');
             }
         }
     }
@@ -1123,7 +1129,8 @@ class FlightRequestUI {
                 return_date: this.elements.returnDate?.value || '',
                 departure_airport: this.elements.departureAirport?.value?.trim() || '',
                 arrival_airport: this.elements.arrivalAirport?.value?.trim() || '',
-                purchase_link: selectedType === 'direct' ? this.elements.purchaseLink?.value?.trim() || null : null
+                // 🔧 v8.4.0: 구매 대행일 때만 purchase_link 저장
+                purchase_link: selectedType === 'agency' ? this.elements.purchaseLink?.value?.trim() || null : null
             };
 
             let result;
@@ -1247,4 +1254,4 @@ class FlightRequestUI {
 }
 
 // 페이지 로드 시 초기화 제거 - HTML에서 모듈 로딩 완료 후 초기화
-console.log('✅ FlightRequestUI v8.3.2 모듈 로드 완료 - UI 로딩 문제 해결 및 여권정보 UX 개선');
+console.log('✅ FlightRequestUI v8.4.0 모듈 로드 완료 - 여권정보 수정 UI 개선 및 구매 링크 위치 수정');
