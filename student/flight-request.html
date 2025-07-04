@@ -7,6 +7,95 @@
     <link rel="stylesheet" href="../css/flight-request.css">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- 🆕 가격 정보 스타일 추가 -->
+    <style>
+        .price-info-section {
+            margin-top: 24px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .subsection-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .subsection-title i {
+            width: 18px;
+            height: 18px;
+            color: #3b82f6;
+        }
+
+        .price-info-notice {
+            margin-top: 16px;
+            padding: 12px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+        }
+
+        .notice-content {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .notice-content i {
+            width: 16px;
+            height: 16px;
+            color: #3b82f6;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .notice-content strong {
+            color: #1e40af;
+            font-size: 14px;
+        }
+
+        .notice-content p {
+            margin: 4px 0 0 0;
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.4;
+        }
+
+        /* 통화 선택 스타일 개선 */
+        #currency {
+            cursor: pointer;
+        }
+
+        /* 가격 입력 필드 스타일 */
+        #ticketPrice {
+            text-align: right;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+        }
+
+        /* 반응형 조정 */
+        @media (max-width: 768px) {
+            .price-info-section {
+                margin-top: 16px;
+                padding: 16px;
+            }
+            
+            .subsection-title {
+                font-size: 15px;
+            }
+            
+            .notice-content {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- 로딩 상태 -->
@@ -244,6 +333,54 @@
                                     </div>
                                 </div>
 
+                                <!-- 🆕 가격 정보 추가 -->
+                                <div class="price-info-section">
+                                    <h3 class="subsection-title">
+                                        <i data-lucide="credit-card"></i>
+                                        가격 정보
+                                    </h3>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="ticketPrice" class="form-label required">항공권 가격</label>
+                                            <input type="number" id="ticketPrice" name="ticketPrice" class="form-input" 
+                                                   placeholder="예: 850000" min="0" step="1000" required>
+                                            <span class="form-hint">숫자만 입력해주세요 (천 원 단위 권장)</span>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="currency" class="form-label required">통화</label>
+                                            <select id="currency" name="currency" class="form-input" required>
+                                                <option value="KRW">KRW (원)</option>
+                                                <option value="USD">USD (달러)</option>
+                                                <option value="CNY">CNY (위안)</option>
+                                                <option value="JPY">JPY (엔)</option>
+                                                <option value="EUR">EUR (유로)</option>
+                                                <option value="OTHER">기타</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="priceSource" class="form-label required">가격 정보 출처</label>
+                                        <input type="text" id="priceSource" name="priceSource" class="form-input" 
+                                               placeholder="예: 대한항공 공식 홈페이지, 인터파크 투어, 스카이스캐너" required>
+                                        <span class="form-hint">항공권 가격을 확인한 사이트나 여행사명을 입력해주세요</span>
+                                    </div>
+
+                                    <!-- 가격 정보 안내 -->
+                                    <div class="price-info-notice">
+                                        <div class="notice-content">
+                                            <i data-lucide="info"></i>
+                                            <div>
+                                                <strong>가격 정보 안내</strong>
+                                                <p>• 실제 구매 가격을 정확히 입력해주세요</p>
+                                                <p>• 세금 및 수수료가 포함된 최종 결제 금액을 입력해주세요</p>
+                                                <p>• 가격은 승인 및 정산 과정에서 확인됩니다</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- 🔧 구매 링크를 구매 대행으로 이동 -->
                                 <div class="form-group" id="purchaseLinkGroup" style="display: none;">
                                     <label for="purchaseLink" class="form-label">항공권 구매 링크</label>
@@ -393,7 +530,7 @@
         </div>
     </div>
 
-    <!-- 🔧 v8.4.2 여권정보 설정 버튼 자동 폼 채우기 기능 수정 - 최적화된 모듈 시스템 (SupabaseCore v1.0.1) -->
+    <!-- 🔧 v8.5.0 가격 정보 추가 - 최적화된 모듈 시스템 (SupabaseCore v1.0.1) -->
     <!-- 1. Supabase JavaScript 라이브러리 (CDN 버전 구체화) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
 
@@ -409,11 +546,66 @@
     <!-- 5. Storage Utils 로드 -->
     <script src="../js/common/storage-utils.js"></script>
 
-    <!-- 6. 🔧 v8.4.2: 여권정보 설정 버튼 자동 폼 채우기 기능 수정 - 개선된 인증 체크 및 초기화 스크립트 -->
+    <!-- 6. 🔧 v8.5.0: 가격 정보 추가 - 개선된 인증 체크 및 초기화 스크립트 -->
     <script>
-        console.log('🚀 항공권 신청 페이지 v8.4.2 초기화 시작 (여권정보 설정 버튼 자동 폼 채우기 기능 수정)...');
+        console.log('🚀 항공권 신청 페이지 v8.5.0 초기화 시작 (가격 정보 추가)...');
 
-        // 🔧 v8.4.2: 최적화된 인증 체크
+        // 🆕 가격 정보 JavaScript 이벤트 처리
+        document.addEventListener('DOMContentLoaded', function() {
+            // 가격 입력 시 숫자 포맷팅
+            const ticketPriceInput = document.getElementById('ticketPrice');
+            if (ticketPriceInput) {
+                ticketPriceInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/[^\d]/g, '');
+                    if (value) {
+                        e.target.value = value;
+                    }
+                });
+
+                // 가격 필드 포커스 아웃 시 검증
+                ticketPriceInput.addEventListener('blur', function(e) {
+                    const value = parseInt(e.target.value);
+                    if (value && value < 100000) {
+                        console.log('⚠️ 항공권 가격이 10만원 미만입니다. 정확한 가격인지 확인해주세요.');
+                    }
+                });
+            }
+
+            // 통화 변경 시 가격 입력 힌트 업데이트
+            const currencySelect = document.getElementById('currency');
+            if (currencySelect) {
+                currencySelect.addEventListener('change', function(e) {
+                    const priceInput = document.getElementById('ticketPrice');
+                    const hint = priceInput?.nextElementSibling;
+                    
+                    if (hint && hint.classList.contains('form-hint')) {
+                        switch(e.target.value) {
+                            case 'KRW':
+                                hint.textContent = '숫자만 입력해주세요 (천 원 단위 권장)';
+                                priceInput.placeholder = '예: 850000';
+                                break;
+                            case 'USD':
+                                hint.textContent = '숫자만 입력해주세요 (달러 단위)';
+                                priceInput.placeholder = '예: 650';
+                                break;
+                            case 'CNY':
+                                hint.textContent = '숫자만 입력해주세요 (위안 단위)';
+                                priceInput.placeholder = '예: 4800';
+                                break;
+                            case 'JPY':
+                                hint.textContent = '숫자만 입력해주세요 (엔 단위)';
+                                priceInput.placeholder = '예: 95000';
+                                break;
+                            default:
+                                hint.textContent = '숫자만 입력해주세요';
+                                priceInput.placeholder = '가격을 입력하세요';
+                        }
+                    }
+                });
+            }
+        });
+
+        // 🔧 v8.5.0: 최적화된 인증 체크
         async function checkAuth() {
             try {
                 console.log('🔐 사용자 인증 확인 중...');
@@ -463,11 +655,11 @@
 
         // 페이지 로드 시 실행
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('📄 DOM 로드 완료 (v8.4.2 여권정보 설정 버튼 자동 폼 채우기 기능 수정)');
+            console.log('📄 DOM 로드 완료 (v8.5.0 가격 정보 추가)');
             
             const authResult = await checkAuth();
             if (authResult) {
-                console.log('✅ 항공권 신청 페이지 v8.4.2 인증 확인 완료');
+                console.log('✅ 항공권 신청 페이지 v8.5.0 인증 확인 완료');
             } else {
                 console.log('⚠️ 인증 실패 - 기본 기능만 사용 가능');
             }
@@ -478,7 +670,7 @@
             if (window.StorageUtils && window.SupabaseAPI?.core?.isInitialized) {
                 const supabase = window.SupabaseAPI.core.getClient();
                 window.StorageUtils.setSupabaseInstance(supabase);
-                console.log('✅ StorageUtils 인스턴스 설정 완료 (v8.4.2)');
+                console.log('✅ StorageUtils 인스턴스 설정 완료 (v8.5.0)');
             } else if (window.StorageUtils && window.SupabaseCore?.client) {
                 // 폴백
                 window.StorageUtils.setSupabaseInstance(window.SupabaseCore.client);
@@ -498,7 +690,7 @@
                 });
             }
 
-            // 🔧 v8.4.2: 여권정보 페이지에서 항공권 신청으로 돌아가기 버튼
+            // 🔧 v8.5.0: 여권정보 페이지에서 항공권 신청으로 돌아가기 버튼
             const backToFlightRequestBtn = document.getElementById('backToFlightRequestFromPassport');
             if (backToFlightRequestBtn) {
                 backToFlightRequestBtn.addEventListener('click', function() {
@@ -506,11 +698,11 @@
                 });
             }
 
-            // 🔧 v8.4.2: 여권정보 설정 버튼 (개선된 이벤트 핸들러)
+            // 🔧 v8.5.0: 여권정보 설정 버튼 (개선된 이벤트 핸들러)
             const passportBtn = document.getElementById('passportInfoBtn');
             if (passportBtn) {
                 passportBtn.addEventListener('click', async function() {
-                    console.log('🔄 [UI디버그] v8.4.2 여권정보 설정 버튼 클릭됨');
+                    console.log('🔄 [UI디버그] v8.5.0 여권정보 설정 버튼 클릭됨');
                     
                     if (window.flightRequestUI && typeof window.flightRequestUI.showPassportInfoPage === 'function') {
                         await window.flightRequestUI.showPassportInfoPage();
@@ -552,11 +744,11 @@
                 flightRequestPage.classList.remove('active');
                 passportInfoPage.classList.add('active');
                 
-                console.log('🔄 v8.4.2 여권정보 수정 페이지로 전환 완료');
+                console.log('🔄 v8.5.0 여권정보 수정 페이지로 전환 완료');
             }
         }
 
-        // 🛠️ v8.4.2: 무한 새로고침 버그 수정 유지 - loadInitialData() 대신 loadFlightRequestData() 직접 호출
+        // 🛠️ v8.5.0: 무한 새로고침 버그 수정 유지 - loadInitialData() 대신 loadFlightRequestData() 직접 호출
         function showFlightRequestPage() {
             const passportInfoPage = document.getElementById('passportInfoPage');
             const flightRequestPage = document.getElementById('flightRequestPage');
@@ -568,12 +760,12 @@
                 // 🛠️ 핵심 수정: loadInitialData() 대신 loadFlightRequestData()만 호출하여 무한 루프 방지
                 setTimeout(() => {
                     if (window.flightRequestUI && typeof window.flightRequestUI.loadFlightRequestData === 'function') {
-                        console.log('✅ v8.4.2: 항공권 신청 데이터만 로드 (무한 루프 방지)');
+                        console.log('✅ v8.5.0: 항공권 신청 데이터만 로드 (무한 루프 방지)');
                         window.flightRequestUI.loadFlightRequestData();
                     }
                 }, 200);
                 
-                console.log('🔄 v8.4.2 항공권 신청 페이지로 전환 완료');
+                console.log('🔄 v8.5.0 항공권 신청 페이지로 전환 완료');
             }
         }
 
@@ -605,7 +797,7 @@
                             `${institute} 파견을 위한 항공권을 신청해주세요.`;
                     }
 
-                    // 🔧 v8.4.2: 여권정보 수정 페이지 헤더
+                    // 🔧 v8.5.0: 여권정보 수정 페이지 헤더
                     const passportWelcomeEl = document.getElementById('passportWelcome');
                     
                     if (passportWelcomeEl && studentData.name) {
@@ -655,7 +847,7 @@
             // 사용자 정보 표시
             updateUserInfo();
             
-            console.log('✅ 항공권 신청 페이지 초기화 완료 (v8.4.2 여권정보 설정 버튼 자동 폼 채우기 기능 수정)');
+            console.log('✅ 항공권 신청 페이지 초기화 완료 (v8.5.0 가격 정보 추가)');
         }
 
         // DOM 로드 후 앱 표시
@@ -666,7 +858,7 @@
         }
     </script>
 
-    <!-- 7. 🔧 v8.4.2: 최적화된 모듈 로딩 시스템 -->
+    <!-- 7. 🔧 v8.5.0: 최적화된 모듈 로딩 시스템 -->
     <script>
         let modulesLoaded = {
             flightRequestAPI: false,
@@ -678,7 +870,7 @@
         const MAX_INIT_ATTEMPTS = 2;
         let initializationTimer = null;
 
-        // 🔧 v8.4.2: SupabaseCore v1.0.1 최적화된 모듈 체크
+        // 🔧 v8.5.0: SupabaseCore v1.0.1 최적화된 모듈 체크
         function checkAllModulesLoaded() {
             const allLoaded = Object.values(modulesLoaded).every(Boolean);
             
@@ -690,7 +882,7 @@
                 supabaseCoreReady = true; // 폴백
             }
             
-            console.log('📦 v8.4.2 모듈 로딩 상태 확인:', {
+            console.log('📦 v8.5.0 모듈 로딩 상태 확인:', {
                 modules: modulesLoaded,
                 supabaseCoreReady: supabaseCoreReady,
                 supabaseAPI: !!window.SupabaseAPI,
@@ -698,25 +890,25 @@
             });
             
             if (allLoaded && supabaseCoreReady) {
-                console.log('✅ v8.4.2 모든 모듈 로드 완료 및 SupabaseCore 준비 완료');
+                console.log('✅ v8.5.0 모든 모듈 로드 완료 및 SupabaseCore 준비 완료');
                 clearTimeout(initializationTimer);
                 
                 // 즉시 초기화
                 initializeFlightRequestSystem();
             } else {
-                console.log('⏳ v8.4.2 모듈 로딩 대기중...');
+                console.log('⏳ v8.5.0 모듈 로딩 대기중...');
                 
                 // 재시도 로직 (더 빠르게)
                 if (initializationAttempts < MAX_INIT_ATTEMPTS) {
                     initializationAttempts++;
                     initializationTimer = setTimeout(() => {
                         if (!window.flightRequestUI) {
-                            console.log(`🔄 v8.4.2 초기화 재시도 ${initializationAttempts}/${MAX_INIT_ATTEMPTS}`);
+                            console.log(`🔄 v8.5.0 초기화 재시도 ${initializationAttempts}/${MAX_INIT_ATTEMPTS}`);
                             checkAllModulesLoaded();
                         }
                     }, 500); // 더 빠른 재시도
                 } else {
-                    console.error('❌ v8.4.2 모듈 초기화 최대 재시도 횟수 초과');
+                    console.error('❌ v8.5.0 모듈 초기화 최대 재시도 횟수 초과');
                     showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
                 }
             }
@@ -724,7 +916,7 @@
 
         function initializeFlightRequestSystem() {
             try {
-                console.log('🚀 v8.4.2 FlightRequestSystem 초기화 시작...');
+                console.log('🚀 v8.5.0 FlightRequestSystem 초기화 시작...');
                 
                 // 전역 로딩 상태 숨기기
                 const globalLoading = document.getElementById('globalLoadingState');
@@ -743,17 +935,17 @@
                     throw new Error('SupabaseCore가 초기화되지 않았습니다');
                 }
                 
-                // FlightRequestUI 초기화 (v8.4.2)
+                // FlightRequestUI 초기화 (v8.5.0)
                 if (typeof FlightRequestUI !== 'undefined') {
                     console.log('🚀 FlightRequestUI 초기화 시작...');
                     window.flightRequestUI = new FlightRequestUI();
-                    console.log('✅ FlightRequestUI 초기화 완료 (v8.4.2 여권정보 설정 버튼 자동 폼 채우기 기능 수정)');
+                    console.log('✅ FlightRequestUI 초기화 완료 (v8.5.0 가격 정보 추가)');
                 } else {
                     console.error('❌ FlightRequestUI 클래스를 찾을 수 없습니다');
                     throw new Error('FlightRequestUI 클래스가 로드되지 않았습니다');
                 }
             } catch (error) {
-                console.error('❌ v8.4.2 항공권 요청 시스템 초기화 실패:', error);
+                console.error('❌ v8.5.0 항공권 요청 시스템 초기화 실패:', error);
                 showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
             }
         }
@@ -764,10 +956,10 @@
             showError(`${moduleName} 모듈을 불러올 수 없습니다. 페이지를 새로고침해주세요.`);
         }
 
-        // 🔧 v8.4.2: 최종 초기화 확인 (단축된 시간)
+        // 🔧 v8.5.0: 최종 초기화 확인 (단축된 시간)
         setTimeout(() => {
             if (!window.flightRequestUI) {
-                console.warn('⚠️ v8.4.2: 2초 후에도 초기화되지 않음 - 최종 확인');
+                console.warn('⚠️ v8.5.0: 2초 후에도 초기화되지 않음 - 최종 확인');
                 
                 // 강제 초기화 시도
                 if (typeof FlightRequestUI !== 'undefined') {
@@ -776,9 +968,9 @@
                     if (hasSupabaseCore) {
                         try {
                             window.flightRequestUI = new FlightRequestUI();
-                            console.log('✅ v8.4.2 강제 초기화 성공');
+                            console.log('✅ v8.5.0 강제 초기화 성공');
                         } catch (error) {
-                            console.error('❌ v8.4.2 강제 초기화 실패:', error);
+                            console.error('❌ v8.5.0 강제 초기화 실패:', error);
                             showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
                         }
                     } else {
@@ -793,17 +985,17 @@
         }, 2000); // 3초 → 2초로 단축
     </script>
     
-    <!-- 8. Flight Request 모듈들 (v8.4.2) -->
+    <!-- 8. Flight Request 모듈들 (v8.5.0) -->
     <script src="../js/student/flight-request-api.js"
-            onload="modulesLoaded.flightRequestAPI = true; console.log('✅ v8.4.2 Flight Request API 로드 완료'); checkAllModulesLoaded();"
+            onload="modulesLoaded.flightRequestAPI = true; console.log('✅ v8.5.0 Flight Request API 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request API', event)"></script>
     
     <script src="../js/student/flight-request-utils.js"
-            onload="modulesLoaded.flightRequestUtils = true; console.log('✅ v8.4.2 Flight Request Utils 로드 완료'); checkAllModulesLoaded();"
+            onload="modulesLoaded.flightRequestUtils = true; console.log('✅ v8.5.0 Flight Request Utils 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request Utils', event)"></script>
     
     <script src="../js/student/flight-request-ui.js"
-            onload="modulesLoaded.flightRequestUI = true; console.log('✅ v8.4.2 Flight Request UI 로드 완료'); checkAllModulesLoaded();"
+            onload="modulesLoaded.flightRequestUI = true; console.log('✅ v8.5.0 Flight Request UI 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request UI', event)"></script>
 
     <!-- Lucide Icons 초기화 -->
