@@ -68,9 +68,9 @@
             background: #cbd5e0;
         }
 
-        /* v8.1.0 Storage 최적화 완료 알림 */
-        .storage-fix-notice {
-            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        /* v8.6.0 가격 정보 업데이트 완료 알림 */
+        .price-update-notice {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
             padding: 1rem 1.5rem;
             border-radius: 0.75rem;
@@ -81,26 +81,65 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        .storage-fix-notice i {
+        .price-update-notice i {
             width: 20px;
             height: 20px;
             flex-shrink: 0;
         }
 
-        .storage-fix-notice .notice-content {
+        .price-update-notice .notice-content {
             flex: 1;
         }
 
-        .storage-fix-notice .notice-title {
+        .price-update-notice .notice-title {
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
 
-        .storage-fix-notice .notice-text {
+        .price-update-notice .notice-text {
             font-size: 0.9rem;
             opacity: 0.9;
             margin: 0;
         }
+
+        /* 🆕 가격 정보 표시 스타일 */
+        .price-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .price-amount {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 0.95rem;
+        }
+
+        .price-source {
+            font-size: 0.8rem;
+            color: #718096;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            max-width: 120px;
+        }
+
+        .price-no-data {
+            color: #a0aec0;
+            font-style: italic;
+            font-size: 0.85rem;
+        }
+
+        /* 테이블 컬럼 너비 조정 */
+        .data-table th:nth-child(1) { width: 80px; }  /* 신청일 */
+        .data-table th:nth-child(2) { width: 100px; } /* 신청자 */
+        .data-table th:nth-child(3) { width: 120px; } /* 파견 학당 */
+        .data-table th:nth-child(4) { width: 80px; }  /* 구매 방식 */
+        .data-table th:nth-child(5) { width: 80px; }  /* 출국일 */
+        .data-table th:nth-child(6) { width: 80px; }  /* 귀국일 */
+        .data-table th:nth-child(7) { width: 120px; } /* 🆕 항공료 */
+        .data-table th:nth-child(8) { width: 80px; }  /* 상태 */
+        .data-table th:nth-child(9) { width: 180px; } /* 작업 */
 
         /* 모바일 반응형 */
         @media (max-width: 768px) {
@@ -119,6 +158,20 @@
 
             .header-actions {
                 justify-content: center;
+            }
+
+            /* 모바일에서 가격 정보 더 컴팩트하게 */
+            .price-info {
+                gap: 0.1rem;
+            }
+
+            .price-amount {
+                font-size: 0.85rem;
+            }
+
+            .price-source {
+                font-size: 0.75rem;
+                max-width: 80px;
             }
         }
     </style>
@@ -141,12 +194,12 @@
             </div>
         </div>
 
-        <!-- v8.1.0 Storage 구조 최적화 완료 알림 -->
-        <div class="storage-fix-notice">
-            <i data-lucide="database"></i>
+        <!-- v8.6.0 가격 정보 업데이트 완료 알림 -->
+        <div class="price-update-notice">
+            <i data-lucide="dollar-sign"></i>
             <div class="notice-content">
-                <div class="notice-title">✅ v8.1.0 Storage 구조 최적화 완료!</div>
-                <p class="notice-text">4개 버킷으로 단순화 • 사용자별 디렉토리 구조 • private/public 분리 • 파일명 규칙 체계화</p>
+                <div class="notice-title">🆕 v8.6.0 가격 정보 기능 업데이트 완료!</div>
+                <p class="notice-text">항공료 입력 및 표시 • 통화별 포맷팅 • 국가별 가격 범위 검증 • 관리자 가격 정보 확인</p>
             </div>
         </div>
 
@@ -200,6 +253,8 @@
                         <option value="departure_date-asc">출국일 빠른순</option>
                         <option value="departure_date-desc">출국일 늦은순</option>
                         <option value="name-asc">이름순</option>
+                        <option value="ticket_price-desc">항공료 높은순</option>
+                        <option value="ticket_price-asc">항공료 낮은순</option>
                     </select>
                 </div>
             </div>
@@ -215,6 +270,7 @@
                             <th>구매 방식</th>
                             <th>출국일</th>
                             <th>귀국일</th>
+                            <th>항공료</th>
                             <th>상태</th>
                             <th width="180">작업</th>
                         </tr>
@@ -230,7 +286,7 @@
     <!-- 🚀 Supabase JavaScript 라이브러리 (CDN 버전 구체화) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
 
-    <!-- 🆕 v8.1.0 최적화된 모듈 로드 -->
+    <!-- 🆕 v8.6.0 최적화된 모듈 로드 -->
     <!-- 1. CONFIG 로드 -->
     <script src="../js/config.js"></script>
     
@@ -241,8 +297,9 @@
     <!-- 3. Utils 로드 -->
     <script src="../js/utils.js"></script>
     
-    <!-- 4. v8.1.0 최적화된 Storage Utils 로드 -->
+    <!-- 4. v8.6.0 가격 정보 Utils 로드 -->
     <script src="../js/common/storage-utils.js"></script>
+    <script src="../js/student/flight-request-utils.js"></script>
     
     <!-- 5. 항공권 관리 모듈들 로드 -->
     <script src="../js/admin/flight-management-api.js"></script>
@@ -251,7 +308,7 @@
 
     <!-- 6. 초기화 및 인증 스크립트 -->
     <script>
-        console.log('🚀 항공권 관리 페이지 v8.1.0 초기화 시작 (Storage 최적화)...');
+        console.log('🚀 항공권 관리 페이지 v8.6.0 초기화 시작 (가격 정보 기능 추가)...');
 
         // 인증 체크
         async function checkAuth() {
@@ -310,23 +367,30 @@
 
         // 페이지 로드 시 실행
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('📄 DOM 로드 완료 (v8.1.0)');
+            console.log('📄 DOM 로드 완료 (v8.6.0 가격 정보 기능)');
             
             const authResult = await checkAuth();
             if (authResult) {
-                console.log('✅ 항공권 관리 페이지 v8.1.0 초기화 완료');
+                console.log('✅ 항공권 관리 페이지 v8.6.0 초기화 완료');
             } else {
                 console.log('⚠️ 인증 실패 - 기본 기능만 사용 가능');
             }
         });
 
-        // v8.1.0 최적화된 StorageUtils 초기화
+        // v8.6.0 최적화된 StorageUtils 초기화
         setTimeout(async () => {
             if (window.StorageUtils && window.SupabaseCore?.supabase) {
                 window.StorageUtils.setSupabaseInstance(window.SupabaseCore.supabase);
-                console.log('✅ v8.1.0 StorageUtils 최적화 인스턴스 설정 완료');
+                console.log('✅ v8.6.0 StorageUtils 최적화 인스턴스 설정 완료');
             } else {
                 console.log('⚠️ StorageUtils 또는 SupabaseCore 인스턴스 없음');
+            }
+
+            // FlightRequestUtils 초기화 확인
+            if (window.FlightRequestUtils) {
+                console.log('✅ v8.6.0 FlightRequestUtils 가격 정보 기능 로드 완료');
+            } else {
+                console.log('⚠️ FlightRequestUtils 인스턴스 없음');
             }
         }, 2000);
     </script>
