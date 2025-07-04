@@ -1,5 +1,5 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.4.1
-// 🔧 여권정보 로딩 문제 해결을 위한 디버깅 및 사용자 인증 강화
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.5.0
+// 🔧 가격 정보 입력 기능 추가
 // passport-info 기능 완전 통합 버전
 
 class FlightRequestAPI {
@@ -12,10 +12,10 @@ class FlightRequestAPI {
         this.initializationPromise = this.initialize();
     }
 
-    // 🚀 v8.4.1: 퍼블릭 Storage 최적화된 연동
+    // 🚀 v8.5.0: 퍼블릭 Storage 최적화된 연동
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v8.4.1 초기화 시작 (여권정보 로딩 문제 해결)...');
+            console.log('🔄 FlightRequestAPI v8.5.0 초기화 시작 (가격 정보 기능 추가)...');
             
             // SupabaseCore v1.0.1 연결
             await this.connectToSupabaseCore();
@@ -26,7 +26,7 @@ class FlightRequestAPI {
             // 초기화 완료 마킹
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI v8.4.1 초기화 완료');
+            console.log('✅ FlightRequestAPI v8.5.0 초기화 완료');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -35,7 +35,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 🔧 v8.4.1: SupabaseCore v1.0.1 최적화된 연결
+    // 🔧 v8.5.0: SupabaseCore v1.0.1 최적화된 연결
     async connectToSupabaseCore() {
         try {
             // 이미 연결되어 있으면 스킵
@@ -156,7 +156,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 🔧 v8.4.1: 강화된 사용자 정보 조회 (상세한 디버깅 로그)
+    // 🔧 v8.5.0: 강화된 사용자 정보 조회 (상세한 디버깅 로그)
     async getCurrentUser() {
         try {
             console.log('🔍 [디버그] getCurrentUser() 시작...');
@@ -195,7 +195,7 @@ class FlightRequestAPI {
                     });
 
                     if (studentData?.id) {
-                        // 🔧 v8.4.1: 사용자 ID 유효성 검증 강화
+                        // 🔧 v8.5.0: 사용자 ID 유효성 검증 강화
                         if (typeof studentData.id !== 'string' || studentData.id.length < 10) {
                             console.warn('⚠️ [디버그] 의심스러운 사용자 ID 형식:', studentData.id);
                         }
@@ -224,7 +224,7 @@ class FlightRequestAPI {
                 console.error('❌ [디버그] currentStudent 데이터 없음');
             }
 
-            // 🔧 v8.4.1: 다른 인증 소스도 확인 (폴백)
+            // 🔧 v8.5.0: 다른 인증 소스도 확인 (폴백)
             console.log('🔍 [디버그] 대체 인증 소스 확인 중...');
             
             // userInfo, userProfile 등 다른 키 확인
@@ -292,9 +292,9 @@ class FlightRequestAPI {
         }
     }
 
-    // === 🔧 v8.4.1: 강화된 PASSPORT INFO 기능 ===
+    // === 🔧 v8.5.0: 강화된 PASSPORT INFO 기능 ===
 
-    // 🔧 v8.4.1: 상세한 디버깅이 포함된 여권정보 조회
+    // 🔧 v8.5.0: 상세한 디버깅이 포함된 여권정보 조회
     async getPassportInfo() {
         try {
             console.log('🔍 [여권디버그] getPassportInfo() 시작...');
@@ -316,7 +316,7 @@ class FlightRequestAPI {
                 name: this.user.name
             });
 
-            // 🔧 v8.4.1: 데이터베이스 쿼리 실행 전 확인
+            // 🔧 v8.5.0: 데이터베이스 쿼리 실행 전 확인
             console.log('🔍 [여권디버그] Supabase 클라이언트 상태 확인...');
             console.log('🔍 [여권디버그] core 사용 가능:', !!this.core?.select);
             console.log('🔍 [여권디버그] supabase 클라이언트 사용 가능:', !!this.supabase);
@@ -371,7 +371,7 @@ class FlightRequestAPI {
                 queryResult = data;
             }
 
-            // 🔧 v8.4.1: 조회 결과 상세 분석
+            // 🔧 v8.5.0: 조회 결과 상세 분석
             if (queryResult) {
                 console.log('✅ [여권디버그] 여권정보 조회 성공:', {
                     id: queryResult.id,
@@ -383,7 +383,7 @@ class FlightRequestAPI {
                     사용자ID일치: queryResult.user_id === this.user.id
                 });
 
-                // 🔧 v8.4.1: 사용자 ID 불일치 검증
+                // 🔧 v8.5.0: 사용자 ID 불일치 검증
                 if (queryResult.user_id !== this.user.id) {
                     console.error('❌ [여권디버그] 사용자 ID 불일치 감지!', {
                         현재사용자ID: this.user.id,
@@ -488,7 +488,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 🌐 v8.4.1: 퍼블릭 Storage 최적화 여권 이미지 업로드
+    // 🌐 v8.5.0: 퍼블릭 Storage 최적화 여권 이미지 업로드
     async uploadPassportImage(imageFile) {
         try {
             // 단순한 파일명 (퍼블릭 Storage이므로 복잡한 패턴 불필요)
@@ -517,6 +517,76 @@ class FlightRequestAPI {
             return { 
                 valid: true, 
                 warning: `여권 만료일이 6개월 이내입니다. (${remainingDays}일 남음)` 
+            };
+        }
+
+        return { valid: true };
+    }
+
+    // === 🆕 v8.5.0: 가격 정보 유효성 검증 메서드들 ===
+
+    // 가격 정보 유효성 검증
+    validatePriceInfo(priceData) {
+        const errors = [];
+
+        // 가격 검증
+        if (!priceData.ticket_price || priceData.ticket_price <= 0) {
+            errors.push('유효한 항공권 가격을 입력해주세요.');
+        } else {
+            const price = parseFloat(priceData.ticket_price);
+            if (isNaN(price) || price <= 0) {
+                errors.push('가격은 0보다 큰 숫자여야 합니다.');
+            }
+            if (price > 10000000) { // 1천만원 초과 제한
+                errors.push('가격이 너무 높습니다. 다시 확인해주세요.');
+            }
+        }
+
+        // 통화 검증
+        const validCurrencies = ['KRW', 'USD', 'CNY', 'JPY', 'EUR', 'OTHER'];
+        if (!priceData.currency || !validCurrencies.includes(priceData.currency)) {
+            errors.push('유효한 통화를 선택해주세요.');
+        }
+
+        // 가격 출처 검증
+        if (!priceData.price_source || priceData.price_source.trim().length < 2) {
+            errors.push('가격 정보 출처를 입력해주세요.');
+        } else if (priceData.price_source.length > 100) {
+            errors.push('가격 정보 출처는 100자 이내로 입력해주세요.');
+        }
+
+        return {
+            isValid: errors.length === 0,
+            errors: errors
+        };
+    }
+
+    // 통화별 가격 범위 검증
+    validatePriceBycurrency(price, currency) {
+        const price_num = parseFloat(price);
+        
+        const ranges = {
+            'KRW': { min: 100000, max: 5000000, unit: '원' },      // 10만~500만원
+            'USD': { min: 100, max: 5000, unit: '달러' },          // $100~$5000
+            'CNY': { min: 500, max: 30000, unit: '위안' },         // ¥500~¥30,000
+            'JPY': { min: 10000, max: 500000, unit: '엔' },        // ¥10,000~¥500,000
+            'EUR': { min: 100, max: 4000, unit: '유로' },          // €100~€4,000
+            'OTHER': { min: 0, max: 999999999, unit: '' }          // 제한 없음
+        };
+
+        const range = ranges[currency] || ranges['OTHER'];
+        
+        if (price_num < range.min) {
+            return {
+                valid: false,
+                message: `${currency} 통화의 최소 가격은 ${range.min.toLocaleString()} ${range.unit}입니다.`
+            };
+        }
+        
+        if (price_num > range.max) {
+            return {
+                valid: false,
+                message: `${currency} 통화의 최대 가격은 ${range.max.toLocaleString()} ${range.unit}입니다.`
             };
         }
 
@@ -556,15 +626,39 @@ class FlightRequestAPI {
         }
     }
 
-    // 항공권 신청 생성
+    // 🆕 v8.5.0: 가격 정보가 포함된 항공권 신청 생성
     async createFlightRequest(requestData, imageFile) {
         try {
+            console.log('🔍 [항공권디버그] createFlightRequest() 시작 (v8.5.0 가격 정보 포함)...');
             await this.ensureInitialized();
             
             if (!this.user) await this.getCurrentUser();
             
             if (!this.user?.id) {
                 throw new Error('사용자 정보가 없습니다');
+            }
+
+            // 🆕 가격 정보 유효성 검증
+            const priceValidation = this.validatePriceInfo({
+                ticket_price: requestData.ticket_price,
+                currency: requestData.currency,
+                price_source: requestData.price_source
+            });
+
+            if (!priceValidation.isValid) {
+                console.error('❌ [항공권디버그] 가격 정보 검증 실패:', priceValidation.errors);
+                throw new Error(`가격 정보 오류: ${priceValidation.errors.join(', ')}`);
+            }
+
+            // 통화별 가격 범위 검증
+            const priceRangeValidation = this.validatePriceByurrency(
+                requestData.ticket_price, 
+                requestData.currency
+            );
+
+            if (!priceRangeValidation.valid) {
+                console.warn('⚠️ [항공권디버그] 가격 범위 경고:', priceRangeValidation.message);
+                // 경고만 표시하고 계속 진행
             }
 
             let imageUrl = null;
@@ -574,6 +668,7 @@ class FlightRequestAPI {
                 imageUrl = await this.uploadFlightImage(imageFile);
             }
 
+            // 🆕 v8.5.0: 가격 정보 필드 추가
             const dataToSave = {
                 user_id: this.user.id,
                 purchase_type: requestData.purchase_type,
@@ -583,17 +678,31 @@ class FlightRequestAPI {
                 arrival_airport: requestData.arrival_airport,
                 flight_image_url: imageUrl,
                 purchase_link: requestData.purchase_link || null,
+                ticket_price: parseFloat(requestData.ticket_price), // 숫자로 변환
+                currency: requestData.currency,
+                price_source: requestData.price_source.trim(),
                 status: 'pending'
             };
 
-            return await this.insertData('flight_requests', dataToSave);
+            console.log('🔍 [항공권디버그] 저장할 데이터 (가격 정보 포함):', {
+                ...dataToSave,
+                user_id: '***',
+                ticket_price: dataToSave.ticket_price,
+                currency: dataToSave.currency,
+                price_source: dataToSave.price_source
+            });
+
+            const result = await this.insertData('flight_requests', dataToSave);
+            console.log('✅ [항공권디버그] 항공권 신청 생성 완료 (가격 정보 포함)');
+            
+            return result;
         } catch (error) {
-            console.error('항공권 신청 생성 실패:', error);
+            console.error('❌ [항공권디버그] 항공권 신청 생성 실패:', error);
             throw error;
         }
     }
 
-    // 🌐 v8.4.1: 퍼블릭 Storage 최적화 항공권 이미지 업로드
+    // 🌐 v8.5.0: 퍼블릭 Storage 최적화 항공권 이미지 업로드
     async uploadFlightImage(imageFile) {
         try {
             // 단순한 파일명 (퍼블릭 Storage이므로 폴더 구조 불필요)
@@ -606,9 +715,10 @@ class FlightRequestAPI {
         }
     }
 
-    // 항공권 신청 수정
+    // 🆕 v8.5.0: 가격 정보가 포함된 항공권 신청 수정
     async updateFlightRequest(requestId, requestData, imageFile = null) {
         try {
+            console.log('🔍 [항공권디버그] updateFlightRequest() 시작 (v8.5.0 가격 정보 포함)...');
             await this.ensureInitialized();
             
             if (!this.user) await this.getCurrentUser();
@@ -617,6 +727,21 @@ class FlightRequestAPI {
                 throw new Error('사용자 정보가 없습니다');
             }
 
+            // 🆕 가격 정보 유효성 검증 (가격 정보가 포함된 경우)
+            if (requestData.ticket_price || requestData.currency || requestData.price_source) {
+                const priceValidation = this.validatePriceInfo({
+                    ticket_price: requestData.ticket_price,
+                    currency: requestData.currency,
+                    price_source: requestData.price_source
+                });
+
+                if (!priceValidation.isValid) {
+                    console.error('❌ [항공권디버그] 가격 정보 검증 실패:', priceValidation.errors);
+                    throw new Error(`가격 정보 오류: ${priceValidation.errors.join(', ')}`);
+                }
+            }
+
+            // 🆕 v8.5.0: 가격 정보 필드 포함한 업데이트 데이터 구성
             let updateData = {
                 purchase_type: requestData.purchase_type,
                 departure_date: requestData.departure_date,
@@ -629,10 +754,28 @@ class FlightRequestAPI {
                 version: (requestData.version || 0) + 1
             };
 
+            // 가격 정보가 있으면 추가
+            if (requestData.ticket_price !== undefined) {
+                updateData.ticket_price = parseFloat(requestData.ticket_price);
+            }
+            if (requestData.currency !== undefined) {
+                updateData.currency = requestData.currency;
+            }
+            if (requestData.price_source !== undefined) {
+                updateData.price_source = requestData.price_source.trim();
+            }
+
             // 새 이미지가 있으면 업로드
             if (imageFile) {
                 updateData.flight_image_url = await this.uploadFlightImage(imageFile);
             }
+
+            console.log('🔍 [항공권디버그] 업데이트할 데이터 (가격 정보 포함):', {
+                ...updateData,
+                ticket_price: updateData.ticket_price,
+                currency: updateData.currency,
+                price_source: updateData.price_source
+            });
 
             // 복잡한 조건이 있는 업데이트는 직접 supabase 사용
             const { data, error } = await this.supabase
@@ -645,14 +788,16 @@ class FlightRequestAPI {
                 .single();
 
             if (error) throw error;
+            
+            console.log('✅ [항공권디버그] 항공권 신청 수정 완료 (가격 정보 포함)');
             return data;
         } catch (error) {
-            console.error('항공권 신청 수정 실패:', error);
+            console.error('❌ [항공권디버그] 항공권 신청 수정 실패:', error);
             throw error;
         }
     }
 
-    // === 🌐 v8.4.1: 퍼블릭 Storage 최적화된 데이터 조작 메서드들 ===
+    // === 🌐 v8.5.0: 퍼블릭 Storage 최적화된 데이터 조작 메서드들 ===
 
     async insertData(table, data) {
         if (this.core?.insert) {
@@ -694,7 +839,7 @@ class FlightRequestAPI {
         return result;
     }
 
-    // 🌐 v8.4.1: 단순화된 퍼블릭 Storage 업로드
+    // 🌐 v8.5.0: 단순화된 퍼블릭 Storage 업로드
     async uploadFile(bucket, path, file, options = {}) {
         try {
             console.log(`📤 퍼블릭 Storage 업로드: ${bucket}/${path}`);
@@ -805,7 +950,7 @@ class FlightRequestAPI {
             }
 
             if (!allowedTypes.includes(file.type)) {
-                throw new Error(`지원하지 않는 파일 형식입니다. (${allowedTypes.join(', ')})`)
+                throw new Error(`지원하지 않는 파일 형식입니다. (${allowedTypes.join(', ')})`);
             }
 
             return { isValid: true };
@@ -815,7 +960,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 🔧 v8.4.1: 강화된 디버깅 메서드
+    // 🔧 v8.5.0: 강화된 디버깅 메서드
     getStatus() {
         return {
             isInitialized: this.isInitialized,
@@ -837,11 +982,13 @@ class FlightRequestAPI {
             localStorage: {
                 currentStudent: !!localStorage.getItem('currentStudent'),
                 keys: Object.keys(localStorage).filter(key => key.includes('user') || key.includes('Student'))
-            }
+            },
+            version: '8.5.0',
+            features: ['passport_info', 'flight_requests', 'price_info']
         };
     }
 
-    // 🔧 v8.4.1: 여권정보 디버깅 전용 메서드
+    // 🔧 v8.5.0: 여권정보 디버깅 전용 메서드
     async debugPassportInfo() {
         console.log('🔍 [디버그] 여권정보 종합 진단 시작...');
         
@@ -891,18 +1038,41 @@ class FlightRequestAPI {
             };
         }
     }
+
+    // 🆕 v8.5.0: 가격 정보 디버깅 메서드
+    debugPriceValidation(priceData) {
+        console.log('🔍 [가격디버그] 가격 정보 검증 시작...', priceData);
+        
+        try {
+            const validation = this.validatePriceInfo(priceData);
+            console.log('🔍 [가격디버그] 기본 검증 결과:', validation);
+
+            if (validation.isValid && priceData.ticket_price && priceData.currency) {
+                const rangeValidation = this.validatePriceByurrency(
+                    priceData.ticket_price, 
+                    priceData.currency
+                );
+                console.log('🔍 [가격디버그] 범위 검증 결과:', rangeValidation);
+            }
+
+            return validation;
+        } catch (error) {
+            console.error('❌ [가격디버그] 검증 실패:', error);
+            return { isValid: false, errors: [error.message] };
+        }
+    }
 }
 
-// 🌐 v8.4.1: 퍼블릭 Storage 최적화된 인스턴스 생성
+// 🌐 v8.5.0: 퍼블릭 Storage 최적화된 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.4.1 인스턴스 생성 시작 (여권정보 로딩 문제 해결)...');
+        console.log('🚀 FlightRequestAPI v8.5.0 인스턴스 생성 시작 (가격 정보 기능 추가)...');
         window.flightRequestAPI = new FlightRequestAPI();
         
         // 호환성을 위한 passport API 인스턴스도 생성
         window.passportAPI = window.flightRequestAPI;
         
-        console.log('✅ FlightRequestAPI v8.4.1 인스턴스 생성 완료 - 여권정보 로딩 문제 해결');
+        console.log('✅ FlightRequestAPI v8.5.0 인스턴스 생성 완료 - 가격 정보 기능 추가');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -910,7 +1080,7 @@ function createFlightRequestAPI() {
     }
 }
 
-// 🌐 v8.4.1: 즉시 생성 (대기 시간 최소화)
+// 🌐 v8.5.0: 즉시 생성 (대기 시간 최소화)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(createFlightRequestAPI, 100); // 단축된 대기 시간
@@ -919,4 +1089,4 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 100); // 즉시 실행에 가깝게
 }
 
-console.log('✅ FlightRequestAPI v8.4.1 모듈 로드 완료 - 여권정보 로딩 문제 해결을 위한 디버깅 및 사용자 인증 강화');
+console.log('✅ FlightRequestAPI v8.5.0 모듈 로드 완료 - 가격 정보 입력 기능 추가');
