@@ -1,16 +1,17 @@
-// 🚀 Supabase Core v1.0.2 - 항공권 시스템 전용 개선된 최소 구현
+// 🚀 Supabase Core v1.0.3 - 항공권 시스템 전용 개선된 최소 구현
 // 세종학당 문화인턴 지원 시스템 - 경량화된 Supabase 클라이언트
 // config.js의 window.SupabaseAPI 의존성 해결 + 항공권 시스템 전용 기능
 
 /**
- * SupabaseCore v1.0.2 - 최소한의 핵심 기능만 제공
+ * SupabaseCore v1.0.3 - 최소한의 핵심 기능만 제공
  * 
  * 🎯 목적:
  * - config.js의 waitForModulesReady가 기대하는 window.SupabaseAPI 제공
  * - 항공권 시스템에 필요한 최소한의 기능만 포함
  * - 기존 무거운 supabase-client.js 의존성 제거
  * 
- * 🔧 v1.0.2 개선사항:
+ * 🔧 v1.0.3 개선사항:
+ * - getSystemSettings 메서드 추가: config.js 오류 해결
  * - ES6 모듈 문법 제거: export/export default 제거로 브라우저 호환성 100%
  * - 즉시 초기화: DOMContentLoaded 대기 제거
  * - 호환성 레이어: 기존 방식과 새 방식 모두 지원
@@ -21,6 +22,7 @@
  * - Supabase 클라이언트 초기화
  * - 기본 인증 관리
  * - 데이터베이스 기본 CRUD
+ * - 시스템 설정 조회 (getSystemSettings)
  * - 파일 업로드 기본 기능
  * - 오류 처리 및 재시도 로직
  */
@@ -33,7 +35,7 @@ class SupabaseCore {
         this.user = null;
         this.userType = null;
 
-        // 🔧 v1.0.2: 초기화 상태 추적 강화
+        // 🔧 v1.0.3: 초기화 상태 추적 강화
         this._initializationState = {
             started: false,
             completed: false,
@@ -49,19 +51,19 @@ class SupabaseCore {
             coreReady: false
         };
 
-        // 🆕 v1.0.2: 즉시 초기화 시작
+        // 🆕 v1.0.3: 즉시 초기화 시작
         this.startInitialization();
     }
 
     // ===================
-    // 🔧 v1.0.2: 개선된 초기화 시스템
+    // 🔧 v1.0.3: 개선된 초기화 시스템
     // ===================
 
     /**
      * 즉시 초기화 시작 (비동기)
      */
     startInitialization() {
-        console.log('🚀 SupabaseCore v1.0.2 즉시 초기화 시작...');
+        console.log('🚀 SupabaseCore v1.0.3 즉시 초기화 시작...');
         
         // 비동기로 초기화 시작 (블로킹하지 않음)
         setTimeout(() => {
@@ -160,7 +162,7 @@ class SupabaseCore {
             this._moduleStatus.initialized = true;
             this._moduleStatus.coreReady = true;
 
-            console.log('✅ SupabaseCore v1.0.2 초기화 완료');
+            console.log('✅ SupabaseCore v1.0.3 초기화 완료');
             console.log('👤 현재 사용자:', this.user ? this.user.email : '없음');
 
             // 7. 초기화 완료 이벤트 발생
@@ -346,6 +348,78 @@ class SupabaseCore {
         }
     }
 
+    // 🆕 v1.0.3: 시스템 설정 조회 메서드 추가 (config.js 오류 해결)
+    async getSystemSettings() {
+        try {
+            console.log('🔍 시스템 설정 조회 중...');
+            
+            const initialized = await this.ensureInitialized();
+            if (!initialized) {
+                throw new Error('SupabaseCore 초기화 실패');
+            }
+
+            // system_settings 테이블에서 설정 조회
+            const { data, error } = await this.client
+                .from('system_settings')
+                .select('setting_key, setting_value');
+
+            if (error) {
+                console.warn('⚠️ 시스템 설정 조회 실패:', error.message);
+                // 기본 설정 반환 (폴백)
+                return this.getDefaultSystemSettings();
+            }
+
+            // 데이터가 없으면 기본 설정 반환
+            if (!data || data.length === 0) {
+                console.log('ℹ️ 시스템 설정이 비어있음, 기본 설정 반환');
+                return this.getDefaultSystemSettings();
+            }
+
+            // 배열을 키-값 객체로 변환
+            const settings = {};
+            data.forEach(item => {
+                if (item.setting_key) {
+                    // JSON 파싱 시도
+                    try {
+                        settings[item.setting_key] = JSON.parse(item.setting_value);
+                    } catch (parseError) {
+                        // JSON이 아니면 문자열 그대로 사용
+                        settings[item.setting_key] = item.setting_value;
+                    }
+                }
+            });
+
+            console.log('✅ 시스템 설정 조회 성공:', Object.keys(settings).length, '개 설정');
+            return settings;
+
+        } catch (error) {
+            console.error('❌ 시스템 설정 조회 실패:', error);
+            // 에러 발생시 기본 설정 반환
+            return this.getDefaultSystemSettings();
+        }
+    }
+
+    /**
+     * 기본 시스템 설정 반환 (DB 조회 실패시 폴백)
+     */
+    getDefaultSystemSettings() {
+        console.log('📋 기본 시스템 설정 사용');
+        
+        // config.js에서 정의된 기본 설정 사용
+        if (window.CONFIG?.APP?.DEFAULT_SYSTEM_SETTINGS) {
+            return { ...window.CONFIG.APP.DEFAULT_SYSTEM_SETTINGS };
+        }
+
+        // 최종 폴백
+        return {
+            test_mode: false,
+            ignore_deadline: false,
+            lesson_plan_deadline: '2025-12-31',
+            lesson_plan_time: '23:59',
+            notice_message: ''
+        };
+    }
+
     // 데이터베이스 기본 CRUD 메서드들 (기존과 동일)
     async select(table, columns = '*', filters = {}) {
         return await this.safeApiCall(
@@ -518,7 +592,7 @@ class SupabaseCore {
     }
 
     debug() {
-        console.group('🔍 SupabaseCore v1.0.2 상태');
+        console.group('🔍 SupabaseCore v1.0.3 상태');
         console.log('초기화:', this.isInitialized);
         console.log('클라이언트:', !!this.client);
         console.log('사용자:', this.user);
@@ -536,7 +610,7 @@ class SupabaseCore {
 // 싱글톤 인스턴스 생성
 const supabaseCore = new SupabaseCore();
 
-// 🔧 v1.0.2: 호환성 레이어 - 기존 방식과 새 방식 모두 지원
+// 🔧 v1.0.3: 호환성 레이어 - 기존 방식과 새 방식 모두 지원
 window.SupabaseAPI = {
     // 필수 메서드들 (config.js가 기대하는 것들)
     _moduleStatus: supabaseCore._moduleStatus,
@@ -551,6 +625,11 @@ window.SupabaseAPI = {
     
     async testConnection() {
         return await supabaseCore.testConnection();
+    },
+
+    // 🆕 v1.0.3: getSystemSettings 메서드 추가 (config.js 오류 해결)
+    async getSystemSettings() {
+        return await supabaseCore.getSystemSettings();
     },
 
     // SupabaseCore 인스턴스 접근
@@ -574,7 +653,7 @@ window.SupabaseAPI = {
     }
 };
 
-// 🆕 v1.0.2: 기존 방식 호환성 지원
+// 🆕 v1.0.3: 기존 방식 호환성 지원
 window.SupabaseCore = {
     // 기존 API 유지
     _initialized: false,
@@ -628,6 +707,11 @@ window.SupabaseCore = {
         return await supabaseCore.testConnection();
     },
     
+    // 🆕 v1.0.3: getSystemSettings 추가
+    async getSystemSettings() {
+        return await supabaseCore.getSystemSettings();
+    },
+    
     getStatus() {
         const status = supabaseCore.getStatus();
         this._initialized = status.initialized;
@@ -658,11 +742,11 @@ window.SupabaseCore = {
     }
 };
 
-// 🔧 v1.0.2: ES6 모듈 문법 제거 - 전역 변수로만 노출
+// 🔧 v1.0.3: ES6 모듈 문법 제거 - 전역 변수로만 노출
 // 브라우저 호환성을 위해 export 문법 사용하지 않음
 
 // ===================
-// 🔧 v1.0.2: 개발자 도구 및 디버깅 지원
+// 🔧 v1.0.3: 개발자 도구 및 디버깅 지원
 // ===================
 
 if (typeof window !== 'undefined') {
@@ -671,6 +755,7 @@ if (typeof window !== 'undefined') {
         debug: () => supabaseCore.debug(),
         forceInit: () => supabaseCore.init(),
         testConnection: () => supabaseCore.testConnection(),
+        getSystemSettings: () => supabaseCore.getSystemSettings(),
         getCurrentUser: () => supabaseCore.getCurrentUser(),
         getCurrentUserType: () => supabaseCore.getCurrentUserType(),
         // 새로운 디버깅 메서드들
@@ -694,4 +779,4 @@ if (typeof window !== 'undefined') {
     };
 }
 
-console.log('🎯 SupabaseCore v1.0.2 로드 완료 - ES6 모듈 문법 제거로 브라우저 호환성 100% 보장');
+console.log('🎯 SupabaseCore v1.0.3 로드 완료 - getSystemSettings 메서드 추가로 config.js 오류 해결');
