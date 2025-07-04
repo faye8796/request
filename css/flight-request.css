@@ -1,5 +1,5 @@
-/* flight-request.css - 항공권 신청 페이지 스타일 v8.3.2 */
-/* passport-info UI 기능 완전 통합 버전 + 여권정보 보기 모드 UX 개선 */
+/* flight-request.css - 항공권 신청 페이지 스타일 v8.4.0 */
+/* passport-info UI 기능 완전 통합 버전 + 여권정보 수정 UI 개선 */
 
 /* 전역 로딩 상태 */
 .global-loading-state {
@@ -187,7 +187,7 @@
     margin: 0 0 2rem 0;
 }
 
-/* 🛠️ v8.3.2: 여권정보 보기 모드 스타일 */
+/* 🛠️ v8.4.0: 여권정보 보기 모드 스타일 */
 .passport-view-container {
     max-width: 800px;
     margin: 0 auto;
@@ -885,6 +885,12 @@
     border-top: 1px solid #e5e7eb;
 }
 
+/* 🛠️ v8.4.0: 여권정보 수정을 위한 단일 버튼 스타일 */
+.button-group.single-button {
+    justify-content: center;
+    gap: 0;
+}
+
 .btn {
     display: inline-flex;
     align-items: center;
@@ -1199,7 +1205,7 @@
         font-size: 1rem;
     }
 
-    /* 🛠️ v8.3.2: 여권정보 보기 모드 반응형 */
+    /* 🛠️ v8.4.0: 여권정보 보기 모드 반응형 */
     .passport-view-container {
         padding: 15px;
     }
@@ -1226,6 +1232,15 @@
     .passport-image-display img {
         max-width: 100%;
         max-height: 250px;
+    }
+
+    /* 🛠️ v8.4.0: 단일 버튼 반응형 */
+    .button-group.single-button {
+        flex-direction: column;
+    }
+
+    .button-group.single-button .btn {
+        width: 100%;
     }
 }
 
@@ -1263,7 +1278,7 @@
     }
 }
 
-/* 🛠️ v8.3.2: 다크 모드 지원 (여권정보 보기 모드) */
+/* 🛠️ v8.4.0: 다크 모드 지원 (여권정보 보기 모드) */
 @media (prefers-color-scheme: dark) {
     .passport-info-card {
         background: #1f2937;
