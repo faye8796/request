@@ -1,5 +1,5 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.4.2
-// 🔧 여권정보 설정 버튼 자동 폼 채우기 기능 수정 완료
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.5.0
+// 🔧 가격 정보 입력 기능 추가
 // passport-info UI 기능 완전 통합 버전
 
 class FlightRequestUI {
@@ -16,10 +16,10 @@ class FlightRequestUI {
         // 🆕 Passport-info 관련 상태
         this.passportImageFile = null;
         this.existingPassportImageUrl = null;
-        this.existingPassportInfo = null; // 🛠️ v8.4.2: 기존 여권정보 저장
-        this.isViewMode = false; // 🛠️ v8.4.2: 여권정보 보기/편집 모드
+        this.existingPassportInfo = null; // 🛠️ v8.5.0: 기존 여권정보 저장
+        this.isViewMode = false; // 🛠️ v8.5.0: 여권정보 보기/편집 모드
         
-        // 🛠️ v8.4.2: 무한 루프 방지 플래그
+        // 🛠️ v8.5.0: 무한 루프 방지 플래그
         this.isLoadingData = false;
         
         // 초기화 상태
@@ -54,7 +54,7 @@ class FlightRequestUI {
             passportSuccessMessage: document.getElementById('passportSuccessMessage'),
             proceedToFlightRequest: document.getElementById('proceedToFlightRequest'),
             
-            // 🛠️ v8.4.2: 여권정보 보기 모드용 요소들 추가
+            // 🛠️ v8.5.0: 여권정보 보기 모드용 요소들 추가
             passportViewContainer: null, // 동적으로 생성
             
             // 항공권 신청 폼 요소
@@ -73,6 +73,11 @@ class FlightRequestUI {
             removeImage: document.getElementById('removeImage'),
             submitBtn: document.getElementById('submitBtn'),
             submitBtnText: document.getElementById('submitBtnText'),
+            
+            // 🆕 v8.5.0: 가격 정보 관련 요소들 추가
+            ticketPrice: document.getElementById('ticketPrice'),
+            currency: document.getElementById('currency'),
+            priceSource: document.getElementById('priceSource'),
             
             // 모달
             ticketSubmitModal: document.getElementById('ticketSubmitModal'),
@@ -97,7 +102,7 @@ class FlightRequestUI {
 
     async init() {
         try {
-            console.log('🔄 FlightRequestUI v8.4.2 초기화 시작 (여권정보 설정 버튼 자동 폼 채우기 기능 수정)...');
+            console.log('🔄 FlightRequestUI v8.5.0 초기화 시작 (가격 정보 입력 기능 추가)...');
             
             // API 및 유틸리티 대기
             await this.waitForDependencies();
@@ -105,12 +110,12 @@ class FlightRequestUI {
             // 이벤트 리스너 설정
             this.setupEventListeners();
             
-            // 🛠️ v8.4.2: 초기화 시 자동으로 데이터 로드 시작
+            // 🛠️ v8.5.0: 초기화 시 자동으로 데이터 로드 시작
             setTimeout(() => {
                 this.loadInitialData();
             }, 300);
             
-            console.log('✅ FlightRequestUI v8.4.2 초기화 완료 - 여권정보 설정 버튼 자동 폼 채우기 기능 수정');
+            console.log('✅ FlightRequestUI v8.5.0 초기화 완료 - 가격 정보 입력 기능 추가');
             
             this.isInitialized = true;
         } catch (error) {
@@ -119,7 +124,7 @@ class FlightRequestUI {
         }
     }
 
-    // 🔧 v8.4.2: 강화된 의존성 대기 로직
+    // 🔧 v8.5.0: 강화된 의존성 대기 로직
     async waitForDependencies(timeout = 20000) {
         const startTime = Date.now();
         
@@ -140,9 +145,9 @@ class FlightRequestUI {
                 if (apiExists && apiInitialized && utilsReady) {
                     this.api = window.flightRequestAPI;
                     this.utils = window.FlightRequestUtils;
-                    console.log('✅ [UI디버그] FlightRequestUI v8.4.2 의존성 로드 완료');
+                    console.log('✅ [UI디버그] FlightRequestUI v8.5.0 의존성 로드 완료');
                     
-                    // 🔧 v8.4.2: API 상태 추가 확인
+                    // 🔧 v8.5.0: API 상태 추가 확인
                     const apiStatus = this.api.getStatus();
                     console.log('🔍 [UI디버그] API 상세 상태:', apiStatus);
                     
@@ -189,10 +194,10 @@ class FlightRequestUI {
         }
     }
 
-    // 🛠️ v8.4.2: 강화된 초기 데이터 로드 (상세한 디버깅)
+    // 🛠️ v8.5.0: 강화된 초기 데이터 로드 (상세한 디버깅)
     async loadInitialData() {
         try {
-            console.log('🔄 [UI디버그] v8.4.2 초기 데이터 로드 시작 - 여권정보 설정 버튼 자동 폼 채우기 기능 수정');
+            console.log('🔄 [UI디버그] v8.5.0 초기 데이터 로드 시작 - 가격 정보 입력 기능 추가');
             
             // API 초기화 확인
             await this.ensureInitialized();
@@ -219,7 +224,7 @@ class FlightRequestUI {
             
             console.log('🔍 [UI디버그] 여권정보 확인 시작...');
             
-            // 🔧 v8.4.2: 여권정보 확인 - 더 상세한 로그
+            // 🔧 v8.5.0: 여권정보 확인 - 더 상세한 로그
             try {
                 // 먼저 API 디버깅 실행
                 if (this.api.debugPassportInfo) {
@@ -255,9 +260,9 @@ class FlightRequestUI {
         }
     }
 
-    // 🛠️ v8.4.2: 데이터 없이 항공권 신청 페이지 표시 (폴백)
+    // 🛠️ v8.5.0: 데이터 없이 항공권 신청 페이지 표시 (폴백)
     showFlightRequestPageWithoutData() {
-        console.log('🔄 [UI디버그] v8.4.2 기본 항공권 신청 페이지 표시 (데이터 없음)');
+        console.log('🔄 [UI디버그] v8.5.0 기본 항공권 신청 페이지 표시 (데이터 없음)');
         
         // 항공권 신청 페이지 표시
         this.showFlightRequestPage();
@@ -268,10 +273,10 @@ class FlightRequestUI {
         console.log('✅ [UI디버그] 기본 UI 표시 완료');
     }
 
-    // 🔧 v8.4.2: 여권정보 등록 페이지 표시 개선
+    // 🔧 v8.5.0: 여권정보 등록 페이지 표시 개선
     async showPassportInfoPage() {
         try {
-            console.log('🔄 [UI디버그] v8.4.2 여권정보 페이지 표시...');
+            console.log('🔄 [UI디버그] v8.5.0 여권정보 페이지 표시...');
             
             // 페이지 전환
             const flightRequestPage = document.getElementById('flightRequestPage');
@@ -282,7 +287,7 @@ class FlightRequestUI {
                 passportInfoPage.classList.add('active');
             }
             
-            // 🔧 v8.4.2: DOM 안정화 대기 후 폼 자동 채우기 실행
+            // 🔧 v8.5.0: DOM 안정화 대기 후 폼 자동 채우기 실행
             setTimeout(async () => {
                 try {
                     await this.initializePassportInfoUI();
@@ -292,7 +297,7 @@ class FlightRequestUI {
                 }
             }, 200);
             
-            console.log('✅ [UI디버그] v8.4.2 여권정보 페이지 표시 완료');
+            console.log('✅ [UI디버그] v8.5.0 여권정보 페이지 표시 완료');
         } catch (error) {
             console.error('❌ [UI디버그] 여권정보 페이지 표시 실패:', error);
         }
@@ -305,12 +310,12 @@ class FlightRequestUI {
         }
     }
 
-    // === 🔧 v8.4.2: 강화된 PASSPORT INFO UI 기능 ===
+    // === 🔧 v8.5.0: 강화된 PASSPORT INFO UI 기능 ===
 
     // 여권정보 UI 초기화
     async initializePassportInfoUI() {
         try {
-            console.log('🔧 [UI디버그] v8.4.2 여권정보 UI 초기화 시작 (자동 폼 채우기 기능)');
+            console.log('🔧 [UI디버그] v8.5.0 여권정보 UI 초기화 시작 (자동 폼 채우기 기능)');
             
             // API 초기화 확인
             await this.ensureInitialized();
@@ -318,38 +323,38 @@ class FlightRequestUI {
             // 여권정보 이벤트 리스너 설정
             this.setupPassportEventListeners();
             
-            console.log('✅ [UI디버그] v8.4.2 여권정보 UI 초기화 완료');
+            console.log('✅ [UI디버그] v8.5.0 여권정보 UI 초기화 완료');
         } catch (error) {
             console.error('❌ [UI디버그] 여권정보 UI 초기화 오류:', error);
             this.showError('여권정보 UI 초기화 중 오류가 발생했습니다: ' + error.message);
         }
     }
 
-    // 🛠️ v8.4.2: 개선된 기존 여권정보 로드 및 모드 설정
+    // 🛠️ v8.5.0: 개선된 기존 여권정보 로드 및 모드 설정
     async loadExistingPassportDataAndSetMode() {
         try {
-            console.log('🔄 [UI디버그] v8.4.2 기존 여권정보 로드 및 모드 설정 시작...');
+            console.log('🔄 [UI디버그] v8.5.0 기존 여권정보 로드 및 모드 설정 시작...');
             
             const passportInfo = await window.flightRequestAPI.getPassportInfo();
             
             if (passportInfo) {
-                console.log('✅ [UI디버그] v8.4.2 기존 여권정보 발견 - 폼 채우기 실행');
+                console.log('✅ [UI디버그] v8.5.0 기존 여권정보 발견 - 폼 채우기 실행');
                 await this.populatePassportForm(passportInfo);
                 return true;
             } else {
-                console.log('ℹ️ [UI디버그] v8.4.2 기존 여권정보 없음 - 신규 등록 모드');
+                console.log('ℹ️ [UI디버그] v8.5.0 기존 여권정보 없음 - 신규 등록 모드');
                 return false;
             }
         } catch (error) {
-            console.error('❌ [UI디버그] v8.4.2 여권정보 로딩 실패:', error);
+            console.error('❌ [UI디버그] v8.5.0 여권정보 로딩 실패:', error);
             return false;
         }
     }
 
-    // 🛠️ v8.4.2: 개선된 여권정보 폼 채우기
+    // 🛠️ v8.5.0: 개선된 여권정보 폼 채우기
     async populatePassportForm(passportData) {
         try {
-            console.log('🔄 [UI디버그] v8.4.2 여권정보 폼 채우기 시작...', passportData);
+            console.log('🔄 [UI디버그] v8.5.0 여권정보 폼 채우기 시작...', passportData);
             
             // 폼 필드 채우기
             const passportNumber = document.getElementById('passportNumber');
@@ -375,15 +380,15 @@ class FlightRequestUI {
                 }
             }
             
-            console.log('✅ [UI디버그] v8.4.2 여권정보 폼 채우기 완료');
+            console.log('✅ [UI디버그] v8.5.0 여권정보 폼 채우기 완료');
             return true;
         } catch (error) {
-            console.error('❌ [UI디버그] v8.4.2 폼 채우기 실패:', error);
+            console.error('❌ [UI디버그] v8.5.0 폼 채우기 실패:', error);
             return false;
         }
     }
 
-    // 🛠️ v8.4.2: 여권정보 보기 모드 표시
+    // 🛠️ v8.5.0: 여권정보 보기 모드 표시
     showPassportViewMode(passportInfo) {
         const container = document.getElementById('passportForm');
         if (!container) return;
@@ -457,7 +462,7 @@ class FlightRequestUI {
         }
     }
 
-    // 🛠️ v8.4.2: 여권정보 편집 모드 표시
+    // 🛠️ v8.5.0: 여권정보 편집 모드 표시
     showPassportEditMode() {
         // 보기 모드 컨테이너 제거
         if (this.elements.passportViewContainer) {
@@ -476,9 +481,9 @@ class FlightRequestUI {
         }
     }
 
-    // 🛠️ v8.4.2: 여권정보 보기 모드 닫기
+    // 🛠️ v8.5.0: 여권정보 보기 모드 닫기
     closePassportView() {
-        console.log('🔄 [UI디버그] v8.4.2 여권정보 보기 닫기 - 항공권 신청 페이지로 이동');
+        console.log('🔄 [UI디버그] v8.5.0 여권정보 보기 닫기 - 항공권 신청 페이지로 이동');
         this.showFlightRequestPage();
         
         // 항공권 신청 데이터 로드
@@ -487,9 +492,9 @@ class FlightRequestUI {
         }, 200);
     }
 
-    // 🛠️ v8.4.2: 여권정보 편집 모드로 전환
+    // 🛠️ v8.5.0: 여권정보 편집 모드로 전환
     editPassportInfo() {
-        console.log('🔄 [UI디버그] v8.4.2 여권정보 편집 모드로 전환');
+        console.log('🔄 [UI디버그] v8.5.0 여권정보 편집 모드로 전환');
         this.isViewMode = false;
         this.showPassportEditMode();
     }
@@ -507,6 +512,33 @@ class FlightRequestUI {
             });
         } catch (error) {
             return dateString;
+        }
+    }
+
+    // 🆕 v8.5.0: 가격 포맷팅 유틸리티
+    formatPrice(price, currency) {
+        if (!price) return '-';
+        
+        try {
+            const numPrice = parseFloat(price);
+            const formatter = new Intl.NumberFormat('ko-KR');
+            
+            switch(currency) {
+                case 'KRW':
+                    return `${formatter.format(numPrice)}원`;
+                case 'USD':
+                    return `$${formatter.format(numPrice)}`;
+                case 'CNY':
+                    return `¥${formatter.format(numPrice)}`;
+                case 'JPY':
+                    return `¥${formatter.format(numPrice)}`;
+                case 'EUR':
+                    return `€${formatter.format(numPrice)}`;
+                default:
+                    return `${formatter.format(numPrice)} ${currency}`;
+            }
+        } catch (error) {
+            return `${price} ${currency}`;
         }
     }
 
@@ -653,12 +685,12 @@ class FlightRequestUI {
         return true;
     }
 
-    // 🔧 v8.4.2: 강화된 여권정보 제출 처리
+    // 🔧 v8.5.0: 강화된 여권정보 제출 처리
     async handlePassportSubmit(event) {
         event.preventDefault();
 
         try {
-            console.log('🔄 [UI디버그] v8.4.2 여권정보 제출 시작...');
+            console.log('🔄 [UI디버그] v8.5.0 여권정보 제출 시작...');
             
             // API 초기화 확인
             await this.ensureInitialized();
@@ -689,17 +721,17 @@ class FlightRequestUI {
                 expiry_date: this.elements.expiryDate?.value || ''
             };
 
-            console.log('🔍 [UI디버그] v8.4.2 여권정보 저장 데이터:', passportData);
+            console.log('🔍 [UI디버그] v8.5.0 여권정보 저장 데이터:', passportData);
 
             const result = await this.api.savePassportInfo(passportData, this.passportImageFile);
 
-            console.log('✅ [UI디버그] v8.4.2 여권정보 저장 성공:', result);
+            console.log('✅ [UI디버그] v8.5.0 여권정보 저장 성공:', result);
 
             // 성공 시 성공 메시지 표시 후 항공권 신청 페이지로 안내
             this.showPassportSuccessTransition(result.isUpdate);
 
         } catch (error) {
-            console.error('❌ [UI디버그] v8.4.2 여권정보 저장 실패:', error);
+            console.error('❌ [UI디버그] v8.5.0 여권정보 저장 실패:', error);
             this.showError(error.message || '저장 중 오류가 발생했습니다.');
         } finally {
             this.setPassportLoading(false);
@@ -756,9 +788,9 @@ class FlightRequestUI {
 
     // === FLIGHT REQUEST UI 기능 ===
 
-    // 🛠️ v8.4.2: 항공권 신청 데이터만 로드 (무한 루프 방지)
+    // 🛠️ v8.5.0: 항공권 신청 데이터만 로드 (무한 루프 방지)
     async loadFlightRequestData() {
-        // 🛠️ v8.4.2: 중복 로딩 방지
+        // 🛠️ v8.5.0: 중복 로딩 방지
         if (this.isLoadingData) {
             console.log('⚠️ [UI디버그] 이미 데이터 로딩 중 - 중복 실행 방지');
             return;
@@ -766,7 +798,7 @@ class FlightRequestUI {
 
         try {
             this.isLoadingData = true;
-            console.log('🔄 [UI디버그] 항공권 신청 데이터 로드 시작 (v8.4.2)');
+            console.log('🔄 [UI디버그] 항공권 신청 데이터 로드 시작 (v8.5.0)');
             
             // API 초기화 확인
             await this.ensureInitialized();
@@ -790,7 +822,7 @@ class FlightRequestUI {
                 this.showRequestForm(false);
             }
 
-            console.log('✅ [UI디버그] 항공권 신청 데이터 로드 완료 (v8.4.2)');
+            console.log('✅ [UI디버그] 항공권 신청 데이터 로드 완료 (v8.5.0)');
         } catch (error) {
             console.error('❌ [UI디버그] 항공권 신청 데이터 로드 실패:', error);
             if (this.utils) {
@@ -852,6 +884,9 @@ class FlightRequestUI {
             this.elements.receiptFile.addEventListener('change', (e) => this.handleFileUpload(e, 'receipt'));
         }
 
+        // 🆕 v8.5.0: 가격 정보 관련 이벤트 리스너 추가
+        this.setupPriceEventListeners();
+
         // 오늘 날짜로 최소값 설정
         const today = new Date().toISOString().split('T')[0];
         if (this.elements.departureDate) {
@@ -859,6 +894,108 @@ class FlightRequestUI {
         }
         if (this.elements.returnDate) {
             this.elements.returnDate.min = today;
+        }
+    }
+
+    // 🆕 v8.5.0: 가격 정보 이벤트 리스너 설정
+    setupPriceEventListeners() {
+        // 가격 입력 시 숫자만 허용
+        if (this.elements.ticketPrice) {
+            this.elements.ticketPrice.addEventListener('input', (e) => {
+                // 숫자만 허용
+                let value = e.target.value.replace(/[^\d]/g, '');
+                if (value) {
+                    e.target.value = value;
+                }
+            });
+
+            // 가격 검증
+            this.elements.ticketPrice.addEventListener('blur', (e) => {
+                this.validatePriceInput();
+            });
+        }
+
+        // 통화 변경 시 힌트 업데이트
+        if (this.elements.currency) {
+            this.elements.currency.addEventListener('change', (e) => {
+                this.updatePriceHint();
+                this.validatePriceInput();
+            });
+        }
+
+        // 가격 출처 입력 검증
+        if (this.elements.priceSource) {
+            this.elements.priceSource.addEventListener('input', (e) => {
+                // 최대 길이 제한
+                if (e.target.value.length > 100) {
+                    e.target.value = e.target.value.substring(0, 100);
+                }
+            });
+        }
+    }
+
+    // 🆕 v8.5.0: 가격 입력 검증
+    validatePriceInput() {
+        if (!this.elements.ticketPrice || !this.elements.currency || !this.api) {
+            return true;
+        }
+
+        const price = this.elements.ticketPrice.value;
+        const currency = this.elements.currency.value;
+
+        if (!price || !currency) {
+            return true;
+        }
+
+        try {
+            // API를 통한 가격 범위 검증
+            const validation = this.api.validatePriceByCurrency(price, currency);
+            
+            if (!validation.valid) {
+                console.warn('⚠️ [가격검증]', validation.message);
+                // 경고 표시 (선택적)
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('❌ 가격 검증 오류:', error);
+            return true; // 검증 오류 시 통과
+        }
+    }
+
+    // 🆕 v8.5.0: 통화별 가격 힌트 업데이트
+    updatePriceHint() {
+        if (!this.elements.ticketPrice || !this.elements.currency) {
+            return;
+        }
+
+        const currency = this.elements.currency.value;
+        const priceInput = this.elements.ticketPrice;
+        const hint = priceInput.nextElementSibling;
+
+        if (hint && hint.classList.contains('form-hint')) {
+            switch(currency) {
+                case 'KRW':
+                    hint.textContent = '숫자만 입력해주세요 (천 원 단위 권장)';
+                    priceInput.placeholder = '예: 850000';
+                    break;
+                case 'USD':
+                    hint.textContent = '숫자만 입력해주세요 (달러 단위)';
+                    priceInput.placeholder = '예: 650';
+                    break;
+                case 'CNY':
+                    hint.textContent = '숫자만 입력해주세요 (위안 단위)';
+                    priceInput.placeholder = '예: 4800';
+                    break;
+                case 'JPY':
+                    hint.textContent = '숫자만 입력해주세요 (엔 단위)';
+                    priceInput.placeholder = '예: 95000';
+                    break;
+                default:
+                    hint.textContent = '숫자만 입력해주세요';
+                    priceInput.placeholder = '가격을 입력하세요';
+            }
         }
     }
 
@@ -914,6 +1051,7 @@ class FlightRequestUI {
         this.renderExistingRequest();
     }
 
+    // 🆕 v8.5.0: 가격 정보가 포함된 기존 신청 내역 렌더링
     renderExistingRequest() {
         if (!this.existingRequest || !this.elements.existingRequest || !this.utils) return;
         
@@ -940,6 +1078,28 @@ class FlightRequestUI {
                         <label>경로</label>
                         <p>${request.departure_airport} → ${request.arrival_airport}</p>
                     </div>
+        `;
+
+        // 🆕 v8.5.0: 가격 정보 표시 추가
+        if (request.ticket_price && request.currency) {
+            html += `
+                    <div class="info-group">
+                        <label>항공권 가격</label>
+                        <p class="price-display">${this.formatPrice(request.ticket_price, request.currency)}</p>
+                    </div>
+            `;
+        }
+
+        if (request.price_source) {
+            html += `
+                    <div class="info-group">
+                        <label>가격 출처</label>
+                        <p>${request.price_source}</p>
+                    </div>
+            `;
+        }
+
+        html += `
                     <div class="info-group">
                         <label>신청일</label>
                         <p>${this.utils.formatDateTime(request.created_at)}</p>
@@ -1005,6 +1165,7 @@ class FlightRequestUI {
         this.populateForm(this.existingRequest);
     }
 
+    // 🆕 v8.5.0: 가격 정보가 포함된 폼 채우기
     populateForm(request) {
         // 구매 방식
         if (this.elements.purchaseType && this.elements.purchaseType.length > 0) {
@@ -1029,6 +1190,18 @@ class FlightRequestUI {
             this.elements.arrivalAirport.value = request.arrival_airport;
         }
         
+        // 🆕 v8.5.0: 가격 정보 채우기
+        if (this.elements.ticketPrice && request.ticket_price) {
+            this.elements.ticketPrice.value = request.ticket_price;
+        }
+        if (this.elements.currency && request.currency) {
+            this.elements.currency.value = request.currency;
+            this.updatePriceHint(); // 통화에 맞는 힌트 업데이트
+        }
+        if (this.elements.priceSource && request.price_source) {
+            this.elements.priceSource.value = request.price_source;
+        }
+        
         // 구매 링크
         if (request.purchase_link && this.elements.purchaseLink) {
             this.elements.purchaseLink.value = request.purchase_link;
@@ -1041,26 +1214,26 @@ class FlightRequestUI {
         this.validateDuration();
     }
 
-    // 🔧 v8.4.2: 구매 링크 위치 수정 - [구매 대행]일 때 표시
+    // 🔧 v8.5.0: 구매 링크 위치 수정 - [구매 대행]일 때 표시
     handlePurchaseTypeChange() {
         if (!this.elements.purchaseType || this.elements.purchaseType.length === 0) return;
         
         const selectedType = Array.from(this.elements.purchaseType)
             .find(radio => radio.checked)?.value;
         
-        console.log('🔧 [UI디버그] v8.4.2: 구매 방식 변경:', selectedType);
+        console.log('🔧 [UI디버그] v8.5.0: 구매 방식 변경:', selectedType);
         
         if (this.elements.purchaseLinkGroup) {
-            // 🔧 v8.4.2: [구매 대행]일 때 구매 링크 표시 (기존: direct → agency)
+            // 🔧 v8.5.0: [구매 대행]일 때 구매 링크 표시 (기존: direct → agency)
             if (selectedType === 'agency') {
                 this.elements.purchaseLinkGroup.style.display = 'block';
-                console.log('✅ [UI디버그] v8.4.2: 구매 링크 표시 (구매 대행)');
+                console.log('✅ [UI디버그] v8.5.0: 구매 링크 표시 (구매 대행)');
             } else {
                 this.elements.purchaseLinkGroup.style.display = 'none';
                 if (this.elements.purchaseLink) {
                     this.elements.purchaseLink.value = '';
                 }
-                console.log('✅ [UI디버그] v8.4.2: 구매 링크 숨김 (직접 구매)');
+                console.log('✅ [UI디버그] v8.5.0: 구매 링크 숨김 (직접 구매)');
             }
         }
     }
@@ -1146,6 +1319,7 @@ class FlightRequestUI {
         }
     }
 
+    // 🆕 v8.5.0: 가격 정보가 포함된 항공권 신청 제출
     async handleSubmit(event) {
         event.preventDefault();
 
@@ -1155,6 +1329,11 @@ class FlightRequestUI {
 
             // 날짜 및 기간 검증
             if (!this.validateDuration()) {
+                return;
+            }
+
+            // 🆕 v8.5.0: 가격 정보 검증
+            if (!this.validatePriceFields()) {
                 return;
             }
 
@@ -1170,15 +1349,27 @@ class FlightRequestUI {
             const selectedType = Array.from(this.elements.purchaseType || [])
                 .find(radio => radio.checked)?.value || 'direct';
 
+            // 🆕 v8.5.0: 가격 정보 포함한 요청 데이터 구성
             const requestData = {
                 purchase_type: selectedType,
                 departure_date: this.elements.departureDate?.value || '',
                 return_date: this.elements.returnDate?.value || '',
                 departure_airport: this.elements.departureAirport?.value?.trim() || '',
                 arrival_airport: this.elements.arrivalAirport?.value?.trim() || '',
-                // 🔧 v8.4.2: 구매 대행일 때만 purchase_link 저장
-                purchase_link: selectedType === 'agency' ? this.elements.purchaseLink?.value?.trim() || null : null
+                // 🔧 v8.5.0: 구매 대행일 때만 purchase_link 저장
+                purchase_link: selectedType === 'agency' ? this.elements.purchaseLink?.value?.trim() || null : null,
+                // 🆕 v8.5.0: 가격 정보 추가
+                ticket_price: this.elements.ticketPrice?.value || '',
+                currency: this.elements.currency?.value || 'KRW',
+                price_source: this.elements.priceSource?.value?.trim() || ''
             };
+
+            console.log('🔍 [UI디버그] v8.5.0 제출 데이터 (가격 정보 포함):', {
+                ...requestData,
+                ticket_price: requestData.ticket_price,
+                currency: requestData.currency,
+                price_source: requestData.price_source
+            });
 
             let result;
             if (isUpdate) {
@@ -1208,6 +1399,37 @@ class FlightRequestUI {
         }
     }
 
+    // 🆕 v8.5.0: 가격 정보 필드 검증
+    validatePriceFields() {
+        const ticketPrice = this.elements.ticketPrice?.value?.trim();
+        const currency = this.elements.currency?.value;
+        const priceSource = this.elements.priceSource?.value?.trim();
+
+        if (!ticketPrice) {
+            this.showError('항공권 가격을 입력해주세요.');
+            return false;
+        }
+
+        if (!currency) {
+            this.showError('통화를 선택해주세요.');
+            return false;
+        }
+
+        if (!priceSource) {
+            this.showError('가격 정보 출처를 입력해주세요.');
+            return false;
+        }
+
+        // 가격이 숫자인지 확인
+        const priceNum = parseFloat(ticketPrice);
+        if (isNaN(priceNum) || priceNum <= 0) {
+            this.showError('유효한 가격을 입력해주세요.');
+            return false;
+        }
+
+        return true;
+    }
+
     setLoading(loading) {
         if (this.elements.submitBtn) {
             this.elements.submitBtn.disabled = loading;
@@ -1220,7 +1442,7 @@ class FlightRequestUI {
         }
     }
 
-    // 🔧 v8.4.2: 개선된 에러 메시지 표시 (passport와 flight 공통)
+    // 🔧 v8.5.0: 개선된 에러 메시지 표시 (passport와 flight 공통)
     showError(message) {
         console.error('🚨 [UI오류]:', message);
         
@@ -1321,4 +1543,4 @@ class FlightRequestUI {
 }
 
 // 페이지 로드 시 초기화 제거 - HTML에서 모듈 로딩 완료 후 초기화
-console.log('✅ FlightRequestUI v8.4.2 모듈 로드 완료 - 여권정보 설정 버튼 자동 폼 채우기 기능 수정 완료');
+console.log('✅ FlightRequestUI v8.5.0 모듈 로드 완료 - 가격 정보 입력 기능 추가');
