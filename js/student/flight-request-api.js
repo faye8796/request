@@ -1,5 +1,5 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.4.0
-// 🌐 완전한 퍼블릭 Storage 지원 - 인증 시스템 단순화
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.4.1
+// 🔧 여권정보 로딩 문제 해결을 위한 디버깅 및 사용자 인증 강화
 // passport-info 기능 완전 통합 버전
 
 class FlightRequestAPI {
@@ -12,10 +12,10 @@ class FlightRequestAPI {
         this.initializationPromise = this.initialize();
     }
 
-    // 🚀 v8.4.0: 퍼블릭 Storage 최적화된 연동
+    // 🚀 v8.4.1: 퍼블릭 Storage 최적화된 연동
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v8.4.0 초기화 시작 (퍼블릭 Storage 최적화)...');
+            console.log('🔄 FlightRequestAPI v8.4.1 초기화 시작 (여권정보 로딩 문제 해결)...');
             
             // SupabaseCore v1.0.1 연결
             await this.connectToSupabaseCore();
@@ -26,7 +26,7 @@ class FlightRequestAPI {
             // 초기화 완료 마킹
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI v8.4.0 초기화 완료');
+            console.log('✅ FlightRequestAPI v8.4.1 초기화 완료');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -35,7 +35,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 🔧 v8.4.0: SupabaseCore v1.0.1 최적화된 연결
+    // 🔧 v8.4.1: SupabaseCore v1.0.1 최적화된 연결
     async connectToSupabaseCore() {
         try {
             // 이미 연결되어 있으면 스킵
@@ -156,40 +156,98 @@ class FlightRequestAPI {
         }
     }
 
-    // 🌐 v8.4.0: 단순화된 사용자 정보 조회 (localStorage 기반)
+    // 🔧 v8.4.1: 강화된 사용자 정보 조회 (상세한 디버깅 로그)
     async getCurrentUser() {
         try {
+            console.log('🔍 [디버그] getCurrentUser() 시작...');
             await this.ensureInitialized();
 
             // 이미 사용자 정보가 있으면 반환
             if (this.user) {
+                console.log('✅ [디버그] 캐시된 사용자 정보 사용:', {
+                    id: this.user.id,
+                    email: this.user.email,
+                    name: this.user.name
+                });
                 return this.user;
             }
 
-            // localStorage에서 사용자 정보 가져오기 (단순화)
+            console.log('🔍 [디버그] localStorage에서 사용자 정보 조회 중...');
+
+            // localStorage 전체 확인
+            const allLocalStorageKeys = Object.keys(localStorage);
+            console.log('🔍 [디버그] localStorage 키 목록:', allLocalStorageKeys);
+
+            // currentStudent 확인
             const currentStudentData = localStorage.getItem('currentStudent');
+            console.log('🔍 [디버그] currentStudent 원본 데이터:', currentStudentData);
+
             if (currentStudentData) {
                 try {
                     const studentData = JSON.parse(currentStudentData);
+                    console.log('🔍 [디버그] 파싱된 studentData:', {
+                        전체: studentData,
+                        id: studentData?.id,
+                        email: studentData?.email,
+                        name: studentData?.name,
+                        id타입: typeof studentData?.id,
+                        id길이: studentData?.id?.length
+                    });
+
                     if (studentData?.id) {
+                        // 🔧 v8.4.1: 사용자 ID 유효성 검증 강화
+                        if (typeof studentData.id !== 'string' || studentData.id.length < 10) {
+                            console.warn('⚠️ [디버그] 의심스러운 사용자 ID 형식:', studentData.id);
+                        }
+
                         this.user = { 
                             id: studentData.id, 
-                            email: studentData.email,
-                            name: studentData.name 
+                            email: studentData.email || 'no-email',
+                            name: studentData.name || 'no-name'
                         };
                         
-                        console.log('✅ localStorage에서 사용자 정보 확인:', this.user.email);
+                        console.log('✅ [디버그] localStorage에서 사용자 정보 설정 완료:', {
+                            id: this.user.id,
+                            email: this.user.email,
+                            name: this.user.name,
+                            id검증: this.user.id.includes('-') ? 'UUID형식' : '기타형식'
+                        });
                         return this.user;
+                    } else {
+                        console.error('❌ [디버그] studentData.id가 없음:', studentData);
                     }
                 } catch (parseError) {
-                    console.warn('localStorage 파싱 오류:', parseError);
+                    console.error('❌ [디버그] localStorage 파싱 오류:', parseError);
+                    console.error('❌ [디버그] 파싱 실패한 데이터:', currentStudentData);
+                }
+            } else {
+                console.error('❌ [디버그] currentStudent 데이터 없음');
+            }
+
+            // 🔧 v8.4.1: 다른 인증 소스도 확인 (폴백)
+            console.log('🔍 [디버그] 대체 인증 소스 확인 중...');
+            
+            // userInfo, userProfile 등 다른 키 확인
+            const alternativeKeys = ['userInfo', 'userProfile', 'user', 'currentUser'];
+            for (const key of alternativeKeys) {
+                const altData = localStorage.getItem(key);
+                if (altData) {
+                    console.log(`🔍 [디버그] 대체 키 '${key}' 발견:`, altData);
+                    try {
+                        const parsedAlt = JSON.parse(altData);
+                        if (parsedAlt?.id) {
+                            console.log(`✅ [디버그] 대체 키 '${key}'에서 사용자 ID 발견:`, parsedAlt.id);
+                        }
+                    } catch (e) {
+                        console.log(`⚠️ [디버그] 대체 키 '${key}' 파싱 실패`);
+                    }
                 }
             }
 
-            throw new Error('localStorage에서 사용자 정보를 찾을 수 없습니다');
+            throw new Error('localStorage에서 유효한 사용자 정보를 찾을 수 없습니다');
 
         } catch (error) {
-            console.error('사용자 정보 조회 실패:', error);
+            console.error('❌ [디버그] getCurrentUser() 실패:', error);
             throw error;
         }
     }
@@ -234,47 +292,118 @@ class FlightRequestAPI {
         }
     }
 
-    // === 🆕 PASSPORT INFO 기능 통합 ===
+    // === 🔧 v8.4.1: 강화된 PASSPORT INFO 기능 ===
 
-    // 기존 여권정보 조회
+    // 🔧 v8.4.1: 상세한 디버깅이 포함된 여권정보 조회
     async getPassportInfo() {
         try {
+            console.log('🔍 [여권디버그] getPassportInfo() 시작...');
             await this.ensureInitialized();
             
-            if (!this.user) await this.getCurrentUser();
+            if (!this.user) {
+                console.log('🔍 [여권디버그] 사용자 정보 없음, getCurrentUser() 호출...');
+                await this.getCurrentUser();
+            }
             
             if (!this.user?.id) {
+                console.error('❌ [여권디버그] 사용자 ID 없음:', this.user);
                 throw new Error('사용자 정보가 없습니다');
             }
 
+            console.log('🔍 [여권디버그] 여권정보 조회 대상 사용자:', {
+                id: this.user.id,
+                email: this.user.email,
+                name: this.user.name
+            });
+
+            // 🔧 v8.4.1: 데이터베이스 쿼리 실행 전 확인
+            console.log('🔍 [여권디버그] Supabase 클라이언트 상태 확인...');
+            console.log('🔍 [여권디버그] core 사용 가능:', !!this.core?.select);
+            console.log('🔍 [여권디버그] supabase 클라이언트 사용 가능:', !!this.supabase);
+
+            let queryResult = null;
+
             // SupabaseCore 사용 (가능하면)
             if (this.core?.select) {
+                console.log('🔍 [여권디버그] SupabaseCore로 조회 시도...');
                 const result = await this.core.select('passport_info', '*', { user_id: this.user.id });
+                
+                console.log('🔍 [여권디버그] SupabaseCore 조회 결과:', {
+                    success: result.success,
+                    dataLength: result.data?.length,
+                    error: result.error,
+                    rawResult: result
+                });
                 
                 if (!result.success) {
                     if (result.error.includes('PGRST116')) {
+                        console.log('✅ [여권디버그] 데이터 없음 (PGRST116)');
                         return null; // 데이터 없음
                     }
+                    console.error('❌ [여권디버그] SupabaseCore 조회 오류:', result.error);
                     throw new Error(result.error);
                 }
 
-                return result.data?.length > 0 ? result.data[0] : null;
+                queryResult = result.data?.length > 0 ? result.data[0] : null;
+            } else {
+                // 폴백: 직접 supabase 사용
+                console.log('🔍 [여권디버그] 직접 Supabase 클라이언트로 조회 시도...');
+                console.log('🔍 [여권디버그] 쿼리 조건 - user_id:', this.user.id);
+                
+                const { data, error } = await this.supabase
+                    .from('passport_info')
+                    .select('*')
+                    .eq('user_id', this.user.id)
+                    .single();
+
+                console.log('🔍 [여권디버그] 직접 Supabase 조회 결과:', {
+                    data: data,
+                    error: error,
+                    errorCode: error?.code,
+                    errorMessage: error?.message
+                });
+
+                if (error && error.code !== 'PGRST116') {
+                    console.error('❌ [여권디버그] 직접 Supabase 조회 오류:', error);
+                    throw error;
+                }
+
+                queryResult = data;
             }
 
-            // 폴백: 직접 supabase 사용
-            const { data, error } = await this.supabase
-                .from('passport_info')
-                .select('*')
-                .eq('user_id', this.user.id)
-                .single();
+            // 🔧 v8.4.1: 조회 결과 상세 분석
+            if (queryResult) {
+                console.log('✅ [여권디버그] 여권정보 조회 성공:', {
+                    id: queryResult.id,
+                    user_id: queryResult.user_id,
+                    passport_number: queryResult.passport_number,
+                    name_english: queryResult.name_english,
+                    hasImage: !!queryResult.image_url,
+                    created_at: queryResult.created_at,
+                    사용자ID일치: queryResult.user_id === this.user.id
+                });
 
-            if (error && error.code !== 'PGRST116') {
-                throw error;
+                // 🔧 v8.4.1: 사용자 ID 불일치 검증
+                if (queryResult.user_id !== this.user.id) {
+                    console.error('❌ [여권디버그] 사용자 ID 불일치 감지!', {
+                        현재사용자ID: this.user.id,
+                        여권정보사용자ID: queryResult.user_id
+                    });
+                }
+            } else {
+                console.log('❌ [여권디버그] 여권정보 없음 - 신규 등록 필요');
             }
 
-            return data;
+            return queryResult;
+
         } catch (error) {
-            console.error('여권정보 조회 실패:', error);
+            console.error('❌ [여권디버그] getPassportInfo() 전체 실패:', {
+                error: error,
+                message: error.message,
+                stack: error.stack,
+                userId: this.user?.id,
+                userName: this.user?.name
+            });
             throw error;
         }
     }
@@ -282,10 +411,13 @@ class FlightRequestAPI {
     // 여권정보 확인 (존재 여부만 확인)
     async checkPassportInfo() {
         try {
+            console.log('🔍 [여권디버그] checkPassportInfo() 시작...');
             const passportInfo = await this.getPassportInfo();
-            return !!passportInfo;
+            const exists = !!passportInfo;
+            console.log('🔍 [여권디버그] checkPassportInfo() 결과:', exists);
+            return exists;
         } catch (error) {
-            console.error('여권정보 확인 실패:', error);
+            console.error('❌ [여권디버그] checkPassportInfo() 실패:', error);
             return false;
         }
     }
@@ -293,6 +425,7 @@ class FlightRequestAPI {
     // 여권정보 저장
     async savePassportInfo(passportData, imageFile = null) {
         try {
+            console.log('🔍 [여권디버그] savePassportInfo() 시작...');
             await this.ensureInitialized();
             
             if (!this.user) await this.getCurrentUser();
@@ -336,22 +469,26 @@ class FlightRequestAPI {
                 updated_at: new Date().toISOString()
             };
 
+            console.log('🔍 [여권디버그] 저장할 데이터:', dataToSave);
+
             if (existingInfo) {
                 // 수정
+                console.log('🔍 [여권디버그] 기존 정보 수정 모드');
                 const result = await this.updateData('passport_info', dataToSave, { id: existingInfo.id });
                 return { data: result, isUpdate: true };
             } else {
                 // 생성
+                console.log('🔍 [여권디버그] 신규 정보 생성 모드');
                 const result = await this.insertData('passport_info', dataToSave);
                 return { data: result, isUpdate: false };
             }
         } catch (error) {
-            console.error('여권정보 저장 실패:', error);
+            console.error('❌ [여권디버그] savePassportInfo() 실패:', error);
             throw error;
         }
     }
 
-    // 🌐 v8.4.0: 퍼블릭 Storage 최적화 여권 이미지 업로드
+    // 🌐 v8.4.1: 퍼블릭 Storage 최적화 여권 이미지 업로드
     async uploadPassportImage(imageFile) {
         try {
             // 단순한 파일명 (퍼블릭 Storage이므로 복잡한 패턴 불필요)
@@ -456,7 +593,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 🌐 v8.4.0: 퍼블릭 Storage 최적화 항공권 이미지 업로드
+    // 🌐 v8.4.1: 퍼블릭 Storage 최적화 항공권 이미지 업로드
     async uploadFlightImage(imageFile) {
         try {
             // 단순한 파일명 (퍼블릭 Storage이므로 폴더 구조 불필요)
@@ -515,7 +652,7 @@ class FlightRequestAPI {
         }
     }
 
-    // === 🌐 v8.4.0: 퍼블릭 Storage 최적화된 데이터 조작 메서드들 ===
+    // === 🌐 v8.4.1: 퍼블릭 Storage 최적화된 데이터 조작 메서드들 ===
 
     async insertData(table, data) {
         if (this.core?.insert) {
@@ -557,7 +694,7 @@ class FlightRequestAPI {
         return result;
     }
 
-    // 🌐 v8.4.0: 단순화된 퍼블릭 Storage 업로드
+    // 🌐 v8.4.1: 단순화된 퍼블릭 Storage 업로드
     async uploadFile(bucket, path, file, options = {}) {
         try {
             console.log(`📤 퍼블릭 Storage 업로드: ${bucket}/${path}`);
@@ -678,7 +815,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 디버깅 메서드
+    // 🔧 v8.4.1: 강화된 디버깅 메서드
     getStatus() {
         return {
             isInitialized: this.isInitialized,
@@ -689,22 +826,83 @@ class FlightRequestAPI {
             coreInitialized: this.core?.isInitialized,
             supabaseAPI: !!window.SupabaseAPI,
             supabaseCore: !!window.SupabaseCore,
-            userInfo: this.user ? { id: this.user.id, email: this.user.email, name: this.user.name } : null,
-            storageMode: 'Public Access (No Auth Required)'
+            userInfo: this.user ? { 
+                id: this.user.id, 
+                email: this.user.email, 
+                name: this.user.name,
+                idLength: this.user.id?.length,
+                idType: this.user.id?.includes('-') ? 'UUID' : 'Other'
+            } : null,
+            storageMode: 'Public Access (No Auth Required)',
+            localStorage: {
+                currentStudent: !!localStorage.getItem('currentStudent'),
+                keys: Object.keys(localStorage).filter(key => key.includes('user') || key.includes('Student'))
+            }
         };
+    }
+
+    // 🔧 v8.4.1: 여권정보 디버깅 전용 메서드
+    async debugPassportInfo() {
+        console.log('🔍 [디버그] 여권정보 종합 진단 시작...');
+        
+        try {
+            // 1. 초기화 상태 확인
+            console.log('1️⃣ API 초기화 상태:', {
+                isInitialized: this.isInitialized,
+                hasSupabase: !!this.supabase,
+                hasCore: !!this.core
+            });
+
+            // 2. 사용자 정보 확인
+            await this.getCurrentUser();
+            console.log('2️⃣ 사용자 정보:', this.user);
+
+            // 3. 직접 DB 조회
+            if (this.supabase && this.user?.id) {
+                const { data, error } = await this.supabase
+                    .from('passport_info')
+                    .select('*')
+                    .eq('user_id', this.user.id);
+
+                console.log('3️⃣ 직접 DB 조회 결과:', {
+                    data: data,
+                    error: error,
+                    dataCount: data?.length
+                });
+            }
+
+            // 4. 여권정보 조회 테스트
+            const passportInfo = await this.getPassportInfo();
+            console.log('4️⃣ getPassportInfo() 결과:', passportInfo);
+
+            return {
+                success: true,
+                userInfo: this.user,
+                passportInfo: passportInfo,
+                message: '디버깅 완료'
+            };
+
+        } catch (error) {
+            console.error('❌ 여권정보 디버깅 실패:', error);
+            return {
+                success: false,
+                error: error.message,
+                userInfo: this.user
+            };
+        }
     }
 }
 
-// 🌐 v8.4.0: 퍼블릭 Storage 최적화된 인스턴스 생성
+// 🌐 v8.4.1: 퍼블릭 Storage 최적화된 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.4.0 인스턴스 생성 시작 (퍼블릭 Storage 최적화)...');
+        console.log('🚀 FlightRequestAPI v8.4.1 인스턴스 생성 시작 (여권정보 로딩 문제 해결)...');
         window.flightRequestAPI = new FlightRequestAPI();
         
         // 호환성을 위한 passport API 인스턴스도 생성
         window.passportAPI = window.flightRequestAPI;
         
-        console.log('✅ FlightRequestAPI v8.4.0 인스턴스 생성 완료 - 완전한 퍼블릭 Storage 지원');
+        console.log('✅ FlightRequestAPI v8.4.1 인스턴스 생성 완료 - 여권정보 로딩 문제 해결');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -712,7 +910,7 @@ function createFlightRequestAPI() {
     }
 }
 
-// 🌐 v8.4.0: 즉시 생성 (대기 시간 최소화)
+// 🌐 v8.4.1: 즉시 생성 (대기 시간 최소화)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(createFlightRequestAPI, 100); // 단축된 대기 시간
@@ -721,4 +919,4 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 100); // 즉시 실행에 가깝게
 }
 
-console.log('✅ FlightRequestAPI v8.4.0 모듈 로드 완료 - 완전한 퍼블릭 Storage 지원 및 인증 시스템 단순화');
+console.log('✅ FlightRequestAPI v8.4.1 모듈 로드 완료 - 여권정보 로딩 문제 해결을 위한 디버깅 및 사용자 인증 강화');
