@@ -1,5 +1,5 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.2.2
-// 🔧 SupabaseCore v1.0.0 호환성 개선 및 안정성 강화
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.3.1
+// 🛠️ v8.3.1: 무한 새로고침 버그 수정 완료 - SupabaseCore v1.0.1 호환성 개선 및 안정성 강화
 // passport-info UI 기능 완전 통합 버전
 
 class FlightRequestUI {
@@ -16,6 +16,9 @@ class FlightRequestUI {
         // 🆕 Passport-info 관련 상태
         this.passportImageFile = null;
         this.existingPassportImageUrl = null;
+        
+        // 🛠️ v8.3.1: 무한 루프 방지 플래그
+        this.isLoadingData = false;
         
         // 초기화 상태
         this.isInitialized = false;
@@ -89,7 +92,7 @@ class FlightRequestUI {
 
     async init() {
         try {
-            console.log('🔄 FlightRequestUI v8.2.2 초기화 시작...');
+            console.log('🔄 FlightRequestUI v8.3.1 초기화 시작 (무한 새로고침 버그 수정)...');
             
             // API 및 유틸리티 대기
             await this.waitForDependencies();
@@ -97,18 +100,17 @@ class FlightRequestUI {
             // 이벤트 리스너 설정
             this.setupEventListeners();
             
-            // 🎯 Equipment-request 구조 참고: 여권정보 상태 확인 후 페이지 분기
-            await this.checkPassportInfoAndSetPage();
+            // 🛠️ v8.3.1: 초기화 시에는 여권정보 확인만 수행 (페이지 분기 제거)
+            console.log('✅ FlightRequestUI v8.3.1 초기화 완료 - 무한 루프 방지 적용');
             
             this.isInitialized = true;
-            console.log('✅ FlightRequestUI v8.2.2 초기화 완료');
         } catch (error) {
             console.error('❌ FlightRequestUI 초기화 오류:', error);
             this.showError('시스템 초기화 중 오류가 발생했습니다.');
         }
     }
 
-    // 🔧 v8.2.2: 단순화된 의존성 대기 로직
+    // 🔧 v8.3.1: 단순화된 의존성 대기 로직
     async waitForDependencies(timeout = 15000) {
         const startTime = Date.now();
         
@@ -121,7 +123,7 @@ class FlightRequestUI {
                 if (apiReady && utilsReady) {
                     this.api = window.flightRequestAPI;
                     this.utils = window.FlightRequestUtils;
-                    console.log('✅ FlightRequestUI v8.2.2 의존성 로드 완료');
+                    console.log('✅ FlightRequestUI v8.3.1 의존성 로드 완료');
                     resolve();
                     return;
                 }
@@ -164,7 +166,7 @@ class FlightRequestUI {
         }
     }
 
-    // 🆕 Equipment-request 구조 참고: 여권정보 확인 및 페이지 분기
+    // 🛠️ v8.3.1: 무한 루프 방지 - 여권정보 확인 및 페이지 분기 (loadInitialData에서만 호출)
     async checkPassportInfoAndSetPage() {
         try {
             console.log('🔍 여권정보 상태 확인 시작');
@@ -530,9 +532,18 @@ class FlightRequestUI {
 
     // === FLIGHT REQUEST UI 기능 ===
 
-    // 🆕 항공권 신청 데이터 로드 (기존 loadInitialData에서 분리)
+    // 🛠️ v8.3.1: 항공권 신청 데이터만 로드 (무한 루프 방지)
     async loadFlightRequestData() {
+        // 🛠️ v8.3.1: 중복 로딩 방지
+        if (this.isLoadingData) {
+            console.log('⚠️ 이미 데이터 로딩 중 - 중복 실행 방지');
+            return;
+        }
+
         try {
+            this.isLoadingData = true;
+            console.log('🔄 항공권 신청 데이터 로드 시작 (v8.3.1)');
+            
             // API 초기화 확인
             await this.ensureInitialized();
             
@@ -554,6 +565,8 @@ class FlightRequestUI {
                 // 새 신청 폼 표시
                 this.showRequestForm(false);
             }
+
+            console.log('✅ 항공권 신청 데이터 로드 완료 (v8.3.1)');
         } catch (error) {
             console.error('항공권 신청 데이터 로드 실패:', error);
             if (this.utils) {
@@ -563,12 +576,15 @@ class FlightRequestUI {
             }
         } finally {
             this.showLoading(false);
+            this.isLoadingData = false;
         }
     }
 
-    // 🆕 외부에서 호출 가능한 데이터 새로고침 (여권정보 등록 후)
+    // 🛠️ v8.3.1: 초기 데이터 로드 (최초 페이지 접근 시에만 사용)
     async loadInitialData() {
-        console.log('🔄 데이터 새로고침 시작');
+        console.log('🔄 초기 데이터 로드 시작 (v8.3.1)');
+        
+        // 🛠️ v8.3.1: 여권정보 확인 및 페이지 분기는 최초 접근 시에만 수행
         await this.checkPassportInfoAndSetPage();
     }
 
@@ -1065,4 +1081,4 @@ class FlightRequestUI {
 }
 
 // 페이지 로드 시 초기화 제거 - HTML에서 모듈 로딩 완료 후 초기화
-console.log('✅ FlightRequestUI v8.2.2 모듈 로드 완료 - SupabaseCore v1.0.0 호환성 개선');
+console.log('✅ FlightRequestUI v8.3.1 모듈 로드 완료 - 무한 새로고침 버그 수정 완료');
