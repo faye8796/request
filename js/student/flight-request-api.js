@@ -1,5 +1,5 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.7.1
-// 🔧 406 오류 수정: .single() 메서드 문제 해결
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.7.2
+// 🗑️ 삭제 기능 추가: "삭제하고 재신청" 버튼 문제 해결
 // passport-info 기능 완전 통합 버전
 
 class FlightRequestAPI {
@@ -15,7 +15,7 @@ class FlightRequestAPI {
     // 🚀 v8.4.1: 퍼블릭 Storage 최적화된 연동
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v8.7.1 초기화 시작 (406 오류 수정)...');
+            console.log('🔄 FlightRequestAPI v8.7.2 초기화 시작 (삭제 기능 추가)...');
             
             // SupabaseCore v1.0.1 연결
             await this.connectToSupabaseCore();
@@ -26,7 +26,7 @@ class FlightRequestAPI {
             // 초기화 완료 마킹
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI v8.7.1 초기화 완료');
+            console.log('✅ FlightRequestAPI v8.7.2 초기화 완료');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -674,6 +674,105 @@ class FlightRequestAPI {
         }
     }
 
+    // 🗑️ v8.7.2: 항공권 신청 삭제 (삭제하고 재신청 버튼용)
+    async deleteFlightRequest(requestId) {
+        try {
+            console.log('🗑️ [API디버그] deleteFlightRequest() 시작...', requestId);
+            await this.ensureInitialized();
+            
+            if (!this.user) await this.getCurrentUser();
+            
+            if (!this.user?.id) {
+                throw new Error('사용자 정보가 없습니다');
+            }
+
+            if (!requestId) {
+                throw new Error('삭제할 신청 ID가 없습니다');
+            }
+
+            // 1. 먼저 해당 신청 정보를 조회하여 권한 및 상태 확인
+            const { data: existingRequest, error: fetchError } = await this.supabase
+                .from('flight_requests')
+                .select('*')
+                .eq('id', requestId)
+                .eq('user_id', this.user.id) // 본인 신청만 삭제 가능
+                .single();
+
+            if (fetchError) {
+                console.error('❌ [API디버그] 삭제 대상 신청 조회 실패:', fetchError);
+                throw new Error('삭제할 신청을 찾을 수 없습니다');
+            }
+
+            if (!existingRequest) {
+                throw new Error('삭제할 신청이 존재하지 않거나 권한이 없습니다');
+            }
+
+            console.log('🔍 [API디버그] 삭제 대상 신청 정보:', {
+                id: existingRequest.id,
+                status: existingRequest.status,
+                user_id: existingRequest.user_id,
+                hasImage: !!existingRequest.flight_image_url
+            });
+
+            // 2. 삭제 가능한 상태인지 확인 (pending, rejected만 삭제 가능)
+            if (!['pending', 'rejected'].includes(existingRequest.status)) {
+                throw new Error(`${existingRequest.status} 상태의 신청은 삭제할 수 없습니다`);
+            }
+
+            // 3. 관련 이미지 파일이 있으면 삭제 시도 (실패해도 계속 진행)
+            if (existingRequest.flight_image_url) {
+                try {
+                    console.log('🗑️ [API디버그] 관련 이미지 파일 삭제 시도:', existingRequest.flight_image_url);
+                    
+                    // URL에서 파일 경로 추출
+                    const urlParts = existingRequest.flight_image_url.split('/');
+                    const fileName = urlParts[urlParts.length - 1];
+                    
+                    if (fileName && fileName.includes('flight_')) {
+                        await this.deleteFile('flight-images', fileName);
+                        console.log('✅ [API디버그] 관련 이미지 파일 삭제 성공');
+                    }
+                } catch (imageDeleteError) {
+                    console.warn('⚠️ [API디버그] 이미지 파일 삭제 실패 (계속 진행):', imageDeleteError);
+                    // 이미지 삭제 실패는 치명적이지 않으므로 계속 진행
+                }
+            }
+
+            // 4. 데이터베이스에서 신청 레코드 삭제
+            console.log('🗑️ [API디버그] 데이터베이스에서 신청 레코드 삭제 시도...');
+            const { error: deleteError } = await this.supabase
+                .from('flight_requests')
+                .delete()
+                .eq('id', requestId)
+                .eq('user_id', this.user.id); // 추가 보안을 위한 사용자 ID 확인
+
+            if (deleteError) {
+                console.error('❌ [API디버그] 신청 레코드 삭제 실패:', deleteError);
+                throw new Error('신청 삭제 중 오류가 발생했습니다: ' + deleteError.message);
+            }
+
+            console.log('✅ [API디버그] 항공권 신청 삭제 완료:', {
+                requestId: requestId,
+                userId: this.user.id,
+                status: existingRequest.status
+            });
+
+            return {
+                success: true,
+                deletedRequest: {
+                    id: existingRequest.id,
+                    status: existingRequest.status,
+                    departure_date: existingRequest.departure_date,
+                    return_date: existingRequest.return_date
+                }
+            };
+
+        } catch (error) {
+            console.error('❌ [API디버그] deleteFlightRequest() 실패:', error);
+            throw error;
+        }
+    }
+
     // === 🌐 v8.4.1: 퍼블릭 Storage 최적화된 데이터 조작 메서드들 ===
 
     async insertData(table, data) {
@@ -915,19 +1014,19 @@ class FlightRequestAPI {
     }
 }
 
-// 🔧 v8.7.1: FlightRequestAPI 클래스를 전역 스코프에 노출
+// 🔧 v8.7.2: FlightRequestAPI 클래스를 전역 스코프에 노출
 window.FlightRequestAPI = FlightRequestAPI;
 
-// 🌐 v8.7.1: 인스턴스 생성
+// 🌐 v8.7.2: 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.7.1 인스턴스 생성 시작 (406 오류 수정)...');
+        console.log('🚀 FlightRequestAPI v8.7.2 인스턴스 생성 시작 (삭제 기능 추가)...');
         window.flightRequestAPI = new FlightRequestAPI();
         
         // 호환성을 위한 passport API 인스턴스도 생성
         window.passportAPI = window.flightRequestAPI;
         
-        console.log('✅ FlightRequestAPI v8.7.1 인스턴스 생성 완료 - 406 오류 수정');
+        console.log('✅ FlightRequestAPI v8.7.2 인스턴스 생성 완료 - 삭제 기능 추가');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -935,7 +1034,7 @@ function createFlightRequestAPI() {
     }
 }
 
-// 🌐 v8.7.1: 즉시 생성 (대기 시간 최소화)
+// 🌐 v8.7.2: 즉시 생성 (대기 시간 최소화)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(createFlightRequestAPI, 100); // 단축된 대기 시간
@@ -944,4 +1043,4 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 100); // 즉시 실행에 가깝게
 }
 
-console.log('✅ FlightRequestAPI v8.7.1 모듈 로드 완료 - 406 오류 수정 (.single() 문제 해결)');
+console.log('✅ FlightRequestAPI v8.7.2 모듈 로드 완료 - 삭제 기능 추가 ("삭제하고 재신청" 버튼 문제 해결)');
