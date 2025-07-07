@@ -1,7 +1,7 @@
 /**
  * 학생용 학당 정보 핵심 로직 모듈
- * Version: 4.8.0
- * Description: DB 기반 국가 안전정보 시스템 적용 - iframe 제거 및 구조화된 안전정보 연동
+ * Version: 4.8.1
+ * Description: 담당자 정보 공개 - 학당 담당자 및 현지 적응 지원 담당자 정보 표시 기능 활성화
  */
 
 window.InstituteInfoCore = (function() {
@@ -131,7 +131,7 @@ window.InstituteInfoCore = (function() {
     function displayInstituteInfo() {
         try {
             
-            // 기본 정보 구성 (테이블 형태)
+            // 기본 정보 구성 (테이블 형태) - 담당자 정보 포함
             const basicInfo = [
                 {
                     icon: 'briefcase',
@@ -153,12 +153,8 @@ window.InstituteInfoCore = (function() {
                     label: 'SNS 정보',
                     value: currentInstituteData.sns_url || '정보 없음',
                     isLink: currentInstituteData.sns_url ? true : false
-                }
-                /* 
-                === 담당자 정보 임시 숨김 (향후 공개 예정) ===
-                나중에 아래 4개 필드를 다시 활성화하려면 이 주석을 제거하고 아래 코드를 기본 정보 배열에 추가하세요:
-                
-                ,{
+                },
+                {
                     icon: 'user',
                     label: '담당자 정보',
                     value: currentInstituteData.contact_person || '정보 없음'
@@ -178,9 +174,6 @@ window.InstituteInfoCore = (function() {
                     label: '적응 지원 담당자 연락처',
                     value: currentInstituteData.local_coordinator_phone || '정보 없음'
                 }
-                
-                === 담당자 정보 임시 숨김 끝 ===
-                */
             ];
             
             // 문화인턴 활동 정보 구성 (희망 개설 강좌 제외)
@@ -510,12 +503,12 @@ window.InstituteInfoCore = (function() {
     function getModuleInfo() {
         return {
             name: 'InstituteInfoCore',
-            version: '4.8.0',
+            version: '4.8.1',
             initialized: isInitialized,
             currentTab,
             hasData: !!currentInstituteData,
             eventListenersCount: eventListeners.size,
-            description: 'DB 기반 국가 안전정보 시스템이 적용된 학당 정보 핵심 로직 모듈'
+            description: '담당자 정보 공개 - 학당 담당자 및 현지 적응 지원 담당자 정보 표시 기능 활성화'
         };
     }
     
@@ -548,4 +541,4 @@ window.InstituteInfoCore = (function() {
 })();
 
 // 모듈 로드 완료 로그
-console.log('🧠 InstituteInfoCore 모듈 로드 완료 - v4.8.0 (DB 기반 국가 안전정보 시스템 적용)');
+console.log('🧠 InstituteInfoCore 모듈 로드 완료 - v4.8.1 (담당자 정보 공개 - 학당 담당자 및 현지 적응 지원 담당자 정보 표시 기능 활성화)');
