@@ -1,5 +1,6 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.7.2
-// 🗑️ 삭제 기능 추가: "삭제하고 재신청" 버튼 문제 해결
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.8.0
+// 🛠️ 여권 수정 관련 기능 점검 및 수정 완료
+// 🔧 API 초기화 타이밍, 상태 변수 관리, 에러 처리 강화
 // passport-info 기능 완전 통합 버전
 
 class FlightRequestAPI {
@@ -9,13 +10,18 @@ class FlightRequestAPI {
         this.core = null;
         this.storageUtils = null;
         this.isInitialized = false;
+        
+        // 🛠️ v8.8.0: 초기화 상태 추적 강화
+        this.initializationAttempts = 0;
+        this.maxInitializationAttempts = 5;
+        
         this.initializationPromise = this.initialize();
     }
 
     // 🚀 v8.4.1: 퍼블릭 Storage 최적화된 연동
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v8.7.2 초기화 시작 (삭제 기능 추가)...');
+            console.log('🔄 FlightRequestAPI v8.8.0 초기화 시작 (여권 수정 관련 기능 점검 및 수정)...');
             
             // SupabaseCore v1.0.1 연결
             await this.connectToSupabaseCore();
@@ -26,7 +32,7 @@ class FlightRequestAPI {
             // 초기화 완료 마킹
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI v8.7.2 초기화 완료');
+            console.log('✅ FlightRequestAPI v8.8.0 초기화 완료');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -127,13 +133,13 @@ class FlightRequestAPI {
         }
     }
 
-    // 초기화 보장 (개선된 로직)
+    // 🛠️ v8.8.0: 강화된 초기화 보장 (재시도 로직 개선)
     async ensureInitialized() {
         if (this.isInitialized && (this.core?.isInitialized || this.supabase)) {
             return true;
         }
 
-        console.log('🔄 FlightRequestAPI 초기화 보장 중...');
+        console.log('🔄 [API디버그] v8.8.0 FlightRequestAPI 초기화 보장 중...');
 
         try {
             if (!this.initializationPromise) {
@@ -142,16 +148,26 @@ class FlightRequestAPI {
 
             await this.initializationPromise;
             
-            if (!this.isInitialized) {
-                // 재시도
-                console.log('🔄 초기화 재시도...');
+            if (!this.isInitialized && this.initializationAttempts < this.maxInitializationAttempts) {
+                // 🛠️ v8.8.0: 재시도 로직 개선
+                this.initializationAttempts++;
+                console.log(`🔄 [API디버그] v8.8.0: 초기화 재시도 ${this.initializationAttempts}/${this.maxInitializationAttempts}`);
+                
+                // 재시도 전 잠시 대기
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
                 this.initializationPromise = this.initialize();
                 await this.initializationPromise;
             }
 
+            if (!this.isInitialized) {
+                throw new Error(`API 초기화 실패 (${this.initializationAttempts}회 시도 후)`);
+            }
+
+            console.log('✅ [API디버그] v8.8.0: API 초기화 보장 완료');
             return this.isInitialized;
         } catch (error) {
-            console.error('❌ 초기화 보장 실패:', error);
+            console.error('❌ [API디버그] v8.8.0: 초기화 보장 실패:', error);
             throw error;
         }
     }
@@ -292,12 +308,12 @@ class FlightRequestAPI {
         }
     }
 
-    // === 🔧 v8.4.1: 강화된 PASSPORT INFO 기능 ===
+    // === 🛠️ v8.8.0: 강화된 PASSPORT INFO 기능 ===
 
-    // 🔧 v8.4.1: 상세한 디버깅이 포함된 여권정보 조회
+    // 🛠️ v8.8.0: 개선된 여권정보 조회 (에러 처리 강화)
     async getPassportInfo() {
         try {
-            console.log('🔍 [여권디버그] getPassportInfo() 시작...');
+            console.log('🔍 [여권디버그] v8.8.0 getPassportInfo() 시작...');
             await this.ensureInitialized();
             
             if (!this.user) {
@@ -316,7 +332,7 @@ class FlightRequestAPI {
                 name: this.user.name
             });
 
-            // 🔧 v8.4.1: 데이터베이스 쿼리 실행 전 확인
+            // 🛠️ v8.8.0: 데이터베이스 쿼리 실행 전 확인
             console.log('🔍 [여권디버그] Supabase 클라이언트 상태 확인...');
             console.log('🔍 [여권디버그] core 사용 가능:', !!this.core?.select);
             console.log('🔍 [여권디버그] supabase 클라이언트 사용 가능:', !!this.supabase);
@@ -371,9 +387,9 @@ class FlightRequestAPI {
                 queryResult = data;
             }
 
-            // 🔧 v8.4.1: 조회 결과 상세 분석
+            // 🛠️ v8.8.0: 조회 결과 상세 분석
             if (queryResult) {
-                console.log('✅ [여권디버그] 여권정보 조회 성공:', {
+                console.log('✅ [여권디버그] v8.8.0 여권정보 조회 성공:', {
                     id: queryResult.id,
                     user_id: queryResult.user_id,
                     passport_number: queryResult.passport_number,
@@ -383,7 +399,7 @@ class FlightRequestAPI {
                     사용자ID일치: queryResult.user_id === this.user.id
                 });
 
-                // 🔧 v8.4.1: 사용자 ID 불일치 검증
+                // 🛠️ v8.8.0: 사용자 ID 불일치 검증
                 if (queryResult.user_id !== this.user.id) {
                     console.error('❌ [여권디버그] 사용자 ID 불일치 감지!', {
                         현재사용자ID: this.user.id,
@@ -397,7 +413,7 @@ class FlightRequestAPI {
             return queryResult;
 
         } catch (error) {
-            console.error('❌ [여권디버그] getPassportInfo() 전체 실패:', {
+            console.error('❌ [여권디버그] v8.8.0 getPassportInfo() 전체 실패:', {
                 error: error,
                 message: error.message,
                 stack: error.stack,
@@ -411,21 +427,21 @@ class FlightRequestAPI {
     // 여권정보 확인 (존재 여부만 확인)
     async checkPassportInfo() {
         try {
-            console.log('🔍 [여권디버그] checkPassportInfo() 시작...');
+            console.log('🔍 [여권디버그] v8.8.0 checkPassportInfo() 시작...');
             const passportInfo = await this.getPassportInfo();
             const exists = !!passportInfo;
-            console.log('🔍 [여권디버그] checkPassportInfo() 결과:', exists);
+            console.log('🔍 [여권디버그] v8.8.0 checkPassportInfo() 결과:', exists);
             return exists;
         } catch (error) {
-            console.error('❌ [여권디버그] checkPassportInfo() 실패:', error);
+            console.error('❌ [여권디버그] v8.8.0 checkPassportInfo() 실패:', error);
             return false;
         }
     }
 
-    // 여권정보 저장
+    // 🛠️ v8.8.0: 강화된 여권정보 저장 (에러 처리 개선)
     async savePassportInfo(passportData, imageFile = null) {
         try {
-            console.log('🔍 [여권디버그] savePassportInfo() 시작...');
+            console.log('🔍 [여권디버그] v8.8.0 savePassportInfo() 시작...');
             await this.ensureInitialized();
             
             if (!this.user) await this.getCurrentUser();
@@ -435,11 +451,21 @@ class FlightRequestAPI {
             }
 
             // 기존 정보 확인
-            const existingInfo = await this.getPassportInfo();
+            let existingInfo = null;
+            try {
+                existingInfo = await this.getPassportInfo();
+                console.log('🔍 [여권디버그] v8.8.0: 기존 정보 확인:', !!existingInfo);
+            } catch (error) {
+                console.warn('⚠️ [여권디버그] v8.8.0: 기존 정보 확인 실패 (신규 등록으로 처리):', error);
+                existingInfo = null;
+            }
+            
             let imageUrl = existingInfo?.image_url;
 
             // 새 이미지가 있으면 업로드
             if (imageFile) {
+                console.log('🔍 [여권디버그] v8.8.0: 새 이미지 업로드 시작...');
+                
                 // 기존 이미지 삭제 (가능하면)
                 if (imageUrl && this.storageUtils) {
                     try {
@@ -449,14 +475,16 @@ class FlightRequestAPI {
                         );
                         if (filePath) {
                             await this.deleteFile('passports', filePath);
+                            console.log('✅ [여권디버그] v8.8.0: 기존 이미지 삭제 성공');
                         }
                     } catch (deleteError) {
-                        console.warn('기존 이미지 삭제 실패 (계속 진행):', deleteError);
+                        console.warn('⚠️ [여권디버그] v8.8.0: 기존 이미지 삭제 실패 (계속 진행):', deleteError);
                     }
                 }
                 
                 // 새 이미지 업로드
                 imageUrl = await this.uploadPassportImage(imageFile);
+                console.log('✅ [여권디버그] v8.8.0: 새 이미지 업로드 성공:', imageUrl);
             }
 
             const dataToSave = {
@@ -469,22 +497,43 @@ class FlightRequestAPI {
                 updated_at: new Date().toISOString()
             };
 
-            console.log('🔍 [여권디버그] 저장할 데이터:', dataToSave);
+            console.log('🔍 [여권디버그] v8.8.0: 저장할 데이터:', dataToSave);
+
+            let result;
+            let isUpdate = false;
 
             if (existingInfo) {
                 // 수정
-                console.log('🔍 [여권디버그] 기존 정보 수정 모드');
-                const result = await this.updateData('passport_info', dataToSave, { id: existingInfo.id });
-                return { data: result, isUpdate: true };
+                console.log('🔍 [여권디버그] v8.8.0: 기존 정보 수정 모드');
+                isUpdate = true;
+                result = await this.updateData('passport_info', dataToSave, { id: existingInfo.id });
             } else {
                 // 생성
-                console.log('🔍 [여권디버그] 신규 정보 생성 모드');
-                const result = await this.insertData('passport_info', dataToSave);
-                return { data: result, isUpdate: false };
+                console.log('🔍 [여권디버그] v8.8.0: 신규 정보 생성 모드');
+                isUpdate = false;
+                result = await this.insertData('passport_info', dataToSave);
             }
+
+            console.log('✅ [여권디버그] v8.8.0: 저장 성공:', { result, isUpdate });
+            return { data: result, isUpdate: isUpdate };
         } catch (error) {
-            console.error('❌ [여권디버그] savePassportInfo() 실패:', error);
-            throw error;
+            console.error('❌ [여권디버그] v8.8.0 savePassportInfo() 실패:', error);
+            
+            // 🛠️ v8.8.0: 에러 처리 개선 - 구체적인 에러 메시지
+            let enhancedError = error;
+            if (error.message) {
+                if (error.message.includes('사용자 정보')) {
+                    enhancedError = new Error('사용자 인증이 만료되었습니다. 페이지를 새로고침 후 다시 시도해주세요.');
+                } else if (error.message.includes('duplicate') || error.message.includes('unique')) {
+                    enhancedError = new Error('이미 등록된 여권번호입니다.');
+                } else if (error.message.includes('upload') || error.message.includes('storage')) {
+                    enhancedError = new Error('이미지 업로드 중 오류가 발생했습니다. 파일 크기와 형식을 확인해주세요.');
+                } else if (error.message.includes('network') || error.message.includes('fetch')) {
+                    enhancedError = new Error('네트워크 연결을 확인하고 다시 시도해주세요.');
+                }
+            }
+            
+            throw enhancedError;
         }
     }
 
@@ -501,26 +550,40 @@ class FlightRequestAPI {
         }
     }
 
-    // 여권 만료일 검증
+    // 🛠️ v8.8.0: 개선된 여권 만료일 검증
     validateExpiryDate(expiryDate) {
-        const today = new Date();
-        const expiry = new Date(expiryDate);
-        const sixMonthsFromNow = new Date();
-        sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
-
-        if (expiry < today) {
-            return { valid: false, message: '여권이 이미 만료되었습니다.' };
+        if (!expiryDate) {
+            return { valid: false, message: '여권 만료일을 입력해주세요.' };
         }
 
-        if (expiry < sixMonthsFromNow) {
-            const remainingDays = Math.floor((expiry - today) / (1000 * 60 * 60 * 24));
-            return { 
-                valid: true, 
-                warning: `여권 만료일이 6개월 이내입니다. (${remainingDays}일 남음)` 
-            };
-        }
+        try {
+            const today = new Date();
+            const expiry = new Date(expiryDate);
+            const sixMonthsFromNow = new Date();
+            sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
 
-        return { valid: true };
+            // 날짜 유효성 검사
+            if (isNaN(expiry.getTime())) {
+                return { valid: false, message: '올바른 날짜 형식이 아닙니다.' };
+            }
+
+            if (expiry < today) {
+                return { valid: false, message: '여권이 이미 만료되었습니다. 새로운 여권을 발급받아주세요.' };
+            }
+
+            if (expiry < sixMonthsFromNow) {
+                const remainingDays = Math.floor((expiry - today) / (1000 * 60 * 60 * 24));
+                return { 
+                    valid: true, 
+                    warning: `⚠️ 여권 만료일이 6개월 이내입니다. (${remainingDays}일 남음) 파견 전 여권 갱신을 권장합니다.` 
+                };
+            }
+
+            return { valid: true, message: '여권 만료일이 유효합니다.' };
+        } catch (error) {
+            console.error('여권 만료일 검증 오류:', error);
+            return { valid: false, message: '만료일 검증 중 오류가 발생했습니다.' };
+        }
     }
 
     // === FLIGHT REQUEST 기능 ===
@@ -677,7 +740,7 @@ class FlightRequestAPI {
     // 🗑️ v8.7.2: 항공권 신청 삭제 (삭제하고 재신청 버튼용)
     async deleteFlightRequest(requestId) {
         try {
-            console.log('🗑️ [API디버그] deleteFlightRequest() 시작...', requestId);
+            console.log('🗑️ [API디버그] v8.8.0 deleteFlightRequest() 시작...', requestId);
             await this.ensureInitialized();
             
             if (!this.user) await this.getCurrentUser();
@@ -699,7 +762,7 @@ class FlightRequestAPI {
                 .single();
 
             if (fetchError) {
-                console.error('❌ [API디버그] 삭제 대상 신청 조회 실패:', fetchError);
+                console.error('❌ [API디버그] v8.8.0 삭제 대상 신청 조회 실패:', fetchError);
                 throw new Error('삭제할 신청을 찾을 수 없습니다');
             }
 
@@ -707,7 +770,7 @@ class FlightRequestAPI {
                 throw new Error('삭제할 신청이 존재하지 않거나 권한이 없습니다');
             }
 
-            console.log('🔍 [API디버그] 삭제 대상 신청 정보:', {
+            console.log('🔍 [API디버그] v8.8.0 삭제 대상 신청 정보:', {
                 id: existingRequest.id,
                 status: existingRequest.status,
                 user_id: existingRequest.user_id,
@@ -722,7 +785,7 @@ class FlightRequestAPI {
             // 3. 관련 이미지 파일이 있으면 삭제 시도 (실패해도 계속 진행)
             if (existingRequest.flight_image_url) {
                 try {
-                    console.log('🗑️ [API디버그] 관련 이미지 파일 삭제 시도:', existingRequest.flight_image_url);
+                    console.log('🗑️ [API디버그] v8.8.0 관련 이미지 파일 삭제 시도:', existingRequest.flight_image_url);
                     
                     // URL에서 파일 경로 추출
                     const urlParts = existingRequest.flight_image_url.split('/');
@@ -730,16 +793,16 @@ class FlightRequestAPI {
                     
                     if (fileName && fileName.includes('flight_')) {
                         await this.deleteFile('flight-images', fileName);
-                        console.log('✅ [API디버그] 관련 이미지 파일 삭제 성공');
+                        console.log('✅ [API디버그] v8.8.0 관련 이미지 파일 삭제 성공');
                     }
                 } catch (imageDeleteError) {
-                    console.warn('⚠️ [API디버그] 이미지 파일 삭제 실패 (계속 진행):', imageDeleteError);
+                    console.warn('⚠️ [API디버그] v8.8.0 이미지 파일 삭제 실패 (계속 진행):', imageDeleteError);
                     // 이미지 삭제 실패는 치명적이지 않으므로 계속 진행
                 }
             }
 
             // 4. 데이터베이스에서 신청 레코드 삭제
-            console.log('🗑️ [API디버그] 데이터베이스에서 신청 레코드 삭제 시도...');
+            console.log('🗑️ [API디버그] v8.8.0 데이터베이스에서 신청 레코드 삭제 시도...');
             const { error: deleteError } = await this.supabase
                 .from('flight_requests')
                 .delete()
@@ -747,11 +810,11 @@ class FlightRequestAPI {
                 .eq('user_id', this.user.id); // 추가 보안을 위한 사용자 ID 확인
 
             if (deleteError) {
-                console.error('❌ [API디버그] 신청 레코드 삭제 실패:', deleteError);
+                console.error('❌ [API디버그] v8.8.0 신청 레코드 삭제 실패:', deleteError);
                 throw new Error('신청 삭제 중 오류가 발생했습니다: ' + deleteError.message);
             }
 
-            console.log('✅ [API디버그] 항공권 신청 삭제 완료:', {
+            console.log('✅ [API디버그] v8.8.0 항공권 신청 삭제 완료:', {
                 requestId: requestId,
                 userId: this.user.id,
                 status: existingRequest.status
@@ -768,7 +831,7 @@ class FlightRequestAPI {
             };
 
         } catch (error) {
-            console.error('❌ [API디버그] deleteFlightRequest() 실패:', error);
+            console.error('❌ [API디버그] v8.8.0 deleteFlightRequest() 실패:', error);
             throw error;
         }
     }
@@ -936,7 +999,7 @@ class FlightRequestAPI {
         }
     }
 
-    // 🔧 v8.4.1: 강화된 디버깅 메서드
+    // 🛠️ v8.8.0: 강화된 디버깅 메서드
     getStatus() {
         return {
             isInitialized: this.isInitialized,
@@ -958,20 +1021,23 @@ class FlightRequestAPI {
             localStorage: {
                 currentStudent: !!localStorage.getItem('currentStudent'),
                 keys: Object.keys(localStorage).filter(key => key.includes('user') || key.includes('Student'))
-            }
+            },
+            initializationAttempts: this.initializationAttempts,
+            maxInitializationAttempts: this.maxInitializationAttempts
         };
     }
 
-    // 🔧 v8.4.1: 여권정보 디버깅 전용 메서드
+    // 🛠️ v8.8.0: 여권정보 디버깅 전용 메서드 (강화)
     async debugPassportInfo() {
-        console.log('🔍 [디버그] 여권정보 종합 진단 시작...');
+        console.log('🔍 [디버그] v8.8.0 여권정보 종합 진단 시작...');
         
         try {
             // 1. 초기화 상태 확인
             console.log('1️⃣ API 초기화 상태:', {
                 isInitialized: this.isInitialized,
                 hasSupabase: !!this.supabase,
-                hasCore: !!this.core
+                hasCore: !!this.core,
+                initializationAttempts: this.initializationAttempts
             });
 
             // 2. 사용자 정보 확인
@@ -1000,33 +1066,34 @@ class FlightRequestAPI {
                 success: true,
                 userInfo: this.user,
                 passportInfo: passportInfo,
-                message: '디버깅 완료'
+                message: 'v8.8.0 디버깅 완료'
             };
 
         } catch (error) {
-            console.error('❌ 여권정보 디버깅 실패:', error);
+            console.error('❌ v8.8.0 여권정보 디버깅 실패:', error);
             return {
                 success: false,
                 error: error.message,
-                userInfo: this.user
+                userInfo: this.user,
+                initializationAttempts: this.initializationAttempts
             };
         }
     }
 }
 
-// 🔧 v8.7.2: FlightRequestAPI 클래스를 전역 스코프에 노출
+// 🔧 v8.8.0: FlightRequestAPI 클래스를 전역 스코프에 노출
 window.FlightRequestAPI = FlightRequestAPI;
 
-// 🌐 v8.7.2: 인스턴스 생성
+// 🌐 v8.8.0: 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.7.2 인스턴스 생성 시작 (삭제 기능 추가)...');
+        console.log('🚀 FlightRequestAPI v8.8.0 인스턴스 생성 시작 (여권 수정 관련 기능 점검 및 수정)...');
         window.flightRequestAPI = new FlightRequestAPI();
         
         // 호환성을 위한 passport API 인스턴스도 생성
         window.passportAPI = window.flightRequestAPI;
         
-        console.log('✅ FlightRequestAPI v8.7.2 인스턴스 생성 완료 - 삭제 기능 추가');
+        console.log('✅ FlightRequestAPI v8.8.0 인스턴스 생성 완료 - 여권 수정 관련 기능 점검 및 수정');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -1034,7 +1101,7 @@ function createFlightRequestAPI() {
     }
 }
 
-// 🌐 v8.7.2: 즉시 생성 (대기 시간 최소화)
+// 🌐 v8.8.0: 즉시 생성 (대기 시간 최소화)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(createFlightRequestAPI, 100); // 단축된 대기 시간
@@ -1043,4 +1110,4 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 100); // 즉시 실행에 가깝게
 }
 
-console.log('✅ FlightRequestAPI v8.7.2 모듈 로드 완료 - 삭제 기능 추가 ("삭제하고 재신청" 버튼 문제 해결)');
+console.log('✅ FlightRequestAPI v8.8.0 모듈 로드 완료 - 여권 수정 관련 기능 점검 및 수정 (API 초기화 타이밍, 상태 변수 관리, 에러 처리 강화)');
