@@ -1,4 +1,5 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.8.0
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.2.1
+// 🆕 v8.2.1: 현지 활동기간 관리 API 기능 추가
 // 🛠️ 여권 수정 관련 기능 점검 및 수정 완료
 // 🔧 API 초기화 타이밍, 상태 변수 관리, 에러 처리 강화
 // passport-info 기능 완전 통합 버전
@@ -21,7 +22,7 @@ class FlightRequestAPI {
     // 🚀 v8.4.1: 퍼블릭 Storage 최적화된 연동
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v8.8.0 초기화 시작 (여권 수정 관련 기능 점검 및 수정)...');
+            console.log('🔄 FlightRequestAPI v8.2.1 초기화 시작 (현지 활동기간 관리 API 기능 추가)...');
             
             // SupabaseCore v1.0.1 연결
             await this.connectToSupabaseCore();
@@ -32,7 +33,7 @@ class FlightRequestAPI {
             // 초기화 완료 마킹
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI v8.8.0 초기화 완료');
+            console.log('✅ FlightRequestAPI v8.2.1 초기화 완료 - 현지 활동기간 관리 API 기능 추가');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -139,7 +140,7 @@ class FlightRequestAPI {
             return true;
         }
 
-        console.log('🔄 [API디버그] v8.8.0 FlightRequestAPI 초기화 보장 중...');
+        console.log('🔄 [API디버그] v8.2.1 FlightRequestAPI 초기화 보장 중...');
 
         try {
             if (!this.initializationPromise) {
@@ -151,7 +152,7 @@ class FlightRequestAPI {
             if (!this.isInitialized && this.initializationAttempts < this.maxInitializationAttempts) {
                 // 🛠️ v8.8.0: 재시도 로직 개선
                 this.initializationAttempts++;
-                console.log(`🔄 [API디버그] v8.8.0: 초기화 재시도 ${this.initializationAttempts}/${this.maxInitializationAttempts}`);
+                console.log(`🔄 [API디버그] v8.2.1: 초기화 재시도 ${this.initializationAttempts}/${this.maxInitializationAttempts}`);
                 
                 // 재시도 전 잠시 대기
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -164,10 +165,10 @@ class FlightRequestAPI {
                 throw new Error(`API 초기화 실패 (${this.initializationAttempts}회 시도 후)`);
             }
 
-            console.log('✅ [API디버그] v8.8.0: API 초기화 보장 완료');
+            console.log('✅ [API디버그] v8.2.1: API 초기화 보장 완료');
             return this.isInitialized;
         } catch (error) {
-            console.error('❌ [API디버그] v8.8.0: 초기화 보장 실패:', error);
+            console.error('❌ [API디버그] v8.2.1: 초기화 보장 실패:', error);
             throw error;
         }
     }
@@ -305,6 +306,365 @@ class FlightRequestAPI {
         } catch (error) {
             console.error('사용자 프로필 조회 실패:', error);
             throw error;
+        }
+    }
+
+    // === 🆕 v8.2.1: 현지 활동기간 관리 API 기능 ===
+
+    /**
+     * 사용자의 현지 활동기간 정보를 user_profiles 테이블에 업데이트
+     * @param {Object} activityData - 활동기간 데이터
+     * @param {string} activityData.actualArrivalDate - 현지 도착일 (YYYY-MM-DD)
+     * @param {string} activityData.actualWorkEndDate - 학당 근무 종료일 (YYYY-MM-DD)
+     * @param {number} activityData.actualWorkDays - 계산된 활동일수
+     * @param {number} activityData.minimumRequiredDays - 최소 요구 활동일 (선택적, 기본값: 180)
+     * @returns {Object} API 응답 결과
+     */
+    async updateUserProfileActivityDates(activityData) {
+        try {
+            console.log('🗓️ [활동기간API] updateUserProfileActivityDates() 시작...');
+            await this.ensureInitialized();
+            
+            if (!this.user) await this.getCurrentUser();
+            
+            if (!this.user?.id) {
+                throw new Error('사용자 정보가 없습니다');
+            }
+
+            // 🔍 입력 데이터 검증
+            if (!activityData) {
+                throw new Error('활동기간 데이터가 없습니다');
+            }
+
+            if (!activityData.actualArrivalDate || !activityData.actualWorkEndDate) {
+                throw new Error('현지 도착일과 학당 근무 종료일을 모두 입력해주세요');
+            }
+
+            // 🔍 데이터 검증 로그
+            console.log('🗓️ [활동기간API] 입력 데이터 검증:', {
+                userId: this.user.id,
+                userName: this.user.name,
+                actualArrivalDate: activityData.actualArrivalDate,
+                actualWorkEndDate: activityData.actualWorkEndDate,
+                actualWorkDays: activityData.actualWorkDays,
+                minimumRequiredDays: activityData.minimumRequiredDays || 180
+            });
+
+            // 🗓️ 업데이트할 데이터 준비
+            const updateData = {
+                actual_arrival_date: activityData.actualArrivalDate,
+                actual_work_end_date: activityData.actualWorkEndDate,
+                actual_work_days: activityData.actualWorkDays || 0,
+                minimum_required_days: activityData.minimumRequiredDays || 180,
+                updated_at: new Date().toISOString()
+            };
+
+            console.log('🗓️ [활동기간API] user_profiles 업데이트 데이터:', updateData);
+
+            // 🗓️ SupabaseCore 사용 (가능하면)
+            if (this.core?.update) {
+                console.log('🗓️ [활동기간API] SupabaseCore로 업데이트 시도...');
+                const result = await this.core.update('user_profiles', updateData, { 
+                    auth_user_id: this.user.id 
+                });
+                
+                if (!result.success) {
+                    console.error('❌ [활동기간API] SupabaseCore 업데이트 실패:', result.error);
+                    throw new Error(result.error);
+                }
+
+                console.log('✅ [활동기간API] SupabaseCore 업데이트 성공:', result.data[0]);
+                return {
+                    success: true,
+                    data: result.data[0],
+                    message: '활동기간 정보가 성공적으로 업데이트되었습니다'
+                };
+            }
+
+            // 🗓️ 폴백: 직접 supabase 사용
+            console.log('🗓️ [활동기간API] 직접 Supabase로 업데이트 시도...');
+            const { data, error } = await this.supabase
+                .from('user_profiles')
+                .update(updateData)
+                .eq('auth_user_id', this.user.id)
+                .select()
+                .single();
+
+            if (error) {
+                console.error('❌ [활동기간API] 직접 Supabase 업데이트 실패:', error);
+                throw error;
+            }
+
+            console.log('✅ [활동기간API] 직접 Supabase 업데이트 성공:', data);
+
+            return {
+                success: true,
+                data: data,
+                message: '활동기간 정보가 성공적으로 업데이트되었습니다'
+            };
+
+        } catch (error) {
+            console.error('❌ [활동기간API] updateUserProfileActivityDates() 실패:', error);
+            
+            // 🗓️ 에러 메시지 개선
+            let enhancedError = error;
+            if (error.message) {
+                if (error.message.includes('사용자 정보')) {
+                    enhancedError = new Error('사용자 인증이 만료되었습니다. 페이지를 새로고침 후 다시 시도해주세요.');
+                } else if (error.message.includes('auth_user_id')) {
+                    enhancedError = new Error('사용자 프로필을 찾을 수 없습니다. 관리자에게 문의해주세요.');
+                } else if (error.message.includes('network') || error.message.includes('fetch')) {
+                    enhancedError = new Error('네트워크 연결을 확인하고 다시 시도해주세요.');
+                }
+            }
+            
+            return {
+                success: false,
+                error: enhancedError.message,
+                originalError: error.message
+            };
+        }
+    }
+
+    /**
+     * 현재 사용자의 활동기간 정보 조회
+     * @returns {Object} 사용자의 활동기간 정보
+     */
+    async getUserProfileActivityDates() {
+        try {
+            console.log('🗓️ [활동기간API] getUserProfileActivityDates() 시작...');
+            await this.ensureInitialized();
+            
+            if (!this.user) await this.getCurrentUser();
+            
+            if (!this.user?.id) {
+                throw new Error('사용자 정보가 없습니다');
+            }
+
+            // 🗓️ 활동기간 관련 컬럼만 조회
+            const selectColumns = [
+                'actual_arrival_date',
+                'actual_work_end_date', 
+                'actual_work_days',
+                'minimum_required_days',
+                'dispatch_start_date',
+                'dispatch_end_date',
+                'dispatch_duration',
+                'updated_at'
+            ].join(', ');
+
+            console.log('🗓️ [활동기간API] 조회할 컬럼:', selectColumns);
+
+            // 🗓️ SupabaseCore 사용 (가능하면)
+            if (this.core?.select) {
+                console.log('🗓️ [활동기간API] SupabaseCore로 조회 시도...');
+                const result = await this.core.select('user_profiles', selectColumns, { 
+                    auth_user_id: this.user.id 
+                });
+                
+                if (!result.success) {
+                    if (result.error.includes('PGRST116')) {
+                        console.log('📅 [활동기간API] 사용자 프로필 없음');
+                        return null;
+                    }
+                    throw new Error(result.error);
+                }
+
+                const profileData = result.data?.length > 0 ? result.data[0] : null;
+                console.log('✅ [활동기간API] SupabaseCore 조회 성공:', profileData);
+                return profileData;
+            }
+
+            // 🗓️ 폴백: 직접 supabase 사용
+            console.log('🗓️ [활동기간API] 직접 Supabase로 조회 시도...');
+            const { data, error } = await this.supabase
+                .from('user_profiles')
+                .select(selectColumns)
+                .eq('auth_user_id', this.user.id)
+                .single();
+
+            if (error && error.code !== 'PGRST116') {
+                console.error('❌ [활동기간API] 직접 Supabase 조회 실패:', error);
+                throw error;
+            }
+
+            console.log('✅ [활동기간API] 직접 Supabase 조회 성공:', data);
+            return data;
+
+        } catch (error) {
+            console.error('❌ [활동기간API] getUserProfileActivityDates() 실패:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 사용자별 최소 요구 활동일 조회
+     * @param {string} userId - 사용자 ID (선택적, 기본값: 현재 사용자)
+     * @returns {number} 최소 요구 활동일
+     */
+    async getRequiredActivityDays(userId = null) {
+        try {
+            console.log('🗓️ [활동기간API] getRequiredActivityDays() 시작...');
+            
+            const targetUserId = userId || this.user?.id;
+            if (!targetUserId) {
+                await this.getCurrentUser();
+                if (!this.user?.id) {
+                    throw new Error('사용자 정보가 없습니다');
+                }
+            }
+
+            // 🗓️ 사용자 프로필에서 설정된 최소 요구일 조회
+            const profileData = await this.getUserProfileActivityDates();
+            
+            if (profileData && profileData.minimum_required_days) {
+                console.log('✅ [활동기간API] 사용자별 설정된 최소 요구일:', profileData.minimum_required_days);
+                return profileData.minimum_required_days;
+            }
+
+            // 🗓️ 기본값 반환 (180일)
+            const defaultRequiredDays = 180;
+            console.log('✅ [활동기간API] 기본 최소 요구일 사용:', defaultRequiredDays);
+            return defaultRequiredDays;
+
+        } catch (error) {
+            console.error('❌ [활동기간API] getRequiredActivityDays() 실패:', error);
+            // 에러 발생 시 기본값 반환
+            return 180;
+        }
+    }
+
+    /**
+     * 활동기간 데이터의 서버 측 검증
+     * @param {Object} activityData - 검증할 활동기간 데이터
+     * @returns {Object} 검증 결과
+     */
+    async validateActivityPeriodAPI(activityData) {
+        try {
+            console.log('🔍 [활동기간검증] validateActivityPeriodAPI() 시작...');
+            
+            // 🔍 Utils 함수 활용하여 클라이언트 측 검증
+            if (window.FlightRequestUtils && window.FlightRequestUtils.validateActivityDates) {
+                const clientValidation = window.FlightRequestUtils.validateActivityDates(
+                    activityData.departureDate,
+                    activityData.actualArrivalDate,
+                    activityData.actualWorkEndDate,
+                    activityData.returnDate
+                );
+
+                console.log('🔍 [활동기간검증] 클라이언트 측 검증 결과:', clientValidation);
+
+                // 🔍 최소 활동일 요구사항 확인
+                const requiredDays = await this.getRequiredActivityDays();
+                const minDaysValidation = window.FlightRequestUtils.validateMinimumActivityDays(
+                    clientValidation.activityDays,
+                    requiredDays
+                );
+
+                console.log('🔍 [활동기간검증] 최소 활동일 검증 결과:', minDaysValidation);
+
+                return {
+                    success: true,
+                    clientValidation: clientValidation,
+                    minDaysValidation: minDaysValidation,
+                    serverValidation: {
+                        requiredDays: requiredDays,
+                        canSubmit: clientValidation.valid && minDaysValidation.valid,
+                        timestamp: new Date().toISOString()
+                    }
+                };
+            }
+
+            // 🔍 Utils 함수가 없는 경우 기본 검증
+            console.warn('⚠️ [활동기간검증] FlightRequestUtils 없음 - 기본 검증 수행');
+            
+            const arrivalDate = new Date(activityData.actualArrivalDate);
+            const workEndDate = new Date(activityData.actualWorkEndDate);
+            const activityDays = Math.ceil((workEndDate - arrivalDate) / (1000 * 60 * 60 * 24)) + 1;
+            
+            const requiredDays = await this.getRequiredActivityDays();
+            const isValid = activityDays >= requiredDays;
+
+            return {
+                success: true,
+                basicValidation: {
+                    valid: isValid,
+                    activityDays: activityDays,
+                    requiredDays: requiredDays,
+                    message: isValid ? '활동 기간이 요구사항을 충족합니다' : `최소 ${requiredDays}일이 필요합니다 (현재: ${activityDays}일)`
+                }
+            };
+
+        } catch (error) {
+            console.error('❌ [활동기간검증] validateActivityPeriodAPI() 실패:', error);
+            return {
+                success: false,
+                error: error.message,
+                canSubmit: false
+            };
+        }
+    }
+
+    /**
+     * 활동기간 관련 종합 디버깅 정보
+     * @param {Object} activityData - 디버깅할 활동기간 데이터 (선택적)
+     * @returns {Object} 디버깅 정보
+     */
+    async debugActivityPeriod(activityData = null) {
+        console.log('🔍 [활동기간디버그] debugActivityPeriod() 시작...');
+        
+        const debug = {
+            timestamp: new Date().toISOString(),
+            apiVersion: 'v8.2.1',
+            user: this.user,
+            inputData: activityData,
+            databaseData: null,
+            validationResults: null,
+            utilsAvailable: !!window.FlightRequestUtils,
+            errors: []
+        };
+
+        try {
+            // 1. 사용자 정보 확인
+            if (!this.user) {
+                await this.getCurrentUser();
+            }
+            debug.user = this.user;
+
+            // 2. 데이터베이스에서 현재 활동기간 정보 조회
+            try {
+                debug.databaseData = await this.getUserProfileActivityDates();
+                console.log('🔍 [활동기간디버그] DB 조회 결과:', debug.databaseData);
+            } catch (dbError) {
+                debug.errors.push(`DB 조회 실패: ${dbError.message}`);
+            }
+
+            // 3. 입력 데이터가 있으면 검증 수행
+            if (activityData) {
+                try {
+                    debug.validationResults = await this.validateActivityPeriodAPI(activityData);
+                    console.log('🔍 [활동기간디버그] 검증 결과:', debug.validationResults);
+                } catch (validationError) {
+                    debug.errors.push(`검증 실패: ${validationError.message}`);
+                }
+            }
+
+            // 4. Utils 함수 가용성 확인
+            if (window.FlightRequestUtils) {
+                debug.utilsInfo = {
+                    hasCalculateActivityDays: typeof window.FlightRequestUtils.calculateActivityDays === 'function',
+                    hasValidateActivityDates: typeof window.FlightRequestUtils.validateActivityDates === 'function',
+                    hasValidateMinimumActivityDays: typeof window.FlightRequestUtils.validateMinimumActivityDays === 'function'
+                };
+            }
+
+            console.log('✅ [활동기간디버그] 디버깅 완료:', debug);
+            return debug;
+
+        } catch (error) {
+            console.error('❌ [활동기간디버그] debugActivityPeriod() 실패:', error);
+            debug.errors.push(`전체 디버깅 실패: ${error.message}`);
+            return debug;
         }
     }
 
@@ -633,9 +993,10 @@ class FlightRequestAPI {
         }
     }
 
-    // 항공권 신청 생성
+    // 🆕 v8.2.1: 현지 활동기간 데이터 포함 항공권 신청 생성
     async createFlightRequest(requestData, imageFile) {
         try {
+            console.log('🆕 [항공권신청] v8.2.1 createFlightRequest() 시작...');
             await this.ensureInitialized();
             
             if (!this.user) await this.getCurrentUser();
@@ -667,9 +1028,36 @@ class FlightRequestAPI {
                 status: 'pending'
             };
 
-            return await this.insertData('flight_requests', dataToSave);
+            console.log('🆕 [항공권신청] v8.2.1 저장할 항공권 데이터:', dataToSave);
+
+            // 🆕 v8.2.1: 항공권 신청 데이터 저장
+            const flightRequestResult = await this.insertData('flight_requests', dataToSave);
+            console.log('✅ [항공권신청] v8.2.1 항공권 신청 저장 성공:', flightRequestResult);
+
+            // 🆕 v8.2.1: 활동기간 데이터가 있으면 user_profiles도 업데이트
+            if (requestData.actualArrivalDate && requestData.actualWorkEndDate) {
+                console.log('🗓️ [항공권신청] v8.2.1 활동기간 데이터도 함께 저장...');
+                
+                const activityData = {
+                    actualArrivalDate: requestData.actualArrivalDate,
+                    actualWorkEndDate: requestData.actualWorkEndDate,
+                    actualWorkDays: requestData.actualWorkDays || 0,
+                    minimumRequiredDays: requestData.minimumRequiredDays || 180
+                };
+
+                try {
+                    const activityUpdateResult = await this.updateUserProfileActivityDates(activityData);
+                    console.log('✅ [항공권신청] v8.2.1 활동기간 업데이트 성공:', activityUpdateResult);
+                } catch (activityError) {
+                    console.warn('⚠️ [항공권신청] v8.2.1 활동기간 업데이트 실패 (항공권 신청은 성공):', activityError);
+                    // 활동기간 업데이트 실패해도 항공권 신청은 성공으로 처리
+                }
+            }
+
+            return flightRequestResult;
+
         } catch (error) {
-            console.error('항공권 신청 생성 실패:', error);
+            console.error('❌ [항공권신청] v8.2.1 createFlightRequest() 실패:', error);
             throw error;
         }
     }
@@ -687,9 +1075,10 @@ class FlightRequestAPI {
         }
     }
 
-    // 항공권 신청 수정
+    // 🆕 v8.2.1: 현지 활동기간 데이터 포함 항공권 신청 수정
     async updateFlightRequest(requestId, requestData, imageFile = null) {
         try {
+            console.log('🔄 [항공권신청] v8.2.1 updateFlightRequest() 시작...');
             await this.ensureInitialized();
             
             if (!this.user) await this.getCurrentUser();
@@ -719,6 +1108,8 @@ class FlightRequestAPI {
                 updateData.flight_image_url = await this.uploadFlightImage(imageFile);
             }
 
+            console.log('🔄 [항공권신청] v8.2.1 업데이트할 항공권 데이터:', updateData);
+
             // 복잡한 조건이 있는 업데이트는 직접 supabase 사용
             const { data, error } = await this.supabase
                 .from('flight_requests')
@@ -730,9 +1121,32 @@ class FlightRequestAPI {
                 .single();
 
             if (error) throw error;
+            
+            console.log('✅ [항공권신청] v8.2.1 항공권 신청 수정 성공:', data);
+
+            // 🆕 v8.2.1: 활동기간 데이터가 있으면 user_profiles도 업데이트
+            if (requestData.actualArrivalDate && requestData.actualWorkEndDate) {
+                console.log('🗓️ [항공권신청] v8.2.1 활동기간 데이터도 함께 업데이트...');
+                
+                const activityData = {
+                    actualArrivalDate: requestData.actualArrivalDate,
+                    actualWorkEndDate: requestData.actualWorkEndDate,
+                    actualWorkDays: requestData.actualWorkDays || 0,
+                    minimumRequiredDays: requestData.minimumRequiredDays || 180
+                };
+
+                try {
+                    const activityUpdateResult = await this.updateUserProfileActivityDates(activityData);
+                    console.log('✅ [항공권신청] v8.2.1 활동기간 업데이트 성공:', activityUpdateResult);
+                } catch (activityError) {
+                    console.warn('⚠️ [항공권신청] v8.2.1 활동기간 업데이트 실패 (항공권 수정은 성공):', activityError);
+                    // 활동기간 업데이트 실패해도 항공권 수정은 성공으로 처리
+                }
+            }
+
             return data;
         } catch (error) {
-            console.error('항공권 신청 수정 실패:', error);
+            console.error('❌ [항공권신청] v8.2.1 updateFlightRequest() 실패:', error);
             throw error;
         }
     }
@@ -740,7 +1154,7 @@ class FlightRequestAPI {
     // 🗑️ v8.7.2: 항공권 신청 삭제 (삭제하고 재신청 버튼용)
     async deleteFlightRequest(requestId) {
         try {
-            console.log('🗑️ [API디버그] v8.8.0 deleteFlightRequest() 시작...', requestId);
+            console.log('🗑️ [API디버그] v8.2.1 deleteFlightRequest() 시작...', requestId);
             await this.ensureInitialized();
             
             if (!this.user) await this.getCurrentUser();
@@ -762,7 +1176,7 @@ class FlightRequestAPI {
                 .single();
 
             if (fetchError) {
-                console.error('❌ [API디버그] v8.8.0 삭제 대상 신청 조회 실패:', fetchError);
+                console.error('❌ [API디버그] v8.2.1 삭제 대상 신청 조회 실패:', fetchError);
                 throw new Error('삭제할 신청을 찾을 수 없습니다');
             }
 
@@ -770,7 +1184,7 @@ class FlightRequestAPI {
                 throw new Error('삭제할 신청이 존재하지 않거나 권한이 없습니다');
             }
 
-            console.log('🔍 [API디버그] v8.8.0 삭제 대상 신청 정보:', {
+            console.log('🔍 [API디버그] v8.2.1 삭제 대상 신청 정보:', {
                 id: existingRequest.id,
                 status: existingRequest.status,
                 user_id: existingRequest.user_id,
@@ -785,7 +1199,7 @@ class FlightRequestAPI {
             // 3. 관련 이미지 파일이 있으면 삭제 시도 (실패해도 계속 진행)
             if (existingRequest.flight_image_url) {
                 try {
-                    console.log('🗑️ [API디버그] v8.8.0 관련 이미지 파일 삭제 시도:', existingRequest.flight_image_url);
+                    console.log('🗑️ [API디버그] v8.2.1 관련 이미지 파일 삭제 시도:', existingRequest.flight_image_url);
                     
                     // URL에서 파일 경로 추출
                     const urlParts = existingRequest.flight_image_url.split('/');
@@ -793,16 +1207,16 @@ class FlightRequestAPI {
                     
                     if (fileName && fileName.includes('flight_')) {
                         await this.deleteFile('flight-images', fileName);
-                        console.log('✅ [API디버그] v8.8.0 관련 이미지 파일 삭제 성공');
+                        console.log('✅ [API디버그] v8.2.1 관련 이미지 파일 삭제 성공');
                     }
                 } catch (imageDeleteError) {
-                    console.warn('⚠️ [API디버그] v8.8.0 이미지 파일 삭제 실패 (계속 진행):', imageDeleteError);
+                    console.warn('⚠️ [API디버그] v8.2.1 이미지 파일 삭제 실패 (계속 진행):', imageDeleteError);
                     // 이미지 삭제 실패는 치명적이지 않으므로 계속 진행
                 }
             }
 
             // 4. 데이터베이스에서 신청 레코드 삭제
-            console.log('🗑️ [API디버그] v8.8.0 데이터베이스에서 신청 레코드 삭제 시도...');
+            console.log('🗑️ [API디버그] v8.2.1 데이터베이스에서 신청 레코드 삭제 시도...');
             const { error: deleteError } = await this.supabase
                 .from('flight_requests')
                 .delete()
@@ -810,11 +1224,11 @@ class FlightRequestAPI {
                 .eq('user_id', this.user.id); // 추가 보안을 위한 사용자 ID 확인
 
             if (deleteError) {
-                console.error('❌ [API디버그] v8.8.0 신청 레코드 삭제 실패:', deleteError);
+                console.error('❌ [API디버그] v8.2.1 신청 레코드 삭제 실패:', deleteError);
                 throw new Error('신청 삭제 중 오류가 발생했습니다: ' + deleteError.message);
             }
 
-            console.log('✅ [API디버그] v8.8.0 항공권 신청 삭제 완료:', {
+            console.log('✅ [API디버그] v8.2.1 항공권 신청 삭제 완료:', {
                 requestId: requestId,
                 userId: this.user.id,
                 status: existingRequest.status
@@ -831,7 +1245,7 @@ class FlightRequestAPI {
             };
 
         } catch (error) {
-            console.error('❌ [API디버그] v8.8.0 deleteFlightRequest() 실패:', error);
+            console.error('❌ [API디버그] v8.2.1 deleteFlightRequest() 실패:', error);
             throw error;
         }
     }
@@ -999,9 +1413,10 @@ class FlightRequestAPI {
         }
     }
 
-    // 🛠️ v8.8.0: 강화된 디버깅 메서드
+    // 🆕 v8.2.1: 강화된 디버깅 메서드
     getStatus() {
         return {
+            version: 'v8.2.1',
             isInitialized: this.isInitialized,
             hasCore: !!this.core,
             hasSupabase: !!this.supabase,
@@ -1023,17 +1438,27 @@ class FlightRequestAPI {
                 keys: Object.keys(localStorage).filter(key => key.includes('user') || key.includes('Student'))
             },
             initializationAttempts: this.initializationAttempts,
-            maxInitializationAttempts: this.maxInitializationAttempts
+            maxInitializationAttempts: this.maxInitializationAttempts,
+            // 🆕 v8.2.1: 활동기간 관리 관련 상태
+            activityPeriodFeatures: {
+                hasUtils: !!window.FlightRequestUtils,
+                hasCalculateActivityDays: !!(window.FlightRequestUtils?.calculateActivityDays),
+                hasValidateActivityDates: !!(window.FlightRequestUtils?.validateActivityDates),
+                hasUpdateUserProfileActivityDates: typeof this.updateUserProfileActivityDates === 'function',
+                hasGetUserProfileActivityDates: typeof this.getUserProfileActivityDates === 'function',
+                hasValidateActivityPeriodAPI: typeof this.validateActivityPeriodAPI === 'function'
+            }
         };
     }
 
     // 🛠️ v8.8.0: 여권정보 디버깅 전용 메서드 (강화)
     async debugPassportInfo() {
-        console.log('🔍 [디버그] v8.8.0 여권정보 종합 진단 시작...');
+        console.log('🔍 [디버그] v8.2.1 여권정보 종합 진단 시작...');
         
         try {
             // 1. 초기화 상태 확인
             console.log('1️⃣ API 초기화 상태:', {
+                version: 'v8.2.1',
                 isInitialized: this.isInitialized,
                 hasSupabase: !!this.supabase,
                 hasCore: !!this.core,
@@ -1064,15 +1489,17 @@ class FlightRequestAPI {
 
             return {
                 success: true,
+                version: 'v8.2.1',
                 userInfo: this.user,
                 passportInfo: passportInfo,
-                message: 'v8.8.0 디버깅 완료'
+                message: 'v8.2.1 디버깅 완료 - 현지 활동기간 관리 기능 포함'
             };
 
         } catch (error) {
-            console.error('❌ v8.8.0 여권정보 디버깅 실패:', error);
+            console.error('❌ v8.2.1 여권정보 디버깅 실패:', error);
             return {
                 success: false,
+                version: 'v8.2.1',
                 error: error.message,
                 userInfo: this.user,
                 initializationAttempts: this.initializationAttempts
@@ -1081,19 +1508,19 @@ class FlightRequestAPI {
     }
 }
 
-// 🔧 v8.8.0: FlightRequestAPI 클래스를 전역 스코프에 노출
+// 🔧 v8.2.1: FlightRequestAPI 클래스를 전역 스코프에 노출
 window.FlightRequestAPI = FlightRequestAPI;
 
-// 🌐 v8.8.0: 인스턴스 생성
+// 🌐 v8.2.1: 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.8.0 인스턴스 생성 시작 (여권 수정 관련 기능 점검 및 수정)...');
+        console.log('🚀 FlightRequestAPI v8.2.1 인스턴스 생성 시작 (현지 활동기간 관리 API 기능 추가)...');
         window.flightRequestAPI = new FlightRequestAPI();
         
         // 호환성을 위한 passport API 인스턴스도 생성
         window.passportAPI = window.flightRequestAPI;
         
-        console.log('✅ FlightRequestAPI v8.8.0 인스턴스 생성 완료 - 여권 수정 관련 기능 점검 및 수정');
+        console.log('✅ FlightRequestAPI v8.2.1 인스턴스 생성 완료 - 현지 활동기간 관리 API 기능 추가');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -1101,7 +1528,7 @@ function createFlightRequestAPI() {
     }
 }
 
-// 🌐 v8.8.0: 즉시 생성 (대기 시간 최소화)
+// 🌐 v8.2.1: 즉시 생성 (대기 시간 최소화)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(createFlightRequestAPI, 100); // 단축된 대기 시간
@@ -1110,4 +1537,4 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 100); // 즉시 실행에 가깝게
 }
 
-console.log('✅ FlightRequestAPI v8.8.0 모듈 로드 완료 - 여권 수정 관련 기능 점검 및 수정 (API 초기화 타이밍, 상태 변수 관리, 에러 처리 강화)');
+console.log('✅ FlightRequestAPI v8.2.1 모듈 로드 완료 - 현지 활동기간 관리 API 기능 추가 (user_profiles 테이블 활동기간 컬럼 업데이트, 서버 측 검증, 항공권 신청과 활동기간 통합 저장)');
