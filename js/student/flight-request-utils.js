@@ -60,6 +60,382 @@ const FlightRequestUtils = {
     },
 
     // ===========================================
+    // 🆕 v8.2.1: 현지 활동기간 관리 유틸리티 함수들
+    // ===========================================
+
+    /**
+     * 현지 활동일 계산 (현지 도착일부터 학당 근무 종료일까지)
+     * @param {string|Date} arrivalDate - 현지 도착일
+     * @param {string|Date} workEndDate - 학당 근무 종료일
+     * @returns {number} 활동일 수 (일 단위)
+     */
+    calculateActivityDays(arrivalDate, workEndDate) {
+        if (!arrivalDate || !workEndDate) return 0;
+        
+        const arrival = new Date(arrivalDate);
+        const workEnd = new Date(workEndDate);
+        
+        // 날짜 유효성 확인
+        if (isNaN(arrival.getTime()) || isNaN(workEnd.getTime())) {
+            return 0;
+        }
+        
+        // 활동일 계산 (시작일과 종료일 모두 포함)
+        const diffTime = workEnd.getTime() - arrival.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        
+        return Math.max(0, diffDays); // 음수 방지
+    },
+
+    /**
+     * 현지 활동기간 날짜들의 전체적인 유효성 검증
+     * @param {string} departureDate - 출국일
+     * @param {string} arrivalDate - 현지 도착일
+     * @param {string} workEndDate - 학당 근무 종료일
+     * @param {string} returnDate - 귀국일
+     * @returns {Object} 검증 결과 객체
+     */
+    validateActivityDates(departureDate, arrivalDate, workEndDate, returnDate) {
+        const validation = {
+            valid: true,
+            errors: [],
+            warnings: [],
+            activityDays: 0,
+            status: 'valid' // 'valid', 'invalid', 'warning'
+        };
+
+        try {
+            // 1. 필수 날짜 확인
+            if (!departureDate || !arrivalDate || !workEndDate || !returnDate) {
+                validation.valid = false;
+                validation.status = 'invalid';
+                validation.errors.push('모든 날짜를 입력해주세요');
+                return validation;
+            }
+
+            // 2. 날짜 파싱
+            const departure = new Date(departureDate);
+            const arrival = new Date(arrivalDate);
+            const workEnd = new Date(workEndDate);
+            const returnD = new Date(returnDate);
+
+            // 3. 날짜 유효성 확인
+            const dates = [departure, arrival, workEnd, returnD];
+            const dateNames = ['출국일', '현지 도착일', '학당 근무 종료일', '귀국일'];
+            
+            for (let i = 0; i < dates.length; i++) {
+                if (isNaN(dates[i].getTime())) {
+                    validation.valid = false;
+                    validation.status = 'invalid';
+                    validation.errors.push(`${dateNames[i]}이 올바르지 않습니다`);
+                }
+            }
+
+            if (!validation.valid) return validation;
+
+            // 4. 날짜 순서 검증
+            if (arrival < departure) {
+                validation.valid = false;
+                validation.status = 'invalid';
+                validation.errors.push('현지 도착일은 출국일 이후여야 합니다');
+            }
+
+            if (workEnd <= arrival) {
+                validation.valid = false;
+                validation.status = 'invalid';
+                validation.errors.push('학당 근무 종료일은 현지 도착일 이후여야 합니다');
+            }
+
+            if (workEnd > returnD) {
+                validation.valid = false;
+                validation.status = 'invalid';
+                validation.errors.push('학당 근무 종료일은 귀국일 이전이어야 합니다');
+            }
+
+            if (returnD <= departure) {
+                validation.valid = false;
+                validation.status = 'invalid';
+                validation.errors.push('귀국일은 출국일 이후여야 합니다');
+            }
+
+            // 5. 활동일 계산
+            if (validation.valid) {
+                validation.activityDays = this.calculateActivityDays(arrivalDate, workEndDate);
+                
+                // 6. 활동일 최소 기준 경고
+                if (validation.activityDays < 150) {
+                    validation.warnings.push(`활동일이 ${validation.activityDays}일로 일반적인 기준(180일)보다 짧습니다`);
+                    if (validation.status === 'valid') {
+                        validation.status = 'warning';
+                    }
+                }
+            }
+
+            // 7. 날짜 간격 검증 (너무 긴 기간 경고)
+            if (validation.valid && validation.activityDays > 365) {
+                validation.warnings.push('활동 기간이 1년을 초과합니다. 확인해주세요');
+                if (validation.status === 'valid') {
+                    validation.status = 'warning';
+                }
+            }
+
+            return validation;
+
+        } catch (error) {
+            console.error('📅 [Utils] 활동기간 날짜 검증 오류:', error);
+            return {
+                valid: false,
+                errors: ['날짜 검증 중 오류가 발생했습니다'],
+                warnings: [],
+                activityDays: 0,
+                status: 'invalid'
+            };
+        }
+    },
+
+    /**
+     * 최소 활동일 요구사항 검증
+     * @param {number} activityDays - 계산된 활동일
+     * @param {number} requiredDays - 최소 요구 활동일 (기본값: 180일)
+     * @returns {Object} 검증 결과
+     */
+    validateMinimumActivityDays(activityDays, requiredDays = 180) {
+        const validation = {
+            valid: true,
+            message: '',
+            status: 'valid' // 'valid', 'invalid', 'warning'
+        };
+
+        if (activityDays < requiredDays) {
+            validation.valid = false;
+            validation.status = 'invalid';
+            validation.message = `최소 ${requiredDays}일의 활동 기간이 필요합니다 (현재: ${activityDays}일)`;
+        } else if (activityDays === requiredDays) {
+            validation.status = 'warning';
+            validation.message = `정확히 최소 요구 활동일(${requiredDays}일)입니다`;
+        } else {
+            validation.message = `활동 기간이 요구사항을 충족합니다 (${activityDays}일 ≥ ${requiredDays}일)`;
+        }
+
+        return validation;
+    },
+
+    /**
+     * 활동기간 포맷팅 (사용자 친화적 표시)
+     * @param {number} days - 활동일 수
+     * @returns {string} 포맷된 활동기간 문자열
+     */
+    formatActivityDuration(days) {
+        if (!days || days <= 0) return '-';
+
+        // 주 단위 계산
+        const weeks = Math.floor(days / 7);
+        const remainingDays = days % 7;
+
+        if (weeks === 0) {
+            return `${days}일`;
+        }
+
+        if (remainingDays === 0) {
+            return `${weeks}주 (${days}일)`;
+        }
+
+        return `${weeks}주 ${remainingDays}일 (${days}일)`;
+    },
+
+    /**
+     * 활동기간 검증 메시지 생성
+     * @param {Object} validation - validateActivityDates() 결과
+     * @returns {Object} 메시지 정보
+     */
+    getActivityValidationMessage(validation) {
+        const message = {
+            text: '',
+            type: validation.status, // 'valid', 'invalid', 'warning'
+            icon: '',
+            details: []
+        };
+
+        // 아이콘 설정
+        switch (validation.status) {
+            case 'valid':
+                message.icon = 'check-circle';
+                break;
+            case 'warning':
+                message.icon = 'alert-triangle';
+                break;
+            case 'invalid':
+                message.icon = 'x-circle';
+                break;
+            default:
+                message.icon = 'help-circle';
+        }
+
+        // 메인 메시지 생성
+        if (validation.errors && validation.errors.length > 0) {
+            message.text = validation.errors[0]; // 첫 번째 오류 메시지
+            message.details = validation.errors.slice(1); // 나머지 오류들
+        } else if (validation.warnings && validation.warnings.length > 0) {
+            message.text = validation.warnings[0]; // 첫 번째 경고 메시지
+            message.details = validation.warnings.slice(1); // 나머지 경고들
+        } else if (validation.valid && validation.activityDays > 0) {
+            message.text = `활동 기간이 요구사항을 충족합니다 (${this.formatActivityDuration(validation.activityDays)})`;
+        } else {
+            message.text = '활동 기간 정보를 입력해주세요';
+            message.type = 'info';
+            message.icon = 'info';
+        }
+
+        return message;
+    },
+
+    /**
+     * 활동기간 전체 요약 정보 생성
+     * @param {Object} dates - { departureDate, arrivalDate, workEndDate, returnDate }
+     * @param {number} requiredDays - 최소 요구 활동일
+     * @returns {Object} 요약 정보 객체
+     */
+    getActivityPeriodSummary(dates, requiredDays = 180) {
+        const summary = {
+            activityDays: 0,
+            formattedDuration: '-',
+            validation: null,
+            minimumDaysValidation: null,
+            isComplete: false,
+            canSubmit: true
+        };
+
+        try {
+            // 1. 전체 날짜 검증
+            summary.validation = this.validateActivityDates(
+                dates.departureDate,
+                dates.arrivalDate, 
+                dates.workEndDate,
+                dates.returnDate
+            );
+
+            summary.activityDays = summary.validation.activityDays;
+            summary.formattedDuration = this.formatActivityDuration(summary.activityDays);
+            summary.isComplete = summary.validation.valid && summary.activityDays > 0;
+
+            // 2. 최소 활동일 검증
+            if (summary.isComplete) {
+                summary.minimumDaysValidation = this.validateMinimumActivityDays(
+                    summary.activityDays, 
+                    requiredDays
+                );
+                
+                // 3. 제출 가능 여부 결정
+                summary.canSubmit = summary.validation.valid && summary.minimumDaysValidation.valid;
+            } else {
+                summary.canSubmit = false;
+            }
+
+            return summary;
+
+        } catch (error) {
+            console.error('📅 [Utils] 활동기간 요약 생성 오류:', error);
+            return {
+                ...summary,
+                validation: {
+                    valid: false,
+                    errors: ['활동기간 계산 중 오류가 발생했습니다'],
+                    warnings: [],
+                    activityDays: 0,
+                    status: 'invalid'
+                },
+                canSubmit: false
+            };
+        }
+    },
+
+    /**
+     * 날짜 문자열을 사용자 친화적 형식으로 변환
+     * @param {string} dateString - YYYY-MM-DD 형식의 날짜
+     * @returns {string} 포맷된 날짜 문자열
+     */
+    formatDateForDisplay(dateString) {
+        if (!dateString) return '';
+        
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            
+            // 요일 추가
+            const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+            const weekday = weekdays[date.getDay()];
+            
+            return `${year}년 ${month}월 ${day}일 (${weekday})`;
+        } catch (error) {
+            console.error('📅 [Utils] 날짜 포맷팅 오류:', error);
+            return dateString;
+        }
+    },
+
+    /**
+     * 활동기간 관련 디버그 정보 생성
+     * @param {Object} dates - 날짜 객체들
+     * @returns {Object} 디버그 정보
+     */
+    debugActivityPeriod(dates) {
+        const debug = {
+            timestamp: new Date().toISOString(),
+            inputDates: dates,
+            parsedDates: {},
+            calculations: {},
+            validations: {}
+        };
+
+        try {
+            // 날짜 파싱 결과
+            Object.keys(dates).forEach(key => {
+                if (dates[key]) {
+                    const parsed = new Date(dates[key]);
+                    debug.parsedDates[key] = {
+                        original: dates[key],
+                        parsed: parsed.toISOString(),
+                        valid: !isNaN(parsed.getTime())
+                    };
+                }
+            });
+
+            // 계산 결과
+            debug.calculations.activityDays = this.calculateActivityDays(
+                dates.arrivalDate, 
+                dates.workEndDate
+            );
+            debug.calculations.totalTripDays = this.calculateDuration(
+                dates.departureDate, 
+                dates.returnDate
+            );
+
+            // 검증 결과
+            debug.validations.dateValidation = this.validateActivityDates(
+                dates.departureDate,
+                dates.arrivalDate,
+                dates.workEndDate,
+                dates.returnDate
+            );
+
+            debug.validations.minimumDaysValidation = this.validateMinimumActivityDays(
+                debug.calculations.activityDays
+            );
+
+            console.log('📅 [Utils] 활동기간 디버그 정보:', debug);
+            return debug;
+
+        } catch (error) {
+            console.error('📅 [Utils] 디버그 정보 생성 오류:', error);
+            debug.error = error.message;
+            return debug;
+        }
+    },
+
+    // ===========================================
     // 🆕 가격 정보 관련 유틸리티 함수들 (v8.6.0)
     // ===========================================
 
@@ -423,3 +799,10 @@ const FlightRequestUtils = {
 
 // 전역 객체로 내보내기
 window.FlightRequestUtils = FlightRequestUtils;
+
+// 🆕 v8.2.1: 현지 활동기간 관리 함수들을 전역 함수로도 노출 (호환성)
+window.calculateActivityDays = FlightRequestUtils.calculateActivityDays.bind(FlightRequestUtils);
+window.validateActivityDates = FlightRequestUtils.validateActivityDates.bind(FlightRequestUtils);
+window.getActivityPeriodSummary = FlightRequestUtils.getActivityPeriodSummary.bind(FlightRequestUtils);
+
+console.log('✅ FlightRequestUtils v8.2.1 로드 완료 - 현지 활동기간 관리 유틸리티 함수 추가');
