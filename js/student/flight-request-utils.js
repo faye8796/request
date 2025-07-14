@@ -1,10 +1,10 @@
-// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.2.2
-// 🔧 v8.2.2: Utils 모듈 버그 해결 - validateDates 메서드 노출 문제 수정
-// 🎯 목적: 재사용 가능한 헬퍼 함수들 제공
+// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.3.0
+// 🆕 v8.3.0: 귀국 필수 완료일 제약사항 기능 추가
+// 🎯 목적: 재사용 가능한 헬퍼 함수들 제공 + 귀국 필수 완료일 검증
 
 class FlightRequestUtils {
     constructor() {
-        this.version = 'v8.2.2';
+        this.version = 'v8.3.0';
     }
 
     // === 날짜 관련 유틸리티 ===
@@ -37,18 +37,87 @@ class FlightRequestUtils {
     }
 
     /**
-     * 🆕 v8.2.2: 현지 활동기간을 포함한 통합 날짜 검증
+     * 🆕 v8.3.0: 귀국 필수 완료일 검증
+     * @param {string} returnDate - 귀국일
+     * @param {string} requiredReturnDate - 귀국 필수 완료일
+     * @returns {Object} 검증 결과
+     */
+    validateRequiredReturnDate(returnDate, requiredReturnDate) {
+        if (!returnDate) {
+            return { valid: false, message: '귀국일을 입력해주세요.' };
+        }
+
+        if (!requiredReturnDate) {
+            // 필수 귀국일이 설정되지 않은 경우 기본 검증만 수행
+            return { valid: true, message: '귀국일이 유효합니다.' };
+        }
+
+        try {
+            const returnD = new Date(returnDate);
+            const requiredD = new Date(requiredReturnDate);
+
+            if (isNaN(returnD.getTime()) || isNaN(requiredD.getTime())) {
+                return { valid: false, message: '날짜 형식이 올바르지 않습니다.' };
+            }
+
+            if (returnD > requiredD) {
+                const formattedRequired = this.formatDate(requiredReturnDate);
+                return { 
+                    valid: false, 
+                    message: `귀국일은 ${formattedRequired} 이전이어야 합니다.`,
+                    code: 'REQUIRED_RETURN_DATE_EXCEEDED'
+                };
+            }
+
+            // 필수 완료일과 같은 날이면 경고
+            if (returnD.getTime() === requiredD.getTime()) {
+                const formattedRequired = this.formatDate(requiredReturnDate);
+                return { 
+                    valid: true, 
+                    message: `귀국일이 필수 완료일(${formattedRequired})과 동일합니다.`,
+                    warning: '가능한 여유를 두고 일정을 계획하시기 바랍니다.'
+                };
+            }
+
+            // 필수 완료일 7일 전 이내이면 주의 메시지
+            const daysDiff = Math.ceil((requiredD - returnD) / (1000 * 60 * 60 * 24));
+            if (daysDiff <= 7) {
+                const formattedRequired = this.formatDate(requiredReturnDate);
+                return { 
+                    valid: true, 
+                    message: '귀국일이 유효합니다.',
+                    warning: `필수 완료일(${formattedRequired})까지 ${daysDiff}일 남았습니다.`
+                };
+            }
+
+            return { valid: true, message: '귀국일이 유효합니다.' };
+
+        } catch (error) {
+            return { valid: false, message: '날짜 검증 중 오류가 발생했습니다.' };
+        }
+    }
+
+    /**
+     * 🔄 v8.3.0: 현지 활동기간을 포함한 통합 날짜 검증 + 귀국 필수 완료일 검증
      * @param {Object} dates - 모든 날짜 정보
+     * @param {string} dates.requiredReturnDate - 귀국 필수 완료일 (새로 추가)
      * @returns {Object} 검증 결과
      */
     validateAllDates(dates) {
-        const { departureDate, returnDate, actualArrivalDate, actualWorkEndDate } = dates;
+        const { 
+            departureDate, 
+            returnDate, 
+            actualArrivalDate, 
+            actualWorkEndDate,
+            requiredReturnDate 
+        } = dates;
         
         const validation = {
             valid: true,
             errors: [],
             warnings: [],
-            activityDays: 0
+            activityDays: 0,
+            requiredReturnValidation: null
         };
 
         try {
@@ -59,7 +128,20 @@ class FlightRequestUtils {
                 validation.valid = false;
             }
 
-            // 2. 현지 활동기간이 입력된 경우에만 추가 검증
+            // 2. 🆕 v8.3.0: 귀국 필수 완료일 검증 (최우선)
+            if (returnDate && requiredReturnDate) {
+                const requiredValidation = this.validateRequiredReturnDate(returnDate, requiredReturnDate);
+                validation.requiredReturnValidation = requiredValidation;
+                
+                if (!requiredValidation.valid) {
+                    validation.errors.push(requiredValidation.message);
+                    validation.valid = false;
+                } else if (requiredValidation.warning) {
+                    validation.warnings.push(requiredValidation.warning);
+                }
+            }
+
+            // 3. 현지 활동기간이 입력된 경우에만 추가 검증
             if (actualArrivalDate && actualWorkEndDate) {
                 const activityValidation = this.validateActivityDates(
                     departureDate, actualArrivalDate, actualWorkEndDate, returnDate
@@ -237,6 +319,98 @@ class FlightRequestUtils {
         }
         
         return { valid: true, message: `적절한 파견 기간입니다. (${duration}일)` };
+    }
+
+    // === 🆕 v8.3.0: 귀국 필수 완료일 관련 유틸리티 ===
+
+    /**
+     * 귀국 필수 완료일까지 남은 일수 계산
+     * @param {string} requiredReturnDate - 귀국 필수 완료일
+     * @returns {number} 남은 일수 (음수면 이미 지남)
+     */
+    calculateDaysUntilRequired(requiredReturnDate) {
+        if (!requiredReturnDate) return null;
+        
+        try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const required = new Date(requiredReturnDate);
+            
+            return Math.ceil((required - today) / (1000 * 60 * 60 * 24));
+        } catch (error) {
+            return null;
+        }
+    }
+
+    /**
+     * 귀국 필수 완료일 상태 정보 반환
+     * @param {string} requiredReturnDate - 귀국 필수 완료일
+     * @returns {Object} 상태 정보
+     */
+    getRequiredReturnStatus(requiredReturnDate) {
+        if (!requiredReturnDate) {
+            return {
+                status: 'none',
+                message: '귀국 필수 완료일이 설정되지 않았습니다.',
+                class: 'status-none',
+                icon: 'calendar'
+            };
+        }
+
+        const daysUntil = this.calculateDaysUntilRequired(requiredReturnDate);
+        const formattedDate = this.formatDate(requiredReturnDate);
+
+        if (daysUntil === null) {
+            return {
+                status: 'error',
+                message: '날짜 형식 오류',
+                class: 'status-error',
+                icon: 'alert-circle'
+            };
+        }
+
+        if (daysUntil < 0) {
+            return {
+                status: 'overdue',
+                message: `귀국 필수 완료일이 ${Math.abs(daysUntil)}일 지났습니다. (${formattedDate})`,
+                class: 'status-overdue',
+                icon: 'alert-triangle'
+            };
+        }
+
+        if (daysUntil === 0) {
+            return {
+                status: 'today',
+                message: `오늘이 귀국 필수 완료일입니다. (${formattedDate})`,
+                class: 'status-today',
+                icon: 'calendar-x'
+            };
+        }
+
+        if (daysUntil <= 7) {
+            return {
+                status: 'urgent',
+                message: `귀국 필수 완료일까지 ${daysUntil}일 남았습니다. (${formattedDate})`,
+                class: 'status-urgent',
+                icon: 'clock'
+            };
+        }
+
+        if (daysUntil <= 30) {
+            return {
+                status: 'warning',
+                message: `귀국 필수 완료일까지 ${daysUntil}일 남았습니다. (${formattedDate})`,
+                class: 'status-warning',
+                icon: 'calendar'
+            };
+        }
+
+        return {
+            status: 'normal',
+            message: `귀국 필수 완료일: ${formattedDate} (${daysUntil}일 후)`,
+            class: 'status-normal',
+            icon: 'calendar-check'
+        };
     }
 
     // === 상태 관련 유틸리티 ===
@@ -556,6 +730,8 @@ class FlightRequestUtils {
                 .filter(name => name !== 'constructor'),
             integrationFeatures: [
                 'Enhanced activity date validation',
+                'Required return date validation', // 🆕 v8.3.0
+                'Real-time constraint checking',   // 🆕 v8.3.0
                 'Debounce utility',
                 'Icon refresh utility',
                 'Safe date value getter',
@@ -598,6 +774,19 @@ class FlightRequestUtils {
         return new FlightRequestUtils().validateMinimumActivityDays(activityDays, requiredDays);
     }
 
+    // 🆕 v8.3.0: 귀국 필수 완료일 관련 Static 메서드들
+    static validateRequiredReturnDate(returnDate, requiredReturnDate) {
+        return new FlightRequestUtils().validateRequiredReturnDate(returnDate, requiredReturnDate);
+    }
+
+    static calculateDaysUntilRequired(requiredReturnDate) {
+        return new FlightRequestUtils().calculateDaysUntilRequired(requiredReturnDate);
+    }
+
+    static getRequiredReturnStatus(requiredReturnDate) {
+        return new FlightRequestUtils().getRequiredReturnStatus(requiredReturnDate);
+    }
+
     static formatPrice(price, currency = 'KRW') {
         return new FlightRequestUtils().formatPrice(price, currency);
     }
@@ -633,10 +822,10 @@ window.FlightRequestUtils = FlightRequestUtils;
 // 인스턴스 생성 및 전역 변수 설정
 window.flightRequestUtils = new FlightRequestUtils();
 
-console.log('✅ FlightRequestUtils v8.2.2 로드 완료 - 버그 해결 및 통합 검증 기능 추가');
-console.log('🔧 수정 사항:', {
-    bugFixed: 'validateDates 메서드 노출 문제 해결',
-    newFeature: 'validateAllDates 통합 검증 메서드 추가',
-    staticMethods: 'Static 메서드 호환성 보장',
-    integration: '현지 활동기간 통합 검증'
+console.log('✅ FlightRequestUtils v8.3.0 로드 완료 - 귀국 필수 완료일 제약사항 기능 추가');
+console.log('🆕 v8.3.0 새로운 기능:', {
+    requiredReturnDate: '개인별 귀국 필수 완료일 검증',
+    realTimeValidation: '실시간 제약사항 검사',
+    statusMessages: '상태별 안내 메시지',
+    integrationFeatures: '통합 검증 시스템'
 });
