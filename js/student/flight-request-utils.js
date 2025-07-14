@@ -1,10 +1,10 @@
-// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.2.1
-// 🧹 코드 정리: 실제 유틸리티 함수들만 포함
+// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.2.1-integrated
+// 🔄 통합: flight-request-utils-new.js의 개선된 기능들 통합
 // 🎯 목적: 재사용 가능한 헬퍼 함수들 제공
 
 class FlightRequestUtils {
     constructor() {
-        this.version = 'v8.2.1-clean';
+        this.version = 'v8.2.1-integrated';
     }
 
     // === 날짜 관련 유틸리티 ===
@@ -66,7 +66,7 @@ class FlightRequestUtils {
     }
 
     /**
-     * 🆕 v8.2.1: 현지 활동기간 종합 검증
+     * 🔄 v8.2.1-integrated: 현지 활동기간 종합 검증 (개선된 버전)
      * @param {string} departureDate - 출국일
      * @param {string} arrivalDate - 현지 도착일
      * @param {string} workEndDate - 학당 근무 종료일
@@ -74,45 +74,59 @@ class FlightRequestUtils {
      * @returns {Object} 검증 결과
      */
     validateActivityDates(departureDate, arrivalDate, workEndDate, returnDate) {
-        const result = {
+        const validation = {
             valid: true,
             errors: [],
             activityDays: 0
         };
 
-        if (!arrivalDate || !workEndDate) {
-            result.valid = false;
-            result.errors.push('현지 도착일과 학당 근무 종료일을 입력해주세요');
-            return result;
+        try {
+            const departure = new Date(departureDate);
+            const arrival = new Date(arrivalDate);
+            const workEnd = new Date(workEndDate);
+            const returnD = new Date(returnDate);
+
+            // 기본 날짜 순서 검증
+            if (arrival < departure) {
+                validation.errors.push('현지 도착일은 출국일 이후여야 합니다');
+                validation.valid = false;
+            }
+
+            // 🆕 현지 도착일은 출국일로부터 최대 1일 후까지
+            const maxArrivalDate = new Date(departure.getTime() + (1 * 24 * 60 * 60 * 1000));
+            if (arrival > maxArrivalDate) {
+                validation.errors.push('현지 도착일은 출국일로부터 1일 이내여야 합니다');
+                validation.valid = false;
+            }
+
+            if (workEnd <= arrival) {
+                validation.errors.push('학당 근무 종료일은 현지 도착일 이후여야 합니다');
+                validation.valid = false;
+            }
+
+            if (workEnd > returnD) {
+                validation.errors.push('학당 근무 종료일은 귀국일 이전이어야 합니다');
+                validation.valid = false;
+            }
+
+            // 🆕 귀국일은 활동 종료일로부터 최대 9일 후까지
+            const maxReturnDate = new Date(workEnd.getTime() + (9 * 24 * 60 * 60 * 1000));
+            if (returnD > maxReturnDate) {
+                validation.errors.push('귀국일은 활동 종료일로부터 9일 이내여야 합니다');
+                validation.valid = false;
+            }
+
+            // 활동일 계산
+            if (arrival < workEnd) {
+                validation.activityDays = this.calculateActivityDays(arrivalDate, workEndDate);
+            }
+
+        } catch (error) {
+            validation.errors.push('날짜 형식이 올바르지 않습니다');
+            validation.valid = false;
         }
 
-        const departure = new Date(departureDate);
-        const arrival = new Date(arrivalDate);
-        const workEnd = new Date(workEndDate);
-        const returnD = new Date(returnDate);
-
-        // 날짜 순서 검증
-        if (departure && arrival < departure) {
-            result.valid = false;
-            result.errors.push('현지 도착일은 출국일 이후여야 합니다');
-        }
-
-        if (returnD && workEnd > returnD) {
-            result.valid = false;
-            result.errors.push('학당 근무 종료일은 귀국일 이전이어야 합니다');
-        }
-
-        if (arrival >= workEnd) {
-            result.valid = false;
-            result.errors.push('학당 근무 종료일은 현지 도착일 이후여야 합니다');
-        }
-
-        // 활동일 계산
-        if (result.valid) {
-            result.activityDays = this.calculateActivityDays(arrivalDate, workEndDate);
-        }
-
-        return result;
+        return validation;
     }
 
     /**
@@ -131,12 +145,15 @@ class FlightRequestUtils {
         if (activityDays < requiredDays) {
             result.valid = false;
             result.message = `최소 ${requiredDays}일의 활동 기간이 필요합니다 (현재: ${activityDays}일)`;
+        } else if (activityDays === requiredDays) {
+            result.warning = `정확히 최소 요구일(${requiredDays}일)을 충족합니다`;
+            result.message = '활동 기간이 요구사항을 충족합니다';
         } else if (activityDays < requiredDays + 30) {
             // 최소 요구일보다는 크지만 30일 이내일 때 경고
             result.warning = `활동 기간이 최소 요구사항에 근접합니다 (${activityDays}일/${requiredDays}일)`;
             result.message = '활동 기간이 요구사항을 충족합니다';
         } else {
-            result.message = '활동 기간이 요구사항을 충족합니다';
+            result.message = `활동 기간이 요구사항을 충족합니다 (${activityDays}일)`;
         }
 
         return result;
@@ -202,7 +219,7 @@ class FlightRequestUtils {
     // === 포맷팅 유틸리티 ===
 
     /**
-     * 날짜 포맷팅
+     * 날짜 포맷팅 (한국어)
      * @param {string} dateString - 날짜 문자열
      * @returns {string} 포맷된 날짜
      */
@@ -217,12 +234,12 @@ class FlightRequestUtils {
                 day: 'numeric'
             });
         } catch (error) {
-            return dateString;
+            return '잘못된 날짜';
         }
     }
 
     /**
-     * 날짜시간 포맷팅
+     * 날짜시간 포맷팅 (한국어)
      * @param {string} dateTimeString - 날짜시간 문자열
      * @returns {string} 포맷된 날짜시간
      */
@@ -239,7 +256,7 @@ class FlightRequestUtils {
                 minute: '2-digit'
             });
         } catch (error) {
-            return dateTimeString;
+            return '잘못된 날짜';
         }
     }
 
@@ -305,30 +322,29 @@ class FlightRequestUtils {
      * @returns {Object} 검증 결과
      */
     validatePriceByCurrency(price, currency) {
-        const priceRanges = {
-            KRW: { min: 300000, max: 3000000 },
-            USD: { min: 200, max: 2000 },
-            CNY: { min: 1500, max: 15000 },
-            JPY: { min: 30000, max: 300000 },
-            EUR: { min: 180, max: 1800 }
-        };
-
-        const range = priceRanges[currency];
-        if (!range) {
-            return { valid: true, message: '알 수 없는 통화입니다.' };
-        }
-
-        if (price < range.min) {
-            return { 
-                valid: false, 
-                message: `${currency} ${this.formatPrice(range.min, currency)} 이상이어야 합니다.` 
+        const numPrice = parseFloat(price);
+        
+        if (isNaN(numPrice) || numPrice <= 0) {
+            return {
+                valid: false,
+                message: '올바른 가격을 입력해주세요.'
             };
         }
 
-        if (price > range.max) {
-            return { 
-                valid: false, 
-                message: `${currency} ${this.formatPrice(range.max, currency)} 이하여야 합니다.` 
+        // 통화별 최소 금액 (대략적인 항공료 기준)
+        const minPrices = {
+            'KRW': 200000,    // 20만원
+            'USD': 150,       // 150달러
+            'CNY': 1000,      // 1000위안
+            'JPY': 20000,     // 2만엔
+            'EUR': 140        // 140유로
+        };
+
+        const minPrice = minPrices[currency];
+        if (minPrice && numPrice < minPrice) {
+            return {
+                valid: false,
+                message: `${currency} ${this.formatPrice(minPrice, currency)} 이상의 가격을 입력해주세요.`
             };
         }
 
@@ -430,6 +446,48 @@ class FlightRequestUtils {
         return { valid: true, message: '유효한 이미지 파일입니다.' };
     }
 
+    // === 🆕 통합된 유틸리티 함수들 ===
+
+    /**
+     * 🆕 날짜 값 안전하게 가져오기
+     * @param {string} elementId - 요소 ID
+     * @returns {Date|null} 날짜 객체 또는 null
+     */
+    getDateValue(elementId) {
+        const element = document.getElementById(elementId);
+        if (element && element.value) {
+            return new Date(element.value);
+        }
+        return null;
+    }
+
+    /**
+     * 🆕 Lucide 아이콘 재초기화
+     */
+    refreshIcons() {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    /**
+     * 🆕 디바운싱 함수
+     * @param {Function} func - 실행할 함수
+     * @param {number} wait - 대기 시간 (밀리초)
+     * @returns {Function} 디바운싱된 함수
+     */
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
     // === 디버깅 유틸리티 ===
 
     /**
@@ -441,15 +499,82 @@ class FlightRequestUtils {
             version: this.version,
             loadedAt: new Date().toISOString(),
             methods: Object.getOwnPropertyNames(this.constructor.prototype)
-                .filter(name => name !== 'constructor')
+                .filter(name => name !== 'constructor'),
+            integrationFeatures: [
+                'Enhanced activity date validation',
+                'Debounce utility',
+                'Icon refresh utility',
+                'Safe date value getter',
+                'Improved error handling'
+            ]
         };
+    }
+
+    // === 🆕 Static 메서드들 (호환성 보장) ===
+
+    /**
+     * 🆕 Static 버전들 (기존 코드 호환성 위해)
+     */
+    static formatDate(dateString) {
+        return new FlightRequestUtils().formatDate(dateString);
+    }
+
+    static formatDateTime(dateTimeString) {
+        return new FlightRequestUtils().formatDateTime(dateTimeString);
+    }
+
+    static calculateActivityDays(arrivalDate, workEndDate) {
+        return new FlightRequestUtils().calculateActivityDays(arrivalDate, workEndDate);
+    }
+
+    static validateActivityDates(departureDate, arrivalDate, workEndDate, returnDate) {
+        return new FlightRequestUtils().validateActivityDates(departureDate, arrivalDate, workEndDate, returnDate);
+    }
+
+    static validateMinimumActivityDays(activityDays, requiredDays = 180) {
+        return new FlightRequestUtils().validateMinimumActivityDays(activityDays, requiredDays);
+    }
+
+    static formatPrice(price, currency = 'KRW') {
+        return new FlightRequestUtils().formatPrice(price, currency);
+    }
+
+    static validateImageFile(file) {
+        return new FlightRequestUtils().validateImageFile(file);
+    }
+
+    static showError(message) {
+        return new FlightRequestUtils().showError(message);
+    }
+
+    static showSuccess(message) {
+        return new FlightRequestUtils().showSuccess(message);
+    }
+
+    static getDateValue(elementId) {
+        return new FlightRequestUtils().getDateValue(elementId);
+    }
+
+    static refreshIcons() {
+        return new FlightRequestUtils().refreshIcons();
+    }
+
+    static debounce(func, wait) {
+        return new FlightRequestUtils().debounce(func, wait);
     }
 }
 
-// 전역 스코프에 노출
+// 전역 스코프에 노출 (both 방식 지원)
 window.FlightRequestUtils = FlightRequestUtils;
 
 // 인스턴스 생성 및 전역 변수 설정
 window.flightRequestUtils = new FlightRequestUtils();
 
-console.log('✅ FlightRequestUtils v8.2.1-clean 로드 완료 - 정리된 실제 유틸리티 함수 모음');
+console.log('✅ FlightRequestUtils v8.2.1-integrated 로드 완료 - 통합된 완전한 유틸리티 함수 모음');
+console.log('🔄 통합 기능:', {
+    enhancedValidation: '개선된 활동기간 검증',
+    debouncing: '디바운싱 함수',
+    iconRefresh: 'Lucide 아이콘 재초기화',
+    staticMethods: 'Static 메서드 호환성',
+    safeDateGetter: '안전한 날짜 값 가져오기'
+});
