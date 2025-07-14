@@ -1,6 +1,6 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.9.0
-// 🔧 여권정보 페이지 상태 초기화 버그 수정 - UX 개선
-// 🛠️ 여권 수정 관련 기능 점검 및 수정 완료
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.2.2
+// 🔧 v8.2.2: 현지 활동기간 통합 검증 및 UX 향상 - 버그 해결
+// 🛠️ 여권정보 페이지 상태 초기화 버그 수정 - UX 개선
 // 🔧 API 초기화 타이밍, 상태 변수 관리, 에러 처리, 이벤트 리스너 중복 등록 문제 해결
 // passport-info UI 기능 완전 통합 버전
 
@@ -27,6 +27,10 @@ class FlightRequestUI {
         
         // 🛠️ v8.5.0: 무한 루프 방지 플래그
         this.isLoadingData = false;
+        
+        // 🆕 v8.2.2: 현지 활동기간 관련 상태
+        this.activityValidationEnabled = false;
+        this.validationDebounceTimer = null;
         
         // 초기화 상태
         this.isInitialized = false;
@@ -69,6 +73,14 @@ class FlightRequestUI {
             departureDate: document.getElementById('departureDate'),
             returnDate: document.getElementById('returnDate'),
             durationMessage: document.getElementById('durationMessage'),
+            
+            // 🆕 v8.2.2: 현지 활동기간 요소들 추가
+            actualArrivalDate: document.getElementById('actualArrivalDate'),
+            actualWorkEndDate: document.getElementById('actualWorkEndDate'),
+            calculatedDays: document.getElementById('calculatedDays'),
+            requiredDays: document.getElementById('requiredDays'),
+            validationStatus: document.getElementById('validationStatus'),
+            
             departureAirport: document.getElementById('departureAirport'),
             arrivalAirport: document.getElementById('arrivalAirport'),
             purchaseLink: document.getElementById('purchaseLink'),
@@ -108,7 +120,7 @@ class FlightRequestUI {
 
     async init() {
         try {
-            console.log('🔄 FlightRequestUI v8.9.0 초기화 시작 (여권정보 페이지 상태 초기화 버그 수정)...');
+            console.log('🔄 FlightRequestUI v8.2.2 초기화 시작 (현지 활동기간 통합 검증 및 UX 향상)...');
             
             // API 및 유틸리티 대기
             await this.waitForDependencies();
@@ -116,12 +128,15 @@ class FlightRequestUI {
             // 이벤트 리스너 설정
             this.setupEventListeners();
             
+            // 🆕 v8.2.2: 현지 활동기간 검증 이벤트 설정
+            this.setupActivityValidationEvents();
+            
             // 🛠️ v8.5.0: 초기화 시 자동으로 데이터 로드 시작
             setTimeout(() => {
                 this.loadInitialData();
             }, 300);
             
-            console.log('✅ FlightRequestUI v8.9.0 초기화 완료 - 여권정보 페이지 상태 초기화 버그 수정');
+            console.log('✅ FlightRequestUI v8.2.2 초기화 완료 - 현지 활동기간 통합 검증 적용');
             
             this.isInitialized = true;
         } catch (error) {
@@ -151,7 +166,7 @@ class FlightRequestUI {
                 if (apiExists && apiInitialized && utilsReady) {
                     this.api = window.flightRequestAPI;
                     this.utils = window.FlightRequestUtils;
-                    console.log('✅ [UI디버그] FlightRequestUI v8.9.0 의존성 로드 완료');
+                    console.log('✅ [UI디버그] FlightRequestUI v8.2.2 의존성 로드 완료');
                     
                     // 🔧 v8.5.0: API 상태 추가 확인
                     const apiStatus = this.api.getStatus();
@@ -187,7 +202,7 @@ class FlightRequestUI {
             return true;
         }
 
-        console.log('🔄 [UI디버그] v8.9.0: 초기화 보장 시작...');
+        console.log('🔄 [UI디버그] v8.2.2: 초기화 보장 시작...');
 
         if (!this.initializationPromise) {
             this.initializationPromise = this.init();
@@ -202,22 +217,129 @@ class FlightRequestUI {
             }
             
             if (!this.api.isInitialized) {
-                console.log('🔄 [UI디버그] v8.9.0: API 초기화 대기...');
+                console.log('🔄 [UI디버그] v8.2.2: API 초기화 대기...');
                 await this.api.ensureInitialized();
             }
             
-            console.log('✅ [UI디버그] v8.9.0: 초기화 보장 완료');
+            console.log('✅ [UI디버그] v8.2.2: 초기화 보장 완료');
             return this.isInitialized && this.api.isInitialized;
         } catch (error) {
-            console.error('❌ [UI디버그] v8.9.0: 초기화 보장 실패:', error);
+            console.error('❌ [UI디버그] v8.2.2: 초기화 보장 실패:', error);
             throw error;
+        }
+    }
+
+    // 🆕 v8.2.2: 현지 활동기간 검증 이벤트 설정
+    setupActivityValidationEvents() {
+        const elements = [
+            this.elements.actualArrivalDate,
+            this.elements.actualWorkEndDate,
+            this.elements.departureDate,
+            this.elements.returnDate
+        ];
+
+        elements.forEach(element => {
+            if (element) {
+                element.addEventListener('change', () => {
+                    this.debouncedActivityValidation();
+                });
+            }
+        });
+
+        console.log('✅ [UI디버그] v8.2.2: 현지 활동기간 검증 이벤트 설정 완료');
+    }
+
+    // 🆕 v8.2.2: 디바운스된 활동기간 검증
+    debouncedActivityValidation() {
+        if (this.validationDebounceTimer) {
+            clearTimeout(this.validationDebounceTimer);
+        }
+
+        this.validationDebounceTimer = setTimeout(() => {
+            this.validateActivityPeriod();
+        }, 300);
+    }
+
+    // 🆕 v8.2.2: 현지 활동기간 검증 메서드
+    validateActivityPeriod() {
+        if (!this.utils) {
+            console.warn('⚠️ [활동기간검증] Utils가 준비되지 않음');
+            return { valid: true };
+        }
+
+        const dates = {
+            departureDate: this.elements.departureDate?.value,
+            returnDate: this.elements.returnDate?.value,
+            actualArrivalDate: this.elements.actualArrivalDate?.value,
+            actualWorkEndDate: this.elements.actualWorkEndDate?.value
+        };
+
+        console.log('🔍 [활동기간검증] v8.2.2 날짜 값들:', dates);
+
+        // Utils의 통합 검증 메서드 사용
+        const validation = this.utils.validateAllDates(dates);
+
+        console.log('✅ [활동기간검증] v8.2.2 검증 결과:', validation);
+
+        // UI 업데이트
+        this.updateActivityValidationUI(validation);
+
+        return validation;
+    }
+
+    // 🆕 v8.2.2: 활동기간 검증 UI 업데이트
+    updateActivityValidationUI(validation) {
+        // 계산된 활동일 표시
+        if (this.elements.calculatedDays) {
+            this.elements.calculatedDays.textContent = validation.activityDays > 0 ? 
+                validation.activityDays : '-';
+        }
+
+        // 검증 상태 표시
+        if (this.elements.validationStatus) {
+            this.elements.validationStatus.className = 'validation-status';
+            
+            if (!validation.valid) {
+                this.elements.validationStatus.classList.add('invalid');
+                
+                const message = validation.errors.join(' / ');
+                this.elements.validationStatus.innerHTML = 
+                    `<i data-lucide="x-circle"></i>${message}`;
+                this.elements.validationStatus.style.display = 'flex';
+                this.elements.validationStatus.style.alignItems = 'center';
+                
+            } else if (validation.warnings && validation.warnings.length > 0) {
+                this.elements.validationStatus.classList.add('warning');
+                const message = validation.warnings.join(' / ');
+                this.elements.validationStatus.innerHTML = 
+                    `<i data-lucide="alert-triangle"></i>${message}`;
+                this.elements.validationStatus.style.display = 'flex';
+                this.elements.validationStatus.style.alignItems = 'center';
+                
+            } else if (validation.activityDays > 0) {
+                this.elements.validationStatus.classList.add('valid');
+                this.elements.validationStatus.innerHTML = 
+                    `<i data-lucide="check-circle"></i>활동 기간이 요구사항을 충족합니다`;
+                this.elements.validationStatus.style.display = 'flex';
+                this.elements.validationStatus.style.alignItems = 'center';
+                
+            } else {
+                this.elements.validationStatus.style.display = 'none';
+            }
+            
+            // Lucide 아이콘 재초기화
+            if (this.utils?.refreshIcons) {
+                this.utils.refreshIcons();
+            } else if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         }
     }
 
     // 🛠️ v8.5.0: 강화된 초기 데이터 로드 (상세한 디버깅)
     async loadInitialData() {
         try {
-            console.log('🔄 [UI디버그] v8.9.0 초기 데이터 로드 시작 - 여권정보 페이지 상태 초기화 버그 수정');
+            console.log('🔄 [UI디버그] v8.2.2 초기 데이터 로드 시작 - 현지 활동기간 통합 검증 적용');
             
             // API 초기화 확인
             await this.ensureInitialized();
@@ -282,7 +404,7 @@ class FlightRequestUI {
 
     // 🛠️ v8.5.0: 데이터 없이 항공권 신청 페이지 표시 (폴백)
     showFlightRequestPageWithoutData() {
-        console.log('🔄 [UI디버그] v8.9.0 기본 항공권 신청 페이지 표시 (데이터 없음)');
+        console.log('🔄 [UI디버그] v8.2.2 기본 항공권 신청 페이지 표시 (데이터 없음)');
         
         // 항공권 신청 페이지 표시
         this.showFlightRequestPage();
@@ -296,7 +418,7 @@ class FlightRequestUI {
     // 🔧 v8.9.0: 여권정보 페이지 상태 초기화 버그 수정 - 개선된 여권정보 등록 페이지 표시
     async showPassportInfoPage() {
         try {
-            console.log('🔄 [UI디버그] v8.9.0 여권정보 페이지 표시 (상태 초기화 포함)...');
+            console.log('🔄 [UI디버그] v8.2.2 여권정보 페이지 표시 (상태 초기화 포함)...');
             
             // 페이지 전환
             const flightRequestPage = document.getElementById('flightRequestPage');
@@ -320,7 +442,7 @@ class FlightRequestUI {
                 }
             }, 200);
             
-            console.log('✅ [UI디버그] v8.9.0 여권정보 페이지 표시 완료 (상태 초기화 적용)');
+            console.log('✅ [UI디버그] v8.2.2 여권정보 페이지 표시 완료 (상태 초기화 적용)');
         } catch (error) {
             console.error('❌ [UI디버그] 여권정보 페이지 표시 실패:', error);
         }
@@ -328,40 +450,40 @@ class FlightRequestUI {
 
     // 🆕 v8.9.0: 새로운 메서드 - 여권정보 페이지 상태 초기화
     resetPassportPageState() {
-        console.log('🔧 [UI디버그] v8.9.0: 여권정보 페이지 상태 초기화 시작');
+        console.log('🔧 [UI디버그] v8.2.2: 여권정보 페이지 상태 초기화 시작');
         
         // 1. 성공 메시지 숨기기
         if (this.elements.passportSuccessMessage) {
             this.elements.passportSuccessMessage.style.display = 'none';
-            console.log('✅ [UI디버그] v8.9.0: 성공 메시지 숨김');
+            console.log('✅ [UI디버그] v8.2.2: 성공 메시지 숨김');
         }
         
         // 2. 여권정보 폼 표시하기
         if (this.elements.passportForm) {
             this.elements.passportForm.style.display = 'block';
-            console.log('✅ [UI디버그] v8.9.0: 여권정보 폼 표시');
+            console.log('✅ [UI디버그] v8.2.2: 여권정보 폼 표시');
         }
         
         // 3. 여권정보 입력 폼 표시하기 (세부 폼도 확인)
         if (this.elements.passportInfoForm) {
             this.elements.passportInfoForm.style.display = 'block';
-            console.log('✅ [UI디버그] v8.9.0: 여권정보 입력 폼 표시');
+            console.log('✅ [UI디버그] v8.2.2: 여권정보 입력 폼 표시');
         }
         
         // 4. 로딩 상태 숨기기
         if (this.elements.passportLoadingState) {
             this.elements.passportLoadingState.style.display = 'none';
-            console.log('✅ [UI디버그] v8.9.0: 로딩 상태 숨김');
+            console.log('✅ [UI디버그] v8.2.2: 로딩 상태 숨김');
         }
         
         // 5. 여권정보 보기 모드 컨테이너 제거 (있다면)
         if (this.elements.passportViewContainer) {
             this.elements.passportViewContainer.remove();
             this.elements.passportViewContainer = null;
-            console.log('✅ [UI디버그] v8.9.0: 여권정보 보기 모드 컨테이너 제거');
+            console.log('✅ [UI디버그] v8.2.2: 여권정보 보기 모드 컨테이너 제거');
         }
         
-        console.log('✅ [UI디버그] v8.9.0: 여권정보 페이지 상태 초기화 완료');
+        console.log('✅ [UI디버그] v8.2.2: 여권정보 페이지 상태 초기화 완료');
     }
 
     // 항공권 신청 페이지 표시
@@ -376,7 +498,7 @@ class FlightRequestUI {
     // 🛠️ v8.8.0: 개선된 여권정보 UI 초기화 (이벤트 리스너 중복 등록 방지)
     async initializePassportInfoUI() {
         try {
-            console.log('🔧 [UI디버그] v8.9.0 여권정보 UI 초기화 시작 (이벤트 리스너 중복 등록 방지)');
+            console.log('🔧 [UI디버그] v8.2.2 여권정보 UI 초기화 시작 (이벤트 리스너 중복 등록 방지)');
             
             // API 초기화 확인
             await this.ensureInitialized();
@@ -385,12 +507,12 @@ class FlightRequestUI {
             if (!this.passportEventListenersSetup) {
                 this.setupPassportEventListeners();
                 this.passportEventListenersSetup = true;
-                console.log('✅ [UI디버그] v8.9.0: 여권정보 이벤트 리스너 최초 설정 완료');
+                console.log('✅ [UI디버그] v8.2.2: 여권정보 이벤트 리스너 최초 설정 완료');
             } else {
-                console.log('ℹ️ [UI디버그] v8.9.0: 여권정보 이벤트 리스너 이미 설정됨 (중복 방지)');
+                console.log('ℹ️ [UI디버그] v8.2.2: 여권정보 이벤트 리스너 이미 설정됨 (중복 방지)');
             }
             
-            console.log('✅ [UI디버그] v8.9.0 여권정보 UI 초기화 완료');
+            console.log('✅ [UI디버그] v8.2.2 여권정보 UI 초기화 완료');
         } catch (error) {
             console.error('❌ [UI디버그] 여권정보 UI 초기화 오류:', error);
             this.showError('여권정보 UI 초기화 중 오류가 발생했습니다: ' + error.message);
@@ -400,24 +522,24 @@ class FlightRequestUI {
     // 🛠️ v8.8.0: 개선된 기존 여권정보 로드 및 모드 설정 (상태 변수 관리 개선)
     async loadExistingPassportDataAndSetMode() {
         try {
-            console.log('🔄 [UI디버그] v8.9.0 기존 여권정보 로드 및 모드 설정 시작...');
+            console.log('🔄 [UI디버그] v8.2.2 기존 여권정보 로드 및 모드 설정 시작...');
             
             // 🛠️ v8.8.0: API 초기화 상태 재확인
             if (!this.api || !this.api.isInitialized) {
-                console.warn('⚠️ [UI디버그] v8.9.0: API가 초기화되지 않음, 재시도...');
+                console.warn('⚠️ [UI디버그] v8.2.2: API가 초기화되지 않음, 재시도...');
                 await this.ensureInitialized();
             }
             
             const passportInfo = await this.api.getPassportInfo();
             
             if (passportInfo) {
-                console.log('✅ [UI디버그] v8.9.0 기존 여권정보 발견 - 폼 채우기 실행');
+                console.log('✅ [UI디버그] v8.2.2 기존 여권정보 발견 - 폼 채우기 실행');
                 
                 // 🛠️ v8.8.0: 상태 변수 제대로 설정
                 this.existingPassportInfo = passportInfo;
                 this.existingPassportImageUrl = passportInfo.image_url || null;
                 
-                console.log('🔍 [UI디버그] v8.9.0: 상태 변수 설정:', {
+                console.log('🔍 [UI디버그] v8.2.2: 상태 변수 설정:', {
                     hasExistingInfo: !!this.existingPassportInfo,
                     hasExistingImageUrl: !!this.existingPassportImageUrl,
                     imageUrl: this.existingPassportImageUrl
@@ -430,7 +552,7 @@ class FlightRequestUI {
                 
                 return true;
             } else {
-                console.log('ℹ️ [UI디버그] v8.9.0 기존 여권정보 없음 - 신규 등록 모드');
+                console.log('ℹ️ [UI디버그] v8.2.2 기존 여권정보 없음 - 신규 등록 모드');
                 
                 // 🛠️ v8.8.0: 신규 등록 모드 상태 설정
                 this.existingPassportInfo = null;
@@ -441,7 +563,7 @@ class FlightRequestUI {
                 return false;
             }
         } catch (error) {
-            console.error('❌ [UI디버그] v8.9.0 여권정보 로딩 실패:', error);
+            console.error('❌ [UI디버그] v8.2.2 여권정보 로딩 실패:', error);
             
             // 🛠️ v8.8.0: 에러 발생 시 상태 초기화
             this.existingPassportInfo = null;
@@ -457,14 +579,14 @@ class FlightRequestUI {
         if (this.elements.passportSubmitBtnText) {
             const buttonText = isUpdate ? '수정하기' : '등록하기';
             this.elements.passportSubmitBtnText.textContent = buttonText;
-            console.log('🔧 [UI디버그] v8.9.0: 여권정보 버튼 텍스트 업데이트:', buttonText);
+            console.log('🔧 [UI디버그] v8.2.2: 여권정보 버튼 텍스트 업데이트:', buttonText);
         }
     }
 
     // 🛠️ v8.5.0: 개선된 여권정보 폼 채우기
     async populatePassportForm(passportData) {
         try {
-            console.log('🔄 [UI디버그] v8.9.0 여권정보 폼 채우기 시작...', passportData);
+            console.log('🔄 [UI디버그] v8.2.2 여권정보 폼 채우기 시작...', passportData);
             
             // 폼 필드 채우기
             const passportNumber = document.getElementById('passportNumber');
@@ -490,531 +612,11 @@ class FlightRequestUI {
                 }
             }
             
-            console.log('✅ [UI디버그] v8.9.0 여권정보 폼 채우기 완료');
+            console.log('✅ [UI디버그] v8.2.2 여권정보 폼 채우기 완료');
             return true;
         } catch (error) {
-            console.error('❌ [UI디버그] v8.9.0 폼 채우기 실패:', error);
+            console.error('❌ [UI디버그] v8.2.2 폼 채우기 실패:', error);
             return false;
-        }
-    }
-
-    // 🛠️ v8.5.0: 여권정보 보기 모드 표시
-    showPassportViewMode(passportInfo) {
-        const container = document.getElementById('passportForm');
-        if (!container) return;
-
-        // 기존 폼 숨기기
-        if (this.elements.passportInfoForm) {
-            this.elements.passportInfoForm.style.display = 'none';
-        }
-
-        // 보기 모드 HTML 생성
-        const viewHtml = `
-            <div id="passportViewContainer" class="passport-view-container">
-                <div class="passport-info-card">
-                    <h2 class="section-title">
-                        <i data-lucide="user-check"></i>
-                        등록된 여권정보
-                    </h2>
-                    
-                    <div class="passport-info-grid">
-                        <div class="info-item">
-                            <label>여권번호</label>
-                            <p>${passportInfo.passport_number || '-'}</p>
-                        </div>
-                        
-                        <div class="info-item">
-                            <label>영문 이름</label>
-                            <p>${passportInfo.name_english || '-'}</p>
-                        </div>
-                        
-                        <div class="info-item">
-                            <label>발급일</label>
-                            <p>${this.formatDate(passportInfo.issue_date) || '-'}</p>
-                        </div>
-                        
-                        <div class="info-item">
-                            <label>만료일</label>
-                            <p>${this.formatDate(passportInfo.expiry_date) || '-'}</p>
-                        </div>
-                        
-                        ${passportInfo.image_url ? `
-                        <div class="info-item full-width">
-                            <label>여권 사본</label>
-                            <div class="passport-image-display">
-                                <img src="${passportInfo.image_url}" alt="여권 사본" onclick="window.open('${passportInfo.image_url}', '_blank')">
-                                <p class="image-hint">클릭하면 크게 볼 수 있습니다</p>
-                            </div>
-                        </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="passport-view-actions">
-                        <button type="button" class="btn btn-secondary" onclick="flightRequestUI.closePassportView()">
-                            <i data-lucide="arrow-left"></i>
-                            닫기 (항공권 신청으로)
-                        </button>
-                        <button type="button" class="btn btn-primary" onclick="flightRequestUI.editPassportInfo()">
-                            <i data-lucide="edit"></i>
-                            수정하기
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        container.insertAdjacentHTML('beforeend', viewHtml);
-        this.elements.passportViewContainer = document.getElementById('passportViewContainer');
-
-        // 아이콘 초기화
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-    }
-
-    // 🛠️ v8.5.0: 여권정보 편집 모드 표시
-    showPassportEditMode() {
-        // 보기 모드 컨테이너 제거
-        if (this.elements.passportViewContainer) {
-            this.elements.passportViewContainer.remove();
-            this.elements.passportViewContainer = null;
-        }
-
-        // 편집 폼 표시
-        if (this.elements.passportInfoForm) {
-            this.elements.passportInfoForm.style.display = 'block';
-        }
-
-        // 기존 데이터가 있으면 폼에 채우기
-        if (this.existingPassportInfo) {
-            this.populatePassportForm(this.existingPassportInfo);
-        }
-    }
-
-    // 🛠️ v8.5.0: 여권정보 보기 모드 닫기
-    closePassportView() {
-        console.log('🔄 [UI디버그] v8.9.0 여권정보 보기 닫기 - 항공권 신청 페이지로 이동');
-        this.showFlightRequestPage();
-        
-        // 항공권 신청 데이터 로드
-        setTimeout(() => {
-            this.loadFlightRequestData();
-        }, 200);
-    }
-
-    // 🛠️ v8.5.0: 여권정보 편집 모드로 전환
-    editPassportInfo() {
-        console.log('🔄 [UI디버그] v8.9.0 여권정보 편집 모드로 전환');
-        this.isViewMode = false;
-        this.showPassportEditMode();
-    }
-
-    // 날짜 포맷팅 유틸리티
-    formatDate(dateString) {
-        if (!dateString) return '';
-        
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        } catch (error) {
-            return dateString;
-        }
-    }
-
-    // 🆕 v8.5.0: 가격 포맷팅 유틸리티
-    formatPrice(price, currency) {
-        if (!price) return '-';
-        
-        try {
-            const numPrice = parseFloat(price);
-            const formatter = new Intl.NumberFormat('ko-KR');
-            
-            switch(currency) {
-                case 'KRW':
-                    return `${formatter.format(numPrice)}원`;
-                case 'USD':
-                    return `$${formatter.format(numPrice)}`;
-                case 'CNY':
-                    return `¥${formatter.format(numPrice)}`;
-                case 'JPY':
-                    return `¥${formatter.format(numPrice)}`;
-                case 'EUR':
-                    return `€${formatter.format(numPrice)}`;
-                default:
-                    return `${formatter.format(numPrice)} ${currency}`;
-            }
-        } catch (error) {
-            return `${price} ${currency}`;
-        }
-    }
-
-    // 🛠️ v8.8.0: 개선된 여권정보 이벤트 리스너 설정 (중복 등록 방지)
-    setupPassportEventListeners() {
-        console.log('🔧 [UI디버그] v8.9.0: 여권정보 이벤트 리스너 설정 시작 (중복 방지)');
-        
-        // 🛠️ v8.8.0: 기존 이벤트 리스너 제거 (있다면)
-        this.removePassportEventListeners();
-        
-        // 바인딩된 핸들러 생성 및 저장 (메모리 관리)
-        this.boundEventHandlers.passportSubmit = (e) => this.handlePassportSubmit(e);
-        this.boundEventHandlers.passportImageUpload = (e) => this.handlePassportImageUpload(e);
-        this.boundEventHandlers.removePassportImage = () => this.removePassportImage();
-        this.boundEventHandlers.validateExpiryDate = () => this.validatePassportExpiryDate();
-        this.boundEventHandlers.proceedToFlightRequest = () => {
-            this.showFlightRequestPage();
-            setTimeout(() => {
-                this.loadFlightRequestData();
-            }, 200);
-        };
-        
-        // 영문 이름 실시간 검증 핸들러
-        this.boundEventHandlers.nameEnglishInput = (e) => {
-            // 대문자 변환
-            e.target.value = e.target.value.toUpperCase();
-            
-            // 영문과 띄어쓰기만 허용
-            e.target.value = e.target.value.replace(/[^A-Z\s]/g, '');
-            
-            // 연속된 띄어쓰기 제거
-            e.target.value = e.target.value.replace(/\s{2,}/g, ' ');
-        };
-        
-        // 여권번호 실시간 검증 핸들러
-        this.boundEventHandlers.passportNumberInput = (e) => {
-            // 대문자 변환
-            e.target.value = e.target.value.toUpperCase();
-            
-            // 여권번호 형식만 허용 (대문자 1자리 + 숫자 8자리)
-            e.target.value = e.target.value.replace(/[^A-Z0-9]/g, '');
-            
-            // 최대 9자리 제한
-            if (e.target.value.length > 9) {
-                e.target.value = e.target.value.substring(0, 9);
-            }
-        };
-
-        // 이벤트 리스너 등록
-        if (this.elements.passportInfoForm) {
-            this.elements.passportInfoForm.addEventListener('submit', this.boundEventHandlers.passportSubmit);
-            console.log('✅ [UI디버그] v8.9.0: 여권정보 폼 제출 이벤트 등록');
-        }
-
-        if (this.elements.passportImage) {
-            this.elements.passportImage.addEventListener('change', this.boundEventHandlers.passportImageUpload);
-            console.log('✅ [UI디버그] v8.9.0: 여권 이미지 업로드 이벤트 등록');
-        }
-        
-        if (this.elements.removePassportImage) {
-            this.elements.removePassportImage.addEventListener('click', this.boundEventHandlers.removePassportImage);
-            console.log('✅ [UI디버그] v8.9.0: 여권 이미지 제거 이벤트 등록');
-        }
-
-        if (this.elements.expiryDate) {
-            this.elements.expiryDate.addEventListener('change', this.boundEventHandlers.validateExpiryDate);
-            console.log('✅ [UI디버그] v8.9.0: 여권 만료일 검증 이벤트 등록');
-        }
-
-        if (this.elements.nameEnglish) {
-            this.elements.nameEnglish.addEventListener('input', this.boundEventHandlers.nameEnglishInput);
-            console.log('✅ [UI디버그] v8.9.0: 영문 이름 실시간 검증 이벤트 등록');
-        }
-
-        if (this.elements.passportNumber) {
-            this.elements.passportNumber.addEventListener('input', this.boundEventHandlers.passportNumberInput);
-            console.log('✅ [UI디버그] v8.9.0: 여권번호 실시간 검증 이벤트 등록');
-        }
-
-        if (this.elements.proceedToFlightRequest) {
-            this.elements.proceedToFlightRequest.addEventListener('click', this.boundEventHandlers.proceedToFlightRequest);
-            console.log('✅ [UI디버그] v8.9.0: 항공권 신청 진행 이벤트 등록');
-        }
-        
-        console.log('✅ [UI디버그] v8.9.0: 여권정보 이벤트 리스너 설정 완료');
-    }
-
-    // 🛠️ v8.8.0: 새로운 메서드 - 여권정보 이벤트 리스너 제거
-    removePassportEventListeners() {
-        if (!this.boundEventHandlers) return;
-        
-        console.log('🔧 [UI디버그] v8.9.0: 기존 여권정보 이벤트 리스너 제거 시작');
-        
-        if (this.elements.passportInfoForm && this.boundEventHandlers.passportSubmit) {
-            this.elements.passportInfoForm.removeEventListener('submit', this.boundEventHandlers.passportSubmit);
-        }
-
-        if (this.elements.passportImage && this.boundEventHandlers.passportImageUpload) {
-            this.elements.passportImage.removeEventListener('change', this.boundEventHandlers.passportImageUpload);
-        }
-        
-        if (this.elements.removePassportImage && this.boundEventHandlers.removePassportImage) {
-            this.elements.removePassportImage.removeEventListener('click', this.boundEventHandlers.removePassportImage);
-        }
-
-        if (this.elements.expiryDate && this.boundEventHandlers.validateExpiryDate) {
-            this.elements.expiryDate.removeEventListener('change', this.boundEventHandlers.validateExpiryDate);
-        }
-
-        if (this.elements.nameEnglish && this.boundEventHandlers.nameEnglishInput) {
-            this.elements.nameEnglish.removeEventListener('input', this.boundEventHandlers.nameEnglishInput);
-        }
-
-        if (this.elements.passportNumber && this.boundEventHandlers.passportNumberInput) {
-            this.elements.passportNumber.removeEventListener('input', this.boundEventHandlers.passportNumberInput);
-        }
-
-        if (this.elements.proceedToFlightRequest && this.boundEventHandlers.proceedToFlightRequest) {
-            this.elements.proceedToFlightRequest.removeEventListener('click', this.boundEventHandlers.proceedToFlightRequest);
-        }
-        
-        console.log('✅ [UI디버그] v8.9.0: 기존 여권정보 이벤트 리스너 제거 완료');
-    }
-
-    // 여권 이미지 업로드 처리
-    handlePassportImageUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        // 파일 유효성 검사
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-        if (!allowedTypes.includes(file.type)) {
-            this.showError('JPG, PNG 형식의 이미지만 업로드 가능합니다.');
-            event.target.value = '';
-            return;
-        }
-
-        if (file.size > 5 * 1024 * 1024) {
-            this.showError('파일 크기는 5MB를 초과할 수 없습니다.');
-            event.target.value = '';
-            return;
-        }
-
-        this.passportImageFile = file;
-
-        // 미리보기 표시
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            this.showPassportImagePreview(e.target.result);
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // 여권 이미지 미리보기 표시
-    showPassportImagePreview(src) {
-        if (this.elements.passportPreviewImg && this.elements.passportImagePreview) {
-            this.elements.passportPreviewImg.src = src;
-            this.elements.passportImagePreview.style.display = 'block';
-        }
-    }
-
-    // 여권 이미지 제거
-    removePassportImage() {
-        this.passportImageFile = null;
-        this.existingPassportImageUrl = null;
-        
-        if (this.elements.passportImage) {
-            this.elements.passportImage.value = '';
-        }
-        if (this.elements.passportImagePreview) {
-            this.elements.passportImagePreview.style.display = 'none';
-        }
-        if (this.elements.passportPreviewImg) {
-            this.elements.passportPreviewImg.src = '';
-        }
-    }
-
-    // 여권 만료일 검증
-    validatePassportExpiryDate() {
-        if (!this.elements.expiryDate || !this.elements.expiryWarning || !this.api) return true;
-        
-        const expiryDate = this.elements.expiryDate.value;
-        if (!expiryDate) return true;
-
-        const validation = this.api.validateExpiryDate(expiryDate);
-        
-        if (!validation.valid) {
-            this.elements.expiryWarning.textContent = validation.message;
-            this.elements.expiryWarning.style.display = 'block';
-            this.elements.expiryWarning.style.color = '#dc3545';
-            return false;
-        }
-
-        if (validation.warning) {
-            this.elements.expiryWarning.textContent = validation.warning;
-            this.elements.expiryWarning.style.display = 'block';
-            this.elements.expiryWarning.style.color = '#ff6b00';
-        } else {
-            this.elements.expiryWarning.style.display = 'none';
-        }
-
-        return true;
-    }
-
-    // 🛠️ v8.8.0: 대폭 강화된 여권정보 제출 처리 (모든 문제점 해결)
-    async handlePassportSubmit(event) {
-        event.preventDefault();
-
-        try {
-            console.log('🔄 [UI디버그] v8.9.0 여권정보 제출 시작...');
-            
-            // 🛠️ v8.8.0: 1. API 초기화 타이밍 문제 해결 - 다중 검증
-            console.log('🔍 [UI디버그] v8.9.0: 1단계 - API 초기화 상태 확인');
-            
-            if (!this.api) {
-                console.log('⚠️ [UI디버그] v8.9.0: API 인스턴스 없음, 초기화 시도...');
-                await this.ensureInitialized();
-                
-                if (!this.api) {
-                    throw new Error('API를 초기화할 수 없습니다. 페이지를 새로고침 후 다시 시도해주세요.');
-                }
-            }
-            
-            if (!this.api.isInitialized) {
-                console.log('⚠️ [UI디버그] v8.9.0: API 초기화되지 않음, 재초기화...');
-                await this.api.ensureInitialized();
-                
-                if (!this.api.isInitialized) {
-                    throw new Error('API 초기화가 완료되지 않았습니다. 잠시 후 다시 시도해주세요.');
-                }
-            }
-            
-            console.log('✅ [UI디버그] v8.9.0: API 초기화 확인 완료');
-            
-            // 🛠️ v8.8.0: 2. 상태 변수 관리 문제 해결 - 정확한 상태 판단
-            console.log('🔍 [UI디버그] v8.9.0: 2단계 - 상태 변수 확인');
-            console.log('🔍 [UI디버그] v8.9.0: 현재 상태:', {
-                existingPassportInfo: !!this.existingPassportInfo,
-                existingPassportImageUrl: !!this.existingPassportImageUrl,
-                passportImageFile: !!this.passportImageFile,
-                isUpdate: !!(this.existingPassportInfo || this.existingPassportImageUrl)
-            });
-
-            // 만료일 검증
-            const validation = this.api.validateExpiryDate(this.elements.expiryDate?.value);
-            if (!validation.valid) {
-                throw new Error(validation.message);
-            }
-
-            // 🛠️ v8.8.0: 3. 에러 처리 미흡 문제 해결 - 구체적인 검증 및 안내
-            console.log('🔍 [UI디버그] v8.9.0: 3단계 - 이미지 검증');
-            
-            const isUpdate = !!(this.existingPassportInfo || this.existingPassportImageUrl);
-            
-            if (!isUpdate && !this.passportImageFile) {
-                throw new Error('신규 등록 시 여권 사본 업로드가 필수입니다.');
-            }
-            
-            if (isUpdate && !this.passportImageFile && !this.existingPassportImageUrl) {
-                throw new Error('여권 사본이 없습니다. 새로운 이미지를 업로드해주세요.');
-            }
-
-            console.log('✅ [UI디버그] v8.9.0: 입력 검증 완료');
-
-            // 로딩 상태 설정
-            this.setPassportLoading(true);
-
-            const passportData = {
-                passport_number: this.elements.passportNumber?.value?.trim() || '',
-                name_english: this.elements.nameEnglish?.value?.trim() || '',
-                issue_date: this.elements.issueDate?.value || '',
-                expiry_date: this.elements.expiryDate?.value || ''
-            };
-
-            console.log('🔍 [UI디버그] v8.9.0: 저장할 여권정보 데이터:', passportData);
-
-            // API 호출
-            const result = await this.api.savePassportInfo(passportData, this.passportImageFile);
-
-            console.log('✅ [UI디버그] v8.9.0: 여권정보 저장 성공:', result);
-
-            // 🛠️ v8.8.0: 4. 상태 변수 업데이트 (성공 후)
-            this.existingPassportInfo = result.data;
-            if (result.data.image_url) {
-                this.existingPassportImageUrl = result.data.image_url;
-            }
-
-            // 성공 시 성공 메시지 표시 후 항공권 신청 페이지로 안내
-            this.showPassportSuccessTransition(result.isUpdate);
-
-        } catch (error) {
-            console.error('❌ [UI디버그] v8.9.0 여권정보 저장 실패:', error);
-            
-            // 🛠️ v8.8.0: 에러 처리 미흡 문제 해결 - 구체적인 에러 메시지
-            let userFriendlyMessage = '저장 중 오류가 발생했습니다.';
-            
-            if (error.message) {
-                if (error.message.includes('API')) {
-                    userFriendlyMessage = error.message + ' 네트워크 연결을 확인하고 다시 시도해주세요.';
-                } else if (error.message.includes('초기화')) {
-                    userFriendlyMessage = error.message;
-                } else if (error.message.includes('필수')) {
-                    userFriendlyMessage = error.message;
-                } else if (error.message.includes('여권')) {
-                    userFriendlyMessage = error.message;
-                } else {
-                    userFriendlyMessage = `저장 중 오류가 발생했습니다: ${error.message}`;
-                }
-            }
-            
-            this.showError(userFriendlyMessage);
-        } finally {
-            this.setPassportLoading(false);
-        }
-    }
-
-    // 여권정보 성공 전환 표시
-    showPassportSuccessTransition(isUpdate) {
-        // 폼 숨기고 성공 메시지 표시
-        if (this.elements.passportForm) {
-            this.elements.passportForm.style.display = 'none';
-        }
-        if (this.elements.passportSuccessMessage) {
-            this.elements.passportSuccessMessage.style.display = 'block';
-        }
-
-        // 성공 메시지 업데이트
-        const successTitle = this.elements.passportSuccessMessage.querySelector('h3');
-        if (successTitle) {
-            successTitle.textContent = isUpdate ? 
-                '여권정보가 성공적으로 수정되었습니다!' : 
-                '여권정보가 성공적으로 등록되었습니다!';
-        }
-
-        // 자동으로 항공권 신청 페이지로 이동 (3초 후)
-        setTimeout(() => {
-            this.showFlightRequestPage();
-            setTimeout(() => {
-                this.loadFlightRequestData();
-            }, 200);
-        }, 3000);
-    }
-
-    // 여권정보 로딩 상태 표시
-    showPassportLoading(show) {
-        if (this.elements.passportLoadingState) {
-            this.elements.passportLoadingState.style.display = show ? 'flex' : 'none';
-        }
-        if (this.elements.passportForm) {
-            this.elements.passportForm.style.display = show ? 'none' : 'block';
-        }
-    }
-
-    // 🛠️ v8.8.0: 개선된 여권정보 제출 버튼 로딩 상태 (상태 변수 관리 개선)
-    setPassportLoading(loading) {
-        if (this.elements.passportSubmitBtn) {
-            this.elements.passportSubmitBtn.disabled = loading;
-        }
-        if (this.elements.passportSubmitBtnText) {
-            if (loading) {
-                this.elements.passportSubmitBtnText.textContent = '처리 중...';
-            } else {
-                // 🛠️ v8.8.0: 상태 변수를 정확히 체크하여 버튼 텍스트 결정
-                const isUpdate = !!(this.existingPassportInfo || this.existingPassportImageUrl);
-                this.elements.passportSubmitBtnText.textContent = isUpdate ? '수정하기' : '등록하기';
-            }
         }
     }
 
@@ -1030,7 +632,7 @@ class FlightRequestUI {
 
         try {
             this.isLoadingData = true;
-            console.log('🔄 [UI디버그] 항공권 신청 데이터 로드 시작 (v8.9.0 - 여권정보 페이지 상태 초기화 버그 수정)');
+            console.log('🔄 [UI디버그] 항공권 신청 데이터 로드 시작 (v8.2.2 - 현지 활동기간 통합 검증)');
             
             // API 초기화 확인
             await this.ensureInitialized();
@@ -1042,15 +644,15 @@ class FlightRequestUI {
             
             if (this.existingRequest) {
                 // 🐛 v8.1.2: 반려 상태도 기존 신청 내역 표시 (반려 사유 포함)
-                console.log('✅ [UI디버그] v8.9.0: 기존 신청 발견 - 상태별 정보 표시:', this.existingRequest.status);
+                console.log('✅ [UI디버그] v8.2.2: 기존 신청 발견 - 상태별 정보 표시:', this.existingRequest.status);
                 this.showExistingRequest();
             } else {
                 // 새 신청 폼 표시
-                console.log('✅ [UI디버그] v8.9.0: 신규 신청 - 신청 폼 표시');
+                console.log('✅ [UI디버그] v8.2.2: 신규 신청 - 신청 폼 표시');
                 this.showRequestForm(false);
             }
 
-            console.log('✅ [UI디버그] 항공권 신청 데이터 로드 완료 (v8.9.0)');
+            console.log('✅ [UI디버그] 항공권 신청 데이터 로드 완료 (v8.2.2)');
         } catch (error) {
             console.error('❌ [UI디버그] 항공권 신청 데이터 로드 실패:', error);
             if (this.utils) {
@@ -1085,13 +687,13 @@ class FlightRequestUI {
             });
         }
 
-        // 날짜 변경
+        // 🔧 v8.2.2: 통합 날짜 검증으로 변경
         if (this.elements.departureDate) {
-            this.elements.departureDate.addEventListener('change', () => this.validateDuration());
+            this.elements.departureDate.addEventListener('change', () => this.validateAllDates());
         }
         
         if (this.elements.returnDate) {
-            this.elements.returnDate.addEventListener('change', () => this.validateDuration());
+            this.elements.returnDate.addEventListener('change', () => this.validateAllDates());
         }
 
         // 이미지 업로드
@@ -1123,6 +725,58 @@ class FlightRequestUI {
         if (this.elements.returnDate) {
             this.elements.returnDate.min = today;
         }
+    }
+
+    // 🔧 v8.2.2: 통합 날짜 검증 메서드 (기존 validateDuration 대체)
+    validateAllDates() {
+        if (!this.utils) {
+            console.warn('⚠️ [날짜검증] Utils가 준비되지 않음');
+            return true;
+        }
+
+        const dates = {
+            departureDate: this.elements.departureDate?.value,
+            returnDate: this.elements.returnDate?.value,
+            actualArrivalDate: this.elements.actualArrivalDate?.value,
+            actualWorkEndDate: this.elements.actualWorkEndDate?.value
+        };
+
+        console.log('🔍 [날짜검증] v8.2.2 통합 검증 시작:', dates);
+
+        // 1. 기본 항공권 날짜 검증
+        if (dates.departureDate && dates.returnDate) {
+            const basicValidation = this.utils.validateDates(dates.departureDate, dates.returnDate);
+            
+            if (!basicValidation.valid) {
+                if (this.elements.durationMessage) {
+                    this.elements.durationMessage.textContent = basicValidation.message;
+                    this.elements.durationMessage.style.color = '#dc3545';
+                }
+                return false;
+            }
+
+            // 기본 항공권 기간 표시
+            const duration = this.utils.calculateDuration(dates.departureDate, dates.returnDate);
+            const dispatchDuration = this.userProfile?.dispatch_duration || 90;
+            const durationValidation = this.utils.validateDispatchDuration(duration, dispatchDuration);
+            
+            if (this.elements.durationMessage) {
+                this.elements.durationMessage.textContent = durationValidation.message;
+                this.elements.durationMessage.style.color = durationValidation.valid ? '#28a745' : '#dc3545';
+            }
+        }
+
+        // 2. 현지 활동기간이 입력된 경우 통합 검증
+        if (dates.actualArrivalDate || dates.actualWorkEndDate) {
+            const validation = this.utils.validateAllDates(dates);
+            
+            // 활동기간 UI 업데이트
+            this.updateActivityValidationUI(validation);
+            
+            return validation.valid;
+        }
+
+        return true;
     }
 
     // 🆕 v8.5.0: 가격 정보 이벤트 리스너 설정
@@ -1433,6 +1087,14 @@ class FlightRequestUI {
             this.elements.returnDate.value = request.return_date;
         }
         
+        // 🆕 v8.2.2: 현지 활동기간 필드도 채우기 (있다면)
+        if (this.elements.actualArrivalDate && request.actual_arrival_date) {
+            this.elements.actualArrivalDate.value = request.actual_arrival_date;
+        }
+        if (this.elements.actualWorkEndDate && request.actual_work_end_date) {
+            this.elements.actualWorkEndDate.value = request.actual_work_end_date;
+        }
+        
         // 공항
         if (this.elements.departureAirport) {
             this.elements.departureAirport.value = request.departure_airport;
@@ -1461,8 +1123,8 @@ class FlightRequestUI {
         // 구매 방식에 따른 UI 업데이트
         this.handlePurchaseTypeChange();
         
-        // 파견 기간 검증
-        this.validateDuration();
+        // 🔧 v8.2.2: 통합 날짜 검증으로 변경
+        this.validateAllDates();
     }
 
     // 🔧 v8.5.0: 구매 링크 위치 수정 - [구매 대행]일 때 표시
@@ -1472,56 +1134,21 @@ class FlightRequestUI {
         const selectedType = Array.from(this.elements.purchaseType)
             .find(radio => radio.checked)?.value;
         
-        console.log('🔧 [UI디버그] v8.9.0: 구매 방식 변경:', selectedType);
+        console.log('🔧 [UI디버그] v8.2.2: 구매 방식 변경:', selectedType);
         
         if (this.elements.purchaseLinkGroup) {
             // 🔧 v8.5.0: [구매 대행]일 때 구매 링크 표시 (기존: direct → agency)
             if (selectedType === 'agency') {
                 this.elements.purchaseLinkGroup.style.display = 'block';
-                console.log('✅ [UI디버그] v8.9.0: 구매 링크 표시 (구매 대행)');
+                console.log('✅ [UI디버그] v8.2.2: 구매 링크 표시 (구매 대행)');
             } else {
                 this.elements.purchaseLinkGroup.style.display = 'none';
                 if (this.elements.purchaseLink) {
                     this.elements.purchaseLink.value = '';
                 }
-                console.log('✅ [UI디버그] v8.9.0: 구매 링크 숨김 (직접 구매)');
+                console.log('✅ [UI디버그] v8.2.2: 구매 링크 숨김 (직접 구매)');
             }
         }
-    }
-
-    validateDuration() {
-        if (!this.elements.departureDate || !this.elements.returnDate || !this.elements.durationMessage || !this.utils) {
-            return true;
-        }
-        
-        const departureDate = this.elements.departureDate.value;
-        const returnDate = this.elements.returnDate.value;
-        
-        if (!departureDate || !returnDate) {
-            this.elements.durationMessage.textContent = '';
-            return true;
-        }
-        
-        const dateValidation = this.utils.validateDates(departureDate, returnDate);
-        if (!dateValidation.valid) {
-            this.elements.durationMessage.textContent = dateValidation.message;
-            this.elements.durationMessage.style.color = '#dc3545';
-            return false;
-        }
-        
-        const duration = this.utils.calculateDuration(departureDate, returnDate);
-        const dispatchDuration = this.userProfile?.dispatch_duration || 90;
-        const durationValidation = this.utils.validateDispatchDuration(duration, dispatchDuration);
-        
-        if (!durationValidation.valid) {
-            this.elements.durationMessage.textContent = durationValidation.message;
-            this.elements.durationMessage.style.color = '#dc3545';
-            return false;
-        }
-        
-        this.elements.durationMessage.textContent = `파견 기간: ${duration}일`;
-        this.elements.durationMessage.style.color = '#28a745';
-        return true;
     }
 
     handleImageUpload(event) {
@@ -1578,9 +1205,28 @@ class FlightRequestUI {
             // API 초기화 확인
             await this.ensureInitialized();
 
-            // 날짜 및 기간 검증
-            if (!this.validateDuration()) {
+            // 🔧 v8.2.2: 통합 날짜 검증 (현지 활동기간 포함)
+            if (!this.validateAllDates()) {
                 return;
+            }
+
+            // 🆕 v8.2.2: 현지 활동기간이 입력된 경우 추가 검증
+            const hasActivityDates = this.elements.actualArrivalDate?.value && 
+                                   this.elements.actualWorkEndDate?.value;
+            
+            if (hasActivityDates) {
+                const dates = {
+                    departureDate: this.elements.departureDate?.value,
+                    returnDate: this.elements.returnDate?.value,
+                    actualArrivalDate: this.elements.actualArrivalDate?.value,
+                    actualWorkEndDate: this.elements.actualWorkEndDate?.value
+                };
+                
+                const validation = this.utils.validateAllDates(dates);
+                if (!validation.valid) {
+                    this.showError('현지 활동기간을 다시 확인해주세요: ' + validation.errors.join(', '));
+                    return;
+                }
             }
 
             // 🆕 v8.5.0: 가격 정보 검증
@@ -1600,7 +1246,7 @@ class FlightRequestUI {
             const selectedType = Array.from(this.elements.purchaseType || [])
                 .find(radio => radio.checked)?.value || 'direct';
 
-            // 🆕 v8.5.0: 가격 정보 포함한 요청 데이터 구성
+            // 🆕 v8.2.2: 현지 활동기간 정보 포함한 요청 데이터 구성
             const requestData = {
                 purchase_type: selectedType,
                 departure_date: this.elements.departureDate?.value || '',
@@ -1612,14 +1258,23 @@ class FlightRequestUI {
                 // 🆕 v8.5.0: 가격 정보 추가
                 ticket_price: this.elements.ticketPrice?.value || '',
                 currency: this.elements.currency?.value || 'KRW',
-                price_source: this.elements.priceSource?.value?.trim() || ''
+                price_source: this.elements.priceSource?.value?.trim() || '',
+                // 🆕 v8.2.2: 현지 활동기간 정보 추가
+                actual_arrival_date: this.elements.actualArrivalDate?.value || null,
+                actual_work_end_date: this.elements.actualWorkEndDate?.value || null
             };
 
-            console.log('🔍 [UI디버그] v8.9.0 제출 데이터 (가격 정보 포함):', {
+            // 🆕 v8.2.2: 활동일 계산 (유효한 경우에만)
+            if (requestData.actual_arrival_date && requestData.actual_work_end_date) {
+                requestData.actual_work_days = this.utils.calculateActivityDays(
+                    requestData.actual_arrival_date, 
+                    requestData.actual_work_end_date
+                );
+            }
+
+            console.log('🔍 [UI디버그] v8.2.2 제출 데이터 (현지 활동기간 포함):', {
                 ...requestData,
-                ticket_price: requestData.ticket_price,
-                currency: requestData.currency,
-                price_source: requestData.price_source
+                actual_work_days: requestData.actual_work_days
             });
 
             let result;
@@ -1695,7 +1350,7 @@ class FlightRequestUI {
 
     // 🔧 v8.8.0: 개선된 에러 메시지 표시 (passport와 flight 공통)
     showError(message) {
-        console.error('🚨 [UI오류] v8.9.0:', message);
+        console.error('🚨 [UI오류] v8.2.2:', message);
         
         if (this.elements.errorMessage) {
             this.elements.errorMessage.textContent = message;
@@ -1721,7 +1376,7 @@ class FlightRequestUI {
 
     // 성공 메시지 표시
     showSuccess(message) {
-        console.log('✅ [UI성공] v8.9.0:', message);
+        console.log('✅ [UI성공] v8.2.2:', message);
         
         if (this.elements.successMessage) {
             this.elements.successMessage.textContent = message;
@@ -1745,6 +1400,33 @@ class FlightRequestUI {
         }
     }
 
+    // 🆕 v8.2.2: 가격 포맷팅 유틸리티 (Utils 의존성 제거)
+    formatPrice(price, currency) {
+        if (!price) return '-';
+        
+        try {
+            const numPrice = parseFloat(price);
+            const formatter = new Intl.NumberFormat('ko-KR');
+            
+            switch(currency) {
+                case 'KRW':
+                    return `${formatter.format(numPrice)}원`;
+                case 'USD':
+                    return `$${formatter.format(numPrice)}`;
+                case 'CNY':
+                    return `¥${formatter.format(numPrice)}`;
+                case 'JPY':
+                    return `¥${formatter.format(numPrice)}`;
+                case 'EUR':
+                    return `€${formatter.format(numPrice)}`;
+                default:
+                    return `${formatter.format(numPrice)} ${currency}`;
+            }
+        } catch (error) {
+            return `${price} ${currency}`;
+        }
+    }
+
     // 기타 메서드들 (간소화된 버전)
     handleFileUpload(event, type) {
         console.log(`파일 업로드: ${type}`, event.target.files[0]);
@@ -1760,10 +1442,378 @@ class FlightRequestUI {
         console.log('영수증 제출:', this.receiptFile);
     }
 
+    // === 여권정보 관련 메서드들 (기존 유지) ===
+
+    // 🛠️ v8.8.0: 개선된 여권정보 이벤트 리스너 설정 (중복 등록 방지)
+    setupPassportEventListeners() {
+        console.log('🔧 [UI디버그] v8.2.2: 여권정보 이벤트 리스너 설정 시작 (중복 방지)');
+        
+        // 🛠️ v8.8.0: 기존 이벤트 리스너 제거 (있다면)
+        this.removePassportEventListeners();
+        
+        // 바인딩된 핸들러 생성 및 저장 (메모리 관리)
+        this.boundEventHandlers.passportSubmit = (e) => this.handlePassportSubmit(e);
+        this.boundEventHandlers.passportImageUpload = (e) => this.handlePassportImageUpload(e);
+        this.boundEventHandlers.removePassportImage = () => this.removePassportImage();
+        this.boundEventHandlers.validateExpiryDate = () => this.validatePassportExpiryDate();
+        this.boundEventHandlers.proceedToFlightRequest = () => {
+            this.showFlightRequestPage();
+            setTimeout(() => {
+                this.loadFlightRequestData();
+            }, 200);
+        };
+        
+        // 영문 이름 실시간 검증 핸들러
+        this.boundEventHandlers.nameEnglishInput = (e) => {
+            // 대문자 변환
+            e.target.value = e.target.value.toUpperCase();
+            
+            // 영문과 띄어쓰기만 허용
+            e.target.value = e.target.value.replace(/[^A-Z\s]/g, '');
+            
+            // 연속된 띄어쓰기 제거
+            e.target.value = e.target.value.replace(/\s{2,}/g, ' ');
+        };
+        
+        // 여권번호 실시간 검증 핸들러
+        this.boundEventHandlers.passportNumberInput = (e) => {
+            // 대문자 변환
+            e.target.value = e.target.value.toUpperCase();
+            
+            // 여권번호 형식만 허용 (대문자 1자리 + 숫자 8자리)
+            e.target.value = e.target.value.replace(/[^A-Z0-9]/g, '');
+            
+            // 최대 9자리 제한
+            if (e.target.value.length > 9) {
+                e.target.value = e.target.value.substring(0, 9);
+            }
+        };
+
+        // 이벤트 리스너 등록
+        if (this.elements.passportInfoForm) {
+            this.elements.passportInfoForm.addEventListener('submit', this.boundEventHandlers.passportSubmit);
+            console.log('✅ [UI디버그] v8.2.2: 여권정보 폼 제출 이벤트 등록');
+        }
+
+        if (this.elements.passportImage) {
+            this.elements.passportImage.addEventListener('change', this.boundEventHandlers.passportImageUpload);
+            console.log('✅ [UI디버그] v8.2.2: 여권 이미지 업로드 이벤트 등록');
+        }
+        
+        if (this.elements.removePassportImage) {
+            this.elements.removePassportImage.addEventListener('click', this.boundEventHandlers.removePassportImage);
+            console.log('✅ [UI디버그] v8.2.2: 여권 이미지 제거 이벤트 등록');
+        }
+
+        if (this.elements.expiryDate) {
+            this.elements.expiryDate.addEventListener('change', this.boundEventHandlers.validateExpiryDate);
+            console.log('✅ [UI디버그] v8.2.2: 여권 만료일 검증 이벤트 등록');
+        }
+
+        if (this.elements.nameEnglish) {
+            this.elements.nameEnglish.addEventListener('input', this.boundEventHandlers.nameEnglishInput);
+            console.log('✅ [UI디버그] v8.2.2: 영문 이름 실시간 검증 이벤트 등록');
+        }
+
+        if (this.elements.passportNumber) {
+            this.elements.passportNumber.addEventListener('input', this.boundEventHandlers.passportNumberInput);
+            console.log('✅ [UI디버그] v8.2.2: 여권번호 실시간 검증 이벤트 등록');
+        }
+
+        if (this.elements.proceedToFlightRequest) {
+            this.elements.proceedToFlightRequest.addEventListener('click', this.boundEventHandlers.proceedToFlightRequest);
+            console.log('✅ [UI디버그] v8.2.2: 항공권 신청 진행 이벤트 등록');
+        }
+        
+        console.log('✅ [UI디버그] v8.2.2: 여권정보 이벤트 리스너 설정 완료');
+    }
+
+    // 🛠️ v8.8.0: 새로운 메서드 - 여권정보 이벤트 리스너 제거
+    removePassportEventListeners() {
+        if (!this.boundEventHandlers) return;
+        
+        console.log('🔧 [UI디버그] v8.2.2: 기존 여권정보 이벤트 리스너 제거 시작');
+        
+        if (this.elements.passportInfoForm && this.boundEventHandlers.passportSubmit) {
+            this.elements.passportInfoForm.removeEventListener('submit', this.boundEventHandlers.passportSubmit);
+        }
+
+        if (this.elements.passportImage && this.boundEventHandlers.passportImageUpload) {
+            this.elements.passportImage.removeEventListener('change', this.boundEventHandlers.passportImageUpload);
+        }
+        
+        if (this.elements.removePassportImage && this.boundEventHandlers.removePassportImage) {
+            this.elements.removePassportImage.removeEventListener('click', this.boundEventHandlers.removePassportImage);
+        }
+
+        if (this.elements.expiryDate && this.boundEventHandlers.validateExpiryDate) {
+            this.elements.expiryDate.removeEventListener('change', this.boundEventHandlers.validateExpiryDate);
+        }
+
+        if (this.elements.nameEnglish && this.boundEventHandlers.nameEnglishInput) {
+            this.elements.nameEnglish.removeEventListener('input', this.boundEventHandlers.nameEnglishInput);
+        }
+
+        if (this.elements.passportNumber && this.boundEventHandlers.passportNumberInput) {
+            this.elements.passportNumber.removeEventListener('input', this.boundEventHandlers.passportNumberInput);
+        }
+
+        if (this.elements.proceedToFlightRequest && this.boundEventHandlers.proceedToFlightRequest) {
+            this.elements.proceedToFlightRequest.removeEventListener('click', this.boundEventHandlers.proceedToFlightRequest);
+        }
+        
+        console.log('✅ [UI디버그] v8.2.2: 기존 여권정보 이벤트 리스너 제거 완료');
+    }
+
+    // 여권 이미지 업로드 처리
+    handlePassportImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // 파일 유효성 검사
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        if (!allowedTypes.includes(file.type)) {
+            this.showError('JPG, PNG 형식의 이미지만 업로드 가능합니다.');
+            event.target.value = '';
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            this.showError('파일 크기는 5MB를 초과할 수 없습니다.');
+            event.target.value = '';
+            return;
+        }
+
+        this.passportImageFile = file;
+
+        // 미리보기 표시
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.showPassportImagePreview(e.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // 여권 이미지 미리보기 표시
+    showPassportImagePreview(src) {
+        if (this.elements.passportPreviewImg && this.elements.passportImagePreview) {
+            this.elements.passportPreviewImg.src = src;
+            this.elements.passportImagePreview.style.display = 'block';
+        }
+    }
+
+    // 여권 이미지 제거
+    removePassportImage() {
+        this.passportImageFile = null;
+        this.existingPassportImageUrl = null;
+        
+        if (this.elements.passportImage) {
+            this.elements.passportImage.value = '';
+        }
+        if (this.elements.passportImagePreview) {
+            this.elements.passportImagePreview.style.display = 'none';
+        }
+        if (this.elements.passportPreviewImg) {
+            this.elements.passportPreviewImg.src = '';
+        }
+    }
+
+    // 여권 만료일 검증
+    validatePassportExpiryDate() {
+        if (!this.elements.expiryDate || !this.elements.expiryWarning || !this.api) return true;
+        
+        const expiryDate = this.elements.expiryDate.value;
+        if (!expiryDate) return true;
+
+        const validation = this.api.validateExpiryDate(expiryDate);
+        
+        if (!validation.valid) {
+            this.elements.expiryWarning.textContent = validation.message;
+            this.elements.expiryWarning.style.display = 'block';
+            this.elements.expiryWarning.style.color = '#dc3545';
+            return false;
+        }
+
+        if (validation.warning) {
+            this.elements.expiryWarning.textContent = validation.warning;
+            this.elements.expiryWarning.style.display = 'block';
+            this.elements.expiryWarning.style.color = '#ff6b00';
+        } else {
+            this.elements.expiryWarning.style.display = 'none';
+        }
+
+        return true;
+    }
+
+    // 🛠️ v8.8.0: 대폭 강화된 여권정보 제출 처리 (모든 문제점 해결)
+    async handlePassportSubmit(event) {
+        event.preventDefault();
+
+        try {
+            console.log('🔄 [UI디버그] v8.2.2 여권정보 제출 시작...');
+            
+            // 🛠️ v8.8.0: 1. API 초기화 타이밍 문제 해결 - 다중 검증
+            console.log('🔍 [UI디버그] v8.2.2: 1단계 - API 초기화 상태 확인');
+            
+            if (!this.api) {
+                console.log('⚠️ [UI디버그] v8.2.2: API 인스턴스 없음, 초기화 시도...');
+                await this.ensureInitialized();
+                
+                if (!this.api) {
+                    throw new Error('API를 초기화할 수 없습니다. 페이지를 새로고침 후 다시 시도해주세요.');
+                }
+            }
+            
+            if (!this.api.isInitialized) {
+                console.log('⚠️ [UI디버그] v8.2.2: API 초기화되지 않음, 재초기화...');
+                await this.api.ensureInitialized();
+                
+                if (!this.api.isInitialized) {
+                    throw new Error('API 초기화가 완료되지 않았습니다. 잠시 후 다시 시도해주세요.');
+                }
+            }
+            
+            console.log('✅ [UI디버그] v8.2.2: API 초기화 확인 완료');
+            
+            // 🛠️ v8.8.0: 2. 상태 변수 관리 문제 해결 - 정확한 상태 판단
+            console.log('🔍 [UI디버그] v8.2.2: 2단계 - 상태 변수 확인');
+            console.log('🔍 [UI디버그] v8.2.2: 현재 상태:', {
+                existingPassportInfo: !!this.existingPassportInfo,
+                existingPassportImageUrl: !!this.existingPassportImageUrl,
+                passportImageFile: !!this.passportImageFile,
+                isUpdate: !!(this.existingPassportInfo || this.existingPassportImageUrl)
+            });
+
+            // 만료일 검증
+            const validation = this.api.validateExpiryDate(this.elements.expiryDate?.value);
+            if (!validation.valid) {
+                throw new Error(validation.message);
+            }
+
+            // 🛠️ v8.8.0: 3. 에러 처리 미흡 문제 해결 - 구체적인 검증 및 안내
+            console.log('🔍 [UI디버그] v8.2.2: 3단계 - 이미지 검증');
+            
+            const isUpdate = !!(this.existingPassportInfo || this.existingPassportImageUrl);
+            
+            if (!isUpdate && !this.passportImageFile) {
+                throw new Error('신규 등록 시 여권 사본 업로드가 필수입니다.');
+            }
+            
+            if (isUpdate && !this.passportImageFile && !this.existingPassportImageUrl) {
+                throw new Error('여권 사본이 없습니다. 새로운 이미지를 업로드해주세요.');
+            }
+
+            console.log('✅ [UI디버그] v8.2.2: 입력 검증 완료');
+
+            // 로딩 상태 설정
+            this.setPassportLoading(true);
+
+            const passportData = {
+                passport_number: this.elements.passportNumber?.value?.trim() || '',
+                name_english: this.elements.nameEnglish?.value?.trim() || '',
+                issue_date: this.elements.issueDate?.value || '',
+                expiry_date: this.elements.expiryDate?.value || ''
+            };
+
+            console.log('🔍 [UI디버그] v8.2.2: 저장할 여권정보 데이터:', passportData);
+
+            // API 호출
+            const result = await this.api.savePassportInfo(passportData, this.passportImageFile);
+
+            console.log('✅ [UI디버그] v8.2.2: 여권정보 저장 성공:', result);
+
+            // 🛠️ v8.8.0: 4. 상태 변수 업데이트 (성공 후)
+            this.existingPassportInfo = result.data;
+            if (result.data.image_url) {
+                this.existingPassportImageUrl = result.data.image_url;
+            }
+
+            // 성공 시 성공 메시지 표시 후 항공권 신청 페이지로 안내
+            this.showPassportSuccessTransition(result.isUpdate);
+
+        } catch (error) {
+            console.error('❌ [UI디버그] v8.2.2 여권정보 저장 실패:', error);
+            
+            // 🛠️ v8.8.0: 에러 처리 미흡 문제 해결 - 구체적인 에러 메시지
+            let userFriendlyMessage = '저장 중 오류가 발생했습니다.';
+            
+            if (error.message) {
+                if (error.message.includes('API')) {
+                    userFriendlyMessage = error.message + ' 네트워크 연결을 확인하고 다시 시도해주세요.';
+                } else if (error.message.includes('초기화')) {
+                    userFriendlyMessage = error.message;
+                } else if (error.message.includes('필수')) {
+                    userFriendlyMessage = error.message;
+                } else if (error.message.includes('여권')) {
+                    userFriendlyMessage = error.message;
+                } else {
+                    userFriendlyMessage = `저장 중 오류가 발생했습니다: ${error.message}`;
+                }
+            }
+            
+            this.showError(userFriendlyMessage);
+        } finally {
+            this.setPassportLoading(false);
+        }
+    }
+
+    // 여권정보 성공 전환 표시
+    showPassportSuccessTransition(isUpdate) {
+        // 폼 숨기고 성공 메시지 표시
+        if (this.elements.passportForm) {
+            this.elements.passportForm.style.display = 'none';
+        }
+        if (this.elements.passportSuccessMessage) {
+            this.elements.passportSuccessMessage.style.display = 'block';
+        }
+
+        // 성공 메시지 업데이트
+        const successTitle = this.elements.passportSuccessMessage.querySelector('h3');
+        if (successTitle) {
+            successTitle.textContent = isUpdate ? 
+                '여권정보가 성공적으로 수정되었습니다!' : 
+                '여권정보가 성공적으로 등록되었습니다!';
+        }
+
+        // 자동으로 항공권 신청 페이지로 이동 (3초 후)
+        setTimeout(() => {
+            this.showFlightRequestPage();
+            setTimeout(() => {
+                this.loadFlightRequestData();
+            }, 200);
+        }, 3000);
+    }
+
+    // 여권정보 로딩 상태 표시
+    showPassportLoading(show) {
+        if (this.elements.passportLoadingState) {
+            this.elements.passportLoadingState.style.display = show ? 'flex' : 'none';
+        }
+        if (this.elements.passportForm) {
+            this.elements.passportForm.style.display = show ? 'none' : 'block';
+        }
+    }
+
+    // 🛠️ v8.8.0: 개선된 여권정보 제출 버튼 로딩 상태 (상태 변수 관리 개선)
+    setPassportLoading(loading) {
+        if (this.elements.passportSubmitBtn) {
+            this.elements.passportSubmitBtn.disabled = loading;
+        }
+        if (this.elements.passportSubmitBtnText) {
+            if (loading) {
+                this.elements.passportSubmitBtnText.textContent = '처리 중...';
+            } else {
+                // 🛠️ v8.8.0: 상태 변수를 정확히 체크하여 버튼 텍스트 결정
+                const isUpdate = !!(this.existingPassportInfo || this.existingPassportImageUrl);
+                this.elements.passportSubmitBtnText.textContent = isUpdate ? '수정하기' : '등록하기';
+            }
+        }
+    }
+
     // 🗑️ v8.7.3: 완전히 구현된 삭제 기능 - API 호출 포함
     async deleteRequest(requestId) {
         try {
-            console.log('🗑️ [UI디버그] v8.9.0 삭제 요청 시작:', requestId);
+            console.log('🗑️ [UI디버그] v8.2.2 삭제 요청 시작:', requestId);
 
             // API 초기화 확인
             await this.ensureInitialized();
@@ -1785,11 +1835,11 @@ class FlightRequestUI {
 
             // 사용자 확인
             if (!confirm(confirmMessage)) {
-                console.log('🔄 [UI디버그] v8.9.0 사용자가 삭제 취소');
+                console.log('🔄 [UI디버그] v8.2.2 사용자가 삭제 취소');
                 return;
             }
 
-            console.log('🗑️ [UI디버그] v8.9.0 실제 삭제 API 호출 시작...');
+            console.log('🗑️ [UI디버그] v8.2.2 실제 삭제 API 호출 시작...');
 
             // 삭제 버튼들 비활성화 (중복 클릭 방지)
             const deleteButtons = document.querySelectorAll('button[onclick*="deleteRequest"]');
@@ -1801,7 +1851,7 @@ class FlightRequestUI {
             // 🔧 v8.8.0: 실제 API 삭제 메서드 호출
             const result = await this.api.deleteFlightRequest(requestId);
 
-            console.log('✅ [UI디버그] v8.9.0 삭제 API 성공:', result);
+            console.log('✅ [UI디버그] v8.2.2 삭제 API 성공:', result);
 
             // 성공 메시지 표시
             this.showSuccess(
@@ -1812,12 +1862,12 @@ class FlightRequestUI {
 
             // 2초 후 페이지 새로고침으로 UI 업데이트
             setTimeout(() => {
-                console.log('🔄 [UI디버그] v8.9.0 삭제 완료 후 페이지 새로고침');
+                console.log('🔄 [UI디버그] v8.2.2 삭제 완료 후 페이지 새로고침');
                 window.location.reload();
             }, 2000);
 
         } catch (error) {
-            console.error('❌ [UI디버그] v8.9.0 삭제 실패:', error);
+            console.error('❌ [UI디버그] v8.2.2 삭제 실패:', error);
             
             // 삭제 버튼 재활성화
             const deleteButtons = document.querySelectorAll('button[onclick*="deleteRequest"]');
@@ -1876,8 +1926,8 @@ class FlightRequestUI {
     }
 }
 
-// 🔧 v8.9.0: FlightRequestUI 클래스를 전역 스코프에 노출
+// 🔧 v8.2.2: FlightRequestUI 클래스를 전역 스코프에 노출
 window.FlightRequestUI = FlightRequestUI;
 
 // 페이지 로드 시 초기화 제거 - HTML에서 모듈 로딩 완료 후 초기화
-console.log('✅ FlightRequestUI v8.9.0 모듈 로드 완료 - 여권정보 페이지 상태 초기화 버그 수정 (사용자 경험 개선)');
+console.log('✅ FlightRequestUI v8.2.2 모듈 로드 완료 - 현지 활동기간 통합 검증 및 UX 향상 (버그 해결)');
