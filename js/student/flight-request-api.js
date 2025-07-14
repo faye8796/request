@@ -1,6 +1,6 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.2.1-clean
-// 🧹 코드 정리: 핵심 API 기능만 유지, 과도한 디버깅 제거
-// 🎯 목적: 효율적이고 안정적인 API 통신
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.3.0
+// 🆕 v8.3.0: 귀국 필수 완료일 제약사항 API 기능 추가
+// 🎯 목적: 효율적이고 안정적인 API 통신 + 귀국 필수 완료일 관리
 
 class FlightRequestAPI {
     constructor() {
@@ -14,12 +14,12 @@ class FlightRequestAPI {
     // === 초기화 ===
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v8.2.1-clean 초기화 시작...');
+            console.log('🔄 FlightRequestAPI v8.3.0 초기화 시작...');
             
             await this.connectToSupabaseCore();
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI v8.2.1-clean 초기화 완료');
+            console.log('✅ FlightRequestAPI v8.3.0 초기화 완료');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -128,6 +128,157 @@ class FlightRequestAPI {
         }
     }
 
+    // === 🆕 v8.3.0: 귀국 필수 완료일 관리 API ===
+
+    /**
+     * 🆕 v8.3.0: 사용자의 귀국 필수 완료일 정보 조회
+     * @returns {Object} 귀국 필수 완료일 정보
+     */
+    async getRequiredReturnDate() {
+        try {
+            await this.ensureInitialized();
+            if (!this.user) await this.getCurrentUser();
+
+            const selectColumns = [
+                'required_return_date', 
+                'required_return_reason',
+                'name', 
+                'email'
+            ].join(', ');
+
+            if (this.core?.select) {
+                const result = await this.core.select('user_profiles', selectColumns, { 
+                    auth_user_id: this.user.id 
+                });
+                if (!result.success && !result.error.includes('PGRST116')) {
+                    throw new Error(result.error);
+                }
+                return result.data?.length > 0 ? result.data[0] : null;
+            }
+
+            const { data, error } = await this.supabase
+                .from('user_profiles')
+                .select(selectColumns)
+                .eq('auth_user_id', this.user.id)
+                .single();
+
+            if (error && error.code !== 'PGRST116') throw error;
+            return data;
+
+        } catch (error) {
+            console.error('❌ 귀국 필수 완료일 조회 실패:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 🆕 v8.3.0: 사용자의 귀국 필수 완료일과 현재 상태 정보를 함께 반환
+     * @returns {Object} 상세 정보 포함한 귀국 필수 완료일 정보
+     */
+    async getRequiredReturnDateWithStatus() {
+        try {
+            const data = await this.getRequiredReturnDate();
+            
+            if (!data || !data.required_return_date) {
+                return {
+                    hasRequiredDate: false,
+                    requiredDate: null,
+                    reason: null,
+                    status: null,
+                    validation: null
+                };
+            }
+
+            // Utils 함수를 통한 상태 정보 생성
+            let status = null;
+            if (window.FlightRequestUtils) {
+                const utils = window.flightRequestUtils || new window.FlightRequestUtils();
+                status = utils.getRequiredReturnStatus(data.required_return_date);
+            }
+
+            return {
+                hasRequiredDate: true,
+                requiredDate: data.required_return_date,
+                reason: data.required_return_reason || '프로그램 종료 요구사항',
+                userName: data.name,
+                userEmail: data.email,
+                status: status,
+                validation: {
+                    isOverdue: status?.status === 'overdue',
+                    isToday: status?.status === 'today',
+                    isUrgent: status?.status === 'urgent',
+                    daysRemaining: status ? window.flightRequestUtils?.calculateDaysUntilRequired(data.required_return_date) : null
+                }
+            };
+
+        } catch (error) {
+            console.error('❌ 귀국 필수 완료일 상태 조회 실패:', error);
+            return {
+                hasRequiredDate: false,
+                requiredDate: null,
+                reason: null,
+                status: null,
+                validation: null,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * 🆕 v8.3.0: 귀국일 제약사항 검증 (서버 측 검증)
+     * @param {string} returnDate - 검증할 귀국일
+     * @returns {Object} 검증 결과
+     */
+    async validateReturnDateConstraints(returnDate) {
+        try {
+            if (!returnDate) {
+                return {
+                    valid: false,
+                    message: '귀국일을 입력해주세요.',
+                    constraint: 'MISSING_DATE'
+                };
+            }
+
+            // 귀국 필수 완료일 정보 조회
+            const requiredInfo = await this.getRequiredReturnDateWithStatus();
+            
+            if (!requiredInfo.hasRequiredDate) {
+                // 필수 완료일이 설정되지 않은 경우 기본 검증만 수행
+                return {
+                    valid: true,
+                    message: '귀국일이 유효합니다.',
+                    constraint: 'NO_CONSTRAINT'
+                };
+            }
+
+            // Utils 함수를 통한 검증
+            let validation = { valid: true, message: '귀국일이 유효합니다.' };
+            if (window.FlightRequestUtils) {
+                const utils = window.flightRequestUtils || new window.FlightRequestUtils();
+                validation = utils.validateRequiredReturnDate(returnDate, requiredInfo.requiredDate);
+            }
+
+            return {
+                valid: validation.valid,
+                message: validation.message,
+                warning: validation.warning,
+                constraint: validation.valid ? 'VALID' : 'REQUIRED_DATE_EXCEEDED',
+                requiredDate: requiredInfo.requiredDate,
+                requiredReason: requiredInfo.reason,
+                status: requiredInfo.status
+            };
+
+        } catch (error) {
+            console.error('❌ 귀국일 제약사항 검증 실패:', error);
+            return {
+                valid: false,
+                message: '귀국일 검증 중 오류가 발생했습니다.',
+                constraint: 'VALIDATION_ERROR',
+                error: error.message
+            };
+        }
+    }
+
     // === 🆕 v8.2.1: 현지 활동기간 관리 API ===
 
     /**
@@ -185,7 +336,8 @@ class FlightRequestAPI {
             const selectColumns = [
                 'actual_arrival_date', 'actual_work_end_date', 'actual_work_days',
                 'minimum_required_days', 'dispatch_start_date', 'dispatch_end_date',
-                'dispatch_duration', 'updated_at'
+                'dispatch_duration', 'required_return_date', 'required_return_reason', // 🆕 v8.3.0
+                'updated_at'
             ].join(', ');
 
             if (this.core?.select) {
@@ -227,7 +379,7 @@ class FlightRequestAPI {
     }
 
     /**
-     * 활동기간 데이터의 서버 측 검증
+     * 🔄 v8.3.0: 활동기간 데이터의 서버 측 검증 (귀국 필수 완료일 포함)
      */
     async validateActivityPeriodAPI(activityData) {
         try {
@@ -235,26 +387,25 @@ class FlightRequestAPI {
             if (window.FlightRequestUtils) {
                 const utils = window.flightRequestUtils || new window.FlightRequestUtils();
                 
-                const clientValidation = utils.validateActivityDates(
-                    activityData.departureDate,
-                    activityData.actualArrivalDate,
-                    activityData.actualWorkEndDate,
-                    activityData.returnDate
-                );
+                // 🆕 v8.3.0: 귀국 필수 완료일 정보 포함
+                const requiredInfo = await this.getRequiredReturnDateWithStatus();
+                const validationDates = {
+                    ...activityData,
+                    requiredReturnDate: requiredInfo.requiredDate
+                };
 
+                const clientValidation = utils.validateAllDates(validationDates);
                 const requiredDays = await this.getRequiredActivityDays();
-                const minDaysValidation = utils.validateMinimumActivityDays(
-                    clientValidation.activityDays,
-                    requiredDays
-                );
 
                 return {
                     success: true,
                     clientValidation: clientValidation,
-                    minDaysValidation: minDaysValidation,
+                    requiredReturnInfo: requiredInfo,
                     serverValidation: {
                         requiredDays: requiredDays,
-                        canSubmit: clientValidation.valid && minDaysValidation.valid
+                        canSubmit: clientValidation.valid,
+                        hasRequiredReturnDate: requiredInfo.hasRequiredDate,
+                        isReturnDateValid: !requiredInfo.validation?.isOverdue
                     }
                 };
             }
@@ -450,6 +601,14 @@ class FlightRequestAPI {
             await this.ensureInitialized();
             if (!this.user) await this.getCurrentUser();
 
+            // 🆕 v8.3.0: 귀국일 제약사항 사전 검증
+            if (requestData.return_date) {
+                const constraintValidation = await this.validateReturnDateConstraints(requestData.return_date);
+                if (!constraintValidation.valid) {
+                    throw new Error(`귀국일 제약사항 위반: ${constraintValidation.message}`);
+                }
+            }
+
             let imageUrl = null;
             if (imageFile) {
                 imageUrl = await this.uploadFlightImage(imageFile);
@@ -500,6 +659,14 @@ class FlightRequestAPI {
         try {
             await this.ensureInitialized();
             if (!this.user) await this.getCurrentUser();
+
+            // 🆕 v8.3.0: 귀국일 제약사항 사전 검증
+            if (requestData.return_date) {
+                const constraintValidation = await this.validateReturnDateConstraints(requestData.return_date);
+                if (!constraintValidation.valid) {
+                    throw new Error(`귀국일 제약사항 위반: ${constraintValidation.message}`);
+                }
+            }
 
             let updateData = {
                 purchase_type: requestData.purchase_type,
@@ -708,7 +875,7 @@ class FlightRequestAPI {
     // === 상태 정보 ===
     getStatus() {
         return {
-            version: 'v8.2.1-clean',
+            version: 'v8.3.0',
             isInitialized: this.isInitialized,
             hasCore: !!this.core,
             hasSupabase: !!this.supabase,
@@ -717,7 +884,13 @@ class FlightRequestAPI {
                 id: this.user.id, 
                 email: this.user.email, 
                 name: this.user.name
-            } : null
+            } : null,
+            newFeatures: [ // 🆕 v8.3.0
+                'Required return date validation',
+                'Return date constraint checking',
+                'Enhanced server-side validation',
+                'Integrated constraint management'
+            ]
         };
     }
 }
@@ -728,10 +901,10 @@ window.FlightRequestAPI = FlightRequestAPI;
 // 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.2.1-clean 인스턴스 생성 시작...');
+        console.log('🚀 FlightRequestAPI v8.3.0 인스턴스 생성 시작...');
         window.flightRequestAPI = new FlightRequestAPI();
         window.passportAPI = window.flightRequestAPI; // 호환성
-        console.log('✅ FlightRequestAPI v8.2.1-clean 인스턴스 생성 완료');
+        console.log('✅ FlightRequestAPI v8.3.0 인스턴스 생성 완료');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -748,4 +921,10 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 100);
 }
 
-console.log('✅ FlightRequestAPI v8.2.1-clean 모듈 로드 완료 - 정리된 핵심 API 기능');
+console.log('✅ FlightRequestAPI v8.3.0 모듈 로드 완료 - 귀국 필수 완료일 제약사항 기능 추가');
+console.log('🆕 v8.3.0 새로운 기능:', {
+    requiredReturnDate: '개인별 귀국 필수 완료일 조회 API',
+    constraintValidation: '귀국일 제약사항 서버 측 검증',
+    enhancedSecurity: '신청 생성/수정 시 사전 검증',
+    statusIntegration: 'Utils와 연동된 상태 관리'
+});
