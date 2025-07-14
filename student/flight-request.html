@@ -785,7 +785,7 @@
             }
         });
 
-        // 🆕 v8.2.1: 현지 활동기간 검증 함수
+        // 🆕 v8.2.1: 수정된 현지 활동기간 검증 함수 (사용자 요구사항 반영)
         function validateActivityPeriod() {
             const departureDate = getDateValue('departureDate');
             const returnDate = getDateValue('returnDate');
@@ -806,17 +806,30 @@
                 workEndDate
             });
             
-            // 날짜 순서 검증
-            if (arrivalDate && departureDate && arrivalDate < departureDate) {
-                validation.errors.push('현지 도착일은 출국일 이후여야 합니다');
-                validation.isValid = false;
-                validation.status = 'invalid';
+            // ✅ 사용자 요구사항 1: 현지 도착일은 출국일로부터 최대 1일 후까지
+            if (arrivalDate && departureDate) {
+                if (arrivalDate < departureDate) {
+                    validation.errors.push('현지 도착일은 출국일 이후여야 합니다');
+                    validation.isValid = false;
+                    validation.status = 'invalid';
+                } else if (arrivalDate > new Date(departureDate.getTime() + (1 * 24 * 60 * 60 * 1000))) {
+                    validation.errors.push('현지 도착일은 출국일로부터 1일 이내여야 합니다 (비행시간 고려)');
+                    validation.isValid = false;
+                    validation.status = 'invalid';
+                }
             }
             
-            if (workEndDate && returnDate && workEndDate > returnDate) {
-                validation.errors.push('학당 근무 종료일은 귀국일 이전이어야 합니다');
-                validation.isValid = false;
-                validation.status = 'invalid';
+            // ✅ 사용자 요구사항 2: 귀국일은 활동 종료일로부터 최대 9일 후까지
+            if (workEndDate && returnDate) {
+                if (workEndDate > returnDate) {
+                    validation.errors.push('학당 근무 종료일은 귀국일 이전이어야 합니다');
+                    validation.isValid = false;
+                    validation.status = 'invalid';
+                } else if (returnDate > new Date(workEndDate.getTime() + (9 * 24 * 60 * 60 * 1000))) {
+                    validation.errors.push('귀국일은 활동 종료일로부터 9일 이내여야 합니다');
+                    validation.isValid = false;
+                    validation.status = 'invalid';
+                }
             }
             
             if (arrivalDate && workEndDate && arrivalDate >= workEndDate) {
