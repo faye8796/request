@@ -222,6 +222,12 @@
             color: #059669;
         }
 
+        /* 🔧 v8.4.0: 로딩 상태 추가 */
+        .requirement-status .value.loading {
+            color: #6b7280;
+            font-style: italic;
+        }
+
         .validation-status {
             margin-top: 12px;
             padding: 10px 12px;
@@ -595,7 +601,7 @@
                                     </div>
                                 </div>
                                 
-                                <!-- 활동일 계산 표시 -->
+                                <!-- 🔧 v8.4.0: 활동일 계산 표시 (하드코딩 제거) -->
                                 <div class="activity-period-info">
                                     <div class="activity-summary">
                                         <div class="activity-days">
@@ -604,7 +610,7 @@
                                         </div>
                                         <div class="requirement-status">
                                             <span class="label">최소 요구일:</span>
-                                            <span id="requiredDays" class="value">180</span>일
+                                            <span id="requiredDays" class="value loading">로딩중...</span>일
                                         </div>
                                     </div>
                                     <div id="validationStatus" class="validation-status"></div>
@@ -917,11 +923,18 @@
     <!-- 5. Storage Utils 로드 -->
     <script src="../js/common/storage-utils.js"></script>
 
-    <!-- 6. 🔧 v8.3.0: UX 개선 - 사용자 친화적 초기화 스크립트 (귀국 필수 완료일 제약사항 포함) -->
+    <!-- 6. 🔧 v8.4.0: UX 개선 - 사용자 친화적 초기화 스크립트 (사용자별 최소 체류일 동적 로드) -->
     <script>
-        console.log('🚀 항공권 신청 페이지 v8.3.0 (귀국 필수 완료일 제약사항 기능 추가) 초기화 시작...');
+        console.log('🚀 항공권 신청 페이지 v8.4.0 (사용자별 최소 체류일 하드코딩 문제 해결) 초기화 시작...');
 
-        // 🆕 v8.3.0: 귀국 필수 완료일 관리 JavaScript 이벤트 처리 개선
+        // 🔧 v8.4.0: 사용자별 체류일 전역 상태
+        window.userActivityRequirements = {
+            minimumDays: 180,  // 기본값
+            maximumDays: 210,  // 기본값
+            isLoaded: false
+        };
+
+        // 🆕 v8.4.0: 귀국 필수 완료일 관리 JavaScript 이벤트 처리 개선
         document.addEventListener('DOMContentLoaded', function() {
             // 🆕 현지 활동 기간 실시간 검증 이벤트 리스너
             const actualArrivalDate = document.getElementById('actualArrivalDate');
@@ -1121,7 +1134,7 @@
             }
         }
 
-        // 🆕 v8.2.2: 수정된 현지 활동기간 검증 함수 (사용자 요구사항 반영)
+        // 🔧 v8.4.0: 수정된 현지 활동기간 검증 함수 (사용자별 최소 요구일 적용)
         function validateActivityPeriod() {
             const departureDate = getDateValue('departureDate');
             const returnDate = getDateValue('returnDate');
@@ -1135,11 +1148,12 @@
                 status: 'valid'
             };
             
-            console.log('🔍 [활동기간검증] v8.3.0 날짜 값들:', {
+            console.log('🔍 [활동기간검증] v8.4.0 날짜 값들 (사용자별 최소 요구일 적용):', {
                 departureDate,
                 returnDate,
                 arrivalDate,
-                workEndDate
+                workEndDate,
+                사용자최소요구일: window.userActivityRequirements.minimumDays
             });
             
             // ✅ 사용자 요구사항 1: 현지 도착일은 출국일로부터 최대 1일 후까지
@@ -1178,8 +1192,8 @@
             if (arrivalDate && workEndDate && arrivalDate < workEndDate) {
                 validation.activityDays = Math.ceil((workEndDate - arrivalDate) / (1000 * 60 * 60 * 24));
                 
-                // 최소 활동일 검증
-                const requiredDays = parseInt(document.getElementById('requiredDays').textContent) || 180;
+                // 🔧 v8.4.0: 사용자별 최소 활동일 검증
+                const requiredDays = window.userActivityRequirements.minimumDays;
                 if (validation.activityDays < requiredDays) {
                     validation.errors.push(`최소 ${requiredDays}일의 활동 기간이 필요합니다 (현재: ${validation.activityDays}일)`);
                     validation.isValid = false;
@@ -1189,7 +1203,10 @@
                 }
             }
             
-            console.log('✅ [활동기간검증] v8.3.0 검증 결과:', validation);
+            console.log('✅ [활동기간검증] v8.4.0 검증 결과 (사용자별 기준):', {
+                ...validation,
+                적용된최소요구일: window.userActivityRequirements.minimumDays
+            });
             updateValidationUI(validation);
             return validation;
         }
@@ -1304,11 +1321,11 @@
 
         // 페이지 로드 시 실행
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('📄 DOM 로드 완료 (v8.3.0 귀국 필수 완료일 제약사항 기능 추가)');
+            console.log('📄 DOM 로드 완료 (v8.4.0 사용자별 최소 체류일 하드코딩 문제 해결)');
             
             const authResult = await checkAuth();
             if (authResult) {
-                console.log('✅ 항공권 신청 페이지 v8.3.0 인증 확인 완료');
+                console.log('✅ 항공권 신청 페이지 v8.4.0 인증 확인 완료');
             } else {
                 console.log('⚠️ 인증 실패 - 기본 기능만 사용 가능');
             }
@@ -1319,7 +1336,7 @@
             if (window.StorageUtils && window.SupabaseAPI?.core?.isInitialized) {
                 const supabase = window.SupabaseAPI.core.getClient();
                 window.StorageUtils.setSupabaseInstance(supabase);
-                console.log('✅ StorageUtils 인스턴스 설정 완료 (v8.3.0)');
+                console.log('✅ StorageUtils 인스턴스 설정 완료 (v8.4.0)');
             } else if (window.StorageUtils && window.SupabaseCore?.client) {
                 // 폴백
                 window.StorageUtils.setSupabaseInstance(window.SupabaseCore.client);
@@ -1351,7 +1368,7 @@
             const passportBtn = document.getElementById('passportInfoBtn');
             if (passportBtn) {
                 passportBtn.addEventListener('click', async function() {
-                    console.log('🔄 [UI디버그] v8.3.0 여권정보 설정 버튼 클릭됨');
+                    console.log('🔄 [UI디버그] v8.4.0 여권정보 설정 버튼 클릭됨');
                     
                     if (window.flightRequestUI && typeof window.flightRequestUI.showPassportInfoPage === 'function') {
                         await window.flightRequestUI.showPassportInfoPage();
@@ -1393,7 +1410,7 @@
                 flightRequestPage.classList.remove('active');
                 passportInfoPage.classList.add('active');
                 
-                console.log('🔄 v8.3.0 여권정보 수정 페이지로 전환 완료');
+                console.log('🔄 v8.4.0 여권정보 수정 페이지로 전환 완료');
             }
         }
 
@@ -1409,12 +1426,12 @@
                 // 🛠️ 핵심 수정: loadInitialData() 대신 loadFlightRequestData()만 호출하여 무한 루프 방지
                 setTimeout(() => {
                     if (window.flightRequestUI && typeof window.flightRequestUI.loadFlightRequestData === 'function') {
-                        console.log('✅ v8.3.0: 항공권 신청 데이터만 로드 (무한 루프 방지)');
+                        console.log('✅ v8.4.0: 항공권 신청 데이터만 로드 (무한 루프 방지)');
                         window.flightRequestUI.loadFlightRequestData();
                     }
                 }, 200);
                 
-                console.log('🔄 v8.3.0 항공권 신청 페이지로 전환 완료');
+                console.log('🔄 v8.4.0 항공권 신청 페이지로 전환 완료');
             }
         }
 
@@ -1489,7 +1506,7 @@
             // 사용자 정보 표시
             updateUserInfo();
             
-            console.log('✅ 항공권 신청 페이지 초기화 완료 (v8.3.0 귀국 필수 완료일 제약사항 기능 추가)');
+            console.log('✅ 항공권 신청 페이지 초기화 완료 (v8.4.0 사용자별 최소 체류일 하드코딩 문제 해결)');
         }
 
         // DOM 로드 후 앱 표시
@@ -1500,7 +1517,7 @@
         }
     </script>
 
-    <!-- 7. 🔧 v8.3.0: UX 개선 - 사용자 친화적 모듈 로딩 시스템 (귀국 필수 완료일 제약사항 포함) -->
+    <!-- 7. 🔧 v8.4.0: UX 개선 - 사용자 친화적 모듈 로딩 시스템 (사용자별 최소 체류일 동적 로드) -->
     <script>
         let modulesLoaded = {
             flightRequestAPI: false,
@@ -1533,7 +1550,7 @@
                 supabaseCoreReady = true; // 폴백
             }
             
-            console.log('📦 v8.3.0 모듈 로딩 상태 확인:', {
+            console.log('📦 v8.4.0 모듈 로딩 상태 확인:', {
                 modules: modulesLoaded,
                 supabaseCoreReady: supabaseCoreReady,
                 flightRequestAPI: !!window.FlightRequestAPI,
@@ -1544,7 +1561,7 @@
             });
             
             if (allLoaded && supabaseCoreReady) {
-                console.log('✅ v8.3.0 모든 모듈 로드 완료 및 SupabaseCore 준비 완료');
+                console.log('✅ v8.4.0 모든 모듈 로드 완료 및 SupabaseCore 준비 완료');
                 clearTimeout(initializationTimer);
                 updateLoadingMessage('시스템 초기화를 완료하고 있습니다...');
                 
@@ -1562,7 +1579,7 @@
                     updateLoadingMessage('시스템 초기화를 완료하고 있습니다...');
                 }
                 
-                console.log(`⏳ v8.3.0 모듈 로딩 대기중... (${initializationAttempts + 1}/${MAX_INIT_ATTEMPTS})`);
+                console.log(`⏳ v8.4.0 모듈 로딩 대기중... (${initializationAttempts + 1}/${MAX_INIT_ATTEMPTS})`);
                 
                 // 🔧 v8.7.0: 대폭 강화된 재시도 로직
                 if (initializationAttempts < MAX_INIT_ATTEMPTS) {
@@ -1573,13 +1590,13 @@
                     
                     initializationTimer = setTimeout(() => {
                         if (!window.flightRequestUI) {
-                            console.log(`🔄 v8.3.0 초기화 재시도 ${initializationAttempts}/${MAX_INIT_ATTEMPTS}`);
+                            console.log(`🔄 v8.4.0 초기화 재시도 ${initializationAttempts}/${MAX_INIT_ATTEMPTS}`);
                             checkAllModulesLoaded();
                         }
                     }, waitTime);
                 } else {
                     // 🔧 v8.7.0 UX 개선: 오류 대신 계속 로딩 표시
-                    console.warn('⚠️ v8.3.0 최대 재시도 횟수 도달 - 강제 초기화 시도');
+                    console.warn('⚠️ v8.4.0 최대 재시도 횟수 도달 - 강제 초기화 시도');
                     updateLoadingMessage('시스템을 강제로 초기화하고 있습니다. 잠시만 기다려주세요...');
                     
                     // 강제 초기화 시도 (오류 모달 대신)
@@ -1593,14 +1610,14 @@
         // 🆕 v8.7.0: 강제 초기화 함수 (오류 모달 대신)
         function forceInitialization() {
             try {
-                console.log('🚀 v8.3.0 강제 초기화 시도...');
+                console.log('🚀 v8.4.0 강제 초기화 시도...');
                 
                 if (window.FlightRequestUI && window.FlightRequestAPI) {
                     const hasSupabaseCore = !!(window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized);
                     
                     if (hasSupabaseCore) {
                         window.flightRequestUI = new FlightRequestUI();
-                        console.log('✅ v8.3.0 강제 초기화 성공');
+                        console.log('✅ v8.4.0 강제 초기화 성공');
                         
                         // 로딩 상태 숨기기 및 앱 표시
                         const globalLoading = document.getElementById('globalLoadingState');
@@ -1614,7 +1631,7 @@
                 }
                 
                 // 여전히 실패할 경우 - 기본 기능만 제공
-                console.warn('⚠️ v8.3.0 강제 초기화 실패 - 기본 기능만 제공');
+                console.warn('⚠️ v8.4.0 강제 초기화 실패 - 기본 기능만 제공');
                 updateLoadingMessage('기본 기능을 준비하고 있습니다...');
                 
                 setTimeout(() => {
@@ -1641,14 +1658,14 @@
                 }, 1000);
                 
             } catch (error) {
-                console.error('❌ v8.3.0 강제 초기화 실패:', error);
+                console.error('❌ v8.4.0 강제 초기화 실패:', error);
                 updateLoadingMessage('시스템 오류가 발생했습니다. 페이지를 새로고침해주세요.');
             }
         }
 
         function initializeFlightRequestSystem() {
             try {
-                console.log('🚀 v8.3.0 FlightRequestSystem 초기화 시작...');
+                console.log('🚀 v8.4.0 FlightRequestSystem 초기화 시작...');
                 
                 // 전역 로딩 상태 숨기기
                 const globalLoading = document.getElementById('globalLoadingState');
@@ -1664,7 +1681,7 @@
                     throw new Error('FlightRequestAPI 클래스가 로드되지 않았습니다');
                 }
                 
-                console.log('✅ v8.3.0 FlightRequestAPI 클래스 확인 완료');
+                console.log('✅ v8.4.0 FlightRequestAPI 클래스 확인 완료');
                 
                 // 🔧 v8.7.0: FlightRequestUI 클래스 체크
                 if (!window.FlightRequestUI) {
@@ -1672,7 +1689,7 @@
                     throw new Error('FlightRequestUI 클래스가 로드되지 않았습니다');
                 }
                 
-                console.log('✅ v8.3.0 FlightRequestUI 클래스 확인 완료');
+                console.log('✅ v8.4.0 FlightRequestUI 클래스 확인 완료');
                 
                 // SupabaseCore 확인 (v1.0.1 및 폴백)
                 const hasSupabaseCore = !!(window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized);
@@ -1681,13 +1698,13 @@
                     throw new Error('SupabaseCore가 초기화되지 않았습니다');
                 }
                 
-                // FlightRequestUI 초기화 (v8.3.0)
+                // FlightRequestUI 초기화 (v8.4.0)
                 console.log('🚀 FlightRequestUI 초기화 시작...');
                 window.flightRequestUI = new FlightRequestUI();
-                console.log('✅ FlightRequestUI 초기화 완료 (v8.3.0 귀국 필수 완료일 제약사항 기능 추가)');
+                console.log('✅ FlightRequestUI 초기화 완료 (v8.4.0 사용자별 최소 체류일 하드코딩 문제 해결)');
                 
             } catch (error) {
-                console.error('❌ v8.3.0 항공권 요청 시스템 초기화 실패:', error);
+                console.error('❌ v8.4.0 항공권 요청 시스템 초기화 실패:', error);
                 
                 // 🔧 v8.7.0 UX 개선: 오류 메시지 대신 기본 기능 제공
                 const globalLoading = document.getElementById('globalLoadingState');
@@ -1714,23 +1731,23 @@
         // 🔧 v8.7.0: 최종 안전장치 (10초 → 30초로 연장)
         setTimeout(() => {
             if (!window.flightRequestUI) {
-                console.warn('⚠️ v8.3.0: 30초 후에도 초기화되지 않음 - 최종 안전장치 실행');
+                console.warn('⚠️ v8.4.0: 30초 후에도 초기화되지 않음 - 최종 안전장치 실행');
                 forceInitialization();
             }
         }, 30000); // 30초로 연장
     </script>
     
-    <!-- 8. Flight Request 모듈들 (v8.3.0) -->
+    <!-- 8. Flight Request 모듈들 (v8.4.0) -->
     <script src="../js/student/flight-request-api.js"
-            onload="modulesLoaded.flightRequestAPI = true; console.log('✅ v8.3.0 Flight Request API 로드 완료'); checkAllModulesLoaded();"
+            onload="modulesLoaded.flightRequestAPI = true; console.log('✅ v8.4.0 Flight Request API 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request API', event)"></script>
     
     <script src="../js/student/flight-request-utils.js"
-            onload="modulesLoaded.flightRequestUtils = true; console.log('✅ v8.3.0 Flight Request Utils 로드 완료'); checkAllModulesLoaded();"
+            onload="modulesLoaded.flightRequestUtils = true; console.log('✅ v8.4.0 Flight Request Utils 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request Utils', event)"></script>
     
     <script src="../js/student/flight-request-ui.js"
-            onload="modulesLoaded.flightRequestUI = true; console.log('✅ v8.3.0 Flight Request UI 로드 완료'); checkAllModulesLoaded();"
+            onload="modulesLoaded.flightRequestUI = true; console.log('✅ v8.4.0 Flight Request UI 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request UI', event)"></script>
 
     <!-- Lucide Icons 초기화 -->
