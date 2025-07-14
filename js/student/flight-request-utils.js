@@ -1,16 +1,16 @@
-// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.2.1-integrated
-// 🔄 통합: flight-request-utils-new.js의 개선된 기능들 통합
+// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.2.2
+// 🔧 v8.2.2: Utils 모듈 버그 해결 - validateDates 메서드 노출 문제 수정
 // 🎯 목적: 재사용 가능한 헬퍼 함수들 제공
 
 class FlightRequestUtils {
     constructor() {
-        this.version = 'v8.2.1-integrated';
+        this.version = 'v8.2.2';
     }
 
     // === 날짜 관련 유틸리티 ===
 
     /**
-     * 날짜 유효성 검증
+     * 🔧 v8.2.2: 기본 날짜 유효성 검증 (UI에서 호출하는 메서드)
      * @param {string} departureDate - 출발일
      * @param {string} returnDate - 귀국일
      * @returns {Object} 검증 결과
@@ -34,6 +34,60 @@ class FlightRequestUtils {
         }
 
         return { valid: true, message: '날짜가 유효합니다.' };
+    }
+
+    /**
+     * 🆕 v8.2.2: 현지 활동기간을 포함한 통합 날짜 검증
+     * @param {Object} dates - 모든 날짜 정보
+     * @returns {Object} 검증 결과
+     */
+    validateAllDates(dates) {
+        const { departureDate, returnDate, actualArrivalDate, actualWorkEndDate } = dates;
+        
+        const validation = {
+            valid: true,
+            errors: [],
+            warnings: [],
+            activityDays: 0
+        };
+
+        try {
+            // 1. 기본 날짜 검증 (출국일, 귀국일)
+            const basicValidation = this.validateDates(departureDate, returnDate);
+            if (!basicValidation.valid) {
+                validation.errors.push(basicValidation.message);
+                validation.valid = false;
+            }
+
+            // 2. 현지 활동기간이 입력된 경우에만 추가 검증
+            if (actualArrivalDate && actualWorkEndDate) {
+                const activityValidation = this.validateActivityDates(
+                    departureDate, actualArrivalDate, actualWorkEndDate, returnDate
+                );
+                
+                if (!activityValidation.valid) {
+                    validation.errors.push(...activityValidation.errors);
+                    validation.valid = false;
+                } else {
+                    validation.activityDays = activityValidation.activityDays;
+                    
+                    // 최소 활동일 검증
+                    const minDaysValidation = this.validateMinimumActivityDays(validation.activityDays);
+                    if (!minDaysValidation.valid) {
+                        validation.errors.push(minDaysValidation.message);
+                        validation.valid = false;
+                    } else if (minDaysValidation.warning) {
+                        validation.warnings.push(minDaysValidation.warning);
+                    }
+                }
+            }
+
+        } catch (error) {
+            validation.errors.push('날짜 형식이 올바르지 않습니다.');
+            validation.valid = false;
+        }
+
+        return validation;
     }
 
     /**
@@ -66,7 +120,7 @@ class FlightRequestUtils {
     }
 
     /**
-     * 🔄 v8.2.1-integrated: 현지 활동기간 종합 검증 (개선된 버전)
+     * 🔄 v8.2.2: 현지 활동기간 종합 검증 (개선된 버전)
      * @param {string} departureDate - 출국일
      * @param {string} arrivalDate - 현지 도착일
      * @param {string} workEndDate - 학당 근무 종료일
@@ -505,7 +559,8 @@ class FlightRequestUtils {
                 'Debounce utility',
                 'Icon refresh utility',
                 'Safe date value getter',
-                'Improved error handling'
+                'Improved error handling',
+                'Integrated date validation'
             ]
         };
     }
@@ -521,6 +576,14 @@ class FlightRequestUtils {
 
     static formatDateTime(dateTimeString) {
         return new FlightRequestUtils().formatDateTime(dateTimeString);
+    }
+
+    static validateDates(departureDate, returnDate) {
+        return new FlightRequestUtils().validateDates(departureDate, returnDate);
+    }
+
+    static validateAllDates(dates) {
+        return new FlightRequestUtils().validateAllDates(dates);
     }
 
     static calculateActivityDays(arrivalDate, workEndDate) {
@@ -570,11 +633,10 @@ window.FlightRequestUtils = FlightRequestUtils;
 // 인스턴스 생성 및 전역 변수 설정
 window.flightRequestUtils = new FlightRequestUtils();
 
-console.log('✅ FlightRequestUtils v8.2.1-integrated 로드 완료 - 통합된 완전한 유틸리티 함수 모음');
-console.log('🔄 통합 기능:', {
-    enhancedValidation: '개선된 활동기간 검증',
-    debouncing: '디바운싱 함수',
-    iconRefresh: 'Lucide 아이콘 재초기화',
-    staticMethods: 'Static 메서드 호환성',
-    safeDateGetter: '안전한 날짜 값 가져오기'
+console.log('✅ FlightRequestUtils v8.2.2 로드 완료 - 버그 해결 및 통합 검증 기능 추가');
+console.log('🔧 수정 사항:', {
+    bugFixed: 'validateDates 메서드 노출 문제 해결',
+    newFeature: 'validateAllDates 통합 검증 메서드 추가',
+    staticMethods: 'Static 메서드 호환성 보장',
+    integration: '현지 활동기간 통합 검증'
 });
