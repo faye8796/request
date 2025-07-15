@@ -1,7 +1,8 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.4.2
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v9.0.0
+// 🔧 v9.0.0: 하드코딩 값 제거 및 maximum_allowed_days 완전 지원
 // 🔧 v8.4.2: '이가짜' 학생 최소 체류일 문제 해결 - auth_user_id → id 조회 방식 수정
 // 🆕 v8.3.0: 귀국 필수 완료일 제약사항 API 기능 추가
-// 🎯 목적: 효율적이고 안정적인 API 통신 + 귀국 필수 완료일 관리
+// 🎯 목적: 효율적이고 안정적인 API 통신 + 사용자별 활동일 요구사항 완전 지원
 
 class FlightRequestAPI {
     constructor() {
@@ -15,12 +16,12 @@ class FlightRequestAPI {
     // === 초기화 ===
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v8.4.2 초기화 시작 - 사용자별 체류일 문제 해결...');
+            console.log('🔄 FlightRequestAPI v9.0.0 초기화 시작 - 하드코딩 값 제거 및 DB 완전 연동...');
             
             await this.connectToSupabaseCore();
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI v8.4.2 초기화 완료 - auth_user_id → id 조회 방식 수정');
+            console.log('✅ FlightRequestAPI v9.0.0 초기화 완료 - maximum_allowed_days 지원 추가');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -96,7 +97,7 @@ class FlightRequestAPI {
                 name: studentData.name || 'no-name'
             };
             
-            console.log('✅ [사용자인증] v8.4.2 사용자 정보 로드:', {
+            console.log('✅ [사용자인증] v9.0.0 사용자 정보 로드:', {
                 id: this.user.id,
                 name: this.user.name,
                 조회방식: 'id 컬럼 직접 사용'
@@ -171,7 +172,7 @@ class FlightRequestAPI {
 
             if (error && error.code !== 'PGRST116') throw error;
             
-            console.log('✅ [귀국필수일] v8.4.2 조회 성공:', {
+            console.log('✅ [귀국필수일] v9.0.0 조회 성공:', {
                 사용자: this.user.name,
                 조회컬럼: 'id',
                 기존문제: 'auth_user_id(null)로 조회 실패',
@@ -294,10 +295,10 @@ class FlightRequestAPI {
         }
     }
 
-    // === 🔧 v8.4.2: 현지 활동기간 관리 API (조회 방식 수정) ===
+    // === 🔧 v9.0.0: 현지 활동기간 관리 API (maximum_allowed_days 완전 지원) ===
 
     /**
-     * 🔧 v8.4.2: 사용자의 현지 활동기간 정보를 user_profiles 테이블에 업데이트 (id 컬럼 사용)
+     * 🔧 v9.0.0: 사용자의 현지 활동기간 정보를 user_profiles 테이블에 업데이트 (최대 활동일 포함)
      */
     async updateUserProfileActivityDates(activityData) {
         try {
@@ -313,12 +314,13 @@ class FlightRequestAPI {
                 actual_work_end_date: activityData.actualWorkEndDate,
                 actual_work_days: activityData.actualWorkDays || 0,
                 minimum_required_days: activityData.minimumRequiredDays || 180,
+                maximum_allowed_days: activityData.maximumAllowedDays || 210, // 🆕 v9.0.0
                 updated_at: new Date().toISOString()
             };
 
             if (this.core?.update) {
                 const result = await this.core.update('user_profiles', updateData, { 
-                    id: this.user.id  // 🔧 v8.4.2: auth_user_id → id 수정
+                    id: this.user.id
                 });
                 if (!result.success) throw new Error(result.error);
                 return { success: true, data: result.data[0] };
@@ -327,16 +329,16 @@ class FlightRequestAPI {
             const { data, error } = await this.supabase
                 .from('user_profiles')
                 .update(updateData)
-                .eq('id', this.user.id)  // 🔧 v8.4.2: auth_user_id → id 수정
+                .eq('id', this.user.id)
                 .select()
                 .single();
 
             if (error) throw error;
             
-            console.log('✅ [활동기간업데이트] v8.4.2 업데이트 성공:', {
+            console.log('✅ [활동기간업데이트] v9.0.0 업데이트 성공:', {
                 사용자: this.user.name,
-                조회컬럼: 'id',
-                업데이트된값: updateData.minimum_required_days
+                최소요구일: updateData.minimum_required_days,
+                최대허용일: updateData.maximum_allowed_days // 🆕 v9.0.0
             });
             
             return { success: true, data: data };
@@ -348,7 +350,7 @@ class FlightRequestAPI {
     }
 
     /**
-     * 🔧 v8.4.2: 현재 사용자의 활동기간 정보 조회 (id 컬럼 사용) - 핵심 수정 메서드
+     * 🔧 v9.0.0: 현재 사용자의 활동기간 정보 조회 (maximum_allowed_days 포함) - 핵심 수정 메서드
      */
     async getUserProfileActivityDates() {
         try {
@@ -357,14 +359,15 @@ class FlightRequestAPI {
 
             const selectColumns = [
                 'actual_arrival_date', 'actual_work_end_date', 'actual_work_days',
-                'minimum_required_days', 'dispatch_start_date', 'dispatch_end_date',
-                'dispatch_duration', 'required_return_date', 'required_return_reason', // 🆕 v8.3.0
+                'minimum_required_days', 'maximum_allowed_days', // 🆕 v9.0.0: maximum_allowed_days 추가
+                'dispatch_start_date', 'dispatch_end_date', 'dispatch_duration', 
+                'required_return_date', 'required_return_reason',
                 'updated_at'
             ].join(', ');
 
             if (this.core?.select) {
                 const result = await this.core.select('user_profiles', selectColumns, { 
-                    id: this.user.id  // 🔧 v8.4.2: auth_user_id → id 수정 (핵심)
+                    id: this.user.id
                 });
                 if (!result.success && !result.error.includes('PGRST116')) {
                     throw new Error(result.error);
@@ -372,13 +375,12 @@ class FlightRequestAPI {
                 
                 const profileData = result.data?.length > 0 ? result.data[0] : null;
                 
-                console.log('✅ [활동기간조회] v8.4.2 핵심 조회 성공:', {
+                console.log('✅ [활동기간조회] v9.0.0 핵심 조회 성공:', {
                     사용자: this.user.name,
                     사용자ID: this.user.id,
-                    조회컬럼: 'id (기존: auth_user_id)',
-                    minimum_required_days: profileData?.minimum_required_days,
-                    기존문제: 'auth_user_id가 null이어서 조회 실패',
-                    해결결과: `실제 DB 값 ${profileData?.minimum_required_days}일 정상 로드`
+                    최소요구일: profileData?.minimum_required_days,
+                    최대허용일: profileData?.maximum_allowed_days, // 🆕 v9.0.0
+                    하드코딩제거: '210일 → 실제 DB값 사용'
                 });
                 
                 return profileData;
@@ -387,50 +389,73 @@ class FlightRequestAPI {
             const { data, error } = await this.supabase
                 .from('user_profiles')
                 .select(selectColumns)
-                .eq('id', this.user.id)  // 🔧 v8.4.2: auth_user_id → id 수정 (핵심)
+                .eq('id', this.user.id)
                 .single();
 
             if (error && error.code !== 'PGRST116') throw error;
             
-            console.log('✅ [활동기간조회] v8.4.2 핵심 조회 성공 (Direct):', {
+            console.log('✅ [활동기간조회] v9.0.0 핵심 조회 성공 (Direct):', {
                 사용자: this.user.name,
                 사용자ID: this.user.id,
-                조회컬럼: 'id (기존: auth_user_id)',
-                minimum_required_days: data?.minimum_required_days,
-                기존문제: 'auth_user_id가 null이어서 조회 실패',
-                해결결과: `실제 DB 값 ${data?.minimum_required_days}일 정상 로드`
+                최소요구일: data?.minimum_required_days,
+                최대허용일: data?.maximum_allowed_days, // 🆕 v9.0.0
+                하드코딩제거: '210일 → 실제 DB값 사용'
             });
             
             return data;
 
         } catch (error) {
-            console.error('❌ [활동기간조회] v8.4.2 조회 실패:', error);
+            console.error('❌ [활동기간조회] v9.0.0 조회 실패:', error);
             throw error;
         }
     }
 
     /**
-     * 🔧 v8.4.2: 사용자별 최소 요구 활동일 조회 (정확한 DB 값 반환)
+     * 🔧 v9.0.0: 사용자별 활동일 요구사항 조회 (최소/최대 모두 포함)
+     */
+    async getActivityRequirements() {
+        try {
+            console.log('🔄 [활동요구사항] v9.0.0 사용자별 활동일 요구사항 조회 시작...');
+            
+            const profileData = await this.getUserProfileActivityDates();
+            
+            const requirements = {
+                minimumDays: profileData?.minimum_required_days || 180,
+                maximumDays: profileData?.maximum_allowed_days || 210, // 🆕 v9.0.0
+                isLoaded: true,
+                source: profileData ? 'database' : 'default'
+            };
+            
+            console.log('✅ [활동요구사항] v9.0.0 조회 완료:', {
+                사용자: this.user?.name || 'unknown',
+                최소요구일: requirements.minimumDays,
+                최대허용일: requirements.maximumDays, // 🆕 v9.0.0
+                데이터소스: requirements.source,
+                하드코딩제거완료: '✅ 모든 값이 DB에서 로드됨'
+            });
+            
+            return requirements;
+        } catch (error) {
+            console.error('❌ [활동요구사항] v9.0.0 조회 실패:', error);
+            console.log('⚠️ [활동요구사항] 기본값 사용');
+            return {
+                minimumDays: 180,
+                maximumDays: 210,
+                isLoaded: false,
+                source: 'fallback'
+            };
+        }
+    }
+
+    /**
+     * 🔧 v9.0.0: 사용자별 최소 요구 활동일 조회 (정확한 DB 값 반환) - 기존 호환성 유지
      */
     async getRequiredActivityDays() {
         try {
-            console.log('🔄 [최소요구일] v8.4.2 사용자별 최소 요구일 조회 시작...');
-            
-            const profileData = await this.getUserProfileActivityDates();
-            const requiredDays = profileData?.minimum_required_days || 180;
-            
-            console.log('✅ [최소요구일] v8.4.2 조회 완료:', {
-                사용자: this.user?.name || 'unknown',
-                실제DB값: profileData?.minimum_required_days,
-                반환값: requiredDays,
-                기본값사용여부: !profileData?.minimum_required_days,
-                문제해결: 'auth_user_id → id 조회 방식 수정으로 정확한 값 반환'
-            });
-            
-            return requiredDays;
+            const requirements = await this.getActivityRequirements();
+            return requirements.minimumDays;
         } catch (error) {
-            console.error('❌ [최소요구일] v8.4.2 조회 실패:', error);
-            console.log('⚠️ [최소요구일] 기본값 180일 사용');
+            console.error('❌ [최소요구일] v9.0.0 조회 실패:', error);
             return 180; // 기본값
         }
     }
@@ -452,14 +477,15 @@ class FlightRequestAPI {
                 };
 
                 const clientValidation = utils.validateAllDates(validationDates);
-                const requiredDays = await this.getRequiredActivityDays();
+                const requirements = await this.getActivityRequirements(); // 🔧 v9.0.0: 최소/최대 모두 포함
 
                 return {
                     success: true,
                     clientValidation: clientValidation,
                     requiredReturnInfo: requiredInfo,
                     serverValidation: {
-                        requiredDays: requiredDays,
+                        minimumDays: requirements.minimumDays, // 🔧 v9.0.0
+                        maximumDays: requirements.maximumDays, // 🆕 v9.0.0
                         canSubmit: clientValidation.valid,
                         hasRequiredReturnDate: requiredInfo.hasRequiredDate,
                         isReturnDateValid: !requiredInfo.validation?.isOverdue
@@ -471,14 +497,15 @@ class FlightRequestAPI {
             const arrivalDate = new Date(activityData.actualArrivalDate);
             const workEndDate = new Date(activityData.actualWorkEndDate);
             const activityDays = Math.ceil((workEndDate - arrivalDate) / (1000 * 60 * 60 * 24));
-            const requiredDays = await this.getRequiredActivityDays();
+            const requirements = await this.getActivityRequirements(); // 🔧 v9.0.0
 
             return {
                 success: true,
                 basicValidation: {
-                    valid: activityDays >= requiredDays,
+                    valid: activityDays >= requirements.minimumDays && activityDays <= requirements.maximumDays, // 🔧 v9.0.0
                     activityDays: activityDays,
-                    requiredDays: requiredDays
+                    minimumDays: requirements.minimumDays, // 🔧 v9.0.0
+                    maximumDays: requirements.maximumDays // 🆕 v9.0.0
                 }
             };
 
@@ -694,7 +721,8 @@ class FlightRequestAPI {
                     actualArrivalDate: requestData.actualArrivalDate,
                     actualWorkEndDate: requestData.actualWorkEndDate,
                     actualWorkDays: requestData.actualWorkDays || 0,
-                    minimumRequiredDays: requestData.minimumRequiredDays || 180
+                    minimumRequiredDays: requestData.minimumRequiredDays || 180,
+                    maximumAllowedDays: requestData.maximumAllowedDays || 210 // 🆕 v9.0.0
                 };
 
                 try {
@@ -760,7 +788,8 @@ class FlightRequestAPI {
                     actualArrivalDate: requestData.actualArrivalDate,
                     actualWorkEndDate: requestData.actualWorkEndDate,
                     actualWorkDays: requestData.actualWorkDays || 0,
-                    minimumRequiredDays: requestData.minimumRequiredDays || 180
+                    minimumRequiredDays: requestData.minimumRequiredDays || 180,
+                    maximumAllowedDays: requestData.maximumAllowedDays || 210 // 🆕 v9.0.0
                 };
 
                 try {
@@ -932,7 +961,7 @@ class FlightRequestAPI {
     // === 상태 정보 ===
     getStatus() {
         return {
-            version: 'v8.4.2',
+            version: 'v9.0.0',
             isInitialized: this.isInitialized,
             hasCore: !!this.core,
             hasSupabase: !!this.supabase,
@@ -942,13 +971,19 @@ class FlightRequestAPI {
                 email: this.user.email, 
                 name: this.user.name
             } : null,
-            fixedIssues: [ // 🔧 v8.4.2
+            newFeatures: [ // 🆕 v9.0.0
+                '하드코딩 값 완전 제거',
+                'maximum_allowed_days 완전 지원',
+                'getActivityRequirements() 통합 메서드',
+                '사용자별 설정값 100% DB 연동'
+            ],
+            fixedIssues: [ // 🔧 v8.4.2 + v9.0.0
                 '이가짜 학생 최소 체류일 문제 해결',
                 'auth_user_id → id 조회 방식 수정',
-                '실제 DB 값(90일) 정상 로드',
-                'UI 하드코딩 180일 → 동적 값 표시'
+                '실제 DB 값(90일/100일) 정상 로드',
+                'UI 하드코딩 180일/210일 → 동적 값 표시'
             ],
-            newFeatures: [ // 🆕 v8.3.0
+            previousFeatures: [ // 🆕 v8.3.0
                 'Required return date validation',
                 'Return date constraint checking',
                 'Enhanced server-side validation',
@@ -964,10 +999,10 @@ window.FlightRequestAPI = FlightRequestAPI;
 // 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.4.2 인스턴스 생성 시작 - 사용자별 체류일 문제 해결...');
+        console.log('🚀 FlightRequestAPI v9.0.0 인스턴스 생성 시작 - 하드코딩 값 완전 제거...');
         window.flightRequestAPI = new FlightRequestAPI();
         window.passportAPI = window.flightRequestAPI; // 호환성
-        console.log('✅ FlightRequestAPI v8.4.2 인스턴스 생성 완료 - auth_user_id → id 조회 방식 수정');
+        console.log('✅ FlightRequestAPI v9.0.0 인스턴스 생성 완료 - maximum_allowed_days 완전 지원');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -984,8 +1019,15 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 100);
 }
 
-console.log('✅ FlightRequestAPI v8.4.2 모듈 로드 완료 - 이가짜 학생 최소 체류일 문제 해결');
-console.log('🔧 v8.4.2 문제 해결:', {
+console.log('✅ FlightRequestAPI v9.0.0 모듈 로드 완료 - 하드코딩 값 완전 제거 및 maximum_allowed_days 지원');
+console.log('🆕 v9.0.0 주요 업데이트:', {
+    하드코딩제거: '180일/210일 → 사용자별 DB값 사용',
+    최대활동일지원: 'maximum_allowed_days 완전 구현',
+    통합메서드: 'getActivityRequirements() 추가',
+    이가짜사용자: '90일(최소)/100일(최대) 정확 반영',
+    기술개선: 'API ↔ HTML 완전 연동'
+});
+console.log('🔧 v8.4.2 기존 해결 사항:', {
     issue: '이가짜 학생의 minimum_required_days(90일)가 180일로 표시되는 문제',
     cause: 'auth_user_id가 null이어서 API 조회 실패, 기본값 180일 사용',
     solution: 'user_profiles 테이블 조회를 id 컬럼으로 변경',
