@@ -1,10 +1,11 @@
-// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.3.0
+// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.5.0
+// 🆕 v8.5.0: 최대 활동일 초과 검증 기능 추가 - 사용자별 maximum_allowed_days 검증
 // 🆕 v8.3.0: 귀국 필수 완료일 제약사항 기능 추가
-// 🎯 목적: 재사용 가능한 헬퍼 함수들 제공 + 귀국 필수 완료일 검증
+// 🎯 목적: 재사용 가능한 헬퍼 함수들 제공 + 완전한 활동기간 범위 검증
 
 class FlightRequestUtils {
     constructor() {
-        this.version = 'v8.3.0';
+        this.version = 'v8.5.0';
     }
 
     // === 날짜 관련 유틸리티 ===
@@ -98,9 +99,11 @@ class FlightRequestUtils {
     }
 
     /**
-     * 🔄 v8.3.0: 현지 활동기간을 포함한 통합 날짜 검증 + 귀국 필수 완료일 검증
+     * 🔄 v8.5.0: 현지 활동기간을 포함한 통합 날짜 검증 + 최대 활동일 검증 추가
      * @param {Object} dates - 모든 날짜 정보
-     * @param {string} dates.requiredReturnDate - 귀국 필수 완료일 (새로 추가)
+     * @param {string} dates.requiredReturnDate - 귀국 필수 완료일
+     * @param {number} dates.minimumRequiredDays - 최소 요구일 (기본: 180일)
+     * @param {number} dates.maximumAllowedDays - 최대 허용일 (기본: 210일) 🆕
      * @returns {Object} 검증 결과
      */
     validateAllDates(dates) {
@@ -109,7 +112,9 @@ class FlightRequestUtils {
             returnDate, 
             actualArrivalDate, 
             actualWorkEndDate,
-            requiredReturnDate 
+            requiredReturnDate,
+            minimumRequiredDays = 180,
+            maximumAllowedDays = 210  // 🆕 v8.5.0
         } = dates;
         
         const validation = {
@@ -117,7 +122,8 @@ class FlightRequestUtils {
             errors: [],
             warnings: [],
             activityDays: 0,
-            requiredReturnValidation: null
+            requiredReturnValidation: null,
+            exceedsMaximum: false  // 🆕 v8.5.0
         };
 
         try {
@@ -153,13 +159,23 @@ class FlightRequestUtils {
                 } else {
                     validation.activityDays = activityValidation.activityDays;
                     
-                    // 최소 활동일 검증
-                    const minDaysValidation = this.validateMinimumActivityDays(validation.activityDays);
+                    // 🔧 v8.5.0: 최소 활동일 검증
+                    const minDaysValidation = this.validateMinimumActivityDays(validation.activityDays, minimumRequiredDays);
                     if (!minDaysValidation.valid) {
                         validation.errors.push(minDaysValidation.message);
                         validation.valid = false;
                     } else if (minDaysValidation.warning) {
                         validation.warnings.push(minDaysValidation.warning);
+                    }
+
+                    // 🆕 v8.5.0: 최대 활동일 검증 추가
+                    const maxDaysValidation = this.validateMaximumActivityDays(validation.activityDays, maximumAllowedDays);
+                    if (!maxDaysValidation.valid) {
+                        validation.errors.push(maxDaysValidation.message);
+                        validation.valid = false;
+                        validation.exceedsMaximum = true;  // 최대 활동일 초과 플래그
+                    } else if (maxDaysValidation.warning) {
+                        validation.warnings.push(maxDaysValidation.warning);
                     }
                 }
             }
@@ -291,6 +307,84 @@ class FlightRequestUtils {
         } else {
             result.message = `활동 기간이 요구사항을 충족합니다 (${activityDays}일)`;
         }
+
+        return result;
+    }
+
+    /**
+     * 🆕 v8.5.0: 최대 활동일 초과 검증 - 핵심 기능 추가!
+     * @param {number} activityDays - 계산된 활동일
+     * @param {number} maximumDays - 최대 허용일 (기본: 210일)
+     * @returns {Object} 검증 결과
+     */
+    validateMaximumActivityDays(activityDays, maximumDays = 210) {
+        const result = {
+            valid: true,
+            message: '',
+            warning: null,
+            code: null
+        };
+
+        if (activityDays > maximumDays) {
+            result.valid = false;
+            result.message = `최대 ${maximumDays}일을 초과할 수 없습니다 (현재: ${activityDays}일, 초과: ${activityDays - maximumDays}일)`;
+            result.code = 'MAXIMUM_ACTIVITY_DAYS_EXCEEDED';
+        } else if (activityDays === maximumDays) {
+            result.warning = `정확히 최대 허용일(${maximumDays}일)에 도달했습니다`;
+            result.message = '활동 기간이 최대 허용 범위 내에 있습니다';
+        } else if (activityDays > maximumDays - 10) {
+            // 최대 허용일에서 10일 이내일 때 주의 메시지
+            const remaining = maximumDays - activityDays;
+            result.warning = `최대 허용일까지 ${remaining}일 남았습니다 (${activityDays}일/${maximumDays}일)`;
+            result.message = '활동 기간이 최대 허용 범위 내에 있습니다';
+        } else {
+            result.message = `활동 기간이 허용 범위 내에 있습니다 (${activityDays}일/${maximumDays}일)`;
+        }
+
+        return result;
+    }
+
+    /**
+     * 🆕 v8.5.0: 활동기간 전체 범위 검증 (최소/최대 통합)
+     * @param {number} activityDays - 계산된 활동일
+     * @param {number} minimumDays - 최소 요구일 (기본: 180일)
+     * @param {number} maximumDays - 최대 허용일 (기본: 210일)
+     * @returns {Object} 통합 검증 결과
+     */
+    validateActivityDaysRange(activityDays, minimumDays = 180, maximumDays = 210) {
+        const result = {
+            valid: true,
+            errors: [],
+            warnings: [],
+            minimumCheck: null,
+            maximumCheck: null,
+            inValidRange: false
+        };
+
+        // 최소 활동일 검증
+        const minValidation = this.validateMinimumActivityDays(activityDays, minimumDays);
+        result.minimumCheck = minValidation;
+        
+        if (!minValidation.valid) {
+            result.errors.push(minValidation.message);
+            result.valid = false;
+        } else if (minValidation.warning) {
+            result.warnings.push(minValidation.warning);
+        }
+
+        // 최대 활동일 검증
+        const maxValidation = this.validateMaximumActivityDays(activityDays, maximumDays);
+        result.maximumCheck = maxValidation;
+        
+        if (!maxValidation.valid) {
+            result.errors.push(maxValidation.message);
+            result.valid = false;
+        } else if (maxValidation.warning) {
+            result.warnings.push(maxValidation.warning);
+        }
+
+        // 유효 범위 내 여부
+        result.inValidRange = activityDays >= minimumDays && activityDays <= maximumDays;
 
         return result;
     }
@@ -732,6 +826,8 @@ class FlightRequestUtils {
                 'Enhanced activity date validation',
                 'Required return date validation', // 🆕 v8.3.0
                 'Real-time constraint checking',   // 🆕 v8.3.0
+                'Maximum activity days validation', // 🆕 v8.5.0
+                'Complete activity range checking', // 🆕 v8.5.0
                 'Debounce utility',
                 'Icon refresh utility',
                 'Safe date value getter',
@@ -772,6 +868,15 @@ class FlightRequestUtils {
 
     static validateMinimumActivityDays(activityDays, requiredDays = 180) {
         return new FlightRequestUtils().validateMinimumActivityDays(activityDays, requiredDays);
+    }
+
+    // 🆕 v8.5.0: 최대 활동일 검증 Static 메서드 추가
+    static validateMaximumActivityDays(activityDays, maximumDays = 210) {
+        return new FlightRequestUtils().validateMaximumActivityDays(activityDays, maximumDays);
+    }
+
+    static validateActivityDaysRange(activityDays, minimumDays = 180, maximumDays = 210) {
+        return new FlightRequestUtils().validateActivityDaysRange(activityDays, minimumDays, maximumDays);
     }
 
     // 🆕 v8.3.0: 귀국 필수 완료일 관련 Static 메서드들
@@ -822,10 +927,11 @@ window.FlightRequestUtils = FlightRequestUtils;
 // 인스턴스 생성 및 전역 변수 설정
 window.flightRequestUtils = new FlightRequestUtils();
 
-console.log('✅ FlightRequestUtils v8.3.0 로드 완료 - 귀국 필수 완료일 제약사항 기능 추가');
-console.log('🆕 v8.3.0 새로운 기능:', {
-    requiredReturnDate: '개인별 귀국 필수 완료일 검증',
-    realTimeValidation: '실시간 제약사항 검사',
-    statusMessages: '상태별 안내 메시지',
-    integrationFeatures: '통합 검증 시스템'
+console.log('✅ FlightRequestUtils v8.5.0 로드 완료 - 최대 활동일 초과 검증 기능 추가');
+console.log('🆕 v8.5.0 새로운 기능:', {
+    maximumActivityDaysValidation: '사용자별 maximum_allowed_days 검증',
+    completeRangeChecking: '최소/최대 활동일 통합 검증',
+    exceedsMaximumFlag: '최대 활동일 초과 감지',
+    enhancedWarnings: '범위별 세분화된 경고 메시지',
+    userSpecificLimits: '개인별 설정값 정확 반영'
 });
