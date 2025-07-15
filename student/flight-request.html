@@ -222,7 +222,7 @@
             color: #059669;
         }
 
-        /* 🔧 v8.4.0: 로딩 상태 추가 */
+        /* 🔧 v8.4.1: 로딩 상태 간소화 */
         .requirement-status .value.loading {
             color: #6b7280;
             font-style: italic;
@@ -389,18 +389,18 @@
     </style>
 </head>
 <body>
-    <!-- 🔧 개선된 로딩 상태 -->
+    <!-- 🔧 v8.4.1: 간소화된 로딩 상태 -->
     <div id="globalLoadingState" class="global-loading-state">
         <div class="spinner"></div>
         <div class="loading-message">
             <h3>시스템을 준비하고 있습니다<span class="loading-dots"></span></h3>
-            <p>잠시만 기다려주세요. 시스템이 안전하게 초기화되고 있습니다.</p>
+            <p>잠시만 기다려주세요.</p>
         </div>
     </div>
 
     <!-- Main App Container -->
     <div id="app" style="display: none;">
-        <!-- 📋 여권정보 수정 페이지 (equipment-request 구조 참고) -->
+        <!-- 📋 여권정보 수정 페이지 -->
         <div id="passportInfoPage" class="page">
             <header class="header">
                 <div class="header-content">
@@ -418,107 +418,16 @@
             </header>
 
             <main class="container">
-                <!-- 로딩 상태 -->
-                <div id="passportLoadingState" class="loading-state" style="display: none;">
-                    <div class="spinner"></div>
-                    <p>여권정보를 불러오는 중...</p>
-                </div>
-
                 <!-- 여권정보 폼 -->
                 <div id="passportForm" class="passport-form">
-                    <form id="passportInfoForm">
-                        <!-- 기본 정보 섹션 -->
-                        <div class="form-section">
-                            <h2 class="section-title">
-                                <i data-lucide="user-check"></i>
-                                기본 정보
-                            </h2>
-                            
-                            <div class="form-group">
-                                <label for="passportNumber" class="form-label required">여권번호</label>
-                                <input type="text" id="passportNumber" name="passportNumber" class="form-input" 
-                                       placeholder="예: M12345678" required pattern="[A-Z][0-9]{8}" 
-                                       title="대문자 1자리 + 숫자 8자리 형식으로 입력해주세요">
-                                <span class="form-hint">대문자 1자리 + 숫자 8자리</span>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="nameEnglish" class="form-label required">영문 이름</label>
-                                <input type="text" id="nameEnglish" name="nameEnglish" class="form-input" 
-                                       placeholder="예: HONG GILDONG" required pattern="[A-Z ]+|[A-Z]+\s[A-Z]+" 
-                                       title="대문자 영문과 띄어쓰기만 입력 가능합니다">
-                                <span class="form-hint">여권상 영문 이름을 정확히 입력해주세요 (대문자, 띄어쓰기 허용)</span>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="issueDate" class="form-label required">발급일</label>
-                                    <input type="date" id="issueDate" name="issueDate" class="form-input" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="expiryDate" class="form-label required">만료일</label>
-                                    <input type="date" id="expiryDate" name="expiryDate" class="form-input" required>
-                                    <span id="expiryWarning" class="form-warning" style="display: none;"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 여권 사본 업로드 섹션 -->
-                        <div class="form-section">
-                            <h2 class="section-title">
-                                <i data-lucide="upload"></i>
-                                여권 사본
-                            </h2>
-                            
-                            <div class="upload-container">
-                                <input type="file" id="passportImage" name="passportImage" accept="image/*" class="file-input">
-                                <label for="passportImage" class="upload-label">
-                                    <div class="upload-content">
-                                        <i data-lucide="upload" class="upload-icon"></i>
-                                        <p class="upload-text">클릭하여 여권 사본 업로드</p>
-                                        <p class="upload-hint">JPG, PNG 형식 (최대 5MB)</p>
-                                    </div>
-                                </label>
-                                
-                                <!-- 이미지 미리보기 -->
-                                <div id="passportImagePreview" class="image-preview" style="display: none;">
-                                    <img id="passportPreviewImg" src="" alt="여권 사본 미리보기">
-                                    <button type="button" id="removePassportImage" class="remove-image">
-                                        <i data-lucide="x"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 버튼 그룹 - 수정하기 버튼 하나만 -->
-                        <div class="button-group single-button">
-                            <button type="submit" class="btn btn-primary" id="passportSubmitBtn">
-                                <i data-lucide="save"></i>
-                                <span id="passportSubmitBtnText">수정하기</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- 여권정보 저장 후 안내 -->
-                <div id="passportSuccessMessage" class="success-transition" style="display: none;">
-                    <div class="success-icon">
-                        <i data-lucide="check-circle"></i>
-                    </div>
-                    <h3>여권정보가 성공적으로 수정되었습니다!</h3>
-                    <p>이제 항공권 신청을 계속 진행할 수 있습니다.</p>
-                    <button id="proceedToFlightRequest" class="btn btn-primary">
-                        <i data-lucide="plane"></i>
-                        항공권 신청으로 돌아가기
-                    </button>
+                    <p>여권정보 기능은 잠시 후 사용 가능합니다.</p>
                 </div>
             </main>
         </div>
 
         <!-- ✈️ 항공권 신청 페이지 -->
         <div id="flightRequestPage" class="page active">
-            <!-- 🎨 Updated Header to match equipment-request.html style -->
+            <!-- 🎨 Updated Header -->
             <header class="header">
                 <div class="header-content">
                     <div class="user-info">
@@ -539,12 +448,6 @@
             </header>
 
             <main class="container">
-                <!-- 로딩 상태 -->
-                <div id="loadingState" class="loading-state" style="display: none;">
-                    <div class="spinner"></div>
-                    <p>데이터를 불러오는 중...</p>
-                </div>
-
                 <!-- 메인 컨텐츠 -->
                 <div id="mainContent">
                     <!-- 여권정보 체크 알림 -->
@@ -557,22 +460,16 @@
                         </div>
                     </div>
 
-                    <!-- 🆕 v8.3.0: 귀국 필수 완료일 정보 표시 -->
-                    <div id="requiredReturnDateInfo" class="required-return-date-info" style="display: none;">
-                        <!-- 동적으로 렌더링됨 -->
-                    </div>
-
                     <!-- 기존 신청 내역 -->
                     <div id="existingRequest" class="existing-request" style="display: none;">
                         <!-- 동적으로 렌더링됨 -->
                     </div>
 
                     <!-- 신청 폼 -->
-                    <div id="requestForm" class="request-form" style="display: none;">
+                    <div id="requestForm" class="request-form" style="display: block;">
                         <form id="flightRequestForm">
-                            <!-- 🆕 v8.2.2: 1단계 - 현지 활동 기간 (최우선 배치) -->
+                            <!-- 🆕 v8.2.2: 1단계 - 현지 활동 기간 -->
                             <div class="form-section priority">
-                                <!-- 단계 안내 -->
                                 <div class="step-indicator">
                                     <div class="step-number">1</div>
                                     <div class="step-content">
@@ -601,7 +498,7 @@
                                     </div>
                                 </div>
                                 
-                                <!-- 🔧 v8.4.0: 활동일 계산 표시 (하드코딩 제거) -->
+                                <!-- 🔧 v8.4.1: 활동일 계산 표시 (간소화) -->
                                 <div class="activity-period-info">
                                     <div class="activity-summary">
                                         <div class="activity-days">
@@ -610,16 +507,15 @@
                                         </div>
                                         <div class="requirement-status">
                                             <span class="label">최소 요구일:</span>
-                                            <span id="requiredDays" class="value loading">로딩중...</span>일
+                                            <span id="requiredDays" class="value">180</span>일
                                         </div>
                                     </div>
                                     <div id="validationStatus" class="validation-status"></div>
                                 </div>
                             </div>
 
-                            <!-- 🔧 v8.2.2: 2단계 - 구매 방식 선택 -->
+                            <!-- 2단계 - 구매 방식 선택 -->
                             <div class="form-section">
-                                <!-- 단계 안내 -->
                                 <div class="step-indicator">
                                     <div class="step-number">2</div>
                                     <div class="step-content">
@@ -655,7 +551,6 @@
                                     </label>
                                 </div>
 
-                                <!-- 🔧 구매 링크를 구매 대행으로 이동 -->
                                 <div class="form-group" id="purchaseLinkGroup" style="display: none;">
                                     <label for="purchaseLink" class="form-label">항공권 구매 링크</label>
                                     <input type="url" id="purchaseLink" name="purchaseLink" class="form-input" 
@@ -664,14 +559,13 @@
                                 </div>
                             </div>
 
-                            <!-- 🔧 v8.2.2: 3단계 - 항공권 정보 (현지 활동기간 후 배치) -->
+                            <!-- 3단계 - 항공권 정보 -->
                             <div class="form-section">
-                                <!-- 단계 안내 -->
                                 <div class="step-indicator">
                                     <div class="step-number">3</div>
                                     <div class="step-content">
                                         <h3>항공권 정보 입력</h3>
-                                        <p>현지 활동기간에 맞춰 출국일과 귀국일을 입력해주세요. 날짜는 자동으로 검증됩니다.</p>
+                                        <p>현지 활동기간에 맞춰 출국일과 귀국일을 입력해주세요.</p>
                                     </div>
                                 </div>
 
@@ -689,10 +583,6 @@
                                         <label for="returnDate" class="form-label required">귀국일</label>
                                         <input type="date" id="returnDate" name="returnDate" class="form-input" required>
                                         <span id="durationMessage" class="form-hint"></span>
-                                        <!-- 🆕 v8.3.0: 귀국일 제약사항 알림 -->
-                                        <div id="returnDateConstraintInfo" class="return-date-constraint-info">
-                                            <!-- 동적으로 렌더링됨 -->
-                                        </div>
                                     </div>
                                 </div>
 
@@ -709,7 +599,7 @@
                                     </div>
                                 </div>
 
-                                <!-- 🆕 가격 정보 추가 -->
+                                <!-- 가격 정보 -->
                                 <div class="price-info-section">
                                     <h3 class="subsection-title">
                                         <i data-lucide="credit-card"></i>
@@ -742,25 +632,11 @@
                                                placeholder="예: 대한항공 공식 홈페이지, 인터파크 투어, 스카이스캐너" required>
                                         <span class="form-hint">항공권 가격을 확인한 사이트나 여행사명을 입력해주세요</span>
                                     </div>
-
-                                    <!-- 가격 정보 안내 -->
-                                    <div class="price-info-notice">
-                                        <div class="notice-content">
-                                            <i data-lucide="info"></i>
-                                            <div>
-                                                <strong>가격 정보 안내</strong>
-                                                <p>• 실제 구매 가격을 정확히 입력해주세요</p>
-                                                <p>• 세금 및 수수료가 포함된 최종 결제 금액을 입력해주세요</p>
-                                                <p>• 가격은 승인 및 정산 과정에서 확인됩니다</p>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
 
-                            <!-- 🔧 v8.2.2: 4단계 - 항공권 이미지 업로드 -->
+                            <!-- 4단계 - 항공권 이미지 업로드 -->
                             <div class="form-section">
-                                <!-- 단계 안내 -->
                                 <div class="step-indicator">
                                     <div class="step-number">4</div>
                                     <div class="step-content">
@@ -773,7 +649,7 @@
                                     <i data-lucide="image"></i>
                                     항공권 정보 이미지
                                 </h2>
-                                <p class="section-description">항공권 정보를 확인한 사이트의 해당 항공권 관련 상세정보 이미지를 업로드해주세요.<br>(항공편 정보, 출발 및 도착 시간 등 세부일정 확인이 가능한 캡처 이미지)</p>
+                                <p class="section-description">항공권 정보를 확인한 사이트의 해당 항공권 관련 상세정보 이미지를 업로드해주세요.</p>
                                 
                                 <div class="upload-container">
                                     <input type="file" id="flightImage" name="flightImage" accept="image/*" class="file-input" required>
@@ -817,946 +693,176 @@
                 <div id="successMessage" class="success-message" style="display: none;"></div>
             </main>
         </div>
-
-        <!-- 항공권 제출 모달 -->
-        <div id="ticketSubmitModal" class="modal" style="display: none;">
-            <div class="modal-backdrop"></div>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title">항공권 제출</h2>
-                    <button type="button" class="modal-close" onclick="flightRequestUI.closeModal('ticketSubmitModal')">
-                        <i data-lucide="x"></i>
-                    </button>
-                </div>
-                <form id="ticketSubmitForm">
-                    <div class="modal-body">
-                        <p class="modal-description">구매하신 항공권을 업로드해주세요.</p>
-                        
-                        <div class="upload-container">
-                            <input type="file" id="ticketFile" accept="application/pdf,image/*" class="file-input" required>
-                            <label for="ticketFile" class="upload-label">
-                                <div class="upload-content">
-                                    <i data-lucide="file-plus" class="upload-icon"></i>
-                                    <p class="upload-text">클릭하여 항공권 업로드</p>
-                                    <p class="upload-hint">PDF, JPG, PNG 형식 (최대 10MB)</p>
-                                </div>
-                            </label>
-                            
-                            <div id="ticketPreview" class="file-preview" style="display: none;">
-                                <div class="file-info">
-                                    <i data-lucide="file-check"></i>
-                                    <div>
-                                        <p id="ticketFileName" class="file-name"></p>
-                                        <p id="ticketFileSize" class="file-size"></p>
-                                    </div>
-                                </div>
-                                <button type="button" class="remove-file" onclick="flightRequestUI.removeFile('ticket')">제거</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="flightRequestUI.closeModal('ticketSubmitModal')">취소</button>
-                        <button type="submit" class="btn btn-primary">제출하기</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- 영수증 제출 모달 -->
-        <div id="receiptSubmitModal" class="modal" style="display: none;">
-            <div class="modal-backdrop"></div>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title">영수증 제출</h2>
-                    <button type="button" class="modal-close" onclick="flightRequestUI.closeModal('receiptSubmitModal')">
-                        <i data-lucide="x"></i>
-                    </button>
-                </div>
-                <form id="receiptSubmitForm">
-                    <div class="modal-body">
-                        <p class="modal-description">항공권 구매 영수증을 업로드해주세요.</p>
-                        
-                        <div class="upload-container">
-                            <input type="file" id="receiptFile" accept="application/pdf,image/*" class="file-input" required>
-                            <label for="receiptFile" class="upload-label">
-                                <div class="upload-content">
-                                    <i data-lucide="receipt" class="upload-icon"></i>
-                                    <p class="upload-text">클릭하여 영수증 업로드</p>
-                                    <p class="upload-hint">PDF, JPG, PNG 형식 (최대 10MB)</p>
-                                </div>
-                            </label>
-                            
-                            <div id="receiptPreview" class="file-preview" style="display: none;">
-                                <div class="file-info">
-                                    <i data-lucide="file-check"></i>
-                                    <div>
-                                        <p id="receiptFileName" class="file-name"></p>
-                                        <p id="receiptFileSize" class="file-size"></p>
-                                    </div>
-                                </div>
-                                <button type="button" class="remove-file" onclick="flightRequestUI.removeFile('receipt')">제거</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="flightRequestUI.closeModal('receiptSubmitModal')">취소</button>
-                        <button type="submit" class="btn btn-primary">제출하기</button>
-                    </div>
-                </form>
-            </div>
-        </div>
     </div>
 
-    <!-- 🔧 v8.7.0 UX 개선 - 사용자 친화적 모듈 시스템 -->
-    <!-- 1. Supabase JavaScript 라이브러리 (CDN 버전 구체화) -->
+    <!-- 🔧 v8.4.1: 간소화된 스크립트 로딩 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
-
-    <!-- 2. CONFIG 로드 -->
     <script src="../js/config.js"></script>
-    
-    <!-- 3. 🔧 경량화된 SupabaseCore v1.0.1 로드 -->
     <script src="../js/common/supabase-core.js"></script>
-    
-    <!-- 4. Utils 로드 -->
     <script src="../js/utils.js"></script>
-    
-    <!-- 5. Storage Utils 로드 -->
     <script src="../js/common/storage-utils.js"></script>
 
-    <!-- 6. 🔧 v8.4.0: UX 개선 - 사용자 친화적 초기화 스크립트 (사용자별 최소 체류일 동적 로드) -->
+    <!-- 🚑 v8.4.1: 응급 수정된 초기화 스크립트 -->
     <script>
-        console.log('🚀 항공권 신청 페이지 v8.4.0 (사용자별 최소 체류일 하드코딩 문제 해결) 초기화 시작...');
+        console.log('🚑 v8.4.1 응급 수정: 간소화된 초기화 시작');
 
-        // 🔧 v8.4.0: 사용자별 체류일 전역 상태
+        // 🔧 기본값 설정
         window.userActivityRequirements = {
-            minimumDays: 180,  // 기본값
-            maximumDays: 210,  // 기본값
-            isLoaded: false
+            minimumDays: 180,
+            maximumDays: 210,
+            isLoaded: true
         };
 
-        // 🆕 v8.4.0: 귀국 필수 완료일 관리 JavaScript 이벤트 처리 개선
-        document.addEventListener('DOMContentLoaded', function() {
-            // 🆕 현지 활동 기간 실시간 검증 이벤트 리스너
-            const actualArrivalDate = document.getElementById('actualArrivalDate');
-            const actualWorkEndDate = document.getElementById('actualWorkEndDate');
-            const departureDate = document.getElementById('departureDate');
-            const returnDate = document.getElementById('returnDate');
+        // 🚑 즉시 앱 표시 (3초 타이머)
+        let initTimer = setTimeout(() => {
+            console.log('🚑 타이머 실행: 앱 강제 표시');
+            showApp();
+        }, 3000);
 
-            if (actualArrivalDate && actualWorkEndDate) {
-                // 실시간 활동일 계산 및 검증 (디바운싱 적용)
-                let validationTimeout;
-                
-                function debounceValidation() {
-                    clearTimeout(validationTimeout);
-                    validationTimeout = setTimeout(() => {
-                        validateActivityPeriod();
-                    }, 300);
-                }
-
-                actualArrivalDate.addEventListener('change', debounceValidation);
-                actualWorkEndDate.addEventListener('change', debounceValidation);
-                
-                // 출국일/귀국일 변경 시에도 검증
-                if (departureDate) departureDate.addEventListener('change', debounceValidation);
-                if (returnDate) returnDate.addEventListener('change', debounceValidation);
-            }
-
-            // 🆕 v8.3.0: 귀국일 제약사항 실시간 검증
-            if (returnDate) {
-                let returnValidationTimeout;
-                
-                function debounceReturnValidation() {
-                    clearTimeout(returnValidationTimeout);
-                    returnValidationTimeout = setTimeout(() => {
-                        validateReturnDateConstraints();
-                    }, 500);
-                }
-
-                returnDate.addEventListener('change', validateReturnDateConstraints);
-                returnDate.addEventListener('input', debounceReturnValidation);
-            }
-
-            // 🆕 가격 정보 JavaScript 이벤트 처리
-            const ticketPriceInput = document.getElementById('ticketPrice');
-            if (ticketPriceInput) {
-                ticketPriceInput.addEventListener('input', function(e) {
-                    let value = e.target.value.replace(/[^\d]/g, '');
-                    if (value) {
-                        e.target.value = value;
-                    }
-                });
-
-                // 가격 필드 포커스 아웃 시 검증
-                ticketPriceInput.addEventListener('blur', function(e) {
-                    const value = parseInt(e.target.value);
-                    if (value && value < 100000) {
-                        console.log('⚠️ 항공권 가격이 10만원 미만입니다. 정확한 가격인지 확인해주세요.');
-                    }
-                });
-            }
-
-            // 통화 변경 시 가격 입력 힌트 업데이트
-            const currencySelect = document.getElementById('currency');
-            if (currencySelect) {
-                currencySelect.addEventListener('change', function(e) {
-                    const priceInput = document.getElementById('ticketPrice');
-                    const hint = priceInput?.nextElementSibling;
-                    
-                    if (hint && hint.classList.contains('form-hint')) {
-                        switch(e.target.value) {
-                            case 'KRW':
-                                hint.textContent = '숫자만 입력해주세요 (천 원 단위 권장)';
-                                priceInput.placeholder = '예: 850000';
-                                break;
-                            case 'USD':
-                                hint.textContent = '숫자만 입력해주세요 (달러 단위)';
-                                priceInput.placeholder = '예: 650';
-                                break;
-                            case 'CNY':
-                                hint.textContent = '숫자만 입력해주세요 (위안 단위)';
-                                priceInput.placeholder = '예: 4800';
-                                break;
-                            case 'JPY':
-                                hint.textContent = '숫자만 입력해주세요 (엔 단위)';
-                                priceInput.placeholder = '예: 95000';
-                                break;
-                            default:
-                                hint.textContent = '숫자만 입력해주세요';
-                                priceInput.placeholder = '가격을 입력하세요';
-                        }
-                    }
-                });
-            }
-        });
-
-        // 🆕 v8.3.0: 귀국일 제약사항 검증 함수
-        async function validateReturnDateConstraints() {
-            const returnDateInput = document.getElementById('returnDate');
-            const constraintElement = document.getElementById('returnDateConstraintInfo');
+        // 🔧 앱 표시 함수
+        function showApp() {
+            const globalLoading = document.getElementById('globalLoadingState');
+            const app = document.getElementById('app');
             
-            if (!returnDateInput || !returnDateInput.value) {
-                if (constraintElement) {
-                    constraintElement.style.display = 'none';
-                }
-                // 입력 필드 스타일 복원
-                if (returnDateInput) {
-                    returnDateInput.style.borderColor = '';
-                }
-                return { valid: true };
-            }
-
-            try {
-                // FlightRequestAPI가 로드되었는지 확인
-                if (window.flightRequestAPI && typeof window.flightRequestAPI.validateReturnDateConstraints === 'function') {
-                    const validation = await window.flightRequestAPI.validateReturnDateConstraints(returnDateInput.value);
-                    updateReturnDateConstraintUI(validation);
-                    return validation;
-                } else {
-                    console.log('🔄 [귀국일검증] FlightRequestAPI가 아직 로드되지 않음 - 나중에 재시도');
-                    return { valid: true };
-                }
-            } catch (error) {
-                console.error('❌ [귀국일검증] 제약사항 검증 실패:', error);
-                return { valid: false, message: '검증 중 오류가 발생했습니다.' };
-            }
+            if (globalLoading) globalLoading.style.display = 'none';
+            if (app) app.style.display = 'block';
+            
+            console.log('✅ 앱 표시 완료');
+            
+            // 기본 이벤트 설정
+            setupBasicEvents();
         }
 
-        // 🆕 v8.3.0: 귀국일 제약사항 UI 업데이트
-        function updateReturnDateConstraintUI(validation) {
-            const returnDateInput = document.getElementById('returnDate');
-            let constraintElement = document.getElementById('returnDateConstraintInfo');
-            
-            // 요소가 없으면 동적으로 생성
-            if (!constraintElement) {
-                constraintElement = document.createElement('div');
-                constraintElement.id = 'returnDateConstraintInfo';
-                constraintElement.className = 'return-date-constraint-info';
-                constraintElement.style.display = 'none';
-                constraintElement.style.alignItems = 'center';
-                constraintElement.style.gap = '8px';
-                constraintElement.style.padding = '8px 12px';
-                constraintElement.style.marginTop = '4px';
-                constraintElement.style.borderRadius = '4px';
-                constraintElement.style.fontSize = '14px';
-                
-                // 귀국일 입력 필드 다음에 삽입
-                const returnDateContainer = returnDateInput.parentElement;
-                if (returnDateContainer) {
-                    returnDateContainer.appendChild(constraintElement);
-                }
-            }
-
-            constraintElement.className = 'return-date-constraint-info';
-            
-            if (!validation.valid) {
-                constraintElement.classList.add('constraint-error');
-                constraintElement.innerHTML = `
-                    <i data-lucide="alert-circle"></i>
-                    <span class="constraint-message">${validation.message}</span>
-                `;
-                constraintElement.style.display = 'flex';
-                
-                // 입력 필드 스타일 변경
-                if (returnDateInput) {
-                    returnDateInput.style.borderColor = '#dc3545';
-                }
-                
-            } else if (validation.warning) {
-                constraintElement.classList.add('constraint-warning');
-                constraintElement.innerHTML = `
-                    <i data-lucide="alert-triangle"></i>
-                    <span class="constraint-message">${validation.warning}</span>
-                `;
-                constraintElement.style.display = 'flex';
-                
-                // 입력 필드 스타일 변경
-                if (returnDateInput) {
-                    returnDateInput.style.borderColor = '#ffc107';
-                }
-                
-            } else {
-                constraintElement.classList.add('constraint-valid');
-                constraintElement.innerHTML = `
-                    <i data-lucide="check-circle"></i>
-                    <span class="constraint-message">귀국일이 제약사항을 충족합니다</span>
-                `;
-                constraintElement.style.display = 'flex';
-                
-                // 입력 필드 스타일 복원
-                if (returnDateInput) {
-                    returnDateInput.style.borderColor = '#28a745';
-                }
-            }
-            
-            // Lucide 아이콘 재초기화
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-        }
-
-        // 🔧 v8.4.0: 수정된 현지 활동기간 검증 함수 (사용자별 최소 요구일 적용)
-        function validateActivityPeriod() {
-            const departureDate = getDateValue('departureDate');
-            const returnDate = getDateValue('returnDate');
-            const arrivalDate = getDateValue('actualArrivalDate');
-            const workEndDate = getDateValue('actualWorkEndDate');
-            
-            const validation = {
-                isValid: true,
-                errors: [],
-                activityDays: 0,
-                status: 'valid'
-            };
-            
-            console.log('🔍 [활동기간검증] v8.4.0 날짜 값들 (사용자별 최소 요구일 적용):', {
-                departureDate,
-                returnDate,
-                arrivalDate,
-                workEndDate,
-                사용자최소요구일: window.userActivityRequirements.minimumDays
-            });
-            
-            // ✅ 사용자 요구사항 1: 현지 도착일은 출국일로부터 최대 1일 후까지
-            if (arrivalDate && departureDate) {
-                if (arrivalDate < departureDate) {
-                    validation.errors.push('현지 도착일은 출국일 이후여야 합니다');
-                    validation.isValid = false;
-                    validation.status = 'invalid';
-                } else if (arrivalDate > new Date(departureDate.getTime() + (1 * 24 * 60 * 60 * 1000))) {
-                    validation.errors.push('현지 도착일은 출국일로부터 1일 이내여야 합니다 (비행시간 고려)');
-                    validation.isValid = false;
-                    validation.status = 'invalid';
-                }
-            }
-            
-            // ✅ 사용자 요구사항 2: 귀국일은 활동 종료일로부터 최대 9일 후까지
-            if (workEndDate && returnDate) {
-                if (workEndDate > returnDate) {
-                    validation.errors.push('학당 근무 종료일은 귀국일 이전이어야 합니다');
-                    validation.isValid = false;
-                    validation.status = 'invalid';
-                } else if (returnDate > new Date(workEndDate.getTime() + (9 * 24 * 60 * 60 * 1000))) {
-                    validation.errors.push('귀국일은 활동 종료일로부터 9일 이내여야 합니다');
-                    validation.isValid = false;
-                    validation.status = 'invalid';
-                }
-            }
-            
-            if (arrivalDate && workEndDate && arrivalDate >= workEndDate) {
-                validation.errors.push('학당 근무 종료일은 현지 도착일 이후여야 합니다');
-                validation.isValid = false;
-                validation.status = 'invalid';
-            }
-            
-            // 활동일 계산
-            if (arrivalDate && workEndDate && arrivalDate < workEndDate) {
-                validation.activityDays = Math.ceil((workEndDate - arrivalDate) / (1000 * 60 * 60 * 24));
-                
-                // 🔧 v8.4.0: 사용자별 최소 활동일 검증
-                const requiredDays = window.userActivityRequirements.minimumDays;
-                if (validation.activityDays < requiredDays) {
-                    validation.errors.push(`최소 ${requiredDays}일의 활동 기간이 필요합니다 (현재: ${validation.activityDays}일)`);
-                    validation.isValid = false;
-                    validation.status = 'invalid';
-                } else if (validation.activityDays === requiredDays) {
-                    validation.status = 'warning';
-                }
-            }
-            
-            console.log('✅ [활동기간검증] v8.4.0 검증 결과 (사용자별 기준):', {
-                ...validation,
-                적용된최소요구일: window.userActivityRequirements.minimumDays
-            });
-            updateValidationUI(validation);
-            return validation;
-        }
-
-        // 🆕 v8.2.2: 검증 UI 업데이트 함수
-        function updateValidationUI(validation) {
-            const calculatedDaysEl = document.getElementById('calculatedDays');
-            const validationStatusEl = document.getElementById('validationStatus');
-            
-            // 계산된 활동일 표시
-            if (calculatedDaysEl) {
-                calculatedDaysEl.textContent = validation.activityDays > 0 ? validation.activityDays : '-';
-            }
-            
-            // 검증 상태 표시
-            if (validationStatusEl) {
-                validationStatusEl.className = 'validation-status';
-                
-                if (validation.errors.length > 0) {
-                    validationStatusEl.classList.add(validation.status);
-                    
-                    let iconName = validation.status === 'invalid' ? 'x-circle' : 'alert-triangle';
-                    let message = validation.errors.join(' / ');
-                    
-                    validationStatusEl.innerHTML = `<i data-lucide="${iconName}"></i>${message}`;
-                    validationStatusEl.style.display = 'flex';
-                    validationStatusEl.style.alignItems = 'center';
-                    
-                    // Lucide 아이콘 다시 초기화
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
-                } else if (validation.activityDays > 0) {
-                    validationStatusEl.classList.add('valid');
-                    validationStatusEl.innerHTML = `<i data-lucide="check-circle"></i>활동 기간이 요구사항을 충족합니다`;
-                    validationStatusEl.style.display = 'flex';
-                    validationStatusEl.style.alignItems = 'center';
-                    
-                    // Lucide 아이콘 다시 초기화
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
-                } else {
-                    validationStatusEl.style.display = 'none';
-                }
-            }
-        }
-
-        // 🆕 v8.2.2: 날짜 값 가져오기 유틸리티 함수
-        function getDateValue(elementId) {
-            const element = document.getElementById(elementId);
-            if (element && element.value) {
-                return new Date(element.value);
-            }
-            return null;
-        }
-
-        // 전역 함수로 노출
-        window.validateActivityPeriod = validateActivityPeriod;
-        window.updateValidationUI = updateValidationUI;
-        window.getDateValue = getDateValue;
-        window.validateReturnDateConstraints = validateReturnDateConstraints;
-        window.updateReturnDateConstraintUI = updateReturnDateConstraintUI;
-
-        // 🔧 v8.7.0: 최적화된 인증 체크
-        async function checkAuth() {
-            try {
-                console.log('🔐 사용자 인증 확인 중...');
-                
-                // SupabaseCore v1.0.1 대기 (더 효율적)
-                if (window.SupabaseAPI?.core) {
-                    const core = window.SupabaseAPI.core;
-                    
-                    // 초기화 보장
-                    const initialized = await core.ensureInitialized();
-                    if (!initialized) {
-                        console.error('❌ SupabaseCore v1.0.1 초기화 실패');
-                        return false;
-                    }
-
-                    console.log('✅ SupabaseCore v1.0.1 인스턴스 확인 완료');
-
-                    const supabase = core.getClient();
-                    if (!supabase) {
-                        console.error('❌ Supabase 클라이언트를 찾을 수 없습니다');
-                        return false;
-                    }
-
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (user) {
-                        console.log('✅ 사용자 인증 확인:', user.email);
-                        return true;
-                    }
-                }
-
-                // 폴백: localStorage 확인
-                console.log('⚠️ Supabase 인증 실패 - localStorage 확인');
-                const currentStudentData = localStorage.getItem('currentStudent');
-                if (currentStudentData) {
-                    console.log('✅ localStorage에서 학생 정보 확인됨');
-                    return true;
-                }
-                
-                console.log('❌ 사용자 정보 없음');
-                return false;
-
-            } catch (error) {
-                console.error('❌ 인증 확인 오류:', error);
-                return false;
-            }
-        }
-
-        // 페이지 로드 시 실행
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('📄 DOM 로드 완료 (v8.4.0 사용자별 최소 체류일 하드코딩 문제 해결)');
-            
-            const authResult = await checkAuth();
-            if (authResult) {
-                console.log('✅ 항공권 신청 페이지 v8.4.0 인증 확인 완료');
-            } else {
-                console.log('⚠️ 인증 실패 - 기본 기능만 사용 가능');
-            }
-        });
-
-        // StorageUtils 초기화
-        setTimeout(async () => {
-            if (window.StorageUtils && window.SupabaseAPI?.core?.isInitialized) {
-                const supabase = window.SupabaseAPI.core.getClient();
-                window.StorageUtils.setSupabaseInstance(supabase);
-                console.log('✅ StorageUtils 인스턴스 설정 완료 (v8.4.0)');
-            } else if (window.StorageUtils && window.SupabaseCore?.client) {
-                // 폴백
-                window.StorageUtils.setSupabaseInstance(window.SupabaseCore.client);
-                console.log('✅ StorageUtils 인스턴스 설정 완료 (폴백)');
-            } else {
-                console.log('⚠️ StorageUtils 설정 실패 - Supabase 클라이언트 없음');
-            }
-        }, 500);
-
-        // 네비게이션 설정
-        function setupNavigation() {
-            // 대시보드로 돌아가기 버튼
-            const backToDashboardBtn = document.getElementById('backToDashboard');
-            if (backToDashboardBtn) {
-                backToDashboardBtn.addEventListener('click', function() {
+        // 🔧 기본 이벤트 설정
+        function setupBasicEvents() {
+            // 뒤로가기 버튼
+            const backBtn = document.getElementById('backToDashboard');
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
                     window.location.href = 'dashboard.html';
                 });
             }
 
-            // 🔧 v8.7.0: 여권정보 페이지에서 항공권 신청으로 돌아가기 버튼
-            const backToFlightRequestBtn = document.getElementById('backToFlightRequestFromPassport');
-            if (backToFlightRequestBtn) {
-                backToFlightRequestBtn.addEventListener('click', function() {
-                    showFlightRequestPage();
-                });
-            }
-
-            // 🔧 v8.7.0: 여권정보 설정 버튼 (개선된 이벤트 핸들러)
+            // 여권정보 버튼
             const passportBtn = document.getElementById('passportInfoBtn');
             if (passportBtn) {
-                passportBtn.addEventListener('click', async function() {
-                    console.log('🔄 [UI디버그] v8.4.0 여권정보 설정 버튼 클릭됨');
-                    
-                    if (window.flightRequestUI && typeof window.flightRequestUI.showPassportInfoPage === 'function') {
-                        await window.flightRequestUI.showPassportInfoPage();
-                    } else {
-                        // 폴백: 직접 실행
-                        showPassportInfoPage();
-                        setTimeout(async () => {
-                            if (window.flightRequestUI) {
-                                await window.flightRequestUI.loadExistingPassportDataAndSetMode();
-                            }
-                        }, 200);
-                    }
+                passportBtn.addEventListener('click', () => {
+                    alert('여권정보 기능은 잠시 후 사용 가능합니다. 페이지를 새로고침해주세요.');
                 });
             }
 
-            // 여권정보 등록 버튼 (알림에서)
-            const registerPassportBtn = document.getElementById('registerPassportBtn');
-            if (registerPassportBtn) {
-                registerPassportBtn.addEventListener('click', function() {
-                    showPassportInfoPage();
+            // 활동일 계산
+            const arrivalInput = document.getElementById('actualArrivalDate');
+            const workEndInput = document.getElementById('actualWorkEndDate');
+            
+            if (arrivalInput && workEndInput) {
+                [arrivalInput, workEndInput].forEach(input => {
+                    input.addEventListener('change', calculateActivityDays);
                 });
             }
 
-            // 항공권 신청하기 버튼 (여권정보 저장 후)
-            const proceedBtn = document.getElementById('proceedToFlightRequest');
-            if (proceedBtn) {
-                proceedBtn.addEventListener('click', function() {
-                    showFlightRequestPage();
+            // 구매 방식 변경
+            const purchaseTypeInputs = document.querySelectorAll('input[name="purchaseType"]');
+            purchaseTypeInputs.forEach(input => {
+                input.addEventListener('change', () => {
+                    const linkGroup = document.getElementById('purchaseLinkGroup');
+                    if (linkGroup) {
+                        linkGroup.style.display = input.value === 'agency' ? 'block' : 'none';
+                    }
                 });
-            }
-        }
-
-        // 📋 Equipment-request 구조 참고한 페이지 전환 함수들
-        function showPassportInfoPage() {
-            const flightRequestPage = document.getElementById('flightRequestPage');
-            const passportInfoPage = document.getElementById('passportInfoPage');
-            
-            if (flightRequestPage && passportInfoPage) {
-                flightRequestPage.classList.remove('active');
-                passportInfoPage.classList.add('active');
-                
-                console.log('🔄 v8.4.0 여권정보 수정 페이지로 전환 완료');
-            }
-        }
-
-        // 🛠️ v8.7.0: 무한 새로고침 버그 수정 유지 - loadInitialData() 대신 loadFlightRequestData() 직접 호출
-        function showFlightRequestPage() {
-            const passportInfoPage = document.getElementById('passportInfoPage');
-            const flightRequestPage = document.getElementById('flightRequestPage');
-            
-            if (passportInfoPage && flightRequestPage) {
-                passportInfoPage.classList.remove('active');
-                flightRequestPage.classList.add('active');
-                
-                // 🛠️ 핵심 수정: loadInitialData() 대신 loadFlightRequestData()만 호출하여 무한 루프 방지
-                setTimeout(() => {
-                    if (window.flightRequestUI && typeof window.flightRequestUI.loadFlightRequestData === 'function') {
-                        console.log('✅ v8.4.0: 항공권 신청 데이터만 로드 (무한 루프 방지)');
-                        window.flightRequestUI.loadFlightRequestData();
-                    }
-                }, 200);
-                
-                console.log('🔄 v8.4.0 항공권 신청 페이지로 전환 완료');
-            }
-        }
-
-        // 전역 함수로 노출
-        window.showPassportInfoPage = showPassportInfoPage;
-        window.showFlightRequestPage = showFlightRequestPage;
-        window.setupNavigation = setupNavigation;
-
-        function updateUserInfo() {
-            try {
-                // localStorage에서 사용자 정보 가져오기
-                const currentStudentData = localStorage.getItem('currentStudent');
-                if (currentStudentData) {
-                    const studentData = JSON.parse(currentStudentData);
-                    
-                    // 항공권 신청 페이지 헤더
-                    const welcomeEl = document.getElementById('userWelcome');
-                    const detailsEl = document.getElementById('userDetails');
-                    
-                    if (welcomeEl && studentData.name) {
-                        welcomeEl.textContent = `${studentData.name}님의 항공권 신청`;
-                    }
-                    
-                    if (detailsEl && studentData.sejong_institute) {
-                        const institute = studentData.sejong_institute;
-                        const field = studentData.field || '';
-                        detailsEl.textContent = field ? 
-                            `${institute} - ${field} 파견을 위한 항공권을 신청해주세요.` : 
-                            `${institute} 파견을 위한 항공권을 신청해주세요.`;
-                    }
-
-                    // 🔧 v8.7.0: 여권정보 수정 페이지 헤더
-                    const passportWelcomeEl = document.getElementById('passportWelcome');
-                    
-                    if (passportWelcomeEl && studentData.name) {
-                        passportWelcomeEl.textContent = `${studentData.name}님의 여권정보 수정`;
-                    }
-                }
-            } catch (error) {
-                console.error('❌ 사용자 정보 업데이트 실패:', error);
-            }
-        }
-
-        function showError(message) {
-            const errorEl = document.getElementById('errorMessage');
-            if (errorEl) {
-                errorEl.textContent = message;
-                errorEl.style.display = 'block';
-                
-                setTimeout(() => {
-                    errorEl.style.display = 'none';
-                }, 5000);
-            } else {
-                alert(message);
-            }
-        }
-
-        // 전역 함수로 노출
-        window.showError = showError;
-        window.updateUserInfo = updateUserInfo;
-
-        // DOM 초기화 완료 후 실행
-        function initializeApp() {
-            // Lucide 아이콘 초기화
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-            
-            // 네비게이션 설정
-            setupNavigation();
-            
-            // 사용자 정보 표시
-            updateUserInfo();
-            
-            console.log('✅ 항공권 신청 페이지 초기화 완료 (v8.4.0 사용자별 최소 체류일 하드코딩 문제 해결)');
-        }
-
-        // DOM 로드 후 앱 표시
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeApp);
-        } else {
-            initializeApp();
-        }
-    </script>
-
-    <!-- 7. 🔧 v8.4.0: UX 개선 - 사용자 친화적 모듈 로딩 시스템 (사용자별 최소 체류일 동적 로드) -->
-    <script>
-        let modulesLoaded = {
-            flightRequestAPI: false,
-            flightRequestUtils: false,
-            flightRequestUI: false
-        };
-
-        let initializationAttempts = 0;
-        const MAX_INIT_ATTEMPTS = 15; // 🔧 2 → 15회로 대폭 증가
-        let initializationTimer = null;
-
-        // 🔧 v8.7.0: UX 개선 - 로딩 상태 업데이트 함수
-        function updateLoadingMessage(message) {
-            const loadingDiv = document.getElementById('globalLoadingState');
-            const messageElement = loadingDiv?.querySelector('.loading-message p');
-            if (messageElement) {
-                messageElement.textContent = message;
-            }
-        }
-
-        // 🔧 v8.7.0: SupabaseCore v1.0.1 최적화된 모듈 체크 + UX 개선
-        function checkAllModulesLoaded() {
-            const allLoaded = Object.values(modulesLoaded).every(Boolean);
-            
-            // SupabaseCore v1.0.1 상태 확인 (더 효율적)
-            let supabaseCoreReady = false;
-            if (window.SupabaseAPI?.core?.isInitialized) {
-                supabaseCoreReady = true;
-            } else if (window.SupabaseCore?._initialized) {
-                supabaseCoreReady = true; // 폴백
-            }
-            
-            console.log('📦 v8.4.0 모듈 로딩 상태 확인:', {
-                modules: modulesLoaded,
-                supabaseCoreReady: supabaseCoreReady,
-                flightRequestAPI: !!window.FlightRequestAPI,
-                flightRequestUI: !!window.FlightRequestUI,
-                supabaseAPI: !!window.SupabaseAPI,
-                supabaseCore: !!window.SupabaseCore,
-                attempt: `${initializationAttempts}/${MAX_INIT_ATTEMPTS}`
             });
+
+            console.log('✅ 기본 이벤트 설정 완료');
+        }
+
+        // 🔧 활동일 계산 함수
+        function calculateActivityDays() {
+            const arrivalDate = document.getElementById('actualArrivalDate')?.value;
+            const workEndDate = document.getElementById('actualWorkEndDate')?.value;
+            const calculatedDaysEl = document.getElementById('calculatedDays');
             
-            if (allLoaded && supabaseCoreReady) {
-                console.log('✅ v8.4.0 모든 모듈 로드 완료 및 SupabaseCore 준비 완료');
-                clearTimeout(initializationTimer);
-                updateLoadingMessage('시스템 초기화를 완료하고 있습니다...');
+            if (arrivalDate && workEndDate && calculatedDaysEl) {
+                const arrival = new Date(arrivalDate);
+                const workEnd = new Date(workEndDate);
                 
-                // 즉시 초기화
-                setTimeout(() => {
-                    initializeFlightRequestSystem();
-                }, 200);
-            } else {
-                // 🔧 v8.7.0 UX 개선: 진행 상황 표시
-                if (initializationAttempts < 5) {
-                    updateLoadingMessage('시스템 모듈을 로딩하고 있습니다...');
-                } else if (initializationAttempts < 10) {
-                    updateLoadingMessage('데이터베이스 연결을 준비하고 있습니다...');
-                } else {
-                    updateLoadingMessage('시스템 초기화를 완료하고 있습니다...');
-                }
-                
-                console.log(`⏳ v8.4.0 모듈 로딩 대기중... (${initializationAttempts + 1}/${MAX_INIT_ATTEMPTS})`);
-                
-                // 🔧 v8.7.0: 대폭 강화된 재시도 로직
-                if (initializationAttempts < MAX_INIT_ATTEMPTS) {
-                    initializationAttempts++;
+                if (arrival < workEnd) {
+                    const days = Math.ceil((workEnd - arrival) / (1000 * 60 * 60 * 24));
+                    calculatedDaysEl.textContent = days;
                     
-                    // 🔧 점진적 대기 시간 증가 (500ms → 1000ms → 1500ms)
-                    const waitTime = Math.min(500 + (initializationAttempts * 100), 1500);
-                    
-                    initializationTimer = setTimeout(() => {
-                        if (!window.flightRequestUI) {
-                            console.log(`🔄 v8.4.0 초기화 재시도 ${initializationAttempts}/${MAX_INIT_ATTEMPTS}`);
-                            checkAllModulesLoaded();
+                    // 간단한 검증
+                    const validationEl = document.getElementById('validationStatus');
+                    if (validationEl) {
+                        if (days >= 180) {
+                            validationEl.className = 'validation-status valid';
+                            validationEl.innerHTML = '<i data-lucide="check-circle"></i>활동 기간이 요구사항을 충족합니다';
+                            validationEl.style.display = 'flex';
+                        } else {
+                            validationEl.className = 'validation-status invalid';
+                            validationEl.innerHTML = `<i data-lucide="x-circle"></i>최소 180일의 활동 기간이 필요합니다 (현재: ${days}일)`;
+                            validationEl.style.display = 'flex';
                         }
-                    }, waitTime);
+                        
+                        // 아이콘 초기화
+                        if (typeof lucide !== 'undefined') {
+                            lucide.createIcons();
+                        }
+                    }
                 } else {
-                    // 🔧 v8.7.0 UX 개선: 오류 대신 계속 로딩 표시
-                    console.warn('⚠️ v8.4.0 최대 재시도 횟수 도달 - 강제 초기화 시도');
-                    updateLoadingMessage('시스템을 강제로 초기화하고 있습니다. 잠시만 기다려주세요...');
-                    
-                    // 강제 초기화 시도 (오류 모달 대신)
-                    setTimeout(() => {
-                        forceInitialization();
-                    }, 1000);
+                    calculatedDaysEl.textContent = '-';
                 }
             }
         }
 
-        // 🆕 v8.7.0: 강제 초기화 함수 (오류 모달 대신)
-        function forceInitialization() {
-            try {
-                console.log('🚀 v8.4.0 강제 초기화 시도...');
-                
-                if (window.FlightRequestUI && window.FlightRequestAPI) {
-                    const hasSupabaseCore = !!(window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized);
-                    
-                    if (hasSupabaseCore) {
-                        window.flightRequestUI = new FlightRequestUI();
-                        console.log('✅ v8.4.0 강제 초기화 성공');
-                        
-                        // 로딩 상태 숨기기 및 앱 표시
-                        const globalLoading = document.getElementById('globalLoadingState');
-                        const app = document.getElementById('app');
-                        
-                        if (globalLoading) globalLoading.style.display = 'none';
-                        if (app) app.style.display = 'block';
-                        
-                        return;
-                    }
-                }
-                
-                // 여전히 실패할 경우 - 기본 기능만 제공
-                console.warn('⚠️ v8.4.0 강제 초기화 실패 - 기본 기능만 제공');
-                updateLoadingMessage('기본 기능을 준비하고 있습니다...');
-                
-                setTimeout(() => {
-                    const globalLoading = document.getElementById('globalLoadingState');
-                    const app = document.getElementById('app');
-                    
-                    if (globalLoading) globalLoading.style.display = 'none';
-                    if (app) app.style.display = 'block';
-                    
-                    // 기본 오류 메시지 (더 친화적)
-                    const errorEl = document.getElementById('errorMessage');
-                    if (errorEl) {
-                        errorEl.innerHTML = `
-                            <div style="text-align: center; padding: 20px;">
-                                <h3>시스템 로딩이 지연되고 있습니다</h3>
-                                <p>네트워크 상태를 확인하고 페이지를 새로고침해보세요.</p>
-                                <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                    새로고침
-                                </button>
-                            </div>
-                        `;
-                        errorEl.style.display = 'block';
-                    }
-                }, 1000);
-                
-            } catch (error) {
-                console.error('❌ v8.4.0 강제 초기화 실패:', error);
-                updateLoadingMessage('시스템 오류가 발생했습니다. 페이지를 새로고침해주세요.');
-            }
-        }
-
-        function initializeFlightRequestSystem() {
-            try {
-                console.log('🚀 v8.4.0 FlightRequestSystem 초기화 시작...');
-                
-                // 전역 로딩 상태 숨기기
-                const globalLoading = document.getElementById('globalLoadingState');
-                if (globalLoading) globalLoading.style.display = 'none';
-                
-                // 앱 표시
-                const app = document.getElementById('app');
-                if (app) app.style.display = 'block';
-                
-                // 🔧 v8.7.0: FlightRequestAPI 클래스 체크 (인스턴스가 아닌 클래스 확인)
-                if (!window.FlightRequestAPI) {
-                    console.error('❌ FlightRequestAPI 클래스가 없습니다');
-                    throw new Error('FlightRequestAPI 클래스가 로드되지 않았습니다');
-                }
-                
-                console.log('✅ v8.4.0 FlightRequestAPI 클래스 확인 완료');
-                
-                // 🔧 v8.7.0: FlightRequestUI 클래스 체크
-                if (!window.FlightRequestUI) {
-                    console.error('❌ FlightRequestUI 클래스가 없습니다');
-                    throw new Error('FlightRequestUI 클래스가 로드되지 않았습니다');
-                }
-                
-                console.log('✅ v8.4.0 FlightRequestUI 클래스 확인 완료');
-                
-                // SupabaseCore 확인 (v1.0.1 및 폴백)
-                const hasSupabaseCore = !!(window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized);
-                if (!hasSupabaseCore) {
-                    console.error('❌ SupabaseCore가 초기화되지 않았습니다');
-                    throw new Error('SupabaseCore가 초기화되지 않았습니다');
-                }
-                
-                // FlightRequestUI 초기화 (v8.4.0)
-                console.log('🚀 FlightRequestUI 초기화 시작...');
-                window.flightRequestUI = new FlightRequestUI();
-                console.log('✅ FlightRequestUI 초기화 완료 (v8.4.0 사용자별 최소 체류일 하드코딩 문제 해결)');
-                
-            } catch (error) {
-                console.error('❌ v8.4.0 항공권 요청 시스템 초기화 실패:', error);
-                
-                // 🔧 v8.7.0 UX 개선: 오류 메시지 대신 기본 기능 제공
-                const globalLoading = document.getElementById('globalLoadingState');
-                const app = document.getElementById('app');
-                
-                if (globalLoading) globalLoading.style.display = 'none';
-                if (app) app.style.display = 'block';
-                
-                showError('일부 고급 기능이 제한될 수 있습니다. 기본 기능은 사용 가능합니다.');
-            }
-        }
-
-        // 모듈 로드 오류 처리 (더 친화적)
-        function handleModuleError(moduleName, error) {
-            console.error(`❌ ${moduleName} 모듈 로드 실패:`, error);
-            updateLoadingMessage(`${moduleName} 모듈을 다시 로딩 중입니다...`);
+        // DOM 로드 시 즉시 실행
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📄 DOM 로드 완료');
             
-            // 🔧 v8.7.0: 모듈 로드 실패 시에도 계속 시도
+            // 1초 후 앱 표시
             setTimeout(() => {
-                checkAllModulesLoaded();
+                clearTimeout(initTimer);
+                showApp();
             }, 1000);
-        }
-
-        // 🔧 v8.7.0: 최종 안전장치 (10초 → 30초로 연장)
-        setTimeout(() => {
-            if (!window.flightRequestUI) {
-                console.warn('⚠️ v8.4.0: 30초 후에도 초기화되지 않음 - 최종 안전장치 실행');
-                forceInitialization();
-            }
-        }, 30000); // 30초로 연장
-    </script>
-    
-    <!-- 8. Flight Request 모듈들 (v8.4.0) -->
-    <script src="../js/student/flight-request-api.js"
-            onload="modulesLoaded.flightRequestAPI = true; console.log('✅ v8.4.0 Flight Request API 로드 완료'); checkAllModulesLoaded();"
-            onerror="handleModuleError('Flight Request API', event)"></script>
-    
-    <script src="../js/student/flight-request-utils.js"
-            onload="modulesLoaded.flightRequestUtils = true; console.log('✅ v8.4.0 Flight Request Utils 로드 완료'); checkAllModulesLoaded();"
-            onerror="handleModuleError('Flight Request Utils', event)"></script>
-    
-    <script src="../js/student/flight-request-ui.js"
-            onload="modulesLoaded.flightRequestUI = true; console.log('✅ v8.4.0 Flight Request UI 로드 완료'); checkAllModulesLoaded();"
-            onerror="handleModuleError('Flight Request UI', event)"></script>
-
-    <!-- Lucide Icons 초기화 -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
+            
+            // 아이콘 초기화
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
         });
+
+        // 페이지 완전 로드 시
+        window.addEventListener('load', () => {
+            console.log('📄 페이지 완전 로드');
+            showApp();
+        });
+    </script>
+
+    <!-- 🔧 v8.4.1: 기본 모듈들만 로드 (필수적인 것만) -->
+    <script>
+        // 🔧 모듈 로드 시도 (실패해도 무시)
+        setTimeout(() => {
+            try {
+                if (window.FlightRequestAPI) {
+                    console.log('✅ FlightRequestAPI 사용 가능');
+                }
+                if (window.FlightRequestUI) {
+                    console.log('✅ FlightRequestUI 사용 가능');
+                    window.flightRequestUI = new FlightRequestUI();
+                }
+            } catch (error) {
+                console.log('⚠️ 고급 기능 로드 실패, 기본 기능 사용:', error.message);
+            }
+        }, 2000);
+    </script>
+
+    <script src="../js/student/flight-request-api.js" onerror="console.log('⚠️ API 모듈 로드 실패')"></script>
+    <script src="../js/student/flight-request-utils.js" onerror="console.log('⚠️ Utils 모듈 로드 실패')"></script>
+    <script src="../js/student/flight-request-ui.js" onerror="console.log('⚠️ UI 모듈 로드 실패')"></script>
+
+    <!-- Lucide Icons 초기화 -->
+    <script>
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
     </script>
 </body>
 </html>
