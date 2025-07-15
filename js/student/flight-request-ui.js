@@ -1,4 +1,10 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.2.5
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.2.6
+// 🔧 v8.2.6: 항공권 검증 로직 완전 분리 - 파견 기간 검증 제거
+// 📝 변경사항:
+//   - validateFlightDatesOnly()에서 파견 기간 검증 로직 완전 제거
+//   - 순수하게 날짜 관계만 확인하도록 변경
+//   - "파견 기간이 너무 깁니다" 메시지 제거
+//   - 100일 활동기간에 109일 체류 허용 가능
 // 🔧 v8.2.5: 항공권 검증 로직 수정 - 불필요한 활동기간 검증 제거
 // 📝 변경사항:
 //   - validateAllDates(): 항공권 검증에서 활동기간 최소/최대 검증 제거
@@ -135,7 +141,7 @@ class FlightRequestUI {
 
     async init() {
         try {
-            console.log('🔄 FlightRequestUI v8.2.5 초기화 시작 - 검증 로직 분리 구현...');
+            console.log('🔄 FlightRequestUI v8.2.6 초기화 시작 - 파견 기간 검증 제거...');
             
             // API 및 유틸리티 대기
             await this.waitForDependencies();
@@ -157,7 +163,7 @@ class FlightRequestUI {
                 this.loadInitialData();
             }, 300);
             
-            console.log('✅ FlightRequestUI v8.2.5 초기화 완료 - 검증 로직 분리 구현');
+            console.log('✅ FlightRequestUI v8.2.6 초기화 완료 - 파견 기간 검증 제거');
             
             this.isInitialized = true;
         } catch (error) {
@@ -178,7 +184,7 @@ class FlightRequestUI {
                 if (apiExists && apiInitialized && utilsReady) {
                     this.api = window.flightRequestAPI;
                     this.utils = window.FlightRequestUtils;
-                    console.log('✅ FlightRequestUI v8.2.5 의존성 로드 완료');
+                    console.log('✅ FlightRequestUI v8.2.6 의존성 로드 완료');
                     resolve();
                     return;
                 }
@@ -236,7 +242,7 @@ class FlightRequestUI {
             }
         });
 
-        console.log('✅ [전제조건] v8.2.5: 전제 조건 시스템 이벤트 설정 완료');
+        console.log('✅ [전제조건] v8.2.6: 전제 조건 시스템 이벤트 설정 완료');
     }
 
     // 🚀 v8.2.4: 현지 활동기간 완료 여부 확인
@@ -255,7 +261,7 @@ class FlightRequestUI {
             this.isActivityPeriodValid = false;
         }
         
-        console.log('🔍 [전제조건] v8.2.5: 현지 활동기간 완료 여부 확인:', {
+        console.log('🔍 [전제조건] v8.2.6: 현지 활동기간 완료 여부 확인:', {
             완료여부: this.isActivityPeriodCompleted,
             유효여부: this.isActivityPeriodValid,
             사용자요구사항로드됨: this.isUserActivityRequirementsLoaded,
@@ -293,7 +299,7 @@ class FlightRequestUI {
             // 비활성화 안내 메시지 숨김
             this.hideFlightSectionNotice();
             
-            console.log('✅ [전제조건] v8.2.5: 항공권 정보 섹션 활성화');
+            console.log('✅ [전제조건] v8.2.6: 항공권 정보 섹션 활성화');
         } else {
             // 비활성화
             flightSection.classList.add('section-disabled');
@@ -303,7 +309,7 @@ class FlightRequestUI {
             // 비활성화 안내 메시지 표시
             this.showFlightSectionNotice();
             
-            console.log('❌ [전제조건] v8.2.5: 항공권 정보 섹션 비활성화');
+            console.log('❌ [전제조건] v8.2.6: 항공권 정보 섹션 비활성화');
         }
         
         // 항공권 입력 필드들 활성화/비활성화
@@ -403,7 +409,7 @@ class FlightRequestUI {
                 throw new Error('API가 초기화되지 않았습니다.');
             }
 
-            console.log('🔄 [활동요구사항] v8.2.5: 사용자별 최소/최대 체류일 로드 시작...');
+            console.log('🔄 [활동요구사항] v8.2.6: 사용자별 최소/최대 체류일 로드 시작...');
 
             const activityData = await this.api.getUserProfileActivityDates();
             
@@ -411,7 +417,7 @@ class FlightRequestUI {
                 this.userRequiredDays = activityData.minimum_required_days;
                 this.userMaximumDays = activityData.maximum_allowed_days;
                 
-                console.log('✅ [활동요구사항] v8.2.5: 사용자별 체류일 로드 완료:', {
+                console.log('✅ [활동요구사항] v8.2.6: 사용자별 체류일 로드 완료:', {
                     사용자ID: this.userProfile?.id || 'unknown',
                     최소요구일: this.userRequiredDays,
                     최대허용일: this.userMaximumDays
@@ -422,7 +428,7 @@ class FlightRequestUI {
                     this.userRequiredDays = requirements.minimumDays;
                     this.userMaximumDays = requirements.maximumDays;
                     
-                    console.log('✅ [활동요구사항] v8.2.5: API 기본값 로드 완료:', {
+                    console.log('✅ [활동요구사항] v8.2.6: API 기본값 로드 완료:', {
                         최소요구일: this.userRequiredDays,
                         최대허용일: this.userMaximumDays,
                         데이터소스: requirements.source
@@ -445,7 +451,7 @@ class FlightRequestUI {
             return true;
 
         } catch (error) {
-            console.error('❌ [활동요구사항] v8.2.5: 사용자 활동기간 요구사항 로드 실패:', error);
+            console.error('❌ [활동요구사항] v8.2.6: 사용자 활동기간 요구사항 로드 실패:', error);
             
             this.userRequiredDays = null;
             this.userMaximumDays = null;
@@ -472,7 +478,7 @@ class FlightRequestUI {
                 this.elements.requiredDays.textContent = this.userRequiredDays;
                 this.elements.requiredDays.className = 'value';
                 
-                console.log('✅ [활동요구사항] v8.2.5: 최소 요구일 UI 업데이트 완료:', {
+                console.log('✅ [활동요구사항] v8.2.6: 최소 요구일 UI 업데이트 완료:', {
                     요소: '#requiredDays',
                     새값: this.userRequiredDays,
                     사용자: this.userProfile?.name || 'unknown'
@@ -485,7 +491,7 @@ class FlightRequestUI {
             }, 100);
 
         } catch (error) {
-            console.error('❌ [활동요구사항] v8.2.5: 최소/최대 요구일 UI 업데이트 실패:', error);
+            console.error('❌ [활동요구사항] v8.2.6: 최소/최대 요구일 UI 업데이트 실패:', error);
         }
     }
 
@@ -522,7 +528,7 @@ class FlightRequestUI {
             });
         }
 
-        console.log('✅ [귀국일검증] v8.2.5: 귀국 필수 완료일 검증 이벤트 설정 완료');
+        console.log('✅ [귀국일검증] v8.2.6: 귀국 필수 완료일 검증 이벤트 설정 완료');
     }
 
     // 디바운스된 귀국일 검증
@@ -685,7 +691,7 @@ class FlightRequestUI {
             }
         });
 
-        console.log('✅ [활동기간검증] v8.2.5: 현지 활동기간 검증 이벤트 설정 완료');
+        console.log('✅ [활동기간검증] v8.2.6: 현지 활동기간 검증 이벤트 설정 완료');
     }
 
     // 디바운스된 활동기간 검증
@@ -699,7 +705,7 @@ class FlightRequestUI {
         }, 300);
     }
 
-    // 🔧 v8.2.5: 현지 활동기간 검증 메서드 (순수 활동기간만 검증)
+    // 🔧 v8.2.6: 현지 활동기간 검증 메서드 (순수 활동기간만 검증)
     validateActivityPeriod() {
         if (!this.utils) {
             console.warn('⚠️ [활동기간검증] Utils가 준비되지 않음');
@@ -714,7 +720,7 @@ class FlightRequestUI {
         const arrivalDate = this.elements.actualArrivalDate?.value;
         const workEndDate = this.elements.actualWorkEndDate?.value;
 
-        console.log('🔍 [활동기간검증] v8.2.5 순수 활동기간 검증 시작:', {
+        console.log('🔍 [활동기간검증] v8.2.6 순수 활동기간 검증 시작:', {
             현지도착일: arrivalDate,
             학당근무종료일: workEndDate,
             사용자최소요구일: this.userRequiredDays,
@@ -722,7 +728,7 @@ class FlightRequestUI {
             분리된검증: '✅ 활동기간만 검증'
         });
 
-        // 🔧 v8.2.5: 순수 활동기간 검증 (항공권 날짜와 분리)
+        // 🔧 v8.2.6: 순수 활동기간 검증 (항공권 날짜와 분리)
         let validation;
         if (arrivalDate && workEndDate) {
             const activityDays = this.utils.calculateActivityDays(arrivalDate, workEndDate);
@@ -756,7 +762,7 @@ class FlightRequestUI {
             };
         }
 
-        console.log('✅ [활동기간검증] v8.2.5 순수 활동기간 검증 결과:', {
+        console.log('✅ [활동기간검증] v8.2.6 순수 활동기간 검증 결과:', {
             ...validation,
             적용된최소요구일: this.userRequiredDays,
             적용된최대허용일: this.userMaximumDays,
@@ -836,7 +842,7 @@ class FlightRequestUI {
     // 초기 데이터 로드
     async loadInitialData() {
         try {
-            console.log('🔄 [초기데이터] v8.2.5 초기 데이터 로드 시작 - 검증 로직 분리 적용');
+            console.log('🔄 [초기데이터] v8.2.6 초기 데이터 로드 시작 - 파견 기간 검증 제거');
             
             await this.ensureInitialized();
             
@@ -894,7 +900,7 @@ class FlightRequestUI {
     }
 
     showFlightRequestPageWithoutData() {
-        console.log('🔄 [초기데이터] v8.2.5 기본 항공권 신청 페이지 표시 (데이터 없음)');
+        console.log('🔄 [초기데이터] v8.2.6 기본 항공권 신청 페이지 표시 (데이터 없음)');
         
         this.showFlightRequestPage();
         this.showPassportAlert();
@@ -915,7 +921,7 @@ class FlightRequestUI {
             });
         }
 
-        // 🔧 v8.2.5: 순수 항공권 날짜 검증으로 변경
+        // 🔧 v8.2.6: 순수 항공권 날짜 검증으로 변경
         if (this.elements.departureDate) {
             this.elements.departureDate.addEventListener('change', () => this.validateFlightDatesOnly());
         }
@@ -943,7 +949,7 @@ class FlightRequestUI {
         }
     }
 
-    // 🔧 v8.2.5: 순수 항공권 날짜 관계 검증 (활동기간 검증 제외)
+    // 🔧 v8.2.6: 순수 항공권 날짜 관계 검증 (파견 기간 검증 완전 제거)
     validateFlightDatesOnly() {
         if (!this.utils) {
             console.warn('⚠️ [항공권검증] Utils가 준비되지 않음');
@@ -955,15 +961,16 @@ class FlightRequestUI {
         const actualArrivalDate = this.elements.actualArrivalDate?.value;
         const actualWorkEndDate = this.elements.actualWorkEndDate?.value;
 
-        console.log('🔍 [항공권검증] v8.2.5 순수 항공권 날짜 관계 검증 시작:', {
+        console.log('🔍 [항공권검증] v8.2.6 순수 항공권 날짜 관계 검증 시작:', {
             출국일: departureDate,
             귀국일: returnDate,
             현지도착일: actualArrivalDate,
             학당근무종료일: actualWorkEndDate,
-            분리된검증: '✅ 날짜 관계만 확인'
+            파견기간검증: '❌ 제거됨',
+            분리된검증: '✅ 순수 날짜 관계만 확인'
         });
 
-        // 🔧 v8.2.5: 기본 항공권 날짜 검증 (활동기간 최소/최대 검증 제외)
+        // 🔧 v8.2.6: 기본 항공권 날짜 검증 (파편 기간 검증 완전 제거)
         if (departureDate && returnDate) {
             const basicValidation = this.utils.validateDates(departureDate, returnDate);
             
@@ -975,25 +982,17 @@ class FlightRequestUI {
                 return false;
             }
 
-            // 파견 기간 계산 및 검증
-            const departure = new Date(departureDate);
-            const returnD = new Date(returnDate);
-            const duration = Math.ceil((returnD - departure) / (1000 * 60 * 60 * 24));
+            // 🔧 v8.2.6: 파견 기간 검증 완전 제거
+            // 이전 버전에서는 여기서 dispatch_duration 검증을 수행했지만,
+            // 완전한 검증 로직 분리를 위해 제거함
             
-            const dispatchDuration = this.userProfile?.dispatch_duration || 90;
-            const durationValidation = this.utils.validateDispatchDuration(duration, dispatchDuration);
-            
+            // 성공 시 메시지 제거
             if (this.elements.durationMessage) {
-                if (durationValidation.valid) {
-                    this.elements.durationMessage.textContent = ''; // 성공 시 메시지 없음
-                } else {
-                    this.elements.durationMessage.textContent = durationValidation.message;
-                    this.elements.durationMessage.style.color = '#dc3545';
-                }
+                this.elements.durationMessage.textContent = '';
             }
         }
 
-        // 🔧 v8.2.5: 순수 날짜 관계 검증 (2일/10일 제약)
+        // 🔧 v8.2.6: 순수 날짜 관계 검증 (2일/10일 제약)
         if (departureDate && actualArrivalDate && actualWorkEndDate && returnDate) {
             const flightValidation = this.utils.validateFlightDatesOnly(
                 departureDate, actualArrivalDate, actualWorkEndDate, returnDate
@@ -1039,12 +1038,12 @@ class FlightRequestUI {
             this.validateReturnDateConstraints();
         }
 
-        console.log('✅ [항공권검증] v8.2.5 순수 항공권 날짜 관계 검증 완료');
+        console.log('✅ [항공권검증] v8.2.6 순수 항공권 날짜 관계 검증 완료 - 파견 기간 검증 제거');
 
         return true;
     }
 
-    // 🔧 v8.2.5: 항공권 신청 제출 - 검증 로직 분리 적용
+    // 🔧 v8.2.6: 항공권 신청 제출 - 검증 로직 분리 적용
     async handleSubmit(event) {
         event.preventDefault();
 
@@ -1062,12 +1061,12 @@ class FlightRequestUI {
                 return;
             }
 
-            // 🔧 v8.2.5: 순수 항공권 날짜 관계 검증
+            // 🔧 v8.2.6: 순수 항공권 날짜 관계 검증 (파견 기간 검증 제거)
             if (!this.validateFlightDatesOnly()) {
                 return;
             }
 
-            // 🔧 v8.2.5: 활동기간 검증 (별도 수행)
+            // 🔧 v8.2.6: 활동기간 검증 (별도 수행)
             const hasActivityDates = this.elements.actualArrivalDate?.value && 
                                    this.elements.actualWorkEndDate?.value;
             
@@ -1095,10 +1094,11 @@ class FlightRequestUI {
                     return;
                 }
                 
-                console.log('✅ [제출검증] v8.2.5: 사용자별 활동일 범위 검증 통과:', {
+                console.log('✅ [제출검증] v8.2.6: 사용자별 활동일 범위 검증 통과:', {
                     활동일: activityValidation.activityDays,
                     최소요구일: this.userRequiredDays,
-                    최대허용일: this.userMaximumDays
+                    최대허용일: this.userMaximumDays,
+                    파견기간검증: '❌ 제거됨'
                 });
             }
 
@@ -1119,7 +1119,7 @@ class FlightRequestUI {
             const selectedType = Array.from(this.elements.purchaseType || [])
                 .find(radio => radio.checked)?.value || 'direct';
 
-            // 🔧 v8.2.5: 사용자별 요구사항 포함한 요청 데이터 구성
+            // 🔧 v8.2.6: 사용자별 요구사항 포함한 요청 데이터 구성
             const requestData = {
                 purchase_type: selectedType,
                 departure_date: this.elements.departureDate?.value || '',
@@ -1144,12 +1144,13 @@ class FlightRequestUI {
                 );
             }
 
-            console.log('🔍 [제출검증] v8.2.5 제출 데이터 (검증 로직 분리 적용):', {
+            console.log('🔍 [제출검증] v8.2.6 제출 데이터 (파견 기간 검증 제거):', {
                 ...requestData,
                 actual_work_days: requestData.actual_work_days,
                 hasRequiredReturnDate: this.hasRequiredReturnDate,
                 requiredReturnDate: this.requiredReturnInfo?.requiredDate,
                 검증로직분리: '✅ 완료',
+                파견기간검증: '❌ 제거됨',
                 사용자별최소요구일: this.userRequiredDays,
                 사용자별최대허용일: this.userMaximumDays
             });
@@ -1209,7 +1210,7 @@ class FlightRequestUI {
     
     showPassportInfoPage() {
         try {
-            console.log('🔄 [페이지전환] v8.2.5 여권정보 페이지 표시...');
+            console.log('🔄 [페이지전환] v8.2.6 여권정보 페이지 표시...');
             
             const flightRequestPage = document.getElementById('flightRequestPage');
             const passportInfoPage = document.getElementById('passportInfoPage');
@@ -1255,7 +1256,7 @@ class FlightRequestUI {
 
     // 🚀 v8.2.4: 성공 메시지 표시 (중요한 작업 완료 시에만)
     showSuccess(message) {
-        console.log('✅ [성공] v8.2.5:', message);
+        console.log('✅ [성공] v8.2.6:', message);
         
         // 🚀 v8.2.4: 중요한 작업 완료인 경우에만 표시
         if (message && (message.includes('성공적으로') || message.includes('완료'))) {
@@ -1279,7 +1280,7 @@ class FlightRequestUI {
     }
 
     showError(message) {
-        console.error('🚨 [오류] v8.2.5:', message);
+        console.error('🚨 [오류] v8.2.6:', message);
         
         if (this.elements.errorMessage) {
             this.elements.errorMessage.textContent = message;
@@ -1403,36 +1404,30 @@ class FlightRequestUI {
 // 전역 스코프에 노출
 window.FlightRequestUI = FlightRequestUI;
 
-console.log('✅ FlightRequestUI v8.2.5 모듈 로드 완료 - 항공권 검증 로직 분리 및 불필요한 검증 제거');
-console.log('🔧 v8.2.5 주요 수정사항:', {
-    flightValidationSeparation: {
-        description: '항공권 검증과 활동기간 검증 완전 분리',
-        flightValidation: 'validateFlightDatesOnly() - 순수 날짜 관계만 확인',
-        activityValidation: 'validateActivityPeriod() - 별도 수행',
-        result: '중복 검증 제거로 논리적 구조 개선'
+console.log('✅ FlightRequestUI v8.2.6 모듈 로드 완료 - 항공권 검증 로직 완전 분리');
+console.log('🔧 v8.2.6 핵심 수정사항:', {
+    dispatchValidationRemoval: {
+        description: '파견 기간 검증 로직 완전 제거',
+        before: 'validateFlightDatesOnly()에서 dispatch_duration 검증 수행',
+        after: '순수하게 날짜 관계만 확인하도록 변경',
+        result: '"파견 기간이 너무 깁니다" 메시지 제거'
     },
-    validationLogicSeparation: {
-        before: 'validateAllDates() - 항공권과 활동기간 검증 혼재',
-        after: 'validateFlightDatesOnly() + validateActivityPeriod() 분리 실행',
-        benefit: '검증 책임 명확히 분리하여 유지보수성 향상',
-        clarity: '각 검증의 목적과 범위 명확화'
+    validationSeparation: {
+        flight: '항공권 검증 - 순수 날짜 관계만 확인',
+        activity: '활동기간 검증 - 별도 수행',
+        dispatch: '파견 기간 검증 - 완전 제거',
+        consistency: '메서드 이름과 실제 동작 일치'
     },
-    duplicateValidationRemoval: {
-        issue: '항공권 검증에서 불필요한 활동기간 최소/최대 검증 수행',
-        solution: '항공권은 날짜 관계만, 활동기간은 별도 범위 검증',
+    problemSolution: {
+        issue: '100일 활동기간에 109일 체류 시 파견 기간 에러 발생',
+        solution: '파견 기간 검증 완전 제거로 해결',
         result: '100일 활동기간에 109일 체류 허용 가능',
-        performance: '불필요한 검증 제거로 성능 최적화'
+        userExperience: '올바른 입력 시 에러 메시지 없음'
     },
     technicalImprovements: {
-        eventListeners: 'setupEventListeners() - 검증 메서드 분리 반영',
-        handleSubmit: '제출 시 분리된 검증 로직 순차 수행',
-        errorHandling: '각 검증 단계별 명확한 에러 처리',
-        userExperience: '검증 실패 시 해당 필드로 포커스 이동'
-    },
-    codeQuality: {
-        readability: '검증 로직 가독성 대폭 향상',
-        maintainability: '각 검증의 독립성으로 유지보수 용이',
-        testability: '분리된 메서드로 단위 테스트 용이',
-        debuggability: '문제 발생 시 원인 파악 용이'
+        logicClarity: '검증 로직 명확성 대폭 향상',
+        performance: '불필요한 검증 제거로 성능 최적화',
+        maintainability: '관심사 분리로 유지보수성 향상',
+        consistency: '논리적 일관성 확보'
     }
 });
