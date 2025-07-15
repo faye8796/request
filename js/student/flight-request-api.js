@@ -180,104 +180,272 @@ class FlightRequestAPI {
         }
     }
 
-    // === 🔧 v8.8.0: 강화된 사용자 정보 관리 ===
+    // === 🔧 P1 강화: 완전 강화된 사용자 정보 관리 ===
     async getCurrentUser() {
         try {
-            console.log('🔍 [디버그] getCurrentUser() 시작...');
+            console.log('🔍 [디버그] v8.8.0 getCurrentUser() 시작 (P1 강화)...');
             await this.ensureInitialized();
 
             // 이미 사용자 정보가 있으면 반환
-            if (this.user) {
+            if (this.user && this.user.id) {
                 console.log('✅ [디버그] 캐시된 사용자 정보 사용:', {
                     id: this.user.id,
                     email: this.user.email,
-                    name: this.user.name
+                    name: this.user.name,
+                    idValidation: this.user.id.length >= 10 ? '유효' : '의심스러움'
                 });
                 return this.user;
             }
 
             console.log('🔍 [디버그] localStorage에서 사용자 정보 조회 중...');
 
-            // localStorage 전체 확인
+            // localStorage 전체 확인 (디버깅용)
             const allLocalStorageKeys = Object.keys(localStorage);
             console.log('🔍 [디버그] localStorage 키 목록:', allLocalStorageKeys);
 
-            // currentStudent 확인
-            const currentStudentData = localStorage.getItem('currentStudent');
-            console.log('🔍 [디버그] currentStudent 원본 데이터:', currentStudentData);
+            // 🔧 P1: 단순화된 사용자 정보 체크
+            const userData = localStorage.getItem('currentStudent');
+            console.log('🔍 [디버그] currentStudent 원본 데이터:', userData);
 
-            if (currentStudentData) {
+            if (userData) {
                 try {
-                    const studentData = JSON.parse(currentStudentData);
+                    const parsed = JSON.parse(userData);
                     console.log('🔍 [디버그] 파싱된 studentData:', {
-                        전체: studentData,
-                        id: studentData?.id,
-                        email: studentData?.email,
-                        name: studentData?.name,
-                        id타입: typeof studentData?.id,
-                        id길이: studentData?.id?.length
+                        전체객체: !!parsed,
+                        id존재: !!parsed?.id,
+                        id값: parsed?.id,
+                        id타입: typeof parsed?.id,
+                        id길이: parsed?.id?.length,
+                        email: parsed?.email,
+                        name: parsed?.name
                     });
 
-                    if (studentData?.id) {
-                        // 🔧 v8.8.0: 사용자 ID 유효성 검증 강화
-                        if (typeof studentData.id !== 'string' || studentData.id.length < 10) {
-                            console.warn('⚠️ [디버그] 의심스러운 사용자 ID 형식:', studentData.id);
+                    if (parsed && parsed.id) {
+                        // 🔧 P1: 사용자 ID 유효성 검증 강화
+                        const userIdValidation = this.validateUserId(parsed.id);
+                        
+                        if (!userIdValidation.valid) {
+                            console.warn('⚠️ [디버그] P1: 사용자 ID 검증 실패:', {
+                                id: parsed.id,
+                                reason: userIdValidation.reason,
+                                suggestion: userIdValidation.suggestion
+                            });
+                            // 검증 실패해도 계속 진행 (경고만)
                         }
 
-                        this.user = { 
-                            id: studentData.id, 
-                            email: studentData.email || 'no-email',
-                            name: studentData.name || 'no-name'
+                        this.user = {
+                            id: String(parsed.id), // 문자열로 강제 변환
+                            email: parsed.email || 'unknown@example.com',
+                            name: parsed.name || 'Unknown User'
                         };
                         
-                        console.log('✅ [디버그] localStorage에서 사용자 정보 설정 완료:', {
+                        console.log('✅ [디버그] P1: localStorage에서 사용자 정보 설정 완료:', {
                             id: this.user.id,
                             email: this.user.email,
                             name: this.user.name,
-                            id검증: this.user.id.includes('-') ? 'UUID형식' : '기타형식'
+                            idValidation: userIdValidation.valid ? '✅ 유효' : '⚠️ 의심',
+                            idType: this.user.id.includes('-') ? 'UUID형식' : '기타형식'
                         });
                         return this.user;
                     } else {
-                        console.error('❌ [디버그] studentData.id가 없음:', studentData);
+                        console.error('❌ [디버그] P1: parsed.id가 없거나 유효하지 않음:', {
+                            parsed: parsed,
+                            idExists: !!parsed?.id,
+                            idValue: parsed?.id
+                        });
                     }
                 } catch (parseError) {
-                    console.error('❌ [디버그] localStorage 파싱 오류:', parseError);
-                    console.error('❌ [디버그] 파싱 실패한 데이터:', currentStudentData);
+                    console.error('❌ [디버그] P1: localStorage 파싱 오류:', {
+                        error: parseError.message,
+                        rawData: userData,
+                        dataType: typeof userData,
+                        dataLength: userData?.length
+                    });
                 }
             } else {
-                console.error('❌ [디버그] currentStudent 데이터 없음');
+                console.error('❌ [디버그] P1: currentStudent 데이터가 localStorage에 없음');
             }
 
-            // 🔧 v8.8.0: 다른 인증 소스도 확인 (폴백)
-            console.log('🔍 [디버그] 대체 인증 소스 확인 중...');
+            // 🔧 P1: 대체 키들 확인 (강화된 로직)
+            console.log('🔍 [디버그] P1: 대체 인증 소스 확인 중...');
             
-            // userInfo, userProfile 등 다른 키 확인
-            const alternativeKeys = ['userInfo', 'userProfile', 'user', 'currentUser'];
+            const alternativeKeys = ['userInfo', 'userProfile', 'user', 'currentUser', 'student', 'userSession'];
             for (const key of alternativeKeys) {
                 const altData = localStorage.getItem(key);
                 if (altData) {
-                    console.log(`🔍 [디버그] 대체 키 '${key}' 발견:`, altData);
+                    console.log(`🔍 [디버그] P1: 대체 키 '${key}' 발견:`, {
+                        dataLength: altData.length,
+                        preview: altData.substring(0, 100) + '...'
+                    });
+                    
                     try {
                         const parsedAlt = JSON.parse(altData);
-                        if (parsedAlt?.id) {
-                            console.log(`✅ [디버그] 대체 키 '${key}'에서 사용자 ID 발견:`, parsedAlt.id);
+                        if (parsedAlt && parsedAlt.id) {
+                            console.log(`✅ [디버그] P1: 대체 키 '${key}'에서 사용자 ID 발견:`, {
+                                id: parsedAlt.id,
+                                email: parsedAlt.email,
+                                name: parsedAlt.name
+                            });
+                            
+                            // 대체 소스에서 사용자 정보 설정
+                            this.user = {
+                                id: String(parsedAlt.id),
+                                email: parsedAlt.email || 'unknown@example.com',
+                                name: parsedAlt.name || 'Unknown User'
+                            };
+                            
+                            console.log(`✅ [디버그] P1: 대체 키 '${key}'에서 사용자 정보 설정 완료`);
+                            return this.user;
                         }
-                    } catch (e) {
-                        console.log(`⚠️ [디버그] 대체 키 '${key}' 파싱 실패`);
+                    } catch (altParseError) {
+                        console.log(`⚠️ [디버그] P1: 대체 키 '${key}' 파싱 실패:`, altParseError.message);
                     }
                 }
             }
 
-            throw new Error('localStorage에서 유효한 사용자 정보를 찾을 수 없습니다');
+            // 🔧 P1: Supabase Auth 확인 (최후의 수단)
+            console.log('🔍 [디버그] P1: Supabase Auth 확인 중...');
+            if (this.supabase && this.supabase.auth) {
+                try {
+                    const { data: { user }, error } = await this.supabase.auth.getUser();
+                    if (user && !error) {
+                        console.log('✅ [디버그] P1: Supabase Auth에서 사용자 발견:', {
+                            id: user.id,
+                            email: user.email
+                        });
+                        
+                        this.user = {
+                            id: user.id,
+                            email: user.email || 'unknown@example.com',
+                            name: user.user_metadata?.name || user.email || 'Supabase User'
+                        };
+                        
+                        return this.user;
+                    }
+                } catch (authError) {
+                    console.warn('⚠️ [디버그] P1: Supabase Auth 확인 실패:', authError.message);
+                }
+            }
+
+            // 🔧 P1: 구체적인 에러 정보 제공
+            const errorInfo = {
+                timestamp: new Date().toISOString(),
+                localStorageKeys: allLocalStorageKeys,
+                currentStudentExists: !!localStorage.getItem('currentStudent'),
+                alternativeKeysFound: alternativeKeys.filter(key => localStorage.getItem(key)),
+                supabaseAuthAvailable: !!(this.supabase?.auth),
+                browserInfo: navigator.userAgent
+            };
+            
+            console.error('❌ [디버그] P1: 모든 사용자 정보 소스에서 실패:', errorInfo);
+
+            throw new Error('localStorage에서 유효한 사용자 정보를 찾을 수 없습니다. 로그인 상태를 확인해주세요.');
 
         } catch (error) {
-            console.error('❌ [디버그] getCurrentUser() 실패:', error);
+            console.error('❌ [디버그] P1: getCurrentUser() 완전 실패:', {
+                error: error.message,
+                stack: error.stack,
+                apiInitialized: this.isInitialized,
+                supabaseExists: !!this.supabase
+            });
             throw error;
         }
     }
 
+    // 🔧 P1: 사용자 ID 유효성 검증 메서드 추가
+    validateUserId(userId) {
+        if (!userId) {
+            return {
+                valid: false,
+                reason: 'ID가 없음',
+                suggestion: '로그인이 필요합니다'
+            };
+        }
+
+        const userIdStr = String(userId);
+        
+        // 최소 길이 검증
+        if (userIdStr.length < 5) {
+            return {
+                valid: false,
+                reason: 'ID가 너무 짧음',
+                suggestion: '유효한 사용자 ID가 아닙니다'
+            };
+        }
+        
+        // UUID 형식 검증
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(userIdStr)) {
+            return {
+                valid: true,
+                reason: 'UUID 형식',
+                suggestion: '정상적인 UUID 형식입니다'
+            };
+        }
+        
+        // 숫자만으로 구성된 ID 검증
+        if (/^\d+$/.test(userIdStr) && userIdStr.length >= 5) {
+            return {
+                valid: true,
+                reason: '숫자 ID',
+                suggestion: '숫자 형식의 유효한 ID입니다'
+            };
+        }
+        
+        // 일반 문자열 ID 검증
+        if (userIdStr.length >= 5 && userIdStr.length <= 50) {
+            return {
+                valid: true,
+                reason: '문자열 ID',
+                suggestion: '일반 문자열 형식의 ID입니다'
+            };
+        }
+        
+        return {
+            valid: false,
+            reason: '알 수 없는 형식',
+            suggestion: 'ID 형식을 확인해주세요'
+        };
+    }
+
     async getUserProfile() {
-        try {\n            await this.ensureInitialized();\n            \n            if (!this.user) await this.getCurrentUser();\n            \n            if (!this.user?.id) {\n                throw new Error('사용자 정보가 없습니다');\n            }\n\n            // SupabaseCore 사용 (가능하면)\n            if (this.core?.select) {\n                const result = await this.core.select('user_profiles', '*', { id: this.user.id });\n                \n                if (!result.success) {\n                    throw new Error(result.error);\n                }\n\n                return result.data?.length > 0 ? result.data[0] : null;\n            }\n\n            // 폴백: 직접 supabase 사용\n            const { data, error } = await this.supabase\n                .from('user_profiles')\n                .select('*')\n                .eq('id', this.user.id)\n                .single();\n\n            if (error && error.code !== 'PGRST116') {\n                throw error;\n            }\n\n            return data;\n        } catch (error) {\n            console.error('사용자 프로필 조회 실패:', error);\n            throw error;\n        }\n    }
+        try {
+            await this.ensureInitialized();
+            
+            if (!this.user) await this.getCurrentUser();
+            
+            if (!this.user?.id) {
+                throw new Error('사용자 정보가 없습니다');
+            }
+
+            // SupabaseCore 사용 (가능하면)
+            if (this.core?.select) {
+                const result = await this.core.select('user_profiles', '*', { id: this.user.id });
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                return result.data?.length > 0 ? result.data[0] : null;
+            }
+
+            // 폴백: 직접 supabase 사용
+            const { data, error } = await this.supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('id', this.user.id)
+                .single();
+
+            if (error && error.code !== 'PGRST116') {
+                throw error;
+            }
+
+            return data;
+        } catch (error) {
+            console.error('사용자 프로필 조회 실패:', error);
+            throw error;
+        }
+    }
 
     // === 🛠️ v8.8.0: 강화된 PASSPORT INFO 기능 ===
 
@@ -1552,6 +1720,14 @@ class FlightRequestAPI {
                 debugMethod: 'debugPassportInfo() 디버깅 전용 메서드 추가',
                 storageUtilsIntegration: 'StorageUtils 연결 최적화'
             },
+            P1Enhancements: { // 🔥 P1 강화 사항
+                getCurrentUserEnhancement: 'getCurrentUser() 메서드 완전 강화',
+                userIdValidation: 'validateUserId() 메서드로 ID 유효성 검증',
+                alternativeSourceCheck: '다중 localStorage 키 확인 지원',
+                supabaseAuthFallback: 'Supabase Auth 폴백 지원 강화',
+                detailedErrorReporting: '구체적인 에러 정보 제공 (browserInfo, keys 등)',
+                cachedUserOptimization: '캐싱된 사용자 정보 재사용 최적화'
+            },
             v824LegacyFeatures: { // 🚀 v8.2.4 기존 기능 유지
                 dispatchDurationStorage: 'dispatch_duration 계산 및 저장 추가',
                 dualDurationTracking: 'actual_work_days와 dispatch_duration 모두 저장',
@@ -1592,13 +1768,13 @@ window.FlightRequestAPI = FlightRequestAPI;
 // 🌐 v8.8.0: 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.8.0 인스턴스 생성 시작 (여권정보 설정 관련 기능 복구 및 강화)...');
+        console.log('🚀 FlightRequestAPI v8.8.0 인스턴스 생성 시작 (P1 강화: getCurrentUser() 완전 강화)...');
         window.flightRequestAPI = new FlightRequestAPI();
         
         // 호환성을 위한 passport API 인스턴스도 생성
         window.passportAPI = window.flightRequestAPI;
         
-        console.log('✅ FlightRequestAPI v8.8.0 인스턴스 생성 완료 - 여권정보 설정 관련 기능 복구 및 강화');
+        console.log('✅ FlightRequestAPI v8.8.0 인스턴스 생성 완료 - P1 강화: getCurrentUser() 완전 강화');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -1615,8 +1791,35 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 100); // 즉시 실행에 가깝게
 }
 
-console.log('✅ FlightRequestAPI v8.8.0 모듈 로드 완료 - 여권정보 설정 관련 기능 복구 및 강화 (API 초기화 타이밍, 상태 변수 관리, 에러 처리 강화)');
-console.log('🛠️ v8.8.0 주요 업데이트:', {
+console.log('✅ FlightRequestAPI v8.8.0 모듈 로드 완료 - P1 강화: getCurrentUser() 완전 강화 (사용자 인증 정보 처리 최적화)');
+console.log('🔥 P1 강화 업데이트:', {
+    getCurrentUserEnhancement: {
+        feature: 'getCurrentUser() 메서드 완전 강화',
+        description: '사용자 인증 정보 처리 및 검증 로직 최적화',
+        enhancements: [
+            '상세한 디버깅 로그 및 검증 로직 추가',
+            'validateUserId() 메서드로 사용자 ID 유효성 검증 강화',
+            '다중 localStorage 키 확인 (userInfo, userProfile, user, currentUser 등)',
+            'Supabase Auth 폴백 지원 강화',
+            '구체적인 에러 정보 제공 (browserInfo, localStorageKeys 등)',
+            '캐싱된 사용자 정보 재사용 최적화'
+        ],
+        newMethods: 'validateUserId() 메서드 추가 (UUID/숫자/문자열 ID 형식별 검증)'
+    },
+    problemsSolved: {
+        localStorageKeyMismatch: 'localStorage 키 불일치로 인한 사용자 정보 조회 실패 해결',
+        userIdValidation: '사용자 ID 형식 검증 부족으로 인한 오류 방지',
+        alternativeSourceCheck: '대체 인증 소스 확인 부족 문제 해결',
+        debuggingInformation: '디버깅 정보 부족으로 인한 문제 진단 어려움 개선'
+    },
+    technicalImprovements: {
+        idValidation: 'ID 길이/형식별 상세 검증 (UUID, 숫자, 문자열)',
+        errorReporting: '브라우저 환경 정보 포함한 에러 리포팅',
+        fallbackLogic: '단계별 폴백 로직으로 인증 소스 확인',
+        userExperience: '사용자 친화적 에러 메시지 개선'
+    }
+});
+console.log('🛠️ v8.8.0 기존 기능 유지:', {
     passportFeatureRecovery: {
         feature: '여권정보 설정 관련 기능 복구 및 강화',
         description: '여권정보 조회/저장/검증 기능 완전 복구',
