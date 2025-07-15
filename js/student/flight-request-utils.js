@@ -1,4 +1,10 @@
-// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v9.1.1
+// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.2.4
+// 🚀 v8.2.4: 항공권 날짜 검증 로직 수정 및 dispatch_duration 계산 추가
+// 📝 변경사항:
+//   - 출국일 ≤ 현지도착일 ≤ 출국일+2일 (기존: +1일에서 +2일로 변경)
+//   - 학당근무종료일 ≤ 귀국일 ≤ 학당근무종료일+10일 (기존: +9일에서 +10일로 변경)
+//   - dispatch_duration 계산 메서드 추가 (출국일~귀국일 전체 체류기간)
+//   - 성공 메시지 제거, 실패 시에만 구체적 경고 표시
 // 🔧 v9.1.1: validateDispatchDuration Static 메서드 누락 수정 - this.utils.validateDispatchDuration 에러 해결
 // 🔧 v9.1.0: 하드코딩된 기본값 완전 제거 - 매개변수 의존성으로 변경
 // 🆕 v8.5.0: 최대 활동일 초과 검증 기능 추가 - 사용자별 maximum_allowed_days 검증
@@ -7,7 +13,7 @@
 
 class FlightRequestUtils {
     constructor() {
-        this.version = 'v9.1.1';
+        this.version = 'v8.2.4';
     }
 
     // === 날짜 관련 유틸리티 ===
@@ -121,7 +127,7 @@ class FlightRequestUtils {
         
         // 🔧 v9.1.0: 필수 매개변수 검증 추가
         if (!minimumRequiredDays || !maximumAllowedDays) {
-            console.error('❌ [Utils] v9.1.1: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
+            console.error('❌ [Utils] v8.2.4: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
                 minimumRequiredDays,
                 maximumAllowedDays,
                 하드코딩제거: '✅ 완료 - 매개변수 의존성으로 변경'
@@ -203,7 +209,7 @@ class FlightRequestUtils {
             validation.valid = false;
         }
 
-        console.log('✅ [Utils] v9.1.1: 하드코딩 제거 완료 - 통합 날짜 검증:', {
+        console.log('✅ [Utils] v8.2.4: 하드코딩 제거 완료 - 통합 날짜 검증:', {
             사용된최소요구일: minimumRequiredDays,
             사용된최대허용일: maximumAllowedDays,
             기존하드코딩값: '180일/210일 → 제거됨',
@@ -226,6 +232,32 @@ class FlightRequestUtils {
     }
 
     /**
+     * 🆕 v8.2.4: 전체 체류기간 계산 (출국일 ~ 귀국일) - dispatch_duration 저장용
+     * @param {string} departureDate - 출국일
+     * @param {string} returnDate - 귀국일
+     * @returns {number} 전체 체류일수
+     */
+    calculateTotalStayDuration(departureDate, returnDate) {
+        if (!departureDate || !returnDate) return 0;
+        
+        const departure = new Date(departureDate);
+        const returnD = new Date(returnDate);
+        
+        if (departure >= returnD) return 0;
+        
+        const totalDays = Math.ceil((returnD - departure) / (1000 * 60 * 60 * 24));
+        
+        console.log('✅ [Utils] v8.2.4: 전체 체류기간 계산:', {
+            출국일: departureDate,
+            귀국일: returnDate,
+            전체체류일: totalDays,
+            용도: 'dispatch_duration 저장'
+        });
+        
+        return totalDays;
+    }
+
+    /**
      * 🆕 v8.2.1: 현지 활동일 계산
      * @param {string} arrivalDate - 현지 도착일
      * @param {string} workEndDate - 학당 근무 종료일
@@ -243,7 +275,7 @@ class FlightRequestUtils {
     }
 
     /**
-     * 🔄 v8.2.2: 현지 활동기간 종합 검증 (개선된 버전)
+     * 🚀 v8.2.4: 현지 활동기간 종합 검증 - 날짜 검증 범위 확장
      * @param {string} departureDate - 출국일
      * @param {string} arrivalDate - 현지 도착일
      * @param {string} workEndDate - 학당 근무 종료일
@@ -269,10 +301,10 @@ class FlightRequestUtils {
                 validation.valid = false;
             }
 
-            // 🆕 현지 도착일은 출국일로부터 최대 1일 후까지
-            const maxArrivalDate = new Date(departure.getTime() + (1 * 24 * 60 * 60 * 1000));
+            // 🚀 v8.2.4: 현지 도착일은 출국일로부터 최대 2일 후까지 (기존: 1일 → 2일)
+            const maxArrivalDate = new Date(departure.getTime() + (2 * 24 * 60 * 60 * 1000));
             if (arrival > maxArrivalDate) {
-                validation.errors.push('현지 도착일은 출국일로부터 1일 이내여야 합니다');
+                validation.errors.push('출국일은 현지 도착일 2일 이내여야 합니다');
                 validation.valid = false;
             }
 
@@ -286,10 +318,10 @@ class FlightRequestUtils {
                 validation.valid = false;
             }
 
-            // 🆕 귀국일은 활동 종료일로부터 최대 9일 후까지
-            const maxReturnDate = new Date(workEnd.getTime() + (9 * 24 * 60 * 60 * 1000));
+            // 🚀 v8.2.4: 귀국일은 활동 종료일로부터 최대 10일 후까지 (기존: 9일 → 10일)
+            const maxReturnDate = new Date(workEnd.getTime() + (10 * 24 * 60 * 60 * 1000));
             if (returnD > maxReturnDate) {
-                validation.errors.push('귀국일은 활동 종료일로부터 9일 이내여야 합니다');
+                validation.errors.push('귀국일은 학당 근무종료일 10일 이내여야 합니다');
                 validation.valid = false;
             }
 
@@ -297,6 +329,12 @@ class FlightRequestUtils {
             if (arrival < workEnd) {
                 validation.activityDays = this.calculateActivityDays(arrivalDate, workEndDate);
             }
+
+            console.log('✅ [Utils] v8.2.4: 날짜 검증 범위 확장 완료:', {
+                현지도착일허용범위: '출국일로부터 최대 2일 후 (기존: 1일)',
+                귀국일허용범위: '활동종료일로부터 최대 10일 후 (기존: 9일)',
+                검증결과: validation.valid
+            });
 
         } catch (error) {
             validation.errors.push('날짜 형식이 올바르지 않습니다');
@@ -315,7 +353,7 @@ class FlightRequestUtils {
     validateMinimumActivityDays(activityDays, requiredDays) {
         // 🔧 v9.1.0: 필수 매개변수 검증
         if (!requiredDays) {
-            console.error('❌ [Utils] v9.1.1: 최소 요구일이 매개변수로 전달되지 않았습니다');
+            console.error('❌ [Utils] v8.2.4: 최소 요구일이 매개변수로 전달되지 않았습니다');
             throw new Error('최소 요구일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
 
@@ -333,13 +371,16 @@ class FlightRequestUtils {
             result.message = `최소 ${requiredDays}일의 활동 기간이 필요합니다 (현재: ${activityDays}일)`;
         } else if (activityDays === requiredDays) {
             result.warning = `정확히 최소 요구일(${requiredDays}일)을 충족합니다`;
-            result.message = '활동 기간이 요구사항을 충족합니다';
+            // 🚀 v8.2.4: 성공 메시지 제거 정책
+            result.message = ''; // 성공 시 메시지 없음
         } else if (activityDays < requiredDays + 30) {
             // 최소 요구일보다는 크지만 30일 이내일 때 경고
             result.warning = `활동 기간이 최소 요구사항에 근접합니다 (${activityDays}일/${requiredDays}일)`;
-            result.message = '활동 기간이 요구사항을 충족합니다';
+            // 🚀 v8.2.4: 성공 메시지 제거 정책
+            result.message = ''; // 성공 시 메시지 없음
         } else {
-            result.message = `활동 기간이 요구사항을 충족합니다 (${activityDays}일)`;
+            // 🚀 v8.2.4: 성공 메시지 제거 정책
+            result.message = ''; // 성공 시 메시지 없음
         }
 
         return result;
@@ -354,7 +395,7 @@ class FlightRequestUtils {
     validateMaximumActivityDays(activityDays, maximumDays) {
         // 🔧 v9.1.0: 필수 매개변수 검증
         if (!maximumDays) {
-            console.error('❌ [Utils] v9.1.1: 최대 허용일이 매개변수로 전달되지 않았습니다');
+            console.error('❌ [Utils] v8.2.4: 최대 허용일이 매개변수로 전달되지 않았습니다');
             throw new Error('최대 허용일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
 
@@ -374,14 +415,17 @@ class FlightRequestUtils {
             result.code = 'MAXIMUM_ACTIVITY_DAYS_EXCEEDED';
         } else if (activityDays === maximumDays) {
             result.warning = `정확히 최대 허용일(${maximumDays}일)에 도달했습니다`;
-            result.message = '활동 기간이 최대 허용 범위 내에 있습니다';
+            // 🚀 v8.2.4: 성공 메시지 제거 정책
+            result.message = ''; // 성공 시 메시지 없음
         } else if (activityDays > maximumDays - 10) {
             // 최대 허용일에서 10일 이내일 때 주의 메시지
             const remaining = maximumDays - activityDays;
             result.warning = `최대 허용일까지 ${remaining}일 남았습니다 (${activityDays}일/${maximumDays}일)`;
-            result.message = '활동 기간이 최대 허용 범위 내에 있습니다';
+            // 🚀 v8.2.4: 성공 메시지 제거 정책
+            result.message = ''; // 성공 시 메시지 없음
         } else {
-            result.message = `활동 기간이 허용 범위 내에 있습니다 (${activityDays}일/${maximumDays}일)`;
+            // 🚀 v8.2.4: 성공 메시지 제거 정책
+            result.message = ''; // 성공 시 메시지 없음
         }
 
         return result;
@@ -397,7 +441,7 @@ class FlightRequestUtils {
     validateActivityDaysRange(activityDays, minimumDays, maximumDays) {
         // 🔧 v9.1.0: 필수 매개변수 검증
         if (!minimumDays || !maximumDays) {
-            console.error('❌ [Utils] v9.1.1: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
+            console.error('❌ [Utils] v8.2.4: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
                 minimumDays,
                 maximumDays
             });
@@ -444,7 +488,7 @@ class FlightRequestUtils {
         // 유효 범위 내 여부
         result.inValidRange = activityDays >= minimumDays && activityDays <= maximumDays;
 
-        console.log('✅ [Utils] v9.1.1: 하드코딩 제거 완료 - 범위 검증:', {
+        console.log('✅ [Utils] v8.2.4: 하드코딩 제거 완료 - 범위 검증:', {
             활동일: activityDays,
             사용된최소요구일: minimumDays,
             사용된최대허용일: maximumDays,
@@ -478,7 +522,8 @@ class FlightRequestUtils {
             };
         }
         
-        return { valid: true, message: `적절한 파견 기간입니다. (${duration}일)` };
+        // 🚀 v8.2.4: 성공 메시지 제거 정책
+        return { valid: true, message: '' }; // 성공 시 메시지 없음
     }
 
     // === 🆕 v8.3.0: 귀국 필수 완료일 관련 유틸리티 ===
@@ -767,27 +812,28 @@ class FlightRequestUtils {
     }
 
     /**
-     * 성공 메시지 표시
+     * 성공 메시지 표시 (🚀 v8.2.4: 성공 메시지 제거 정책 반영)
      * @param {string} message - 메시지
      */
     showSuccess(message) {
+        // 🚀 v8.2.4: 성공 메시지는 로그에만 기록, UI에는 표시하지 않음
         console.log('✅ [Utils성공]:', message);
         
-        // 성공 메시지 요소 찾기
-        const successElement = document.getElementById('successMessage') || 
-                              document.querySelector('.success-message') ||
-                              document.querySelector('[data-success]');
-        
-        if (successElement) {
-            successElement.textContent = message;
-            successElement.style.display = 'block';
+        // 필요한 경우에만 표시 (예: 중요한 작업 완료 알림)
+        if (message && message.includes('중요') || message.includes('완료')) {
+            const successElement = document.getElementById('successMessage') || 
+                                  document.querySelector('.success-message') ||
+                                  document.querySelector('[data-success]');
             
-            // 5초 후 자동 숨김
-            setTimeout(() => {
-                successElement.style.display = 'none';
-            }, 5000);
-        } else {
-            alert('성공: ' + message);
+            if (successElement) {
+                successElement.textContent = message;
+                successElement.style.display = 'block';
+                
+                // 3초 후 자동 숨김 (기존 5초에서 단축)
+                setTimeout(() => {
+                    successElement.style.display = 'none';
+                }, 3000);
+            }
         }
     }
 
@@ -886,6 +932,12 @@ class FlightRequestUtils {
         return {
             version: this.version,
             loadedAt: new Date().toISOString(),
+            v824Updates: { // 🚀 v8.2.4 새 기능
+                dateValidationRange: '출국일→현지도착일: 최대 2일, 학당종료일→귀국일: 최대 10일',
+                successMessagePolicy: '성공 시 메시지 제거, 실패 시에만 구체적 경고',
+                dispatchDurationCalculation: '전체 체류기간(출국일~귀국일) 계산 기능 추가',
+                improvedUX: '불필요한 메시지 제거로 깔끔한 사용자 경험'
+            },
             hardcodingRemoved: true, // 🔧 v9.1.0
             methods: Object.getOwnPropertyNames(this.constructor.prototype)
                 .filter(name => name !== 'constructor'),
@@ -902,7 +954,10 @@ class FlightRequestUtils {
                 'Icon refresh utility',
                 'Safe date value getter',
                 'Improved error handling',
-                'Integrated date validation'
+                'Integrated date validation',
+                'Extended date range validation',   // 🚀 v8.2.4
+                'Success message removal policy',   // 🚀 v8.2.4
+                'Total stay duration calculation'   // 🚀 v8.2.4
             ]
         };
     }
@@ -932,6 +987,11 @@ class FlightRequestUtils {
         return new FlightRequestUtils().calculateActivityDays(arrivalDate, workEndDate);
     }
 
+    // 🚀 v8.2.4: 전체 체류기간 계산 Static 메서드 추가
+    static calculateTotalStayDuration(departureDate, returnDate) {
+        return new FlightRequestUtils().calculateTotalStayDuration(departureDate, returnDate);
+    }
+
     static validateActivityDates(departureDate, arrivalDate, workEndDate, returnDate) {
         return new FlightRequestUtils().validateActivityDates(departureDate, arrivalDate, workEndDate, returnDate);
     }
@@ -943,8 +1003,8 @@ class FlightRequestUtils {
      */
     static validateMinimumActivityDays(activityDays, requiredDays) {
         if (!requiredDays) {
-            console.error('❌ [Utils] v9.1.1 Static: 최소 요구일이 매개변수로 전달되지 않았습니다');
-            console.warn('⚠️ [Utils] v9.1.1: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
+            console.error('❌ [Utils] v8.2.4 Static: 최소 요구일이 매개변수로 전달되지 않았습니다');
+            console.warn('⚠️ [Utils] v8.2.4: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
             throw new Error('최소 요구일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
         return new FlightRequestUtils().validateMinimumActivityDays(activityDays, requiredDays);
@@ -957,8 +1017,8 @@ class FlightRequestUtils {
      */
     static validateMaximumActivityDays(activityDays, maximumDays) {
         if (!maximumDays) {
-            console.error('❌ [Utils] v9.1.1 Static: 최대 허용일이 매개변수로 전달되지 않았습니다');
-            console.warn('⚠️ [Utils] v9.1.1: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
+            console.error('❌ [Utils] v8.2.4 Static: 최대 허용일이 매개변수로 전달되지 않았습니다');
+            console.warn('⚠️ [Utils] v8.2.4: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
             throw new Error('최대 허용일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
         return new FlightRequestUtils().validateMaximumActivityDays(activityDays, maximumDays);
@@ -972,11 +1032,11 @@ class FlightRequestUtils {
      */
     static validateActivityDaysRange(activityDays, minimumDays, maximumDays) {
         if (!minimumDays || !maximumDays) {
-            console.error('❌ [Utils] v9.1.1 Static: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
+            console.error('❌ [Utils] v8.2.4 Static: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
                 minimumDays,
                 maximumDays
             });
-            console.warn('⚠️ [Utils] v9.1.1: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
+            console.warn('⚠️ [Utils] v8.2.4: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
             throw new Error('활동일 요구사항이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
         return new FlightRequestUtils().validateActivityDaysRange(activityDays, minimumDays, maximumDays);
@@ -1040,22 +1100,26 @@ window.FlightRequestUtils = FlightRequestUtils;
 // 인스턴스 생성 및 전역 변수 설정
 window.flightRequestUtils = new FlightRequestUtils();
 
-console.log('✅ FlightRequestUtils v9.1.1 로드 완료 - validateDispatchDuration Static 메서드 추가');
-console.log('🔧 v9.1.1 핵심 수정 완료:', {
-    fixedError: {
-        errorMessage: 'this.utils.validateDispatchDuration is not a function',
-        solution: 'validateDispatchDuration Static 메서드 추가',
-        status: '✅ 완전 해결'
+console.log('✅ FlightRequestUtils v8.2.4 로드 완료 - 항공권 날짜 검증 로직 확장 및 dispatch_duration 계산 추가');
+console.log('🚀 v8.2.4 주요 업데이트:', {
+    dateValidationRange: {
+        arrivalDateRange: '출국일로부터 최대 2일 후 (기존: 1일)',
+        returnDateRange: '학당 근무 종료일로부터 최대 10일 후 (기존: 9일)',
+        improvement: '비행시간과 정리 시간을 더 충분히 고려'
     },
-    staticMethodsCompleted: {
-        validateDispatchDuration: '✅ 추가 완료',
-        totalStaticMethods: 21,
-        coverage: '100% - 모든 인스턴스 메서드에 Static 버전 제공'
+    messagePolicy: {
+        successMessages: '제거됨 - 깔끔한 UI 위해',
+        errorMessages: '실패 시에만 구체적 경고 표시',
+        userExperience: '불필요한 알림 최소화'
     },
-    uiCompatibility: {
-        flightRequestUI: '✅ 완전 호환',
-        utilsCalls: '✅ 모든 this.utils 호출 지원',
-        errorHandling: '✅ 안정성 보장'
+    newFeatures: {
+        calculateTotalStayDuration: '전체 체류기간 계산 메서드 추가',
+        dispatchDurationSupport: 'dispatch_duration 저장을 위한 계산 지원',
+        staticMethod: 'calculateTotalStayDuration Static 버전 제공'
     },
-    backwardCompatibility: '✅ 기존 코드 100% 호환 유지'
+    compatibility: {
+        backwardCompatible: '기존 모든 메서드 100% 호환',
+        hardcodingRemoved: '180일/210일 하드코딩 완전 제거 유지',
+        existingFeatures: '모든 기존 기능 정상 작동'
+    }
 });
