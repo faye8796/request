@@ -1,4 +1,11 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.2.6
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.4.2
+// 🔧 v8.4.2: 여권정보 설정 버튼 자동 폼 채우기 기능 수정 - 완전한 여권정보 UI 로직 복구
+// 📝 변경사항:
+//   - 여권정보 폼 처리 로직 완전 복구
+//   - 자동 폼 채우기 기능 (loadExistingPassportDataAndSetMode) 추가
+//   - 여권정보 유효성 검증 및 저장 처리 복구
+//   - 여권 사본 이미지 업로드 및 미리보기 기능 복구
+//   - 성공 메시지 및 페이지 전환 로직 복구
 // 🔧 v8.2.6: 항공권 검증 로직 완전 분리 - 파견 기간 검증 제거
 // 📝 변경사항:
 //   - validateFlightDatesOnly()에서 파견 기간 검증 로직 완전 제거
@@ -28,6 +35,11 @@ class FlightRequestUI {
         this.receiptFile = null;
         this.userProfile = null;
         this.existingRequest = null;
+        
+        // 🔧 v8.4.2: 여권정보 관련 상태
+        this.passportImageFile = null;
+        this.isPassportMode = false;
+        this.existingPassportInfo = null;
         
         // 현지 활동기간 관련 상태
         this.activityValidationEnabled = false;
@@ -60,6 +72,25 @@ class FlightRequestUI {
             passportAlert: document.getElementById('passportAlert'),
             existingRequest: document.getElementById('existingRequest'),
             requestForm: document.getElementById('requestForm'),
+            
+            // 🔧 v8.4.2: 여권정보 페이지 요소들
+            passportInfoPage: document.getElementById('passportInfoPage'),
+            passportLoadingState: document.getElementById('passportLoadingState'),
+            passportForm: document.getElementById('passportForm'),
+            passportInfoForm: document.getElementById('passportInfoForm'),
+            passportNumber: document.getElementById('passportNumber'),
+            nameEnglish: document.getElementById('nameEnglish'),
+            issueDate: document.getElementById('issueDate'),
+            expiryDate: document.getElementById('expiryDate'),
+            expiryWarning: document.getElementById('expiryWarning'),
+            passportImage: document.getElementById('passportImage'),
+            passportImagePreview: document.getElementById('passportImagePreview'),
+            passportPreviewImg: document.getElementById('passportPreviewImg'),
+            removePassportImage: document.getElementById('removePassportImage'),
+            passportSubmitBtn: document.getElementById('passportSubmitBtn'),
+            passportSubmitBtnText: document.getElementById('passportSubmitBtnText'),
+            passportSuccessMessage: document.getElementById('passportSuccessMessage'),
+            proceedToFlightRequest: document.getElementById('proceedToFlightRequest'),
             
             // 항공권 신청 폼 요소
             form: document.getElementById('flightRequestForm'),
@@ -141,13 +172,16 @@ class FlightRequestUI {
 
     async init() {
         try {
-            console.log('🔄 FlightRequestUI v8.2.6 초기화 시작 - 파견 기간 검증 제거...');
+            console.log('🔄 FlightRequestUI v8.4.2 초기화 시작 - 여권정보 설정 버튼 자동 폼 채우기 기능 수정...');
             
             // API 및 유틸리티 대기
             await this.waitForDependencies();
             
             // 이벤트 리스너 설정
             this.setupEventListeners();
+            
+            // 🔧 v8.4.2: 여권정보 이벤트 리스너 설정
+            this.setupPassportEventListeners();
             
             // 현지 활동기간 검증 이벤트 설정
             this.setupActivityValidationEvents();
@@ -163,12 +197,408 @@ class FlightRequestUI {
                 this.loadInitialData();
             }, 300);
             
-            console.log('✅ FlightRequestUI v8.2.6 초기화 완료 - 파견 기간 검증 제거');
+            console.log('✅ FlightRequestUI v8.4.2 초기화 완료 - 여권정보 설정 버튼 자동 폼 채우기 기능 수정');
             
             this.isInitialized = true;
         } catch (error) {
             console.error('❌ FlightRequestUI 초기화 오류:', error);
             this.showError('시스템 초기화 중 오류가 발생했습니다.');
+        }
+    }
+
+    // 🔧 v8.4.2: 여권정보 이벤트 리스너 설정
+    setupPassportEventListeners() {
+        console.log('🔄 [여권정보] v8.4.2 여권정보 이벤트 리스너 설정 시작...');
+        
+        // 여권정보 폼 제출
+        if (this.elements.passportInfoForm) {
+            this.elements.passportInfoForm.addEventListener('submit', (e) => this.handlePassportSubmit(e));
+        }
+
+        // 여권 만료일 검증
+        if (this.elements.expiryDate) {
+            this.elements.expiryDate.addEventListener('change', () => this.validateExpiryDate());
+            this.elements.expiryDate.addEventListener('blur', () => this.validateExpiryDate());
+        }
+
+        // 여권 이미지 업로드
+        if (this.elements.passportImage) {
+            this.elements.passportImage.addEventListener('change', (e) => this.handlePassportImageUpload(e));
+        }
+        
+        // 여권 이미지 제거
+        if (this.elements.removePassportImage) {
+            this.elements.removePassportImage.addEventListener('click', () => this.removePassportImage());
+        }
+
+        // 항공권 신청으로 돌아가기 버튼
+        if (this.elements.proceedToFlightRequest) {
+            this.elements.proceedToFlightRequest.addEventListener('click', () => this.showFlightRequestPage());
+        }
+
+        console.log('✅ [여권정보] v8.4.2 여권정보 이벤트 리스너 설정 완료');
+    }
+
+    // 🔧 v8.4.2: 여권정보 페이지 표시 및 자동 폼 채우기
+    async showPassportInfoPage() {
+        try {
+            console.log('🔄 [여권정보] v8.4.2 여권정보 페이지 표시 및 자동 폼 채우기 시작...');
+            
+            const flightRequestPage = document.getElementById('flightRequestPage');
+            const passportInfoPage = document.getElementById('passportInfoPage');
+            
+            if (flightRequestPage && passportInfoPage) {
+                flightRequestPage.classList.remove('active');
+                passportInfoPage.classList.add('active');
+                
+                this.isPassportMode = true;
+                
+                // 🔧 v8.4.2: 자동 폼 채우기 실행
+                setTimeout(async () => {
+                    await this.loadExistingPassportDataAndSetMode();
+                }, 200);
+                
+                console.log('✅ [여권정보] v8.4.2 여권정보 페이지 표시 및 자동 폼 채우기 완료');
+            }
+            
+        } catch (error) {
+            console.error('❌ [여권정보] v8.4.2 여권정보 페이지 표시 실패:', error);
+        }
+    }
+
+    // 🔧 v8.4.2: 기존 여권정보 로드 및 모드 설정 - 핵심 메서드
+    async loadExistingPassportDataAndSetMode() {
+        try {
+            console.log('🔄 [여권정보] v8.4.2 기존 여권정보 로드 및 자동 폼 채우기 시작...');
+            
+            if (!this.api) {
+                console.warn('⚠️ [여권정보] API가 아직 준비되지 않음');
+                return;
+            }
+
+            // 로딩 상태 표시
+            this.setPassportLoading(true);
+
+            try {
+                // 기존 여권정보 조회
+                this.existingPassportInfo = await this.api.getPassportInfo();
+                
+                if (this.existingPassportInfo) {
+                    console.log('✅ [여권정보] v8.4.2 기존 여권정보 발견 - 자동 폼 채우기:', {
+                        여권번호: this.existingPassportInfo.passport_number,
+                        영문이름: this.existingPassportInfo.name_english,
+                        발급일: this.existingPassportInfo.issue_date,
+                        만료일: this.existingPassportInfo.expiry_date,
+                        이미지존재: !!this.existingPassportInfo.image_url
+                    });
+                    
+                    // 폼에 기존 데이터 자동 채우기
+                    this.fillPassportForm(this.existingPassportInfo);
+                    
+                    // 제출 버튼 텍스트 변경
+                    if (this.elements.passportSubmitBtnText) {
+                        this.elements.passportSubmitBtnText.textContent = '수정하기';
+                    }
+                } else {
+                    console.log('ℹ️ [여권정보] v8.4.2 기존 여권정보 없음 - 신규 등록 모드');
+                    
+                    // 제출 버튼 텍스트 설정
+                    if (this.elements.passportSubmitBtnText) {
+                        this.elements.passportSubmitBtnText.textContent = '등록하기';
+                    }
+                }
+            } catch (error) {
+                console.error('❌ [여권정보] v8.4.2 여권정보 조회 실패:', error);
+                
+                // 제출 버튼 텍스트 기본값 설정
+                if (this.elements.passportSubmitBtnText) {
+                    this.elements.passportSubmitBtnText.textContent = '등록하기';
+                }
+            }
+
+        } catch (error) {
+            console.error('❌ [여권정보] v8.4.2 기존 여권정보 로드 및 자동 폼 채우기 실패:', error);
+        } finally {
+            // 로딩 상태 해제
+            this.setPassportLoading(false);
+        }
+    }
+
+    // 🔧 v8.4.2: 여권정보 폼 자동 채우기
+    fillPassportForm(passportInfo) {
+        try {
+            console.log('🔄 [여권정보] v8.4.2 여권정보 폼 자동 채우기 시작...');
+            
+            if (this.elements.passportNumber && passportInfo.passport_number) {
+                this.elements.passportNumber.value = passportInfo.passport_number;
+            }
+            
+            if (this.elements.nameEnglish && passportInfo.name_english) {
+                this.elements.nameEnglish.value = passportInfo.name_english;
+            }
+            
+            if (this.elements.issueDate && passportInfo.issue_date) {
+                this.elements.issueDate.value = passportInfo.issue_date;
+            }
+            
+            if (this.elements.expiryDate && passportInfo.expiry_date) {
+                this.elements.expiryDate.value = passportInfo.expiry_date;
+                // 만료일 검증 실행
+                setTimeout(() => this.validateExpiryDate(), 100);
+            }
+            
+            // 기존 이미지가 있는 경우 미리보기 표시
+            if (passportInfo.image_url && this.elements.passportPreviewImg && this.elements.passportImagePreview) {
+                this.elements.passportPreviewImg.src = passportInfo.image_url;
+                this.elements.passportImagePreview.style.display = 'block';
+            }
+            
+            console.log('✅ [여권정보] v8.4.2 여권정보 폼 자동 채우기 완료');
+            
+        } catch (error) {
+            console.error('❌ [여권정보] v8.4.2 여권정보 폼 자동 채우기 실패:', error);
+        }
+    }
+
+    // 🔧 v8.4.2: 여권 만료일 검증
+    validateExpiryDate() {
+        if (!this.elements.expiryDate || !this.api) return;
+
+        const expiryDate = this.elements.expiryDate.value;
+        if (!expiryDate) {
+            this.clearExpiryWarning();
+            return;
+        }
+
+        try {
+            const validation = this.api.validateExpiryDate(expiryDate);
+            
+            if (this.elements.expiryWarning) {
+                if (!validation.valid) {
+                    this.elements.expiryWarning.textContent = validation.message;
+                    this.elements.expiryWarning.style.display = 'block';
+                    this.elements.expiryWarning.style.color = '#dc3545';
+                    this.elements.expiryDate.style.borderColor = '#dc3545';
+                } else if (validation.warning) {
+                    this.elements.expiryWarning.textContent = validation.warning;
+                    this.elements.expiryWarning.style.display = 'block';
+                    this.elements.expiryWarning.style.color = '#f59e0b';
+                    this.elements.expiryDate.style.borderColor = '#f59e0b';
+                } else {
+                    this.clearExpiryWarning();
+                }
+            }
+        } catch (error) {
+            console.error('❌ [여권정보] 만료일 검증 실패:', error);
+        }
+    }
+
+    // 🔧 v8.4.2: 만료일 경고 제거
+    clearExpiryWarning() {
+        if (this.elements.expiryWarning) {
+            this.elements.expiryWarning.style.display = 'none';
+            this.elements.expiryWarning.textContent = '';
+        }
+        if (this.elements.expiryDate) {
+            this.elements.expiryDate.style.borderColor = '';
+        }
+    }
+
+    // 🔧 v8.4.2: 여권 이미지 업로드 처리
+    handlePassportImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        if (!allowedTypes.includes(file.type)) {
+            this.showError('JPG, PNG 형식의 이미지만 업로드 가능합니다.');
+            event.target.value = '';
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            this.showError('파일 크기는 5MB를 초과할 수 없습니다.');
+            event.target.value = '';
+            return;
+        }
+
+        this.passportImageFile = file;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (this.elements.passportPreviewImg) {
+                this.elements.passportPreviewImg.src = e.target.result;
+            }
+            if (this.elements.passportImagePreview) {
+                this.elements.passportImagePreview.style.display = 'block';
+            }
+        };
+        reader.readAsDataURL(file);
+
+        console.log('✅ [여권정보] 여권 이미지 업로드 준비 완료:', file.name);
+    }
+
+    // 🔧 v8.4.2: 여권 이미지 제거
+    removePassportImage() {
+        this.passportImageFile = null;
+        if (this.elements.passportImage) {
+            this.elements.passportImage.value = '';
+        }
+        if (this.elements.passportImagePreview) {
+            this.elements.passportImagePreview.style.display = 'none';
+        }
+        if (this.elements.passportPreviewImg) {
+            this.elements.passportPreviewImg.src = '';
+        }
+        
+        console.log('🗑️ [여권정보] 여권 이미지 제거 완료');
+    }
+
+    // 🔧 v8.4.2: 여권정보 제출 처리
+    async handlePassportSubmit(event) {
+        event.preventDefault();
+
+        try {
+            await this.ensureInitialized();
+
+            if (!this.api) {
+                this.showError('시스템이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+
+            // 폼 데이터 수집
+            const passportData = {
+                passport_number: this.elements.passportNumber?.value?.trim().toUpperCase() || '',
+                name_english: this.elements.nameEnglish?.value?.trim().toUpperCase() || '',
+                issue_date: this.elements.issueDate?.value || '',
+                expiry_date: this.elements.expiryDate?.value || ''
+            };
+
+            // 기본 검증
+            if (!passportData.passport_number) {
+                this.showError('여권번호를 입력해주세요.');
+                this.elements.passportNumber?.focus();
+                return;
+            }
+
+            if (!passportData.name_english) {
+                this.showError('영문 이름을 입력해주세요.');
+                this.elements.nameEnglish?.focus();
+                return;
+            }
+
+            if (!passportData.issue_date) {
+                this.showError('발급일을 입력해주세요.');
+                this.elements.issueDate?.focus();
+                return;
+            }
+
+            if (!passportData.expiry_date) {
+                this.showError('만료일을 입력해주세요.');
+                this.elements.expiryDate?.focus();
+                return;
+            }
+
+            // 여권번호 형식 검증
+            const passportNumberRegex = /^[A-Z][0-9]{8}$/;
+            if (!passportNumberRegex.test(passportData.passport_number)) {
+                this.showError('여권번호는 대문자 1자리 + 숫자 8자리 형식이어야 합니다. (예: M12345678)');
+                this.elements.passportNumber?.focus();
+                return;
+            }
+
+            // 영문 이름 형식 검증
+            const nameEnglishRegex = /^[A-Z\s]+$/;
+            if (!nameEnglishRegex.test(passportData.name_english)) {
+                this.showError('영문 이름은 대문자 영문과 띄어쓰기만 입력 가능합니다.');
+                this.elements.nameEnglish?.focus();
+                return;
+            }
+
+            // 만료일 검증
+            const expiryValidation = this.api.validateExpiryDate(passportData.expiry_date);
+            if (!expiryValidation.valid) {
+                this.showError(expiryValidation.message);
+                this.elements.expiryDate?.focus();
+                return;
+            }
+
+            this.setPassportLoading(true);
+
+            console.log('🔄 [여권정보] v8.4.2 여권정보 저장 시작:', {
+                여권번호: passportData.passport_number,
+                영문이름: passportData.name_english,
+                이미지포함: !!this.passportImageFile,
+                수정모드: !!this.existingPassportInfo
+            });
+
+            // 여권정보 저장
+            const result = await this.api.savePassportInfo(passportData, this.passportImageFile);
+            
+            console.log('✅ [여권정보] v8.4.2 여권정보 저장 완료:', {
+                성공: !!result,
+                수정여부: result?.isUpdate,
+                이미지URL: result?.data?.image_url
+            });
+
+            // 성공 메시지 표시
+            this.showPassportSuccess();
+
+        } catch (error) {
+            console.error('❌ [여권정보] v8.4.2 여권정보 저장 실패:', error);
+            this.showError(error.message || '여권정보 저장 중 오류가 발생했습니다.');
+        } finally {
+            this.setPassportLoading(false);
+        }
+    }
+
+    // 🔧 v8.4.2: 여권정보 저장 성공 메시지 표시
+    showPassportSuccess() {
+        try {
+            // 폼 숨기기
+            if (this.elements.passportForm) {
+                this.elements.passportForm.style.display = 'none';
+            }
+            
+            // 성공 메시지 표시
+            if (this.elements.passportSuccessMessage) {
+                this.elements.passportSuccessMessage.style.display = 'block';
+                
+                // 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+            
+            console.log('✅ [여권정보] v8.4.2 여권정보 저장 성공 메시지 표시 완료');
+            
+        } catch (error) {
+            console.error('❌ [여권정보] v8.4.2 성공 메시지 표시 실패:', error);
+        }
+    }
+
+    // 🔧 v8.4.2: 여권정보 로딩 상태 관리
+    setPassportLoading(loading) {
+        try {
+            if (this.elements.passportSubmitBtn) {
+                this.elements.passportSubmitBtn.disabled = loading;
+            }
+            
+            if (this.elements.passportSubmitBtnText) {
+                if (loading) {
+                    this.elements.passportSubmitBtnText.textContent = '저장 중...';
+                } else {
+                    const isUpdate = !!this.existingPassportInfo;
+                    this.elements.passportSubmitBtnText.textContent = isUpdate ? '수정하기' : '등록하기';
+                }
+            }
+            
+            if (this.elements.passportLoadingState) {
+                this.elements.passportLoadingState.style.display = loading ? 'block' : 'none';
+            }
+            
+        } catch (error) {
+            console.error('❌ [여권정보] v8.4.2 로딩 상태 설정 실패:', error);
         }
     }
 
@@ -184,7 +614,7 @@ class FlightRequestUI {
                 if (apiExists && apiInitialized && utilsReady) {
                     this.api = window.flightRequestAPI;
                     this.utils = window.FlightRequestUtils;
-                    console.log('✅ FlightRequestUI v8.2.6 의존성 로드 완료');
+                    console.log('✅ FlightRequestUI v8.4.2 의존성 로드 완료');
                     resolve();
                     return;
                 }
@@ -242,7 +672,7 @@ class FlightRequestUI {
             }
         });
 
-        console.log('✅ [전제조건] v8.2.6: 전제 조건 시스템 이벤트 설정 완료');
+        console.log('✅ [전제조건] v8.4.2: 전제 조건 시스템 이벤트 설정 완료');
     }
 
     // 🚀 v8.2.4: 현지 활동기간 완료 여부 확인
@@ -261,7 +691,7 @@ class FlightRequestUI {
             this.isActivityPeriodValid = false;
         }
         
-        console.log('🔍 [전제조건] v8.2.6: 현지 활동기간 완료 여부 확인:', {
+        console.log('🔍 [전제조건] v8.4.2: 현지 활동기간 완료 여부 확인:', {
             완료여부: this.isActivityPeriodCompleted,
             유효여부: this.isActivityPeriodValid,
             사용자요구사항로드됨: this.isUserActivityRequirementsLoaded,
@@ -299,7 +729,7 @@ class FlightRequestUI {
             // 비활성화 안내 메시지 숨김
             this.hideFlightSectionNotice();
             
-            console.log('✅ [전제조건] v8.2.6: 항공권 정보 섹션 활성화');
+            console.log('✅ [전제조건] v8.4.2: 항공권 정보 섹션 활성화');
         } else {
             // 비활성화
             flightSection.classList.add('section-disabled');
@@ -309,7 +739,7 @@ class FlightRequestUI {
             // 비활성화 안내 메시지 표시
             this.showFlightSectionNotice();
             
-            console.log('❌ [전제조건] v8.2.6: 항공권 정보 섹션 비활성화');
+            console.log('❌ [전제조건] v8.4.2: 항공권 정보 섹션 비활성화');
         }
         
         // 항공권 입력 필드들 활성화/비활성화
@@ -409,7 +839,7 @@ class FlightRequestUI {
                 throw new Error('API가 초기화되지 않았습니다.');
             }
 
-            console.log('🔄 [활동요구사항] v8.2.6: 사용자별 최소/최대 체류일 로드 시작...');
+            console.log('🔄 [활동요구사항] v8.4.2: 사용자별 최소/최대 체류일 로드 시작...');
 
             const activityData = await this.api.getUserProfileActivityDates();
             
@@ -417,7 +847,7 @@ class FlightRequestUI {
                 this.userRequiredDays = activityData.minimum_required_days;
                 this.userMaximumDays = activityData.maximum_allowed_days;
                 
-                console.log('✅ [활동요구사항] v8.2.6: 사용자별 체류일 로드 완료:', {
+                console.log('✅ [활동요구사항] v8.4.2: 사용자별 체류일 로드 완료:', {
                     사용자ID: this.userProfile?.id || 'unknown',
                     최소요구일: this.userRequiredDays,
                     최대허용일: this.userMaximumDays
@@ -428,7 +858,7 @@ class FlightRequestUI {
                     this.userRequiredDays = requirements.minimumDays;
                     this.userMaximumDays = requirements.maximumDays;
                     
-                    console.log('✅ [활동요구사항] v8.2.6: API 기본값 로드 완료:', {
+                    console.log('✅ [활동요구사항] v8.4.2: API 기본값 로드 완료:', {
                         최소요구일: this.userRequiredDays,
                         최대허용일: this.userMaximumDays,
                         데이터소스: requirements.source
@@ -451,7 +881,7 @@ class FlightRequestUI {
             return true;
 
         } catch (error) {
-            console.error('❌ [활동요구사항] v8.2.6: 사용자 활동기간 요구사항 로드 실패:', error);
+            console.error('❌ [활동요구사항] v8.4.2: 사용자 활동기간 요구사항 로드 실패:', error);
             
             this.userRequiredDays = null;
             this.userMaximumDays = null;
@@ -478,7 +908,7 @@ class FlightRequestUI {
                 this.elements.requiredDays.textContent = this.userRequiredDays;
                 this.elements.requiredDays.className = 'value';
                 
-                console.log('✅ [활동요구사항] v8.2.6: 최소 요구일 UI 업데이트 완료:', {
+                console.log('✅ [활동요구사항] v8.4.2: 최소 요구일 UI 업데이트 완료:', {
                     요소: '#requiredDays',
                     새값: this.userRequiredDays,
                     사용자: this.userProfile?.name || 'unknown'
@@ -491,7 +921,7 @@ class FlightRequestUI {
             }, 100);
 
         } catch (error) {
-            console.error('❌ [활동요구사항] v8.2.6: 최소/최대 요구일 UI 업데이트 실패:', error);
+            console.error('❌ [활동요구사항] v8.4.2: 최소/최대 요구일 UI 업데이트 실패:', error);
         }
     }
 
@@ -528,7 +958,7 @@ class FlightRequestUI {
             });
         }
 
-        console.log('✅ [귀국일검증] v8.2.6: 귀국 필수 완료일 검증 이벤트 설정 완료');
+        console.log('✅ [귀국일검증] v8.4.2: 귀국 필수 완료일 검증 이벤트 설정 완료');
     }
 
     // 디바운스된 귀국일 검증
@@ -691,7 +1121,7 @@ class FlightRequestUI {
             }
         });
 
-        console.log('✅ [활동기간검증] v8.2.6: 현지 활동기간 검증 이벤트 설정 완료');
+        console.log('✅ [활동기간검증] v8.4.2: 현지 활동기간 검증 이벤트 설정 완료');
     }
 
     // 디바운스된 활동기간 검증
@@ -720,7 +1150,7 @@ class FlightRequestUI {
         const arrivalDate = this.elements.actualArrivalDate?.value;
         const workEndDate = this.elements.actualWorkEndDate?.value;
 
-        console.log('🔍 [활동기간검증] v8.2.6 순수 활동기간 검증 시작:', {
+        console.log('🔍 [활동기간검증] v8.4.2 순수 활동기간 검증 시작:', {
             현지도착일: arrivalDate,
             학당근무종료일: workEndDate,
             사용자최소요구일: this.userRequiredDays,
@@ -762,7 +1192,7 @@ class FlightRequestUI {
             };
         }
 
-        console.log('✅ [활동기간검증] v8.2.6 순수 활동기간 검증 결과:', {
+        console.log('✅ [활동기간검증] v8.4.2 순수 활동기간 검증 결과:', {
             ...validation,
             적용된최소요구일: this.userRequiredDays,
             적용된최대허용일: this.userMaximumDays,
@@ -842,7 +1272,7 @@ class FlightRequestUI {
     // 초기 데이터 로드
     async loadInitialData() {
         try {
-            console.log('🔄 [초기데이터] v8.2.6 초기 데이터 로드 시작 - 파견 기간 검증 제거');
+            console.log('🔄 [초기데이터] v8.4.2 초기 데이터 로드 시작 - 여권정보 설정 버튼 자동 폼 채우기 기능 수정');
             
             await this.ensureInitialized();
             
@@ -900,7 +1330,7 @@ class FlightRequestUI {
     }
 
     showFlightRequestPageWithoutData() {
-        console.log('🔄 [초기데이터] v8.2.6 기본 항공권 신청 페이지 표시 (데이터 없음)');
+        console.log('🔄 [초기데이터] v8.4.2 기본 항공권 신청 페이지 표시 (데이터 없음)');
         
         this.showFlightRequestPage();
         this.showPassportAlert();
@@ -961,7 +1391,7 @@ class FlightRequestUI {
         const actualArrivalDate = this.elements.actualArrivalDate?.value;
         const actualWorkEndDate = this.elements.actualWorkEndDate?.value;
 
-        console.log('🔍 [항공권검증] v8.2.6 순수 항공권 날짜 관계 검증 시작:', {
+        console.log('🔍 [항공권검증] v8.4.2 순수 항공권 날짜 관계 검증 시작:', {
             출국일: departureDate,
             귀국일: returnDate,
             현지도착일: actualArrivalDate,
@@ -1038,7 +1468,7 @@ class FlightRequestUI {
             this.validateReturnDateConstraints();
         }
 
-        console.log('✅ [항공권검증] v8.2.6 순수 항공권 날짜 관계 검증 완료 - 파견 기간 검증 제거');
+        console.log('✅ [항공권검증] v8.4.2 순수 항공권 날짜 관계 검증 완료 - 파견 기간 검증 제거');
 
         return true;
     }
@@ -1094,7 +1524,7 @@ class FlightRequestUI {
                     return;
                 }
                 
-                console.log('✅ [제출검증] v8.2.6: 사용자별 활동일 범위 검증 통과:', {
+                console.log('✅ [제출검증] v8.4.2: 사용자별 활동일 범위 검증 통과:', {
                     활동일: activityValidation.activityDays,
                     최소요구일: this.userRequiredDays,
                     최대허용일: this.userMaximumDays,
@@ -1144,7 +1574,7 @@ class FlightRequestUI {
                 );
             }
 
-            console.log('🔍 [제출검증] v8.2.6 제출 데이터 (파견 기간 검증 제거):', {
+            console.log('🔍 [제출검증] v8.4.2 제출 데이터 (파견 기간 검증 제거):', {
                 ...requestData,
                 actual_work_days: requestData.actual_work_days,
                 hasRequiredReturnDate: this.hasRequiredReturnDate,
@@ -1207,23 +1637,6 @@ class FlightRequestUI {
             window.showFlightRequestPage();
         }
     }
-    
-    showPassportInfoPage() {
-        try {
-            console.log('🔄 [페이지전환] v8.2.6 여권정보 페이지 표시...');
-            
-            const flightRequestPage = document.getElementById('flightRequestPage');
-            const passportInfoPage = document.getElementById('passportInfoPage');
-            
-            if (flightRequestPage && passportInfoPage) {
-                flightRequestPage.classList.remove('active');
-                passportInfoPage.classList.add('active');
-            }
-            
-        } catch (error) {
-            console.error('❌ [페이지전환] 여권정보 페이지 표시 실패:', error);
-        }
-    }
 
     validatePriceFields() {
         const ticketPrice = this.elements.ticketPrice?.value?.trim();
@@ -1256,7 +1669,7 @@ class FlightRequestUI {
 
     // 🚀 v8.2.4: 성공 메시지 표시 (중요한 작업 완료 시에만)
     showSuccess(message) {
-        console.log('✅ [성공] v8.2.6:', message);
+        console.log('✅ [성공] v8.4.2:', message);
         
         // 🚀 v8.2.4: 중요한 작업 완료인 경우에만 표시
         if (message && (message.includes('성공적으로') || message.includes('완료'))) {
@@ -1280,7 +1693,7 @@ class FlightRequestUI {
     }
 
     showError(message) {
-        console.error('🚨 [오류] v8.2.6:', message);
+        console.error('🚨 [오류] v8.4.2:', message);
         
         if (this.elements.errorMessage) {
             this.elements.errorMessage.textContent = message;
@@ -1404,8 +1817,35 @@ class FlightRequestUI {
 // 전역 스코프에 노출
 window.FlightRequestUI = FlightRequestUI;
 
-console.log('✅ FlightRequestUI v8.2.6 모듈 로드 완료 - 항공권 검증 로직 완전 분리');
-console.log('🔧 v8.2.6 핵심 수정사항:', {
+console.log('✅ FlightRequestUI v8.4.2 모듈 로드 완료 - 여권정보 설정 버튼 자동 폼 채우기 기능 수정');
+console.log('🔧 v8.4.2 핵심 복구사항:', {
+    passportFormHandling: {
+        description: '여권정보 폼 처리 로직 완전 복구',
+        methods: ['handlePassportSubmit', 'validateExpiryDate', 'handlePassportImageUpload'],
+        features: '폼 검증, 이미지 업로드, 저장 처리'
+    },
+    autoFormFilling: {
+        description: '기존 여권정보 자동 폼 채우기 기능 복구',
+        method: 'loadExistingPassportDataAndSetMode',
+        features: '기존 데이터 로드, 폼 자동 채우기, 모드 설정'
+    },
+    uiEnhancements: {
+        description: 'UI 요소 및 이벤트 처리 완전 복구',
+        elements: 'passportInfoPage, passportForm, passportImage 등',
+        events: '폼 제출, 이미지 업로드, 성공 메시지'
+    },
+    pageTransition: {
+        description: '페이지 전환 및 성공 메시지 복구',
+        methods: ['showPassportInfoPage', 'showPassportSuccess'],
+        features: '페이지 전환, 성공 안내, 연결 버튼'
+    },
+    validationLogic: {
+        description: '여권정보 검증 로직 복구',
+        validations: '여권번호 형식, 영문이름, 만료일 검증',
+        errorHandling: '실시간 검증 및 오류 표시'
+    }
+});
+console.log('🔧 v8.2.6 기존 핵심 수정사항:', {
     dispatchValidationRemoval: {
         description: '파견 기간 검증 로직 완전 제거',
         before: 'validateFlightDatesOnly()에서 dispatch_duration 검증 수행',
