@@ -1,4 +1,5 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.4.0
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.5.0
+// 🆕 v8.5.0: 최대 활동일 초과 검증 UI 기능 추가 - 완전한 활동기간 범위 검증
 // 🔧 v8.4.0: 사용자별 최소 체류일 하드코딩 문제 해결
 // 🆕 v8.3.0: 귀국 필수 완료일 제약사항 UI 기능 추가
 // 🔧 v8.2.2: 현지 활동기간 통합 검증 및 UX 향상 - 버그 해결
@@ -92,6 +93,10 @@ class FlightRequestUI {
             requiredDays: document.getElementById('requiredDays'),
             validationStatus: document.getElementById('validationStatus'),
             
+            // 🆕 v8.5.0: 최대 활동일 관련 요소들 추가
+            maximumDays: document.getElementById('maximumDays'),
+            maximumValidationStatus: document.getElementById('maximumValidationStatus'),
+            
             // 🆕 v8.3.0: 귀국 필수 완료일 관련 요소들
             requiredReturnDateInfo: document.getElementById('requiredReturnDateInfo'),
             requiredReturnDateWarning: document.getElementById('requiredReturnDateWarning'),
@@ -136,7 +141,7 @@ class FlightRequestUI {
 
     async init() {
         try {
-            console.log('🔄 FlightRequestUI v8.4.0 초기화 시작 (사용자별 최소 체류일 하드코딩 문제 해결)...');
+            console.log('🔄 FlightRequestUI v8.5.0 초기화 시작 (최대 활동일 초과 검증 기능 추가)...');
             
             // API 및 유틸리티 대기
             await this.waitForDependencies();
@@ -155,7 +160,7 @@ class FlightRequestUI {
                 this.loadInitialData();
             }, 300);
             
-            console.log('✅ FlightRequestUI v8.4.0 초기화 완료 - 사용자별 최소 체류일 동적 로드 적용');
+            console.log('✅ FlightRequestUI v8.5.0 초기화 완료 - 최대 활동일 초과 검증 기능 추가');
             
             this.isInitialized = true;
         } catch (error) {
@@ -185,7 +190,7 @@ class FlightRequestUI {
                 if (apiExists && apiInitialized && utilsReady) {
                     this.api = window.flightRequestAPI;
                     this.utils = window.FlightRequestUtils;
-                    console.log('✅ [UI디버그] FlightRequestUI v8.4.0 의존성 로드 완료');
+                    console.log('✅ [UI디버그] FlightRequestUI v8.5.0 의존성 로드 완료');
                     
                     // 🔧 v8.5.0: API 상태 추가 확인
                     const apiStatus = this.api.getStatus();
@@ -221,7 +226,7 @@ class FlightRequestUI {
             return true;
         }
 
-        console.log('🔄 [UI디버그] v8.4.0: 초기화 보장 시작...');
+        console.log('🔄 [UI디버그] v8.5.0: 초기화 보장 시작...');
 
         if (!this.initializationPromise) {
             this.initializationPromise = this.init();
@@ -236,19 +241,19 @@ class FlightRequestUI {
             }
             
             if (!this.api.isInitialized) {
-                console.log('🔄 [UI디버그] v8.4.0: API 초기화 대기...');
+                console.log('🔄 [UI디버그] v8.5.0: API 초기화 대기...');
                 await this.api.ensureInitialized();
             }
             
-            console.log('✅ [UI디버그] v8.4.0: 초기화 보장 완료');
+            console.log('✅ [UI디버그] v8.5.0: 초기화 보장 완료');
             return this.isInitialized && this.api.isInitialized;
         } catch (error) {
-            console.error('❌ [UI디버그] v8.4.0: 초기화 보장 실패:', error);
+            console.error('❌ [UI디버그] v8.5.0: 초기화 보장 실패:', error);
             throw error;
         }
     }
 
-    // 🔧 v8.4.0: 사용자별 활동기간 요구사항 로드
+    // 🔧 v8.5.0: 사용자별 활동기간 요구사항 로드 (최대 활동일 포함)
     async loadUserActivityRequirements() {
         try {
             if (!this.api) {
@@ -256,7 +261,7 @@ class FlightRequestUI {
                 return false;
             }
 
-            console.log('🔄 [체류일로드] v8.4.0: 사용자별 최소/최대 체류일 로드 시작...');
+            console.log('🔄 [체류일로드] v8.5.0: 사용자별 최소/최대 체류일 로드 시작...');
 
             // 사용자 프로필에서 활동기간 정보 가져오기
             const activityData = await this.api.getUserProfileActivityDates();
@@ -264,25 +269,26 @@ class FlightRequestUI {
             if (activityData) {
                 // 사용자별 설정값 사용
                 this.userRequiredDays = activityData.minimum_required_days || 180;
-                this.userMaximumDays = activityData.maximum_allowed_days || 210;
+                this.userMaximumDays = activityData.maximum_allowed_days || 210;  // 🆕 v8.5.0
                 
-                console.log('✅ [체류일로드] v8.4.0: 사용자별 체류일 로드 완료:', {
+                console.log('✅ [체류일로드] v8.5.0: 사용자별 체류일 로드 완료:', {
                     사용자ID: this.userProfile?.id || 'unknown',
                     최소요구일: this.userRequiredDays,
-                    최대허용일: this.userMaximumDays,
-                    기존하드코딩값: '180일'
+                    최대허용일: this.userMaximumDays,  // 🆕 v8.5.0
+                    기존하드코딩값: '180일/210일'
                 });
             } else {
                 // 기본값 사용
-                console.log('⚠️ [체류일로드] v8.4.0: 사용자 활동기간 정보 없음 - 기본값 사용');
+                console.log('⚠️ [체류일로드] v8.5.0: 사용자 활동기간 정보 없음 - 기본값 사용');
                 
                 // 기본값을 API에서 가져오기 시도
                 try {
                     this.userRequiredDays = await this.api.getRequiredActivityDays();
-                    console.log('✅ [체류일로드] v8.4.0: API에서 기본 최소 요구일 로드:', this.userRequiredDays);
+                    console.log('✅ [체류일로드] v8.5.0: API에서 기본 최소 요구일 로드:', this.userRequiredDays);
                 } catch (error) {
-                    console.warn('⚠️ [체류일로드] API에서 기본값 로드 실패, 180일 사용');
+                    console.warn('⚠️ [체류일로드] API에서 기본값 로드 실패, 180일/210일 사용');
                     this.userRequiredDays = 180;
+                    this.userMaximumDays = 210;
                 }
             }
 
@@ -293,7 +299,7 @@ class FlightRequestUI {
             return true;
 
         } catch (error) {
-            console.error('❌ [체류일로드] v8.4.0: 사용자 활동기간 요구사항 로드 실패:', error);
+            console.error('❌ [체류일로드] v8.5.0: 사용자 활동기간 요구사항 로드 실패:', error);
             
             // 오류 시 기본값 사용
             this.userRequiredDays = 180;
@@ -304,13 +310,14 @@ class FlightRequestUI {
         }
     }
 
-    // 🔧 v8.4.0: 최소 요구일 UI 업데이트
+    // 🔧 v8.5.0: 최소/최대 요구일 UI 업데이트
     updateRequiredDaysUI() {
         try {
+            // 최소 요구일 업데이트
             if (this.elements.requiredDays) {
                 this.elements.requiredDays.textContent = this.userRequiredDays;
                 
-                console.log('✅ [UI업데이트] v8.4.0: 최소 요구일 UI 업데이트 완료:', {
+                console.log('✅ [UI업데이트] v8.5.0: 최소 요구일 UI 업데이트 완료:', {
                     요소: '#requiredDays',
                     기존값: '180 (하드코딩)',
                     새값: this.userRequiredDays,
@@ -320,7 +327,21 @@ class FlightRequestUI {
                 console.warn('⚠️ [UI업데이트] #requiredDays 요소를 찾을 수 없음');
             }
 
-            // 🔧 v8.4.0: 검증 시에도 사용자별 값 사용하도록 전역 함수 업데이트
+            // 🆕 v8.5.0: 최대 허용일 업데이트
+            if (this.elements.maximumDays) {
+                this.elements.maximumDays.textContent = this.userMaximumDays;
+                
+                console.log('✅ [UI업데이트] v8.5.0: 최대 허용일 UI 업데이트 완료:', {
+                    요소: '#maximumDays',
+                    기존값: '210 (하드코딩)',
+                    새값: this.userMaximumDays,
+                    사용자: this.userProfile?.name || 'unknown'
+                });
+            } else {
+                console.warn('⚠️ [UI업데이트] #maximumDays 요소를 찾을 수 없음');
+            }
+
+            // 🔧 v8.5.0: 검증 시에도 사용자별 값 사용하도록 전역 함수 업데이트
             if (window.validateActivityPeriod) {
                 // 현재 입력된 값들로 즉시 재검증
                 setTimeout(() => {
@@ -329,7 +350,7 @@ class FlightRequestUI {
             }
 
         } catch (error) {
-            console.error('❌ [UI업데이트] v8.4.0: 최소 요구일 UI 업데이트 실패:', error);
+            console.error('❌ [UI업데이트] v8.5.0: 최소/최대 요구일 UI 업데이트 실패:', error);
         }
     }
 
@@ -345,7 +366,7 @@ class FlightRequestUI {
             });
         }
 
-        console.log('✅ [UI디버그] v8.4.0: 귀국 필수 완료일 검증 이벤트 설정 완료');
+        console.log('✅ [UI디버그] v8.5.0: 귀국 필수 완료일 검증 이벤트 설정 완료');
     }
 
     // 🆕 v8.3.0: 디바운스된 귀국일 검증
@@ -375,7 +396,7 @@ class FlightRequestUI {
             // API를 통한 제약사항 검증
             const validation = await this.api.validateReturnDateConstraints(returnDate);
             
-            console.log('🔍 [귀국일검증] v8.4.0 제약사항 검증 결과:', validation);
+            console.log('🔍 [귀국일검증] v8.5.0 제약사항 검증 결과:', validation);
 
             // UI 업데이트
             this.updateReturnDateConstraintUI(validation);
@@ -608,7 +629,7 @@ class FlightRequestUI {
             }
         });
 
-        console.log('✅ [UI디버그] v8.4.0: 현지 활동기간 검증 이벤트 설정 완료');
+        console.log('✅ [UI디버그] v8.5.0: 현지 활동기간 검증 이벤트 설정 완료');
     }
 
     // 🆕 v8.2.2: 디바운스된 활동기간 검증
@@ -622,7 +643,7 @@ class FlightRequestUI {
         }, 300);
     }
 
-    // 🔄 v8.4.0: 현지 활동기간 검증 메서드 (사용자별 최소 요구일 적용)
+    // 🔄 v8.5.0: 현지 활동기간 검증 메서드 (최대 활동일 검증 포함)
     validateActivityPeriod() {
         if (!this.utils) {
             console.warn('⚠️ [활동기간검증] Utils가 준비되지 않음');
@@ -634,38 +655,50 @@ class FlightRequestUI {
             returnDate: this.elements.returnDate?.value,
             actualArrivalDate: this.elements.actualArrivalDate?.value,
             actualWorkEndDate: this.elements.actualWorkEndDate?.value,
-            requiredReturnDate: this.requiredReturnInfo?.requiredDate // 🆕 v8.3.0
+            requiredReturnDate: this.requiredReturnInfo?.requiredDate,
+            minimumRequiredDays: this.userRequiredDays,     // 🔧 v8.4.0
+            maximumAllowedDays: this.userMaximumDays        // 🆕 v8.5.0
         };
 
-        console.log('🔍 [활동기간검증] v8.4.0 날짜 값들 (사용자별 최소 요구일 적용):', {
+        console.log('🔍 [활동기간검증] v8.5.0 날짜 값들 (최대 활동일 검증 포함):', {
             ...dates,
             사용자최소요구일: this.userRequiredDays,
-            기존하드코딩값: '180일'
+            사용자최대허용일: this.userMaximumDays,  // 🆕 v8.5.0
+            기존하드코딩값: '180일/210일'
         });
 
-        // 🔧 v8.4.0: 사용자별 최소 요구일을 사용한 검증
+        // 🔧 v8.5.0: 통합 검증 메서드 사용 (최대 활동일 검증 포함)
         let validation;
         if (dates.actualArrivalDate && dates.actualWorkEndDate) {
             // 활동일 계산
             const activityDays = this.utils.calculateActivityDays(dates.actualArrivalDate, dates.actualWorkEndDate);
             
-            // 🔧 v8.4.0: 사용자별 최소 요구일로 검증
-            const minDaysValidation = this.utils.validateMinimumActivityDays(activityDays, this.userRequiredDays);
+            // 🆕 v8.5.0: 활동기간 전체 범위 검증 (최소/최대 통합)
+            const rangeValidation = this.utils.validateActivityDaysRange(
+                activityDays, 
+                this.userRequiredDays, 
+                this.userMaximumDays
+            );
             
             validation = {
-                valid: minDaysValidation.valid,
-                errors: minDaysValidation.valid ? [] : [minDaysValidation.message],
-                warnings: minDaysValidation.warning ? [minDaysValidation.warning] : [],
-                activityDays: activityDays
+                valid: rangeValidation.valid,
+                errors: rangeValidation.errors,
+                warnings: rangeValidation.warnings,
+                activityDays: activityDays,
+                exceedsMaximum: !rangeValidation.maximumCheck.valid,  // 🆕 v8.5.0
+                maximumCheck: rangeValidation.maximumCheck,           // 🆕 v8.5.0
+                minimumCheck: rangeValidation.minimumCheck
             };
         } else {
             // 기본 검증
             validation = this.utils.validateAllDates(dates);
         }
 
-        console.log('✅ [활동기간검증] v8.4.0 검증 결과 (사용자별 기준):', {
+        console.log('✅ [활동기간검증] v8.5.0 검증 결과 (최대 활동일 포함):', {
             ...validation,
-            적용된최소요구일: this.userRequiredDays
+            적용된최소요구일: this.userRequiredDays,
+            적용된최대허용일: this.userMaximumDays,  // 🆕 v8.5.0
+            최대활동일초과여부: validation.exceedsMaximum
         });
 
         // UI 업데이트
@@ -674,7 +707,7 @@ class FlightRequestUI {
         return validation;
     }
 
-    // 🆕 v8.2.2: 활동기간 검증 UI 업데이트
+    // 🔄 v8.5.0: 활동기간 검증 UI 업데이트 (최대 활동일 검증 포함)
     updateActivityValidationUI(validation) {
         // 계산된 활동일 표시
         if (this.elements.calculatedDays) {
@@ -682,7 +715,42 @@ class FlightRequestUI {
                 validation.activityDays : '-';
         }
 
-        // 검증 상태 표시
+        // 🆕 v8.5.0: 최대 활동일 초과 상태를 별도로 표시
+        if (this.elements.maximumValidationStatus && validation.maximumCheck) {
+            this.elements.maximumValidationStatus.className = 'maximum-validation-status';
+            
+            if (!validation.maximumCheck.valid) {
+                this.elements.maximumValidationStatus.classList.add('invalid');
+                this.elements.maximumValidationStatus.innerHTML = 
+                    `<i data-lucide="x-circle"></i><strong>최대 활동일 초과:</strong> ${validation.maximumCheck.message}`;
+                this.elements.maximumValidationStatus.style.display = 'flex';
+                this.elements.maximumValidationStatus.style.alignItems = 'center';
+                this.elements.maximumValidationStatus.style.color = '#dc3545';
+                this.elements.maximumValidationStatus.style.backgroundColor = '#f8d7da';
+                this.elements.maximumValidationStatus.style.border = '1px solid #f5c6cb';
+                this.elements.maximumValidationStatus.style.padding = '8px 12px';
+                this.elements.maximumValidationStatus.style.borderRadius = '4px';
+                this.elements.maximumValidationStatus.style.marginTop = '8px';
+                
+            } else if (validation.maximumCheck.warning) {
+                this.elements.maximumValidationStatus.classList.add('warning');
+                this.elements.maximumValidationStatus.innerHTML = 
+                    `<i data-lucide="alert-triangle"></i>${validation.maximumCheck.warning}`;
+                this.elements.maximumValidationStatus.style.display = 'flex';
+                this.elements.maximumValidationStatus.style.alignItems = 'center';
+                this.elements.maximumValidationStatus.style.color = '#856404';
+                this.elements.maximumValidationStatus.style.backgroundColor = '#fff3cd';
+                this.elements.maximumValidationStatus.style.border = '1px solid #ffeaa7';
+                this.elements.maximumValidationStatus.style.padding = '8px 12px';
+                this.elements.maximumValidationStatus.style.borderRadius = '4px';
+                this.elements.maximumValidationStatus.style.marginTop = '8px';
+                
+            } else {
+                this.elements.maximumValidationStatus.style.display = 'none';
+            }
+        }
+
+        // 검증 상태 표시 (기존 로직)
         if (this.elements.validationStatus) {
             this.elements.validationStatus.className = 'validation-status';
             
@@ -723,10 +791,10 @@ class FlightRequestUI {
         }
     }
 
-    // 🔧 v8.4.0: 강화된 초기 데이터 로드 (사용자별 체류일 로드 포함)
+    // 🔧 v8.5.0: 강화된 초기 데이터 로드 (최대 체류일 로드 포함)
     async loadInitialData() {
         try {
-            console.log('🔄 [UI디버그] v8.4.0 초기 데이터 로드 시작 - 사용자별 최소 체류일 하드코딩 문제 해결');
+            console.log('🔄 [UI디버그] v8.5.0 초기 데이터 로드 시작 - 최대 활동일 초과 검증 기능 추가');
             
             // API 초기화 확인
             await this.ensureInitialized();
@@ -751,7 +819,7 @@ class FlightRequestUI {
                 console.warn('⚠️ [UI디버그] 사용자 프로필 로드 실패:', error);
             }
 
-            // 🔧 v8.4.0: 사용자별 활동기간 요구사항 로드
+            // 🔧 v8.5.0: 사용자별 활동기간 요구사항 로드 (최대 활동일 포함)
             try {
                 await this.loadUserActivityRequirements();
             } catch (error) {
@@ -805,7 +873,7 @@ class FlightRequestUI {
 
     // 🛠️ v8.5.0: 데이터 없이 항공권 신청 페이지 표시 (폴백)
     showFlightRequestPageWithoutData() {
-        console.log('🔄 [UI디버그] v8.4.0 기본 항공권 신청 페이지 표시 (데이터 없음)');
+        console.log('🔄 [UI디버그] v8.5.0 기본 항공권 신청 페이지 표시 (데이터 없음)');
         
         // 항공권 신청 페이지 표시
         this.showFlightRequestPage();
@@ -837,7 +905,7 @@ class FlightRequestUI {
             });
         }
 
-        // 🔧 v8.4.0: 통합 날짜 검증으로 변경 (사용자별 최소 요구일 포함)
+        // 🔧 v8.5.0: 통합 날짜 검증으로 변경 (최대 활동일 포함)
         if (this.elements.departureDate) {
             this.elements.departureDate.addEventListener('change', () => this.validateAllDates());
         }
@@ -877,7 +945,7 @@ class FlightRequestUI {
         }
     }
 
-    // 🔧 v8.4.0: 통합 날짜 검증 메서드 (사용자별 최소 요구일 적용)
+    // 🔧 v8.5.0: 통합 날짜 검증 메서드 (최대 활동일 검증 포함)
     validateAllDates() {
         if (!this.utils) {
             console.warn('⚠️ [날짜검증] Utils가 준비되지 않음');
@@ -889,12 +957,15 @@ class FlightRequestUI {
             returnDate: this.elements.returnDate?.value,
             actualArrivalDate: this.elements.actualArrivalDate?.value,
             actualWorkEndDate: this.elements.actualWorkEndDate?.value,
-            requiredReturnDate: this.requiredReturnInfo?.requiredDate // 🆕 v8.3.0
+            requiredReturnDate: this.requiredReturnInfo?.requiredDate,
+            minimumRequiredDays: this.userRequiredDays,     // 🔧 v8.4.0
+            maximumAllowedDays: this.userMaximumDays        // 🆕 v8.5.0
         };
 
-        console.log('🔍 [날짜검증] v8.4.0 통합 검증 시작 (사용자별 최소 요구일 적용):', {
+        console.log('🔍 [날짜검증] v8.5.0 통합 검증 시작 (최대 활동일 포함):', {
             ...dates,
-            사용자최소요구일: this.userRequiredDays
+            사용자최소요구일: this.userRequiredDays,
+            사용자최대허용일: this.userMaximumDays  // 🆕 v8.5.0
         });
 
         // 1. 기본 항공권 날짜 검증
@@ -925,16 +996,16 @@ class FlightRequestUI {
             this.validateReturnDateConstraints();
         }
 
-        // 3. 🔧 v8.4.0: 현지 활동기간이 입력된 경우 사용자별 기준으로 검증
+        // 3. 🔧 v8.5.0: 현지 활동기간이 입력된 경우 최대/최소 활동일 검증
         if (dates.actualArrivalDate || dates.actualWorkEndDate) {
-            const validation = this.validateActivityPeriod(); // 이미 사용자별 기준 적용됨
+            const validation = this.validateActivityPeriod(); // 최대 활동일 검증 포함
             return validation.valid;
         }
 
         return true;
     }
 
-    // 🔧 v8.4.0: 강화된 항공권 신청 제출 (사용자별 최소 요구일 적용)
+    // 🔧 v8.5.0: 강화된 항공권 신청 제출 (최대 활동일 검증 포함)
     async handleSubmit(event) {
         event.preventDefault();
 
@@ -944,7 +1015,7 @@ class FlightRequestUI {
 
             // 🆕 v8.3.0: 귀국일 제약사항 사전 검증
             if (this.elements.returnDate?.value && this.hasRequiredReturnDate) {
-                console.log('🔍 [제출검증] v8.4.0: 귀국일 제약사항 사전 검증 시작...');
+                console.log('🔍 [제출검증] v8.5.0: 귀국일 제약사항 사전 검증 시작...');
                 
                 const constraintValidation = await this.validateReturnDateConstraints();
                 if (!constraintValidation.valid) {
@@ -958,15 +1029,15 @@ class FlightRequestUI {
                     return;
                 }
                 
-                console.log('✅ [제출검증] v8.4.0: 귀국일 제약사항 검증 통과');
+                console.log('✅ [제출검증] v8.5.0: 귀국일 제약사항 검증 통과');
             }
 
-            // 🔧 v8.4.0: 통합 날짜 검증 (사용자별 최소 요구일 포함)
+            // 🔧 v8.5.0: 통합 날짜 검증 (최대 활동일 포함)
             if (!this.validateAllDates()) {
                 return;
             }
 
-            // 🔧 v8.4.0: 현지 활동기간이 입력된 경우 사용자별 기준으로 추가 검증
+            // 🔧 v8.5.0: 현지 활동기간이 입력된 경우 최대/최소 활동일 검증
             const hasActivityDates = this.elements.actualArrivalDate?.value && 
                                    this.elements.actualWorkEndDate?.value;
             
@@ -977,18 +1048,41 @@ class FlightRequestUI {
                     this.elements.actualWorkEndDate?.value
                 );
                 
-                // 🔧 v8.4.0: 사용자별 최소 요구일로 검증
-                const minDaysValidation = this.utils.validateMinimumActivityDays(activityDays, this.userRequiredDays);
+                // 🔧 v8.5.0: 최소/최대 활동일 범위 검증
+                const rangeValidation = this.utils.validateActivityDaysRange(
+                    activityDays, 
+                    this.userRequiredDays, 
+                    this.userMaximumDays
+                );
                 
-                if (!minDaysValidation.valid) {
-                    this.showError(`활동기간이 부족합니다: ${minDaysValidation.message} (사용자별 요구사항: 최소 ${this.userRequiredDays}일)`);
+                if (!rangeValidation.valid) {
+                    const errorMessage = rangeValidation.errors.join(', ');
+                    this.showError(`활동기간 문제: ${errorMessage} (사용자별 요구사항: ${this.userRequiredDays}일~${this.userMaximumDays}일)`);
+                    
+                    // 🆕 v8.5.0: 최대 활동일 초과인 경우 특별 처리
+                    if (!rangeValidation.maximumCheck.valid) {
+                        console.error('❌ [제출검증] v8.5.0: 최대 활동일 초과:', {
+                            활동일: activityDays,
+                            최대허용일: this.userMaximumDays,
+                            초과일: activityDays - this.userMaximumDays,
+                            사용자: this.userProfile?.name
+                        });
+                        
+                        // 현지 활동기간 필드로 스크롤
+                        if (this.elements.actualWorkEndDate) {
+                            this.elements.actualWorkEndDate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            this.elements.actualWorkEndDate.focus();
+                        }
+                    }
+                    
                     return;
                 }
                 
-                console.log('✅ [제출검증] v8.4.0: 사용자별 최소 활동일 검증 통과:', {
+                console.log('✅ [제출검증] v8.5.0: 사용자별 활동일 범위 검증 통과:', {
                     활동일: activityDays,
                     최소요구일: this.userRequiredDays,
-                    기존하드코딩값: '180일'
+                    최대허용일: this.userMaximumDays,
+                    기존하드코딩값: '180일~210일'
                 });
             }
 
@@ -1009,7 +1103,7 @@ class FlightRequestUI {
             const selectedType = Array.from(this.elements.purchaseType || [])
                 .find(radio => radio.checked)?.value || 'direct';
 
-            // 🔧 v8.4.0: 사용자별 최소 요구일 정보 포함한 요청 데이터 구성
+            // 🔧 v8.5.0: 최대 활동일 정보 포함한 요청 데이터 구성
             const requestData = {
                 purchase_type: selectedType,
                 departure_date: this.elements.departureDate?.value || '',
@@ -1025,9 +1119,9 @@ class FlightRequestUI {
                 // 🆕 v8.2.2: 현지 활동기간 정보 추가
                 actual_arrival_date: this.elements.actualArrivalDate?.value || null,
                 actual_work_end_date: this.elements.actualWorkEndDate?.value || null,
-                // 🔧 v8.4.0: 사용자별 최소 요구일 정보 추가
+                // 🔧 v8.5.0: 사용자별 최소/최대 활동일 정보 추가
                 minimum_required_days: this.userRequiredDays,
-                maximum_allowed_days: this.userMaximumDays
+                maximum_allowed_days: this.userMaximumDays  // 🆕 v8.5.0
             };
 
             // 🆕 v8.2.2: 활동일 계산 (유효한 경우에만)
@@ -1038,13 +1132,14 @@ class FlightRequestUI {
                 );
             }
 
-            console.log('🔍 [UI디버그] v8.4.0 제출 데이터 (사용자별 최소 요구일 적용):', {
+            console.log('🔍 [UI디버그] v8.5.0 제출 데이터 (최대 활동일 검증 포함):', {
                 ...requestData,
                 actual_work_days: requestData.actual_work_days,
                 hasRequiredReturnDate: this.hasRequiredReturnDate,
                 requiredReturnDate: this.requiredReturnInfo?.requiredDate,
-                기존하드코딩값: '180일',
-                사용자별최소요구일: this.userRequiredDays
+                기존하드코딩값: '180일~210일',
+                사용자별최소요구일: this.userRequiredDays,
+                사용자별최대허용일: this.userMaximumDays  // 🆕 v8.5.0
             });
 
             let result;
@@ -1070,8 +1165,18 @@ class FlightRequestUI {
         } catch (error) {
             console.error('신청 실패:', error);
             
+            // 🆕 v8.5.0: 최대 활동일 초과 에러 특별 처리
+            if (error.message && error.message.includes('최대 활동일')) {
+                this.showError(error.message);
+                
+                // 활동기간 필드로 스크롤
+                if (this.elements.actualWorkEndDate) {
+                    this.elements.actualWorkEndDate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    this.elements.actualWorkEndDate.focus();
+                }
+            } 
             // 🆕 v8.3.0: 귀국일 제약사항 위반 에러 특별 처리
-            if (error.message && error.message.includes('귀국일 제약사항')) {
+            else if (error.message && error.message.includes('귀국일 제약사항')) {
                 this.showError(error.message);
                 
                 // 귀국일 필드로 스크롤
@@ -1098,7 +1203,7 @@ class FlightRequestUI {
     showPassportInfoPage() {
         // 기존 구현 유지
         try {
-            console.log('🔄 [UI디버그] v8.4.0 여권정보 페이지 표시...');
+            console.log('🔄 [UI디버그] v8.5.0 여권정보 페이지 표시...');
             
             const flightRequestPage = document.getElementById('flightRequestPage');
             const passportInfoPage = document.getElementById('passportInfoPage');
@@ -1126,7 +1231,7 @@ class FlightRequestUI {
 
     resetPassportPageState() {
         // 기존 구현 유지
-        console.log('🔧 [UI디버그] v8.4.0: 여권정보 페이지 상태 초기화');
+        console.log('🔧 [UI디버그] v8.5.0: 여권정보 페이지 상태 초기화');
         
         if (this.elements.passportSuccessMessage) {
             this.elements.passportSuccessMessage.style.display = 'none';
@@ -1281,7 +1386,7 @@ class FlightRequestUI {
     }
 
     showError(message) {
-        console.error('🚨 [UI오류] v8.4.0:', message);
+        console.error('🚨 [UI오류] v8.5.0:', message);
         
         if (this.elements.errorMessage) {
             this.elements.errorMessage.textContent = message;
@@ -1305,7 +1410,7 @@ class FlightRequestUI {
     }
 
     showSuccess(message) {
-        console.log('✅ [UI성공] v8.4.0:', message);
+        console.log('✅ [UI성공] v8.5.0:', message);
         
         if (this.elements.successMessage) {
             this.elements.successMessage.textContent = message;
@@ -1441,32 +1546,34 @@ class FlightRequestUI {
     // === 여권정보 관련 간소화된 메서드들 ===
     
     async initializePassportInfoUI() {
-        console.log('🔧 [UI디버그] v8.4.0 여권정보 UI 초기화 (간소화)');
+        console.log('🔧 [UI디버그] v8.5.0 여권정보 UI 초기화 (간소화)');
         // 기본 이벤트 리스너만 설정
     }
 
     async loadExistingPassportDataAndSetMode() {
-        console.log('🔄 [UI디버그] v8.4.0 기존 여권정보 로드 (간소화)');
+        console.log('🔄 [UI디버그] v8.5.0 기존 여권정보 로드 (간소화)');
         // 기본 로드 로직만 구현
         return false;
     }
 
     async handlePassportSubmit(event) {
         event.preventDefault();
-        console.log('🔄 [UI디버그] v8.4.0 여권정보 제출 (간소화)');
+        console.log('🔄 [UI디버그] v8.5.0 여권정보 제출 (간소화)');
         // 기본 제출 로직만 구현
     }
 }
 
-// 🔧 v8.4.0: FlightRequestUI 클래스를 전역 스코프에 노출
+// 🔧 v8.5.0: FlightRequestUI 클래스를 전역 스코프에 노출
 window.FlightRequestUI = FlightRequestUI;
 
-console.log('✅ FlightRequestUI v8.4.0 모듈 로드 완료 - 사용자별 최소 체류일 하드코딩 문제 해결');
-console.log('🔧 v8.4.0 주요 수정사항:', {
-    dynamicRequiredDays: '사용자별 minimum_required_days 동적 로드',
-    apiIntegration: 'getUserProfileActivityDates API 연동',
-    uiUpdate: 'HTML 하드코딩 값 대신 동적 업데이트',
-    userSpecific: '개인별 체류일 요구사항 정확 반영',
-    beforeFix: '기존 180일 하드코딩',
-    afterFix: '사용자별 설정값 동적 적용'
+console.log('✅ FlightRequestUI v8.5.0 모듈 로드 완료 - 최대 활동일 초과 검증 기능 추가');
+console.log('🆕 v8.5.0 주요 수정사항:', {
+    maximumActivityDaysValidation: '사용자별 maximum_allowed_days UI 검증',
+    completeRangeValidation: '최소/최대 활동일 통합 UI 검증',
+    realTimeMaximumCheck: '최대 활동일 초과 실시간 피드백',
+    enhancedErrorHandling: '최대 활동일 초과 시 특별 처리',
+    userSpecificUIUpdates: '개인별 최대 허용일 UI 업데이트',
+    maximumValidationStatus: '최대 활동일 전용 검증 상태 표시',
+    beforeFix: '기존 최소 활동일만 검증',
+    afterFix: '최소/최대 활동일 완전 범위 검증'
 });
