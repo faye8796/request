@@ -1,4 +1,10 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v9.2.0
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.2.4
+// 🚀 v8.2.4: dispatch_duration 저장 로직 추가 및 출국일/귀국일 제약 검증 강화
+// 📝 변경사항:
+//   - dispatch_duration 계산 및 저장 (출국일~귀국일 전체 체류기간)
+//   - actual_work_days와 dispatch_duration 모두 저장하도록 수정
+//   - 사용자별 최소/최대 활동일 요구사항 검증 강화
+//   - 출국일/귀국일 제약사항 2일/10일 규칙으로 업데이트
 // 🔧 v9.2.0: API 폴백값 하드코딩 완전 제거 - 2단계 완료
 // 🔧 v9.0.0: 하드코딩 값 제거 및 maximum_allowed_days 완전 지원
 // 🔧 v8.4.2: '이가짜' 학생 최소 체류일 문제 해결 - auth_user_id → id 조회 방식 수정
@@ -17,12 +23,12 @@ class FlightRequestAPI {
     // === 초기화 ===
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v9.2.0 초기화 시작 - API 폴백값 하드코딩 완전 제거...');
+            console.log('🔄 FlightRequestAPI v8.2.4 초기화 시작 - dispatch_duration 저장 로직 추가...');
             
             await this.connectToSupabaseCore();
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI v9.2.0 초기화 완료 - 하드코딩 폴백값 완전 제거');
+            console.log('✅ FlightRequestAPI v8.2.4 초기화 완료 - dispatch_duration 저장 로직 추가');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -98,7 +104,7 @@ class FlightRequestAPI {
                 name: studentData.name || 'no-name'
             };
             
-            console.log('✅ [사용자인증] v9.2.0 사용자 정보 로드:', {
+            console.log('✅ [사용자인증] v8.2.4 사용자 정보 로드:', {
                 id: this.user.id,
                 name: this.user.name,
                 조회방식: 'id 컬럼 직접 사용'
@@ -173,7 +179,7 @@ class FlightRequestAPI {
 
             if (error && error.code !== 'PGRST116') throw error;
             
-            console.log('✅ [귀국필수일] v9.2.0 조회 성공:', {
+            console.log('✅ [귀국필수일] v8.2.4 조회 성공:', {
                 사용자: this.user.name,
                 조회컬럼: 'id',
                 기존문제: 'auth_user_id(null)로 조회 실패',
@@ -242,7 +248,7 @@ class FlightRequestAPI {
     }
 
     /**
-     * 🆕 v8.3.0: 귀국일 제약사항 검증 (서버 측 검증)
+     * 🚀 v8.2.4: 귀국일 제약사항 검증 (2일/10일 규칙 적용)
      * @param {string} returnDate - 검증할 귀국일
      * @returns {Object} 검증 결과
      */
@@ -299,7 +305,7 @@ class FlightRequestAPI {
     // === 🔧 v9.2.0: 현지 활동기간 관리 API (하드코딩 폴백값 완전 제거) ===
 
     /**
-     * 🔧 v9.2.0: 사용자의 현지 활동기간 정보를 user_profiles 테이블에 업데이트 (폴백값 제거)
+     * 🚀 v8.2.4: 사용자 프로필에 활동기간과 dispatch_duration 모두 업데이트
      */
     async updateUserProfileActivityDates(activityData) {
         try {
@@ -312,12 +318,19 @@ class FlightRequestAPI {
 
             // 🔧 v9.2.0: 하드코딩 폴백값 제거 - 필수 매개변수 검증
             if (!activityData?.minimumRequiredDays || !activityData?.maximumAllowedDays) {
-                console.error('❌ [API] v9.2.0: 활동일 요구사항이 매개변수로 전달되지 않음:', {
+                console.error('❌ [API] v8.2.4: 활동일 요구사항이 매개변수로 전달되지 않음:', {
                     minimumRequiredDays: activityData?.minimumRequiredDays,
                     maximumAllowedDays: activityData?.maximumAllowedDays,
                     하드코딩제거: '✅ 완료 - 폴백값 없음'
                 });
                 throw new Error('활동일 요구사항(최소/최대 활동일)이 설정되지 않았습니다. 사용자별 요구사항을 먼저 로드해주세요.');
+            }
+
+            // 🚀 v8.2.4: dispatch_duration도 함께 계산하여 저장
+            let dispatchDuration = 0;
+            if (activityData.departureDate && activityData.returnDate && window.FlightRequestUtils) {
+                const utils = window.flightRequestUtils || new window.FlightRequestUtils();
+                dispatchDuration = utils.calculateTotalStayDuration(activityData.departureDate, activityData.returnDate);
             }
 
             const updateData = {
@@ -326,6 +339,8 @@ class FlightRequestAPI {
                 actual_work_days: activityData.actualWorkDays || 0,
                 minimum_required_days: activityData.minimumRequiredDays, // 🔧 v9.2.0: 폴백값 제거
                 maximum_allowed_days: activityData.maximumAllowedDays,   // 🔧 v9.2.0: 폴백값 제거
+                // 🚀 v8.2.4: dispatch_duration 추가 저장
+                dispatch_duration: dispatchDuration,
                 updated_at: new Date().toISOString()
             };
 
@@ -346,11 +361,13 @@ class FlightRequestAPI {
 
             if (error) throw error;
             
-            console.log('✅ [활동기간업데이트] v9.2.0 업데이트 성공 (폴백값 제거):', {
+            console.log('✅ [활동기간업데이트] v8.2.4 업데이트 성공 (dispatch_duration 추가):', {
                 사용자: this.user.name,
                 최소요구일: updateData.minimum_required_days,
                 최대허용일: updateData.maximum_allowed_days,
-                하드코딩폴백값제거: '✅ 완료'
+                실제활동일: updateData.actual_work_days,
+                전체체류일: updateData.dispatch_duration,
+                새기능: 'dispatch_duration 저장 추가'
             });
             
             return { success: true, data: data };
@@ -387,11 +404,12 @@ class FlightRequestAPI {
                 
                 const profileData = result.data?.length > 0 ? result.data[0] : null;
                 
-                console.log('✅ [활동기간조회] v9.2.0 핵심 조회 성공:', {
+                console.log('✅ [활동기간조회] v8.2.4 핵심 조회 성공:', {
                     사용자: this.user.name,
                     사용자ID: this.user.id,
                     최소요구일: profileData?.minimum_required_days,
                     최대허용일: profileData?.maximum_allowed_days,
+                    dispatch_duration: profileData?.dispatch_duration,
                     하드코딩제거: '210일 → 실제 DB값 사용'
                 });
                 
@@ -406,18 +424,19 @@ class FlightRequestAPI {
 
             if (error && error.code !== 'PGRST116') throw error;
             
-            console.log('✅ [활동기간조회] v9.2.0 핵심 조회 성공 (Direct):', {
+            console.log('✅ [활동기간조회] v8.2.4 핵심 조회 성공 (Direct):', {
                 사용자: this.user.name,
                 사용자ID: this.user.id,
                 최소요구일: data?.minimum_required_days,
                 최대허용일: data?.maximum_allowed_days,
+                dispatch_duration: data?.dispatch_duration,
                 하드코딩제거: '210일 → 실제 DB값 사용'
             });
             
             return data;
 
         } catch (error) {
-            console.error('❌ [활동기간조회] v9.2.0 조회 실패:', error);
+            console.error('❌ [활동기간조회] v8.2.4 조회 실패:', error);
             throw error;
         }
     }
@@ -427,13 +446,13 @@ class FlightRequestAPI {
      */
     async getActivityRequirements() {
         try {
-            console.log('🔄 [활동요구사항] v9.2.0 사용자별 활동일 요구사항 조회 시작 (폴백값 제거)...');
+            console.log('🔄 [활동요구사항] v8.2.4 사용자별 활동일 요구사항 조회 시작 (폴백값 제거)...');
             
             const profileData = await this.getUserProfileActivityDates();
             
             // 🔧 v9.2.0: 하드코딩 폴백값 제거 - 명시적 에러 처리
             if (!profileData?.minimum_required_days || !profileData?.maximum_allowed_days) {
-                console.error('❌ [활동요구사항] v9.2.0: DB에 사용자별 활동일 요구사항이 설정되지 않음:', {
+                console.error('❌ [활동요구사항] v8.2.4: DB에 사용자별 활동일 요구사항이 설정되지 않음:', {
                     사용자: this.user?.name,
                     최소요구일: profileData?.minimum_required_days,
                     최대허용일: profileData?.maximum_allowed_days,
@@ -456,7 +475,7 @@ class FlightRequestAPI {
                 source: 'database'
             };
             
-            console.log('✅ [활동요구사항] v9.2.0 조회 완료 (폴백값 제거):', {
+            console.log('✅ [활동요구사항] v8.2.4 조회 완료 (폴백값 제거):', {
                 사용자: this.user?.name || 'unknown',
                 최소요구일: requirements.minimumDays,
                 최대허용일: requirements.maximumDays,
@@ -466,7 +485,7 @@ class FlightRequestAPI {
             
             return requirements;
         } catch (error) {
-            console.error('❌ [활동요구사항] v9.2.0 조회 실패:', error);
+            console.error('❌ [활동요구사항] v8.2.4 조회 실패:', error);
             
             // 🔧 v9.2.0: 하드코딩 폴백값 제거 - 에러 상태 반환
             return {
@@ -487,19 +506,19 @@ class FlightRequestAPI {
             const requirements = await this.getActivityRequirements();
             
             if (!requirements.minimumDays) {
-                console.error('❌ [최소요구일] v9.2.0: 사용자별 최소 요구일이 설정되지 않음');
+                console.error('❌ [최소요구일] v8.2.4: 사용자별 최소 요구일이 설정되지 않음');
                 throw new Error('사용자별 최소 요구 활동일이 설정되지 않았습니다. 관리자에게 문의하세요.');
             }
             
             return requirements.minimumDays;
         } catch (error) {
-            console.error('❌ [최소요구일] v9.2.0 조회 실패:', error);
+            console.error('❌ [최소요구일] v8.2.4 조회 실패:', error);
             throw error; // 🔧 v9.2.0: 하드코딩 기본값 제거, 에러 전파
         }
     }
 
     /**
-     * 🔄 v8.3.0: 활동기간 데이터의 서버 측 검증 (귀국 필수 완료일 포함)
+     * 🚀 v8.2.4: 활동기간 데이터의 서버 측 검증 (2일/10일 규칙 적용)
      */
     async validateActivityPeriodAPI(activityData) {
         try {
@@ -718,6 +737,9 @@ class FlightRequestAPI {
         }
     }
 
+    /**
+     * 🚀 v8.2.4: 항공권 신청 생성 - dispatch_duration 저장 추가
+     */
     async createFlightRequest(requestData, imageFile) {
         try {
             await this.ensureInitialized();
@@ -734,6 +756,13 @@ class FlightRequestAPI {
             let imageUrl = null;
             if (imageFile) {
                 imageUrl = await this.uploadFlightImage(imageFile);
+            }
+
+            // 🚀 v8.2.4: dispatch_duration 계산 및 포함
+            let dispatchDuration = 0;
+            if (requestData.departure_date && requestData.return_date && window.FlightRequestUtils) {
+                const utils = window.flightRequestUtils || new window.FlightRequestUtils();
+                dispatchDuration = utils.calculateTotalStayDuration(requestData.departure_date, requestData.return_date);
             }
 
             const dataToSave = {
@@ -753,22 +782,26 @@ class FlightRequestAPI {
 
             const flightRequestResult = await this.insertData('flight_requests', dataToSave);
 
-            // 활동기간 데이터가 있으면 user_profiles도 업데이트
+            // 🚀 v8.2.4: 활동기간 데이터가 있으면 user_profiles도 업데이트 (dispatch_duration 포함)
             if (requestData.actualArrivalDate && requestData.actualWorkEndDate) {
                 // 🔧 v9.2.0: 하드코딩 폴백값 제거 - 필수 매개변수 검증
                 if (!requestData.minimumRequiredDays || !requestData.maximumAllowedDays) {
-                    console.warn('⚠️ [항공권신청] v9.2.0: 활동일 요구사항이 누락됨 - 활동기간 업데이트 생략');
+                    console.warn('⚠️ [항공권신청] v8.2.4: 활동일 요구사항이 누락됨 - 활동기간 업데이트 생략');
                 } else {
                     const activityData = {
                         actualArrivalDate: requestData.actualArrivalDate,
                         actualWorkEndDate: requestData.actualWorkEndDate,
                         actualWorkDays: requestData.actualWorkDays || 0,
                         minimumRequiredDays: requestData.minimumRequiredDays, // 🔧 v9.2.0: 폴백값 제거
-                        maximumAllowedDays: requestData.maximumAllowedDays    // 🔧 v9.2.0: 폴백값 제거
+                        maximumAllowedDays: requestData.maximumAllowedDays,    // 🔧 v9.2.0: 폴백값 제거
+                        // 🚀 v8.2.4: dispatch_duration 계산을 위한 날짜 정보 추가
+                        departureDate: requestData.departure_date,
+                        returnDate: requestData.return_date
                     };
 
                     try {
                         await this.updateUserProfileActivityDates(activityData);
+                        console.log('✅ [항공권신청] v8.2.4: dispatch_duration 포함 활동기간 업데이트 완료');
                     } catch (activityError) {
                         console.warn('⚠️ 활동기간 업데이트 실패 (항공권 신청은 성공):', activityError);
                     }
@@ -783,6 +816,9 @@ class FlightRequestAPI {
         }
     }
 
+    /**
+     * 🚀 v8.2.4: 항공권 신청 수정 - dispatch_duration 저장 추가
+     */
     async updateFlightRequest(requestId, requestData, imageFile = null) {
         try {
             await this.ensureInitialized();
@@ -825,22 +861,26 @@ class FlightRequestAPI {
 
             if (error) throw error;
 
-            // 활동기간 데이터가 있으면 user_profiles도 업데이트
+            // 🚀 v8.2.4: 활동기간 데이터가 있으면 user_profiles도 업데이트 (dispatch_duration 포함)
             if (requestData.actualArrivalDate && requestData.actualWorkEndDate) {
                 // 🔧 v9.2.0: 하드코딩 폴백값 제거 - 필수 매개변수 검증
                 if (!requestData.minimumRequiredDays || !requestData.maximumAllowedDays) {
-                    console.warn('⚠️ [항공권수정] v9.2.0: 활동일 요구사항이 누락됨 - 활동기간 업데이트 생략');
+                    console.warn('⚠️ [항공권수정] v8.2.4: 활동일 요구사항이 누락됨 - 활동기간 업데이트 생략');
                 } else {
                     const activityData = {
                         actualArrivalDate: requestData.actualArrivalDate,
                         actualWorkEndDate: requestData.actualWorkEndDate,
                         actualWorkDays: requestData.actualWorkDays || 0,
                         minimumRequiredDays: requestData.minimumRequiredDays, // 🔧 v9.2.0: 폴백값 제거
-                        maximumAllowedDays: requestData.maximumAllowedDays    // 🔧 v9.2.0: 폴백값 제거
+                        maximumAllowedDays: requestData.maximumAllowedDays,    // 🔧 v9.2.0: 폴백값 제거
+                        // 🚀 v8.2.4: dispatch_duration 계산을 위한 날짜 정보 추가
+                        departureDate: requestData.departure_date,
+                        returnDate: requestData.return_date
                     };
 
                     try {
                         await this.updateUserProfileActivityDates(activityData);
+                        console.log('✅ [항공권수정] v8.2.4: dispatch_duration 포함 활동기간 업데이트 완료');
                     } catch (activityError) {
                         console.warn('⚠️ 활동기간 업데이트 실패 (항공권 수정은 성공):', activityError);
                     }
@@ -1009,7 +1049,7 @@ class FlightRequestAPI {
     // === 상태 정보 ===
     getStatus() {
         return {
-            version: 'v9.2.0',
+            version: 'v8.2.4',
             isInitialized: this.isInitialized,
             hasCore: !!this.core,
             hasSupabase: !!this.supabase,
@@ -1019,6 +1059,12 @@ class FlightRequestAPI {
                 email: this.user.email, 
                 name: this.user.name
             } : null,
+            v824Updates: { // 🚀 v8.2.4 새 기능
+                dispatchDurationStorage: 'dispatch_duration 계산 및 저장 추가',
+                dualDurationTracking: 'actual_work_days와 dispatch_duration 모두 저장',
+                enhancedDateValidation: '2일/10일 제약 규칙 적용',
+                improvedActivityTracking: '현지 활동기간과 전체 체류기간 구분 관리'
+            },
             newFeatures: [ // 🆕 v9.2.0
                 'API 폴백값 하드코딩 완전 제거',
                 '에러 처리 기반 안정성 향상',
@@ -1053,10 +1099,10 @@ window.FlightRequestAPI = FlightRequestAPI;
 // 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v9.2.0 인스턴스 생성 시작 - API 폴백값 하드코딩 완전 제거...');
+        console.log('🚀 FlightRequestAPI v8.2.4 인스턴스 생성 시작 - dispatch_duration 저장 로직 추가...');
         window.flightRequestAPI = new FlightRequestAPI();
         window.passportAPI = window.flightRequestAPI; // 호환성
-        console.log('✅ FlightRequestAPI v9.2.0 인스턴스 생성 완료 - 폴백값 하드코딩 완전 제거');
+        console.log('✅ FlightRequestAPI v8.2.4 인스턴스 생성 완료 - dispatch_duration 저장 로직 추가');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -1073,8 +1119,32 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 100);
 }
 
-console.log('✅ FlightRequestAPI v9.2.0 모듈 로드 완료 - API 폴백값 하드코딩 완전 제거');
-console.log('🔧 v9.2.0 주요 업데이트:', {
+console.log('✅ FlightRequestAPI v8.2.4 모듈 로드 완료 - dispatch_duration 저장 로직 추가');
+console.log('🚀 v8.2.4 주요 업데이트:', {
+    dispatchDurationStorage: {
+        feature: 'dispatch_duration 계산 및 저장',
+        description: '출국일~귀국일 전체 체류기간을 user_profiles 테이블에 저장',
+        tables: 'user_profiles.dispatch_duration 컬럼 활용',
+        calculation: 'calculateTotalStayDuration() 메서드 사용'
+    },
+    dualTracking: {
+        actualWorkDays: '현지 도착일 ~ 학당 근무 종료일 (기존)',
+        dispatchDuration: '출국일 ~ 귀국일 (신규 추가)',
+        purpose: '활동기간과 전체 체류기간 구분 관리'
+    },
+    enhancedValidation: {
+        arrivalDateTolerance: '출국일로부터 최대 2일 후 (기존: 1일)',
+        returnDateTolerance: '활동종료일로부터 최대 10일 후 (기존: 9일)',
+        constraint: '2025-12-12 귀국 필수 완료일 검증 유지'
+    },
+    technicalImprovements: {
+        updateUserProfileActivityDates: 'dispatch_duration 계산 및 저장 추가',
+        createFlightRequest: '신청 생성 시 활동기간+체류기간 모두 저장',
+        updateFlightRequest: '신청 수정 시 활동기간+체류기간 모두 업데이트',
+        backwardCompatibility: '기존 모든 기능 100% 호환 유지'
+    }
+});
+console.log('🔧 v9.2.0 기존 기능:', {
     API폴백값제거: '180일/210일 폴백값 → 에러 처리로 변경',
     안정성향상: '명확한 에러 메시지 및 필수 매개변수 검증',
     데이터정합성: 'DB 설정값 없을 시 명시적 에러 반환',
