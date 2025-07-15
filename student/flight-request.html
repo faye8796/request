@@ -184,7 +184,7 @@
             line-height: 1.4;
         }
 
-        /* 🆕 v8.2.2: 현지 활동기간 관리 스타일 개선 */
+        /* 🆕 v9.0.0: 현지 활동기간 관리 스타일 개선 (2열 레이아웃) */
         .activity-period-info {
             margin-top: 16px;
             padding: 16px;
@@ -195,7 +195,7 @@
 
         .activity-summary {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 12px;
             margin-bottom: 12px;
             padding: 12px;
@@ -229,7 +229,7 @@
             white-space: nowrap;
         }
 
-        /* 🔧 v8.5.0: 로딩 상태 스타일 */
+        /* 🔧 v9.0.0: 로딩 상태 스타일 */
         .requirement-status .value.loading {
             color: #6b7280;
             font-style: italic;
@@ -267,36 +267,6 @@
             width: 16px;
             height: 16px;
             margin-right: 8px;
-        }
-
-        /* 🆕 v8.5.0: 최대 활동일 검증 상태 스타일 */
-        .maximum-validation-status {
-            margin-top: 8px;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 500;
-            display: none;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .maximum-validation-status.invalid {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #dc2626;
-        }
-
-        .maximum-validation-status.warning {
-            background: #fffbeb;
-            border: 1px solid #fed7aa;
-            color: #d97706;
-        }
-
-        .maximum-validation-status i {
-            width: 16px;
-            height: 16px;
-            flex-shrink: 0;
         }
 
         /* 🆕 v8.2.2: 단계별 진행 안내 스타일 */
@@ -535,7 +505,7 @@
                                     </div>
                                 </div>
                                 
-                                <!-- 🔧 v8.5.0: 활동일 계산 표시 (최대 활동일 포함) -->
+                                <!-- 🔧 v9.0.0: 활동일 계산 표시 (2열 레이아웃) -->
                                 <div class="activity-period-info">
                                     <div class="activity-summary">
                                         <div class="activity-days">
@@ -543,18 +513,11 @@
                                             <span id="calculatedDays" class="value">-</span>일
                                         </div>
                                         <div class="requirement-status">
-                                            <span class="label">최소 요구일:</span>
+                                            <span class="label">필수 활동일:</span>
                                             <span id="requiredDays" class="value loading">로딩중...</span>일
-                                        </div>
-                                        <!-- 🆕 v8.5.0: 최대 허용일 표시 추가 -->
-                                        <div class="requirement-status">
-                                            <span class="label">최대 허용일:</span>
-                                            <span id="maximumDays" class="value loading">로딩중...</span>일
                                         </div>
                                     </div>
                                     <div id="validationStatus" class="validation-status"></div>
-                                    <!-- 🆕 v8.5.0: 최대 활동일 전용 검증 상태 표시 -->
-                                    <div id="maximumValidationStatus" class="maximum-validation-status" style="display: none;"></div>
                                 </div>
                             </div>
 
@@ -753,15 +716,15 @@
     <script src="../js/utils.js"></script>
     <script src="../js/common/storage-utils.js"></script>
 
-    <!-- 🚑 v8.4.1: 응급 수정된 초기화 스크립트 -->
+    <!-- 🚑 v9.0.0: 하드코딩 값 제거 및 DB 연동 강화 -->
     <script>
-        console.log('🚑 v8.5.0 응급 수정: 간소화된 초기화 시작 (최대 활동일 검증 UI 완성)');
+        console.log('🚑 v9.0.0 시작: 하드코딩 값 제거 및 실제 DB값 사용 개선');
 
-        // 🔧 기본값 설정
+        // 🔧 사용자별 활동 요구사항 (DB에서 로드)
         window.userActivityRequirements = {
-            minimumDays: 180,
-            maximumDays: 210,
-            isLoaded: true
+            minimumDays: null,  // ✅ DB에서 로드
+            maximumDays: null,  // ✅ DB에서 로드
+            isLoaded: false
         };
 
         // 🚑 즉시 앱 표시 (3초 타이머)
@@ -778,10 +741,13 @@
             if (globalLoading) globalLoading.style.display = 'none';
             if (app) app.style.display = 'block';
             
-            console.log('✅ 앱 표시 완료 (v8.5.0 UI 요소 포함)');
+            console.log('✅ v9.0.0 앱 표시 완료 (DB 연동 로직 포함)');
             
             // 기본 이벤트 설정
             setupBasicEvents();
+            
+            // 🆕 v9.0.0: 사용자별 활동 요구사항 로드
+            loadUserActivityRequirements();
         }
 
         // 🔧 기본 이벤트 설정
@@ -823,16 +789,77 @@
                 });
             });
 
-            console.log('✅ 기본 이벤트 설정 완료 (v8.5.0 요소 포함)');
+            console.log('✅ 기본 이벤트 설정 완료 (v9.0.0)');
         }
 
-        // 🔧 v8.5.0: 향상된 활동일 계산 함수 (최대 활동일 검증 포함)
+        // 🆕 v9.0.0: 사용자별 활동 요구사항 로드
+        async function loadUserActivityRequirements() {
+            try {
+                console.log('🔍 [DB연동] v9.0.0: 사용자별 활동 요구사항 로드 시작');
+                
+                // 현재 사용자 ID 가져오기 (localStorage에서)
+                const currentUser = JSON.parse(localStorage.getItem('userData') || '{}');
+                const userId = currentUser.id;
+                
+                if (!userId) {
+                    console.warn('⚠️ 사용자 ID 없음, 기본값 사용');
+                    setDefaultRequirements();
+                    return;
+                }
+
+                // API가 있으면 사용, 없으면 직접 DB 쿼리
+                if (window.FlightRequestAPI) {
+                    const response = await window.FlightRequestAPI.getUserProfileActivityDates(userId);
+                    if (response && response.data) {
+                        updateRequirements(response.data);
+                        return;
+                    }
+                }
+
+                // 폴백: 기본값 사용
+                console.warn('⚠️ API 로드 실패, 기본값 사용');
+                setDefaultRequirements();
+                
+            } catch (error) {
+                console.error('❌ [DB연동] 활동 요구사항 로드 실패:', error);
+                setDefaultRequirements();
+            }
+        }
+
+        function setDefaultRequirements() {
+            window.userActivityRequirements = {
+                minimumDays: 180,  // 폴백 기본값
+                maximumDays: 210,  // 폴백 기본값
+                isLoaded: true
+            };
+            updateRequirementDisplay();
+            console.log('📋 기본 요구사항 설정 완료 (폴백)');
+        }
+
+        function updateRequirements(data) {
+            window.userActivityRequirements = {
+                minimumDays: data.minimum_required_days || 180,
+                maximumDays: data.maximum_allowed_days || 210,
+                isLoaded: true
+            };
+            updateRequirementDisplay();
+            console.log('✅ [DB연동] 실제 사용자 요구사항 로드 완료:', window.userActivityRequirements);
+        }
+
+        function updateRequirementDisplay() {
+            const requiredDaysEl = document.getElementById('requiredDays');
+            if (requiredDaysEl) {
+                requiredDaysEl.className = 'value';
+                requiredDaysEl.textContent = window.userActivityRequirements.minimumDays;
+            }
+        }
+
+        // 🔧 v9.0.0: 개선된 활동일 계산 함수 (하드코딩 제거)
         function calculateActivityDays() {
             const arrivalDate = document.getElementById('actualArrivalDate')?.value;
             const workEndDate = document.getElementById('actualWorkEndDate')?.value;
             const calculatedDaysEl = document.getElementById('calculatedDays');
             const validationEl = document.getElementById('validationStatus');
-            const maximumValidationEl = document.getElementById('maximumValidationStatus'); // 🆕 v8.5.0
             
             if (arrivalDate && workEndDate && calculatedDaysEl) {
                 const arrival = new Date(arrivalDate);
@@ -842,51 +869,31 @@
                     const days = Math.ceil((workEnd - arrival) / (1000 * 60 * 60 * 24));
                     calculatedDaysEl.textContent = days;
                     
-                    // 🔧 v8.5.0: 최소/최대 활동일 통합 검증
+                    // 🔧 v9.0.0: 실제 DB값 사용한 검증
                     const minRequiredDays = window.userActivityRequirements?.minimumDays || 180;
                     const maxAllowedDays = window.userActivityRequirements?.maximumDays || 210;
                     
-                    console.log('🔍 [활동일계산] v8.5.0:', {
+                    console.log('🔍 [활동일계산] v9.0.0:', {
                         계산된활동일: days,
-                        최소요구일: minRequiredDays,
-                        최대허용일: maxAllowedDays,
-                        기존하드코딩값: '180일/210일'
+                        필수활동일: minRequiredDays,
+                        최대활동일: maxAllowedDays,
+                        DB연동상태: window.userActivityRequirements?.isLoaded ? '성공' : '실패'
                     });
                     
-                    // 최소 활동일 검증
+                    // 🎯 v9.0.0: 단순화된 검증 로직 (빨간색 경고만)
                     if (validationEl) {
                         if (days >= minRequiredDays && days <= maxAllowedDays) {
                             validationEl.className = 'validation-status valid';
                             validationEl.innerHTML = '<i data-lucide="check-circle"></i>활동 기간이 요구사항을 충족합니다';
                             validationEl.style.display = 'flex';
-                        } else if (days < minRequiredDays) {
-                            validationEl.className = 'validation-status invalid';
-                            validationEl.innerHTML = `<i data-lucide="x-circle"></i>최소 ${minRequiredDays}일의 활동 기간이 필요합니다 (현재: ${days}일)`;
-                            validationEl.style.display = 'flex';
-                        }
-                    }
-                    
-                    // 🆕 v8.5.0: 최대 활동일 검증 (별도 표시)
-                    if (maximumValidationEl) {
-                        if (days > maxAllowedDays) {
-                            const exceedDays = days - maxAllowedDays;
-                            maximumValidationEl.className = 'maximum-validation-status invalid';
-                            maximumValidationEl.innerHTML = `<i data-lucide="alert-circle"></i><strong>최대 활동일 초과:</strong> 최대 ${maxAllowedDays}일을 ${exceedDays}일 초과했습니다 (현재: ${days}일)`;
-                            maximumValidationEl.style.display = 'flex';
-                            
-                            console.error('❌ [최대활동일] v8.5.0 초과 감지:', {
-                                활동일: days,
-                                최대허용일: maxAllowedDays,
-                                초과일: exceedDays,
-                                사용자: 'unknown'
-                            });
-                        } else if (days > maxAllowedDays - 10) {
-                            const remaining = maxAllowedDays - days;
-                            maximumValidationEl.className = 'maximum-validation-status warning';
-                            maximumValidationEl.innerHTML = `<i data-lucide="alert-triangle"></i>최대 허용일까지 ${remaining}일 남았습니다 (${days}일/${maxAllowedDays}일)`;
-                            maximumValidationEl.style.display = 'flex';
                         } else {
-                            maximumValidationEl.style.display = 'none';
+                            validationEl.className = 'validation-status invalid';
+                            if (days < minRequiredDays) {
+                                validationEl.innerHTML = `<i data-lucide="x-circle"></i>최소 ${minRequiredDays}일의 활동 기간이 필요합니다 (현재: ${days}일)`;
+                            } else {
+                                validationEl.innerHTML = `<i data-lucide="x-circle"></i>최대 ${maxAllowedDays}일을 초과했습니다 (현재: ${days}일)`;
+                            }
+                            validationEl.style.display = 'flex';
                         }
                     }
                     
@@ -897,14 +904,13 @@
                 } else {
                     calculatedDaysEl.textContent = '-';
                     if (validationEl) validationEl.style.display = 'none';
-                    if (maximumValidationEl) maximumValidationEl.style.display = 'none'; // 🆕 v8.5.0
                 }
             }
         }
 
         // DOM 로드 시 즉시 실행
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('📄 DOM 로드 완료 (v8.5.0 UI 요소 포함)');
+            console.log('📄 DOM 로드 완료 (v9.0.0 DB 연동 로직 포함)');
             
             // 1초 후 앱 표시
             setTimeout(() => {
@@ -920,21 +926,21 @@
 
         // 페이지 완전 로드 시
         window.addEventListener('load', () => {
-            console.log('📄 페이지 완전 로드 (v8.5.0)');
+            console.log('📄 페이지 완전 로드 (v9.0.0)');
             showApp();
         });
     </script>
 
-    <!-- 🔧 v8.5.0: 기본 모듈들만 로드 (필수적인 것만) -->
+    <!-- 🔧 v9.0.0: 기본 모듈들만 로드 (필수적인 것만) -->
     <script>
         // 🔧 모듈 로드 시도 (실패해도 무시)
         setTimeout(() => {
             try {
                 if (window.FlightRequestAPI) {
-                    console.log('✅ FlightRequestAPI 사용 가능 (v8.5.0)');
+                    console.log('✅ FlightRequestAPI 사용 가능 (v9.0.0)');
                 }
                 if (window.FlightRequestUI) {
-                    console.log('✅ FlightRequestUI 사용 가능 (v8.5.0 최대 활동일 검증 포함)');
+                    console.log('✅ FlightRequestUI 사용 가능 (v9.0.0)');
                     window.flightRequestUI = new FlightRequestUI();
                 }
             } catch (error) {
