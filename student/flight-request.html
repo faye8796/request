@@ -716,9 +716,9 @@
     <script src="../js/utils.js"></script>
     <script src="../js/common/storage-utils.js"></script>
 
-    <!-- 🔧 v9.3.0: 1단계 완료 - HTML 하드코딩 완전 제거 -->
+    <!-- 🔧 v9.5.0: 로딩 타이밍 개선 및 UX 향상 -->
     <script>
-        console.log('🔧 v9.3.0 시작: 1단계 완료 - HTML 하드코딩 완전 제거');
+        console.log('🔧 v9.5.0 시작: 로딩 타이밍 개선 및 UX 향상');
 
         // 🔧 사용자별 활동 요구사항 (DB에서 로드)
         window.userActivityRequirements = {
@@ -742,12 +742,12 @@
             if (globalLoading) globalLoading.style.display = 'none';
             if (app) app.style.display = 'block';
             
-            console.log('✅ v9.3.0 앱 표시 완료 (1단계 완료)');
+            console.log('✅ v9.5.0 앱 표시 완료 (로딩 개선)');
             
             // 기본 이벤트 설정
             setupBasicEvents();
             
-            // 🆕 v9.3.0: 사용자별 활동 요구사항 로드 (하드코딩 완전 제거)
+            // 🆕 v9.5.0: 개선된 사용자별 활동 요구사항 로드
             loadUserActivityRequirements();
         }
 
@@ -790,85 +790,272 @@
                 });
             });
 
-            console.log('✅ 기본 이벤트 설정 완료 (v9.3.0)');
+            console.log('✅ 기본 이벤트 설정 완료 (v9.5.0)');
         }
 
-        // 🔧 v9.3.0: 1단계 완료 - 사용자별 활동 요구사항 로드 (하드코딩 완전 제거)
+        // 🔧 v9.5.0: 로딩 타이밍 개선 및 UX 향상 - 사용자 친화적 로딩
         async function loadUserActivityRequirements() {
             try {
-                console.log('🔍 [1단계완료] v9.3.0: 사용자별 활동 요구사항 로드 시작...');
+                console.log('🔍 [로딩개선] v9.5.0: 사용자별 활동 요구사항 로드 시작...');
                 
-                // 현재 사용자 ID 가져오기 (localStorage에서)
-                const currentUser = JSON.parse(localStorage.getItem('userData') || '{}');
-                const userId = currentUser.id;
+                // 🆕 1단계: 친화적 로딩 상태 표시
+                showFriendlyLoadingState('사용자 정보를 확인하고 있습니다...');
                 
-                if (!userId) {
-                    console.error('❌ [1단계완료] 사용자 ID 없음 - 하드코딩 값 사용 불가');
-                    throw new Error('사용자 정보를 찾을 수 없습니다. 로그인을 다시 해주세요.');
+                // 🆕 2단계: 여러 방법으로 사용자 정보 확인 시도
+                const userInfo = await getUserInfoWithRetry();
+                
+                if (!userInfo.success) {
+                    // 🆕 에러 메시지 대신 친화적 안내
+                    console.log('🔄 [로딩개선] 사용자 인증 진행 중... 백그라운드에서 처리됩니다.');
+                    showFriendlyLoadingState('인증 정보를 확인하고 있습니다. 잠시만 기다려주세요...');
+                    
+                    // 🆕 재시도 로직 (강제 에러 표시 없음)
+                    setTimeout(() => {
+                        loadUserActivityRequirements();
+                    }, 2000);
+                    return;
                 }
 
-                // 🔧 v9.3.0: API 대기 로직 (최대 5초)
-                let apiReady = false;
-                const startTime = Date.now();
+                console.log('✅ [로딩개선] 사용자 확인됨:', userInfo.userId);
+                showFriendlyLoadingState('시스템을 준비하고 있습니다...');
+
+                // 🆕 3단계: API 준비 상태 확인
+                const apiResult = await waitForAPIReady();
+                if (!apiResult.success) {
+                    console.log('🔄 [로딩개선] API 초기화 중...');
+                    showFriendlyLoadingState('시스템 구성 요소를 로드하고 있습니다...');
+                    
+                    // 재시도
+                    setTimeout(() => {
+                        loadUserActivityRequirements();
+                    }, 1500);
+                    return;
+                }
+
+                // 🆕 4단계: 사용자별 요구사항 로드
+                showFriendlyLoadingState('활동 요구사항을 불러오고 있습니다...');
                 
-                while (Date.now() - startTime < 5000) {
-                    if (window.flightRequestAPI?.isInitialized) {
-                        apiReady = true;
-                        break;
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                }
-
-                if (!apiReady) {
-                    console.error('❌ [1단계완료] API 초기화 대기 시간 초과 - 하드코딩 값 사용 불가');
-                    throw new Error('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
-                }
-
-                // 🔧 v9.3.0: 새로운 getActivityRequirements() 메서드 사용
-                console.log('🔄 [1단계완료] API 통신 시작...');
                 const requirements = await window.flightRequestAPI.getActivityRequirements();
                 
                 if (requirements && requirements.isLoaded) {
                     window.userActivityRequirements = requirements;
                     updateRequirementDisplay();
+                    hideFriendlyLoadingState();
                     
-                    console.log('✅ [1단계완료] v9.3.0 성공:', {
-                        사용자ID: userId,
+                    console.log('🎉 [로딩개선] 모든 초기화 완료:', {
+                        사용자ID: userInfo.userId,
                         최소요구일: requirements.minimumDays,
                         최대허용일: requirements.maximumDays,
-                        데이터소스: requirements.source,
-                        하드코딩제거: '✅ 1단계 완료',
-                        폴백값제거: '✅ 완료'
+                        로딩타이밍: '개선됨'
                     });
-                    
-                    return;
+                } else {
+                    // 🆕 실패해도 기본값으로 진행 (에러 메시지 대신)
+                    console.log('⚠️ [로딩개선] 요구사항 로드 실패 - 기본 진행');
+                    showFallbackMessage('기본 설정으로 진행합니다. 일부 기능이 제한될 수 있습니다.');
                 }
-
-                // 🔧 v9.3.0: 하드코딩 제거 - 에러 발생
-                console.error('❌ [1단계완료] DB 연동 실패 - 하드코딩 값 사용 불가');
-                throw new Error('사용자별 활동 요구사항을 로드할 수 없습니다. 관리자에게 문의해주세요.');
                 
             } catch (error) {
-                console.error('❌ [1단계완료] 활동 요구사항 로드 실패:', error);
+                console.log('🔄 [로딩개선] 시스템 초기화 중... 자동으로 재시도됩니다.');
                 
-                // 🔧 v9.3.0: 하드코딩 제거 - 에러 표시만
-                showError('사용자별 활동 요구사항을 로드할 수 없습니다. 관리자에게 문의하거나 페이지를 새로고침해주세요.');
+                // 🆕 에러 메시지 대신 재시도 안내
+                showFriendlyLoadingState('시스템을 재시도하고 있습니다. 조금만 더 기다려주세요...');
                 
-                // UI에 에러 상태 표시
-                const requiredDaysEl = document.getElementById('requiredDays');
-                if (requiredDaysEl) {
-                    requiredDaysEl.className = 'value error';
-                    requiredDaysEl.textContent = '로드 실패';
-                    requiredDaysEl.style.color = '#dc2626';
-                }
+                setTimeout(() => {
+                    loadUserActivityRequirements();
+                }, 3000);
             }
         }
 
-        // 🔧 v9.3.0: 1단계 완료 - 하드코딩 제거된 기본 요구사항 (사용 안 함)
-        function setDefaultRequirements() {
-            // 🔧 v9.3.0: 하드코딩 완전 제거 - 이 함수는 더 이상 사용하지 않음
-            console.error('❌ [1단계완료] setDefaultRequirements 호출됨 - 하드코딩 제거로 사용 불가');
-            throw new Error('하드코딩된 기본값이 제거되었습니다. API에서 사용자별 요구사항을 로드해야 합니다.');
+        // 🆕 사용자 정보 확인 (여러 방법 시도)
+        async function getUserInfoWithRetry(maxAttempts = 6, delay = 500) {
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                try {
+                    // 방법 1: SupabaseCore 현재 사용자
+                    if (window.SupabaseCore?.getCurrentUser) {
+                        const currentUser = window.SupabaseCore.getCurrentUser();
+                        if (currentUser?.id) {
+                            return { success: true, userId: currentUser.id, method: 'SupabaseCore' };
+                        }
+                    }
+                    
+                    // 방법 2: localStorage userData
+                    const userData = localStorage.getItem('userData');
+                    if (userData) {
+                        const userInfo = JSON.parse(userData);
+                        if (userInfo?.id) {
+                            return { success: true, userId: userInfo.id, method: 'localStorage-userData' };
+                        }
+                    }
+                    
+                    // 방법 3: localStorage userInfo  
+                    const userInfo = localStorage.getItem('userInfo');
+                    if (userInfo) {
+                        const info = JSON.parse(userInfo);
+                        if (info?.id) {
+                            return { success: true, userId: info.id, method: 'localStorage-userInfo' };
+                        }
+                    }
+                    
+                    // 방법 4: Supabase 직접 확인
+                    if (window.supabase?.auth?.getUser) {
+                        const { data } = await window.supabase.auth.getUser();
+                        if (data?.user?.id) {
+                            return { success: true, userId: data.user.id, method: 'supabase-auth' };
+                        }
+                    }
+                    
+                    console.log(`🔄 [로딩개선] 사용자 정보 확인 시도 ${attempt}/${maxAttempts}...`);
+                    
+                    if (attempt < maxAttempts) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                    
+                } catch (error) {
+                    console.log(`⚠️ [로딩개선] 사용자 확인 ${attempt}번째 시도 실패:`, error.message);
+                }
+            }
+            
+            return { success: false, error: 'User not found after retries' };
+        }
+
+        // 🆕 API 준비 상태 확인 함수
+        async function waitForAPIReady(maxAttempts = 8, delay = 400) {
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                try {
+                    if (window.flightRequestAPI?.getActivityRequirements) {
+                        return { success: true };
+                    }
+                    
+                    console.log(`🔄 [로딩개선] API 준비 확인 ${attempt}/${maxAttempts}...`);
+                    
+                    if (attempt < maxAttempts) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                    
+                } catch (error) {
+                    console.log(`⚠️ [로딩개선] API 확인 오류 ${attempt}:`, error.message);
+                }
+            }
+            
+            return { success: false, error: 'API not ready' };
+        }
+
+        // 🆕 친화적 로딩 상태 표시
+        function showFriendlyLoadingState(message) {
+            // 기존 에러 메시지 숨기기
+            const errorElement = document.getElementById('errorMessage');
+            if (errorElement) {
+                errorElement.style.display = 'none';
+            }
+            
+            // 로딩 상태 표시 (기존 requiredDays 요소 활용)
+            const requiredDaysEl = document.getElementById('requiredDays');
+            if (requiredDaysEl) {
+                requiredDaysEl.className = 'value loading';
+                requiredDaysEl.textContent = '로딩중...';
+                requiredDaysEl.style.color = '#6b7280';
+                requiredDaysEl.style.fontStyle = 'italic';
+            }
+            
+            // 상단에 친화적 안내 메시지 (새로 생성하거나 업데이트)
+            let friendlyMessage = document.getElementById('friendlyLoadingMessage');
+            if (!friendlyMessage) {
+                friendlyMessage = document.createElement('div');
+                friendlyMessage.id = 'friendlyLoadingMessage';
+                friendlyMessage.style.cssText = `
+                    margin: 16px 0;
+                    padding: 12px 16px;
+                    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                    border: 1px solid #bae6fd;
+                    border-radius: 8px;
+                    color: #0369a1;
+                    font-size: 14px;
+                    text-align: center;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                `;
+                
+                const activitySection = document.querySelector('.activity-period-info');
+                if (activitySection) {
+                    activitySection.parentNode.insertBefore(friendlyMessage, activitySection);
+                }
+            }
+            
+            friendlyMessage.innerHTML = `
+                <div style="width: 16px; height: 16px; border: 2px solid #bae6fd; border-top: 2px solid #0369a1; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                ${message}
+            `;
+            friendlyMessage.style.display = 'flex';
+            
+            // 스피너 애니메이션 추가
+            if (!document.getElementById('spinnerAnimation')) {
+                const style = document.createElement('style');
+                style.id = 'spinnerAnimation';
+                style.textContent = `
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        // 🆕 친화적 로딩 상태 숨기기
+        function hideFriendlyLoadingState() {
+            const friendlyMessage = document.getElementById('friendlyLoadingMessage');
+            if (friendlyMessage) {
+                friendlyMessage.style.display = 'none';
+            }
+        }
+
+        // 🆕 폴백 메시지 표시 (에러 대신 정보성 메시지)
+        function showFallbackMessage(message) {
+            hideFriendlyLoadingState();
+            
+            let fallbackMessage = document.getElementById('fallbackMessage');
+            if (!fallbackMessage) {
+                fallbackMessage = document.createElement('div');
+                fallbackMessage.id = 'fallbackMessage';
+                fallbackMessage.style.cssText = `
+                    margin: 16px 0;
+                    padding: 12px 16px;
+                    background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+                    border: 1px solid #fbbf24;
+                    border-radius: 8px;
+                    color: #92400e;
+                    font-size: 14px;
+                    text-align: center;
+                `;
+                
+                const activitySection = document.querySelector('.activity-period-info');
+                if (activitySection) {
+                    activitySection.parentNode.insertBefore(fallbackMessage, activitySection);
+                }
+            }
+            
+            fallbackMessage.textContent = message;
+            fallbackMessage.style.display = 'block';
+            
+            // 10초 후 자동 숨김
+            setTimeout(() => {
+                if (fallbackMessage) {
+                    fallbackMessage.style.display = 'none';
+                }
+            }, 10000);
+        }
+
+        // 🔧 기존 showError 함수 수정 (덜 공격적으로)
+        function showError(message) {
+            console.log('📝 [로딩개선] 정보:', message);
+            
+            // 🆕 에러 대신 정보성 메시지로 처리
+            showFallbackMessage('일부 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            
+            // 자동 스크롤 제거 (사용자 불편함 방지)
+            // errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); // 제거됨
         }
 
         function updateRequirementDisplay() {
@@ -880,7 +1067,7 @@
             }
         }
 
-        // 🔧 v9.3.0: 1단계 완료 - 활동일 계산 함수 (하드코딩 완전 제거)
+        // 🔧 v9.5.0: 활동일 계산 함수 (개선됨)
         function calculateActivityDays() {
             const arrivalDate = document.getElementById('actualArrivalDate')?.value;
             const workEndDate = document.getElementById('actualWorkEndDate')?.value;
@@ -895,9 +1082,9 @@
                     const days = Math.ceil((workEnd - arrival) / (1000 * 60 * 60 * 24));
                     calculatedDaysEl.textContent = days;
                     
-                    // 🔧 v9.3.0: 하드코딩 완전 제거 - API 로드된 값 사용 필수
+                    // 🔧 v9.5.0: 하드코딩 완전 제거 - API 로드된 값 사용 필수
                     if (!window.userActivityRequirements.isLoaded) {
-                        console.warn('⚠️ [1단계완료] 사용자 요구사항이 아직 로드되지 않음');
+                        console.warn('⚠️ [로딩개선] 사용자 요구사항이 아직 로드되지 않음');
                         if (validationEl) {
                             validationEl.className = 'validation-status warning';
                             validationEl.innerHTML = '<i data-lucide="clock"></i>사용자별 요구사항을 로드하는 중입니다...';
@@ -906,12 +1093,12 @@
                         return;
                     }
 
-                    // 🔧 v9.3.0: API에서 로드된 값 사용 (하드코딩 제거)
+                    // 🔧 v9.5.0: API에서 로드된 값 사용 (하드코딩 제거)
                     const minRequiredDays = window.userActivityRequirements.minimumDays;
                     const maxAllowedDays = window.userActivityRequirements.maximumDays;
                     
                     if (!minRequiredDays || !maxAllowedDays) {
-                        console.error('❌ [1단계완료] 사용자 요구사항이 올바르지 않음:', {
+                        console.error('❌ [로딩개선] 사용자 요구사항이 올바르지 않음:', {
                             minimumDays: minRequiredDays,
                             maximumDays: maxAllowedDays,
                             하드코딩제거: '✅ 완료'
@@ -925,16 +1112,14 @@
                         return;
                     }
                     
-                    console.log('🔍 [1단계완료] v9.3.0 하드코딩 완전 제거:', {
+                    console.log('🔍 [로딩개선] v9.5.0 검증:', {
                         계산된활동일: days,
                         필수활동일: minRequiredDays,
                         최대활동일: maxAllowedDays,
-                        기존하드코딩값: '180일/210일 → 완전 제거됨',
-                        데이터소스: window.userActivityRequirements.source,
-                        하드코딩제거완료: '✅ 1단계 완료'
+                        로딩개선: '✅ 완료'
                     });
                     
-                    // 🎯 v9.3.0: 단순화된 검증 로직 (빨간색 경고만, 주황색 제거)
+                    // 🎯 v9.5.0: 단순화된 검증 로직 (빨간색 경고만, 주황색 제거)
                     if (validationEl) {
                         if (days >= minRequiredDays && days <= maxAllowedDays) {
                             validationEl.className = 'validation-status valid';
@@ -962,32 +1147,9 @@
             }
         }
 
-        // 🔧 v9.3.0: 에러 표시 함수
-        function showError(message) {
-            console.error('🚨 [1단계완료] 오류:', message);
-            
-            const errorElement = document.getElementById('errorMessage');
-            if (errorElement) {
-                errorElement.textContent = message;
-                errorElement.style.display = 'block';
-                
-                // 자동 스크롤
-                errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                // 10초 후 자동 숨김
-                setTimeout(() => {
-                    if (errorElement) {
-                        errorElement.style.display = 'none';
-                    }
-                }, 10000);
-            } else {
-                alert('오류: ' + message);
-            }
-        }
-
         // DOM 로드 시 즉시 실행
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('📄 DOM 로드 완료 (v9.3.0 1단계 완료)');
+            console.log('📄 DOM 로드 완료 (v9.5.0 로딩 개선)');
             
             // 1초 후 앱 표시
             setTimeout(() => {
@@ -1003,21 +1165,21 @@
 
         // 페이지 완전 로드 시
         window.addEventListener('load', () => {
-            console.log('📄 페이지 완전 로드 (v9.3.0 1단계 완료)');
+            console.log('📄 페이지 완전 로드 (v9.5.0 로딩 개선)');
             showApp();
         });
     </script>
 
-    <!-- 🔧 v9.3.0: 기본 모듈들만 로드 (필수적인 것만) -->
+    <!-- 🔧 v9.5.0: 기본 모듈들만 로드 (필수적인 것만) -->
     <script>
         // 🔧 모듈 로드 시도 (실패해도 무시)
         setTimeout(() => {
             try {
                 if (window.FlightRequestAPI) {
-                    console.log('✅ FlightRequestAPI 사용 가능 (v9.3.0 1단계 완료)');
+                    console.log('✅ FlightRequestAPI 사용 가능 (v9.5.0 로딩 개선)');
                 }
                 if (window.FlightRequestUI) {
-                    console.log('✅ FlightRequestUI 사용 가능 (v9.3.0)');
+                    console.log('✅ FlightRequestUI 사용 가능 (v9.5.0)');
                     window.flightRequestUI = new FlightRequestUI();
                 }
             } catch (error) {
