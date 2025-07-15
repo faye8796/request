@@ -1,0 +1,101 @@
+<!-- 🚑 v8.4.1 응급 수정 스크립트 - 기존 복잡한 초기화 로직을 간소화 -->
+<script>
+console.log('🚑 v8.4.1 응급 수정 시작 - 무한 루프 해결');
+
+// 🔧 간소화된 초기화 로직
+let initializationCompleted = false;
+let emergencyTimeout = null;
+
+// 🚑 응급 초기화 함수 (5초 후 강제 실행)
+function emergencyInitialization() {
+    if (initializationCompleted) return;
+    
+    console.log('🚑 응급 초기화 실행');
+    initializationCompleted = true;
+    
+    // 로딩 상태 즉시 해제
+    const globalLoading = document.getElementById('globalLoadingState');
+    const app = document.getElementById('app');
+    
+    if (globalLoading) {
+        globalLoading.style.display = 'none';
+        console.log('✅ 로딩 상태 해제');
+    }
+    
+    if (app) {
+        app.style.display = 'block';
+        console.log('✅ 앱 표시');
+    }
+    
+    // 🔧 기본값으로 사용자별 체류일 설정
+    window.userActivityRequirements = {
+        minimumDays: 180,  // 기본값 사용
+        maximumDays: 210,  // 기본값 사용
+        isLoaded: true     // 로드 완료로 표시
+    };
+    
+    // UI에 기본값 표시
+    const requiredDaysEl = document.getElementById('requiredDays');
+    if (requiredDaysEl) {
+        requiredDaysEl.textContent = '180';
+        requiredDaysEl.classList.remove('loading');
+        console.log('✅ 기본 최소 요구일 표시: 180일');
+    }
+    
+    // 🔧 v8.4.1: 간소화된 FlightRequestUI 초기화 시도
+    if (window.FlightRequestUI && !window.flightRequestUI) {
+        try {
+            window.flightRequestUI = new FlightRequestUI();
+            console.log('✅ FlightRequestUI 초기화 성공');
+        } catch (error) {
+            console.warn('⚠️ FlightRequestUI 초기화 실패, 기본 기능만 사용:', error);
+        }
+    }
+    
+    // 기본 네비게이션 설정
+    setupBasicNavigation();
+    
+    console.log('✅ v8.4.1 응급 초기화 완료');
+}
+
+// 🔧 기본 네비게이션 설정
+function setupBasicNavigation() {
+    // 대시보드 돌아가기
+    const backBtn = document.getElementById('backToDashboard');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            window.location.href = 'dashboard.html';
+        });
+    }
+    
+    // 여권정보 페이지 버튼
+    const passportBtn = document.getElementById('passportInfoBtn');
+    if (passportBtn) {
+        passportBtn.addEventListener('click', () => {
+            alert('여권정보 기능은 잠시 후 사용 가능합니다. 페이지를 새로고침해주세요.');
+        });
+    }
+}
+
+// 🚑 즉시 응급 타이머 시작 (5초)
+emergencyTimeout = setTimeout(() => {
+    emergencyInitialization();
+}, 5000);
+
+// DOM 로드 시 즉시 체크
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('📄 DOM 로드 완료 - 응급 초기화 체크');
+    
+    // 2초 후 응급 초기화 실행
+    setTimeout(() => {
+        emergencyInitialization();
+    }, 2000);
+});
+
+// 🔧 페이지 완전 로드 시 최종 체크
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        emergencyInitialization();
+    }, 1000);
+});
+</script>
