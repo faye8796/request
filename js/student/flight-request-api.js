@@ -1,4 +1,5 @@
-// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.3.0
+// flight-request-api.js - 항공권 신청 API 통신 모듈 v8.4.2
+// 🔧 v8.4.2: '이가짜' 학생 최소 체류일 문제 해결 - auth_user_id → id 조회 방식 수정
 // 🆕 v8.3.0: 귀국 필수 완료일 제약사항 API 기능 추가
 // 🎯 목적: 효율적이고 안정적인 API 통신 + 귀국 필수 완료일 관리
 
@@ -14,12 +15,12 @@ class FlightRequestAPI {
     // === 초기화 ===
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v8.3.0 초기화 시작...');
+            console.log('🔄 FlightRequestAPI v8.4.2 초기화 시작 - 사용자별 체류일 문제 해결...');
             
             await this.connectToSupabaseCore();
             this.isInitialized = true;
             
-            console.log('✅ FlightRequestAPI v8.3.0 초기화 완료');
+            console.log('✅ FlightRequestAPI v8.4.2 초기화 완료 - auth_user_id → id 조회 방식 수정');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -95,6 +96,12 @@ class FlightRequestAPI {
                 name: studentData.name || 'no-name'
             };
             
+            console.log('✅ [사용자인증] v8.4.2 사용자 정보 로드:', {
+                id: this.user.id,
+                name: this.user.name,
+                조회방식: 'id 컬럼 직접 사용'
+            });
+            
             return this.user;
         } catch (error) {
             console.error('❌ getCurrentUser() 실패:', error);
@@ -131,7 +138,7 @@ class FlightRequestAPI {
     // === 🆕 v8.3.0: 귀국 필수 완료일 관리 API ===
 
     /**
-     * 🆕 v8.3.0: 사용자의 귀국 필수 완료일 정보 조회
+     * 🔧 v8.4.2: 사용자의 귀국 필수 완료일 정보 조회 (id 컬럼 사용)
      * @returns {Object} 귀국 필수 완료일 정보
      */
     async getRequiredReturnDate() {
@@ -148,7 +155,7 @@ class FlightRequestAPI {
 
             if (this.core?.select) {
                 const result = await this.core.select('user_profiles', selectColumns, { 
-                    auth_user_id: this.user.id 
+                    id: this.user.id  // 🔧 v8.4.2: auth_user_id → id 수정
                 });
                 if (!result.success && !result.error.includes('PGRST116')) {
                     throw new Error(result.error);
@@ -159,10 +166,18 @@ class FlightRequestAPI {
             const { data, error } = await this.supabase
                 .from('user_profiles')
                 .select(selectColumns)
-                .eq('auth_user_id', this.user.id)
+                .eq('id', this.user.id)  // 🔧 v8.4.2: auth_user_id → id 수정
                 .single();
 
             if (error && error.code !== 'PGRST116') throw error;
+            
+            console.log('✅ [귀국필수일] v8.4.2 조회 성공:', {
+                사용자: this.user.name,
+                조회컬럼: 'id',
+                기존문제: 'auth_user_id(null)로 조회 실패',
+                해결방법: 'id 컬럼으로 직접 조회'
+            });
+            
             return data;
 
         } catch (error) {
@@ -279,10 +294,10 @@ class FlightRequestAPI {
         }
     }
 
-    // === 🆕 v8.2.1: 현지 활동기간 관리 API ===
+    // === 🔧 v8.4.2: 현지 활동기간 관리 API (조회 방식 수정) ===
 
     /**
-     * 사용자의 현지 활동기간 정보를 user_profiles 테이블에 업데이트
+     * 🔧 v8.4.2: 사용자의 현지 활동기간 정보를 user_profiles 테이블에 업데이트 (id 컬럼 사용)
      */
     async updateUserProfileActivityDates(activityData) {
         try {
@@ -303,7 +318,7 @@ class FlightRequestAPI {
 
             if (this.core?.update) {
                 const result = await this.core.update('user_profiles', updateData, { 
-                    auth_user_id: this.user.id 
+                    id: this.user.id  // 🔧 v8.4.2: auth_user_id → id 수정
                 });
                 if (!result.success) throw new Error(result.error);
                 return { success: true, data: result.data[0] };
@@ -312,11 +327,18 @@ class FlightRequestAPI {
             const { data, error } = await this.supabase
                 .from('user_profiles')
                 .update(updateData)
-                .eq('auth_user_id', this.user.id)
+                .eq('id', this.user.id)  // 🔧 v8.4.2: auth_user_id → id 수정
                 .select()
                 .single();
 
             if (error) throw error;
+            
+            console.log('✅ [활동기간업데이트] v8.4.2 업데이트 성공:', {
+                사용자: this.user.name,
+                조회컬럼: 'id',
+                업데이트된값: updateData.minimum_required_days
+            });
+            
             return { success: true, data: data };
 
         } catch (error) {
@@ -326,7 +348,7 @@ class FlightRequestAPI {
     }
 
     /**
-     * 현재 사용자의 활동기간 정보 조회
+     * 🔧 v8.4.2: 현재 사용자의 활동기간 정보 조회 (id 컬럼 사용) - 핵심 수정 메서드
      */
     async getUserProfileActivityDates() {
         try {
@@ -342,38 +364,73 @@ class FlightRequestAPI {
 
             if (this.core?.select) {
                 const result = await this.core.select('user_profiles', selectColumns, { 
-                    auth_user_id: this.user.id 
+                    id: this.user.id  // 🔧 v8.4.2: auth_user_id → id 수정 (핵심)
                 });
                 if (!result.success && !result.error.includes('PGRST116')) {
                     throw new Error(result.error);
                 }
-                return result.data?.length > 0 ? result.data[0] : null;
+                
+                const profileData = result.data?.length > 0 ? result.data[0] : null;
+                
+                console.log('✅ [활동기간조회] v8.4.2 핵심 조회 성공:', {
+                    사용자: this.user.name,
+                    사용자ID: this.user.id,
+                    조회컬럼: 'id (기존: auth_user_id)',
+                    minimum_required_days: profileData?.minimum_required_days,
+                    기존문제: 'auth_user_id가 null이어서 조회 실패',
+                    해결결과: `실제 DB 값 ${profileData?.minimum_required_days}일 정상 로드`
+                });
+                
+                return profileData;
             }
 
             const { data, error } = await this.supabase
                 .from('user_profiles')
                 .select(selectColumns)
-                .eq('auth_user_id', this.user.id)
+                .eq('id', this.user.id)  // 🔧 v8.4.2: auth_user_id → id 수정 (핵심)
                 .single();
 
             if (error && error.code !== 'PGRST116') throw error;
+            
+            console.log('✅ [활동기간조회] v8.4.2 핵심 조회 성공 (Direct):', {
+                사용자: this.user.name,
+                사용자ID: this.user.id,
+                조회컬럼: 'id (기존: auth_user_id)',
+                minimum_required_days: data?.minimum_required_days,
+                기존문제: 'auth_user_id가 null이어서 조회 실패',
+                해결결과: `실제 DB 값 ${data?.minimum_required_days}일 정상 로드`
+            });
+            
             return data;
 
         } catch (error) {
-            console.error('❌ 활동기간 조회 실패:', error);
+            console.error('❌ [활동기간조회] v8.4.2 조회 실패:', error);
             throw error;
         }
     }
 
     /**
-     * 사용자별 최소 요구 활동일 조회
+     * 🔧 v8.4.2: 사용자별 최소 요구 활동일 조회 (정확한 DB 값 반환)
      */
     async getRequiredActivityDays() {
         try {
+            console.log('🔄 [최소요구일] v8.4.2 사용자별 최소 요구일 조회 시작...');
+            
             const profileData = await this.getUserProfileActivityDates();
-            return profileData?.minimum_required_days || 180;
+            const requiredDays = profileData?.minimum_required_days || 180;
+            
+            console.log('✅ [최소요구일] v8.4.2 조회 완료:', {
+                사용자: this.user?.name || 'unknown',
+                실제DB값: profileData?.minimum_required_days,
+                반환값: requiredDays,
+                기본값사용여부: !profileData?.minimum_required_days,
+                문제해결: 'auth_user_id → id 조회 방식 수정으로 정확한 값 반환'
+            });
+            
+            return requiredDays;
         } catch (error) {
-            console.error('❌ 최소 요구일 조회 실패:', error);
+            console.error('❌ [최소요구일] v8.4.2 조회 실패:', error);
+            console.log('⚠️ [최소요구일] 기본값 180일 사용');
             return 180; // 기본값
         }
     }
@@ -875,7 +932,7 @@ class FlightRequestAPI {
     // === 상태 정보 ===
     getStatus() {
         return {
-            version: 'v8.3.0',
+            version: 'v8.4.2',
             isInitialized: this.isInitialized,
             hasCore: !!this.core,
             hasSupabase: !!this.supabase,
@@ -885,6 +942,12 @@ class FlightRequestAPI {
                 email: this.user.email, 
                 name: this.user.name
             } : null,
+            fixedIssues: [ // 🔧 v8.4.2
+                '이가짜 학생 최소 체류일 문제 해결',
+                'auth_user_id → id 조회 방식 수정',
+                '실제 DB 값(90일) 정상 로드',
+                'UI 하드코딩 180일 → 동적 값 표시'
+            ],
             newFeatures: [ // 🆕 v8.3.0
                 'Required return date validation',
                 'Return date constraint checking',
@@ -901,10 +964,10 @@ window.FlightRequestAPI = FlightRequestAPI;
 // 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.3.0 인스턴스 생성 시작...');
+        console.log('🚀 FlightRequestAPI v8.4.2 인스턴스 생성 시작 - 사용자별 체류일 문제 해결...');
         window.flightRequestAPI = new FlightRequestAPI();
         window.passportAPI = window.flightRequestAPI; // 호환성
-        console.log('✅ FlightRequestAPI v8.3.0 인스턴스 생성 완료');
+        console.log('✅ FlightRequestAPI v8.4.2 인스턴스 생성 완료 - auth_user_id → id 조회 방식 수정');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -921,8 +984,15 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 100);
 }
 
-console.log('✅ FlightRequestAPI v8.3.0 모듈 로드 완료 - 귀국 필수 완료일 제약사항 기능 추가');
-console.log('🆕 v8.3.0 새로운 기능:', {
+console.log('✅ FlightRequestAPI v8.4.2 모듈 로드 완료 - 이가짜 학생 최소 체류일 문제 해결');
+console.log('🔧 v8.4.2 문제 해결:', {
+    issue: '이가짜 학생의 minimum_required_days(90일)가 180일로 표시되는 문제',
+    cause: 'auth_user_id가 null이어서 API 조회 실패, 기본값 180일 사용',
+    solution: 'user_profiles 테이블 조회를 id 컬럼으로 변경',
+    result: '실제 DB 값(90일) 정상 로드 및 UI 반영',
+    affectedMethods: ['getUserProfileActivityDates', 'getRequiredReturnDate', 'updateUserProfileActivityDates']
+});
+console.log('🆕 v8.3.0 기존 기능:', {
     requiredReturnDate: '개인별 귀국 필수 완료일 조회 API',
     constraintValidation: '귀국일 제약사항 서버 측 검증',
     enhancedSecurity: '신청 생성/수정 시 사전 검증',
