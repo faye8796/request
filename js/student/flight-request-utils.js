@@ -1,11 +1,12 @@
-// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.5.0
+// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v9.1.0
+// 🔧 v9.1.0: 하드코딩된 기본값 완전 제거 - 매개변수 의존성으로 변경
 // 🆕 v8.5.0: 최대 활동일 초과 검증 기능 추가 - 사용자별 maximum_allowed_days 검증
 // 🆕 v8.3.0: 귀국 필수 완료일 제약사항 기능 추가
 // 🎯 목적: 재사용 가능한 헬퍼 함수들 제공 + 완전한 활동기간 범위 검증
 
 class FlightRequestUtils {
     constructor() {
-        this.version = 'v8.5.0';
+        this.version = 'v9.1.0';
     }
 
     // === 날짜 관련 유틸리티 ===
@@ -99,11 +100,11 @@ class FlightRequestUtils {
     }
 
     /**
-     * 🔄 v8.5.0: 현지 활동기간을 포함한 통합 날짜 검증 + 최대 활동일 검증 추가
+     * 🔧 v9.1.0: 현지 활동기간을 포함한 통합 날짜 검증 - 하드코딩 제거 완료
      * @param {Object} dates - 모든 날짜 정보
      * @param {string} dates.requiredReturnDate - 귀국 필수 완료일
-     * @param {number} dates.minimumRequiredDays - 최소 요구일 (기본: 180일)
-     * @param {number} dates.maximumAllowedDays - 최대 허용일 (기본: 210일) 🆕
+     * @param {number} dates.minimumRequiredDays - 최소 요구일 (필수 매개변수)
+     * @param {number} dates.maximumAllowedDays - 최대 허용일 (필수 매개변수)
      * @returns {Object} 검증 결과
      */
     validateAllDates(dates) {
@@ -113,9 +114,19 @@ class FlightRequestUtils {
             actualArrivalDate, 
             actualWorkEndDate,
             requiredReturnDate,
-            minimumRequiredDays = 180,
-            maximumAllowedDays = 210  // 🆕 v8.5.0
+            minimumRequiredDays,  // 🔧 v9.1.0: 기본값 제거
+            maximumAllowedDays    // 🔧 v9.1.0: 기본값 제거
         } = dates;
+        
+        // 🔧 v9.1.0: 필수 매개변수 검증 추가
+        if (!minimumRequiredDays || !maximumAllowedDays) {
+            console.error('❌ [Utils] v9.1.0: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
+                minimumRequiredDays,
+                maximumAllowedDays,
+                하드코딩제거: '✅ 완료 - 매개변수 의존성으로 변경'
+            });
+            throw new Error('활동일 요구사항이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
+        }
         
         const validation = {
             valid: true,
@@ -123,7 +134,13 @@ class FlightRequestUtils {
             warnings: [],
             activityDays: 0,
             requiredReturnValidation: null,
-            exceedsMaximum: false  // 🆕 v8.5.0
+            exceedsMaximum: false,
+            // 🔧 v9.1.0: 사용된 요구사항 정보 포함
+            usedRequirements: {
+                minimumDays: minimumRequiredDays,
+                maximumDays: maximumAllowedDays,
+                source: 'parameter'
+            }
         };
 
         try {
@@ -159,7 +176,7 @@ class FlightRequestUtils {
                 } else {
                     validation.activityDays = activityValidation.activityDays;
                     
-                    // 🔧 v8.5.0: 최소 활동일 검증
+                    // 🔧 v9.1.0: 매개변수로 전달받은 요구사항 사용
                     const minDaysValidation = this.validateMinimumActivityDays(validation.activityDays, minimumRequiredDays);
                     if (!minDaysValidation.valid) {
                         validation.errors.push(minDaysValidation.message);
@@ -168,12 +185,12 @@ class FlightRequestUtils {
                         validation.warnings.push(minDaysValidation.warning);
                     }
 
-                    // 🆕 v8.5.0: 최대 활동일 검증 추가
+                    // 🔧 v9.1.0: 매개변수로 전달받은 요구사항 사용
                     const maxDaysValidation = this.validateMaximumActivityDays(validation.activityDays, maximumAllowedDays);
                     if (!maxDaysValidation.valid) {
                         validation.errors.push(maxDaysValidation.message);
                         validation.valid = false;
-                        validation.exceedsMaximum = true;  // 최대 활동일 초과 플래그
+                        validation.exceedsMaximum = true;
                     } else if (maxDaysValidation.warning) {
                         validation.warnings.push(maxDaysValidation.warning);
                     }
@@ -184,6 +201,13 @@ class FlightRequestUtils {
             validation.errors.push('날짜 형식이 올바르지 않습니다.');
             validation.valid = false;
         }
+
+        console.log('✅ [Utils] v9.1.0: 하드코딩 제거 완료 - 통합 날짜 검증:', {
+            사용된최소요구일: minimumRequiredDays,
+            사용된최대허용일: maximumAllowedDays,
+            기존하드코딩값: '180일/210일 → 제거됨',
+            매개변수전달: '✅ 완료'
+        });
 
         return validation;
     }
@@ -282,16 +306,25 @@ class FlightRequestUtils {
     }
 
     /**
-     * 🆕 v8.2.1: 최소 활동일 요구사항 검증
+     * 🔧 v9.1.0: 최소 활동일 요구사항 검증 - 하드코딩 제거 완료
      * @param {number} activityDays - 계산된 활동일
-     * @param {number} requiredDays - 최소 요구일 (기본: 180일)
+     * @param {number} requiredDays - 최소 요구일 (필수 매개변수)
      * @returns {Object} 검증 결과
      */
-    validateMinimumActivityDays(activityDays, requiredDays = 180) {
+    validateMinimumActivityDays(activityDays, requiredDays) {
+        // 🔧 v9.1.0: 필수 매개변수 검증
+        if (!requiredDays) {
+            console.error('❌ [Utils] v9.1.0: 최소 요구일이 매개변수로 전달되지 않았습니다');
+            throw new Error('최소 요구일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
+        }
+
         const result = {
             valid: true,
             message: '',
-            warning: null
+            warning: null,
+            // 🔧 v9.1.0: 사용된 요구일 정보 포함
+            usedRequiredDays: requiredDays,
+            hardcodingRemoved: true
         };
 
         if (activityDays < requiredDays) {
@@ -312,17 +345,26 @@ class FlightRequestUtils {
     }
 
     /**
-     * 🆕 v8.5.0: 최대 활동일 초과 검증 - 핵심 기능 추가!
+     * 🔧 v9.1.0: 최대 활동일 초과 검증 - 하드코딩 제거 완료
      * @param {number} activityDays - 계산된 활동일
-     * @param {number} maximumDays - 최대 허용일 (기본: 210일)
+     * @param {number} maximumDays - 최대 허용일 (필수 매개변수)
      * @returns {Object} 검증 결과
      */
-    validateMaximumActivityDays(activityDays, maximumDays = 210) {
+    validateMaximumActivityDays(activityDays, maximumDays) {
+        // 🔧 v9.1.0: 필수 매개변수 검증
+        if (!maximumDays) {
+            console.error('❌ [Utils] v9.1.0: 최대 허용일이 매개변수로 전달되지 않았습니다');
+            throw new Error('최대 허용일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
+        }
+
         const result = {
             valid: true,
             message: '',
             warning: null,
-            code: null
+            code: null,
+            // 🔧 v9.1.0: 사용된 최대일 정보 포함
+            usedMaximumDays: maximumDays,
+            hardcodingRemoved: true
         };
 
         if (activityDays > maximumDays) {
@@ -345,20 +387,35 @@ class FlightRequestUtils {
     }
 
     /**
-     * 🆕 v8.5.0: 활동기간 전체 범위 검증 (최소/최대 통합)
+     * 🔧 v9.1.0: 활동기간 전체 범위 검증 - 하드코딩 제거 완료
      * @param {number} activityDays - 계산된 활동일
-     * @param {number} minimumDays - 최소 요구일 (기본: 180일)
-     * @param {number} maximumDays - 최대 허용일 (기본: 210일)
+     * @param {number} minimumDays - 최소 요구일 (필수 매개변수)
+     * @param {number} maximumDays - 최대 허용일 (필수 매개변수)
      * @returns {Object} 통합 검증 결과
      */
-    validateActivityDaysRange(activityDays, minimumDays = 180, maximumDays = 210) {
+    validateActivityDaysRange(activityDays, minimumDays, maximumDays) {
+        // 🔧 v9.1.0: 필수 매개변수 검증
+        if (!minimumDays || !maximumDays) {
+            console.error('❌ [Utils] v9.1.0: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
+                minimumDays,
+                maximumDays
+            });
+            throw new Error('활동일 요구사항이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
+        }
+
         const result = {
             valid: true,
             errors: [],
             warnings: [],
             minimumCheck: null,
             maximumCheck: null,
-            inValidRange: false
+            inValidRange: false,
+            // 🔧 v9.1.0: 사용된 요구사항 정보 포함
+            usedRequirements: {
+                minimumDays: minimumDays,
+                maximumDays: maximumDays,
+                hardcodingRemoved: true
+            }
         };
 
         // 최소 활동일 검증
@@ -385,6 +442,14 @@ class FlightRequestUtils {
 
         // 유효 범위 내 여부
         result.inValidRange = activityDays >= minimumDays && activityDays <= maximumDays;
+
+        console.log('✅ [Utils] v9.1.0: 하드코딩 제거 완료 - 범위 검증:', {
+            활동일: activityDays,
+            사용된최소요구일: minimumDays,
+            사용된최대허용일: maximumDays,
+            기존하드코딩값: '180일/210일 → 제거됨',
+            검증결과: result.valid
+        });
 
         return result;
     }
@@ -820,6 +885,7 @@ class FlightRequestUtils {
         return {
             version: this.version,
             loadedAt: new Date().toISOString(),
+            hardcodingRemoved: true, // 🔧 v9.1.0
             methods: Object.getOwnPropertyNames(this.constructor.prototype)
                 .filter(name => name !== 'constructor'),
             integrationFeatures: [
@@ -828,6 +894,8 @@ class FlightRequestUtils {
                 'Real-time constraint checking',   // 🆕 v8.3.0
                 'Maximum activity days validation', // 🆕 v8.5.0
                 'Complete activity range checking', // 🆕 v8.5.0
+                'Parameter-dependent validation',   // 🔧 v9.1.0
+                'Hardcoding completely removed',    // 🔧 v9.1.0
                 'Debounce utility',
                 'Icon refresh utility',
                 'Safe date value getter',
@@ -837,10 +905,10 @@ class FlightRequestUtils {
         };
     }
 
-    // === 🆕 Static 메서드들 (호환성 보장) ===
+    // === 🔧 v9.1.0: Static 메서드들 - 하드코딩 제거 완료 ===
 
     /**
-     * 🆕 Static 버전들 (기존 코드 호환성 위해)
+     * 🔧 v9.1.0: Static 버전들 - 하드코딩 제거 및 필수 매개변수 추가
      */
     static formatDate(dateString) {
         return new FlightRequestUtils().formatDate(dateString);
@@ -866,16 +934,49 @@ class FlightRequestUtils {
         return new FlightRequestUtils().validateActivityDates(departureDate, arrivalDate, workEndDate, returnDate);
     }
 
-    static validateMinimumActivityDays(activityDays, requiredDays = 180) {
+    /**
+     * 🔧 v9.1.0: 최소 활동일 검증 - 하드코딩 제거 완료
+     * @param {number} activityDays - 계산된 활동일
+     * @param {number} requiredDays - 최소 요구일 (필수 매개변수)
+     */
+    static validateMinimumActivityDays(activityDays, requiredDays) {
+        if (!requiredDays) {
+            console.error('❌ [Utils] v9.1.0 Static: 최소 요구일이 매개변수로 전달되지 않았습니다');
+            console.warn('⚠️ [Utils] v9.1.0: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
+            throw new Error('최소 요구일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
+        }
         return new FlightRequestUtils().validateMinimumActivityDays(activityDays, requiredDays);
     }
 
-    // 🆕 v8.5.0: 최대 활동일 검증 Static 메서드 추가
-    static validateMaximumActivityDays(activityDays, maximumDays = 210) {
+    /**
+     * 🔧 v9.1.0: 최대 활동일 검증 - 하드코딩 제거 완료
+     * @param {number} activityDays - 계산된 활동일
+     * @param {number} maximumDays - 최대 허용일 (필수 매개변수)
+     */
+    static validateMaximumActivityDays(activityDays, maximumDays) {
+        if (!maximumDays) {
+            console.error('❌ [Utils] v9.1.0 Static: 최대 허용일이 매개변수로 전달되지 않았습니다');
+            console.warn('⚠️ [Utils] v9.1.0: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
+            throw new Error('최대 허용일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
+        }
         return new FlightRequestUtils().validateMaximumActivityDays(activityDays, maximumDays);
     }
 
-    static validateActivityDaysRange(activityDays, minimumDays = 180, maximumDays = 210) {
+    /**
+     * 🔧 v9.1.0: 활동기간 범위 검증 - 하드코딩 제거 완료
+     * @param {number} activityDays - 계산된 활동일
+     * @param {number} minimumDays - 최소 요구일 (필수 매개변수)
+     * @param {number} maximumDays - 최대 허용일 (필수 매개변수)
+     */
+    static validateActivityDaysRange(activityDays, minimumDays, maximumDays) {
+        if (!minimumDays || !maximumDays) {
+            console.error('❌ [Utils] v9.1.0 Static: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
+                minimumDays,
+                maximumDays
+            });
+            console.warn('⚠️ [Utils] v9.1.0: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
+            throw new Error('활동일 요구사항이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
+        }
         return new FlightRequestUtils().validateActivityDaysRange(activityDays, minimumDays, maximumDays);
     }
 
@@ -927,11 +1028,25 @@ window.FlightRequestUtils = FlightRequestUtils;
 // 인스턴스 생성 및 전역 변수 설정
 window.flightRequestUtils = new FlightRequestUtils();
 
-console.log('✅ FlightRequestUtils v8.5.0 로드 완료 - 최대 활동일 초과 검증 기능 추가');
-console.log('🆕 v8.5.0 새로운 기능:', {
-    maximumActivityDaysValidation: '사용자별 maximum_allowed_days 검증',
-    completeRangeChecking: '최소/최대 활동일 통합 검증',
-    exceedsMaximumFlag: '최대 활동일 초과 감지',
-    enhancedWarnings: '범위별 세분화된 경고 메시지',
-    userSpecificLimits: '개인별 설정값 정확 반영'
+console.log('✅ FlightRequestUtils v9.1.0 로드 완료 - 하드코딩 완전 제거 완료');
+console.log('🔧 v9.1.0 하드코딩 제거 완료:', {
+    hardcodingRemoved: {
+        validateMinimumActivityDays: '기본값 180일 → 필수 매개변수',
+        validateMaximumActivityDays: '기본값 210일 → 필수 매개변수', 
+        validateActivityDaysRange: '기본값 180일/210일 → 필수 매개변수',
+        validateAllDates: '기본값 180일/210일 → 필수 매개변수',
+        staticMethods: '모든 Static 메서드 하드코딩 제거'
+    },
+    newRequirements: {
+        parameterDependency: '매개변수 의존성으로 변경',
+        errorHandling: '필수 매개변수 누락 시 에러 발생',
+        apiIntegration: 'API에서 사용자별 요구사항 로드 필수',
+        backwardCompatibility: '기존 호출 방식 호환성 유지 (매개변수 추가 필요)'
+    },
+    benefits: {
+        userSpecific: '사용자별 정확한 요구사항 반영',
+        noHardcoding: '하드코딩 값 완전 제거',
+        flexibility: '설정값 변경 유연성 확보',
+        dataConsistency: 'DB와 완전 일치하는 검증'
+    }
 });
