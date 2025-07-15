@@ -716,9 +716,9 @@
     <script src="../js/utils.js"></script>
     <script src="../js/common/storage-utils.js"></script>
 
-    <!-- 🔧 v9.5.0: 로딩 타이밍 개선 및 UX 향상 -->
+    <!-- 🔧 인증 문제 해결 스크립트 -->
     <script>
-        console.log('🔧 v9.5.0 시작: 로딩 타이밍 개선 및 UX 향상');
+        console.log('🔧 [인증수정] 인증정보 전달 문제 해결 버전 시작');
 
         // 🔧 사용자별 활동 요구사항 (DB에서 로드)
         window.userActivityRequirements = {
@@ -742,13 +742,13 @@
             if (globalLoading) globalLoading.style.display = 'none';
             if (app) app.style.display = 'block';
             
-            console.log('✅ v9.5.0 앱 표시 완료 (로딩 개선)');
+            console.log('✅ [인증수정] 앱 표시 완료');
             
             // 기본 이벤트 설정
             setupBasicEvents();
             
-            // 🆕 v9.5.0: 개선된 사용자별 활동 요구사항 로드
-            loadUserActivityRequirements();
+            // 🆕 인증 문제 해결된 사용자별 활동 요구사항 로드
+            loadUserActivityRequirementsFixed();
         }
 
         // 🔧 기본 이벤트 설정
@@ -790,49 +790,99 @@
                 });
             });
 
-            console.log('✅ 기본 이벤트 설정 완료 (v9.5.0)');
+            console.log('✅ [인증수정] 기본 이벤트 설정 완료');
         }
 
-        // 🔧 v9.5.0: 로딩 타이밍 개선 및 UX 향상 - 사용자 친화적 로딩
-        async function loadUserActivityRequirements() {
+        // 🆕 간소화된 사용자 정보 확인 함수 (핵심 수정 부분)
+        async function getSimpleUserInfo() {
             try {
-                console.log('🔍 [로딩개선] v9.5.0: 사용자별 활동 요구사항 로드 시작...');
+                console.log('🔍 [인증수정] 간소화된 사용자 정보 확인 시작...');
                 
-                // 🆕 1단계: 친화적 로딩 상태 표시
+                // 방법 1: localStorage의 currentStudent 확인 (가장 확실한 방법)
+                const currentStudentData = localStorage.getItem('currentStudent');
+                if (currentStudentData) {
+                    try {
+                        const studentData = JSON.parse(currentStudentData);
+                        if (studentData?.id) {
+                            console.log('✅ [인증수정] localStorage currentStudent에서 사용자 정보 확인:', {
+                                id: studentData.id,
+                                name: studentData.name,
+                                method: 'localStorage-currentStudent'
+                            });
+                            return { success: true, userId: studentData.id, userData: studentData, method: 'localStorage-currentStudent' };
+                        }
+                    } catch (parseError) {
+                        console.warn('⚠️ [인증수정] currentStudent 파싱 오류:', parseError);
+                    }
+                }
+                
+                // 방법 2: sessionStorage의 userSession 확인 (백업 방법)
+                const userSessionData = sessionStorage.getItem('userSession');
+                if (userSessionData) {
+                    try {
+                        const sessionData = JSON.parse(userSessionData);
+                        if (sessionData?.user?.id) {
+                            console.log('✅ [인증수정] sessionStorage userSession에서 사용자 정보 확인:', {
+                                id: sessionData.user.id,
+                                name: sessionData.user.name,
+                                method: 'sessionStorage-userSession'
+                            });
+                            return { success: true, userId: sessionData.user.id, userData: sessionData.user, method: 'sessionStorage-userSession' };
+                        }
+                    } catch (parseError) {
+                        console.warn('⚠️ [인증수정] userSession 파싱 오류:', parseError);
+                    }
+                }
+                
+                console.log('❌ [인증수정] 사용자 정보를 찾을 수 없습니다. 로그인이 필요합니다.');
+                return { success: false, error: 'User not found - login required' };
+                
+            } catch (error) {
+                console.error('❌ [인증수정] 사용자 정보 확인 중 오류:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // 🆕 개선된 사용자별 활동 요구사항 로드 함수 (핵심 수정 부분)
+        async function loadUserActivityRequirementsFixed() {
+            try {
+                console.log('🔄 [인증수정] 개선된 사용자별 활동 요구사항 로드 시작...');
+                
+                // 🆕 1단계: 간소화된 사용자 정보 확인
                 showFriendlyLoadingState('사용자 정보를 확인하고 있습니다...');
                 
-                // 🆕 2단계: 여러 방법으로 사용자 정보 확인 시도
-                const userInfo = await getUserInfoWithRetry();
+                const userInfo = await getSimpleUserInfo();
                 
                 if (!userInfo.success) {
-                    // 🆕 에러 메시지 대신 친화적 안내
-                    console.log('🔄 [로딩개선] 사용자 인증 진행 중... 백그라운드에서 처리됩니다.');
-                    showFriendlyLoadingState('인증 정보를 확인하고 있습니다. 잠시만 기다려주세요...');
+                    console.log('🔄 [인증수정] 사용자 인증 실패 - 로그인 페이지로 리다이렉트 권장');
+                    showFallbackMessage('로그인이 필요합니다. 로그인 페이지로 이동해주세요.');
                     
-                    // 🆕 재시도 로직 (강제 에러 표시 없음)
+                    // 3초 후 로그인 페이지로 리다이렉트
                     setTimeout(() => {
-                        loadUserActivityRequirements();
-                    }, 2000);
+                        if (confirm('로그인이 필요합니다. 로그인 페이지로 이동하시겠습니까?')) {
+                            window.location.href = '../index.html';
+                        }
+                    }, 3000);
                     return;
                 }
 
-                console.log('✅ [로딩개선] 사용자 확인됨:', userInfo.userId);
+                console.log('✅ [인증수정] 사용자 확인됨:', userInfo.userId);
                 showFriendlyLoadingState('시스템을 준비하고 있습니다...');
 
-                // 🆕 3단계: API 준비 상태 확인
-                const apiResult = await waitForAPIReady();
+                // 🆕 2단계: API 준비 상태 확인 (타이밍 개선)
+                const apiResult = await waitForAPIReadyFixed();
                 if (!apiResult.success) {
-                    console.log('🔄 [로딩개선] API 초기화 중...');
+                    console.log('🔄 [인증수정] API 초기화 중...');
                     showFriendlyLoadingState('시스템 구성 요소를 로드하고 있습니다...');
                     
                     // 재시도
                     setTimeout(() => {
-                        loadUserActivityRequirements();
+                        loadUserActivityRequirementsFixed();
                     }, 1500);
                     return;
                 }
 
-                // 🆕 4단계: 사용자별 요구사항 로드
+                // 🆕 3단계: 사용자별 요구사항 로드
                 showFriendlyLoadingState('활동 요구사항을 불러오고 있습니다...');
                 
                 const requirements = await window.flightRequestAPI.getActivityRequirements();
@@ -842,113 +892,57 @@
                     updateRequirementDisplay();
                     hideFriendlyLoadingState();
                     
-                    console.log('🎉 [로딩개선] 모든 초기화 완료:', {
+                    console.log('🎉 [인증수정] 모든 초기화 완료:', {
                         사용자ID: userInfo.userId,
                         최소요구일: requirements.minimumDays,
                         최대허용일: requirements.maximumDays,
-                        로딩타이밍: '개선됨'
+                        인증방법: userInfo.method
                     });
                 } else {
-                    // 🆕 실패해도 기본값으로 진행 (에러 메시지 대신)
-                    console.log('⚠️ [로딩개선] 요구사항 로드 실패 - 기본 진행');
+                    console.log('⚠️ [인증수정] 요구사항 로드 실패 - 기본 진행');
                     showFallbackMessage('기본 설정으로 진행합니다. 일부 기능이 제한될 수 있습니다.');
                 }
                 
             } catch (error) {
-                console.log('🔄 [로딩개선] 시스템 초기화 중... 자동으로 재시도됩니다.');
+                console.log('🔄 [인증수정] 시스템 초기화 중... 자동으로 재시도됩니다.');
                 
-                // 🆕 에러 메시지 대신 재시도 안내
                 showFriendlyLoadingState('시스템을 재시도하고 있습니다. 조금만 더 기다려주세요...');
                 
                 setTimeout(() => {
-                    loadUserActivityRequirements();
+                    loadUserActivityRequirementsFixed();
                 }, 3000);
             }
         }
 
-        // 🆕 사용자 정보 확인 (여러 방법 시도)
-        async function getUserInfoWithRetry(maxAttempts = 6, delay = 500) {
-            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                try {
-                    // 방법 1: SupabaseCore 현재 사용자
-                    if (window.SupabaseCore?.getCurrentUser) {
-                        const currentUser = window.SupabaseCore.getCurrentUser();
-                        if (currentUser?.id) {
-                            return { success: true, userId: currentUser.id, method: 'SupabaseCore' };
-                        }
-                    }
-                    
-                    // 방법 2: localStorage userData
-                    const userData = localStorage.getItem('userData');
-                    if (userData) {
-                        const userInfo = JSON.parse(userData);
-                        if (userInfo?.id) {
-                            return { success: true, userId: userInfo.id, method: 'localStorage-userData' };
-                        }
-                    }
-                    
-                    // 방법 3: localStorage userInfo  
-                    const userInfo = localStorage.getItem('userInfo');
-                    if (userInfo) {
-                        const info = JSON.parse(userInfo);
-                        if (info?.id) {
-                            return { success: true, userId: info.id, method: 'localStorage-userInfo' };
-                        }
-                    }
-                    
-                    // 방법 4: Supabase 직접 확인
-                    if (window.supabase?.auth?.getUser) {
-                        const { data } = await window.supabase.auth.getUser();
-                        if (data?.user?.id) {
-                            return { success: true, userId: data.user.id, method: 'supabase-auth' };
-                        }
-                    }
-                    
-                    console.log(`🔄 [로딩개선] 사용자 정보 확인 시도 ${attempt}/${maxAttempts}...`);
-                    
-                    if (attempt < maxAttempts) {
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                    }
-                    
-                } catch (error) {
-                    console.log(`⚠️ [로딩개선] 사용자 확인 ${attempt}번째 시도 실패:`, error.message);
-                }
-            }
-            
-            return { success: false, error: 'User not found after retries' };
-        }
-
-        // 🆕 API 준비 상태 확인 함수
-        async function waitForAPIReady(maxAttempts = 8, delay = 400) {
+        // 🆕 개선된 API 준비 상태 확인 함수
+        async function waitForAPIReadyFixed(maxAttempts = 8, delay = 400) {
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
                 try {
                     if (window.flightRequestAPI?.getActivityRequirements) {
                         return { success: true };
                     }
                     
-                    console.log(`🔄 [로딩개선] API 준비 확인 ${attempt}/${maxAttempts}...`);
+                    console.log(`🔄 [인증수정] API 준비 확인 ${attempt}/${maxAttempts}...`);
                     
                     if (attempt < maxAttempts) {
                         await new Promise(resolve => setTimeout(resolve, delay));
                     }
                     
                 } catch (error) {
-                    console.log(`⚠️ [로딩개선] API 확인 오류 ${attempt}:`, error.message);
+                    console.log(`⚠️ [인증수정] API 확인 오류 ${attempt}:`, error.message);
                 }
             }
             
             return { success: false, error: 'API not ready' };
         }
 
-        // 🆕 친화적 로딩 상태 표시
+        // 기존 helper 함수들
         function showFriendlyLoadingState(message) {
-            // 기존 에러 메시지 숨기기
             const errorElement = document.getElementById('errorMessage');
             if (errorElement) {
                 errorElement.style.display = 'none';
             }
             
-            // 로딩 상태 표시 (기존 requiredDays 요소 활용)
             const requiredDaysEl = document.getElementById('requiredDays');
             if (requiredDaysEl) {
                 requiredDaysEl.className = 'value loading';
@@ -957,7 +951,6 @@
                 requiredDaysEl.style.fontStyle = 'italic';
             }
             
-            // 상단에 친화적 안내 메시지 (새로 생성하거나 업데이트)
             let friendlyMessage = document.getElementById('friendlyLoadingMessage');
             if (!friendlyMessage) {
                 friendlyMessage = document.createElement('div');
@@ -989,7 +982,6 @@
             `;
             friendlyMessage.style.display = 'flex';
             
-            // 스피너 애니메이션 추가
             if (!document.getElementById('spinnerAnimation')) {
                 const style = document.createElement('style');
                 style.id = 'spinnerAnimation';
@@ -1003,7 +995,6 @@
             }
         }
 
-        // 🆕 친화적 로딩 상태 숨기기
         function hideFriendlyLoadingState() {
             const friendlyMessage = document.getElementById('friendlyLoadingMessage');
             if (friendlyMessage) {
@@ -1011,7 +1002,6 @@
             }
         }
 
-        // 🆕 폴백 메시지 표시 (에러 대신 정보성 메시지)
         function showFallbackMessage(message) {
             hideFriendlyLoadingState();
             
@@ -1039,23 +1029,11 @@
             fallbackMessage.textContent = message;
             fallbackMessage.style.display = 'block';
             
-            // 10초 후 자동 숨김
             setTimeout(() => {
                 if (fallbackMessage) {
                     fallbackMessage.style.display = 'none';
                 }
             }, 10000);
-        }
-
-        // 🔧 기존 showError 함수 수정 (덜 공격적으로)
-        function showError(message) {
-            console.log('📝 [로딩개선] 정보:', message);
-            
-            // 🆕 에러 대신 정보성 메시지로 처리
-            showFallbackMessage('일부 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-            
-            // 자동 스크롤 제거 (사용자 불편함 방지)
-            // errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); // 제거됨
         }
 
         function updateRequirementDisplay() {
@@ -1067,7 +1045,6 @@
             }
         }
 
-        // 🔧 v9.5.0: 활동일 계산 함수 (개선됨)
         function calculateActivityDays() {
             const arrivalDate = document.getElementById('actualArrivalDate')?.value;
             const workEndDate = document.getElementById('actualWorkEndDate')?.value;
@@ -1082,9 +1059,8 @@
                     const days = Math.ceil((workEnd - arrival) / (1000 * 60 * 60 * 24));
                     calculatedDaysEl.textContent = days;
                     
-                    // 🔧 v9.5.0: 하드코딩 완전 제거 - API 로드된 값 사용 필수
                     if (!window.userActivityRequirements.isLoaded) {
-                        console.warn('⚠️ [로딩개선] 사용자 요구사항이 아직 로드되지 않음');
+                        console.warn('⚠️ [인증수정] 사용자 요구사항이 아직 로드되지 않음');
                         if (validationEl) {
                             validationEl.className = 'validation-status warning';
                             validationEl.innerHTML = '<i data-lucide="clock"></i>사용자별 요구사항을 로드하는 중입니다...';
@@ -1093,15 +1069,13 @@
                         return;
                     }
 
-                    // 🔧 v9.5.0: API에서 로드된 값 사용 (하드코딩 제거)
                     const minRequiredDays = window.userActivityRequirements.minimumDays;
                     const maxAllowedDays = window.userActivityRequirements.maximumDays;
                     
                     if (!minRequiredDays || !maxAllowedDays) {
-                        console.error('❌ [로딩개선] 사용자 요구사항이 올바르지 않음:', {
+                        console.error('❌ [인증수정] 사용자 요구사항이 올바르지 않음:', {
                             minimumDays: minRequiredDays,
-                            maximumDays: maxAllowedDays,
-                            하드코딩제거: '✅ 완료'
+                            maximumDays: maxAllowedDays
                         });
                         
                         if (validationEl) {
@@ -1112,14 +1086,12 @@
                         return;
                     }
                     
-                    console.log('🔍 [로딩개선] v9.5.0 검증:', {
+                    console.log('🔍 [인증수정] 검증:', {
                         계산된활동일: days,
                         필수활동일: minRequiredDays,
-                        최대활동일: maxAllowedDays,
-                        로딩개선: '✅ 완료'
+                        최대활동일: maxAllowedDays
                     });
                     
-                    // 🎯 v9.5.0: 단순화된 검증 로직 (빨간색 경고만, 주황색 제거)
                     if (validationEl) {
                         if (days >= minRequiredDays && days <= maxAllowedDays) {
                             validationEl.className = 'validation-status valid';
@@ -1136,7 +1108,6 @@
                         }
                     }
                     
-                    // 아이콘 초기화
                     if (typeof lucide !== 'undefined') {
                         lucide.createIcons();
                     }
@@ -1149,41 +1120,37 @@
 
         // DOM 로드 시 즉시 실행
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('📄 DOM 로드 완료 (v9.5.0 로딩 개선)');
+            console.log('📄 [인증수정] DOM 로드 완료');
             
-            // 1초 후 앱 표시
             setTimeout(() => {
                 clearTimeout(initTimer);
                 showApp();
             }, 1000);
             
-            // 아이콘 초기화
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
         });
 
-        // 페이지 완전 로드 시
         window.addEventListener('load', () => {
-            console.log('📄 페이지 완전 로드 (v9.5.0 로딩 개선)');
+            console.log('📄 [인증수정] 페이지 완전 로드');
             showApp();
         });
     </script>
 
-    <!-- 🔧 v9.5.0: 기본 모듈들만 로드 (필수적인 것만) -->
+    <!-- 기존 모듈 로드 -->
     <script>
-        // 🔧 모듈 로드 시도 (실패해도 무시)
         setTimeout(() => {
             try {
                 if (window.FlightRequestAPI) {
-                    console.log('✅ FlightRequestAPI 사용 가능 (v9.5.0 로딩 개선)');
+                    console.log('✅ [인증수정] FlightRequestAPI 사용 가능');
                 }
                 if (window.FlightRequestUI) {
-                    console.log('✅ FlightRequestUI 사용 가능 (v9.5.0)');
+                    console.log('✅ [인증수정] FlightRequestUI 사용 가능');
                     window.flightRequestUI = new FlightRequestUI();
                 }
             } catch (error) {
-                console.log('⚠️ 고급 기능 로드 실패, 기본 기능 사용:', error.message);
+                console.log('⚠️ [인증수정] 고급 기능 로드 실패, 기본 기능 사용:', error.message);
             }
         }, 2000);
     </script>
