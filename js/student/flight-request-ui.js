@@ -1,5 +1,12 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.7.0
-// 🔥 v8.7.0: P3 필수 활동일 정보 로딩 수정 - 강화된 에러 처리 및 재시도 로직 개선
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.7.1
+// 🔧 v8.7.1: 현지 활동기간 실시간 계산 로직 구현 - 계산된 활동일 업데이트 누락 수정
+// 📝 P4 핵심 수정사항:
+//   - validateActivityPeriod() 메서드 완전 구현 (기본 구현에서 → 실제 계산 로직)
+//   - updateCalculatedActivityDays() 실시간 활동일 계산 및 UI 업데이트 메서드 추가
+//   - utils.calculateActivityDays() 메서드 적극 활용
+//   - 날짜 입력 시 즉시 "계산된 활동일" 표시
+//   - 검증 로직과 UI 업데이트 로직 분리하여 안정성 확보
+// 🔥 v8.7.0: P3 필수 활동일 정보 로딩 수정 - 강화된 에러 처리 및 재시도 로직 개선 (유지)
 // 📝 P3 주요 개선사항:
 //   - updateRequiredDaysUI() 메서드 강화된 에러 처리 및 요구사항 유효성 검증
 //   - updateRequiredDaysElements() UI 요소 업데이트 분리 메서드 추가
@@ -274,7 +281,7 @@ class FlightRequestUI {
 
     async init() {
         try {
-            console.log('🔄 FlightRequestUI v8.7.0 초기화 시작 - P3 필수 활동일 정보 로딩 수정...');
+            console.log('🔄 FlightRequestUI v8.7.1 초기화 시작 - P4 현지 활동기간 실시간 계산 로직 구현...');
             
             // 🚀 v8.5.0: API 및 유틸리티 대기 (타임아웃 설정)
             await this.waitForDependenciesEnhanced();
@@ -299,7 +306,7 @@ class FlightRequestUI {
                 this.loadInitialData();
             }, 300);
             
-            console.log('✅ FlightRequestUI v8.7.0 초기화 완료 - P3 필수 활동일 정보 로딩 수정');
+            console.log('✅ FlightRequestUI v8.7.1 초기화 완료 - P4 현지 활동기간 실시간 계산 로직 구현');
             
             this.isInitialized = true;
         } catch (error) {
@@ -319,7 +326,7 @@ class FlightRequestUI {
                     const apiInitialized = window.flightRequestAPI?.isInitialized;
                     const utilsReady = !!window.FlightRequestUtils;
                     
-                    console.log('🔍 [의존성체크] v8.7.0 상태:', {
+                    console.log('🔍 [의존성체크] v8.7.1 상태:', {
                         apiExists,
                         apiInitialized,
                         utilsReady,
@@ -329,7 +336,7 @@ class FlightRequestUI {
                     if (apiExists && apiInitialized && utilsReady) {
                         this.api = window.flightRequestAPI;
                         this.utils = window.FlightRequestUtils;
-                        console.log('✅ FlightRequestUI v8.7.0 의존성 로드 완료');
+                        console.log('✅ FlightRequestUI v8.7.1 의존성 로드 완료');
                         resolve();
                         return;
                     }
@@ -381,11 +388,11 @@ class FlightRequestUI {
     // 🔥 v8.6.0: P2 loadInitialData() 메서드 완전 강화
     async loadInitialData() {
         try {
-            console.log('🔄 [초기데이터] v8.7.0 P2 초기 데이터 로드 시작 - 여권정보 체크 로직 수정');
+            console.log('🔄 [초기데이터] v8.7.1 P2 초기 데이터 로드 시작 - 여권정보 체크 로직 수정');
             
             // 🔧 P2: API 초기화 완료 보장
             await this.ensureAPIReadiness();
-            
+
             if (!this.api) {
                 throw new Error('API가 초기화되지 않았습니다.');
             }
@@ -728,7 +735,7 @@ class FlightRequestUI {
             }, '여권정보 체크', 3);
             
             console.log('✅ [여권체크] v8.5.0 여권정보 체크 완료:', passportExists);
-            
+
             // 🚀 Priority 1: 사용자 친화적 UI 전환
             if (!passportExists) {
                 console.log('📝 [여권체크] 여권정보 설정 필요 - 안내 페이지 표시');
@@ -864,7 +871,7 @@ class FlightRequestUI {
 
     // 🚀 v8.5.0: 강화된 에러 표시 (Priority 2)
     showEnhancedError(message, error = null) {
-        console.error('🚨 [오류] v8.7.0:', message, error);
+        console.error('🚨 [오류] v8.7.1:', message, error);
         
         let enhancedMessage = message;
         let actionButton = null;
@@ -1179,7 +1186,7 @@ class FlightRequestUI {
             }
         });
 
-        console.log('✅ [활동기간검증] v8.7.0: 현지 활동기간 검증 이벤트 설정 완료');
+        console.log('✅ [활동기간검증] v8.7.1: 현지 활동기간 검증 이벤트 설정 완료');
     }
 
     debouncedActivityValidation() {
@@ -1203,7 +1210,7 @@ class FlightRequestUI {
             });
         }
 
-        console.log('✅ [귀국일검증] v8.7.0: 귀국 필수 완료일 검증 이벤트 설정 완료');
+        console.log('✅ [귀국일검증] v8.7.1: 귀국 필수 완료일 검증 이벤트 설정 완료');
     }
 
     debouncedReturnDateValidation() {
@@ -1238,7 +1245,7 @@ class FlightRequestUI {
             }
         });
 
-        console.log('✅ [전제조건] v8.7.0: 전제 조건 시스템 이벤트 설정 완료');
+        console.log('✅ [전제조건] v8.7.1: 전제 조건 시스템 이벤트 설정 완료');
     }
 
     // 여권정보 관련 메서드들 (기존 로직 유지)
@@ -1402,7 +1409,7 @@ class FlightRequestUI {
 
             this.setPassportLoading(true);
 
-            console.log('🔄 [여권정보] v8.7.0 여권정보 저장 시작:', {
+            console.log('🔄 [여권정보] v8.7.1 여권정보 저장 시작:', {
                 여권번호: passportData.passport_number,
                 영문이름: passportData.name_english,
                 이미지포함: !!this.passportImageFile,
@@ -1412,7 +1419,7 @@ class FlightRequestUI {
             // 여권정보 저장
             const result = await this.api.savePassportInfo(passportData, this.passportImageFile);
             
-            console.log('✅ [여권정보] v8.7.0 여권정보 저장 완료:', {
+            console.log('✅ [여권정보] v8.7.1 여권정보 저장 완료:', {
                 성공: !!result,
                 수정여부: result?.isUpdate,
                 이미지URL: result?.data?.image_url
@@ -1422,7 +1429,7 @@ class FlightRequestUI {
             this.showPassportSuccess();
 
         } catch (error) {
-            console.error('❌ [여권정보] v8.7.0 여권정보 저장 실패:', error);
+            console.error('❌ [여권정보] v8.7.1 여권정보 저장 실패:', error);
             this.showError(error.message || '여권정보 저장 중 오류가 발생했습니다.');
         } finally {
             this.setPassportLoading(false);
@@ -1446,10 +1453,10 @@ class FlightRequestUI {
                 }
             }
             
-            console.log('✅ [여권정보] v8.7.0 여권정보 저장 성공 메시지 표시 완료');
+            console.log('✅ [여권정보] v8.7.1 여권정보 저장 성공 메시지 표시 완료');
             
         } catch (error) {
-            console.error('❌ [여권정보] v8.7.0 성공 메시지 표시 실패:', error);
+            console.error('❌ [여권정보] v8.7.1 성공 메시지 표시 실패:', error);
         }
     }
 
@@ -1473,7 +1480,7 @@ class FlightRequestUI {
             }
             
         } catch (error) {
-            console.error('❌ [여권정보] v8.7.0 로딩 상태 설정 실패:', error);
+            console.error('❌ [여권정보] v8.7.1 로딩 상태 설정 실패:', error);
         }
     }
 
@@ -1780,6 +1787,245 @@ class FlightRequestUI {
         this.updateFlightSectionAvailability();
     }
 
+    // === P4 핵심 기능: 현지 활동기간 실시간 계산 로직 구현 ===
+
+    // 🔧 P4: 현지 활동기간 검증 메서드 완전 구현 (기본 구현에서 → 실제 계산 로직)
+    validateActivityPeriod() {
+        try {
+            console.log('🔄 [활동기간검증] P4: 현지 활동기간 검증 시작...');
+            
+            // 🔧 P4: 날짜 요소 값 가져오기
+            const arrivalDate = this.elements.actualArrivalDate?.value;
+            const workEndDate = this.elements.actualWorkEndDate?.value;
+            
+            console.log('📋 [활동기간검증] P4: 입력된 날짜:', {
+                현지도착일: arrivalDate,
+                학당근무종료일: workEndDate,
+                둘다입력됨: !!(arrivalDate && workEndDate)
+            });
+            
+            // 🔧 P4: 둘 다 입력되지 않은 경우 UI 초기화
+            if (!arrivalDate || !workEndDate) {
+                this.updateCalculatedActivityDays(0);
+                this.updateActivityValidationUI({
+                    valid: false,
+                    message: '현지 도착일과 학당 근무 종료일을 모두 입력해주세요.',
+                    activityDays: 0
+                });
+                return { valid: false, activityDays: 0 };
+            }
+            
+            // 🔧 P4: 실시간 활동일 계산
+            let activityDays = 0;
+            try {
+                if (this.utils && typeof this.utils.calculateActivityDays === 'function') {
+                    activityDays = this.utils.calculateActivityDays(arrivalDate, workEndDate);
+                } else {
+                    // utils가 없는 경우 직접 계산
+                    const arrival = new Date(arrivalDate);
+                    const workEnd = new Date(workEndDate);
+                    if (arrival < workEnd) {
+                        activityDays = Math.ceil((workEnd - arrival) / (1000 * 60 * 60 * 24));
+                    }
+                }
+                
+                console.log('📊 [활동기간검증] P4: 활동일 계산 완료:', {
+                    현지도착일: arrivalDate,
+                    학당근무종료일: workEndDate,
+                    계산된활동일: activityDays
+                });
+                
+            } catch (calcError) {
+                console.error('❌ [활동기간검증] P4: 활동일 계산 실패:', calcError);
+                activityDays = 0;
+            }
+            
+            // 🔧 P4: UI에 계산된 활동일 즉시 반영
+            this.updateCalculatedActivityDays(activityDays);
+            
+            // 🔧 P4: 활동기간 범위 검증 (사용자별 요구사항 활용)
+            let validation = { valid: true, activityDays: activityDays };
+            
+            if (this.isUserActivityRequirementsLoaded && this.userRequiredDays && this.userMaximumDays) {
+                try {
+                    console.log('🔄 [활동기간검증] P4: 사용자별 요구사항으로 범위 검증:', {
+                        활동일: activityDays,
+                        최소요구일: this.userRequiredDays,
+                        최대허용일: this.userMaximumDays
+                    });
+                    
+                    if (this.utils && typeof this.utils.validateActivityDaysRange === 'function') {
+                        const rangeValidation = this.utils.validateActivityDaysRange(
+                            activityDays, 
+                            this.userRequiredDays, 
+                            this.userMaximumDays
+                        );
+                        
+                        validation = {
+                            valid: rangeValidation.valid,
+                            activityDays: activityDays,
+                            errors: rangeValidation.errors || [],
+                            warnings: rangeValidation.warnings || [],
+                            minimumCheck: rangeValidation.minimumCheck,
+                            maximumCheck: rangeValidation.maximumCheck
+                        };
+                        
+                        console.log('✅ [활동기간검증] P4: 범위 검증 완료:', validation);
+                        
+                    } else {
+                        console.warn('⚠️ [활동기간검증] P4: Utils 범위 검증 메서드 사용 불가 - 기본 검증 수행');
+                        
+                        // 기본 범위 검증
+                        if (activityDays < this.userRequiredDays) {
+                            validation = {
+                                valid: false,
+                                activityDays: activityDays,
+                                message: `최소 ${this.userRequiredDays}일의 활동 기간이 필요합니다 (현재: ${activityDays}일)`
+                            };
+                        } else if (activityDays > this.userMaximumDays) {
+                            validation = {
+                                valid: false,
+                                activityDays: activityDays,
+                                message: `최대 ${this.userMaximumDays}일을 초과할 수 없습니다 (현재: ${activityDays}일)`
+                            };
+                        } else {
+                            validation = {
+                                valid: true,
+                                activityDays: activityDays,
+                                message: `활동기간이 유효합니다 (${activityDays}일)`
+                            };
+                        }
+                    }
+                    
+                } catch (rangeError) {
+                    console.error('❌ [활동기간검증] P4: 범위 검증 실패:', rangeError);
+                    validation = {
+                        valid: false,
+                        activityDays: activityDays,
+                        message: '활동기간 검증 중 오류가 발생했습니다.'
+                    };
+                }
+                
+            } else {
+                console.warn('⚠️ [활동기간검증] P4: 사용자별 요구사항이 로드되지 않음 - 기본 검증만 수행');
+                validation = {
+                    valid: activityDays > 0,
+                    activityDays: activityDays,
+                    message: activityDays > 0 ? 
+                        `현지 활동기간: ${activityDays}일 (요구사항 확인 중...)` : 
+                        '활동기간을 계산할 수 없습니다.'
+                };
+            }
+            
+            // 🔧 P4: UI 업데이트
+            this.updateActivityValidationUI(validation);
+            
+            // 🔧 P4: 전제 조건 시스템 업데이트
+            this.isActivityPeriodValid = validation.valid;
+            setTimeout(() => {
+                this.checkActivityPeriodCompletion();
+                this.updateFlightSectionAvailability();
+            }, 50);
+            
+            console.log('✅ [활동기간검증] P4: 현지 활동기간 검증 완료:', {
+                검증결과: validation.valid,
+                활동일: validation.activityDays,
+                사용자요구사항로드됨: this.isUserActivityRequirementsLoaded
+            });
+            
+            return validation;
+            
+        } catch (error) {
+            console.error('❌ [활동기간검증] P4: 현지 활동기간 검증 실패:', error);
+            
+            const errorValidation = {
+                valid: false,
+                activityDays: 0,
+                message: '활동기간 검증 중 오류가 발생했습니다.'
+            };
+            
+            this.updateActivityValidationUI(errorValidation);
+            return errorValidation;
+        }
+    }
+    
+    // 🔧 P4: 실시간 활동일 계산 및 UI 업데이트 메서드 추가
+    updateCalculatedActivityDays(activityDays) {
+        try {
+            console.log('🔄 [활동기간UI] P4: 계산된 활동일 UI 업데이트:', activityDays);
+            
+            if (this.elements.calculatedDays) {
+                if (activityDays > 0) {
+                    this.elements.calculatedDays.textContent = activityDays;
+                    this.elements.calculatedDays.style.color = '#059669';
+                    this.elements.calculatedDays.style.fontWeight = '600';
+                    this.elements.calculatedDays.className = 'value success';
+                } else {
+                    this.elements.calculatedDays.textContent = '-';
+                    this.elements.calculatedDays.style.color = '#6b7280';
+                    this.elements.calculatedDays.style.fontWeight = '400';
+                    this.elements.calculatedDays.className = 'value';
+                }
+                
+                console.log('✅ [활동기간UI] P4: calculatedDays 요소 업데이트 완료:', {
+                    표시값: this.elements.calculatedDays.textContent,
+                    색상: this.elements.calculatedDays.style.color
+                });
+            } else {
+                console.warn('⚠️ [활동기간UI] P4: calculatedDays 요소를 찾을 수 없음');
+            }
+            
+        } catch (error) {
+            console.error('❌ [활동기간UI] P4: 계산된 활동일 UI 업데이트 실패:', error);
+        }
+    }
+    
+    // 🔧 P4: 활동기간 검증 결과 UI 업데이트 (개선된 구현)
+    updateActivityValidationUI(validation) {
+        try {
+            console.log('🔄 [활동기간UI] P4: 검증 결과 UI 업데이트:', validation);
+            
+            if (this.elements.validationStatus) {
+                if (validation.valid) {
+                    // 성공 상태
+                    this.elements.validationStatus.className = 'validation-status valid';
+                    this.elements.validationStatus.innerHTML = 
+                        `<i data-lucide="check-circle"></i>${validation.message || '활동기간이 유효합니다'}`;
+                    this.elements.validationStatus.style.color = '#059669';
+                    this.elements.validationStatus.style.backgroundColor = '#f0fdf4';
+                    this.elements.validationStatus.style.border = '1px solid #bbf7d0';
+                } else {
+                    // 실패 상태
+                    this.elements.validationStatus.className = 'validation-status invalid';
+                    this.elements.validationStatus.innerHTML = 
+                        `<i data-lucide="x-circle"></i>${validation.message || '활동기간이 유효하지 않습니다'}`;
+                    this.elements.validationStatus.style.color = '#dc2626';
+                    this.elements.validationStatus.style.backgroundColor = '#fef2f2';
+                    this.elements.validationStatus.style.border = '1px solid #fecaca';
+                }
+                
+                this.elements.validationStatus.style.display = 'flex';
+                this.elements.validationStatus.style.alignItems = 'center';
+                this.elements.validationStatus.style.gap = '8px';
+                this.elements.validationStatus.style.padding = '12px';
+                this.elements.validationStatus.style.borderRadius = '6px';
+                this.elements.validationStatus.style.marginTop = '8px';
+                
+                console.log('✅ [활동기간UI] P4: validationStatus 요소 업데이트 완료');
+            } else {
+                console.warn('⚠️ [활동기간UI] P4: validationStatus 요소를 찾을 수 없음');
+            }
+            
+            // 아이콘 새로고침
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+        } catch (error) {
+            console.error('❌ [활동기간UI] P4: 검증 결과 UI 업데이트 실패:', error);
+        }
+    }
+
     // === 기타 메서드들 (스텁에서 실제 구현으로 전환) ===
     checkActivityPeriodCompletion() { 
         // 기본 구현 - 향후 확장 가능
@@ -1789,16 +2035,6 @@ class FlightRequestUI {
     updateFlightSectionAvailability() { 
         // 기본 구현 - 향후 확장 가능
         console.log('🔄 [전제조건] 항공권 섹션 가용성 업데이트');
-    }
-    
-    validateActivityPeriod() { 
-        // 기본 구현 - 향후 확장 가능
-        return { valid: true }; 
-    }
-    
-    updateActivityValidationUI(validation) { 
-        // 기본 구현 - 향후 확장 가능
-        console.log('🔄 [활동기간검증] UI 업데이트:', validation);
     }
     
     validateReturnDateConstraints() { 
@@ -1871,28 +2107,35 @@ class FlightRequestUI {
 // 전역 스코프에 노출
 window.FlightRequestUI = FlightRequestUI;
 
-console.log('✅ FlightRequestUI v8.7.0 모듈 로드 완료 - P3 필수 활동일 정보 로딩 수정');
-console.log('🔥 v8.7.0 P3 핵심 개선사항:', {
-    priorityThree: {
-        title: 'P3: 필수 활동일 정보 로딩 수정',
-        updateRequiredDaysUI: 'updateRequiredDaysUI() 메서드 강화된 에러 처리 및 요구사항 유효성 검증',
-        updateRequiredDaysElements: 'updateRequiredDaysElements() UI 요소 업데이트 분리 메서드 추가',
-        showRequiredDaysError: 'showRequiredDaysError() 요구사항 로딩 에러 표시 메서드 개선',
-        clearRequiredDaysError: 'clearRequiredDaysError() 요구사항 에러 상태 초기화 메서드 추가',
-        createRequirementsErrorBanner: 'createRequirementsErrorBanner() 요구사항 에러 배너 생성 메서드 추가',
-        updateRequiredDaysUIError: 'updateRequiredDaysUIError() UI 에러 상태 표시 메서드 개선'
+console.log('✅ FlightRequestUI v8.7.1 모듈 로드 완료 - P4 현지 활동기간 실시간 계산 로직 구현');
+console.log('🔧 v8.7.1 P4 핵심 수정사항:', {
+    priorityFour: {
+        title: 'P4: 현지 활동기간 실시간 계산 로직 구현',
+        validateActivityPeriod: 'validateActivityPeriod() 메서드 완전 구현 (기본 구현 → 실제 계산 로직)',
+        updateCalculatedActivityDays: 'updateCalculatedActivityDays() 실시간 활동일 계산 및 UI 업데이트 메서드 추가',
+        utilsIntegration: 'utils.calculateActivityDays() 메서드 적극 활용',
+        realTimeCalculation: '날짜 입력 시 즉시 "계산된 활동일" 표시',
+        uiSeparation: '검증 로직과 UI 업데이트 로직 분리하여 안정성 확보',
+        updateActivityValidationUI: 'updateActivityValidationUI() 개선된 검증 결과 UI 업데이트'
     },
     technicalImprovements: {
-        validation: '사용자별 요구사항 유효성 검증 강화 (null 체크, 숫자 검증, 로직 검증)',
-        uiUpdate: 'UI 요소 존재 확인 및 업데이트 최적화',
-        errorHandling: '에러 상황별 구체적 안내 메시지 제공',
-        autoRecovery: '성공 시 에러 상태 초기화 자동화',
-        visualFeedback: '시각적 피드백 개선 (에러 배너, 툴팁, 스타일링)',
+        calculation: '실시간 활동일 계산 (utils 활용 + 직접 계산 백업)',
+        uiUpdate: '즉시 UI 반영 (계산된 활동일, 검증 상태)',
+        validation: '사용자별 요구사항 기반 범위 검증',
+        errorHandling: '계산 및 검증 오류 처리 강화',
+        integration: '전제 조건 시스템과 완전 연동',
         debugging: '상세한 디버깅 로그 및 상태 추적'
     },
+    userExperience: {
+        instantFeedback: '날짜 입력 즉시 활동일 계산 표시',
+        visualFeedback: '성공/실패 상태별 색상 및 아이콘 표시',
+        errorRecovery: '오류 상황에서도 안정적인 UI 유지',
+        responsiveValidation: '사용자별 요구사항 기반 정확한 검증'
+    },
     compatibility: {
+        v870: '기존 v8.7.0 P3 필수 활동일 정보 로딩 수정 완전 보존',
         v860: '기존 v8.6.0 P2 여권정보 체크 로직 완전 보존',
         caching: 'v8.5.0 캐싱 시스템 및 재시도 로직 유지',
-        integration: 'P3 개선사항과 기존 기능 완벽 통합'
+        integration: 'P4 개선사항과 기존 기능 완벽 통합'
     }
 });
