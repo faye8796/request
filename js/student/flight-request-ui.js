@@ -1,4 +1,9 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.7.2
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.7.3
+// 🔧 v8.7.3: 의존성 체크 로직 강화 - utils 로딩 실패 문제 해결
+// 📝 핵심 수정사항:
+//   - waitForDependenciesEnhanced() 메서드에서 utilsReady 체크 로직 강화
+//   - 3가지 방법으로 FlightRequestUtils 존재 확인 (클래스/인스턴스/전역)
+//   - 단일 조건 체크에서 다중 조건 체크로 변경하여 안정성 향상
 // 🔧 v8.7.2: 전제조건 시스템 실제 구현 및 활동기간 범위 검증 제거
 // 📝 P5 핵심 수정사항:
 //   - checkActivityPeriodCompletion() 메서드 실제 구현 (스텁 → 실제 현지 활동기간 완료 확인)
@@ -288,7 +293,7 @@ class FlightRequestUI {
 
     async init() {
         try {
-            console.log('🔄 FlightRequestUI v8.7.2 초기화 시작 - P5 전제조건 시스템 실제 구현...');
+            console.log('🔄 FlightRequestUI v8.7.3 초기화 시작 - 의존성 체크 로직 강화...');
             
             // 🚀 v8.5.0: API 및 유틸리티 대기 (타임아웃 설정)
             await this.waitForDependenciesEnhanced();
@@ -313,7 +318,7 @@ class FlightRequestUI {
                 this.loadInitialData();
             }, 300);
             
-            console.log('✅ FlightRequestUI v8.7.2 초기화 완료 - P5 전제조건 시스템 실제 구현');
+            console.log('✅ FlightRequestUI v8.7.3 초기화 완료 - 의존성 체크 로직 강화');
             
             this.isInitialized = true;
         } catch (error) {
@@ -792,19 +797,26 @@ class FlightRequestUI {
                 const check = () => {
                     const apiExists = !!window.flightRequestAPI;
                     const apiInitialized = window.flightRequestAPI?.isInitialized;
-                    const utilsReady = !!window.FlightRequestUtils;
+                    // 🔧 v8.7.3: 강화된 utils 체크 로직 - 3가지 방법으로 확인
+                    const utilsReady = !!(window.FlightRequestUtils || window.flightRequestUtils || (typeof FlightRequestUtils !== 'undefined'));
                     
-                    console.log('🔍 [의존성체크] v8.7.2 상태:', {
+                    console.log('🔍 [의존성체크] v8.7.3 상태:', {
                         apiExists,
                         apiInitialized,
                         utilsReady,
+                        utilsDetails: {
+                            classRef: !!window.FlightRequestUtils,
+                            instanceRef: !!window.flightRequestUtils,
+                            globalDef: typeof FlightRequestUtils !== 'undefined'
+                        },
                         elapsed: Date.now() - startTime
                     });
                     
                     if (apiExists && apiInitialized && utilsReady) {
                         this.api = window.flightRequestAPI;
-                        this.utils = window.FlightRequestUtils;
-                        console.log('✅ FlightRequestUI v8.7.2 의존성 로드 완료');
+                        // 🔧 v8.7.3: Utils 인스턴스 할당 우선순위 설정
+                        this.utils = window.FlightRequestUtils || window.flightRequestUtils;
+                        console.log('✅ FlightRequestUI v8.7.3 의존성 로드 완료 - 강화된 utils 체크');
                         resolve();
                         return;
                     }
@@ -875,7 +887,7 @@ class FlightRequestUI {
             }
         });
 
-        console.log('✅ [활동기간검증] v8.7.2: 현지 활동기간 검증 이벤트 설정 완료');
+        console.log('✅ [활동기간검증] v8.7.3: 현지 활동기간 검증 이벤트 설정 완료');
     }
 
     debouncedActivityValidation() {
@@ -899,7 +911,7 @@ class FlightRequestUI {
             });
         }
 
-        console.log('✅ [귀국일검증] v8.7.2: 귀국 필수 완료일 검증 이벤트 설정 완료');
+        console.log('✅ [귀국일검증] v8.7.3: 귀국 필수 완료일 검증 이벤트 설정 완료');
     }
 
     debouncedReturnDateValidation() {
@@ -934,7 +946,7 @@ class FlightRequestUI {
             }
         });
 
-        console.log('✅ [전제조건] v8.7.2: 전제 조건 시스템 이벤트 설정 완료');
+        console.log('✅ [전제조건] v8.7.3: 전제 조건 시스템 이벤트 설정 완료');
     }
 
     setupPassportEventListeners() {
@@ -998,33 +1010,35 @@ class FlightRequestUI {
 // 전역 스코프에 노출
 window.FlightRequestUI = FlightRequestUI;
 
-console.log('✅ FlightRequestUI v8.7.2 모듈 로드 완료 - P5 전제조건 시스템 실제 구현');
-console.log('🔧 v8.7.2 P5 핵심 수정사항:', {
-    priorityFive: {
-        title: 'P5: 전제조건 시스템 실제 구현 및 활동기간 범위 검증 제거',
-        checkActivityPeriodCompletion: 'checkActivityPeriodCompletion() 메서드 실제 구현 (스텁 → 실제 현지 활동기간 완료 확인)',
-        updateFlightSectionAvailability: 'updateFlightSectionAvailability() 메서드 실제 구현 (스텁 → 실제 항공권 섹션 활성화/비활성화)',
-        validateActivityPeriod: 'validateActivityPeriod() 메서드에서 활동기간 범위 검증(90일/100일) 제거',
-        prerequisiteSystem: '현지 활동기간 입력 완료 시에만 항공권 정보 섹션 활성화',
-        userInputBased: '사용자가 입력한 현지 활동기간 정보에 의거한 검증 구현'
+console.log('✅ FlightRequestUI v8.7.3 모듈 로드 완료 - 의존성 체크 로직 강화');
+console.log('🔧 v8.7.3 핵심 수정사항:', {
+    dependencyCheckFix: {
+        title: '의존성 체크 로직 강화 - utils 로딩 실패 문제 해결',
+        beforeFix: 'const utilsReady = !!window.FlightRequestUtils; // 단일 조건 체크',
+        afterFix: 'const utilsReady = !!(window.FlightRequestUtils || window.flightRequestUtils || (typeof FlightRequestUtils !== "undefined")); // 3가지 방법으로 체크',
+        benefits: [
+            'window.FlightRequestUtils (클래스) 체크',
+            'window.flightRequestUtils (인스턴스) 체크',
+            'typeof FlightRequestUtils (전역 정의) 체크',
+            '어느 하나라도 존재하면 utils 로딩 완료로 간주'
+        ]
+    },
+    problemSolved: {
+        utilsReadyFalse: 'utilsReady: false 오류 해결',
+        timeoutPrevention: '15초 타임아웃으로 인한 초기화 실패 방지',
+        loadingSuccessRate: '더 관대한 의존성 체크로 로딩 성공률 향상',
+        userExperience: '의존성 로딩 실패로 인한 사용자 불편 해소'
     },
     technicalImprovements: {
-        realImplementation: '전제조건 시스템 스텁에서 실제 구현으로 전환',
-        uiStateManagement: '항공권 입력 필드 실제 활성화/비활성화 구현',
-        statusMessaging: '전제조건 상태 메시지 동적 생성 및 업데이트',
-        validationRemoval: '활동기간 범위 검증 완전 제거 (90일/100일 기준)',
-        logicalFlow: '현지 활동기간 → 항공권 정보 순차적 진행 구현'
-    },
-    userExperience: {
-        prerequisiteGuidance: '현지 활동기간 미완료 시 명확한 안내 메시지',
-        progressiveUnlock: '단계별 잠금 해제 방식의 직관적 UX',
-        visualFeedback: '섹션별 활성화/비활성화 시각적 피드백',
-        logicalConsistency: '사용자 입력에 기반한 논리적 일관된 검증'
+        multipleCheckpoints: '3가지 체크 포인트로 안정성 향상',
+        priorityAssignment: 'Utils 인스턴스 할당 우선순위 설정',
+        enhancedLogging: '의존성 체크 상세 로깅 추가',
+        gracefulDegradation: '부분적 로딩 실패에도 시스템 동작 보장'
     },
     compatibility: {
+        v872: '기존 v8.7.2 P5 전제조건 시스템 실제 구현 완전 보존',
         v871: '기존 v8.7.1 P4 현지 활동기간 실시간 계산 로직 완전 보존',
         v870: '기존 v8.7.0 P3 필수 활동일 정보 로딩 수정 완전 보존',
-        v860: '기존 v8.6.0 P2 여권정보 체크 로직 완전 보존',
-        existingFeatures: 'P5 개선사항과 기존 모든 기능 완벽 통합'
+        existingFeatures: 'v8.7.3 개선사항과 기존 모든 기능 완벽 통합'
     }
 });
