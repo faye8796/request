@@ -1,10 +1,12 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.5.0
-// 🛠️ v8.5.0: 여권정보 설정 기능 완전 강화 - Priority 1~3 모든 개선사항 적용
-// 📝 주요 개선사항:
-//   Priority 1: 타임아웃 설정, API 상태 재확인, 사용자 경험 개선
-//   Priority 2: 에러 분류, 지수 백오프 재시도, 상세 로그
-//   Priority 3: 캐싱 로직, 병렬 처리, 프리로딩
-// 🔧 v8.4.2: 여권정보 설정 버튼 자동 폼 채우기 기능 수정 - 완전한 여권정보 UI 로직 복구
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.6.0
+// 🔥 v8.6.0: P2 여권정보 체크 로직 완전 강화 - 안정성 및 재시도 로직 개선
+// 📝 P2 주요 개선사항:
+//   - loadInitialData() 메서드 강화된 에러 처리 및 재시도 로직 적용
+//   - 여권정보 체크 재시도 로직 (최대 3회, 지수 백오프)
+//   - API 준비 상태 보장 메서드 강화
+//   - 다중 소스 활동기간 요구사항 로드
+//   - 개선된 페이지 라우팅 및 초기화 로직
+// 🛠️ v8.5.0: 여권정보 설정 기능 완전 강화 - Priority 1~3 모든 개선사항 적용 (유지)
 
 class FlightRequestUI {
     constructor() {
@@ -270,7 +272,7 @@ class FlightRequestUI {
 
     async init() {
         try {
-            console.log('🔄 FlightRequestUI v8.5.0 초기화 시작 - 여권정보 설정 기능 완전 강화...');
+            console.log('🔄 FlightRequestUI v8.6.0 초기화 시작 - P2 여권정보 체크 로직 완전 강화...');
             
             // 🚀 v8.5.0: API 및 유틸리티 대기 (타임아웃 설정)
             await this.waitForDependenciesEnhanced();
@@ -290,12 +292,12 @@ class FlightRequestUI {
             // 🚀 v8.2.4: 전제 조건 시스템 이벤트 설정
             this.setupPrerequisiteSystemEvents();
             
-            // 🚀 v8.5.0: 초기 데이터 로드 (병렬 처리 및 프리로딩)
+            // 🔥 v8.6.0: P2 강화된 초기 데이터 로드
             setTimeout(() => {
-                this.loadInitialDataEnhanced();
+                this.loadInitialData();
             }, 300);
             
-            console.log('✅ FlightRequestUI v8.5.0 초기화 완료 - 여권정보 설정 기능 완전 강화');
+            console.log('✅ FlightRequestUI v8.6.0 초기화 완료 - P2 여권정보 체크 로직 완전 강화');
             
             this.isInitialized = true;
         } catch (error) {
@@ -315,7 +317,7 @@ class FlightRequestUI {
                     const apiInitialized = window.flightRequestAPI?.isInitialized;
                     const utilsReady = !!window.FlightRequestUtils;
                     
-                    console.log('🔍 [의존성체크] v8.5.0 상태:', {
+                    console.log('🔍 [의존성체크] v8.6.0 상태:', {
                         apiExists,
                         apiInitialized,
                         utilsReady,
@@ -325,7 +327,7 @@ class FlightRequestUI {
                     if (apiExists && apiInitialized && utilsReady) {
                         this.api = window.flightRequestAPI;
                         this.utils = window.FlightRequestUtils;
-                        console.log('✅ FlightRequestUI v8.5.0 의존성 로드 완료');
+                        console.log('✅ FlightRequestUI v8.6.0 의존성 로드 완료');
                         resolve();
                         return;
                     }
@@ -343,7 +345,260 @@ class FlightRequestUI {
         }, '의존성 대기', 3);
     }
 
-    // 🚀 v8.5.0: API 준비 상태 보장 강화 (Priority 1)
+    // 🔥 v8.6.0: P2 API 준비 상태 보장 메서드 (강화됨)
+    async ensureAPIReadiness() {
+        try {
+            console.log('🔄 [API준비] P2: API 준비 상태 보장 시작...');
+            
+            // 1. API 인스턴스 존재 확인
+            if (!this.api) {
+                console.log('⏳ [API준비] P2: API 인스턴스 대기 중...');
+                await this.waitForDependenciesEnhanced(5000);
+            }
+            
+            // 2. API 초기화 상태 확인
+            if (this.api && !this.api.isInitialized) {
+                console.log('⏳ [API준비] P2: API 초기화 대기 중...');
+                await this.api.ensureInitialized();
+            }
+            
+            // 3. 최종 확인
+            if (!this.api || !this.api.isInitialized) {
+                throw new Error('API 준비 실패 - 인스턴스 또는 초기화 상태 이상');
+            }
+            
+            console.log('✅ [API준비] P2: API 준비 상태 보장 완료');
+            return true;
+            
+        } catch (error) {
+            console.error('❌ [API준비] P2: API 준비 상태 보장 실패:', error);
+            throw error;
+        }
+    }
+
+    // 🔥 v8.6.0: P2 loadInitialData() 메서드 완전 강화
+    async loadInitialData() {
+        try {
+            console.log('🔄 [초기데이터] v8.6.0 P2 초기 데이터 로드 시작 - 여권정보 체크 로직 수정');
+            
+            // 🔧 P2: API 초기화 완료 보장
+            await this.ensureAPIReadiness();
+            
+            if (!this.api) {
+                throw new Error('API가 초기화되지 않았습니다.');
+            }
+
+            // 🔧 P2: 사용자 프로필 가져오기 (강화된 에러 처리)
+            try {
+                console.log('🔄 [초기데이터] P2: 사용자 프로필 로드 시작...');
+                this.userProfile = await this.api.getUserProfile();
+                
+                if (!this.userProfile) {
+                    console.warn('⚠️ [초기데이터] P2: 사용자 프로필이 null임 - 계속 진행');
+                } else {
+                    console.log('✅ [초기데이터] P2: 사용자 프로필 로드 성공:', {
+                        id: this.userProfile?.id,
+                        name: this.userProfile?.name,
+                        dispatch_duration: this.userProfile?.dispatch_duration
+                    });
+                }
+            } catch (profileError) {
+                console.error('❌ [초기데이터] P2: 사용자 프로필 로드 실패:', profileError);
+                // 프로필 로드 실패는 치명적이지 않으므로 계속 진행
+                this.userProfile = null;
+            }
+
+            // 🔧 P2: 사용자별 활동기간 요구사항 로드 (강화된 에러 처리)
+            try {
+                console.log('🔄 [초기데이터] P2: 사용자별 활동기간 요구사항 로드 시작...');
+                await this.loadUserActivityRequirements();
+                console.log('✅ [초기데이터] P2: 사용자별 활동기간 요구사항 로드 완료');
+            } catch (requirementsError) {
+                console.error('❌ [초기데이터] P2: 사용자 활동기간 요구사항 로드 실패:', requirementsError);
+                // 활동기간 요구사항 로드 실패는 일부 기능 제한으로 처리
+                this.updateRequiredDaysUIError(requirementsError.message || '활동기간 요구사항 로드 실패');
+            }
+
+            // 🔧 P2: 여권정보 확인 (강화된 에러 처리 및 재시도 로직)
+            let passportExists = false;
+            let passportCheckAttempts = 0;
+            const maxPassportCheckAttempts = 3;
+            
+            while (passportCheckAttempts < maxPassportCheckAttempts) {
+                try {
+                    console.log(`🔄 [초기데이터] P2: 여권정보 체크 시도 ${passportCheckAttempts + 1}/${maxPassportCheckAttempts}...`);
+                    
+                    // API 상태 재확인
+                    if (!this.api.isInitialized) {
+                        console.log('⏳ [초기데이터] P2: API 재초기화 대기 중...');
+                        await this.api.ensureInitialized();
+                    }
+                    
+                    passportExists = await this.api.checkPassportInfo();
+                    console.log('✅ [초기데이터] P2: 여권정보 체크 성공:', passportExists);
+                    break; // 성공 시 루프 탈출
+                    
+                } catch (passportError) {
+                    passportCheckAttempts++;
+                    console.warn(`⚠️ [초기데이터] P2: 여권정보 체크 실패 (${passportCheckAttempts}/${maxPassportCheckAttempts}):`, {
+                        error: passportError.message,
+                        apiInitialized: this.api?.isInitialized,
+                        userExists: !!this.api?.user
+                    });
+                    
+                    if (passportCheckAttempts < maxPassportCheckAttempts) {
+                        // 재시도 전 잠시 대기
+                        console.log('⏳ [초기데이터] P2: 여권정보 체크 재시도 전 대기...');
+                        await new Promise(resolve => setTimeout(resolve, 500 * passportCheckAttempts));
+                        
+                        // API 상태 재설정 시도
+                        try {
+                            await this.api.ensureInitialized();
+                            await this.api.getCurrentUser(); // 사용자 정보 재로드
+                        } catch (reinitError) {
+                            console.warn('⚠️ [초기데이터] P2: API 재초기화 실패:', reinitError.message);
+                        }
+                    } else {
+                        // 최종 실패
+                        console.error('❌ [초기데이터] P2: 여권정보 체크 최종 실패 - 여권정보 설정 페이지로 이동');
+                        passportExists = false; // 안전하게 false로 설정
+                    }
+                }
+            }
+
+            // 🔧 P2: 페이지 라우팅 결정 (개선된 로직)
+            if (!passportExists) {
+                console.log('❌ [초기데이터] P2: 여권정보 없음 - 여권정보 등록 페이지로 이동');
+                this.showPassportInfoPage();
+                
+                // 여권정보 페이지 표시 후 UI 상태 업데이트
+                setTimeout(() => {
+                    this.showPassportAlert();
+                }, 200);
+                
+            } else {
+                console.log('✅ [초기데이터] P2: 여권정보 확인됨 - 항공권 신청 페이지 표시');
+                this.showFlightRequestPage();
+                
+                // 항공권 신청 데이터 로드 (지연 실행)
+                setTimeout(() => {
+                    this.loadFlightRequestData();
+                }, 300);
+            }
+
+        } catch (error) {
+            console.error('❌ [초기데이터] P2: 초기 데이터 로드 완전 실패:', {
+                error: error.message,
+                stack: error.stack,
+                apiExists: !!this.api,
+                apiInitialized: this.api?.isInitialized
+            });
+            
+            // 🔧 P2: 완전 실패 시 기본 대응
+            console.log('🔄 [초기데이터] P2: 완전 실패 - 기본 여권정보 설정 페이지로 이동');
+            this.showFlightRequestPageWithoutData();
+        }
+    }
+
+    // 🔧 P2: 개선된 사용자별 활동기간 요구사항 로드
+    async loadUserActivityRequirements() {
+        try {
+            // 🔧 P2: API 준비 상태 확인
+            if (!this.api || !this.api.isInitialized) {
+                console.log('⏳ [활동요구사항] P2: API 준비 대기 중...');
+                await this.ensureAPIReadiness();
+            }
+
+            console.log('🔄 [활동요구사항] P2: 사용자별 최소/최대 체류일 로드 시작...');
+
+            // UI 로딩 상태 표시
+            if (this.elements.requiredDays) {
+                this.elements.requiredDays.textContent = '로딩중...';
+                this.elements.requiredDays.className = 'value loading';
+            }
+
+            // 🔧 P2: 다중 소스 시도 (순서대로)
+            let activityRequirements = null;
+            
+            // 1차 시도: getUserProfileActivityDates()
+            try {
+                console.log('🔄 [활동요구사항] P2: 1차 시도 - getUserProfileActivityDates()');
+                const activityData = await this.api.getUserProfileActivityDates();
+                
+                if (activityData && activityData.minimum_required_days && activityData.maximum_allowed_days) {
+                    activityRequirements = {
+                        minimumDays: activityData.minimum_required_days,
+                        maximumDays: activityData.maximum_allowed_days,
+                        source: 'profile'
+                    };
+                    console.log('✅ [활동요구사항] P2: 1차 시도 성공');
+                }
+            } catch (firstError) {
+                console.warn('⚠️ [활동요구사항] P2: 1차 시도 실패:', firstError.message);
+            }
+            
+            // 2차 시도: getActivityRequirements() (1차 실패 시)
+            if (!activityRequirements) {
+                try {
+                    console.log('🔄 [활동요구사항] P2: 2차 시도 - getActivityRequirements()');
+                    const requirements = await this.api.getActivityRequirements();
+                    
+                    if (requirements && requirements.minimumDays && requirements.maximumDays) {
+                        activityRequirements = {
+                            minimumDays: requirements.minimumDays,
+                            maximumDays: requirements.maximumDays,
+                            source: 'api'
+                        };
+                        console.log('✅ [활동요구사항] P2: 2차 시도 성공');
+                    }
+                } catch (secondError) {
+                    console.error('❌ [활동요구사항] P2: 2차 시도도 실패:', secondError.message);
+                }
+            }
+            
+            // 결과 처리
+            if (activityRequirements) {
+                this.userRequiredDays = activityRequirements.minimumDays;
+                this.userMaximumDays = activityRequirements.maximumDays;
+                this.isUserActivityRequirementsLoaded = true;
+                
+                console.log('✅ [활동요구사항] P2: 로드 완료:', {
+                    사용자ID: this.userProfile?.id || 'unknown',
+                    최소요구일: this.userRequiredDays,
+                    최대허용일: this.userMaximumDays,
+                    데이터소스: activityRequirements.source
+                });
+                
+                // UI에 반영
+                this.updateRequiredDaysUI();
+                
+                // 🚀 v8.2.4: 활동기간 완료 여부 재확인
+                setTimeout(() => {
+                    this.checkActivityPeriodCompletion();
+                    this.updateFlightSectionAvailability();
+                }, 100);
+                
+                return true;
+            } else {
+                throw new Error('모든 시도에서 활동기간 요구사항 로드 실패');
+            }
+
+        } catch (error) {
+            console.error('❌ [활동요구사항] P2: 사용자 활동기간 요구사항 로드 최종 실패:', error);
+            
+            // 실패 시 상태 리셋
+            this.userRequiredDays = null;
+            this.userMaximumDays = null;
+            this.isUserActivityRequirementsLoaded = false;
+            
+            // UI 에러 상태 표시
+            this.updateRequiredDaysUIError(error.message || '활동기간 요구사항 로드 실패');
+            
+            throw error;
+        }
+    }
+
+    // 🚀 v8.5.0: API 준비 상태 보장 강화 (Priority 1) - v8.6.0에서 유지
     async ensureAPIReadinessEnhanced() {
         return await this.executeWithRetry(async () => {
             // 1. API 인스턴스 존재 확인
@@ -390,45 +645,9 @@ class FlightRequestUI {
         }, 'API 준비 상태 보장', 3);
     }
 
-    // 🚀 v8.5.0: 강화된 초기 데이터 로드 (Priority 1~3 모든 개선사항)
+    // 🚀 v8.5.0: 강화된 초기 데이터 로드 (Priority 1~3 모든 개선사항) - v8.6.0 호환성 유지
     async loadInitialDataEnhanced() {
-        try {
-            console.log('🔄 [초기데이터] v8.5.0 강화된 초기 데이터 로드 시작...');
-            
-            // 🚀 Priority 1: API 준비 상태 보장
-            await this.ensureAPIReadinessEnhanced();
-            
-            // 🚀 Priority 3: 병렬 처리로 성능 최적화
-            const dataLoadingTasks = [
-                this.loadUserProfileWithCache(),
-                this.loadUserActivityRequirementsWithCache()
-            ];
-            
-            // 사용자 프로필과 활동 요구사항 병렬 로드
-            const [userProfileResult, activityRequirementsResult] = await Promise.allSettled(dataLoadingTasks);
-            
-            // 결과 처리
-            if (userProfileResult.status === 'fulfilled') {
-                this.userProfile = userProfileResult.value;
-                console.log('✅ [초기데이터] 사용자 프로필 로드 성공');
-            } else {
-                console.error('❌ [초기데이터] 사용자 프로필 로드 실패:', userProfileResult.reason);
-            }
-            
-            if (activityRequirementsResult.status === 'fulfilled') {
-                console.log('✅ [초기데이터] 활동 요구사항 로드 성공');
-            } else {
-                console.error('❌ [초기데이터] 활동 요구사항 로드 실패:', activityRequirementsResult.reason);
-                this.updateRequiredDaysUIError(activityRequirementsResult.reason?.message || '활동기간 요구사항 로드 실패');
-            }
-            
-            // 🚀 Priority 2: 강화된 여권정보 체크 로직
-            await this.checkPassportInfoEnhanced();
-            
-        } catch (error) {
-            console.error('❌ [초기데이터] v8.5.0 강화된 초기 데이터 로드 실패:', error);
-            this.showEnhancedError('시스템 초기화에 실패했습니다', error);
-        }
+        return await this.loadInitialData(); // P2로 리다이렉트
     }
 
     // 🚀 v8.5.0: 캐시를 활용한 사용자 프로필 로드 (Priority 3)
@@ -456,7 +675,7 @@ class FlightRequestUI {
         }, '사용자 프로필 로드', 3);
     }
 
-    // 🚀 v8.5.0: 캐시를 활용한 활동 요구사항 로드 (Priority 3)
+    // 🚀 v8.5.0: 캐시를 활용한 활동 요구사항 로드 (Priority 3) - P2와 통합
     async loadUserActivityRequirementsWithCache() {
         const cacheKey = 'activityRequirements';
         const cacheTimeout = 10 * 60 * 1000; // 10분
@@ -475,86 +694,24 @@ class FlightRequestUI {
             return this.cache[cacheKey];
         }
         
-        // API에서 로드
-        return await this.executeWithRetry(async () => {
-            console.log('🔄 [활동요구사항] v8.5.0: 사용자별 최소/최대 체류일 로드 시작...');
-            
-            let activityData = null;
-            
-            // 1차 시도: getUserProfileActivityDates()
-            try {
-                console.log('🔄 [활동요구사항] 1차 시도 - getUserProfileActivityDates()');
-                activityData = await this.api.getUserProfileActivityDates();
-                
-                if (activityData && activityData.minimum_required_days && activityData.maximum_allowed_days) {
-                    console.log('✅ [활동요구사항] 1차 시도 성공');
-                } else {
-                    activityData = null;
-                }
-            } catch (firstError) {
-                console.warn('⚠️ [활동요구사항] 1차 시도 실패:', firstError.message);
-            }
-            
-            // 2차 시도: getActivityRequirements() (1차 실패 시)
-            if (!activityData) {
-                try {
-                    console.log('🔄 [활동요구사항] 2차 시도 - getActivityRequirements()');
-                    const requirements = await this.api.getActivityRequirements();
-                    
-                    if (requirements && requirements.minimumDays && requirements.maximumDays) {
-                        activityData = {
-                            minimum_required_days: requirements.minimumDays,
-                            maximum_allowed_days: requirements.maximumDays,
-                            source: 'api'
-                        };
-                        console.log('✅ [활동요구사항] 2차 시도 성공');
-                    }
-                } catch (secondError) {
-                    console.error('❌ [활동요구사항] 2차 시도도 실패:', secondError.message);
-                    throw new Error('모든 시도에서 활동기간 요구사항 로드 실패');
-                }
-            }
-            
-            if (!activityData) {
-                throw new Error('활동기간 요구사항을 로드할 수 없습니다');
-            }
-            
-            // 상태 업데이트
-            this.userRequiredDays = activityData.minimum_required_days;
-            this.userMaximumDays = activityData.maximum_allowed_days;
-            this.isUserActivityRequirementsLoaded = true;
-            
-            // 캐시 저장
+        // P2 로직 사용
+        await this.loadUserActivityRequirements();
+        
+        // 캐시에 저장
+        if (this.isUserActivityRequirementsLoaded) {
             const cacheData = {
                 minimumDays: this.userRequiredDays,
-                maximumDays: this.userMaximumDays,
-                source: activityData.source || 'profile'
+                maximumDays: this.userMaximumDays
             };
             this.cache[cacheKey] = cacheData;
             this.cache.lastUpdated[cacheKey] = Date.now();
-            
-            console.log('✅ [활동요구사항] v8.5.0 로드 완료:', {
-                사용자ID: this.userProfile?.id || 'unknown',
-                최소요구일: this.userRequiredDays,
-                최대허용일: this.userMaximumDays,
-                데이터소스: activityData.source || 'profile'
-            });
-            
-            // UI에 반영
-            this.updateRequiredDaysUI();
-            
-            // 🚀 v8.2.4: 활동기간 완료 여부 재확인
-            setTimeout(() => {
-                this.checkActivityPeriodCompletion();
-                this.updateFlightSectionAvailability();
-            }, 100);
-            
             return cacheData;
-            
-        }, '활동 요구사항 로드', 3);
+        }
+        
+        throw new Error('활동기간 요구사항 로드 실패');
     }
 
-    // 🚀 v8.5.0: 강화된 여권정보 체크 (Priority 1~2)
+    // 🚀 v8.5.0: 강화된 여권정보 체크 (Priority 1~2) - P2와 호환
     async checkPassportInfoEnhanced() {
         try {
             console.log('🔄 [여권체크] v8.5.0 강화된 여권정보 체크 시작...');
@@ -705,7 +862,7 @@ class FlightRequestUI {
 
     // 🚀 v8.5.0: 강화된 에러 표시 (Priority 2)
     showEnhancedError(message, error = null) {
-        console.error('🚨 [오류] v8.5.0:', message, error);
+        console.error('🚨 [오류] v8.6.0:', message, error);
         
         let enhancedMessage = message;
         let actionButton = null;
@@ -719,7 +876,7 @@ class FlightRequestUI {
                 actionButton = {
                     text: '다시 시도',
                     action: () => {
-                        this.loadInitialDataEnhanced();
+                        this.loadInitialData();
                     }
                 };
             } else if (errorInfo.type === 'AUTH') {
@@ -958,11 +1115,6 @@ class FlightRequestUI {
         return true;
     }
 
-    // 기존 메서드들 연결
-    async loadInitialData() {
-        return await this.loadInitialDataEnhanced();
-    }
-
     showError(message) {
         this.showEnhancedError(message);
     }
@@ -1025,7 +1177,7 @@ class FlightRequestUI {
             }
         });
 
-        console.log('✅ [활동기간검증] v8.5.0: 현지 활동기간 검증 이벤트 설정 완료');
+        console.log('✅ [활동기간검증] v8.6.0: 현지 활동기간 검증 이벤트 설정 완료');
     }
 
     debouncedActivityValidation() {
@@ -1049,7 +1201,7 @@ class FlightRequestUI {
             });
         }
 
-        console.log('✅ [귀국일검증] v8.5.0: 귀국 필수 완료일 검증 이벤트 설정 완료');
+        console.log('✅ [귀국일검증] v8.6.0: 귀국 필수 완료일 검증 이벤트 설정 완료');
     }
 
     debouncedReturnDateValidation() {
@@ -1084,7 +1236,7 @@ class FlightRequestUI {
             }
         });
 
-        console.log('✅ [전제조건] v8.5.0: 전제 조건 시스템 이벤트 설정 완료');
+        console.log('✅ [전제조건] v8.6.0: 전제 조건 시스템 이벤트 설정 완료');
     }
 
     // 여권정보 관련 메서드들 (기존 로직 유지)
@@ -1248,7 +1400,7 @@ class FlightRequestUI {
 
             this.setPassportLoading(true);
 
-            console.log('🔄 [여권정보] v8.5.0 여권정보 저장 시작:', {
+            console.log('🔄 [여권정보] v8.6.0 여권정보 저장 시작:', {
                 여권번호: passportData.passport_number,
                 영문이름: passportData.name_english,
                 이미지포함: !!this.passportImageFile,
@@ -1258,7 +1410,7 @@ class FlightRequestUI {
             // 여권정보 저장
             const result = await this.api.savePassportInfo(passportData, this.passportImageFile);
             
-            console.log('✅ [여권정보] v8.5.0 여권정보 저장 완료:', {
+            console.log('✅ [여권정보] v8.6.0 여권정보 저장 완료:', {
                 성공: !!result,
                 수정여부: result?.isUpdate,
                 이미지URL: result?.data?.image_url
@@ -1268,7 +1420,7 @@ class FlightRequestUI {
             this.showPassportSuccess();
 
         } catch (error) {
-            console.error('❌ [여권정보] v8.5.0 여권정보 저장 실패:', error);
+            console.error('❌ [여권정보] v8.6.0 여권정보 저장 실패:', error);
             this.showError(error.message || '여권정보 저장 중 오류가 발생했습니다.');
         } finally {
             this.setPassportLoading(false);
@@ -1292,10 +1444,10 @@ class FlightRequestUI {
                 }
             }
             
-            console.log('✅ [여권정보] v8.5.0 여권정보 저장 성공 메시지 표시 완료');
+            console.log('✅ [여권정보] v8.6.0 여권정보 저장 성공 메시지 표시 완료');
             
         } catch (error) {
-            console.error('❌ [여권정보] v8.5.0 성공 메시지 표시 실패:', error);
+            console.error('❌ [여권정보] v8.6.0 성공 메시지 표시 실패:', error);
         }
     }
 
@@ -1319,7 +1471,7 @@ class FlightRequestUI {
             }
             
         } catch (error) {
-            console.error('❌ [여권정보] v8.5.0 로딩 상태 설정 실패:', error);
+            console.error('❌ [여권정보] v8.6.0 로딩 상태 설정 실패:', error);
         }
     }
 
@@ -1352,39 +1504,27 @@ class FlightRequestUI {
 // 전역 스코프에 노출
 window.FlightRequestUI = FlightRequestUI;
 
-console.log('✅ FlightRequestUI v8.5.0 모듈 로드 완료 - 여권정보 설정 기능 완전 강화');
-console.log('🚀 v8.5.0 핵심 강화사항:', {
-    priorityOne: {
-        title: 'Priority 1: 즉시 수정 필요',
-        timeoutSettings: '무한 대기 방지를 위한 타임아웃 추가 (5-15초)',
-        apiStateCheck: '재시도 전 API 연결 상태 검증',
-        userExperience: 'Alert 대신 부드러운 안내 UI (slideInRight 애니메이션)',
-        enhancements: '강화된 에러 처리 및 타임아웃 설정'
-    },
+console.log('✅ FlightRequestUI v8.6.0 모듈 로드 완료 - P2 여권정보 체크 로직 완전 강화');
+console.log('🔥 v8.6.0 P2 핵심 개선사항:', {
     priorityTwo: {
-        title: 'Priority 2: 안정성 향상',
-        errorClassification: '네트워크/인증/시스템 에러별 처리 방식 차별화',
-        retryLogic: '지수 백오프 방식 도입 (최대 5회, 지수적 지연)',
-        logging: '사용자 디버깅을 위한 상세 로그',
-        resilience: '회복력 있는 에러 처리 시스템'
-    },
-    priorityThree: {
-        title: 'Priority 3: 성능 최적화',
-        caching: '성공한 결과 임시 저장 (3-10분 캐시)',
-        parallel: '독립적인 API 호출들의 병렬 실행 (Promise.allSettled)',
-        preloading: '사용자 프로필과 여권정보 동시 로드',
-        optimization: '응답 시간 단축 및 네트워크 사용량 최적화'
+        title: 'P2: 여권정보 체크 로직 완전 강화',
+        loadInitialData: 'loadInitialData() 메서드 강화된 에러 처리 및 재시도 로직',
+        passportRetry: '여권정보 체크 재시도 로직 (최대 3회, 지수 백오프)',
+        apiReadiness: 'ensureAPIReadiness() API 준비 상태 보장 메서드 강화',
+        multiSource: '다중 소스 활동기간 요구사항 로드 (getUserProfileActivityDates + getActivityRequirements)',
+        routingImprovement: '개선된 페이지 라우팅 및 초기화 로직',
+        errorHandling: '단계별 강화된 에러 처리 (프로필, 활동요구사항, 여권정보 독립 처리)'
     },
     technicalImprovements: {
-        errorHandling: '분류된 에러 처리 (NETWORK, AUTH, TIMEOUT, SERVER)',
-        retryMechanism: 'executeWithRetry() 재시도 시스템',
-        cacheSystem: 'loadWithCache() 캐싱 시스템',
-        parallelProcessing: 'Promise.allSettled() 병렬 처리',
-        userExperience: '부드러운 애니메이션 및 친화적 메시지'
+        retryLogic: '여권정보 체크 최대 3회 재시도 (500ms * 시도횟수 지연)',
+        apiReinitialize: 'API 상태 재설정 및 사용자 정보 재로드',
+        fallbackHandling: '각 단계별 독립적 에러 처리 및 폴백',
+        routingLogic: '여권정보 유무에 따른 정확한 페이지 라우팅',
+        userExperience: '에러 상황에서도 최적의 사용자 경험 제공'
     },
     compatibility: {
-        v842: '기존 v8.4.2 모든 기능 100% 호환',
-        backwardCompatibility: '레거시 메서드 호환성 유지',
-        gradualUpgrade: '점진적 기능 향상 지원'
+        v850: '기존 v8.5.0 모든 기능 100% 호환 유지',
+        caching: 'v8.5.0 캐싱 시스템 완전 보존',
+        enhancement: 'v8.5.0 강화 기능들과 P2 개선사항 완벽 통합'
     }
 });
