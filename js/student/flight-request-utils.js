@@ -818,7 +818,7 @@ class FlightRequestUtils {
         console.log('✅ [Utils성공]:', message);
         
         // 필요한 경우에만 표시 (예: 중요한 작업 완료 알림)
-        if (message && message.includes('중요') || message.includes('완료')) {
+        if (message && (message.includes('중요') || message.includes('완료'))) {
             const successElement = document.getElementById('successMessage') || 
                                   document.querySelector('.success-message') ||
                                   document.querySelector('[data-success]');
