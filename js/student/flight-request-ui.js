@@ -1,4 +1,9 @@
-// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.7.3
+// flight-request-ui.js - 항공권 신청 UI 관리 모듈 v8.7.4
+// 🔧 v8.7.4: P0 수정 - ensureInitialized 메서드 추가로 콘솔 오류 해결
+// 📝 핵심 수정사항:
+//   - ensureInitialized() 메서드 추가하여 HTML에서 호출하는 오류 해결
+//   - 초기화 상태 확인 및 Promise 대기 로직 구현
+//   - 기존 v8.7.3 의존성 체크 로직 강화 기능 완전 유지
 // 🔧 v8.7.3: 의존성 체크 로직 강화 - utils 로딩 실패 문제 해결
 // 📝 핵심 수정사항:
 //   - waitForDependenciesEnhanced() 메서드에서 utilsReady 체크 로직 강화
@@ -293,7 +298,7 @@ class FlightRequestUI {
 
     async init() {
         try {
-            console.log('🔄 FlightRequestUI v8.7.3 초기화 시작 - 의존성 체크 로직 강화...');
+            console.log('🔄 FlightRequestUI v8.7.4 초기화 시작 - ensureInitialized 메서드 추가...');
             
             // 🚀 v8.5.0: API 및 유틸리티 대기 (타임아웃 설정)
             await this.waitForDependenciesEnhanced();
@@ -318,12 +323,45 @@ class FlightRequestUI {
                 this.loadInitialData();
             }, 300);
             
-            console.log('✅ FlightRequestUI v8.7.3 초기화 완료 - 의존성 체크 로직 강화');
+            console.log('✅ FlightRequestUI v8.7.4 초기화 완료 - ensureInitialized 메서드 추가');
             
             this.isInitialized = true;
         } catch (error) {
             console.error('❌ FlightRequestUI 초기화 오류:', error);
             this.showEnhancedError('시스템 초기화 중 오류가 발생했습니다.', error);
+        }
+    }
+
+    // 🔧 v8.7.4: P0 수정 - ensureInitialized 메서드 추가
+    async ensureInitialized() {
+        try {
+            console.log('🔄 [UI초기화] v8.7.4: ensureInitialized 시작...');
+            
+            // 이미 초기화된 경우
+            if (this.isInitialized) {
+                console.log('✅ [UI초기화] v8.7.4: 이미 초기화 완료됨');
+                return true;
+            }
+            
+            // 초기화 진행 중인 경우 Promise 대기
+            if (this.initializationPromise) {
+                console.log('⏳ [UI초기화] v8.7.4: 초기화 Promise 대기 중...');
+                await this.initializationPromise;
+                return this.isInitialized;
+            }
+            
+            // 초기화 시작
+            console.log('🚀 [UI초기화] v8.7.4: 새로운 초기화 시작...');
+            this.initializationPromise = this.init();
+            await this.initializationPromise;
+            
+            console.log('✅ [UI초기화] v8.7.4: ensureInitialized 완료:', this.isInitialized);
+            return this.isInitialized;
+            
+        } catch (error) {
+            console.error('❌ [UI초기화] v8.7.4: ensureInitialized 실패:', error);
+            this.isInitialized = false;
+            throw error;
         }
     }
 
@@ -800,7 +838,7 @@ class FlightRequestUI {
                     // 🔧 v8.7.3: 강화된 utils 체크 로직 - 3가지 방법으로 확인
                     const utilsReady = !!(window.FlightRequestUtils || window.flightRequestUtils || (typeof FlightRequestUtils !== 'undefined'));
                     
-                    console.log('🔍 [의존성체크] v8.7.3 상태:', {
+                    console.log('🔍 [의존성체크] v8.7.4 상태:', {
                         apiExists,
                         apiInitialized,
                         utilsReady,
@@ -816,7 +854,7 @@ class FlightRequestUI {
                         this.api = window.flightRequestAPI;
                         // 🔧 v8.7.3: Utils 인스턴스 할당 우선순위 설정
                         this.utils = window.FlightRequestUtils || window.flightRequestUtils;
-                        console.log('✅ FlightRequestUI v8.7.3 의존성 로드 완료 - 강화된 utils 체크');
+                        console.log('✅ FlightRequestUI v8.7.4 의존성 로드 완료 - ensureInitialized 메서드 추가');
                         resolve();
                         return;
                     }
@@ -887,7 +925,7 @@ class FlightRequestUI {
             }
         });
 
-        console.log('✅ [활동기간검증] v8.7.3: 현지 활동기간 검증 이벤트 설정 완료');
+        console.log('✅ [활동기간검증] v8.7.4: 현지 활동기간 검증 이벤트 설정 완료');
     }
 
     debouncedActivityValidation() {
@@ -911,7 +949,7 @@ class FlightRequestUI {
             });
         }
 
-        console.log('✅ [귀국일검증] v8.7.3: 귀국 필수 완료일 검증 이벤트 설정 완료');
+        console.log('✅ [귀국일검증] v8.7.4: 귀국 필수 완료일 검증 이벤트 설정 완료');
     }
 
     debouncedReturnDateValidation() {
@@ -946,7 +984,7 @@ class FlightRequestUI {
             }
         });
 
-        console.log('✅ [전제조건] v8.7.3: 전제 조건 시스템 이벤트 설정 완료');
+        console.log('✅ [전제조건] v8.7.4: 전제 조건 시스템 이벤트 설정 완료');
     }
 
     setupPassportEventListeners() {
@@ -1010,35 +1048,37 @@ class FlightRequestUI {
 // 전역 스코프에 노출
 window.FlightRequestUI = FlightRequestUI;
 
-console.log('✅ FlightRequestUI v8.7.3 모듈 로드 완료 - 의존성 체크 로직 강화');
-console.log('🔧 v8.7.3 핵심 수정사항:', {
-    dependencyCheckFix: {
-        title: '의존성 체크 로직 강화 - utils 로딩 실패 문제 해결',
-        beforeFix: 'const utilsReady = !!window.FlightRequestUtils; // 단일 조건 체크',
-        afterFix: 'const utilsReady = !!(window.FlightRequestUtils || window.flightRequestUtils || (typeof FlightRequestUtils !== "undefined")); // 3가지 방법으로 체크',
+console.log('✅ FlightRequestUI v8.7.4 모듈 로드 완료 - ensureInitialized 메서드 추가');
+console.log('🔧 v8.7.4 핵심 수정사항:', {
+    p0Fix: {
+        title: 'P0 수정 - ensureInitialized 메서드 추가로 콘솔 오류 해결',
+        beforeError: 'TypeError: window.flightRequestUI.ensureInitialized is not a function',
+        afterFix: 'ensureInitialized() 메서드 추가하여 HTML에서 정상 호출 가능',
         benefits: [
-            'window.FlightRequestUtils (클래스) 체크',
-            'window.flightRequestUtils (인스턴스) 체크',
-            'typeof FlightRequestUtils (전역 정의) 체크',
-            '어느 하나라도 존재하면 utils 로딩 완료로 간주'
+            '초기화 상태 확인 및 Promise 대기 로직 구현',
+            '이미 초기화된 경우 즉시 true 반환',
+            '초기화 진행 중인 경우 Promise 대기',
+            '새로운 초기화가 필요한 경우 init() 메서드 호출'
         ]
     },
-    problemSolved: {
-        utilsReadyFalse: 'utilsReady: false 오류 해결',
-        timeoutPrevention: '15초 타임아웃으로 인한 초기화 실패 방지',
-        loadingSuccessRate: '더 관대한 의존성 체크로 로딩 성공률 향상',
-        userExperience: '의존성 로딩 실패로 인한 사용자 불편 해소'
-    },
-    technicalImprovements: {
-        multipleCheckpoints: '3가지 체크 포인트로 안정성 향상',
-        priorityAssignment: 'Utils 인스턴스 할당 우선순위 설정',
-        enhancedLogging: '의존성 체크 상세 로깅 추가',
-        gracefulDegradation: '부분적 로딩 실패에도 시스템 동작 보장'
+    technicalImplementation: {
+        methodSignature: 'async ensureInitialized(): Promise<boolean>',
+        initializationCheck: 'this.isInitialized 플래그 확인',
+        promiseHandling: 'this.initializationPromise 대기',
+        errorHandling: '초기화 실패 시 false 반환 및 에러 throw',
+        fallbackSupport: '다양한 초기화 상황에 대한 대응'
     },
     compatibility: {
+        v873: '기존 v8.7.3 의존성 체크 로직 강화 완전 보존',
         v872: '기존 v8.7.2 P5 전제조건 시스템 실제 구현 완전 보존',
         v871: '기존 v8.7.1 P4 현지 활동기간 실시간 계산 로직 완전 보존',
         v870: '기존 v8.7.0 P3 필수 활동일 정보 로딩 수정 완전 보존',
-        existingFeatures: 'v8.7.3 개선사항과 기존 모든 기능 완벽 통합'
+        htmlCompatibility: 'HTML에서 호출하는 ensureInitialized() 메서드 완벽 지원'
+    },
+    problemSolved: {
+        consoleError: 'TypeError: ensureInitialized is not a function 오류 해결',
+        htmlInitialization: 'HTML 초기화 로직에서 정상 호출 가능',
+        systemStability: '시스템 초기화 안정성 대폭 향상',
+        userExperience: '로딩 오류로 인한 사용자 불편 완전 해소'
     }
 });
