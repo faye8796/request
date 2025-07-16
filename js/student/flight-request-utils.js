@@ -1,4 +1,10 @@
-// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.2.5
+// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.2.6
+// 🔧 v8.2.6: 항공권 검증 로직 수정 - 사용자 요청 조건에 맞게 검증 범위 조정
+// 📝 변경사항:
+//   - validateFlightDatesOnly(): 출국일/귀국일 검증 로직을 사용자 요청 조건에 맞게 수정
+//   - 출국일: 현지도착일 -2 < 출국일 < 현지도착일
+//   - 귀국일: 학당근무 종료일 < 귀국일 < 학당근무종료일 + 10
+//   - 기존 "이내" 제약을 정확한 범위 검증으로 변경
 // 🔧 v8.2.5: 항공권 검증 로직 수정 - 불필요한 활동기간 검증 제거 및 부등호 정정
 // 📝 변경사항:
 //   - validateAllDates(): 항공권 검증에서 최소/최대 활동일 검증 제거
@@ -19,7 +25,7 @@
 
 class FlightRequestUtils {
     constructor() {
-        this.version = 'v8.2.5';
+        this.version = 'v8.2.6';
     }
 
     // === 날짜 관련 유틸리티 ===
@@ -133,7 +139,7 @@ class FlightRequestUtils {
         
         // 🔧 v9.1.0: 필수 매개변수 검증 추가
         if (!minimumRequiredDays || !maximumAllowedDays) {
-            console.error('❌ [Utils] v8.2.5: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
+            console.error('❌ [Utils] v8.2.6: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
                 minimumRequiredDays,
                 maximumAllowedDays,
                 하드코딩제거: '✅ 완료 - 매개변수 의존성으로 변경'
@@ -177,7 +183,7 @@ class FlightRequestUtils {
                 }
             }
 
-            // 3. 🔧 v8.2.5: 항공권 날짜 관계 검증 (활동기간 검증 제외)
+            // 3. 🔧 v8.2.6: 항공권 날짜 관계 검증 (사용자 요청 조건 적용)
             if (actualArrivalDate && actualWorkEndDate && departureDate && returnDate) {
                 const flightDateValidation = this.validateFlightDatesOnly(
                     departureDate, actualArrivalDate, actualWorkEndDate, returnDate
@@ -218,20 +224,20 @@ class FlightRequestUtils {
             validation.valid = false;
         }
 
-        console.log('✅ [Utils] v8.2.5: 항공권/활동기간 검증 분리 완료 - 통합 날짜 검증:', {
+        console.log('✅ [Utils] v8.2.6: 사용자 요청 조건 적용 완료 - 통합 날짜 검증:', {
             사용된최소요구일: minimumRequiredDays,
             사용된최대허용일: maximumAllowedDays,
             기존하드코딩값: '180일/210일 → 제거됨',
-            항공권검증: '날짜 관계만 확인',
+            항공권검증: '사용자 요청 조건 적용',
             활동기간검증: '별도 수행',
-            분리완료: '✅'
+            수정완료: '✅'
         });
 
         return validation;
     }
 
     /**
-     * 🔧 v8.2.5: 순수 항공권 날짜 관계 검증 (활동기간 최소/최대 검증 제외)
+     * 🔧 v8.2.6: 순수 항공권 날짜 관계 검증 - 사용자 요청 조건에 맞게 수정
      * @param {string} departureDate - 출국일
      * @param {string} arrivalDate - 현지 도착일
      * @param {string} workEndDate - 학당 근무 종료일
@@ -250,41 +256,45 @@ class FlightRequestUtils {
             const workEnd = new Date(workEndDate);
             const returnD = new Date(returnDate);
 
-            // 기본 날짜 순서 검증
-            if (arrival < departure) {
-                validation.errors.push('현지 도착일은 출국일 이후여야 합니다');
+            // ✅ 수정: 출국일 검증 - 현지도착일 -2 < 출국일 < 현지도착일
+            const arrivalMinus2 = new Date(arrival);
+            arrivalMinus2.setDate(arrival.getDate() - 2);
+            
+            if (departure <= arrivalMinus2) {
+                validation.errors.push('출국일은 현지 도착일 2일 전보다 늦어야 합니다');
+                validation.valid = false;
+            }
+            
+            if (departure >= arrival) {
+                validation.errors.push('출국일은 현지 도착일보다 이전이어야 합니다');
                 validation.valid = false;
             }
 
-            // 🔧 v8.2.5: 출국일은 현지 도착일 2일 이내 (2일 미포함)
-            const daysDiffArrival = Math.ceil((arrival - departure) / (1000 * 60 * 60 * 24));
-            if (daysDiffArrival >= 2) {
-                validation.errors.push('출국일은 현지 도착일 2일 이내여야 합니다');
-                validation.valid = false;
-            }
-
+            // 활동기간 순서 검증
             if (workEnd <= arrival) {
                 validation.errors.push('학당 근무 종료일은 현지 도착일 이후여야 합니다');
                 validation.valid = false;
             }
 
-            if (workEnd > returnD) {
-                validation.errors.push('학당 근무 종료일은 귀국일 이전이어야 합니다');
+            // ✅ 수정: 귀국일 검증 - 학당근무 종료일 < 귀국일 < 학당근무종료일 + 10
+            if (returnD <= workEnd) {
+                validation.errors.push('귀국일은 학당 근무 종료일보다 늦어야 합니다');
+                validation.valid = false;
+            }
+            
+            const workEndPlus10 = new Date(workEnd);
+            workEndPlus10.setDate(workEnd.getDate() + 10);
+            
+            if (returnD >= workEndPlus10) {
+                validation.errors.push('귀국일은 학당 근무 종료일 10일 후보다 이전이어야 합니다');
                 validation.valid = false;
             }
 
-            // 🔧 v8.2.5: 귀국일은 학당 근무 종료일 10일 이내 (10일 미포함)
-            const daysDiffReturn = Math.ceil((returnD - workEnd) / (1000 * 60 * 60 * 24));
-            if (daysDiffReturn >= 10) {
-                validation.errors.push('귀국일은 학당 근무종료일 10일 이내여야 합니다');
-                validation.valid = false;
-            }
-
-            console.log('✅ [Utils] v8.2.5: 순수 항공권 날짜 관계 검증 완료:', {
-                출국일차이: `${daysDiffArrival}일 (< 2일 조건)`,
-                귀국일차이: `${daysDiffReturn}일 (< 10일 조건)`,
-                부등호수정: '이내 = 미포함으로 정정',
-                검증결과: validation.valid
+            console.log('✅ [Utils] v8.2.6: 사용자 요청 조건 맞춤 항공권 날짜 관계 검증 완료:', {
+                출국일범위: `${arrivalMinus2.toISOString().split('T')[0]} < ${departureDate} < ${arrivalDate}`,
+                귀국일범위: `${workEndDate} < ${returnDate} < ${workEndPlus10.toISOString().split('T')[0]}`,
+                검증결과: validation.valid,
+                요청조건: '출국일: 현지도착일-2 < 출국일 < 현지도착일, 귀국일: 학당종료일 < 귀국일 < 학당종료일+10'
             });
 
         } catch (error) {
@@ -323,7 +333,7 @@ class FlightRequestUtils {
         
         const totalDays = Math.ceil((returnD - departure) / (1000 * 60 * 60 * 24));
         
-        console.log('✅ [Utils] v8.2.5: 전체 체류기간 계산:', {
+        console.log('✅ [Utils] v8.2.6: 전체 체류기간 계산:', {
             출국일: departureDate,
             귀국일: returnDate,
             전체체류일: totalDays,
@@ -351,11 +361,11 @@ class FlightRequestUtils {
     }
 
     /**
-     * 🚀 v8.2.5: [DEPRECATED] 기존 validateActivityDates 메서드는 validateFlightDatesOnly로 대체됨
+     * 🚀 v8.2.6: [DEPRECATED] 기존 validateActivityDates 메서드는 validateFlightDatesOnly로 대체됨
      * @deprecated 이 메서드는 validateFlightDatesOnly 메서드로 대체되었습니다.
      */
     validateActivityDates(departureDate, arrivalDate, workEndDate, returnDate) {
-        console.warn('⚠️ [Utils] v8.2.5: validateActivityDates는 deprecated되었습니다. validateFlightDatesOnly를 사용하세요.');
+        console.warn('⚠️ [Utils] v8.2.6: validateActivityDates는 deprecated되었습니다. validateFlightDatesOnly를 사용하세요.');
         return this.validateFlightDatesOnly(departureDate, arrivalDate, workEndDate, returnDate);
     }
 
@@ -368,7 +378,7 @@ class FlightRequestUtils {
     validateMinimumActivityDays(activityDays, requiredDays) {
         // 🔧 v9.1.0: 필수 매개변수 검증
         if (!requiredDays) {
-            console.error('❌ [Utils] v8.2.5: 최소 요구일이 매개변수로 전달되지 않았습니다');
+            console.error('❌ [Utils] v8.2.6: 최소 요구일이 매개변수로 전달되지 않았습니다');
             throw new Error('최소 요구일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
 
@@ -407,7 +417,7 @@ class FlightRequestUtils {
     validateMaximumActivityDays(activityDays, maximumDays) {
         // 🔧 v9.1.0: 필수 매개변수 검증
         if (!maximumDays) {
-            console.error('❌ [Utils] v8.2.5: 최대 허용일이 매개변수로 전달되지 않았습니다');
+            console.error('❌ [Utils] v8.2.6: 최대 허용일이 매개변수로 전달되지 않았습니다');
             throw new Error('최대 허용일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
 
@@ -450,7 +460,7 @@ class FlightRequestUtils {
     validateActivityDaysRange(activityDays, minimumDays, maximumDays) {
         // 🔧 v9.1.0: 필수 매개변수 검증
         if (!minimumDays || !maximumDays) {
-            console.error('❌ [Utils] v8.2.5: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
+            console.error('❌ [Utils] v8.2.6: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
                 minimumDays,
                 maximumDays
             });
@@ -497,7 +507,7 @@ class FlightRequestUtils {
         // 유효 범위 내 여부
         result.inValidRange = activityDays >= minimumDays && activityDays <= maximumDays;
 
-        console.log('✅ [Utils] v8.2.5: 하드코딩 제거 완료 - 범위 검증:', {
+        console.log('✅ [Utils] v8.2.6: 하드코딩 제거 완료 - 범위 검증:', {
             활동일: activityDays,
             사용된최소요구일: minimumDays,
             사용된최대허용일: maximumDays,
@@ -940,7 +950,14 @@ class FlightRequestUtils {
         return {
             version: this.version,
             loadedAt: new Date().toISOString(),
-            v825Updates: { // 🔧 v8.2.5 새 기능
+            v826Updates: { // 🔧 v8.2.6 새 기능
+                flightValidationFix: '사용자 요청 조건에 맞게 검증 로직 수정',
+                departureValidation: '출국일: 현지도착일-2 < 출국일 < 현지도착일',
+                returnValidation: '귀국일: 학당종료일 < 귀국일 < 학당종료일+10',
+                rangeBasedValidation: '기존 "이내" 제약을 정확한 범위 검증으로 변경',
+                userRequestCompliance: '사용자 요청 조건 100% 반영'
+            },
+            v825Updates: { // 🔧 v8.2.5 기존 기능
                 flightValidationSeparation: '항공권 검증과 활동기간 검증 완전 분리',
                 inequalityFixing: '부등호 수정: 2일 이내, 10일 이내 = 미포함',
                 flightDatesOnly: 'validateFlightDatesOnly 메서드 추가',
@@ -957,6 +974,8 @@ class FlightRequestUtils {
             methods: Object.getOwnPropertyNames(this.constructor.prototype)
                 .filter(name => name !== 'constructor'),
             integrationFeatures: [
+                'User-requested validation logic', // 🔧 v8.2.6
+                'Range-based flight date validation', // 🔧 v8.2.6
                 'Separated flight date validation', // 🔧 v8.2.5
                 'Fixed inequality for time constraints', // 🔧 v8.2.5
                 'Enhanced activity date validation',
@@ -1009,7 +1028,7 @@ class FlightRequestUtils {
         return new FlightRequestUtils().calculateTotalStayDuration(departureDate, returnDate);
     }
 
-    // 🔧 v8.2.5: 순수 항공권 날짜 관계 검증 Static 메서드 추가
+    // 🔧 v8.2.6: 순수 항공권 날짜 관계 검증 Static 메서드 수정
     static validateFlightDatesOnly(departureDate, arrivalDate, workEndDate, returnDate) {
         return new FlightRequestUtils().validateFlightDatesOnly(departureDate, arrivalDate, workEndDate, returnDate);
     }
@@ -1021,8 +1040,8 @@ class FlightRequestUtils {
      */
     static validateMinimumActivityDays(activityDays, requiredDays) {
         if (!requiredDays) {
-            console.error('❌ [Utils] v8.2.5 Static: 최소 요구일이 매개변수로 전달되지 않았습니다');
-            console.warn('⚠️ [Utils] v8.2.5: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
+            console.error('❌ [Utils] v8.2.6 Static: 최소 요구일이 매개변수로 전달되지 않았습니다');
+            console.warn('⚠️ [Utils] v8.2.6: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
             throw new Error('최소 요구일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
         return new FlightRequestUtils().validateMinimumActivityDays(activityDays, requiredDays);
@@ -1035,8 +1054,8 @@ class FlightRequestUtils {
      */
     static validateMaximumActivityDays(activityDays, maximumDays) {
         if (!maximumDays) {
-            console.error('❌ [Utils] v8.2.5 Static: 최대 허용일이 매개변수로 전달되지 않았습니다');
-            console.warn('⚠️ [Utils] v8.2.5: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
+            console.error('❌ [Utils] v8.2.6 Static: 최대 허용일이 매개변수로 전달되지 않았습니다');
+            console.warn('⚠️ [Utils] v8.2.6: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
             throw new Error('최대 허용일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
         return new FlightRequestUtils().validateMaximumActivityDays(activityDays, maximumDays);
@@ -1050,11 +1069,11 @@ class FlightRequestUtils {
      */
     static validateActivityDaysRange(activityDays, minimumDays, maximumDays) {
         if (!minimumDays || !maximumDays) {
-            console.error('❌ [Utils] v8.2.5 Static: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
+            console.error('❌ [Utils] v8.2.6 Static: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
                 minimumDays,
                 maximumDays
             });
-            console.warn('⚠️ [Utils] v8.2.5: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
+            console.warn('⚠️ [Utils] v8.2.6: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
             throw new Error('활동일 요구사항이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
         return new FlightRequestUtils().validateActivityDaysRange(activityDays, minimumDays, maximumDays);
@@ -1118,36 +1137,38 @@ window.FlightRequestUtils = FlightRequestUtils;
 // 인스턴스 생성 및 전역 변수 설정
 window.flightRequestUtils = new FlightRequestUtils();
 
-console.log('✅ FlightRequestUtils v8.2.5 로드 완료 - 항공권 검증 로직 수정 및 활동기간 검증 분리');
-console.log('🔧 v8.2.5 주요 수정사항:', {
-    flightValidationSeparation: {
-        description: '항공권 검증과 활동기간 검증 완전 분리',
-        flightValidation: '순수하게 날짜 관계만 확인 (최소/최대 활동일 검증 제거)',
-        activityValidation: '별도로 수행하여 논리적 구조 개선',
-        result: '100일 활동기간에 109일 체류 허용 가능'
+console.log('✅ FlightRequestUtils v8.2.6 로드 완료 - 사용자 요청 조건에 맞게 항공권 검증 로직 수정');
+console.log('🔧 v8.2.6 주요 수정사항:', {
+    userRequestCompliance: {
+        description: '사용자 요청 조건에 맞게 검증 로직 완전 수정',
+        departureValidation: {
+            before: '출국일은 현지 도착일 2일 이내여야 합니다 (daysDiff >= 2)',
+            after: '현지도착일-2 < 출국일 < 현지도착일 (정확한 범위 검증)',
+            improved: '출국일 범위를 정확하게 검증'
+        },
+        returnValidation: {
+            before: '귀국일은 학당 근무종료일 10일 이내여야 합니다 (daysDiff >= 10)',
+            after: '학당종료일 < 귀국일 < 학당종료일+10 (정확한 범위 검증)',
+            improved: '귀국일 하한선 및 상한선 모두 검증'
+        },
+        rangeBasedApproach: '기존 "이내" 제약을 정확한 범위 검증으로 변경'
     },
-    inequalityFixing: {
-        beforeArrival: 'daysDiff > 2 (2일 후까지 허용)',
-        afterArrival: 'daysDiff >= 2 (2일 미포함)',
-        beforeReturn: 'daysDiff > 10 (10일 후까지 허용)', 
-        afterReturn: 'daysDiff >= 10 (10일 미포함)',
-        meaning: '"이내" = 해당 일수 미포함으로 정정'
+    technicalImprovements: {
+        accurateRangeValidation: '출국일/귀국일 모두 정확한 범위 검증 구현',
+        dateCalculation: 'Date 객체 활용한 정확한 날짜 계산',
+        errorMessages: '명확하고 구체적인 에러 메시지 제공',
+        debugging: '상세한 검증 결과 로깅 및 디버깅 정보'
     },
-    newMethods: {
-        validateFlightDatesOnly: '순수 항공권 날짜 관계 검증 메서드 추가',
-        validateAllDates: '항공권/활동기간 검증 분리하여 재구성',
-        staticMethods: 'validateFlightDatesOnly Static 버전 추가'
-    },
-    logicImprovement: {
-        clarity: '검증 로직 명확성 대폭 향상',
-        separation: '관심사 분리로 코드 가독성 개선',
-        maintenance: '유지보수성 향상',
-        bugPrevention: '중복 검증으로 인한 버그 방지'
+    userExperience: {
+        accurateValidation: '사용자가 요청한 정확한 조건으로 검증',
+        clearFeedback: '검증 실패 시 명확한 피드백 제공',
+        logicalConsistency: '논리적으로 일관된 날짜 범위 검증',
+        flexibleConstraints: '적절한 유연성을 가진 날짜 제약'
     },
     compatibility: {
-        backwardCompatible: '기존 모든 메서드 100% 호환',
-        hardcodingRemoved: '180일/210일 하드코딩 완전 제거 유지',
-        existingFeatures: '모든 기존 기능 정상 작동',
-        deprecation: 'validateActivityDates는 deprecated (호환성 유지)'
+        v825: '기존 v8.2.5 모든 기능 100% 호환',
+        methodSignature: '메서드 시그니처 및 반환값 형식 유지',
+        staticMethods: 'Static 메서드들도 동일하게 수정 적용',
+        backwardCompatible: '기존 호출 코드와 완전 호환'
     }
 });
