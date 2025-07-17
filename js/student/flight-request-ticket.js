@@ -86,6 +86,13 @@ class FlightRequestTicket {
             
             // 🔧 v8.2.6: 사용자별 활동 요구사항 로드
             this.loadUserActivityRequirements();
+
+            // 🔧 추가: 초기 전제 조건 체크 (페이지 로드 시 항공권 섹션 비활성화)
+            setTimeout(() => {
+                this.checkActivityPeriodCompletion();
+                this.updateFlightSectionAvailability();
+            }, 500);
+
             
             console.log('✅ [티켓모듈] FlightRequestTicket v8.2.6 초기화 완료');
         } catch (error) {
