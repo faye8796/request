@@ -1261,33 +1261,33 @@
                 console.warn('⚠️ 20초 후에도 시스템이 초기화되지 않음 - 강제 복구 시도');
                 updateLoadingMessage('시스템 복구 중...');
                 
-                // 수정된 모듈 사용
-                if (window.FlightRequestTicketFixed && window.FlightRequestPassportFixed) {
+                // 기존 모듈 사용
+                if (window.FlightRequestTicket && window.FlightRequestPassport) {
                     try {
-                        console.log('🔄 수정된 모듈로 최종 강제 초기화 시도...');
+                        console.log('🔄 기존 모듈로 최종 강제 초기화 시도...');
                         
-                        // 수정된 인스턴스 생성
-                        window.flightRequestTicketFixed = new window.FlightRequestTicketFixed(
+                        // 기존 인스턴스 생성
+                        window.flightRequestTicket = new window.FlightRequestTicket(
                             window.flightRequestAPI,
                             { showError, showSuccess: (msg) => console.log(msg) },
                             null
                         );
                         
-                        window.flightRequestPassportFixed = new window.FlightRequestPassportFixed(
+                        window.flightRequestPassport = new window.FlightRequestPassport(
                             window.flightRequestAPI,
                             { showError, showSuccess: (msg) => console.log(msg) }
                         );
                         
                         hideSystemLoading();
                         setupNavigation();
-                        console.log('✅ 수정된 모듈로 최종 강제 초기화 성공');
+                        console.log('✅ 기존 모듈로 최종 강제 초기화 성공');
                     } catch (error) {
-                        console.error('❌ 수정된 모듈 초기화 실패:', error);
+                        console.error('❌ 기존 모듈 초기화 실패:', error);
                         updateLoadingMessage('초기화 실패 - 페이지를 새로고침해주세요.');
                         showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
                     }
                 } else {
-                    console.error('❌ 수정된 모듈들이 로드되지 않음');
+                    console.error('❌ 모듈들이 로드되지 않음');
                     updateLoadingMessage('시스템 리소스 로딩 실패');
                     showError('시스템 리소스 로딩에 실패했습니다. 페이지를 새로고침해주세요.');
                 }
@@ -1318,14 +1318,14 @@
             onload="modulesLoaded.flightRequestUtils = true; console.log('✅ Flight Request Utils 로드 완료'); checkAllModulesLoaded();"
             onerror="handleModuleError('Flight Request Utils', event)"></script>
     
-    <!-- 수정된 모듈들 로드 -->
-    <script src="../js/student/flight-request-passport-fix.js"
-            onload="modulesLoaded.flightRequestPassport = true; console.log('✅ Flight Request Passport Fixed 로드 완료'); checkAllModulesLoaded();"
-            onerror="handleModuleError('Flight Request Passport Fixed', event)"></script>
+    <!-- 실제 파일명으로 수정된 모듈들 로드 -->
+    <script src="../js/student/flight-request-passport.js"
+            onload="modulesLoaded.flightRequestPassport = true; console.log('✅ Flight Request Passport 로드 완료'); checkAllModulesLoaded();"
+            onerror="handleModuleError('Flight Request Passport', event)"></script>
             
-    <script src="../js/student/flight-request-ticket-fix.js"
-            onload="modulesLoaded.flightRequestTicket = true; console.log('✅ Flight Request Ticket Fixed 로드 완료'); checkAllModulesLoaded();"
-            onerror="handleModuleError('Flight Request Ticket Fixed', event)"></script>
+    <script src="../js/student/flight-request-ticket.js"
+            onload="modulesLoaded.flightRequestTicket = true; console.log('✅ Flight Request Ticket 로드 완료'); checkAllModulesLoaded();"
+            onerror="handleModuleError('Flight Request Ticket', event)"></script>
             
     <!-- 기존 coordinator는 폴백으로 사용 -->
     <script src="../js/student/flight-request-coordinator.js"
