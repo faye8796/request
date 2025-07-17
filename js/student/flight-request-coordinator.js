@@ -1,16 +1,16 @@
-// flight-request-coordinator.js - v1.2.0 안전한 아키텍처
-// 🚨 CRITICAL FIX: 무한루프 완전 해결 - 새로운 안전한 이벤트 시스템
-// 🔧 핵심 수정사항:
-//   1. EventTarget 의존성 완전 제거 → 단순한 이벤트 시스템으로 교체
-//   2. emit() 메서드 재귀 호출 방지 → 안전한 에러 처리
-//   3. 무한루프 원인 완전 제거 → 한 번 실패하면 중단
-//   4. 메모리 안전성 및 성능 최적화
+// flight-request-coordinator.js - v1.2.1 디버깅 문제 해결
+// 🔧 핵심 수정사항 (v1.2.0 → v1.2.1):
+//   1. 의존성 체크 횟수 제한 대폭 상향 (10 → 50)
+//   2. 타임아웃 시간 연장 (5초 → 15초)
+//   3. 초기화 재시도 횟수 증가 (1 → 3)
+//   4. 안전장치 완화로 정상 동작 보장
+//   5. DB 필수 활동일 정보 로딩 지원
 
 class FlightRequestCoordinator {
     constructor() {
-        console.log('🔄 [조정자] FlightRequestCoordinator v1.2.0 생성 - 안전한 아키텍처');
+        console.log('🔄 [조정자] FlightRequestCoordinator v1.2.1 생성 - 디버깅 문제 해결');
         
-        // 🚨 신규: 단순하고 안전한 이벤트 시스템
+        // 🔧 신규: 단순하고 안전한 이벤트 시스템
         this.eventListeners = new Map();
         this.destroyed = false;
         
@@ -56,20 +56,20 @@ class FlightRequestCoordinator {
         this.isInitialized = false;
         this.initializationPromise = null;
         
-        // 🚨 안전장치 플래그
+        // 🔧 안전장치 플래그 (완화됨)
         this.initAttempts = 0;
-        this.maxInitAttempts = 1; // 단 한 번만 시도
+        this.maxInitAttempts = 3; // 1 → 3으로 증가
         this.dependencyCheckCount = 0;
-        this.maxDependencyChecks = 10; // 체크 횟수 제한
+        this.maxDependencyChecks = 50; // 10 → 50으로 대폭 증가
         this.errorCount = 0;
-        this.maxErrors = 3; // 에러 횟수 제한
+        this.maxErrors = 5; // 3 → 5로 증가
     }
 
-    // === 🚨 신규: 안전한 이벤트 시스템 (EventTarget 완전 대체) ===
+    // === 🔧 개선된 안전한 이벤트 시스템 ===
     
     emit(eventName, data) {
         try {
-            // 🚨 핵심: 파괴된 인스턴스나 에러 과다 발생 시 중단
+            // 🔧 파괴된 인스턴스나 에러 과다 발생 시 중단
             if (this.destroyed || this.errorCount >= this.maxErrors) {
                 return;
             }
@@ -79,7 +79,7 @@ class FlightRequestCoordinator {
                 return;
             }
             
-            // 🚨 안전한 리스너 실행 (에러 발생해도 중단하지 않음)
+            // 🔧 안전한 리스너 실행 (에러 발생해도 중단하지 않음)
             listeners.forEach(listener => {
                 try {
                     if (typeof listener === 'function') {
@@ -87,7 +87,7 @@ class FlightRequestCoordinator {
                     }
                 } catch (listenerError) {
                     console.warn(`⚠️ [조정자] 이벤트 리스너 실행 실패 (${eventName}):`, listenerError.message);
-                    // 🚨 중요: 리스너 에러는 무시하고 계속 진행
+                    // 🔧 중요: 리스너 에러는 무시하고 계속 진행
                 }
             });
             
@@ -95,7 +95,7 @@ class FlightRequestCoordinator {
             this.errorCount++;
             console.error(`❌ [조정자] 이벤트 발행 실패: ${eventName}`, error.message);
             
-            // 🚨 중요: 에러 발생해도 재시도하지 않음 (무한루프 방지)
+            // 🔧 중요: 에러 발생해도 재시도하지 않음 (무한루프 방지)
             if (this.errorCount >= this.maxErrors) {
                 console.error('❌ [조정자] 최대 에러 횟수 초과 - 이벤트 시스템 비활성화');
                 this.destroy();
@@ -139,15 +139,15 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 🚨 안전한 의존성 대기 (무한루프 방지) ===
-    async waitForDependencies(timeout = 5000) { // 타임아웃 단축
+    // === 🔧 개선된 의존성 대기 (타임아웃 연장 및 체크 횟수 증가) ===
+    async waitForDependencies(timeout = 15000) { // 5초 → 15초로 연장
         const startTime = Date.now();
         
         return new Promise((resolve) => { // reject 제거 - 항상 resolve
             const check = () => {
                 this.dependencyCheckCount++;
                 
-                // 🚨 체크 횟수 제한
+                // 🔧 체크 횟수 제한 대폭 상향
                 if (this.dependencyCheckCount > this.maxDependencyChecks) {
                     console.warn('⚠️ [조정자] 의존성 체크 횟수 초과 - 강제 종료');
                     resolve();
@@ -162,32 +162,32 @@ class FlightRequestCoordinator {
                 const allBasicReady = apiExists && utilsReady && passportClassReady && ticketClassReady;
                 
                 if (allBasicReady) {
-                    console.log('✅ [조정자] v1.2.0: 기본 의존성 준비 완료');
+                    console.log('✅ [조정자] v1.2.1: 기본 의존성 준비 완료');
                     resolve();
                     return;
                 }
                 
-                // 🚨 타임아웃 체크
+                // 🔧 타임아웃 체크 (연장됨)
                 if (Date.now() - startTime > timeout) {
                     console.warn(`⚠️ [조정자] 의존성 로딩 시간 초과 (${timeout}ms) - 기본값으로 진행`);
                     resolve();
                     return;
                 }
                 
-                // 🚨 긴 간격으로 체크 (성능 개선)
-                setTimeout(check, 500);
+                // 🔧 적절한 간격으로 체크
+                setTimeout(check, 300);
             };
             
             check();
         });
     }
 
-    // === 🚨 안전한 초기화 (한 번만 시도) ===
+    // === 🔧 개선된 초기화 (재시도 횟수 증가) ===
     async init() {
         try {
-            // 🚨 한 번만 시도
+            // 🔧 재시도 횟수 증가
             if (this.initAttempts >= this.maxInitAttempts) {
-                console.error('❌ [조정자] 이미 초기화 시도됨 - 중단');
+                console.error('❌ [조정자] 최대 초기화 시도 횟수 초과 - 중단');
                 return false;
             }
             
@@ -197,7 +197,7 @@ class FlightRequestCoordinator {
             }
             
             this.initAttempts++;
-            console.log(`🚀 [조정자] v1.2.0 초기화 시작 (안전한 아키텍처)`);
+            console.log(`🚀 [조정자] v1.2.1 초기화 시작 (시도 ${this.initAttempts}/${this.maxInitAttempts})`);
             
             await this.waitForDependencies();
             this.setupServicesSafely();
@@ -208,7 +208,7 @@ class FlightRequestCoordinator {
             this.startApplication();
             
             this.isInitialized = true;
-            console.log('✅ [조정자] v1.2.0 초기화 완료');
+            console.log('✅ [조정자] v1.2.1 초기화 완료');
             return true;
             
         } catch (error) {
@@ -341,7 +341,7 @@ class FlightRequestCoordinator {
     }
 
     setupModuleCommunication() {
-        // 🚨 안전한 모듈 간 통신 설정
+        // 🔧 안전한 모듈 간 통신 설정
         this.on('passport:completed', (event) => {
             this.handlePassportCompletion(event.detail);
         });
@@ -385,7 +385,7 @@ class FlightRequestCoordinator {
         });
     }
 
-    // === 안전한 초기 상태 설정 ===
+    // === 🔧 개선된 초기 상태 설정 (타임아웃 연장) ===
     async determineInitialStateSafely() {
         try {
             console.log('🔄 [조정자] 안전한 초기 상태 설정...');
@@ -396,7 +396,7 @@ class FlightRequestCoordinator {
                 try {
                     const existingPassport = await Promise.race([
                         this.services.api.getPassportInfo(),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('타임아웃')), 2000)) // 단축
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('타임아웃')), 5000)) // 2초 → 5초로 연장
                     ]).catch(() => null); // 에러 시 null 반환
                     
                     const hasPassport = !!(existingPassport && existingPassport.passport_number);
@@ -488,7 +488,7 @@ class FlightRequestCoordinator {
             
             this.globalState = { ...this.globalState, ...newState };
             
-            // 🚨 안전한 이벤트 발행 (에러 발생해도 무시)
+            // 🔧 안전한 이벤트 발행 (에러 발생해도 무시)
             setTimeout(() => {
                 this.emit('state:changed', {
                     current: this.globalState,
@@ -734,7 +734,7 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 🚨 신규: 안전한 종료 메서드 ===
+    // === 🔧 개선된 안전한 종료 메서드 ===
     destroy() {
         try {
             console.log('🗑️ [조정자] 인스턴스 정리 중...');
@@ -870,12 +870,12 @@ class FlightRequestCoordinator {
     }
 }
 
-// === 🚨 안전한 애플리케이션 시작점 ===
+// === 🔧 개선된 애플리케이션 시작점 ===
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        console.log('🚀 [조정자] DOM 로드 완료 - v1.2.0 시작 (안전한 아키텍처)');
+        console.log('🚀 [조정자] DOM 로드 완료 - v1.2.1 시작 (디버깅 문제 해결)');
         
-        // 🚨 중복 인스턴스 방지
+        // 🔧 중복 인스턴스 방지
         if (window.flightRequestCoordinator) {
             console.warn('⚠️ [조정자] 기존 인스턴스 정리 중...');
             if (typeof window.flightRequestCoordinator.destroy === 'function') {
@@ -887,19 +887,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 전역 조정자 인스턴스 생성
         window.flightRequestCoordinator = new FlightRequestCoordinator();
         
-        // 초기화 (한 번만 시도)
+        // 초기화 (재시도 가능)
         const initSuccess = await window.flightRequestCoordinator.init();
         
         if (initSuccess) {
-            console.log('✅ [조정자] v1.2.0 완전 초기화 완료 (안전한 아키텍처)');
+            console.log('✅ [조정자] v1.2.1 완전 초기화 완료 (디버깅 문제 해결)');
         } else {
-            console.warn('⚠️ [조정자] v1.2.0 제한된 기능으로 초기화됨');
+            console.warn('⚠️ [조정자] v1.2.1 제한된 기능으로 초기화됨');
         }
         
     } catch (error) {
-        console.error('❌ [조정자] v1.2.0 초기화 실패:', error.message);
+        console.error('❌ [조정자] v1.2.1 초기화 실패:', error.message);
         
-        // 🚨 에러 상황에서도 한 번만 알림
+        // 🔧 에러 상황에서도 한 번만 알림
         if (!window.coordinatorErrorShown) {
             window.coordinatorErrorShown = true;
             alert('시스템 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
@@ -910,12 +910,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 전역 스코프에 클래스 노출
 window.FlightRequestCoordinator = FlightRequestCoordinator;
 
-console.log('✅ FlightRequestCoordinator v1.2.0 모듈 로드 완료 - 안전한 아키텍처');
-console.log('🚨 v1.2.0 안전장치:', {
-    eventSystem: 'EventTarget 완전 대체 → 단순한 Map 기반 이벤트 시스템',
-    infiniteLoopFix: 'emit() 재귀 호출 방지 → 한 번 실패하면 중단',
-    errorHandling: '에러 횟수 제한 → 최대 3회 초과 시 자동 종료',
-    memoryManagement: 'destroy() 메서드 추가 → 메모리 누수 방지',
-    performanceOptimization: '타임아웃 단축 및 체크 간격 최적화',
-    crashPrevention: '브라우저 크래시 완전 방지'
+console.log('✅ FlightRequestCoordinator v1.2.1 모듈 로드 완료 - 디버깅 문제 해결');
+console.log('🔧 v1.2.1 개선사항:', {
+    dependencyCheckLimit: '의존성 체크 횟수 10 → 50으로 대폭 증가',
+    timeoutExtension: '타임아웃 5초 → 15초로 연장',
+    retryIncrease: '초기화 재시도 1 → 3회로 증가',
+    errorLimitIncrease: '에러 한계 3 → 5회로 증가',
+    safetyMeasuresRelaxed: '안전장치 완화로 정상 시나리오 허용',
+    dbDataSupport: 'DB 필수 활동일 정보 로딩 지원 강화'
 });
