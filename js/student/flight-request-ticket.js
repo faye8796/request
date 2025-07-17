@@ -131,8 +131,8 @@ class FlightRequestTicket {
             this.updateRequiredDaysUILoading();
             
             // API를 통해 사용자 프로필 및 활동 요구사항 로드
-            if (this.apiService && typeof this.apiService.loadUserProfile === 'function') {
-                const userProfile = await this.apiService.loadUserProfile();
+                if (this.apiService && typeof this.apiService.getUserProfile === 'function') {
+                    const userProfile = await this.apiService.getUserProfile();
                 
                 if (userProfile) {
                     this.userRequiredDays = userProfile.minimum_required_days || null;
