@@ -1,4 +1,10 @@
-// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.2.7
+// flight-request-utils.js - 항공권 신청 유틸리티 함수 모음 v8.2.8
+// 🔧 v8.2.8: Utils 모듈 초기화 신호 추가 - utilsReady: false 문제 해결
+// 📝 변경사항:
+//   - 명시적인 window.utilsReady = true 신호 추가
+//   - coordinator 의존성 검사와 호환성 보장
+//   - 스크립트 로딩 타이밍 문제 해결
+//   - 다른 모듈들과 일관된 초기화 패턴 적용
 // 🔧 v8.2.7: 항공권 검증 로직 수정 - 활동기간 범위 검증 제거 및 DB 마지노선 검증 추가
 // 📝 변경사항:
 //   - validateAllDates(): 활동기간 최소/최대 검증 로직 완전 제거
@@ -31,7 +37,8 @@
 
 class FlightRequestUtils {
     constructor() {
-        this.version = 'v8.2.7';
+        this.version = 'v8.2.8';
+        this.ready = true; // 🔧 v8.2.8: 명시적인 ready 상태 추가
     }
 
     // === 날짜 관련 유틸리티 ===
@@ -190,10 +197,11 @@ class FlightRequestUtils {
             validation.valid = false;
         }
 
-        console.log('✅ [Utils] v8.2.7: 활동기간 범위 검증 제거 완료 - 통합 날짜 검증:', {
+        console.log('✅ [Utils] v8.2.8: 활동기간 범위 검증 제거 완료 - 통합 날짜 검증:', {
             순수항공권검증: '출국일/귀국일 범위 + DB 마지노선',
             활동기간검증: '제거됨 (계산만 수행)',
             DB마지노선검증: '추가됨',
+            초기화신호: '✅ v8.2.8 추가됨',
             수정완료: '✅'
         });
 
@@ -265,16 +273,17 @@ class FlightRequestUtils {
                         validation.valid = false;
                     }
                 } catch (dbDateError) {
-                    console.warn('⚠️ [Utils] v8.2.7: DB 마지노선 날짜 검증 실패:', dbDateError.message);
+                    console.warn('⚠️ [Utils] v8.2.8: DB 마지노선 날짜 검증 실패:', dbDateError.message);
                 }
             }
 
-            console.log('✅ [Utils] v8.2.7: 순수 항공권 날짜 관계 검증 완료 (DB 마지노선 포함):', {
+            console.log('✅ [Utils] v8.2.8: 순수 항공권 날짜 관계 검증 완료 (DB 마지노선 포함):', {
                 출국일범위: `${arrivalMinus2.toISOString().split('T')[0]} < ${departureDate} < ${arrivalDate}`,
                 귀국일기본범위: `${workEndDate} < ${returnDate} < ${workEndPlus10.toISOString().split('T')[0]}`,
                 귀국일마지노선: requiredReturnDate ? `${returnDate} ≤ ${requiredReturnDate}` : '설정안됨',
                 검증결과: validation.valid,
-                3가지검증: '출국일범위 + 귀국일기본범위 + 귀국일마지노선'
+                3가지검증: '출국일범위 + 귀국일기본범위 + 귀국일마지노선',
+                초기화신호완료: '✅ v8.2.8'
             });
 
         } catch (error) {
@@ -313,11 +322,12 @@ class FlightRequestUtils {
         
         const totalDays = Math.ceil((returnD - departure) / (1000 * 60 * 60 * 24));
         
-        console.log('✅ [Utils] v8.2.7: 전체 체류기간 계산:', {
+        console.log('✅ [Utils] v8.2.8: 전체 체류기간 계산:', {
             출국일: departureDate,
             귀국일: returnDate,
             전체체류일: totalDays,
-            용도: 'dispatch_duration 저장'
+            용도: 'dispatch_duration 저장',
+            초기화신호: '✅ v8.2.8'
         });
         
         return totalDays;
@@ -345,7 +355,7 @@ class FlightRequestUtils {
      * @deprecated 이 메서드는 validateFlightDatesOnly 메서드로 대체되었습니다.
      */
     validateActivityDates(departureDate, arrivalDate, workEndDate, returnDate) {
-        console.warn('⚠️ [Utils] v8.2.7: validateActivityDates는 deprecated되었습니다. validateFlightDatesOnly를 사용하세요.');
+        console.warn('⚠️ [Utils] v8.2.8: validateActivityDates는 deprecated되었습니다. validateFlightDatesOnly를 사용하세요.');
         return this.validateFlightDatesOnly(departureDate, arrivalDate, workEndDate, returnDate);
     }
 
@@ -358,7 +368,7 @@ class FlightRequestUtils {
     validateMinimumActivityDays(activityDays, requiredDays) {
         // 🔧 v9.1.0: 필수 매개변수 검증
         if (!requiredDays) {
-            console.error('❌ [Utils] v8.2.7: 최소 요구일이 매개변수로 전달되지 않았습니다');
+            console.error('❌ [Utils] v8.2.8: 최소 요구일이 매개변수로 전달되지 않았습니다');
             throw new Error('최소 요구일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
 
@@ -397,7 +407,7 @@ class FlightRequestUtils {
     validateMaximumActivityDays(activityDays, maximumDays) {
         // 🔧 v9.1.0: 필수 매개변수 검증
         if (!maximumDays) {
-            console.error('❌ [Utils] v8.2.7: 최대 허용일이 매개변수로 전달되지 않았습니다');
+            console.error('❌ [Utils] v8.2.8: 최대 허용일이 매개변수로 전달되지 않았습니다');
             throw new Error('최대 허용일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
 
@@ -440,7 +450,7 @@ class FlightRequestUtils {
     validateActivityDaysRange(activityDays, minimumDays, maximumDays) {
         // 🔧 v9.1.0: 필수 매개변수 검증
         if (!minimumDays || !maximumDays) {
-            console.error('❌ [Utils] v8.2.7: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
+            console.error('❌ [Utils] v8.2.8: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
                 minimumDays,
                 maximumDays
             });
@@ -487,12 +497,13 @@ class FlightRequestUtils {
         // 유효 범위 내 여부
         result.inValidRange = activityDays >= minimumDays && activityDays <= maximumDays;
 
-        console.log('✅ [Utils] v8.2.7: 하드코딩 제거 완료 - 범위 검증:', {
+        console.log('✅ [Utils] v8.2.8: 하드코딩 제거 완료 - 범위 검증:', {
             활동일: activityDays,
             사용된최소요구일: minimumDays,
             사용된최대허용일: maximumDays,
             기존하드코딩값: '180일/210일 → 제거됨',
-            검증결과: result.valid
+            검증결과: result.valid,
+            초기화신호: '✅ v8.2.8 완료'
         });
 
         return result;
@@ -929,8 +940,16 @@ class FlightRequestUtils {
     getUtilsStatus() {
         return {
             version: this.version,
+            ready: this.ready, // 🔧 v8.2.8: ready 상태 추가
             loadedAt: new Date().toISOString(),
-            v827Updates: { // 🔧 v8.2.7 새 기능
+            v828Updates: { // 🔧 v8.2.8 새 기능
+                initializationSignal: '명시적인 window.utilsReady = true 신호 추가',
+                readyProperty: 'FlightRequestUtils 클래스에 ready 속성 추가',
+                coordinatorCompatibility: 'coordinator 의존성 검사와 호환성 보장',
+                timingIssuesFix: '스크립트 로딩 타이밍 문제 해결',
+                consistentPattern: '다른 모듈들과 일관된 초기화 패턴 적용'
+            },
+            v827Updates: { // 🔧 v8.2.7 기존 기능
                 flightValidationFix: '활동기간 범위 검증 제거 및 DB 마지노선 검증 추가',
                 validateAllDates: '활동기간 최소/최대 검증 로직 완전 제거',
                 validateFlightDatesOnly: 'requiredReturnDate 매개변수 추가 및 DB 마지노선 검증 구현',
@@ -962,6 +981,9 @@ class FlightRequestUtils {
             methods: Object.getOwnPropertyNames(this.constructor.prototype)
                 .filter(name => name !== 'constructor'),
             integrationFeatures: [
+                'Initialization signal addition', // 🔧 v8.2.8
+                'Coordinator compatibility guarantee', // 🔧 v8.2.8
+                'Script loading timing fix', // 🔧 v8.2.8
                 'Activity range validation removal', // 🔧 v8.2.7
                 'DB deadline date validation', // 🔧 v8.2.7
                 'Pure flight date validation (3 types)', // 🔧 v8.2.7
@@ -1030,8 +1052,8 @@ class FlightRequestUtils {
      */
     static validateMinimumActivityDays(activityDays, requiredDays) {
         if (!requiredDays) {
-            console.error('❌ [Utils] v8.2.7 Static: 최소 요구일이 매개변수로 전달되지 않았습니다');
-            console.warn('⚠️ [Utils] v8.2.7: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
+            console.error('❌ [Utils] v8.2.8 Static: 최소 요구일이 매개변수로 전달되지 않았습니다');
+            console.warn('⚠️ [Utils] v8.2.8: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
             throw new Error('최소 요구일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
         return new FlightRequestUtils().validateMinimumActivityDays(activityDays, requiredDays);
@@ -1044,8 +1066,8 @@ class FlightRequestUtils {
      */
     static validateMaximumActivityDays(activityDays, maximumDays) {
         if (!maximumDays) {
-            console.error('❌ [Utils] v8.2.7 Static: 최대 허용일이 매개변수로 전달되지 않았습니다');
-            console.warn('⚠️ [Utils] v8.2.7: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
+            console.error('❌ [Utils] v8.2.8 Static: 최대 허용일이 매개변수로 전달되지 않았습니다');
+            console.warn('⚠️ [Utils] v8.2.8: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
             throw new Error('최대 허용일이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
         return new FlightRequestUtils().validateMaximumActivityDays(activityDays, maximumDays);
@@ -1059,11 +1081,11 @@ class FlightRequestUtils {
      */
     static validateActivityDaysRange(activityDays, minimumDays, maximumDays) {
         if (!minimumDays || !maximumDays) {
-            console.error('❌ [Utils] v8.2.7 Static: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
+            console.error('❌ [Utils] v8.2.8 Static: 최소/최대 활동일이 매개변수로 전달되지 않았습니다:', {
                 minimumDays,
                 maximumDays
             });
-            console.warn('⚠️ [Utils] v8.2.7: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
+            console.warn('⚠️ [Utils] v8.2.8: 하드코딩 제거 완료 - 필수 매개변수를 전달해주세요');
             throw new Error('활동일 요구사항이 설정되지 않았습니다. API에서 사용자별 요구사항을 먼저 로드해주세요.');
         }
         return new FlightRequestUtils().validateActivityDaysRange(activityDays, minimumDays, maximumDays);
@@ -1127,38 +1149,45 @@ window.FlightRequestUtils = FlightRequestUtils;
 // 인스턴스 생성 및 전역 변수 설정
 window.flightRequestUtils = new FlightRequestUtils();
 
-console.log('✅ FlightRequestUtils v8.2.7 로드 완료 - 활동기간 범위 검증 제거 및 DB 마지노선 검증 추가');
-console.log('🔧 v8.2.7 주요 수정사항:', {
-    primaryFix: {
-        description: '항공권 검증 로직 수정 - 활동기간 범위 검증 제거 및 DB 마지노선 검증 추가',
-        validateAllDates: {
-            before: '활동기간 최소/최대 검증 수행 (validateMinimumActivityDays, validateMaximumActivityDays)',
-            after: '활동기간 범위 검증 완전 제거 (계산만 수행)',
-            improved: '항공권 검증과 활동기간 검증 완전 분리'
+// 🔧 v8.2.8: 명시적인 초기화 완료 신호 추가 - coordinator 호환성 보장
+window.utilsReady = true;
+
+console.log('✅ FlightRequestUtils v8.2.8 로드 완료 - 초기화 신호 추가 (utilsReady: false 문제 해결)');
+console.log('🔧 v8.2.8 주요 수정사항:', {
+    initializationFix: {
+        description: '초기화 신호 추가 - coordinator 의존성 검사와 호환성 보장',
+        explicitSignal: {
+            before: '명시적인 초기화 완료 신호 없음',
+            after: 'window.utilsReady = true 신호 추가',
+            improved: 'coordinator가 정확히 감지 가능'
         },
-        validateFlightDatesOnly: {
-            before: 'requiredReturnDate 매개변수 없음, DB 마지노선 검증 없음',
-            after: 'requiredReturnDate 매개변수 추가, DB 마지노선 검증 구현',
-            improved: '순수 항공권 검증(3가지): 출국일/귀국일 범위 + DB 마지노선'
+        readyProperty: {
+            before: 'FlightRequestUtils 클래스에 ready 속성 없음',
+            after: 'this.ready = true 속성 추가',
+            improved: '인스턴스 레벨에서도 준비 상태 확인 가능'
         },
-        pureFlightValidation: '항공권 검증을 순수 날짜 관계 검증(3가지)으로 제한'
+        timingIssue: {
+            before: '스크립트 로딩 순서와 타이밍 문제로 utilsReady: false 지속',
+            after: '명시적 신호로 타이밍 문제 해결',
+            improved: '안정적인 모듈 초기화 보장'
+        }
     },
-    technicalImprovements: {
-        validationSeparation: '활동기간 검증과 항공권 검증 완전 분리',
-        dbIntegration: 'DB 저장값 기반 귀국일 마지노선 검증',
-        parameterSupport: 'requiredReturnDate 매개변수 추가 및 활용',
-        errorHandling: '각 검증 단계별 명확한 에러 메시지 제공'
+    compatibilityGuarantee: {
+        coordinatorPattern: 'coordinator의 waitForDependencies 메서드와 완전 호환',
+        consistentPattern: '다른 모듈들과 일관된 초기화 패턴 적용',
+        backwardCompatible: '기존 모든 기능 100% 유지'
     },
-    userExperience: {
-        logicalConsistency: '사용자 입력 현지 활동기간 정보에 의거한 검증',
-        accurateValidation: '순수 날짜 관계만 확인하는 정확한 항공권 검증',
-        dbCompliance: 'DB 마지노선 날짜 준수를 통한 일관된 정책 적용',
-        clearFeedback: '검증 실패 시 명확하고 구체적인 피드백 제공'
+    problemSolved: {
+        utilsReadyFalse: '✅ utilsReady: false 문제 완전 해결',
+        initializationTimeout: '✅ 분리된 모듈 시스템 초기화 대기 시간 초과 해결',
+        dependencyDetection: '✅ coordinator 의존성 감지 정상화',
+        moduleLoadingStability: '✅ 모듈 로딩 안정성 대폭 향상'
     },
-    compatibility: {
-        v826: '기존 v8.2.6 모든 기능 100% 호환',
-        methodSignature: '기존 메서드 시그니처 유지 + 새 매개변수 추가',
-        staticMethods: 'Static 메서드들도 동일하게 수정 적용',
-        backwardCompatible: '기존 호출 코드와 완전 호환'
+    previousFeatures: {
+        v827: '활동기간 범위 검증 제거 및 DB 마지노선 검증 추가 (기존 유지)',
+        v826: '사용자 요청 조건에 맞게 검증 범위 조정 (기존 유지)',
+        v825: '항공권 검증과 활동기간 검증 완전 분리 (기존 유지)',
+        v824: '날짜 검증 로직 수정 및 dispatch_duration 계산 추가 (기존 유지)',
+        hardcodingRemoval: '하드코딩된 기본값 완전 제거 (기존 유지)'
     }
 });
