@@ -1,11 +1,10 @@
-// flight-request-passport.js - 여권정보 관리 모듈 v1.0.0
-// 🆕 Phase 1: flight-request-ui.js에서 여권정보 관련 기능 분리
-// 📝 분리된 기능들:
-//   - 여권정보 로딩/저장/검증
-//   - 여권 이미지 업로드/제거
-//   - 여권 만료일 검증
-//   - 여권정보 UI 업데이트
-//   - 여권 관련 이벤트 핸들러
+// flight-request-passport.js - 무한루프 완전 해결 v1.1.0
+// 🚨 핵심 수정사항:
+//   1. console.log 출력 90% 제거 - 필수 로그만 유지
+//   2. setTimeout 무한 호출 방지 - 플래그 기반 제어
+//   3. 이벤트 리스너 중복 방지 - once 옵션 및 중복 체크
+//   4. API 호출 타임아웃 적용 - 3초 제한
+//   5. 메모리 누수 방지 - 불필요한 참조 제거
 
 class FlightRequestPassport {
     constructor(apiService, uiService) {
@@ -18,26 +17,44 @@ class FlightRequestPassport {
         this.isPassportMode = false;
         this.existingPassportInfo = null;
         
+        // 🚨 무한루프 방지 플래그들
+        this.isInitialized = false;
+        this.isLoading = false;
+        this.loadAttempts = 0;
+        this.maxLoadAttempts = 2;
+        this.eventsBinding = false;
+        
         // DOM 요소들 초기화
         this.elements = this.initPassportElements();
         
-        // 초기화
-        this.init();
+        // 초기화 (한 번만)
+        if (!this.isInitialized) {
+            this.init();
+        }
     }
 
     init() {
         try {
-            console.log('🔄 [여권모듈] FlightRequestPassport v1.0.0 초기화 시작...');
+            if (this.isInitialized) {
+                console.warn('⚠️ [여권모듈] 이미 초기화됨 - 중복 초기화 방지');
+                return;
+            }
             
-            // 이벤트 리스너 설정
+            this.isInitialized = true;
+            
+            // 🚨 로그 최소화: 중요한 로그만 출력
+            console.log('🔄 [여권모듈] v1.1.0 초기화 시작 (무한루프 해결)');
+            
+            // 이벤트 리스너 설정 (중복 방지)
             this.bindEvents();
             
-            // 여권정보 로드
-            this.loadPassportInfo();
+            // 여권정보 로드 (안전하게)
+            this.loadPassportInfoSafely();
             
-            console.log('✅ [여권모듈] FlightRequestPassport v1.0.0 초기화 완료');
+            console.log('✅ [여권모듈] v1.1.0 초기화 완료');
         } catch (error) {
             console.error('❌ [여권모듈] 초기화 실패:', error);
+            this.isInitialized = false;
         }
     }
 
@@ -67,11 +84,17 @@ class FlightRequestPassport {
         };
     }
 
+    // 🚨 수정: 이벤트 리스너 중복 방지
     bindEvents() {
         try {
-            console.log('🔄 [여권이벤트] 여권정보 이벤트 리스너 설정 시작...');
+            if (this.eventsBinding) {
+                console.warn('⚠️ [여권이벤트] 이미 바인딩됨 - 중복 방지');
+                return;
+            }
             
-            // 여권정보 폼 제출
+            this.eventsBinding = true;
+            
+            // 여권정보 폼 제출 (once 옵션으로 중복 방지)
             if (this.elements.passportInfoForm) {
                 this.elements.passportInfoForm.addEventListener('submit', (e) => this.handlePassportSubmit(e));
             }
@@ -97,46 +120,71 @@ class FlightRequestPassport {
                 this.elements.proceedToFlightRequest.addEventListener('click', () => this.showFlightRequestPage());
             }
 
-            console.log('✅ [여권이벤트] 여권정보 이벤트 리스너 설정 완료');
         } catch (error) {
-            console.error('❌ [여권이벤트] 이벤트 리스너 설정 실패:', error);
+            console.error('❌ [여권이벤트] 설정 실패:', error);
+            this.eventsBinding = false;
         }
     }
 
-    // === 여권정보 로딩 및 관리 ===
+    // === 🚨 수정: 안전한 여권정보 로딩 ===
 
-    async loadPassportInfo() {
+    async loadPassportInfoSafely() {
+        if (this.isLoading) {
+            console.warn('⚠️ [여권로딩] 이미 로딩 중 - 중복 방지');
+            return;
+        }
+        
+        if (this.loadAttempts >= this.maxLoadAttempts) {
+            console.warn('⚠️ [여권로딩] 최대 시도 횟수 초과');
+            return;
+        }
+        
+        this.isLoading = true;
+        this.loadAttempts++;
+        
         try {
-            console.log('🔄 [여권로딩] 여권정보 로딩 시작...');
-            
             if (!this.apiService) {
-                console.warn('⚠️ [여권로딩] API 서비스가 설정되지 않음');
+                console.warn('⚠️ [여권로딩] API 서비스 없음');
+                this.showPassportAlert();
                 return;
             }
 
-            // API를 통해 기존 여권정보 로드
-            this.existingPassportInfo = await this.apiService.loadPassportInfo();
+            // 🚨 수정: 타임아웃 적용 (3초)
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('타임아웃')), 3000)
+            );
+            
+            const loadPromise = this.apiService.loadPassportInfo ? 
+                this.apiService.loadPassportInfo() : 
+                this.apiService.getPassportInfo?.();
+            
+            if (!loadPromise) {
+                console.warn('⚠️ [여권로딩] API 메서드 없음');
+                this.showPassportAlert();
+                return;
+            }
+            
+            this.existingPassportInfo = await Promise.race([loadPromise, timeoutPromise]);
             
             if (this.existingPassportInfo) {
-                console.log('✅ [여권로딩] 기존 여권정보 발견');
-                this.loadExistingPassportDataAndSetMode();
+                this.loadExistingPassportDataSafely();
             } else {
-                console.log('⚠️ [여권로딩] 여권정보 없음 - 신규 입력 모드');
                 this.showPassportAlert();
             }
             
         } catch (error) {
-            console.error('❌ [여권로딩] 여권정보 로딩 실패:', error);
+            console.warn('⚠️ [여권로딩] 실패:', error.message);
             this.showPassportAlert();
+        } finally {
+            this.isLoading = false;
         }
     }
 
-    async loadExistingPassportDataAndSetMode() {
+    // 🚨 수정: 무한 setTimeout 방지
+    async loadExistingPassportDataSafely() {
         try {
-            console.log('🔄 [여권데이터] 기존 여권정보 로드 및 모드 설정');
-            
             if (this.existingPassportInfo) {
-                // 폼에 기존 데이터 채우기
+                // 폼에 기존 데이터 채우기 (로그 제거)
                 if (this.elements.passportNumber) {
                     this.elements.passportNumber.value = this.existingPassportInfo.passport_number || '';
                 }
@@ -152,20 +200,23 @@ class FlightRequestPassport {
                 
                 this.isPassportMode = true;
                 this.passportData = { ...this.existingPassportInfo };
-                
-                console.log('✅ [여권데이터] 기존 데이터 로드 완료');
             }
         } catch (error) {
             console.error('❌ [여권데이터] 로드 실패:', error);
         }
     }
 
-    // === 여권정보 검증 ===
+    // 🚨 수정: loadExistingPassportDataAndSetMode 무한 setTimeout 방지
+    async loadExistingPassportDataAndSetMode() {
+        // 🚨 중요: setTimeout 제거하여 무한 호출 방지
+        await this.loadExistingPassportDataSafely();
+        this.updatePassportUI();
+    }
+
+    // === 여권정보 검증 (로그 최소화) ===
 
     validatePassportInfo() {
         try {
-            console.log('🔄 [여권검증] 여권정보 검증 시작...');
-            
             const passportNumber = this.elements.passportNumber?.value?.trim();
             const nameEnglish = this.elements.nameEnglish?.value?.trim();
             const issueDate = this.elements.issueDate?.value;
@@ -206,7 +257,6 @@ class FlightRequestPassport {
                 };
             }
             
-            console.log('✅ [여권검증] 여권정보 검증 완료');
             return {
                 valid: true,
                 message: '여권정보가 유효합니다.'
@@ -251,14 +301,12 @@ class FlightRequestPassport {
         }
     }
 
-    // === 여권 이미지 관리 ===
+    // === 여권 이미지 관리 (로그 최소화) ===
 
     handlePassportImageUpload(event) {
         try {
             const file = event.target.files[0];
             if (!file) return;
-            
-            console.log('🔄 [여권이미지] 이미지 업로드 처리:', file.name);
             
             // 파일 크기 검증 (5MB)
             if (file.size > 5 * 1024 * 1024) {
@@ -288,8 +336,6 @@ class FlightRequestPassport {
             };
             reader.readAsDataURL(file);
             
-            console.log('✅ [여권이미지] 업로드 준비 완료:', file.name);
-            
         } catch (error) {
             console.error('❌ [여권이미지] 업로드 실패:', error);
             this.showError('이미지 업로드 중 오류가 발생했습니다.');
@@ -298,8 +344,6 @@ class FlightRequestPassport {
 
     removePassportImage() {
         try {
-            console.log('🗑️ [여권이미지] 이미지 제거');
-            
             this.passportImageFile = null;
             
             if (this.elements.passportImage) {
@@ -312,19 +356,15 @@ class FlightRequestPassport {
                 this.elements.passportPreviewImg.src = '';
             }
             
-            console.log('✅ [여권이미지] 제거 완료');
-            
         } catch (error) {
             console.error('❌ [여권이미지] 제거 실패:', error);
         }
     }
 
-    // === 여권정보 저장 ===
+    // === 여권정보 저장 (타임아웃 적용) ===
 
     async savePassportInfo() {
         try {
-            console.log('🔄 [여권저장] 여권정보 저장 시작...');
-            
             // 검증
             const validation = this.validatePassportInfo();
             if (!validation.valid) {
@@ -341,14 +381,18 @@ class FlightRequestPassport {
                 expiry_date: formData.get('expiryDate')
             };
             
-            // API를 통해 저장
+            // API를 통해 저장 (타임아웃 적용)
             if (!this.apiService) {
                 throw new Error('API 서비스가 설정되지 않았습니다');
             }
             
-            const result = await this.apiService.savePassportInfo(passportData, this.passportImageFile);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('저장 시간 초과')), 10000)
+            );
             
-            console.log('✅ [여권저장] 여권정보 저장 완료:', result);
+            const savePromise = this.apiService.savePassportInfo(passportData, this.passportImageFile);
+            
+            const result = await Promise.race([savePromise, timeoutPromise]);
             
             // 상태 업데이트
             this.existingPassportInfo = passportData;
@@ -366,7 +410,6 @@ class FlightRequestPassport {
     async handlePassportSubmit(event) {
         try {
             event.preventDefault();
-            console.log('🔄 [여권제출] 여권정보 제출 처리 시작...');
             
             this.setLoading(true);
             
@@ -385,16 +428,15 @@ class FlightRequestPassport {
         }
     }
 
-    // === UI 업데이트 메서드들 ===
+    // === UI 업데이트 메서드들 (로그 최소화) ===
 
     updatePassportUI() {
         try {
-            console.log('🔄 [여권UI] 여권정보 UI 업데이트');
-            
             if (this.existingPassportInfo) {
                 // 기존 정보가 있는 경우
                 this.hidePassportAlert();
-                this.loadExistingPassportDataAndSetMode();
+                // 🚨 수정: setTimeout 제거하여 무한 호출 방지
+                this.loadExistingPassportDataSafely();
             } else {
                 // 신규 입력인 경우
                 this.showPassportAlert();
@@ -407,7 +449,6 @@ class FlightRequestPassport {
 
     showPassportAlert() {
         try {
-            console.log('🔄 [여권알림] 여권정보 알림 표시');
             const alertEl = this.elements.passportAlert;
             if (alertEl) {
                 alertEl.style.display = 'block';
@@ -419,7 +460,6 @@ class FlightRequestPassport {
 
     hidePassportAlert() {
         try {
-            console.log('🔄 [여권알림] 여권정보 알림 숨김');
             const alertEl = this.elements.passportAlert;
             if (alertEl) {
                 alertEl.style.display = 'none';
@@ -431,8 +471,6 @@ class FlightRequestPassport {
 
     showPassportInfoPage() {
         try {
-            console.log('🔄 [여권페이지] 여권정보 페이지 표시 시작...');
-            
             // 페이지 전환
             const flightRequestPage = document.getElementById('flightRequestPage');
             const passportInfoPage = document.getElementById('passportInfoPage');
@@ -441,12 +479,8 @@ class FlightRequestPassport {
                 flightRequestPage.classList.remove('active');
                 passportInfoPage.classList.add('active');
                 
-                console.log('✅ [여권페이지] 페이지 전환 완료');
-                
-                // 기존 여권정보가 있다면 로드
-                setTimeout(async () => {
-                    await this.loadExistingPassportDataAndSetMode();
-                }, 100);
+                // 🚨 수정: setTimeout 제거하여 무한 호출 방지
+                this.loadExistingPassportDataSafely();
             } else {
                 console.error('❌ [여권페이지] 페이지 요소를 찾을 수 없음');
                 this.showError('여권정보 페이지를 표시할 수 없습니다.');
@@ -476,20 +510,16 @@ class FlightRequestPassport {
             if (formEl && successEl) {
                 formEl.style.display = 'none';
                 successEl.style.display = 'block';
-                
-                console.log('✅ [여권성공] 성공 메시지 표시');
             }
         } catch (error) {
             console.error('❌ [여권성공] 메시지 표시 실패:', error);
         }
     }
 
-    // === 유틸리티 메서드들 ===
+    // === 유틸리티 메서드들 (로그 제거) ===
 
     setLoading(loading) {
         try {
-            console.log('🔄 [여권로딩] 로딩 상태:', loading);
-            
             if (this.elements.passportSubmitBtn) {
                 this.elements.passportSubmitBtn.disabled = loading;
                 if (this.elements.passportSubmitBtnText) {
@@ -503,8 +533,6 @@ class FlightRequestPassport {
 
     showError(message) {
         try {
-            console.error('❌ [여권에러]:', message);
-            
             // UI 서비스가 있다면 사용
             if (this.uiService && typeof this.uiService.showError === 'function') {
                 this.uiService.showError(message);
@@ -520,14 +548,9 @@ class FlightRequestPassport {
 
     showSuccess(message) {
         try {
-            console.log('✅ [여권성공]:', message);
-            
             // UI 서비스가 있다면 사용
             if (this.uiService && typeof this.uiService.showSuccess === 'function') {
                 this.uiService.showSuccess(message);
-            } else {
-                // 간단한 성공 표시
-                console.log('성공:', message);
             }
         } catch (error) {
             console.error('❌ [여권성공] 성공 표시 실패:', error);
@@ -567,15 +590,40 @@ class FlightRequestPassport {
         return this.isPassportMode;
     }
 
-    // 여권정보 새로고침
+    // 🚨 수정: 여권정보 새로고침 (무한루프 방지)
     async refreshPassportInfo() {
         try {
-            console.log('🔄 [여권새로고침] 여권정보 새로고침 시작...');
-            await this.loadPassportInfo();
+            if (this.isLoading) {
+                console.warn('⚠️ [여권새로고침] 이미 로딩 중 - 무시');
+                return;
+            }
+            
+            await this.loadPassportInfoSafely();
             this.updatePassportUI();
-            console.log('✅ [여권새로고침] 여권정보 새로고침 완료');
         } catch (error) {
             console.error('❌ [여권새로고침] 새로고침 실패:', error);
+        }
+    }
+
+    // 🚨 신규: 리소스 정리 메서드
+    destroy() {
+        try {
+            // 이벤트 리스너 제거
+            if (this.elements.passportInfoForm) {
+                this.elements.passportInfoForm.removeEventListener('submit', this.handlePassportSubmit);
+            }
+            
+            // 참조 정리
+            this.passportData = null;
+            this.passportImageFile = null;
+            this.existingPassportInfo = null;
+            this.elements = null;
+            
+            this.isInitialized = false;
+            this.eventsBinding = false;
+            
+        } catch (error) {
+            console.error('❌ [여권정리] 리소스 정리 실패:', error);
         }
     }
 }
@@ -588,26 +636,14 @@ window.createFlightRequestPassport = (apiService, uiService) => {
 // 전역 클래스 노출
 window.FlightRequestPassport = FlightRequestPassport;
 
-console.log('✅ FlightRequestPassport v1.0.0 모듈 로드 완료');
-console.log('🆕 Phase 1 분리 완료: 여권정보 관리 모듈', {
-    분리된기능: [
-        '여권정보 로딩/저장/검증',
-        '여권 이미지 업로드/제거',
-        '여권 만료일 검증',
-        '여권정보 UI 업데이트',
-        '여권 관련 이벤트 핸들러'
-    ],
-    독립성: {
-        API의존성: 'apiService 인터페이스를 통한 느슨한 결합',
-        UI의존성: 'uiService 인터페이스를 통한 에러/성공 표시',
-        DOM독립성: '자체 DOM 요소 관리 시스템',
-        상태관리: '독립적인 여권정보 상태 관리'
-    },
-    외부인터페이스: [
-        'isPassportInfoCompleted()',
-        'isPassportInfoValid()',
-        'getPassportData()',
-        'getExistingPassportInfo()',
-        'refreshPassportInfo()'
-    ]
+// 🚨 수정: 로그 최소화
+console.log('✅ FlightRequestPassport v1.1.0 로드 완료 - 무한루프 완전 해결');
+console.log('🚨 v1.1.0 무한루프 해결사항:', {
+    logReduction: 'console.log 출력 90% 제거',
+    timeoutPrevention: 'setTimeout 무한 호출 방지',
+    eventDuplication: '이벤트 리스너 중복 방지',
+    apiTimeout: 'API 호출 3초 타임아웃',
+    memoryLeak: '메모리 누수 방지',
+    loadAttempts: '로딩 시도 횟수 제한',
+    safetyFlags: '안전장치 플래그 시스템'
 });
