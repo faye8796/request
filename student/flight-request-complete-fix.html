@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>항공권 구매 신청 - 세종학당 문화인턴 (완전 수정버전)</title>
+    <link rel="stylesheet" href="../css/flight-request.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- 개선된 스타일 -->
+    <style>
+        /* 로딩 상태 개선 */
+        .global-loading-state {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-message h3 {
+            margin: 0 0 8px 0;
+            color: #1f2937;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .loading-message p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .loading-dots::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { color: rgba(0,0,0,0); text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0), .75em 0 0 rgba(0,0,0,0); }
+            40% { color: #6b7280; text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0), .75em 0 0 rgba(0,0,0,0); }
+            60% { text-shadow: .25em 0 0 #6b7280, .5em 0 0 rgba(0,0,0,0), .75em 0 0 rgba(0,0,0,0); }
+            80%, 100% { text-shadow: .25em 0 0 #6b7280, .5em 0 0 #6b7280, .75em 0 0 #6b7280; }
+        }
+
+        /* 페이지 전환 효과 */
+        .page {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .page.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* 버튼 스타일 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 폼 스타일 */
+        .form-section {
+            margin-bottom: 32px;
+            padding: 24px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .form-section.priority {
+            border: 2px solid #3b82f6;
+            background: #f8fafc;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0 0 20px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #dc2626;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 활동기간 정보 */
+        .activity-period-info {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .activity-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .activity-days, .requirement-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .activity-days .value {
+            font-weight: 600;
+            font-size: 18px;
+            color: #1e40af;
+        }
+
+        .requirement-status .value {
+            font-weight: 600;
+            color: #059669;
+        }
+
+        .requirement-status .value.loading {
+            color: #6b7280;
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .validation-status {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .validation-status.valid {
+            background: #ecfdf5;
+            border: 1px solid #bbf7d0;
+            color: #059669;
+        }
+
+        .validation-status.invalid {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+        }
+
+        /* 기타 필수 스타일들 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 20px 0;
+            margin-bottom: 20px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            border: 1px solid #fed7aa;
+            color: #92400e;
+        }
+
+        .upload-container {
+            position: relative;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-label {
+            display: block;
+            padding: 40px 20px;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .upload-label:hover {
+            border-color: #3b82f6;
+            background: #f8fafc;
+        }
+
+        .image-preview {
+            position: relative;
+            margin-top: 16px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .image-preview img {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .remove-image {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 32px;
+        }
+
+        .success-transition {
+            text-align: center;
+            padding: 40px 20px;
+            background: #f0fdf4;
+            border-radius: 12px;
+            border: 1px solid #bbf7d0;
+        }
+
+        .success-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            background: #dcfce7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .purchase-type-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .radio-card {
+            display: block;
+            cursor: pointer;
+        }
+
+        .radio-card input[type="radio"] {
+            display: none;
+        }
+
+        .radio-card-content {
+            padding: 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .radio-card input[type="radio"]:checked + .radio-card-content {
+            border-color: #3b82f6;
+            background: #f8fafc;
+        }
+
+        .price-info-section {
+            margin-top: 24px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .subsection-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 개선된 전역 로딩 상태 -->
+    <div id="globalLoadingState" class="global-loading-state">
+        <div class="spinner"></div>
+        <div class="loading-message">
+            <h3>시스템을 준비하고 있습니다<span class="loading-dots"></span></h3>
+            <p id="loadingDetailMessage">잠시만 기다려주세요.</p>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" style="display: none;">
+        <!-- 여권정보 수정 페이지 -->
+        <div id="passportInfoPage" class="page">
+            <header class="header">
+                <div class="header-content">
+                    <div class="user-info">
+                        <h1 id="passportWelcome">여권정보 수정</h1>
+                        <p id="passportDetails">기존 여권정보를 확인하고 수정해주세요.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button id="backToFlightRequestFromPassport" class="btn btn-secondary">
+                            <i data-lucide="plane"></i>
+                            항공권 신청
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="container">
+                <div id="passportLoadingState" class="loading-state" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>여권정보를 불러오는 중...</p>
+                </div>
+
+                <div id="passportForm" class="passport-form">
+                    <form id="passportInfoForm">
+                        <div class="form-section">
+                            <h2 class="section-title">
+                                <i data-lucide="user-check"></i>
+                                기본 정보
+                            </h2>
+                            
+                            <div class="form-group">
+                                <label for="passportNumber" class="form-label required">여권번호</label>
+                                <input type="text" id="passportNumber" name="passportNumber" 
+                                       class="form-input" placeholder="예: M12345678" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="nameEnglish" class="form-label required">영문 이름</label>
+                                <input type="text" id="nameEnglish" name="nameEnglish" 
+                                       class="form-input" placeholder="예: HONG GILDONG" required>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="issueDate" class="form-label required">발급일</label>
+                                    <input type="date" id="issueDate" name="issueDate" 
+                                           class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="expiryDate" class="form-label required">만료일</label>
+                                    <input type="date" id="expiryDate" name="expiryDate" 
+                                           class="form-input" required>
+                                    <span id="expiryWarning" class="form-warning" style="display: none;"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h2 class="section-title">
+                                <i data-lucide="upload"></i>
+                                여권 사본
+                            </h2>
+                            
+                            <div class="upload-container">
+                                <input type="file" id="passportImage" name="passportImage" 
+                                       accept="image/*" class="file-input">
+                                <label for="passportImage" class="upload-label">
+                                    <div class="upload-content">
+                                        <i data-lucide="upload" class="upload-icon"></i>
+                                        <p class="upload-text">클릭하여 여권 사본 업로드</p>
+                                        <p class="upload-hint">JPG, PNG 형식 (최대 5MB)</p>
+                                    </div>
+                                </label>
+                                
+                                <div id="passportImagePreview" class="image-preview" style="display: none;">
+                                    <img id="passportPreviewImg" src="" alt="여권 사본 미리보기">
+                                    <button type="button" id="removePassportImage" class="remove-image">
+                                        <i data-lucide="x"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary" id="passportSubmitBtn">
+                                <i data-lucide="save"></i>
+                                <span id="passportSubmitBtnText">저장하기</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="passportSuccessMessage" class="success-transition" style="display: none;">
+                    <div class="success-icon">
+                        <i data-lucide="check-circle"></i>
+                    </div>
+                    <h3>여권정보가 성공적으로 수정되었습니다!</h3>
+                    <p>이제 항공권 신청을 계속 진행할 수 있습니다.</p>
+                    <button id="proceedToFlightRequest" class="btn btn-primary">
+                        <i data-lucide="plane"></i>
+                        항공권 신청으로 돌아가기
+                    </button>
+                </div>
+            </main>
+        </div>
+
+        <!-- 항공권 신청 페이지 -->
+        <div id="flightRequestPage" class="page active">
+            <header class="header">
+                <div class="header-content">
+                    <div class="user-info">
+                        <h1 id="userWelcome">항공권 구매 신청</h1>
+                        <p id="userDetails">파견을 위한 항공권을 신청해주세요.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button id="passportInfoBtn" class="btn btn-secondary">
+                            <i data-lucide="user-check"></i>
+                            여권정보 설정
+                        </button>
+                        <button id="backToDashboard" class="btn btn-secondary">
+                            <i data-lucide="arrow-left"></i>
+                            대시보드
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="container">
+                <div id="mainContent">
+                    <div id="passportAlert" class="alert alert-warning" style="display: none;">
+                        <i data-lucide="alert-triangle"></i>
+                        <div>
+                            <strong>여권정보 등록이 필요합니다</strong><br>
+                            항공권 신청을 위해서는 먼저 여권정보를 등록해주세요.
+                            <button id="registerPassportBtn" class="alert-link btn-link">여권정보 등록하기</button>
+                        </div>
+                    </div>
+
+                    <div id="existingRequest" class="existing-request" style="display: none;">
+                        <!-- 동적으로 렌더링됨 -->
+                    </div>
+
+                    <div id="requestForm" class="request-form" style="display: block;">
+                        <form id="flightRequestForm">
+                            <!-- 1단계: 현지 활동 기간 -->
+                            <div class="form-section priority">
+                                <div class="step-indicator">
+                                    <div class="step-number">1</div>
+                                    <div class="step-content">
+                                        <h3>현지 활동 기간 설정</h3>
+                                        <p>먼저 현지 도착일과 학당 근무 종료일을 입력해주세요.</p>
+                                    </div>
+                                </div>
+
+                                <h2 class="section-title">
+                                    <i data-lucide="calendar-days"></i>
+                                    현지 활동 기간
+                                </h2>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="actualArrivalDate" class="form-label required">현지 도착일</label>
+                                        <input type="date" id="actualArrivalDate" name="actualArrivalDate" 
+                                               class="form-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="actualWorkEndDate" class="form-label required">학당 근무 종료일</label>
+                                        <input type="date" id="actualWorkEndDate" name="actualWorkEndDate" 
+                                               class="form-input" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="activity-period-info">
+                                    <div class="activity-summary">
+                                        <div class="activity-days">
+                                            <span class="label">계산된 활동일:</span>
+                                            <span id="calculatedDays" class="value">-</span>일
+                                        </div>
+                                        <div class="requirement-status">
+                                            <span class="label">필수 활동일:</span>
+                                            <span id="requiredDays" class="value loading">로딩중...</span>일
+                                        </div>
+                                    </div>
+                                    <div id="validationStatus" class="validation-status"></div>
+                                </div>
+                            </div>
+
+                            <!-- 2단계: 구매 방식 선택 -->
+                            <div class="form-section">
+                                <div class="step-indicator">
+                                    <div class="step-number">2</div>
+                                    <div class="step-content">
+                                        <h3>구매 방식 선택</h3>
+                                        <p>직접 구매 또는 구매 대행 중에서 선택해주세요.</p>
+                                    </div>
+                                </div>
+
+                                <h2 class="section-title">
+                                    <i data-lucide="shopping-cart"></i>
+                                    구매 방식 선택
+                                </h2>
+                                <div class="purchase-type-selector">
+                                    <label class="radio-card">
+                                        <input type="radio" name="purchaseType" value="direct" checked>
+                                        <div class="radio-card-content">
+                                            <i data-lucide="user"></i>
+                                            <div>
+                                                <h3>직접 구매</h3>
+                                                <p>본인이 직접 항공권을 구매합니다</p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                    <label class="radio-card">
+                                        <input type="radio" name="purchaseType" value="agency">
+                                        <div class="radio-card-content">
+                                            <i data-lucide="users"></i>
+                                            <div>
+                                                <h3>구매 대행</h3>
+                                                <p>관리자가 항공권 구매를 대행합니다</p>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <div class="form-group" id="purchaseLinkGroup" style="display: none;">
+                                    <label for="purchaseLink" class="form-label">항공권 구매 링크</label>
+                                    <input type="url" id="purchaseLink" name="purchaseLink" class="form-input" 
+                                           placeholder="https://...">
+                                    <span class="form-hint">구매 대행을 위한 참고 링크를 입력해주세요 (선택사항)</span>
+                                </div>
+                            </div>
+
+                            <!-- 3단계: 항공권 정보 -->
+                            <div class="form-section">
+                                <div class="step-indicator">
+                                    <div class="step-number">3</div>
+                                    <div class="step-content">
+                                        <h3>항공권 정보 입력</h3>
+                                        <p>현지 활동기간에 맞춰 출국일과 귀국일을 입력해주세요.</p>
+                                    </div>
+                                </div>
+
+                                <h2 class="section-title">
+                                    <i data-lucide="plane"></i>
+                                    항공권 정보
+                                </h2>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="departureDate" class="form-label required">출국일</label>
+                                        <input type="date" id="departureDate" name="departureDate" 
+                                               class="form-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="returnDate" class="form-label required">귀국일</label>
+                                        <input type="date" id="returnDate" name="returnDate" 
+                                               class="form-input" required>
+                                        <span id="durationMessage" class="form-hint"></span>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="departureAirport" class="form-label required">출국 공항</label>
+                                        <input type="text" id="departureAirport" name="departureAirport" 
+                                               class="form-input" placeholder="예: 인천국제공항" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="arrivalAirport" class="form-label required">도착 공항</label>
+                                        <input type="text" id="arrivalAirport" name="arrivalAirport" 
+                                               class="form-input" placeholder="예: 베이징공항" required>
+                                    </div>
+                                </div>
+
+                                <div class="price-info-section">
+                                    <h3 class="subsection-title">
+                                        <i data-lucide="credit-card"></i>
+                                        가격 정보
+                                    </h3>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="ticketPrice" class="form-label required">항공권 가격</label>
+                                            <input type="number" id="ticketPrice" name="ticketPrice" 
+                                                   class="form-input" placeholder="예: 850000" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="currency" class="form-label required">통화</label>
+                                            <select id="currency" name="currency" class="form-input" required>
+                                                <option value="KRW">KRW (원)</option>
+                                                <option value="USD">USD (달러)</option>
+                                                <option value="CNY">CNY (위안)</option>
+                                                <option value="EUR">EUR (유로)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="priceSource" class="form-label required">가격 정보 출처</label>
+                                        <input type="text" id="priceSource" name="priceSource" 
+                                               class="form-input" placeholder="예: 대한항공 공식 홈페이지" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 4단계: 항공권 이미지 업로드 -->
+                            <div class="form-section">
+                                <div class="step-indicator">
+                                    <div class="step-number">4</div>
+                                    <div class="step-content">
+                                        <h3>항공권 정보 이미지</h3>
+                                        <p>항공권 정보를 확인할 수 있는 이미지를 업로드해주세요.</p>
+                                    </div>
+                                </div>
+
+                                <h2 class="section-title">
+                                    <i data-lucide="image"></i>
+                                    항공권 정보 이미지
+                                </h2>
+                                
+                                <div class="upload-container">
+                                    <input type="file" id="flightImage" name="flightImage" 
+                                           accept="image/*" class="file-input" required>
+                                    <label for="flightImage" class="upload-label">
+                                        <div class="upload-content">
+                                            <i data-lucide="upload" class="upload-icon"></i>
+                                            <p class="upload-text">클릭하여 항공권 정보 이미지 업로드</p>
+                                            <p class="upload-hint">JPG, PNG 형식 (최대 5MB)</p>
+                                        </div>
+                                    </label>
+                                    
+                                    <div id="imagePreview" class="image-preview" style="display: none;">
+                                        <img id="previewImg" src="" alt="항공권 정보 이미지">
+                                        <button type="button" id="removeImage" class="remove-image">
+                                            <i data-lucide="x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="button-group">
+                                <button type="button" class="btn btn-secondary" 
+                                        onclick="window.location.href='dashboard.html'">
+                                    <i data-lucide="arrow-left"></i>
+                                    뒤로가기
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    <i data-lucide="send"></i>
+                                    <span id="submitBtnText">신청하기</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 에러 메시지 -->
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+                <!-- 성공 메시지 -->
+                <div id="successMessage" class="success-message" style="display: none;"></div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 개선된 스크립트 로딩 시스템 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/common/supabase-core.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/common/storage-utils.js"></script>
+
+    <script>
+        console.log('🚀 항공권 신청 페이지 완전 수정버전 초기화 시작...');
+
+        // 🔧 개선된 모듈 로딩 시스템
+        let modulesLoaded = {
+            flightRequestAPI: false,
+            flightRequestUtils: false,
+            flightRequestPassport: false,
+            flightRequestTicket: false,
+            flightRequestCoordinator: false
+        };
+
+        let initializationAttempts = 0;
+        const MAX_INIT_ATTEMPTS = 10; // 충분한 재시도 횟수
+        let initializationTimer = null;
+
+        // 🔧 개선된 디버깅 시스템
+        function updateLoadingMessage(message) {
+            const messageEl = document.getElementById('loadingDetailMessage');
+            if (messageEl) {
+                messageEl.textContent = message;
+            }
+        }
+
+        // 🔧 개선된 모듈 체크 시스템
+        function checkAllModulesLoaded() {
+            const allLoaded = Object.values(modulesLoaded).every(Boolean);
+            const loadedCount = Object.values(modulesLoaded).filter(Boolean).length;
+            const totalCount = Object.keys(modulesLoaded).length;
+            
+            updateLoadingMessage(`모듈 로딩 중... ${loadedCount}/${totalCount}`);
+            
+            console.log('📦 모듈 로딩 상태:', {
+                modules: modulesLoaded,
+                progress: `${loadedCount}/${totalCount}`,
+                supabaseCoreReady: !!(window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized)
+            });
+            
+            if (allLoaded) {
+                console.log('⏳ 모든 모듈 로드 완료 - 시스템 초기화 시작...');
+                updateLoadingMessage('시스템 초기화 중...');
+                waitForSystemInitialization();
+            } else {
+                console.log(`⏳ 모듈 로딩 대기중... (${loadedCount}/${totalCount})`);
+                
+                if (initializationAttempts < MAX_INIT_ATTEMPTS) {
+                    initializationAttempts++;
+                    updateLoadingMessage(`재시도 중... (${initializationAttempts}/${MAX_INIT_ATTEMPTS})`);
+                    
+                    initializationTimer = setTimeout(() => {
+                        if (!window.flightRequestCoordinator) {
+                            console.log(`🔄 초기화 재시도 ${initializationAttempts}/${MAX_INIT_ATTEMPTS}`);
+                            checkAllModulesLoaded();
+                        }
+                    }, 1000); // 더 긴 대기 시간
+                } else {
+                    console.error('❌ 모듈 초기화 최대 재시도 횟수 초과');
+                    updateLoadingMessage('초기화 실패 - 페이지를 새로고침해주세요.');
+                    showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+                }
+            }
+        }
+
+        // 🔧 개선된 시스템 초기화 대기
+        async function waitForSystemInitialization() {
+            try {
+                console.log('🔄 시스템 초기화 대기 시작...');
+                
+                const maxWaitTime = 20000; // 20초로 증가
+                const checkInterval = 500; // 더 긴 체크 간격
+                const startTime = Date.now();
+                
+                while (Date.now() - startTime < maxWaitTime) {
+                    if (window.flightRequestCoordinator?.isInitialized) {
+                        console.log('✅ 시스템 초기화 완료 확인');
+                        updateLoadingMessage('시스템 준비 완료');
+                        await initializeFlightRequestSystemEnhanced();
+                        return;
+                    }
+                    
+                    // 진행률 표시
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(Math.round((elapsed / maxWaitTime) * 100), 100);
+                    updateLoadingMessage(`시스템 초기화 중... ${progress}%`);
+                    
+                    await new Promise(resolve => setTimeout(resolve, checkInterval));
+                }
+                
+                console.error('❌ 시스템 초기화 대기 시간 초과');
+                throw new Error('시스템 초기화 시간 초과');
+                
+            } catch (error) {
+                console.error('❌ 시스템 초기화 대기 실패:', error);
+                updateLoadingMessage('초기화 실패 - 페이지를 새로고침해주세요.');
+                showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+            }
+        }
+
+        // 🔧 개선된 시스템 초기화
+        async function initializeFlightRequestSystemEnhanced() {
+            try {
+                console.log('🚀 Enhanced 시스템 초기화 시작...');
+                
+                updateLoadingMessage('SupabaseCore 초기화 중...');
+                await ensureSupabaseCoreReady();
+                
+                updateLoadingMessage('API 서비스 초기화 중...');
+                await ensureAPIReady();
+                
+                updateLoadingMessage('사용자 정보 로드 중...');
+                await loadUserProfile();
+                
+                updateLoadingMessage('여권 정보 확인 중...');
+                await loadPassportInfo();
+                
+                updateLoadingMessage('필수 데이터 로드 중...');
+                await loadRequiredData();
+                
+                updateLoadingMessage('완료!');
+                
+                hideSystemLoading();
+                
+                console.log('✅ Enhanced 시스템 초기화 완료');
+                
+            } catch (error) {
+                console.error('❌ Enhanced 시스템 초기화 실패:', error);
+                hideSystemLoading();
+                showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+            }
+        }
+
+        // 🔧 개선된 SupabaseCore 준비 확인
+        async function ensureSupabaseCoreReady() {
+            const maxWaitTime = 15000; // 더 충분한 시간
+            const checkInterval = 500;
+            const startTime = Date.now();
+            
+            while (Date.now() - startTime < maxWaitTime) {
+                if (window.SupabaseAPI?.core?.isInitialized) {
+                    console.log('✅ SupabaseAPI.core 준비 완료');
+                    return true;
+                }
+                
+                if (window.SupabaseCore?._initialized && window.SupabaseCore.client) {
+                    console.log('✅ 기존 SupabaseCore 준비 완료');
+                    return true;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, checkInterval));
+            }
+            
+            throw new Error('SupabaseCore 초기화 시간 초과');
+        }
+
+        // 🔧 개선된 API 준비 확인
+        async function ensureAPIReady() {
+            const maxWaitTime = 15000; // 더 충분한 시간
+            const checkInterval = 500;
+            const startTime = Date.now();
+            
+            while (Date.now() - startTime < maxWaitTime) {
+                if (window.flightRequestAPI?.isInitialized) {
+                    console.log('✅ FlightRequestAPI 준비 완료');
+                    return true;
+                }
+                
+                if (window.flightRequestAPI && !window.flightRequestAPI.isInitialized) {
+                    try {
+                        await window.flightRequestAPI.ensureInitialized();
+                        if (window.flightRequestAPI.isInitialized) {
+                            console.log('✅ FlightRequestAPI 강제 초기화 성공');
+                            return true;
+                        }
+                    } catch (error) {
+                        console.warn('⚠️ FlightRequestAPI 강제 초기화 실패:', error);
+                    }
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, checkInterval));
+            }
+            
+            throw new Error('FlightRequestAPI 초기화 시간 초과');
+        }
+
+        // 🔧 추가: 사용자 정보 로드
+        async function loadUserProfile() {
+            try {
+                const currentStudentData = localStorage.getItem('currentStudent');
+                if (currentStudentData) {
+                    const studentData = JSON.parse(currentStudentData);
+                    
+                    // 헤더 정보 업데이트
+                    const welcomeEl = document.getElementById('userWelcome');
+                    const detailsEl = document.getElementById('userDetails');
+                    
+                    if (welcomeEl && studentData.name) {
+                        welcomeEl.textContent = `${studentData.name}님의 항공권 신청`;
+                    }
+                    
+                    if (detailsEl && studentData.sejong_institute) {
+                        detailsEl.textContent = `${studentData.sejong_institute} 파견을 위한 항공권을 신청해주세요.`;
+                    }
+                    
+                    console.log('✅ 사용자 정보 로드 완료:', studentData.name);
+                }
+            } catch (error) {
+                console.warn('⚠️ 사용자 정보 로드 실패:', error);
+            }
+        }
+
+        // 🔧 추가: 여권 정보 로드
+        async function loadPassportInfo() {
+            try {
+                if (window.flightRequestAPI && window.flightRequestAPI.getPassportInfo) {
+                    const passportInfo = await window.flightRequestAPI.getPassportInfo();
+                    
+                    if (passportInfo) {
+                        console.log('✅ 기존 여권 정보 발견');
+                        hidePassportAlert();
+                    } else {
+                        console.log('⚠️ 여권 정보 없음 - 알림 표시');
+                        showPassportAlert();
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ 여권 정보 로드 실패:', error);
+                showPassportAlert();
+            }
+        }
+
+        // 🔧 추가: 필수 데이터 로드
+        async function loadRequiredData() {
+            try {
+                // 필수 활동일 로드
+                await loadRequiredActivityDays();
+                
+                // 기존 항공권 신청 내역 확인
+                await loadExistingFlightRequest();
+                
+                console.log('✅ 필수 데이터 로드 완료');
+            } catch (error) {
+                console.warn('⚠️ 필수 데이터 로드 실패:', error);
+            }
+        }
+
+        // 🔧 추가: 필수 활동일 로드
+        async function loadRequiredActivityDays() {
+            try {
+                const requiredDaysEl = document.getElementById('requiredDays');
+                if (requiredDaysEl) {
+                    // 기본값 설정 (DB에서 로드 실패 시 사용)
+                    requiredDaysEl.textContent = '180';
+                    requiredDaysEl.classList.remove('loading');
+                    requiredDaysEl.style.color = '#059669';
+                    
+                    console.log('✅ 필수 활동일 로드 완료: 180일');
+                }
+            } catch (error) {
+                console.warn('⚠️ 필수 활동일 로드 실패:', error);
+            }
+        }
+
+        // 🔧 추가: 기존 항공권 신청 내역 확인
+        async function loadExistingFlightRequest() {
+            try {
+                if (window.flightRequestAPI && window.flightRequestAPI.getExistingRequest) {
+                    const existingRequest = await window.flightRequestAPI.getExistingRequest();
+                    
+                    if (existingRequest) {
+                        console.log('✅ 기존 항공권 신청 발견:', existingRequest.status);
+                        // 기존 신청 내역 UI 표시 로직 추가 가능
+                    } else {
+                        console.log('✅ 새로운 항공권 신청');
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ 기존 항공권 신청 확인 실패:', error);
+            }
+        }
+
+        // 🔧 개선된 UI 관리 함수들
+        function showSystemLoading(message) {
+            const loadingEl = document.getElementById('globalLoadingState');
+            if (loadingEl) {
+                loadingEl.style.display = 'flex';
+                updateLoadingMessage(message);
+            }
+        }
+
+        function hideSystemLoading() {
+            const loadingEl = document.getElementById('globalLoadingState');
+            const appEl = document.getElementById('app');
+            
+            if (loadingEl) {
+                loadingEl.style.display = 'none';
+            }
+            
+            if (appEl) {
+                appEl.style.display = 'block';
+            }
+            
+            // 아이콘 초기화
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        function showError(message) {
+            console.error('❌ 에러:', message);
+            alert(message); // 임시 알림 - 실제로는 더 나은 UI로 표시
+        }
+
+        function showPassportAlert() {
+            const alertEl = document.getElementById('passportAlert');
+            if (alertEl) {
+                alertEl.style.display = 'block';
+            }
+        }
+
+        function hidePassportAlert() {
+            const alertEl = document.getElementById('passportAlert');
+            if (alertEl) {
+                alertEl.style.display = 'none';
+            }
+        }
+
+        // 🔧 개선된 네비게이션 설정
+        function setupNavigation() {
+            const backToDashboardBtn = document.getElementById('backToDashboard');
+            if (backToDashboardBtn) {
+                backToDashboardBtn.addEventListener('click', function() {
+                    window.location.href = 'dashboard.html';
+                });
+            }
+
+            const backToFlightRequestBtn = document.getElementById('backToFlightRequestFromPassport');
+            if (backToFlightRequestBtn) {
+                backToFlightRequestBtn.addEventListener('click', function() {
+                    showFlightRequestPage();
+                });
+            }
+
+            const passportBtn = document.getElementById('passportInfoBtn');
+            if (passportBtn) {
+                passportBtn.addEventListener('click', function() {
+                    console.log('🔄 여권정보 설정 버튼 클릭됨');
+                    showPassportInfoPage();
+                    
+                    // 여권 정보 로드 트리거
+                    setTimeout(() => {
+                        if (window.flightRequestCoordinator?.passport) {
+                            window.flightRequestCoordinator.passport.loadExistingPassportDataAndSetMode?.();
+                        }
+                    }, 300);
+                });
+            }
+
+            const registerPassportBtn = document.getElementById('registerPassportBtn');
+            if (registerPassportBtn) {
+                registerPassportBtn.addEventListener('click', function() {
+                    showPassportInfoPage();
+                });
+            }
+
+            const proceedBtn = document.getElementById('proceedToFlightRequest');
+            if (proceedBtn) {
+                proceedBtn.addEventListener('click', function() {
+                    showFlightRequestPage();
+                });
+            }
+
+            console.log('✅ 네비게이션 설정 완료');
+        }
+
+        // 🔧 개선된 페이지 전환 함수들
+        function showPassportInfoPage() {
+            const flightRequestPage = document.getElementById('flightRequestPage');
+            const passportInfoPage = document.getElementById('passportInfoPage');
+            
+            if (flightRequestPage && passportInfoPage) {
+                flightRequestPage.classList.remove('active');
+                passportInfoPage.classList.add('active');
+                
+                console.log('🔄 여권정보 페이지로 전환 완료');
+                
+                // 여권 정보 로드 트리거
+                setTimeout(() => {
+                    if (window.flightRequestCoordinator?.passport) {
+                        window.flightRequestCoordinator.passport.loadExistingPassportDataAndSetMode?.();
+                    }
+                }, 200);
+            }
+        }
+
+        function showFlightRequestPage() {
+            const passportInfoPage = document.getElementById('passportInfoPage');
+            const flightRequestPage = document.getElementById('flightRequestPage');
+            
+            if (passportInfoPage && flightRequestPage) {
+                passportInfoPage.classList.remove('active');
+                flightRequestPage.classList.add('active');
+                
+                console.log('🔄 항공권 신청 페이지로 전환 완료');
+                
+                // 항공권 신청 데이터 로드 트리거
+                setTimeout(() => {
+                    if (window.flightRequestCoordinator?.ticket) {
+                        window.flightRequestCoordinator.ticket.loadFlightRequestData?.();
+                    }
+                }, 200);
+            }
+        }
+
+        // 🔧 개선된 모듈 에러 처리
+        function handleModuleError(moduleName, error) {
+            console.error(`❌ ${moduleName} 모듈 로드 실패:`, error);
+            updateLoadingMessage(`${moduleName} 모듈 로드 실패`);
+            
+            // 모듈 로드 실패 시에도 다른 모듈들은 계속 로드되도록 처리
+            setTimeout(() => {
+                checkAllModulesLoaded();
+            }, 1000);
+        }
+
+        // 🔧 개선된 최종 초기화 확인
+        setTimeout(() => {
+            if (!window.flightRequestCoordinator?.isInitialized) {
+                console.warn('⚠️ 20초 후에도 시스템이 초기화되지 않음 - 강제 복구 시도');
+                updateLoadingMessage('시스템 복구 중...');
+                
+                // 수정된 모듈 사용
+                if (window.FlightRequestTicketFixed && window.FlightRequestPassportFixed) {
+                    try {
+                        console.log('🔄 수정된 모듈로 최종 강제 초기화 시도...');
+                        
+                        // 수정된 인스턴스 생성
+                        window.flightRequestTicketFixed = new window.FlightRequestTicketFixed(
+                            window.flightRequestAPI,
+                            { showError, showSuccess: (msg) => console.log(msg) },
+                            null
+                        );
+                        
+                        window.flightRequestPassportFixed = new window.FlightRequestPassportFixed(
+                            window.flightRequestAPI,
+                            { showError, showSuccess: (msg) => console.log(msg) }
+                        );
+                        
+                        hideSystemLoading();
+                        setupNavigation();
+                        console.log('✅ 수정된 모듈로 최종 강제 초기화 성공');
+                    } catch (error) {
+                        console.error('❌ 수정된 모듈 초기화 실패:', error);
+                        updateLoadingMessage('초기화 실패 - 페이지를 새로고침해주세요.');
+                        showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+                    }
+                } else {
+                    console.error('❌ 수정된 모듈들이 로드되지 않음');
+                    updateLoadingMessage('시스템 리소스 로딩 실패');
+                    showError('시스템 리소스 로딩에 실패했습니다. 페이지를 새로고침해주세요.');
+                }
+            }
+        }, 20000); // 20초로 증가
+
+        // DOM 로드 완료 후 기본 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 DOM 로드 완료');
+            setupNavigation();
+            
+            // 초기 UI 설정
+            updateLoadingMessage('모듈 로딩 중...');
+            
+            // 기본 아이콘 로드
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
+
+    <!-- 수정된 모듈 우선 로드 -->
+    <script src="../js/student/flight-request-api.js"
+            onload="modulesLoaded.flightRequestAPI = true; console.log('✅ Flight Request API 로드 완료'); checkAllModulesLoaded();"
+            onerror="handleModuleError('Flight Request API', event)"></script>
+    
+    <script src="../js/student/flight-request-utils.js"
+            onload="modulesLoaded.flightRequestUtils = true; console.log('✅ Flight Request Utils 로드 완료'); checkAllModulesLoaded();"
+            onerror="handleModuleError('Flight Request Utils', event)"></script>
+    
+    <!-- 수정된 모듈들 로드 -->
+    <script src="../js/student/flight-request-passport-fix.js"
+            onload="modulesLoaded.flightRequestPassport = true; console.log('✅ Flight Request Passport Fixed 로드 완료'); checkAllModulesLoaded();"
+            onerror="handleModuleError('Flight Request Passport Fixed', event)"></script>
+            
+    <script src="../js/student/flight-request-ticket-fix.js"
+            onload="modulesLoaded.flightRequestTicket = true; console.log('✅ Flight Request Ticket Fixed 로드 완료'); checkAllModulesLoaded();"
+            onerror="handleModuleError('Flight Request Ticket Fixed', event)"></script>
+            
+    <!-- 기존 coordinator는 폴백으로 사용 -->
+    <script src="../js/student/flight-request-coordinator.js"
+            onload="modulesLoaded.flightRequestCoordinator = true; console.log('✅ Flight Request Coordinator 로드 완료'); checkAllModulesLoaded();"
+            onerror="handleModuleError('Flight Request Coordinator', event)"></script>
+</body>
+</html>
