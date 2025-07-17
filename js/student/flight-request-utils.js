@@ -276,15 +276,15 @@ class FlightRequestUtils {
                     console.warn('⚠️ [Utils] v8.2.8: DB 마지노선 날짜 검증 실패:', dbDateError.message);
                 }
             }
-
             console.log('✅ [Utils] v8.2.8: 순수 항공권 날짜 관계 검증 완료 (DB 마지노선 포함):', {
-                출국일범위: `${arrivalMinus2.toISOString().split('T')[0]} < ${departureDate} < ${arrivalDate}`,
-                귀국일기본범위: `${workEndDate} < ${returnDate} < ${workEndPlus10.toISOString().split('T')[0]}`,
-                귀국일마지노선: requiredReturnDate ? `${returnDate} ≤ ${requiredReturnDate}` : '설정안됨',
-                검증결과: validation.valid,
-                3가지검증: '출국일범위 + 귀국일기본범위 + 귀국일마지노선',
-                초기화신호완료: '✅ v8.2.8'
+               '출국일범위': `${arrivalMinus2.toISOString().split('T')[0]} < ${departureDate} < ${arrivalDate}`,
+               '귀국일기본범위': `${workEndDate} < ${returnDate} < ${workEndPlus10.toISOString().split('T')[0]}`,
+               '귀국일마지노선': requiredReturnDate ? `${returnDate} <= ${requiredReturnDate}` : '설정안됨',
+               '검증결과': validation.valid,
+               '3가지검증': '출국일범위 + 귀국일기본범위 + 귀국일마지노선',
+               '초기화신호완료': '✅ v8.2.8'
             });
+            
 
         } catch (error) {
             validation.errors.push('날짜 형식이 올바르지 않습니다');
