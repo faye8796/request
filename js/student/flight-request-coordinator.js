@@ -111,7 +111,8 @@ class FlightRequestCoordinator {
             const check = () => {
                 const apiExists = !!window.flightRequestAPI;
                 const apiInitialized = window.flightRequestAPI?.isInitialized;
-                const utilsReady = !!(window.FlightRequestUtils || window.flightRequestUtils);
+                // 🔧 HOTFIX: window.utilsReady 플래그 확인 (utils v8.2.8과 일치)
+                const utilsReady = window.utilsReady === true;
                 const passportClassReady = !!window.FlightRequestPassport;
                 const ticketClassReady = !!window.FlightRequestTicket;
                 
@@ -952,7 +953,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 전역 스코프에 클래스 노출
 window.FlightRequestCoordinator = FlightRequestCoordinator;
 
-console.log('✅ FlightRequestCoordinator v1.0.0 모듈 로드 완료 - Phase 3 통합 조정자');
+console.log('✅ FlightRequestCoordinator v1.0.0 모듈 로드 완료 - Phase 3 통합 조정자 (HOTFIX: utilsReady 체크 수정)');
+console.log('🔧 HOTFIX 수정사항:', {
+    problem: 'utilsReady: false 무한 루프 문제',
+    solution: 'window.utilsReady === true 플래그 확인으로 수정',
+    before: 'window.FlightRequestUtils || window.flightRequestUtils 존재 확인',
+    after: 'window.utilsReady === true 명시적 플래그 확인',
+    compatibility: 'utils v8.2.8의 window.utilsReady = true와 완전 일치'
+});
 console.log('🚀 Phase 3 핵심 기능:', {
     모듈통합관리: 'passport와 ticket 모듈 통합 조정',
     이벤트버스시스템: '모듈 간 느슨한 결합 통신',
