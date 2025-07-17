@@ -497,14 +497,6 @@ class FlightRequestUtils {
         // 유효 범위 내 여부
         result.inValidRange = activityDays >= minimumDays && activityDays <= maximumDays;
 
-        console.log('✅ [Utils] v8.2.8: 하드코딩 제거 완료 - 범위 검증:', {
-            활동일: activityDays,
-            사용된최소요구일: minimumDays,
-            사용된최대허용일: maximumDays,
-            기존하드코딩값: '180일/210일 → 제거됨',
-            검증결과: result.valid,
-            초기화신호: '✅ v8.2.8 완료'
-        });
 
         return result;
     }
