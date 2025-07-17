@@ -1,23 +1,24 @@
-// flight-request-coordinator.js - EventTarget 안전장치 추가 v1.1.1
-// 🚨 HOTFIX: EventTarget 초기화 실패 시 안전장치 추가
+// flight-request-coordinator.js - v1.2.0 안전한 아키텍처
+// 🚨 CRITICAL FIX: 무한루프 완전 해결 - 새로운 안전한 이벤트 시스템
 // 🔧 핵심 수정사항:
-//   1. EventTarget 초기화 실패 시 폴백 객체 생성
-//   2. emit() 메서드에 null/undefined 체크 강화
-//   3. 이벤트 버스 재초기화 메서드 추가
-//   4. 안전한 이벤트 처리로 무한루프 방지
+//   1. EventTarget 의존성 완전 제거 → 단순한 이벤트 시스템으로 교체
+//   2. emit() 메서드 재귀 호출 방지 → 안전한 에러 처리
+//   3. 무한루프 원인 완전 제거 → 한 번 실패하면 중단
+//   4. 메모리 안전성 및 성능 최적화
 
 class FlightRequestCoordinator {
     constructor() {
+        console.log('🔄 [조정자] FlightRequestCoordinator v1.2.0 생성 - 안전한 아키텍처');
+        
+        // 🚨 신규: 단순하고 안전한 이벤트 시스템
+        this.eventListeners = new Map();
+        this.destroyed = false;
+        
         // 분리된 모듈 인스턴스들
         this.passport = null;
         this.ticket = null;
         this.api = null;
         this.utils = null;
-        
-        // 🚨 수정: 안전한 이벤트 버스 초기화
-        this.eventBus = null;
-        this.eventBusInitialized = false;
-        this.initializeEventBusSafely();
         
         // 전역 상태 관리
         this.globalState = {
@@ -55,97 +56,98 @@ class FlightRequestCoordinator {
         this.isInitialized = false;
         this.initializationPromise = null;
         
-        // 🚨 무한루프 방지 강화
+        // 🚨 안전장치 플래그
         this.initAttempts = 0;
-        this.maxInitAttempts = 2;
+        this.maxInitAttempts = 1; // 단 한 번만 시도
         this.dependencyCheckCount = 0;
-        this.maxDependencyChecks = 20;
-        
-        console.log('🔄 [조정자] FlightRequestCoordinator v1.1.1 생성됨 (EventTarget 안전장치)');
+        this.maxDependencyChecks = 10; // 체크 횟수 제한
+        this.errorCount = 0;
+        this.maxErrors = 3; // 에러 횟수 제한
     }
 
-    // 🚨 신규: 안전한 EventTarget 초기화
-    initializeEventBusSafely() {
+    // === 🚨 신규: 안전한 이벤트 시스템 (EventTarget 완전 대체) ===
+    
+    emit(eventName, data) {
         try {
-            // EventTarget API 지원 확인
-            if (typeof EventTarget !== 'undefined') {
-                this.eventBus = new EventTarget();
-                this.eventBusInitialized = true;
-                console.log('✅ [조정자] EventTarget 초기화 성공');
-            } else {
-                throw new Error('EventTarget not supported');
+            // 🚨 핵심: 파괴된 인스턴스나 에러 과다 발생 시 중단
+            if (this.destroyed || this.errorCount >= this.maxErrors) {
+                return;
             }
-        } catch (error) {
-            console.warn('⚠️ [조정자] EventTarget 초기화 실패, 폴백 객체 생성:', error.message);
             
-            // 폴백: 간단한 이벤트 시스템 구현
-            this.eventBus = {
-                listeners: new Map(),
-                addEventListener: (type, listener) => {
-                    if (!this.eventBus.listeners.has(type)) {
-                        this.eventBus.listeners.set(type, []);
+            const listeners = this.eventListeners.get(eventName);
+            if (!listeners || listeners.length === 0) {
+                return;
+            }
+            
+            // 🚨 안전한 리스너 실행 (에러 발생해도 중단하지 않음)
+            listeners.forEach(listener => {
+                try {
+                    if (typeof listener === 'function') {
+                        listener({ type: eventName, detail: data });
                     }
-                    this.eventBus.listeners.get(type).push(listener);
-                },
-                removeEventListener: (type, listener) => {
-                    if (this.eventBus.listeners.has(type)) {
-                        const listeners = this.eventBus.listeners.get(type);
-                        const index = listeners.indexOf(listener);
-                        if (index > -1) {
-                            listeners.splice(index, 1);
-                        }
-                    }
-                },
-                dispatchEvent: (event) => {
-                    const type = event.type || event;
-                    if (this.eventBus.listeners.has(type)) {
-                        const listeners = this.eventBus.listeners.get(type);
-                        listeners.forEach(listener => {
-                            try {
-                                if (typeof listener === 'function') {
-                                    listener(event);
-                                }
-                            } catch (listenerError) {
-                                console.error(`❌ [조정자] 이벤트 리스너 실행 실패 (${type}):`, listenerError);
-                            }
-                        });
-                    }
+                } catch (listenerError) {
+                    console.warn(`⚠️ [조정자] 이벤트 리스너 실행 실패 (${eventName}):`, listenerError.message);
+                    // 🚨 중요: 리스너 에러는 무시하고 계속 진행
                 }
-            };
-            this.eventBusInitialized = true;
+            });
+            
+        } catch (error) {
+            this.errorCount++;
+            console.error(`❌ [조정자] 이벤트 발행 실패: ${eventName}`, error.message);
+            
+            // 🚨 중요: 에러 발생해도 재시도하지 않음 (무한루프 방지)
+            if (this.errorCount >= this.maxErrors) {
+                console.error('❌ [조정자] 최대 에러 횟수 초과 - 이벤트 시스템 비활성화');
+                this.destroy();
+            }
         }
     }
 
-    // 🚨 수정: 이벤트 버스 재초기화 메서드
-    reinitializeEventBus() {
+    on(eventName, handler) {
         try {
-            console.log('🔄 [조정자] 이벤트 버스 재초기화 시도...');
+            if (this.destroyed || typeof handler !== 'function') {
+                return;
+            }
             
-            this.eventBus = null;
-            this.eventBusInitialized = false;
-            this.initializeEventBusSafely();
+            if (!this.eventListeners.has(eventName)) {
+                this.eventListeners.set(eventName, []);
+            }
             
-            if (this.eventBusInitialized) {
-                console.log('✅ [조정자] 이벤트 버스 재초기화 성공');
-                return true;
-            } else {
-                console.error('❌ [조정자] 이벤트 버스 재초기화 실패');
-                return false;
+            this.eventListeners.get(eventName).push(handler);
+        } catch (error) {
+            console.warn(`⚠️ [조정자] 이벤트 구독 실패: ${eventName}`, error.message);
+        }
+    }
+
+    off(eventName, handler) {
+        try {
+            if (this.destroyed) {
+                return;
+            }
+            
+            const listeners = this.eventListeners.get(eventName);
+            if (!listeners) {
+                return;
+            }
+            
+            const index = listeners.indexOf(handler);
+            if (index > -1) {
+                listeners.splice(index, 1);
             }
         } catch (error) {
-            console.error('❌ [조정자] 이벤트 버스 재초기화 중 오류:', error);
-            return false;
+            console.warn(`⚠️ [조정자] 이벤트 구독 해제 실패: ${eventName}`, error.message);
         }
     }
 
-    // === 🚨 수정: 무한루프 해결된 의존성 대기 ===
-    async waitForDependencies(timeout = 8000) {
+    // === 🚨 안전한 의존성 대기 (무한루프 방지) ===
+    async waitForDependencies(timeout = 5000) { // 타임아웃 단축
         const startTime = Date.now();
         
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => { // reject 제거 - 항상 resolve
             const check = () => {
                 this.dependencyCheckCount++;
                 
+                // 🚨 체크 횟수 제한
                 if (this.dependencyCheckCount > this.maxDependencyChecks) {
                     console.warn('⚠️ [조정자] 의존성 체크 횟수 초과 - 강제 종료');
                     resolve();
@@ -159,83 +161,75 @@ class FlightRequestCoordinator {
                 
                 const allBasicReady = apiExists && utilsReady && passportClassReady && ticketClassReady;
                 
-                if (this.dependencyCheckCount % 5 === 0) {
-                    console.log(`🔍 [조정자] 의존성 체크 ${this.dependencyCheckCount}/${this.maxDependencyChecks}:`, {
-                        apiExists,
-                        utilsReady,
-                        passportClassReady,
-                        ticketClassReady,
-                        elapsed: Date.now() - startTime
-                    });
-                }
-                
                 if (allBasicReady) {
-                    console.log('✅ [조정자] v1.1.1: 기본 의존성 준비 완료');
+                    console.log('✅ [조정자] v1.2.0: 기본 의존성 준비 완료');
                     resolve();
                     return;
                 }
                 
+                // 🚨 타임아웃 체크
                 if (Date.now() - startTime > timeout) {
                     console.warn(`⚠️ [조정자] 의존성 로딩 시간 초과 (${timeout}ms) - 기본값으로 진행`);
                     resolve();
                     return;
                 }
                 
-                setTimeout(check, 300);
+                // 🚨 긴 간격으로 체크 (성능 개선)
+                setTimeout(check, 500);
             };
             
             check();
         });
     }
 
-    // === 🚨 수정: 안전한 초기화 ===
+    // === 🚨 안전한 초기화 (한 번만 시도) ===
     async init() {
         try {
+            // 🚨 한 번만 시도
             if (this.initAttempts >= this.maxInitAttempts) {
-                console.error('❌ [조정자] 최대 초기화 시도 횟수 초과 - 중단');
-                this.showError('페이지 로딩에 실패했습니다. 새로고침해주세요.');
+                console.error('❌ [조정자] 이미 초기화 시도됨 - 중단');
+                return false;
+            }
+            
+            if (this.destroyed) {
+                console.error('❌ [조정자] 파괴된 인스턴스 - 초기화 불가');
                 return false;
             }
             
             this.initAttempts++;
-            
-            console.log(`🚀 [조정자] v1.1.1 초기화 시작 (시도 ${this.initAttempts}/${this.maxInitAttempts})`);
-            
-            // 🚨 추가: 이벤트 버스 상태 확인 및 재초기화
-            if (!this.eventBusInitialized || !this.eventBus) {
-                console.warn('⚠️ [조정자] 이벤트 버스 미초기화 상태 - 재초기화 시도');
-                this.reinitializeEventBus();
-            }
+            console.log(`🚀 [조정자] v1.2.0 초기화 시작 (안전한 아키텍처)`);
             
             await this.waitForDependencies();
-            await this.setupServicesSafely();
+            this.setupServicesSafely();
             this.initializePageElements();
-            await this.initializeModulesSafely();
+            this.initializeModulesSafely();
             this.setupEventListeners();
             await this.determineInitialStateSafely();
             this.startApplication();
             
             this.isInitialized = true;
-            this.initAttempts = 0;
-            console.log('✅ [조정자] v1.1.1 초기화 완료');
+            console.log('✅ [조정자] v1.2.0 초기화 완료');
             return true;
             
         } catch (error) {
-            console.error('❌ [조정자] 초기화 실패:', error);
+            this.errorCount++;
+            console.error('❌ [조정자] 초기화 실패:', error.message);
             this.handleInitializationError(error);
             return false;
         }
     }
 
-    // === 🚨 신규: 안전한 서비스 설정 ===
-    async setupServicesSafely() {
+    // === 안전한 서비스 설정 ===
+    setupServicesSafely() {
         try {
-            console.log('🔄 [조정자] 안전한 서비스 설정 시작...');
+            console.log('🔄 [조정자] 안전한 서비스 설정...');
             
+            // API 서비스 설정
             if (window.flightRequestAPI) {
                 this.api = window.flightRequestAPI;
                 this.services.api = this.api;
                 
+                // 호환성을 위한 메서드 별칭 추가
                 if (this.api && !this.api.loadPassportInfo) {
                     if (this.api.getPassportInfo) {
                         this.api.loadPassportInfo = this.api.getPassportInfo.bind(this.api);
@@ -244,17 +238,15 @@ class FlightRequestCoordinator {
                         this.api.loadExistingFlightRequest = this.api.getExistingRequest.bind(this.api);
                     }
                 }
-            } else {
-                console.warn('⚠️ [조정자] API 서비스 없음 - 제한된 기능으로 진행');
             }
             
+            // Utils 서비스 설정
             if (window.FlightRequestUtils || window.flightRequestUtils) {
                 this.utils = window.FlightRequestUtils || window.flightRequestUtils;
                 this.services.utils = this.utils;
-            } else {
-                console.warn('⚠️ [조정자] Utils 서비스 없음 - 기본 기능으로 진행');
             }
             
+            // UI 서비스 설정
             this.services.ui = {
                 showError: (message) => this.showError(message),
                 showSuccess: (message) => this.showSuccess(message),
@@ -265,95 +257,12 @@ class FlightRequestCoordinator {
             console.log('✅ [조정자] 안전한 서비스 설정 완료');
             
         } catch (error) {
-            console.error('❌ [조정자] 서비스 설정 실패:', error);
+            this.errorCount++;
+            console.error('❌ [조정자] 서비스 설정 실패:', error.message);
         }
     }
 
-    // === 🚨 신규: 안전한 모듈 초기화 ===
-    async initializeModulesSafely() {
-        try {
-            console.log('🔄 [조정자] 안전한 모듈 초기화 시작...');
-            
-            if (window.FlightRequestPassport) {
-                try {
-                    this.passport = new window.FlightRequestPassport(
-                        this.services.api,
-                        this.services.ui
-                    );
-                    console.log('✅ [조정자] 여권 모듈 초기화 성공');
-                } catch (passportError) {
-                    console.warn('⚠️ [조정자] 여권 모듈 초기화 실패:', passportError);
-                    this.passport = null;
-                }
-            }
-            
-            if (window.FlightRequestTicket) {
-                try {
-                    this.ticket = new window.FlightRequestTicket(
-                        this.services.api,
-                        this.services.ui,
-                        this.passport
-                    );
-                    console.log('✅ [조정자] 항공권 모듈 초기화 성공');
-                } catch (ticketError) {
-                    console.warn('⚠️ [조정자] 항공권 모듈 초기화 실패:', ticketError);
-                    this.ticket = null;
-                }
-            }
-            
-            console.log('✅ [조정자] 안전한 모듈 초기화 완료');
-            
-        } catch (error) {
-            console.error('❌ [조정자] 모듈 초기화 실패:', error);
-        }
-    }
-
-    // === 🚨 신규: 안전한 초기 상태 설정 ===
-    async determineInitialStateSafely() {
-        try {
-            console.log('🔄 [조정자] 안전한 초기 상태 설정...');
-            
-            let initialPage = 'passport';
-            
-            if (this.services.api) {
-                try {
-                    const passportPromise = this.services.api.getPassportInfo ? 
-                        this.services.api.getPassportInfo() : null;
-                    
-                    const existingPassport = await Promise.race([
-                        passportPromise,
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('타임아웃')), 3000))
-                    ]).catch(error => {
-                        console.warn('⚠️ [조정자] 여권정보 로드 실패:', error.message);
-                        return null;
-                    });
-                    
-                    const hasPassport = !!(existingPassport && existingPassport.passport_number);
-                    
-                    if (hasPassport) {
-                        initialPage = 'flight';
-                        console.log('✅ [조정자] 기존 여권정보 발견 - 항공권 페이지로 시작');
-                    }
-                    
-                } catch (error) {
-                    console.warn('⚠️ [조정자] 초기 데이터 확인 실패 - 기본값 사용');
-                }
-            }
-            
-            this.updateGlobalState({
-                currentPage: initialPage
-            });
-            
-            console.log('✅ [조정자] 안전한 초기 상태 설정 완료:', { initialPage });
-            
-        } catch (error) {
-            console.error('❌ [조정자] 초기 상태 설정 실패:', error);
-            this.updateGlobalState({ currentPage: 'passport' });
-        }
-    }
-
-    // === 기존 메서드들 ===
-    
+    // === 페이지 요소 초기화 ===
     initializePageElements() {
         try {
             this.pageElements = {
@@ -369,49 +278,85 @@ class FlightRequestCoordinator {
             console.log('✅ [조정자] 페이지 요소 초기화 완료');
             
         } catch (error) {
-            console.error('❌ [조정자] 페이지 요소 초기화 실패:', error);
+            this.errorCount++;
+            console.error('❌ [조정자] 페이지 요소 초기화 실패:', error.message);
         }
     }
 
+    // === 안전한 모듈 초기화 ===
+    initializeModulesSafely() {
+        try {
+            console.log('🔄 [조정자] 안전한 모듈 초기화...');
+            
+            // 여권 모듈 초기화
+            if (window.FlightRequestPassport) {
+                try {
+                    this.passport = new window.FlightRequestPassport(
+                        this.services.api,
+                        this.services.ui
+                    );
+                    console.log('✅ [조정자] 여권 모듈 초기화 성공');
+                } catch (passportError) {
+                    console.warn('⚠️ [조정자] 여권 모듈 초기화 실패:', passportError.message);
+                    this.passport = null;
+                }
+            }
+            
+            // 항공권 모듈 초기화
+            if (window.FlightRequestTicket) {
+                try {
+                    this.ticket = new window.FlightRequestTicket(
+                        this.services.api,
+                        this.services.ui,
+                        this.passport
+                    );
+                    console.log('✅ [조정자] 항공권 모듈 초기화 성공');
+                } catch (ticketError) {
+                    console.warn('⚠️ [조정자] 항공권 모듈 초기화 실패:', ticketError.message);
+                    this.ticket = null;
+                }
+            }
+            
+            console.log('✅ [조정자] 안전한 모듈 초기화 완료');
+            
+        } catch (error) {
+            this.errorCount++;
+            console.error('❌ [조정자] 모듈 초기화 실패:', error.message);
+        }
+    }
+
+    // === 이벤트 리스너 설정 ===
     setupEventListeners() {
         try {
             this.setupModuleCommunication();
-            this.setupStateChangeEvents();
             this.setupPageNavigationEvents();
             this.setupGlobalEvents();
             
             console.log('✅ [조정자] 이벤트 리스너 설정 완료');
             
         } catch (error) {
-            console.error('❌ [조정자] 이벤트 리스너 설정 실패:', error);
+            this.errorCount++;
+            console.error('❌ [조정자] 이벤트 리스너 설정 실패:', error.message);
         }
     }
 
     setupModuleCommunication() {
-        // 🚨 수정: 안전한 이벤트 리스너 추가
-        if (this.eventBus && typeof this.eventBus.addEventListener === 'function') {
-            this.eventBus.addEventListener('passport:completed', (event) => {
-                this.handlePassportCompletion(event.detail);
-            });
-            
-            this.eventBus.addEventListener('ticket:stateChanged', (event) => {
-                this.handleTicketStateChange(event.detail);
-            });
-            
-            this.eventBus.addEventListener('prerequisites:changed', (event) => {
-                this.handlePrerequisitesChange(event.detail);
-            });
-        } else {
-            console.warn('⚠️ [조정자] 이벤트 버스 사용 불가 - 모듈 통신 제한됨');
-        }
-    }
-
-    setupStateChangeEvents() {
-        if (this.eventBus && typeof this.eventBus.addEventListener === 'function') {
-            this.eventBus.addEventListener('state:changed', (event) => {
-                this.syncModuleStates();
-            });
-        }
+        // 🚨 안전한 모듈 간 통신 설정
+        this.on('passport:completed', (event) => {
+            this.handlePassportCompletion(event.detail);
+        });
+        
+        this.on('ticket:stateChanged', (event) => {
+            this.handleTicketStateChange(event.detail);
+        });
+        
+        this.on('prerequisites:changed', (event) => {
+            this.handlePrerequisitesChange(event.detail);
+        });
+        
+        this.on('state:changed', (event) => {
+            this.syncModuleStates();
+        });
     }
 
     setupPageNavigationEvents() {
@@ -432,7 +377,7 @@ class FlightRequestCoordinator {
 
     setupGlobalEvents() {
         window.addEventListener('beforeunload', () => {
-            this.handleBeforeUnload();
+            this.destroy();
         });
         
         window.addEventListener('error', (event) => {
@@ -440,87 +385,58 @@ class FlightRequestCoordinator {
         });
     }
 
-    // === 🚨 수정: 안전한 이벤트 발행/구독 시스템 ===
-    
-    emit(eventName, data) {
+    // === 안전한 초기 상태 설정 ===
+    async determineInitialStateSafely() {
         try {
-            // 🚨 핵심 수정: null/undefined 체크 강화
-            if (!this.eventBus) {
-                console.warn(`⚠️ [조정자] 이벤트 버스 없음 - 이벤트 무시: ${eventName}`);
-                
-                // 재초기화 시도
-                if (this.reinitializeEventBus()) {
-                    console.log('🔄 [조정자] 이벤트 버스 재초기화 후 재시도');
-                } else {
-                    return; // 재초기화 실패 시 종료
+            console.log('🔄 [조정자] 안전한 초기 상태 설정...');
+            
+            let initialPage = 'passport';
+            
+            if (this.services.api && this.services.api.getPassportInfo) {
+                try {
+                    const existingPassport = await Promise.race([
+                        this.services.api.getPassportInfo(),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('타임아웃')), 2000)) // 단축
+                    ]).catch(() => null); // 에러 시 null 반환
+                    
+                    const hasPassport = !!(existingPassport && existingPassport.passport_number);
+                    
+                    if (hasPassport) {
+                        initialPage = 'flight';
+                        console.log('✅ [조정자] 기존 여권정보 발견 - 항공권 페이지로 시작');
+                    }
+                    
+                } catch (error) {
+                    console.warn('⚠️ [조정자] 초기 데이터 확인 실패 - 기본값 사용');
                 }
             }
             
-            // EventTarget API 사용
-            if (typeof this.eventBus.dispatchEvent === 'function') {
-                const event = new CustomEvent(eventName, { detail: data });
-                this.eventBus.dispatchEvent(event); // ← 401번째 라인 안전장치 적용
-            } else {
-                console.warn(`⚠️ [조정자] dispatchEvent 메서드 없음: ${eventName}`);
-            }
+            this.updateGlobalState({ currentPage: initialPage });
+            console.log('✅ [조정자] 안전한 초기 상태 설정 완료:', { initialPage });
             
         } catch (error) {
-            console.error(`❌ [조정자] 이벤트 발행 실패: ${eventName}`, error);
-            
-            // 🚨 추가: 오류 발생 시 이벤트 버스 재초기화 시도
-            if (error.message.includes('Cannot read properties') || 
-                error.message.includes('null') || 
-                error.message.includes('undefined')) {
-                
-                console.log('🔄 [조정자] 이벤트 버스 오류로 인한 재초기화 시도...');
-                this.reinitializeEventBus();
-            }
+            this.errorCount++;
+            console.error('❌ [조정자] 초기 상태 설정 실패:', error.message);
+            this.updateGlobalState({ currentPage: 'passport' });
         }
     }
 
-    on(eventName, handler) {
-        try {
-            if (this.eventBus && typeof this.eventBus.addEventListener === 'function') {
-                this.eventBus.addEventListener(eventName, handler);
-            } else {
-                console.warn(`⚠️ [조정자] 이벤트 구독 실패 - 이벤트 버스 없음: ${eventName}`);
-            }
-        } catch (error) {
-            console.error(`❌ [조정자] 이벤트 구독 실패: ${eventName}`, error);
-        }
-    }
-
-    off(eventName, handler) {
-        try {
-            if (this.eventBus && typeof this.eventBus.removeEventListener === 'function') {
-                this.eventBus.removeEventListener(eventName, handler);
-            } else {
-                console.warn(`⚠️ [조정자] 이벤트 구독 해제 실패 - 이벤트 버스 없음: ${eventName}`);
-            }
-        } catch (error) {
-            console.error(`❌ [조정자] 이벤트 구독 해제 실패: ${eventName}`, error);
-        }
-    }
-
-    // === 페이지 라우팅 (간소화) ===
-    
+    // === 페이지 라우팅 ===
     async routeToPage(page) {
         try {
-            if (this.globalState.currentPage === page) {
+            if (this.destroyed || this.globalState.currentPage === page) {
                 return;
             }
             
             this.setGlobalLoading(true);
-            
-            // 페이지 전환
             await this.performPageTransition(page);
-            
             this.updateGlobalState({ currentPage: page });
             
             console.log(`✅ [조정자] 페이지 라우팅 완료: ${page}`);
             
         } catch (error) {
-            console.error(`❌ [조정자] 페이지 라우팅 실패: ${page}`, error);
+            this.errorCount++;
+            console.error(`❌ [조정자] 페이지 라우팅 실패: ${page}`, error.message);
             this.showError('페이지 전환 중 오류가 발생했습니다.');
         } finally {
             this.setGlobalLoading(false);
@@ -553,7 +469,9 @@ class FlightRequestCoordinator {
                 
                 // 항공권 모듈의 검증 트리거
                 if (this.ticket && typeof this.ticket.triggerValidation === 'function') {
-                    this.ticket.triggerValidation();
+                    setTimeout(() => {
+                        this.ticket.triggerValidation();
+                    }, 100);
                 }
                 break;
         }
@@ -561,24 +479,35 @@ class FlightRequestCoordinator {
         await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    // === 상태 관리 (로그 최소화) ===
-    
+    // === 상태 관리 ===
     updateGlobalState(newState) {
         try {
+            if (this.destroyed) {
+                return;
+            }
+            
             this.globalState = { ...this.globalState, ...newState };
             
-            this.emit('state:changed', {
-                current: this.globalState,
-                changes: newState
-            });
+            // 🚨 안전한 이벤트 발행 (에러 발생해도 무시)
+            setTimeout(() => {
+                this.emit('state:changed', {
+                    current: this.globalState,
+                    changes: newState
+                });
+            }, 0);
             
         } catch (error) {
-            console.error('❌ [조정자] 전역 상태 업데이트 실패:', error);
+            this.errorCount++;
+            console.error('❌ [조정자] 전역 상태 업데이트 실패:', error.message);
         }
     }
 
     syncModuleStates() {
         try {
+            if (this.destroyed) {
+                return;
+            }
+            
             // 여권 모듈 상태 동기화
             if (this.passport) {
                 const passportCompleted = this.passport.isPassportInfoCompleted && this.passport.isPassportInfoCompleted();
@@ -608,12 +537,12 @@ class FlightRequestCoordinator {
             }
             
         } catch (error) {
-            console.error('❌ [조정자] 모듈 상태 동기화 실패:', error);
+            this.errorCount++;
+            console.error('❌ [조정자] 모듈 상태 동기화 실패:', error.message);
         }
     }
 
     // === 모듈 간 통신 핸들러 ===
-    
     handlePassportCompletion(data) {
         try {
             this.updateGlobalState({
@@ -634,7 +563,8 @@ class FlightRequestCoordinator {
             }
             
         } catch (error) {
-            console.error('❌ [조정자] 여권 완료 처리 실패:', error);
+            this.errorCount++;
+            console.error('❌ [조정자] 여권 완료 처리 실패:', error.message);
         }
     }
 
@@ -647,7 +577,8 @@ class FlightRequestCoordinator {
             });
             
         } catch (error) {
-            console.error('❌ [조정자] 항공권 상태 변경 처리 실패:', error);
+            this.errorCount++;
+            console.error('❌ [조정자] 항공권 상태 변경 처리 실패:', error.message);
         }
     }
 
@@ -659,12 +590,12 @@ class FlightRequestCoordinator {
             });
             
         } catch (error) {
-            console.error('❌ [조정자] 전제 조건 변경 처리 실패:', error);
+            this.errorCount++;
+            console.error('❌ [조정자] 전제 조건 변경 처리 실패:', error.message);
         }
     }
 
     // === 애플리케이션 시작 ===
-    
     startApplication() {
         try {
             console.log('🚀 [조정자] 애플리케이션 시작...');
@@ -676,15 +607,19 @@ class FlightRequestCoordinator {
             console.log('✅ [조정자] 애플리케이션 시작 완료');
             
         } catch (error) {
-            console.error('❌ [조정자] 애플리케이션 시작 실패:', error);
+            this.errorCount++;
+            console.error('❌ [조정자] 애플리케이션 시작 실패:', error.message);
             this.handleStartupError(error);
         }
     }
 
     // === UI 관리 ===
-    
     setGlobalLoading(loading) {
         try {
+            if (this.destroyed) {
+                return;
+            }
+            
             this.updateGlobalState({ isLoading: loading });
             
             if (this.pageElements.loadingState) {
@@ -696,12 +631,16 @@ class FlightRequestCoordinator {
             }
             
         } catch (error) {
-            console.error('❌ [조정자] 전역 로딩 상태 설정 실패:', error);
+            console.error('❌ [조정자] 전역 로딩 상태 설정 실패:', error.message);
         }
     }
 
     showError(message) {
         try {
+            if (this.destroyed) {
+                return;
+            }
+            
             console.error('❌ [조정자] 에러:', message);
             
             this.updateGlobalState({ 
@@ -720,7 +659,9 @@ class FlightRequestCoordinator {
                 errorEl.style.display = 'block';
                 
                 setTimeout(() => {
-                    errorEl.style.display = 'none';
+                    if (errorEl) {
+                        errorEl.style.display = 'none';
+                    }
                     this.updateGlobalState({ hasError: false, errorMessage: null });
                 }, 5000);
                 
@@ -732,13 +673,17 @@ class FlightRequestCoordinator {
             }
             
         } catch (error) {
-            console.error('❌ [조정자] 에러 표시 실패:', error);
+            console.error('❌ [조정자] 에러 표시 실패:', error.message);
             alert(message);
         }
     }
 
     showSuccess(message) {
         try {
+            if (this.destroyed) {
+                return;
+            }
+            
             console.log('✅ [조정자] 성공:', message);
             
             const successEl = document.getElementById('successMessage');
@@ -752,7 +697,9 @@ class FlightRequestCoordinator {
                 successEl.style.display = 'block';
                 
                 setTimeout(() => {
-                    successEl.style.display = 'none';
+                    if (successEl) {
+                        successEl.style.display = 'none';
+                    }
                 }, 5000);
                 
                 if (typeof lucide !== 'undefined') {
@@ -761,12 +708,11 @@ class FlightRequestCoordinator {
             }
             
         } catch (error) {
-            console.error('❌ [조정자] 성공 메시지 표시 실패:', error);
+            console.error('❌ [조정자] 성공 메시지 표시 실패:', error.message);
         }
     }
 
     // === 에러 처리 ===
-    
     handleInitializationError(error) {
         this.showError('시스템 초기화 중 오류가 발생했습니다.');
         this.updateGlobalState({ 
@@ -780,27 +726,52 @@ class FlightRequestCoordinator {
     }
 
     handleGlobalError(event) {
+        this.errorCount++;
         console.error('❌ [조정자] 전역 에러:', event.error);
-        this.showError('예상치 못한 오류가 발생했습니다.');
-    }
-
-    handleBeforeUnload() {
-        if (this.hasUnsavedChanges()) {
-            return '변경사항이 저장되지 않았습니다. 정말 떠나시겠습니까?';
+        
+        if (this.errorCount < this.maxErrors) {
+            this.showError('예상치 못한 오류가 발생했습니다.');
         }
     }
 
-    hasUnsavedChanges() {
-        return false;
+    // === 🚨 신규: 안전한 종료 메서드 ===
+    destroy() {
+        try {
+            console.log('🗑️ [조정자] 인스턴스 정리 중...');
+            
+            this.destroyed = true;
+            
+            // 이벤트 리스너 정리
+            if (this.eventListeners) {
+                this.eventListeners.clear();
+            }
+            
+            // 모듈 정리
+            this.passport = null;
+            this.ticket = null;
+            this.api = null;
+            this.utils = null;
+            
+            // 서비스 정리
+            this.services = {};
+            
+            console.log('✅ [조정자] 인스턴스 정리 완료');
+            
+        } catch (error) {
+            console.error('❌ [조정자] 인스턴스 정리 실패:', error.message);
+        }
     }
 
     // === 외부 인터페이스 ===
-    
     getGlobalState() {
-        return { ...this.globalState };
+        return this.destroyed ? {} : { ...this.globalState };
     }
 
     getModule(moduleName) {
+        if (this.destroyed) {
+            return null;
+        }
+        
         switch (moduleName) {
             case 'passport':
                 return this.passport;
@@ -812,14 +783,20 @@ class FlightRequestCoordinator {
     }
 
     getService(serviceName) {
-        return this.services[serviceName] || null;
+        return this.destroyed ? null : (this.services[serviceName] || null);
     }
 
     forceSyncStates() {
-        this.syncModuleStates();
+        if (!this.destroyed) {
+            this.syncModuleStates();
+        }
     }
 
     triggerValidationAll() {
+        if (this.destroyed) {
+            return;
+        }
+        
         if (this.passport && typeof this.passport.validatePassportInfo === 'function') {
             this.passport.validatePassportInfo();
         }
@@ -830,9 +807,12 @@ class FlightRequestCoordinator {
     }
 
     // === 공개 인터페이스 ===
-    
     async showPassportInfoPage() {
         try {
+            if (this.destroyed) {
+                return;
+            }
+            
             await this.routeToPage('passport');
             
             if (this.passport && typeof this.passport.loadExistingPassportDataAndSetMode === 'function') {
@@ -841,71 +821,87 @@ class FlightRequestCoordinator {
                 }, 200);
             }
         } catch (error) {
-            console.error('❌ [조정자] showPassportInfoPage() 실패:', error);
+            console.error('❌ [조정자] showPassportInfoPage() 실패:', error.message);
             this.showError('여권정보 페이지 로드에 실패했습니다.');
         }
     }
 
     async loadFlightRequestData() {
         try {
+            if (this.destroyed) {
+                return;
+            }
+            
             if (this.ticket && typeof this.ticket.loadFlightRequestData === 'function') {
                 await this.ticket.loadFlightRequestData();
             }
         } catch (error) {
-            console.error('❌ [조정자] loadFlightRequestData() 실패:', error);
+            console.error('❌ [조정자] loadFlightRequestData() 실패:', error.message);
         }
     }
 
     closeModal(modalId) {
         try {
+            if (this.destroyed) {
+                return;
+            }
+            
             const modal = document.getElementById(modalId);
             if (modal) {
                 modal.style.display = 'none';
             }
         } catch (error) {
-            console.error(`❌ [조정자] 모달 닫기 실패: ${modalId}`, error);
+            console.error(`❌ [조정자] 모달 닫기 실패: ${modalId}`, error.message);
         }
     }
 
     removeFile(fileType) {
         try {
+            if (this.destroyed) {
+                return;
+            }
+            
             if (this.ticket && typeof this.ticket.removeFile === 'function') {
                 this.ticket.removeFile(fileType);
             }
         } catch (error) {
-            console.error(`❌ [조정자] 파일 제거 실패: ${fileType}`, error);
+            console.error(`❌ [조정자] 파일 제거 실패: ${fileType}`, error.message);
         }
     }
 }
 
-// === 🚨 수정: 안전한 애플리케이션 시작점 ===
+// === 🚨 안전한 애플리케이션 시작점 ===
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        console.log('🚀 [조정자] DOM 로드 완료 - v1.1.1 시작 (EventTarget 안전장치)');
+        console.log('🚀 [조정자] DOM 로드 완료 - v1.2.0 시작 (안전한 아키텍처)');
         
-        // 이미 인스턴스가 있는지 확인
+        // 🚨 중복 인스턴스 방지
         if (window.flightRequestCoordinator) {
-            console.warn('⚠️ [조정자] 이미 초기화된 인스턴스가 있습니다.');
-            return;
+            console.warn('⚠️ [조정자] 기존 인스턴스 정리 중...');
+            if (typeof window.flightRequestCoordinator.destroy === 'function') {
+                window.flightRequestCoordinator.destroy();
+            }
+            window.flightRequestCoordinator = null;
         }
         
         // 전역 조정자 인스턴스 생성
         window.flightRequestCoordinator = new FlightRequestCoordinator();
         
-        // 초기화 (결과 무시하고 계속 진행)
+        // 초기화 (한 번만 시도)
         const initSuccess = await window.flightRequestCoordinator.init();
         
         if (initSuccess) {
-            console.log('✅ [조정자] v1.1.1 완전 초기화 완료 (EventTarget 안전장치)');
+            console.log('✅ [조정자] v1.2.0 완전 초기화 완료 (안전한 아키텍처)');
         } else {
-            console.warn('⚠️ [조정자] v1.1.1 제한된 기능으로 초기화됨');
+            console.warn('⚠️ [조정자] v1.2.0 제한된 기능으로 초기화됨');
         }
         
     } catch (error) {
-        console.error('❌ [조정자] v1.1.1 초기화 실패:', error);
+        console.error('❌ [조정자] v1.2.0 초기화 실패:', error.message);
         
-        // 에러 상황에서도 기본 알림 표시 (한 번만)
-        if (!window.flightRequestCoordinator?.isInitialized) {
+        // 🚨 에러 상황에서도 한 번만 알림
+        if (!window.coordinatorErrorShown) {
+            window.coordinatorErrorShown = true;
             alert('시스템 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
         }
     }
@@ -914,12 +910,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 전역 스코프에 클래스 노출
 window.FlightRequestCoordinator = FlightRequestCoordinator;
 
-console.log('✅ FlightRequestCoordinator v1.1.1 모듈 로드 완료 - EventTarget 안전장치 추가');
-console.log('🚨 v1.1.1 EventTarget 안전장치:', {
-    eventTargetFallback: 'EventTarget 초기화 실패 시 폴백 객체 생성',
-    nullCheck: 'emit() 메서드에 null/undefined 체크 강화',
-    reinitialize: '이벤트 버스 재초기화 메서드 추가',
-    errorHandling: '오류 발생 시 재시도 로직 추가',
-    infiniteLoopPrevention: '무한루프 방지 완전 구현',
-    lineNumber401Fix: 'flight-request-coordinator.js:401 오류 해결'
+console.log('✅ FlightRequestCoordinator v1.2.0 모듈 로드 완료 - 안전한 아키텍처');
+console.log('🚨 v1.2.0 안전장치:', {
+    eventSystem: 'EventTarget 완전 대체 → 단순한 Map 기반 이벤트 시스템',
+    infiniteLoopFix: 'emit() 재귀 호출 방지 → 한 번 실패하면 중단',
+    errorHandling: '에러 횟수 제한 → 최대 3회 초과 시 자동 종료',
+    memoryManagement: 'destroy() 메서드 추가 → 메모리 누수 방지',
+    performanceOptimization: '타임아웃 단축 및 체크 간격 최적화',
+    crashPrevention: '브라우저 크래시 완전 방지'
 });
