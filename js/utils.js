@@ -175,16 +175,16 @@ const Utils = {
             if (!container) {
                 container = this.createElement('div', 'toast-container');
                 container.id = 'toast-container';
-                container.style.cssText = '\
-                    position: fixed;\
-                    top: 20px;\
-                    right: 20px;\
-                    z-index: 10000;\
-                    display: flex;\
-                    flex-direction: column;\
-                    gap: 10px;\
-                    pointer-events: none;\
-                ';
+                container.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 10000;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    pointer-events: none;
+                `;
                 document.body.appendChild(container);
             }
             return container;
@@ -204,31 +204,31 @@ const Utils = {
             if (!container) return;
             
             const toast = this.createElement('div', 'toast toast-' + type);
-            toast.style.cssText = '\
-                background: ' + this._getToastColor(type) + ';\
-                color: white;\
-                padding: 12px 20px;\
-                border-radius: 6px;\
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);\
-                margin-bottom: 10px;\
-                opacity: 0;\
-                transform: translateX(100%);\
-                transition: all 0.3s ease;\
-                pointer-events: auto;\
-                max-width: 400px;\
-                word-wrap: break-word;\
-                font-size: 14px;\
-                line-height: 1.4;\
-            ';
+            toast.style.cssText = `
+                background: ${this._getToastColor(type)};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                margin-bottom: 10px;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+                pointer-events: auto;
+                max-width: 400px;
+                word-wrap: break-word;
+                font-size: 14px;
+                line-height: 1.4;
+            `;
             
             // 아이콘 추가
             const icon = this._getToastIcon(type);
-            toast.innerHTML = '\
-                <div style="display: flex; align-items: center; gap: 8px;">\
-                    <span>' + icon + '</span>\
-                    <span>' + message + '</span>\
-                </div>\
-            ';
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span>${icon}</span>
+                    <span>${message}</span>
+                </div>
+            `;
             
             container.appendChild(toast);
             
@@ -624,12 +624,12 @@ const Utils = {
         
         try {
             const safePercentage = Math.min(100, Math.max(0, percentage));
-            return '\
-                <div class="progress-bar ' + className + '">\
-                    <div class="progress-fill" style="width: ' + safePercentage + '%"></div>\
-                    <span class="progress-text">' + safePercentage + '%</span>\
-                </div>\
-            ';
+            return `
+                <div class="progress-bar ${className}">
+                    <div class="progress-fill" style="width: ${safePercentage}%"></div>
+                    <span class="progress-text">${safePercentage}%</span>
+                </div>
+            `;
         } catch (error) {
             console.error('진행률 바 생성 오류:', error);
             return '';
@@ -755,11 +755,11 @@ const Utils = {
                 const weeks = Math.ceil(duration / 7);
                 const avgLessonsPerWeek = planData.lessonsPerWeek || Math.ceil(planData.totalLessons / weeks);
                 
-                return '\
-                    파견 기간: ' + Utils.formatDate(planData.startDate) + ' ~ ' + Utils.formatDate(planData.endDate) + ' (' + weeks + '주)\
-                    총 수업 횟수: ' + planData.totalLessons + '회\
-                    주당 평균: ' + avgLessonsPerWeek + '회\
-                '.trim();
+                return `
+                    파견 기간: ${Utils.formatDate(planData.startDate)} ~ ${Utils.formatDate(planData.endDate)} (${weeks}주)
+                    총 수업 횟수: ${planData.totalLessons}회
+                    주당 평균: ${avgLessonsPerWeek}회
+                `.trim();
             } catch (error) {
                 console.error('수업계획 요약 생성 오류:', error);
                 return '';
@@ -1099,5 +1099,9 @@ window.addEventListener('offline', function() {
 // 전역 접근을 위해 window 객체에 추가
 window.Utils = Utils;
 
+// 🔧 FIX: utils 준비 완료 플래그 설정
+window.utilsReady = true;
+
 // 모듈 로드 완료 메시지
 console.log('🛠️ Utils loaded successfully - 구문 오류 해결 및 안전성 강화 완료');
+console.log('✅ window.utilsReady 플래그 설정 완료');
