@@ -1,9 +1,10 @@
-// flight-request-coordinator.js - 무한루프 완전 해결 v1.1.0
-// 🚨 핵심 수정사항:
-//   1. waitForDependencies 무한루프 해결 - 체크 조건 완화 및 타임아웃 강화
-//   2. console.log 출력 최소화 - 필수적인 로그만 유지
-//   3. API 메서드 별칭 중복 설정 방지
-//   4. 초기화 실패 시 안전한 종료
+// flight-request-coordinator.js - EventTarget 안전장치 추가 v1.1.1
+// 🚨 HOTFIX: EventTarget 초기화 실패 시 안전장치 추가
+// 🔧 핵심 수정사항:
+//   1. EventTarget 초기화 실패 시 폴백 객체 생성
+//   2. emit() 메서드에 null/undefined 체크 강화
+//   3. 이벤트 버스 재초기화 메서드 추가
+//   4. 안전한 이벤트 처리로 무한루프 방지
 
 class FlightRequestCoordinator {
     constructor() {
@@ -13,8 +14,10 @@ class FlightRequestCoordinator {
         this.api = null;
         this.utils = null;
         
-        // 이벤트 버스 시스템
-        this.eventBus = new EventTarget();
+        // 🚨 수정: 안전한 이벤트 버스 초기화
+        this.eventBus = null;
+        this.eventBusInitialized = false;
+        this.initializeEventBusSafely();
         
         // 전역 상태 관리
         this.globalState = {
@@ -54,25 +57,98 @@ class FlightRequestCoordinator {
         
         // 🚨 무한루프 방지 강화
         this.initAttempts = 0;
-        this.maxInitAttempts = 2; // 3회 → 2회로 단축
-        this.dependencyCheckCount = 0; // 추가: 의존성 체크 횟수 추적
-        this.maxDependencyChecks = 20; // 추가: 최대 의존성 체크 횟수
+        this.maxInitAttempts = 2;
+        this.dependencyCheckCount = 0;
+        this.maxDependencyChecks = 20;
         
-        console.log('🔄 [조정자] FlightRequestCoordinator v1.1.0 생성됨 (무한루프 해결)');
+        console.log('🔄 [조정자] FlightRequestCoordinator v1.1.1 생성됨 (EventTarget 안전장치)');
+    }
+
+    // 🚨 신규: 안전한 EventTarget 초기화
+    initializeEventBusSafely() {
+        try {
+            // EventTarget API 지원 확인
+            if (typeof EventTarget !== 'undefined') {
+                this.eventBus = new EventTarget();
+                this.eventBusInitialized = true;
+                console.log('✅ [조정자] EventTarget 초기화 성공');
+            } else {
+                throw new Error('EventTarget not supported');
+            }
+        } catch (error) {
+            console.warn('⚠️ [조정자] EventTarget 초기화 실패, 폴백 객체 생성:', error.message);
+            
+            // 폴백: 간단한 이벤트 시스템 구현
+            this.eventBus = {
+                listeners: new Map(),
+                addEventListener: (type, listener) => {
+                    if (!this.eventBus.listeners.has(type)) {
+                        this.eventBus.listeners.set(type, []);
+                    }
+                    this.eventBus.listeners.get(type).push(listener);
+                },
+                removeEventListener: (type, listener) => {
+                    if (this.eventBus.listeners.has(type)) {
+                        const listeners = this.eventBus.listeners.get(type);
+                        const index = listeners.indexOf(listener);
+                        if (index > -1) {
+                            listeners.splice(index, 1);
+                        }
+                    }
+                },
+                dispatchEvent: (event) => {
+                    const type = event.type || event;
+                    if (this.eventBus.listeners.has(type)) {
+                        const listeners = this.eventBus.listeners.get(type);
+                        listeners.forEach(listener => {
+                            try {
+                                if (typeof listener === 'function') {
+                                    listener(event);
+                                }
+                            } catch (listenerError) {
+                                console.error(`❌ [조정자] 이벤트 리스너 실행 실패 (${type}):`, listenerError);
+                            }
+                        });
+                    }
+                }
+            };
+            this.eventBusInitialized = true;
+        }
+    }
+
+    // 🚨 수정: 이벤트 버스 재초기화 메서드
+    reinitializeEventBus() {
+        try {
+            console.log('🔄 [조정자] 이벤트 버스 재초기화 시도...');
+            
+            this.eventBus = null;
+            this.eventBusInitialized = false;
+            this.initializeEventBusSafely();
+            
+            if (this.eventBusInitialized) {
+                console.log('✅ [조정자] 이벤트 버스 재초기화 성공');
+                return true;
+            } else {
+                console.error('❌ [조정자] 이벤트 버스 재초기화 실패');
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ [조정자] 이벤트 버스 재초기화 중 오류:', error);
+            return false;
+        }
     }
 
     // === 🚨 수정: 무한루프 해결된 의존성 대기 ===
-    async waitForDependencies(timeout = 8000) { // 10초 → 8초로 단축
+    async waitForDependencies(timeout = 8000) {
         const startTime = Date.now();
         
         return new Promise((resolve, reject) => {
             const check = () => {
-                this.dependencyCheckCount++; // 체크 횟수 증가
+                this.dependencyCheckCount++;
                 
-                // 🚨 최대 체크 횟수 초과 시 강제 종료
                 if (this.dependencyCheckCount > this.maxDependencyChecks) {
                     console.warn('⚠️ [조정자] 의존성 체크 횟수 초과 - 강제 종료');
-                    resolve(); // reject 대신 resolve로 진행 허용
+                    resolve();
                     return;
                 }
 
@@ -81,10 +157,8 @@ class FlightRequestCoordinator {
                 const passportClassReady = !!window.FlightRequestPassport;
                 const ticketClassReady = !!window.FlightRequestTicket;
                 
-                // 🚨 수정: 매우 관대한 조건으로 변경 - API 초기화 상태 무시
                 const allBasicReady = apiExists && utilsReady && passportClassReady && ticketClassReady;
                 
-                // 🚨 수정: 로그 출력 최소화 (5회마다만 출력)
                 if (this.dependencyCheckCount % 5 === 0) {
                     console.log(`🔍 [조정자] 의존성 체크 ${this.dependencyCheckCount}/${this.maxDependencyChecks}:`, {
                         apiExists,
@@ -95,22 +169,19 @@ class FlightRequestCoordinator {
                     });
                 }
                 
-                // 🚨 기본 의존성만 확인하고 통과
                 if (allBasicReady) {
-                    console.log('✅ [조정자] v1.1.0: 기본 의존성 준비 완료 (관대한 체크)');
+                    console.log('✅ [조정자] v1.1.1: 기본 의존성 준비 완료');
                     resolve();
                     return;
                 }
                 
-                // 타임아웃 확인
                 if (Date.now() - startTime > timeout) {
                     console.warn(`⚠️ [조정자] 의존성 로딩 시간 초과 (${timeout}ms) - 기본값으로 진행`);
-                    resolve(); // reject 대신 resolve로 진행 허용
+                    resolve();
                     return;
                 }
                 
-                // 다음 체크 스케줄 (간격 증가)
-                setTimeout(check, 300); // 200ms → 300ms로 증가
+                setTimeout(check, 300);
             };
             
             check();
@@ -120,7 +191,6 @@ class FlightRequestCoordinator {
     // === 🚨 수정: 안전한 초기화 ===
     async init() {
         try {
-            // 무한 루프 방지
             if (this.initAttempts >= this.maxInitAttempts) {
                 console.error('❌ [조정자] 최대 초기화 시도 횟수 초과 - 중단');
                 this.showError('페이지 로딩에 실패했습니다. 새로고침해주세요.');
@@ -129,38 +199,31 @@ class FlightRequestCoordinator {
             
             this.initAttempts++;
             
-            console.log(`🚀 [조정자] v1.1.0 초기화 시작 (시도 ${this.initAttempts}/${this.maxInitAttempts})`);
+            console.log(`🚀 [조정자] v1.1.1 초기화 시작 (시도 ${this.initAttempts}/${this.maxInitAttempts})`);
             
-            // 1. 의존성 대기 (관대한 조건)
+            // 🚨 추가: 이벤트 버스 상태 확인 및 재초기화
+            if (!this.eventBusInitialized || !this.eventBus) {
+                console.warn('⚠️ [조정자] 이벤트 버스 미초기화 상태 - 재초기화 시도');
+                this.reinitializeEventBus();
+            }
+            
             await this.waitForDependencies();
-            
-            // 2. 서비스 설정 (안전하게)
             await this.setupServicesSafely();
-            
-            // 3. 페이지 요소 초기화
             this.initializePageElements();
-            
-            // 4. 모듈 초기화 (안전하게)
             await this.initializeModulesSafely();
-            
-            // 5. 이벤트 시스템 설정
             this.setupEventListeners();
-            
-            // 6. 초기 상태 설정 (안전하게)
             await this.determineInitialStateSafely();
-            
-            // 7. 애플리케이션 시작
             this.startApplication();
             
             this.isInitialized = true;
-            this.initAttempts = 0; // 성공 시 리셋
-            console.log('✅ [조정자] v1.1.0 초기화 완료');
+            this.initAttempts = 0;
+            console.log('✅ [조정자] v1.1.1 초기화 완료');
             return true;
             
         } catch (error) {
             console.error('❌ [조정자] 초기화 실패:', error);
             this.handleInitializationError(error);
-            return false; // throw 제거
+            return false;
         }
     }
 
@@ -169,12 +232,10 @@ class FlightRequestCoordinator {
         try {
             console.log('🔄 [조정자] 안전한 서비스 설정 시작...');
             
-            // API 서비스 설정 (안전하게)
             if (window.flightRequestAPI) {
                 this.api = window.flightRequestAPI;
                 this.services.api = this.api;
                 
-                // 🚨 수정: API 메서드 별칭 중복 방지
                 if (this.api && !this.api.loadPassportInfo) {
                     if (this.api.getPassportInfo) {
                         this.api.loadPassportInfo = this.api.getPassportInfo.bind(this.api);
@@ -187,7 +248,6 @@ class FlightRequestCoordinator {
                 console.warn('⚠️ [조정자] API 서비스 없음 - 제한된 기능으로 진행');
             }
             
-            // Utils 서비스 설정 (안전하게)
             if (window.FlightRequestUtils || window.flightRequestUtils) {
                 this.utils = window.FlightRequestUtils || window.flightRequestUtils;
                 this.services.utils = this.utils;
@@ -195,7 +255,6 @@ class FlightRequestCoordinator {
                 console.warn('⚠️ [조정자] Utils 서비스 없음 - 기본 기능으로 진행');
             }
             
-            // UI 서비스 설정
             this.services.ui = {
                 showError: (message) => this.showError(message),
                 showSuccess: (message) => this.showSuccess(message),
@@ -207,7 +266,6 @@ class FlightRequestCoordinator {
             
         } catch (error) {
             console.error('❌ [조정자] 서비스 설정 실패:', error);
-            // 오류 발생해도 계속 진행
         }
     }
 
@@ -216,7 +274,6 @@ class FlightRequestCoordinator {
         try {
             console.log('🔄 [조정자] 안전한 모듈 초기화 시작...');
             
-            // 여권정보 모듈 초기화 (안전하게)
             if (window.FlightRequestPassport) {
                 try {
                     this.passport = new window.FlightRequestPassport(
@@ -230,7 +287,6 @@ class FlightRequestCoordinator {
                 }
             }
             
-            // 항공권 신청 모듈 초기화 (안전하게)
             if (window.FlightRequestTicket) {
                 try {
                     this.ticket = new window.FlightRequestTicket(
@@ -249,7 +305,6 @@ class FlightRequestCoordinator {
             
         } catch (error) {
             console.error('❌ [조정자] 모듈 초기화 실패:', error);
-            // 오류 발생해도 계속 진행
         }
     }
 
@@ -258,13 +313,10 @@ class FlightRequestCoordinator {
         try {
             console.log('🔄 [조정자] 안전한 초기 상태 설정...');
             
-            // 기본 상태로 설정
             let initialPage = 'passport';
             
-            // API가 있으면 기존 데이터 확인 (안전하게)
             if (this.services.api) {
                 try {
-                    // 기존 여권정보 확인 (타임아웃 적용)
                     const passportPromise = this.services.api.getPassportInfo ? 
                         this.services.api.getPassportInfo() : null;
                     
@@ -288,7 +340,6 @@ class FlightRequestCoordinator {
                 }
             }
             
-            // 초기 상태 설정
             this.updateGlobalState({
                 currentPage: initialPage
             });
@@ -297,12 +348,11 @@ class FlightRequestCoordinator {
             
         } catch (error) {
             console.error('❌ [조정자] 초기 상태 설정 실패:', error);
-            // 기본값으로 설정
             this.updateGlobalState({ currentPage: 'passport' });
         }
     }
 
-    // === 기존 메서드들 (로그 출력 최소화) ===
+    // === 기존 메서드들 ===
     
     initializePageElements() {
         try {
@@ -325,16 +375,9 @@ class FlightRequestCoordinator {
 
     setupEventListeners() {
         try {
-            // 모듈 간 통신 이벤트
             this.setupModuleCommunication();
-            
-            // 상태 변경 이벤트
             this.setupStateChangeEvents();
-            
-            // 페이지 네비게이션 이벤트
             this.setupPageNavigationEvents();
-            
-            // 전역 이벤트
             this.setupGlobalEvents();
             
             console.log('✅ [조정자] 이벤트 리스너 설정 완료');
@@ -345,26 +388,30 @@ class FlightRequestCoordinator {
     }
 
     setupModuleCommunication() {
-        // 여권 모듈에서 완료 이벤트 수신
-        this.eventBus.addEventListener('passport:completed', (event) => {
-            this.handlePassportCompletion(event.detail);
-        });
-        
-        // 항공권 모듈에서 상태 변경 이벤트 수신
-        this.eventBus.addEventListener('ticket:stateChanged', (event) => {
-            this.handleTicketStateChange(event.detail);
-        });
-        
-        // 전제 조건 변경 이벤트 수신
-        this.eventBus.addEventListener('prerequisites:changed', (event) => {
-            this.handlePrerequisitesChange(event.detail);
-        });
+        // 🚨 수정: 안전한 이벤트 리스너 추가
+        if (this.eventBus && typeof this.eventBus.addEventListener === 'function') {
+            this.eventBus.addEventListener('passport:completed', (event) => {
+                this.handlePassportCompletion(event.detail);
+            });
+            
+            this.eventBus.addEventListener('ticket:stateChanged', (event) => {
+                this.handleTicketStateChange(event.detail);
+            });
+            
+            this.eventBus.addEventListener('prerequisites:changed', (event) => {
+                this.handlePrerequisitesChange(event.detail);
+            });
+        } else {
+            console.warn('⚠️ [조정자] 이벤트 버스 사용 불가 - 모듈 통신 제한됨');
+        }
     }
 
     setupStateChangeEvents() {
-        this.eventBus.addEventListener('state:changed', (event) => {
-            this.syncModuleStates();
-        });
+        if (this.eventBus && typeof this.eventBus.addEventListener === 'function') {
+            this.eventBus.addEventListener('state:changed', (event) => {
+                this.syncModuleStates();
+            });
+        }
     }
 
     setupPageNavigationEvents() {
@@ -393,20 +440,51 @@ class FlightRequestCoordinator {
         });
     }
 
-    // === 이벤트 발행/구독 시스템 ===
+    // === 🚨 수정: 안전한 이벤트 발행/구독 시스템 ===
     
     emit(eventName, data) {
         try {
-            const event = new CustomEvent(eventName, { detail: data });
-            this.eventBus.dispatchEvent(event);
+            // 🚨 핵심 수정: null/undefined 체크 강화
+            if (!this.eventBus) {
+                console.warn(`⚠️ [조정자] 이벤트 버스 없음 - 이벤트 무시: ${eventName}`);
+                
+                // 재초기화 시도
+                if (this.reinitializeEventBus()) {
+                    console.log('🔄 [조정자] 이벤트 버스 재초기화 후 재시도');
+                } else {
+                    return; // 재초기화 실패 시 종료
+                }
+            }
+            
+            // EventTarget API 사용
+            if (typeof this.eventBus.dispatchEvent === 'function') {
+                const event = new CustomEvent(eventName, { detail: data });
+                this.eventBus.dispatchEvent(event); // ← 401번째 라인 안전장치 적용
+            } else {
+                console.warn(`⚠️ [조정자] dispatchEvent 메서드 없음: ${eventName}`);
+            }
+            
         } catch (error) {
             console.error(`❌ [조정자] 이벤트 발행 실패: ${eventName}`, error);
+            
+            // 🚨 추가: 오류 발생 시 이벤트 버스 재초기화 시도
+            if (error.message.includes('Cannot read properties') || 
+                error.message.includes('null') || 
+                error.message.includes('undefined')) {
+                
+                console.log('🔄 [조정자] 이벤트 버스 오류로 인한 재초기화 시도...');
+                this.reinitializeEventBus();
+            }
         }
     }
 
     on(eventName, handler) {
         try {
-            this.eventBus.addEventListener(eventName, handler);
+            if (this.eventBus && typeof this.eventBus.addEventListener === 'function') {
+                this.eventBus.addEventListener(eventName, handler);
+            } else {
+                console.warn(`⚠️ [조정자] 이벤트 구독 실패 - 이벤트 버스 없음: ${eventName}`);
+            }
         } catch (error) {
             console.error(`❌ [조정자] 이벤트 구독 실패: ${eventName}`, error);
         }
@@ -414,7 +492,11 @@ class FlightRequestCoordinator {
 
     off(eventName, handler) {
         try {
-            this.eventBus.removeEventListener(eventName, handler);
+            if (this.eventBus && typeof this.eventBus.removeEventListener === 'function') {
+                this.eventBus.removeEventListener(eventName, handler);
+            } else {
+                console.warn(`⚠️ [조정자] 이벤트 구독 해제 실패 - 이벤트 버스 없음: ${eventName}`);
+            }
         } catch (error) {
             console.error(`❌ [조정자] 이벤트 구독 해제 실패: ${eventName}`, error);
         }
@@ -799,7 +881,7 @@ class FlightRequestCoordinator {
 // === 🚨 수정: 안전한 애플리케이션 시작점 ===
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        console.log('🚀 [조정자] DOM 로드 완료 - v1.1.0 시작 (무한루프 해결)');
+        console.log('🚀 [조정자] DOM 로드 완료 - v1.1.1 시작 (EventTarget 안전장치)');
         
         // 이미 인스턴스가 있는지 확인
         if (window.flightRequestCoordinator) {
@@ -814,13 +896,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const initSuccess = await window.flightRequestCoordinator.init();
         
         if (initSuccess) {
-            console.log('✅ [조정자] v1.1.0 완전 초기화 완료 (무한루프 해결)');
+            console.log('✅ [조정자] v1.1.1 완전 초기화 완료 (EventTarget 안전장치)');
         } else {
-            console.warn('⚠️ [조정자] v1.1.0 제한된 기능으로 초기화됨');
+            console.warn('⚠️ [조정자] v1.1.1 제한된 기능으로 초기화됨');
         }
         
     } catch (error) {
-        console.error('❌ [조정자] v1.1.0 초기화 실패:', error);
+        console.error('❌ [조정자] v1.1.1 초기화 실패:', error);
         
         // 에러 상황에서도 기본 알림 표시 (한 번만)
         if (!window.flightRequestCoordinator?.isInitialized) {
@@ -832,15 +914,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 전역 스코프에 클래스 노출
 window.FlightRequestCoordinator = FlightRequestCoordinator;
 
-console.log('✅ FlightRequestCoordinator v1.1.0 모듈 로드 완료 - 무한루프 완전 해결');
-console.log('🚨 v1.1.0 무한루프 해결사항:', {
-    dependencyCheckLoop: '의존성 체크 무한루프 해결 - 최대 체크 횟수 제한',
-    timeoutReduction: '타임아웃 시간 단축 (10초 → 8초)',
-    logMinimization: 'console.log 출력 최소화 (5회마다만 출력)',
-    apiMethodDuplication: 'API 메서드 별칭 중복 설정 방지',
-    gracefulDegradation: '초기화 실패 시 안전한 종료 및 기본값 사용',
-    retryReduction: '초기화 재시도 횟수 단축 (3회 → 2회)',
-    safeInitialization: '모든 초기화 단계에 안전장치 추가',
-    timeoutOnDataLoad: '데이터 로드 시 3초 타임아웃 적용',
-    conditionalLogging: '조건부 로깅으로 콘솔 스팸 방지'
+console.log('✅ FlightRequestCoordinator v1.1.1 모듈 로드 완료 - EventTarget 안전장치 추가');
+console.log('🚨 v1.1.1 EventTarget 안전장치:', {
+    eventTargetFallback: 'EventTarget 초기화 실패 시 폴백 객체 생성',
+    nullCheck: 'emit() 메서드에 null/undefined 체크 강화',
+    reinitialize: '이벤트 버스 재초기화 메서드 추가',
+    errorHandling: '오류 발생 시 재시도 로직 추가',
+    infiniteLoopPrevention: '무한루프 방지 완전 구현',
+    lineNumber401Fix: 'flight-request-coordinator.js:401 오류 해결'
 });
