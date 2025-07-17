@@ -1,4 +1,4 @@
-// flight-request-coordinator.js - 통합 조정자 모듈 v1.0.0
+// flight-request-coordinator.js - 통합 조정자 모듈 v1.0.1
 // 🚀 Phase 3: 분리된 passport와 ticket 모듈들을 통합 관리하고 전체 플로우를 조정
 // 📝 핵심 역할:
 //   - 모듈 간 통신 중재 및 상태 동기화
@@ -7,6 +7,10 @@
 //   - 전역 상태 관리 및 데이터 통합
 //   - 최종 제출 플로우 통합 관리
 //   - 애플리케이션 라이프사이클 관리
+// 🔧 v1.0.1 수정사항:
+//   - 초기화 오류 및 무한 루프 방지 코드 추가
+//   - API 존재 여부 검증 강화
+//   - 중복 인스턴스 생성 방지
 
 class FlightRequestCoordinator {
     constructor() {
@@ -64,14 +68,27 @@ class FlightRequestCoordinator {
         this.isInitialized = false;
         this.initializationPromise = null;
         
-        console.log('🔄 [조정자] FlightRequestCoordinator v1.0.0 생성됨');
+        // 초기화 시도 횟수 (무한 루프 방지)
+        this.initAttempts = 0;
+        this.maxInitAttempts = 3;
+        
+        console.log('🔄 [조정자] FlightRequestCoordinator v1.0.1 생성됨');
     }
 
     // === 애플리케이션 초기화 ===
 
     async init() {
         try {
-            console.log('🚀 [조정자] FlightRequestCoordinator v1.0.0 초기화 시작...');
+            // 무한 루프 방지
+            if (this.initAttempts >= this.maxInitAttempts) {
+                console.error('❌ [조정자] 최대 초기화 시도 횟수 초과');
+                this.showError('페이지 로딩에 실패했습니다. 새로고침해주세요.');
+                return;
+            }
+            
+            this.initAttempts++;
+            
+            console.log(`🚀 [조정자] FlightRequestCoordinator v1.0.1 초기화 시작... (시도 ${this.initAttempts}/${this.maxInitAttempts})`);
             
             // 1. 의존성 대기
             await this.waitForDependencies();
@@ -95,12 +112,13 @@ class FlightRequestCoordinator {
             this.startApplication();
             
             this.isInitialized = true;
-            console.log('✅ [조정자] FlightRequestCoordinator v1.0.0 초기화 완료');
+            this.initAttempts = 0; // 성공 시 리셋
+            console.log('✅ [조정자] FlightRequestCoordinator v1.0.1 초기화 완료');
             
         } catch (error) {
             console.error('❌ [조정자] 초기화 실패:', error);
             this.handleInitializationError(error);
-            throw error;
+            // throw 제거 - 오류를 다시 던지지 않음 (무한 루프 방지)
         }
     }
 
@@ -116,16 +134,24 @@ class FlightRequestCoordinator {
                 const passportClassReady = !!window.FlightRequestPassport;
                 const ticketClassReady = !!window.FlightRequestTicket;
                 
+                // API 메서드 존재 여부도 확인
+                const apiMethodsReady = !!(
+                    window.flightRequestAPI?.loadPassportInfo &&
+                    window.flightRequestAPI?.loadExistingFlightRequest
+                );
+                
                 console.log('🔍 [조정자] 의존성 상태:', {
                     apiExists,
                     apiInitialized,
+                    apiMethodsReady,
                     utilsReady,
                     passportClassReady,
                     ticketClassReady,
                     elapsed: Date.now() - startTime
                 });
                 
-                if (apiExists && apiInitialized && utilsReady && passportClassReady && ticketClassReady) {
+                if (apiExists && apiInitialized && apiMethodsReady && utilsReady && 
+                    passportClassReady && ticketClassReady) {
                     console.log('✅ [조정자] 모든 의존성 준비 완료');
                     resolve();
                     return;
@@ -587,13 +613,36 @@ class FlightRequestCoordinator {
         try {
             console.log('🔄 [조정자] 초기 상태 결정 시작...');
             
-            // 기존 여권정보 확인
-            const existingPassport = await this.services.api.loadPassportInfo();
-            const hasPassport = !!(existingPassport && existingPassport.passport_number);
+            // API 존재 여부 확인
+            if (!this.services.api || typeof this.services.api.loadPassportInfo !== 'function') {
+                console.error('❌ [조정자] API 서비스가 초기화되지 않음');
+                // 기본 상태로 설정하고 종료
+                this.updateGlobalState({ currentPage: 'passport' });
+                return;
+            }
             
-            // 기존 항공권 신청 확인
-            const existingTicket = await this.services.api.loadExistingFlightRequest();
-            const hasTicketRequest = !!existingTicket;
+            // 기존 여권정보 확인 (안전하게)
+            let existingPassport = null;
+            let hasPassport = false;
+            
+            try {
+                existingPassport = await this.services.api.loadPassportInfo();
+                hasPassport = !!(existingPassport && existingPassport.passport_number);
+            } catch (apiError) {
+                console.warn('⚠️ [조정자] 여권정보 로드 실패, 기본값 사용:', apiError);
+                // API 오류 시 기본값 사용
+            }
+            
+            // 기존 항공권 신청 확인 (안전하게)
+            let existingTicket = null;
+            let hasTicketRequest = false;
+            
+            try {
+                existingTicket = await this.services.api.loadExistingFlightRequest();
+                hasTicketRequest = !!existingTicket;
+            } catch (apiError) {
+                console.warn('⚠️ [조정자] 항공권 신청 정보 로드 실패, 기본값 사용:', apiError);
+            }
             
             console.log('📊 [조정자] 초기 데이터 상태:', {
                 hasPassport,
@@ -634,6 +683,7 @@ class FlightRequestCoordinator {
             console.error('❌ [조정자] 초기 상태 결정 실패:', error);
             // 기본적으로 여권 페이지로 시작
             this.updateGlobalState({ currentPage: 'passport' });
+            // 오류를 다시 던지지 않음 (무한 루프 방지)
         }
     }
 
@@ -934,6 +984,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log('🚀 [조정자] DOM 로드 완료 - FlightRequestCoordinator 시작...');
         
+        // 이미 인스턴스가 있는지 확인 (중복 생성 방지)
+        if (window.flightRequestCoordinator) {
+            console.warn('⚠️ [조정자] 이미 초기화된 인스턴스가 있습니다.');
+            return;
+        }
+        
         // 전역 조정자 인스턴스 생성
         window.flightRequestCoordinator = new FlightRequestCoordinator();
         
@@ -946,20 +1002,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('❌ [조정자] FlightRequestCoordinator 초기화 실패:', error);
         
         // 에러 상황에서도 기본 알림 표시
-        alert('시스템 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+        if (!window.flightRequestCoordinator || !window.flightRequestCoordinator.isInitialized) {
+            alert('시스템 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+        }
     }
 });
 
 // 전역 스코프에 클래스 노출
 window.FlightRequestCoordinator = FlightRequestCoordinator;
 
-console.log('✅ FlightRequestCoordinator v1.0.0 모듈 로드 완료 - Phase 3 통합 조정자 (HOTFIX: utilsReady 체크 수정)');
-console.log('🔧 HOTFIX 수정사항:', {
-    problem: 'utilsReady: false 무한 루프 문제',
-    solution: 'window.utilsReady === true 플래그 확인으로 수정',
-    before: 'window.FlightRequestUtils || window.flightRequestUtils 존재 확인',
-    after: 'window.utilsReady === true 명시적 플래그 확인',
-    compatibility: 'utils v8.2.8의 window.utilsReady = true와 완전 일치'
+console.log('✅ FlightRequestCoordinator v1.0.1 모듈 로드 완료 - Phase 3 통합 조정자');
+console.log('🔧 v1.0.1 수정사항:', {
+    fixes: [
+        '초기화 시도 횟수 제한 (최대 3회)',
+        'determineInitialState API 존재 여부 검증',
+        'API 메서드 준비 상태 확인 강화',
+        '중복 인스턴스 생성 방지',
+        '오류 발생 시 안전한 기본값 처리'
+    ],
+    improvements: [
+        '무한 루프 방지 코드 추가',
+        'API 로드 실패 시 graceful degradation',
+        '에러 재전파 제거로 안정성 향상'
+    ]
 });
 console.log('🚀 Phase 3 핵심 기능:', {
     모듈통합관리: 'passport와 ticket 모듈 통합 조정',
