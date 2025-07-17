@@ -1230,8 +1230,7 @@
             console.log('📦 Phase 4 분리된 모듈 로딩 상태 확인:', {
                 modules: modulesLoaded,
                 supabaseCoreReady: !!(window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized)
-            });
-            
+            });            
             if (allLoaded) {
                 // API 초기화 완료 대기
                 console.log('⏳ Phase 4 모든 분리된 모듈 로드 완료 - 시스템 초기화 대기 중...');
