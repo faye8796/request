@@ -1,4 +1,376 @@
-// flight-request-ticket-fix.js - 항공권 신청 페이지 데이터 로드 문제 해결 v8.3.0 (계속)
+// flight-request-ticket.js - 항공권 신청 관리 모듈 v8.2.5
+// 🔧 Phase 2: flight-request-ui.js에서 항공권 신청 관련 기능들을 분리한 독립 모듈
+// 📝 핵심 기능:
+//   - 현지 활동기간 검증 및 관리
+//   - 항공권 날짜 검증 (v8.2.5 분리된 로직)
+//   - 구매방식 변경 처리
+//   - 항공권 이미지 업로드
+//   - 단계별 네비게이션
+//   - 항공권 섹션 활성화/비활성화 (전제 조건 시스템)
+
+class FlightRequestTicket {
+    constructor(apiService, uiService, passportService) {
+        this.apiService = apiService;
+        this.uiService = uiService;
+        this.passportService = passportService;
+        
+        // 항공권 관련 데이터
+        this.ticketData = {
+            // 현지 활동기간
+            actualArrivalDate: null,
+            actualWorkEndDate: null,
+            calculatedActivityDays: 0,
+            
+            // 항공권 정보
+            departureDate: null,
+            returnDate: null,
+            departureAirport: null,
+            arrivalAirport: null,
+            
+            // 가격 정보
+            ticketPrice: null,
+            currency: null,
+            priceSource: null,
+            
+            // 구매 방식
+            purchaseType: null,
+            purchaseLink: null
+        };
+        
+        // 단계별 네비게이션
+        this.currentStep = 1;
+        this.totalSteps = 4;
+        this.stepCompleted = {
+            activityPeriod: false,
+            purchaseMethod: false,
+            flightInfo: false,
+            imageUpload: false
+        };
+        
+        // 검증 관련 상태
+        this.validationDebounceTimer = null;
+        this.returnValidationDebounceTimer = null;
+        
+        // 전제 조건 시스템 관련 상태
+        this.isActivityPeriodCompleted = false;
+        this.isActivityPeriodValid = false;
+        this.flightSectionEnabled = false;
+        
+        // 파일 업로드 관련
+        this.ticketImageFile = null;
+        this.receiptImageFile = null;
+        
+        this.init();
+    }
+
+    init() {
+        try {
+            console.log('🔄 [티켓모듈] FlightRequestTicket 초기화 시작...');
+            
+            this.bindEvents();
+            this.setupStepNavigation();
+            this.loadTicketInfo();
+            
+            console.log('✅ [티켓모듈] FlightRequestTicket 초기화 완료');
+        } catch (error) {
+            console.error('❌ [티켓모듈] 초기화 실패:', error);
+        }
+    }
+
+    bindEvents() {
+        try {
+            console.log('🔄 [티켓모듈] 이벤트 바인딩 시작...');
+            
+            // 현지 활동기간 이벤트
+            this.setupActivityPeriodEvents();
+            
+            // 항공권 날짜 이벤트
+            this.setupFlightDateEvents();
+            
+            // 구매방식 이벤트
+            this.setupPurchaseMethodEvents();
+            
+            // 이미지 업로드 이벤트
+            this.setupImageUploadEvents();
+            
+            // 가격 정보 이벤트
+            this.setupPriceInfoEvents();
+            
+            // 제출 이벤트
+            this.setupSubmitEvents();
+            
+            console.log('✅ [티켓모듈] 이벤트 바인딩 완료');
+        } catch (error) {
+            console.error('❌ [티켓모듈] 이벤트 바인딩 실패:', error);
+        }
+    }
+
+    // === 현지 활동기간 관리 ===
+
+    setupActivityPeriodEvents() {
+        const arrivalElement = document.getElementById('actualArrivalDate');
+        const workEndElement = document.getElementById('actualWorkEndDate');
+        
+        [arrivalElement, workEndElement].forEach(element => {
+            if (element) {
+                element.addEventListener('change', () => {
+                    this.debouncedActivityValidation();
+                });
+                
+                element.addEventListener('input', () => {
+                    this.debouncedActivityValidation();
+                });
+            }
+        });
+        
+        console.log('✅ [티켓모듈] 현지 활동기간 이벤트 설정 완료');
+    }
+
+    debouncedActivityValidation() {
+        if (this.validationDebounceTimer) {
+            clearTimeout(this.validationDebounceTimer);
+        }
+
+        this.validationDebounceTimer = setTimeout(() => {
+            this.validateActivityPeriod();
+            this.checkActivityPeriodCompletion();
+            this.updateFlightSectionAvailability();
+        }, 300);
+    }
+
+    // 🔧 v8.2.5: 현지 활동기간 검증 - 활동기간 범위 검증 제거
+    validateActivityPeriod() {
+        try {
+            console.log('🔄 [활동기간검증] 현지 활동기간 검증 시작 (범위 검증 제거)...');
+            
+            const arrivalDateEl = document.getElementById('actualArrivalDate');
+            const workEndDateEl = document.getElementById('actualWorkEndDate');
+            
+            const arrivalDate = arrivalDateEl?.value;
+            const workEndDate = workEndDateEl?.value;
+            
+            console.log('📋 [활동기간검증] 입력된 날짜:', {
+                현지도착일: arrivalDate,
+                학당근무종료일: workEndDate,
+                둘다입력됨: !!(arrivalDate && workEndDate)
+            });
+            
+            // 둘 다 입력되지 않은 경우 UI 초기화
+            if (!arrivalDate || !workEndDate) {
+                this.updateCalculatedActivityDays(0);
+                this.updateActivityValidationUI({
+                    valid: false,
+                    message: '현지 도착일과 학당 근무 종료일을 모두 입력해주세요.',
+                    activityDays: 0
+                });
+                return { valid: false, activityDays: 0 };
+            }
+            
+            // 실시간 활동일 계산
+            let activityDays = 0;
+            try {
+                if (this.uiService?.utils && typeof this.uiService.utils.calculateActivityDays === 'function') {
+                    activityDays = this.uiService.utils.calculateActivityDays(arrivalDate, workEndDate);
+                } else {
+                    // utils가 없는 경우 직접 계산
+                    const arrival = new Date(arrivalDate);
+                    const workEnd = new Date(workEndDate);
+                    if (arrival < workEnd) {
+                        activityDays = Math.ceil((workEnd - arrival) / (1000 * 60 * 60 * 24));
+                    }
+                }
+                
+                console.log('📊 [활동기간검증] 활동일 계산 완료:', {
+                    현지도착일: arrivalDate,
+                    학당근무종료일: workEndDate,
+                    계산된활동일: activityDays
+                });
+                
+            } catch (calcError) {
+                console.error('❌ [활동기간검증] 활동일 계산 실패:', calcError);
+                activityDays = 0;
+            }
+            
+            // UI에 계산된 활동일 즉시 반영
+            this.updateCalculatedActivityDays(activityDays);
+            
+            // 🔧 v8.2.5: 활동기간 범위 검증 제거 - 단순 활동일 계산만 수행
+            let validation = { 
+                valid: activityDays > 0, 
+                activityDays: activityDays,
+                message: activityDays > 0 ? 
+                    `현지 활동기간: ${activityDays}일` : 
+                    '활동기간을 계산할 수 없습니다.'
+            };
+            
+            console.log('✅ [활동기간검증] 활동기간 범위 검증 제거 완료:', {
+                제거된검증: '최소/최대 활동일 범위 검증',
+                수행된작업: '활동일 계산만 수행',
+                활동일: validation.activityDays,
+                기본검증결과: validation.valid
+            });
+            
+            // UI 업데이트
+            this.updateActivityValidationUI(validation);
+            
+            // 데이터 저장
+            this.ticketData.actualArrivalDate = arrivalDate;
+            this.ticketData.actualWorkEndDate = workEndDate;
+            this.ticketData.calculatedActivityDays = activityDays;
+            
+            console.log('✅ [활동기간검증] 현지 활동기간 검증 완료 (범위 검증 제거):', {
+                검증결과: validation.valid,
+                활동일: validation.activityDays,
+                범위검증제거: '✅ 완료'
+            });
+            
+            return validation;
+            
+        } catch (error) {
+            console.error('❌ [활동기간검증] 현지 활동기간 검증 실패:', error);
+            
+            const errorValidation = {
+                valid: false,
+                activityDays: 0,
+                message: '활동기간 검증 중 오류가 발생했습니다.'
+            };
+            
+            this.updateActivityValidationUI(errorValidation);
+            return errorValidation;
+        }
+    }
+
+    updateCalculatedActivityDays(activityDays) {
+        try {
+            console.log('🔄 [활동기간UI] 계산된 활동일 UI 업데이트:', activityDays);
+            
+            const calculatedDaysEl = document.getElementById('calculatedDays');
+            if (calculatedDaysEl) {
+                if (activityDays > 0) {
+                    calculatedDaysEl.textContent = activityDays;
+                    calculatedDaysEl.style.color = '#059669';
+                    calculatedDaysEl.style.fontWeight = '600';
+                    calculatedDaysEl.className = 'value success';
+                } else {
+                    calculatedDaysEl.textContent = '-';
+                    calculatedDaysEl.style.color = '#6b7280';
+                    calculatedDaysEl.style.fontWeight = '400';
+                    calculatedDaysEl.className = 'value';
+                }
+                
+                console.log('✅ [활동기간UI] calculatedDays 요소 업데이트 완료:', {
+                    표시값: calculatedDaysEl.textContent,
+                    색상: calculatedDaysEl.style.color
+                });
+            } else {
+                console.warn('⚠️ [활동기간UI] calculatedDays 요소를 찾을 수 없음');
+            }
+            
+        } catch (error) {
+            console.error('❌ [활동기간UI] 계산된 활동일 UI 업데이트 실패:', error);
+        }
+    }
+
+    updateActivityValidationUI(validation) {
+        try {
+            console.log('🔄 [활동기간UI] 검증 결과 UI 업데이트:', validation);
+            
+            const validationStatusEl = document.getElementById('validationStatus');
+            if (validationStatusEl) {
+                if (validation.valid) {
+                    // 성공 상태
+                    validationStatusEl.className = 'validation-status valid';
+                    validationStatusEl.innerHTML = 
+                        `<i data-lucide="check-circle"></i>${validation.message || '활동기간이 유효합니다'}`;
+                    validationStatusEl.style.color = '#059669';
+                    validationStatusEl.style.backgroundColor = '#f0fdf4';
+                    validationStatusEl.style.border = '1px solid #bbf7d0';
+                } else {
+                    // 실패 상태
+                    validationStatusEl.className = 'validation-status invalid';
+                    validationStatusEl.innerHTML = 
+                        `<i data-lucide="x-circle"></i>${validation.message || '활동기간이 유효하지 않습니다'}`;
+                    validationStatusEl.style.color = '#dc2626';
+                    validationStatusEl.style.backgroundColor = '#fef2f2';
+                    validationStatusEl.style.border = '1px solid #fecaca';
+                }
+                
+                validationStatusEl.style.display = 'flex';
+                validationStatusEl.style.alignItems = 'center';
+                validationStatusEl.style.gap = '8px';
+                validationStatusEl.style.padding = '12px';
+                validationStatusEl.style.borderRadius = '6px';
+                validationStatusEl.style.marginTop = '8px';
+                
+                console.log('✅ [활동기간UI] validationStatus 요소 업데이트 완료');
+            } else {
+                console.warn('⚠️ [활동기간UI] validationStatus 요소를 찾을 수 없음');
+            }
+            
+            // 아이콘 새로고침
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+        } catch (error) {
+            console.error('❌ [활동기간UI] 검증 결과 UI 업데이트 실패:', error);
+        }
+    }
+
+    // === 전제 조건 시스템 ===
+
+    checkActivityPeriodCompletion() {
+        try {
+            console.log('🔄 [전제조건] 현지 활동기간 완료 여부 확인 시작...');
+            
+            const arrivalDate = document.getElementById('actualArrivalDate')?.value;
+            const workEndDate = document.getElementById('actualWorkEndDate')?.value;
+            
+            // 완료 조건 - 두 날짜가 모두 입력되어야 함
+            const completed = !!(arrivalDate && workEndDate);
+            
+            // 유효성 조건 - 날짜 순서 및 활동일 검증
+            let valid = false;
+            if (completed) {
+                try {
+                    const arrival = new Date(arrivalDate);
+                    const workEnd = new Date(workEndDate);
+                    
+                    // 기본 날짜 순서 검증
+                    if (arrival < workEnd) {
+                        const activityDays = Math.ceil((workEnd - arrival) / (1000 * 60 * 60 * 24));
+                        valid = activityDays > 0; // 최소 1일 이상의 활동기간
+                    }
+                } catch (dateError) {
+                    console.warn('⚠️ [전제조건] 날짜 검증 실패:', dateError.message);
+                    valid = false;
+                }
+            }
+            
+            // 상태 업데이트
+            this.isActivityPeriodCompleted = completed;
+            this.isActivityPeriodValid = valid;
+            
+            console.log('✅ [전제조건] 현지 활동기간 완료 여부 확인 완료:', {
+                현지도착일: arrivalDate,
+                학당근무종료일: workEndDate,
+                완료여부: completed,
+                유효여부: valid,
+                상태업데이트: '✅ 완료'
+            });
+            
+            return { completed, valid };
+            
+        } catch (error) {
+            console.error('❌ [전제조건] 현지 활동기간 완료 여부 확인 실패:', error);
+            
+            // 오류 시 보수적으로 미완료 처리
+            this.isActivityPeriodCompleted = false;
+            this.isActivityPeriodValid = false;
+            
+            return { completed: false, valid: false };
+        }
+    }
 
     updateFlightSectionAvailability() {
         try {
@@ -247,44 +619,7 @@
         }
     }
 
-    // === 🔧 추가: 공개 인터페이스 메서드들 ===
-
-    // 페이지 로드 시 호출되는 메서드
-    async loadFlightRequestData() {
-        try {
-            console.log('🔄 [티켓모듈] 항공권 신청 데이터 로드 시작...');
-            
-            // 필수 데이터 로드
-            await this.loadRequiredDataOnInit();
-            
-            // 기존 항공권 신청 내역 로드
-            await this.loadTicketInfo();
-            
-            console.log('✅ [티켓모듈] 항공권 신청 데이터 로드 완료');
-            
-        } catch (error) {
-            console.error('❌ [티켓모듈] 항공권 신청 데이터 로드 실패:', error);
-        }
-    }
-
-    // 검증 트리거
-    triggerValidation() {
-        try {
-            console.log('🔄 [티켓모듈] 수동 검증 트리거...');
-            
-            this.validateActivityPeriod();
-            this.validateFlightDatesOnly();
-            this.checkActivityPeriodCompletion();
-            this.updateFlightSectionAvailability();
-            
-            console.log('✅ [티켓모듈] 수동 검증 트리거 완료');
-            
-        } catch (error) {
-            console.error('❌ [티켓모듈] 수동 검증 트리거 실패:', error);
-        }
-    }
-
-    // === 기존 메서드들 유지 (항공권 날짜 검증, 구매방식 등) ===
+    // === 항공권 날짜 검증 ===
 
     setupFlightDateEvents() {
         const departureEl = document.getElementById('departureDate');
@@ -307,9 +642,10 @@
         console.log('✅ [티켓모듈] 항공권 날짜 이벤트 설정 완료');
     }
 
+    // 🔧 v8.2.5: 항공권 날짜 검증 (활동기간 범위 검증 제외)
     validateFlightDatesOnly() {
         try {
-            console.log('🔄 [항공권검증] 항공권 날짜 검증 시작...');
+            console.log('🔄 [항공권검증] 항공권 날짜 검증 시작 (순수 날짜 관계만)...');
             
             const departureDate = document.getElementById('departureDate')?.value;
             const returnDate = document.getElementById('returnDate')?.value;
@@ -368,6 +704,8 @@
         }
     }
 
+    // === 구매방식 관리 ===
+
     setupPurchaseMethodEvents() {
         const purchaseTypeRadios = document.querySelectorAll('input[name="purchaseType"]');
         
@@ -400,6 +738,8 @@
             console.error('❌ [구매방식] 변경 처리 실패:', error);
         }
     }
+
+    // === 이미지 업로드 관리 ===
 
     setupImageUploadEvents() {
         const flightImageEl = document.getElementById('flightImage');
@@ -493,6 +833,8 @@
         }
     }
 
+    // === 가격 정보 관리 ===
+
     setupPriceInfoEvents() {
         const priceElements = [
             document.getElementById('ticketPrice'),
@@ -557,9 +899,14 @@
         }
     }
 
+    // === 단계별 네비게이션 ===
+
     setupStepNavigation() {
         console.log('🔄 [단계네비] 단계별 네비게이션 설정');
+        
+        // 단계별 완료 상태 체크 이벤트 설정
         this.setupStepCompletionChecks();
+        
         console.log('✅ [단계네비] 단계별 네비게이션 설정 완료');
     }
 
@@ -650,6 +997,8 @@
             console.error(`❌ [단계네비] ${step}단계 완료 상태 확인 실패:`, error);
         }
     }
+
+    // === 제출 관리 ===
 
     setupSubmitEvents() {
         const form = document.getElementById('flightRequestForm');
@@ -744,6 +1093,8 @@
             this.setLoading(false);
         }
     }
+
+    // === 데이터 로딩 ===
 
     async loadTicketInfo() {
         try {
@@ -842,9 +1193,11 @@
         try {
             console.error('❌ [티켓모듈]:', message);
             
+            // UI에 에러 메시지 표시
             if (this.uiService && typeof this.uiService.showError === 'function') {
                 this.uiService.showError(message);
             } else {
+                // 폴백: alert 사용
                 alert(message);
             }
             
@@ -857,9 +1210,11 @@
         try {
             console.log('✅ [티켓모듈]:', message);
             
+            // UI에 성공 메시지 표시
             if (this.uiService && typeof this.uiService.showSuccess === 'function') {
                 this.uiService.showSuccess(message);
             } else {
+                // 폴백: alert 사용
                 alert(message);
             }
             
@@ -889,14 +1244,17 @@
 
     // === 외부 인터페이스 ===
 
+    // 현재 티켓 데이터 반환
     getTicketData() {
         return { ...this.ticketData };
     }
 
+    // 단계 완료 상태 반환
     getStepCompletionStatus() {
         return { ...this.stepCompleted };
     }
 
+    // 전제 조건 상태 반환
     getPrerequisiteStatus() {
         return {
             isActivityPeriodCompleted: this.isActivityPeriodCompleted,
@@ -905,27 +1263,26 @@
         };
     }
 
-    removeFile(fileType) {
-        try {
-            if (fileType === 'ticket') {
-                this.removeTicketImage();
-            }
-        } catch (error) {
-            console.error(`❌ [티켓모듈] 파일 제거 실패: ${fileType}`, error);
-        }
+    // 수동으로 검증 트리거
+    triggerValidation() {
+        this.validateActivityPeriod();
+        this.validateFlightDatesOnly();
+        this.checkActivityPeriodCompletion();
+        this.updateFlightSectionAvailability();
     }
 }
 
 // 전역 스코프에 노출
-window.FlightRequestTicketFixed = FlightRequestTicketFixed;
+window.FlightRequestTicket = FlightRequestTicket;
 
-console.log('✅ FlightRequestTicketFixed 모듈 로드 완료 - v8.3.0 항공권 신청 페이지 데이터 로드 문제 해결');
-console.log('🔧 v8.3.0 핵심 개선사항:', {
-    pageDataLoading: '페이지 전환 시 데이터 로드 기능 강화',
-    requiredActivityDaysLoading: '필수 활동일 로드 문제 해결',
-    prerequisiteSystemImprovement: '전제 조건 시스템 개선',
-    flightSectionToggle: '항공권 정보 섹션 활성화/비활성화 로직 개선',
-    realTimeValidation: '실시간 검증 시스템 강화',
-    publicInterface: '공개 인터페이스 메서드 추가',
-    errorHandling: '에러 처리 강화'
+console.log('✅ FlightRequestTicket 모듈 로드 완료 - Phase 2 항공권 신청 관리 모듈');
+console.log('🔧 Phase 2 핵심 기능:', {
+    activityPeriod: '현지 활동기간 검증 및 관리',
+    flightValidation: '항공권 날짜 검증 (v8.2.5 분리된 로직)',
+    purchaseMethod: '구매방식 변경 처리',
+    imageUpload: '항공권 이미지 업로드',
+    stepNavigation: '단계별 네비게이션',
+    prerequisiteSystem: '전제 조건 시스템 (항공권 섹션 활성화/비활성화)',
+    priceManagement: '가격 정보 관리',
+    submissionHandling: '제출 처리'
 });
