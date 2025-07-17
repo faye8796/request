@@ -1220,7 +1220,7 @@
         };
 
         let initializationAttempts = 0;
-        const MAX_INIT_ATTEMPTS = 3;
+        const MAX_INIT_ATTEMPTS = 6;
         let initializationTimer = null;
 
         // Phase 4: 분리된 모듈 체크 시스템
@@ -1246,7 +1246,7 @@
                             console.log(`🔄 Phase 4 초기화 재시도 ${initializationAttempts}/${MAX_INIT_ATTEMPTS}`);
                             checkAllModulesLoaded();
                         }
-                    }, 500);
+                    }, 1000);
                 } else {
                     console.error('❌ Phase 4 분리된 모듈 초기화 최대 재시도 횟수 초과');
                     showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
