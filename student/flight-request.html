@@ -271,7 +271,7 @@
                             </div>
 
                             <!-- 3단계 - 항공권 정보 -->
-                            <div class="form-section" id="flightInfoSection">
+                            <div class="form-section flight-section-disabled" id="flightInfoSection">
                                 <div class="step-indicator">
                                     <div class="step-number">3</div>
                                     <div class="step-content">
@@ -285,14 +285,20 @@
                                     항공권 정보
                                 </h2>
                                 
+                                <!-- 🆕 전제조건 상태 메시지 -->
+                                <div id="prerequisiteStatus" class="prerequisite-status pending">
+                                    <i data-lucide="info"></i>
+                                    <span>항공권 정보를 입력하려면 먼저 현지 활동기간을 입력해주세요.</span>
+                                </div>
+                                
                                 <div class="form-row">
                                     <div class="form-group">
                                         <label for="departureDate" class="form-label required">출국일</label>
-                                        <input type="date" id="departureDate" name="departureDate" class="form-input" required>
+                                        <input type="date" id="departureDate" name="departureDate" class="form-input" required disabled>
                                     </div>
                                     <div class="form-group">
                                         <label for="returnDate" class="form-label required">귀국일</label>
-                                        <input type="date" id="returnDate" name="returnDate" class="form-input" required>
+                                        <input type="date" id="returnDate" name="returnDate" class="form-input" required disabled>
                                         <span id="durationMessage" class="form-hint"></span>
                                         <!-- 🆕 v8.3.0: 귀국일 제약사항 알림 표시 공간 -->
                                         <div id="returnDateConstraintInfo" class="return-date-constraint-info" style="display: none;"></div>
@@ -303,12 +309,12 @@
                                     <div class="form-group">
                                         <label for="departureAirport" class="form-label required">출국 공항</label>
                                         <input type="text" id="departureAirport" name="departureAirport" class="form-input" 
-                                               placeholder="예: 인천국제공항 (ICN)" required>
+                                               placeholder="예: 인천국제공항 (ICN)" required disabled>
                                     </div>
                                     <div class="form-group">
                                         <label for="arrivalAirport" class="form-label required">도착 공항</label>
                                         <input type="text" id="arrivalAirport" name="arrivalAirport" class="form-input" 
-                                               placeholder="예: 베이징 서우두공항 (PEK)" required>
+                                               placeholder="예: 베이징 서우두공항 (PEK)" required disabled>
                                     </div>
                                 </div>
 
@@ -328,12 +334,12 @@
                                         <div class="form-group">
                                             <label for="ticketPrice" class="form-label required">항공권 가격</label>
                                             <input type="number" id="ticketPrice" name="ticketPrice" class="form-input" 
-                                                   placeholder="예: 850000" min="0" step="1000" required>
+                                                   placeholder="예: 850000" min="0" step="1000" required disabled>
                                             <span class="form-hint">숫자만 입력해주세요 (천 원 단위 권장)</span>
                                         </div>
                                         <div class="form-group">
                                             <label for="currency" class="form-label required">통화</label>
-                                            <select id="currency" name="currency" class="form-input" required>
+                                            <select id="currency" name="currency" class="form-input" required disabled>
                                                 <option value="KRW">KRW (원)</option>
                                                 <option value="USD">USD (달러)</option>
                                                 <option value="CNY">CNY (위안)</option>
@@ -347,7 +353,7 @@
                                     <div class="form-group">
                                         <label for="priceSource" class="form-label required">가격 정보 출처</label>
                                         <input type="text" id="priceSource" name="priceSource" class="form-input" 
-                                               placeholder="예: 대한항공 공식 홈페이지, 인터파크 투어, 스카이스캐너" required>
+                                               placeholder="예: 대한항공 공식 홈페이지, 인터파크 투어, 스카이스캐너" required disabled>
                                         <span class="form-hint">항공권 가격을 확인한 사이트나 여행사명을 입력해주세요</span>
                                     </div>
                                 </div>
@@ -501,18 +507,15 @@
         </div>
     </div>
 
-    <!-- 🚀 v9.1.0: 단순화된 초기화 시스템 -->
-<!-- flight-request.html 파일의 </body> 태그 직전에 추가할 스크립트들 -->
-<!-- 기존의 v9.1.0 스크립트들을 이 순서로 교체하세요 -->
-
-    <!-- 🚀 1단계: 기본 라이브러리 (기존 유지) -->
+    <!-- 🚀 v9.2.0: 수정된 초기화 시스템 -->
+    <!-- 1단계: 기본 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
     <script src="../js/config.js"></script>
     <script src="../js/common/supabase-core.js"></script>
     <script src="../js/utils.js"></script>
     <script src="../js/common/storage-utils.js"></script>
 
-    <!-- 🎯 2단계: 이벤트 버스 즉시 생성 (새로 추가) -->
+    <!-- 2단계: 이벤트 버스 생성 -->
     <script>
         console.log('⚡ 이벤트 시스템 초기화...');
         
@@ -540,11 +543,10 @@
         console.log('✅ 이벤트 버스 준비 완료');
     </script>
 
-    <!-- 🔌 3단계: API 이벤트 어댑터 (새로 추가) -->
+    <!-- 3단계: API 이벤트 어댑터 -->
     <script src="../js/student/api-event-adapter.js"></script>
 
-
-    <!-- 🔄 4단계: 기존 모듈들 (폴백용 - 기존 유지하되 async 로드) -->
+    <!-- 4단계: 핵심 모듈들 (UI 모듈 제외) -->
     <script src="../js/student/flight-request-api.js" async></script>
     <script src="../js/student/flight-request-utils.js" async></script>
     <script src="../js/student/flight-request-init.js" async></script>
@@ -552,105 +554,191 @@
     <script src="../js/student/flight-request-ticket.js" async></script>
     <script src="../js/student/flight-request-coordinator.js" async></script>
 
-<!-- 🎨 5단계: 기본 초기화 (v1.4.0 초기화 모듈 통합) -->
-<script>
-    console.log('🚀 기본 초기화 시작 - v1.4.0 초기화 모듈 통합...');
-    
-    // 즉시 앱 표시 (coordinator가 로드되기 전까지 기본 기능)
-    function initializeAppImmediate() {
-        const globalLoading = document.getElementById('globalLoadingState');
-        const app = document.getElementById('app');
+    <!-- 5단계: 기본 초기화 및 폴백 기능 -->
+    <script>
+        console.log('🚀 v9.2.0: 기본 초기화 시작 - flight-request-ui.js 제거됨');
         
-        if (globalLoading) globalLoading.style.display = 'none';
-        if (app) app.style.display = 'block';
-        
-        // Lucide 아이콘 초기화
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-        
-        // 기본 네비게이션 설정
-        setupBasicNavigation();
-        
-        console.log('✅ 기본 초기화 완료 - coordinator 로드 대기 중...');
-    }
-    
-    function setupBasicNavigation() {
-        // 대시보드로 돌아가기
-        const backBtn = document.getElementById('backToDashboard');
-        if (backBtn) {
-            backBtn.addEventListener('click', () => {
-                window.location.href = 'dashboard.html';
-            });
-        }
-        
-        // 여권정보 버튼 (coordinator 로드 후 재설정됨)
-        const passportBtn = document.getElementById('passportInfoBtn');
-        if (passportBtn) {
-            passportBtn.addEventListener('click', () => {
-                // coordinator가 준비되면 해당 메서드 사용, 아니면 폴백
-                if (window.flightRequestCoordinator?.showPassportInfoPage) {
-                    window.flightRequestCoordinator.showPassportInfoPage();
-                } else {
-                    // 폴백: 간단한 페이지 전환
-                    showPassportInfoPage();
-                }
-            });
-        }
-    }
-    
-    function showPassportInfoPage() {
-        const flightPage = document.getElementById('flightRequestPage');
-        const passportPage = document.getElementById('passportInfoPage');
-        
-        if (flightPage && passportPage) {
-            flightPage.classList.remove('active');
-            flightPage.style.display = 'none';
+        // 즉시 앱 표시
+        function initializeAppImmediate() {
+            const globalLoading = document.getElementById('globalLoadingState');
+            const app = document.getElementById('app');
             
-            passportPage.classList.add('active');
-            passportPage.style.display = 'block';
+            if (globalLoading) globalLoading.style.display = 'none';
+            if (app) app.style.display = 'block';
+            
+            // Lucide 아이콘 초기화
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+            // 기본 네비게이션 설정
+            setupBasicNavigation();
+            
+            // 🆕 기본 활동기간 입력 기능 설정
+            setupBasicActivityPeriodInputs();
+            
+            console.log('✅ 기본 초기화 완료 - coordinator 로드 대기 중...');
         }
-    }
-    
-    // DOM 준비되면 즉시 실행
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeAppImmediate);
-    } else {
-        initializeAppImmediate();
-    }
-    
-    // 🆕 coordinator 로드 후 초기화 완료 체크
-    function waitForCoordinatorAndInit() {
-        const checkCoordinator = () => {
-            if (window.flightRequestCoordinator && window.flightRequestCoordinator.isInitialized) {
-                console.log('✅ FlightRequestCoordinator v1.4.0 초기화 완료 - 초기화 모듈 통합됨');
+        
+        function setupBasicNavigation() {
+            // 대시보드로 돌아가기
+            const backBtn = document.getElementById('backToDashboard');
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
+                    window.location.href = 'dashboard.html';
+                });
+            }
+            
+            // 여권정보 버튼
+            const passportBtn = document.getElementById('passportInfoBtn');
+            if (passportBtn) {
+                passportBtn.addEventListener('click', () => {
+                    if (window.flightRequestCoordinator?.showPassportInfoPage) {
+                        window.flightRequestCoordinator.showPassportInfoPage();
+                    } else {
+                        showPassportInfoPage();
+                    }
+                });
+            }
+        }
+        
+        function showPassportInfoPage() {
+            const flightPage = document.getElementById('flightRequestPage');
+            const passportPage = document.getElementById('passportInfoPage');
+            
+            if (flightPage && passportPage) {
+                flightPage.classList.remove('active');
+                flightPage.style.display = 'none';
                 
-                // 초기화 모듈 상태 확인
-                const initModule = window.flightRequestCoordinator.getModule('init');
-                if (initModule) {
-                    const initStatus = initModule.getInitStatus();
-                    console.log('✅ 초기화 모듈 상태:', initStatus);
+                passportPage.classList.add('active');
+                passportPage.style.display = 'block';
+            }
+        }
+        
+        // 🆕 기본 활동기간 입력 기능
+        function setupBasicActivityPeriodInputs() {
+            const arrivalEl = document.getElementById('actualArrivalDate');
+            const workEndEl = document.getElementById('actualWorkEndDate');
+            const calculatedEl = document.getElementById('calculatedDays');
+            const flightSection = document.getElementById('flightInfoSection');
+            
+            if (arrivalEl && workEndEl && calculatedEl) {
+                function updateActivityDays() {
+                    const arrival = arrivalEl.value;
+                    const workEnd = workEndEl.value;
+                    
+                    if (arrival && workEnd) {
+                        const arrivalDate = new Date(arrival);
+                        const workEndDate = new Date(workEnd);
+                        const days = Math.ceil((workEndDate - arrivalDate) / (1000 * 60 * 60 * 24)) + 1;
+                        
+                        // 활동일 표시
+                        calculatedEl.textContent = days > 0 ? days : '-';
+                        
+                        // 기본 검증 (90-120일) 및 항공권 섹션 활성화
+                        if (days >= 90 && days <= 120) {
+                            enableFlightSection();
+                        } else {
+                            disableFlightSection();
+                        }
+                    } else {
+                        calculatedEl.textContent = '-';
+                        disableFlightSection();
+                    }
                 }
                 
-                return true;
-            } else if (window.coordinatorLoadAttempts < 50) { // 5초 대기
-                window.coordinatorLoadAttempts = (window.coordinatorLoadAttempts || 0) + 1;
-                setTimeout(checkCoordinator, 100);
-            } else {
-                console.warn('⚠️ FlightRequestCoordinator 로드 타임아웃 - 기본 기능으로 동작');
-                return false;
+                arrivalEl.addEventListener('input', updateActivityDays);
+                workEndEl.addEventListener('input', updateActivityDays);
+                
+                console.log('✅ 기본 활동기간 입력 기능 설정 완료');
             }
-        };
+        }
         
-        // DOM 로드 후 coordinator 대기
-        setTimeout(checkCoordinator, 500);
-    }
-    
-    // coordinator 대기 시작
-    waitForCoordinatorAndInit();
-</script>
+        function enableFlightSection() {
+            const flightSection = document.getElementById('flightInfoSection');
+            const prerequisiteStatus = document.getElementById('prerequisiteStatus');
+            
+            if (flightSection) {
+                flightSection.classList.remove('flight-section-disabled');
+                flightSection.classList.add('flight-section-enabled');
+                
+                // 입력 필드 활성화
+                const inputs = flightSection.querySelectorAll('input, select');
+                inputs.forEach(input => input.disabled = false);
+                
+                // 상태 메시지 업데이트
+                if (prerequisiteStatus) {
+                    prerequisiteStatus.className = 'prerequisite-status success';
+                    prerequisiteStatus.innerHTML = '<i data-lucide="check-circle"></i><span>항공권 정보를 입력할 수 있습니다.</span>';
+                    
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            }
+        }
+        
+        function disableFlightSection() {
+            const flightSection = document.getElementById('flightInfoSection');
+            const prerequisiteStatus = document.getElementById('prerequisiteStatus');
+            
+            if (flightSection) {
+                flightSection.classList.add('flight-section-disabled');
+                flightSection.classList.remove('flight-section-enabled');
+                
+                // 입력 필드 비활성화
+                const inputs = flightSection.querySelectorAll('input, select');
+                inputs.forEach(input => input.disabled = true);
+                
+                // 상태 메시지 업데이트
+                if (prerequisiteStatus) {
+                    prerequisiteStatus.className = 'prerequisite-status pending';
+                    prerequisiteStatus.innerHTML = '<i data-lucide="info"></i><span>항공권 정보를 입력하려면 먼저 현지 활동기간을 입력해주세요.</span>';
+                    
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            }
+        }
+        
+        // DOM 준비되면 즉시 실행
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeAppImmediate);
+        } else {
+            initializeAppImmediate();
+        }
+        
+        // Coordinator 로드 체크
+        function waitForCoordinatorAndInit() {
+            const checkCoordinator = () => {
+                if (window.flightRequestCoordinator && window.flightRequestCoordinator.isInitialized) {
+                    console.log('✅ FlightRequestCoordinator 초기화 완료');
+                    
+                    // 초기화 모듈 상태 확인
+                    const initModule = window.flightRequestCoordinator.getModule('init');
+                    if (initModule) {
+                        const initStatus = initModule.getInitStatus();
+                        console.log('✅ 초기화 모듈 상태:', initStatus);
+                    }
+                    
+                    return true;
+                } else if (window.coordinatorLoadAttempts < 30) {
+                    window.coordinatorLoadAttempts = (window.coordinatorLoadAttempts || 0) + 1;
+                    setTimeout(checkCoordinator, 100);
+                } else {
+                    console.warn('⚠️ FlightRequestCoordinator 로드 타임아웃 - 기본 기능으로 동작');
+                    return false;
+                }
+            };
+            
+            setTimeout(checkCoordinator, 500);
+        }
+        
+        waitForCoordinatorAndInit();
+    </script>
 
-    <!-- 🛡️ 6단계: 에러 처리 (기존 유지하되 개선) -->
+    <!-- 6단계: 에러 처리 -->
     <script>
         window.addEventListener('error', function(event) {
             console.error('전역 에러:', event.error);
@@ -659,10 +747,10 @@
             if (event.target?.tagName === 'SCRIPT') {
                 console.warn('스크립트 로딩 실패:', event.target.src);
                 
-                // 최적화된 모듈 실패 시 기본 기능 활성화
-                if (event.target.src.includes('optimized-flight-ticket')) {
-                    console.log('🔄 최적화 모듈 실패 - 기본 기능으로 폴백');
-                    setTimeout(activateBasicFlightFeatures, 1000);
+                // UI 모듈 실패 시 기본 기능 활성화
+                if (event.target.src.includes('flight-request-ui')) {
+                    console.log('🔄 UI 모듈 없음 - 기본 기능으로 폴백');
+                    // UI 모듈 없이도 정상 동작하도록 이미 설정됨
                 }
             }
         });
@@ -670,47 +758,9 @@
         window.addEventListener('unhandledrejection', function(event) {
             console.error('미처리 Promise 거부:', event.reason);
         });
-        
-        // 기본 기능 활성화 (최후 폴백)
-        function activateBasicFlightFeatures() {
-            const arrivalEl = document.getElementById('actualArrivalDate');
-            const workEndEl = document.getElementById('actualWorkEndDate');
-            
-            if (arrivalEl && workEndEl) {
-                [arrivalEl, workEndEl].forEach(el => {
-                    el.addEventListener('input', () => {
-                        const arrival = arrivalEl.value;
-                        const workEnd = workEndEl.value;
-                        
-                        if (arrival && workEnd) {
-                            const days = Math.ceil(
-                                (new Date(workEnd) - new Date(arrival)) / (1000 * 60 * 60 * 24)
-                            );
-                            
-                            // 활동일 표시
-                            const calculatedEl = document.getElementById('calculatedDays');
-                            if (calculatedEl) {
-                                calculatedEl.textContent = days > 0 ? days : '-';
-                            }
-                            
-                            // 기본 검증 (90-120일)
-                            if (days >= 90 && days <= 120) {
-                                const flightSection = document.getElementById('flightInfoSection');
-                                if (flightSection) {
-                                    flightSection.classList.remove('flight-section-disabled');
-                                    flightSection.classList.add('flight-section-enabled');
-                                }
-                            }
-                        }
-                    });
-                });
-                
-                console.log('✅ 기본 항공권 기능 활성화 완료');
-            }
-        }
     </script>
 
-    <!-- 🎯 7단계: Lucide 아이콘 최종 초기화 -->
+    <!-- 7단계: Lucide 아이콘 최종 초기화 -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof lucide !== 'undefined') {
