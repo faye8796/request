@@ -778,298 +778,300 @@
     </script>
 
     <!-- 7. Phase 4: 분리된 모듈 로딩 시스템 -->
-    <script>
-        let modulesLoaded = {
-            flightRequestAPI: false,
-            flightRequestUtils: false,
-            flightRequestPassport: false,
-            flightRequestTicket: false,
-            flightRequestCoordinator: false
-        };
+<!-- flight-request.html의 845줄 부근에서 수정할 부분 -->
 
-        let initializationAttempts = 0;
-        const MAX_INIT_ATTEMPTS = 6;
-        let initializationTimer = null;
+<!-- 7. Phase 4: 분리된 모듈 로딩 시스템 - 수정 버전 -->
+<script>
+    let modulesLoaded = {
+        flightRequestAPI: false,
+        flightRequestUtils: false,
+        flightRequestPassport: false,
+        flightRequestTicket: false,
+        flightRequestCoordinator: false
+    };
 
-        // Phase 4: 분리된 모듈 체크 시스템
-        function checkAllModulesLoaded() {
-            const allLoaded = Object.values(modulesLoaded).every(Boolean);
+    let initializationAttempts = 0;
+    const MAX_INIT_ATTEMPTS = 3; // 6 → 3으로 줄임
+    let initializationTimer = null;
+
+    // Phase 4: 분리된 모듈 체크 시스템 - 개선된 버전
+    function checkAllModulesLoaded() {
+        const allLoaded = Object.values(modulesLoaded).every(Boolean);
+        
+        console.log('📦 Phase 4 분리된 모듈 로딩 상태 확인:', {
+            modules: modulesLoaded,
+            supabaseCoreReady: !!(window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized)
+        });            
+        
+        if (allLoaded) {
+            // 즉시 초기화 시도 (대기 시간 없음)
+            console.log('⏳ Phase 4 모든 분리된 모듈 로드 완료 - 즉시 초기화 시작...');
             
-            console.log('📦 Phase 4 분리된 모듈 로딩 상태 확인:', {
-                modules: modulesLoaded,
-                supabaseCoreReady: !!(window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized)
-            });            
-            if (allLoaded) {
-                // API 초기화 완료 대기
-                console.log('⏳ Phase 4 모든 분리된 모듈 로드 완료 - 시스템 초기화 대기 중...');
-                waitForSystemInitialization();
+            // 타이머 정리
+            if (initializationTimer) {
+                clearTimeout(initializationTimer);
+                initializationTimer = null;
+            }
+            
+            // 즉시 초기화
+            setTimeout(initializeFlightRequestSystemEnhanced, 100);
+        } else {
+            console.log('⏳ Phase 4 분리된 모듈 로딩 대기중...');
+            
+            // 재시도 로직 (간소화)
+            if (initializationAttempts < MAX_INIT_ATTEMPTS) {
+                initializationAttempts++;
+                initializationTimer = setTimeout(() => {
+                    console.log(`🔄 Phase 4 초기화 재시도 ${initializationAttempts}/${MAX_INIT_ATTEMPTS}`);
+                    checkAllModulesLoaded();
+                }, 500); // 1000ms → 500ms로 단축
             } else {
-                console.log('⏳ Phase 4 분리된 모듈 로딩 대기중...');
-                
-                // 재시도 로직
-                if (initializationAttempts < MAX_INIT_ATTEMPTS) {
-                    initializationAttempts++;
-                    initializationTimer = setTimeout(() => {
-                        if (!window.flightRequestCoordinator) {
-                            console.log(`🔄 Phase 4 초기화 재시도 ${initializationAttempts}/${MAX_INIT_ATTEMPTS}`);
-                            checkAllModulesLoaded();
-                        }
-                    }, 1000);
-                } else {
-                    console.error('❌ Phase 4 분리된 모듈 초기화 최대 재시도 횟수 초과');
-                    showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
-                }
+                console.error('❌ Phase 4 분리된 모듈 초기화 최대 재시도 횟수 초과');
+                // 폴백 초기화 시도
+                fallbackInitialization();
             }
         }
+    }
 
-        // Phase 4: 분리된 모듈 시스템 초기화 대기
-        async function waitForSystemInitialization() {
-            try {
-                console.log('🔄 Phase 4 분리된 모듈 시스템 초기화 대기 시작...');
+    // 폴백 초기화 함수 추가
+    function fallbackInitialization() {
+        console.log('🔄 Phase 4 폴백 초기화 시도...');
+        
+        try {
+            // 기본 필수 요소들 확인
+            const hasSupabaseCore = !!(window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized);
+            const hasAPI = !!window.flightRequestAPI;
+            
+            if (hasSupabaseCore && hasAPI) {
+                console.log('✅ Phase 4 폴백 초기화 - 기본 시스템 가동');
                 
-                const maxWaitTime = 8000; // 8초 대기
-                const checkInterval = 200; // 200ms마다 확인
-                const startTime = Date.now();
-                
-                while (Date.now() - startTime < maxWaitTime) {
-                    // FlightRequestCoordinator 인스턴스 존재 및 초기화 확인
-                    if (window.flightRequestCoordinator?.isInitialized) {
-                        console.log('✅ Phase 4 분리된 모듈 시스템 초기화 완료 확인');
-                        initializeFlightRequestSystemEnhanced();
-                        return;
-                    }
-                    
-                    await new Promise(resolve => setTimeout(resolve, checkInterval));
-                }
-                
-                console.error('❌ Phase 4 분리된 모듈 시스템 초기화 대기 시간 초과');
-                throw new Error('분리된 모듈 시스템 초기화 시간 초과');
-                
-            } catch (error) {
-                console.error('❌ Phase 4 분리된 모듈 시스템 초기화 대기 실패:', error);
-                showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
-            }
-        }
-
-        // Phase 4: Enhanced 초기화 시스템 (분리된 모듈용)
-        async function initializeFlightRequestSystemEnhanced() {
-            try {
-                console.log('🚀 Phase 4 Enhanced 분리된 모듈 시스템 초기화 시작...');
-                
-                // 1. 전체 로딩 상태 표시
-                showSystemLoading('분리된 모듈 시스템을 초기화하고 있습니다...');
-                
-                // 2. SupabaseCore 초기화 완료 대기
-                console.log('⏳ Phase 4 SupabaseCore 초기화 대기...');
-                await ensureSupabaseCoreReady();
-                
-                // 3. API 초기화 완료 대기
-                console.log('⏳ Phase 4 FlightRequestAPI 초기화 대기...');
-                await ensureAPIReady();
-                
-                // 4. Coordinator가 자동으로 다른 모듈들을 초기화하므로 별도 작업 불필요
-                console.log('⏳ Phase 4 분리된 모듈들 자동 초기화 완료...');
-                
-                // 5. 로딩 상태 해제
+                // Coordinator 없이도 기본 기능 동작하도록 설정
                 hideSystemLoading();
                 
-                console.log('✅ Phase 4 Enhanced 분리된 모듈 시스템 초기화 완료');
-                
-            } catch (error) {
-                console.error('❌ Phase 4 Enhanced 분리된 모듈 시스템 초기화 실패:', error);
-                hideSystemLoading();
-                showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
-            }
-        }
-
-        // SupabaseCore 준비 상태 보장
-        async function ensureSupabaseCoreReady() {
-            const maxWaitTime = 8000; // 8초 대기
-            const checkInterval = 200; // 200ms마다 확인
-            const startTime = Date.now();
-            
-            while (Date.now() - startTime < maxWaitTime) {
-                // SupabaseAPI.core 확인
-                if (window.SupabaseAPI?.core?.isInitialized) {
-                    console.log('✅ Phase 4 SupabaseAPI.core 준비 완료');
-                    return true;
-                }
-                
-                // 기존 SupabaseCore 확인
-                if (window.SupabaseCore?._initialized && window.SupabaseCore.client) {
-                    console.log('✅ Phase 4 기존 SupabaseCore 준비 완료');
-                    return true;
-                }
-                
-                await new Promise(resolve => setTimeout(resolve, checkInterval));
-            }
-            
-            throw new Error('SupabaseCore 초기화 시간 초과');
-        }
-
-        // API 준비 상태 보장
-        async function ensureAPIReady() {
-            const maxWaitTime = 10000; // 10초 대기
-            const checkInterval = 200; // 200ms마다 확인
-            const startTime = Date.now();
-            
-            while (Date.now() - startTime < maxWaitTime) {
-                if (window.flightRequestAPI?.isInitialized) {
-                    console.log('✅ Phase 4 FlightRequestAPI 준비 완료');
-                    return true;
-                }
-                
-                // API 인스턴스가 있지만 초기화되지 않은 경우
-                if (window.flightRequestAPI && !window.flightRequestAPI.isInitialized) {
+                // 기본 초기화 수행
+                setTimeout(() => {
                     try {
-                        await window.flightRequestAPI.ensureInitialized();
-                        if (window.flightRequestAPI.isInitialized) {
-                            console.log('✅ Phase 4 FlightRequestAPI 강제 초기화 성공');
-                            return true;
+                        if (window.flightRequestAPI && !window.flightRequestAPI.isInitialized) {
+                            window.flightRequestAPI.ensureInitialized?.();
                         }
+                        
+                        if (window.flightRequestTicket && typeof window.flightRequestTicket.init === 'function') {
+                            window.flightRequestTicket.init();
+                        }
+                        
+                        console.log('✅ Phase 4 폴백 초기화 완료');
                     } catch (error) {
-                        console.warn('⚠️ Phase 4 FlightRequestAPI 강제 초기화 실패:', error);
+                        console.error('❌ Phase 4 폴백 초기화 실패:', error);
+                        showError('시스템이 제한된 모드로 실행됩니다. 일부 기능이 제한될 수 있습니다.');
                     }
+                }, 100);
+            } else {
+                console.error('❌ Phase 4 폴백 초기화 불가 - 기본 의존성 없음');
+                showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+                hideSystemLoading();
+            }
+        } catch (error) {
+            console.error('❌ Phase 4 폴백 초기화 예외:', error);
+            showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+            hideSystemLoading();
+        }
+    }
+
+    // Phase 4: 분리된 모듈 시스템 초기화 대기 - 간소화 버전
+    async function waitForSystemInitialization() {
+        console.log('🔄 Phase 4 분리된 모듈 시스템 초기화 대기 생략 - 직접 초기화');
+        
+        // 대기 없이 직접 초기화
+        try {
+            await initializeFlightRequestSystemEnhanced();
+        } catch (error) {
+            console.error('❌ Phase 4 직접 초기화 실패:', error);
+            fallbackInitialization();
+        }
+    }
+
+    // Phase 4: Enhanced 초기화 시스템 (분리된 모듈용) - 개선된 버전
+    async function initializeFlightRequestSystemEnhanced() {
+        try {
+            console.log('🚀 Phase 4 Enhanced 분리된 모듈 시스템 초기화 시작...');
+            
+            // 1. 전체 로딩 상태 표시
+            showSystemLoading('분리된 모듈 시스템을 초기화하고 있습니다...');
+            
+            // 2. SupabaseCore 초기화 완료 대기 (단축)
+            console.log('⏳ Phase 4 SupabaseCore 초기화 대기...');
+            await ensureSupabaseCoreReady();
+            
+            // 3. API 초기화 완료 대기 (단축)
+            console.log('⏳ Phase 4 FlightRequestAPI 초기화 대기...');
+            await ensureAPIReady();
+            
+            // 4. Coordinator 초기화 시도
+            console.log('⏳ Phase 4 Coordinator 초기화 시도...');
+            if (typeof FlightRequestCoordinator !== 'undefined') {
+                if (!window.flightRequestCoordinator) {
+                    window.flightRequestCoordinator = new FlightRequestCoordinator();
                 }
                 
-                await new Promise(resolve => setTimeout(resolve, checkInterval));
-            }
-            
-            throw new Error('FlightRequestAPI 초기화 시간 초과');
-        }
-
-        // 시스템 로딩 상태 관리
-        function showSystemLoading(message) {
-            const loadingEl = document.getElementById('globalLoadingState');
-            if (loadingEl) {
-                loadingEl.style.display = 'flex';
-                
-                const messageEl = loadingEl.querySelector('.loading-message h3');
-                if (messageEl) {
-                    messageEl.textContent = message;
-                }
-            }
-        }
-
-        function hideSystemLoading() {
-            const loadingEl = document.getElementById('globalLoadingState');
-            if (loadingEl) {
-                loadingEl.style.display = 'none';
-            }
-            
-            const appEl = document.getElementById('app');
-            if (appEl) {
-                appEl.style.display = 'block';
-            }
-        }
-
-        // 모듈 로드 오류 처리
-        function handleModuleError(moduleName, error) {
-            console.error(`❌ ${moduleName} 모듈 로드 실패:`, error);
-            showError(`${moduleName} 모듈을 불러올 수 없습니다. 페이지를 새로고침해주세요.`);
-        }
-
-        // Phase 4: 최종 초기화 확인 (분리된 모듈용)
-        setTimeout(() => {
-            if (!window.flightRequestCoordinator?.isInitialized) {
-                console.warn('⚠️ Phase 4: 5초 후에도 분리된 모듈 시스템이 초기화되지 않음 - 강제 복구 시도');
-                
-                // 디버깅 정보 출력
-                console.log('🔍 강제 복구 시 시스템 상태:', collectDebugInfo());
-                
-                // 마지막 시도
-                if (typeof FlightRequestCoordinator !== 'undefined') {
-                    const hasSupabaseCore = !!(window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized);
-                    const hasAPI = window.flightRequestAPI?.isInitialized;
-                    
-                    if (hasSupabaseCore && hasAPI) {
-                        try {
-                            console.log('🔄 Phase 4 최종 강제 초기화 시도...');
-                            // Coordinator가 자동으로 모든 모듈을 초기화함
-                            window.flightRequestCoordinator = new FlightRequestCoordinator();
-                            console.log('✅ Phase 4 최종 강제 초기화 성공');
-                            hideSystemLoading();
-                        } catch (error) {
-                            console.error('❌ Phase 4 최종 강제 초기화 실패:', error);
-                            showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
-                            hideSystemLoading();
-                        }
-                    } else {
-                        console.error('❌ Phase 4 의존성 없음 - 초기화 불가:', {
-                            hasSupabaseCore,
-                            hasAPI
-                        });
-                        showError('시스템 리소스 로딩에 실패했습니다. 페이지를 새로고침해주세요.');
-                        hideSystemLoading();
+                // Coordinator 초기화 완료 대기 (짧은 시간)
+                let coordinatorReady = false;
+                for (let i = 0; i < 10; i++) { // 2초 대기 (200ms * 10)
+                    if (window.flightRequestCoordinator?.isInitialized) {
+                        coordinatorReady = true;
+                        break;
                     }
-                } else {
-                    console.error('❌ Phase 4 FlightRequestCoordinator 클래스 없음');
-                    showError('시스템 리소스 로딩에 실패했습니다. 페이지를 새로고침해주세요.');
-                    hideSystemLoading();
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                if (!coordinatorReady) {
+                    console.warn('⚠️ Phase 4 Coordinator 초기화 지연 - 폴백 모드로 진행');
                 }
             }
-        }, 5000);
-
-        // 디버깅 정보 수집
-        function collectDebugInfo() {
-            return {
-                timestamp: new Date().toISOString(),
-                url: window.location.href,
-                userAgent: navigator.userAgent,
-                viewport: {
-                    width: window.innerWidth,
-                    height: window.innerHeight
-                },
-                localStorage: {
-                    hasCurrentStudent: !!localStorage.getItem('currentStudent'),
-                    keys: Object.keys(localStorage).filter(key => 
-                        key.includes('user') || key.includes('Student') || key.includes('auth')
-                    )
-                },
-                globals: {
-                    hasSupabaseAPI: !!window.SupabaseAPI,
-                    hasSupabaseCore: !!window.SupabaseCore,
-                    hasFlightRequestAPI: !!window.flightRequestAPI,
-                    hasFlightRequestPassport: !!window.flightRequestPassport,
-                    hasFlightRequestTicket: !!window.flightRequestTicket,
-                    hasFlightRequestCoordinator: !!window.flightRequestCoordinator,
-                    apiInitialized: window.flightRequestAPI?.isInitialized,
-                    coordinatorInitialized: window.flightRequestCoordinator?.isInitialized,
-                    supabaseCoreInitialized: window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized
-                },
-                modules: modulesLoaded,
-                initializationAttempts: initializationAttempts,
-                performance: {
-                    loadStart: performance.timing?.loadEventStart,
-                    loadEnd: performance.timing?.loadEventEnd,
-                    domReady: performance.timing?.domContentLoadedEventEnd
-                }
-            };
+            
+            // 5. 로딩 상태 해제
+            hideSystemLoading();
+            
+            console.log('✅ Phase 4 Enhanced 분리된 모듈 시스템 초기화 완료');
+            
+        } catch (error) {
+            console.error('❌ Phase 4 Enhanced 분리된 모듈 시스템 초기화 실패:', error);
+            
+            // 폴백으로 넘어감
+            console.log('🔄 초기화 실패 - 폴백 모드로 전환');
+            fallbackInitialization();
         }
+    }
 
-        // 개발자 도구용 디버깅 함수
-        window.debugFlightRequest = function() {
-            console.group('🔍 Phase 4 분리된 모듈 시스템 디버깅 정보');
-            
-            const debugInfo = collectDebugInfo();
-            console.log('시스템 상태:', debugInfo);
-            
-            if (window.flightRequestAPI) {
-                console.log('API 상태:', window.flightRequestAPI.getStatus());
+    // SupabaseCore 준비 상태 보장 - 단축 버전
+    async function ensureSupabaseCoreReady() {
+        const maxWaitTime = 3000; // 8초 → 3초로 단축
+        const checkInterval = 100; // 200ms → 100ms로 단축
+        const startTime = Date.now();
+        
+        while (Date.now() - startTime < maxWaitTime) {
+            // SupabaseAPI.core 확인
+            if (window.SupabaseAPI?.core?.isInitialized) {
+                console.log('✅ Phase 4 SupabaseAPI.core 준비 완료');
+                return true;
             }
             
-            if (window.flightRequestCoordinator) {
-                console.log('Coordinator 상태:', {
-                    isInitialized: window.flightRequestCoordinator.isInitialized,
-                    passport: !!window.flightRequestCoordinator.passport,
-                    ticket: !!window.flightRequestCoordinator.ticket,
-                    globalState: window.flightRequestCoordinator.globalState
-                });
+            // 기존 SupabaseCore 확인
+            if (window.SupabaseCore?._initialized && window.SupabaseCore.client) {
+                console.log('✅ Phase 4 기존 SupabaseCore 준비 완료');
+                return true;
             }
             
-            console.groupEnd();
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
+        }
+        
+        throw new Error('SupabaseCore 초기화 시간 초과 (3초)');
+    }
+
+    // API 준비 상태 보장 - 단축 버전
+    async function ensureAPIReady() {
+        const maxWaitTime = 3000; // 10초 → 3초로 단축
+        const checkInterval = 100; // 200ms → 100ms로 단축
+        const startTime = Date.now();
+        
+        while (Date.now() - startTime < maxWaitTime) {
+            if (window.flightRequestAPI?.isInitialized) {
+                console.log('✅ Phase 4 FlightRequestAPI 준비 완료');
+                return true;
+            }
+            
+            // API 인스턴스가 있지만 초기화되지 않은 경우
+            if (window.flightRequestAPI && !window.flightRequestAPI.isInitialized) {
+                try {
+                    await window.flightRequestAPI.ensureInitialized();
+                    if (window.flightRequestAPI.isInitialized) {
+                        console.log('✅ Phase 4 FlightRequestAPI 강제 초기화 성공');
+                        return true;
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Phase 4 FlightRequestAPI 강제 초기화 실패:', error);
+                }
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
+        }
+        
+        // API가 없어도 계속 진행 (폴백)
+        console.warn('⚠️ Phase 4 FlightRequestAPI 초기화 시간 초과 - 폴백 모드로 진행');
+        return false; // throw 대신 false 반환
+    }
+
+    // 시스템 로딩 상태 관리
+    function showSystemLoading(message) {
+        const loadingEl = document.getElementById('globalLoadingState');
+        if (loadingEl) {
+            loadingEl.style.display = 'flex';
+            
+            const messageEl = loadingEl.querySelector('.loading-message h3');
+            if (messageEl) {
+                messageEl.textContent = message;
+            }
+        }
+    }
+
+    function hideSystemLoading() {
+        const loadingEl = document.getElementById('globalLoadingState');
+        if (loadingEl) {
+            loadingEl.style.display = 'none';
+        }
+        
+        const appEl = document.getElementById('app');
+        if (appEl) {
+            appEl.style.display = 'block';
+        }
+    }
+
+    // 모듈 로드 오류 처리
+    function handleModuleError(moduleName, error) {
+        console.error(`❌ ${moduleName} 모듈 로드 실패:`, error);
+        
+        // 특정 모듈 실패시 해당 모듈을 false로 설정하고 계속 진행
+        const moduleKey = moduleName.replace(/\s/g, '').replace('FlightRequest', 'flightRequest');
+        if (modulesLoaded.hasOwnProperty(moduleKey)) {
+            modulesLoaded[moduleKey] = false;
+        }
+        
+        // 3초 후 폴백 초기화 시도
+        setTimeout(fallbackInitialization, 3000);
+    }
+
+    // Phase 4: 최종 안전장치 - 간소화
+    setTimeout(() => {
+        if (!window.flightRequestCoordinator?.isInitialized) {
+            console.warn('⚠️ Phase 4: 3초 후에도 분리된 모듈 시스템이 초기화되지 않음 - 최종 폴백');
+            fallbackInitialization();
+        }
+    }, 3000); // 5초 → 3초로 단축
+
+    // 디버깅 정보 수집 (간소화)
+    function collectDebugInfo() {
+        return {
+            timestamp: new Date().toISOString(),
+            modules: modulesLoaded,
+            globals: {
+                hasSupabaseAPI: !!window.SupabaseAPI,
+                hasSupabaseCore: !!window.SupabaseCore,
+                hasFlightRequestAPI: !!window.flightRequestAPI,
+                hasFlightRequestCoordinator: !!window.flightRequestCoordinator,
+                apiInitialized: window.flightRequestAPI?.isInitialized,
+                coordinatorInitialized: window.flightRequestCoordinator?.isInitialized,
+                supabaseCoreInitialized: window.SupabaseAPI?.core?.isInitialized || window.SupabaseCore?._initialized
+            },
+            initializationAttempts: initializationAttempts
         };
-    </script>
+    }
+
+    // 개발자 도구용 디버깅 함수 (간소화)
+    window.debugFlightRequest = function() {
+        console.group('🔍 Phase 4 분리된 모듈 시스템 디버깅 정보');
+        console.log('시스템 상태:', collectDebugInfo());
+        console.groupEnd();
+    };
+</script>
 
     <!-- 전역 에러 처리 강화 -->
     <script>
