@@ -242,8 +242,10 @@ class FlightRequestTicket {
         
         [arrivalElement, workEndElement].forEach(element => {
             if (element) {
-                element.addEventListener('change', () => {
-                    this.debouncedActivityValidation();
+                // 🔧 추가: 즉시 활동일 계산 표시
+                element.addEventListener('input', () => {
+                    this.calculateAndShowActivityDaysImmediate();
+
                 });
                 
                 element.addEventListener('input', () => {
@@ -262,9 +264,9 @@ class FlightRequestTicket {
 
         this.validationDebounceTimer = setTimeout(() => {
             this.validateActivityPeriod();
-            this.checkActivityPeriodCompletion();
-            this.updateFlightSectionAvailability();
-        }, 300);
+            const completionStatus = this.checkActivityPeriodCompletion();
+            this.updateFlightSectionAvailabilityDirect(completionStatus);
+        }, 100);
     }
 
     // 🔧 v8.2.6: 현지 활동기간 검증 - 활동기간 범위 검증 포함
@@ -277,6 +279,11 @@ class FlightRequestTicket {
             
             const arrivalDate = arrivalDateEl?.value;
             const workEndDate = workEndDateEl?.value;
+
+            if (arrivalDate && workEndDate) {
+            this.updateActivityValidationUILoading();
+            }
+
             
             console.log('📋 [활동기간검증] v8.2.6: 입력된 날짜:', {
                 현지도착일: arrivalDate,
@@ -404,6 +411,33 @@ class FlightRequestTicket {
         }
     }
 
+    // 🔧 추가: 즉시 활동일 계산 및 표시
+    calculateAndShowActivityDaysImmediate() {
+        try {
+            const arrivalDate = document.getElementById('actualArrivalDate')?.value;
+            const workEndDate = document.getElementById('actualWorkEndDate')?.value;
+        
+            if (arrivalDate && workEndDate) {
+                // 즉시 활동일 계산
+                const arrival = new Date(arrivalDate);
+                const workEnd = new Date(workEndDate);
+                let activityDays = 0;
+                
+                if (arrival < workEnd) {
+                    activityDays = Math.ceil((workEnd - arrival) / (1000 * 60 * 60 * 24));
+                }
+                
+                // 즉시 UI 업데이트
+                this.updateCalculatedActivityDays(activityDays);
+                
+                console.log('⚡ [즉시계산] 활동일 즉시 표시:', activityDays);
+            }
+            
+        } catch (error) {
+            console.error('❌ [즉시계산] 실패:', error);
+        }
+    }
+
     updateActivityValidationUI(validation) {
         try {
             console.log('🔄 [활동기간UI] 검증 결과 UI 업데이트:', validation);
@@ -449,6 +483,46 @@ class FlightRequestTicket {
             console.error('❌ [활동기간UI] 검증 결과 UI 업데이트 실패:', error);
         }
     }
+
+    // 🔧 추가: 활동기간 검증 로딩 상태 UI
+    updateActivityValidationUILoading() {
+        try {
+            console.log('🔄 [활동기간UI] 검증 로딩 상태 표시...');
+            
+            const validationStatusEl = document.getElementById('validationStatus');
+            if (validationStatusEl) {
+                validationStatusEl.className = 'validation-status loading';
+                validationStatusEl.innerHTML = 
+                    `<i data-lucide="loader-2"></i>활동일 체크중...`;
+                validationStatusEl.style.color = '#6b7280';
+                validationStatusEl.style.backgroundColor = '#f9fafb';
+                validationStatusEl.style.border = '1px solid #e5e7eb';
+                validationStatusEl.style.display = 'flex';
+                validationStatusEl.style.alignItems = 'center';
+                validationStatusEl.style.gap = '8px';
+                validationStatusEl.style.padding = '12px';
+                validationStatusEl.style.borderRadius = '6px';
+                validationStatusEl.style.marginTop = '8px';
+            
+                // 로딩 아이콘 애니메이션
+                const icon = validationStatusEl.querySelector('i');
+                if (icon) {
+                    icon.style.animation = 'spin 1s linear infinite';
+                }
+                
+                // 아이콘 새로고침
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+            
+            console.log('✅ [활동기간UI] 검증 로딩 상태 표시 완료');
+            
+        } catch (error) {
+            console.error('❌ [활동기간UI] 로딩 상태 표시 실패:', error);
+        }
+    }
+
 
     // === 🔧 v8.2.6: 전제 조건 시스템 강화 ===
 
@@ -528,6 +602,21 @@ class FlightRequestTicket {
             // 오류 시 보수적으로 비활성화
             this.flightSectionEnabled = false;
             this.toggleFlightInputFields(false);
+        }
+    }
+
+    // 중복 호출 방지용 직접 업데이트 메서드
+    updateFlightSectionAvailabilityDirect(status) {
+        try {
+            const shouldEnable = status.completed && status.valid;
+            this.flightSectionEnabled = shouldEnable;
+        
+            this.toggleFlightInputFields(shouldEnable);
+            this.updatePrerequisiteStatusMessage(status);
+        
+            console.log('✅ [전제조건] 직접 업데이트 완료:', shouldEnable);
+        } catch (error) {
+            console.error('❌ [전제조건] 직접 업데이트 실패:', error);
         }
     }
 

@@ -17,6 +17,21 @@
             border: 1px solid #e2e8f0;
         }
 
+        /* 로딩 아이콘 회전 애니메이션 */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 검증 상태 부드러운 전환 */
+        .validation-status {
+            transition: all 0.3s ease;
+        }
+        
+        .validation-status.loading {
+            opacity: 0.8;
+        }
+
         .subsection-title {
             font-size: 16px;
             font-weight: 600;
