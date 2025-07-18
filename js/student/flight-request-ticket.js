@@ -675,86 +675,21 @@ class FlightRequestTicket {
     }
 
     toggleFlightInputFields(enabled) {
-        try {
-            console.log('🔄 [전제조건] v8.2.6: 항공권 입력 필드 활성화/비활성화:', enabled);
-            
-            // 항공권 관련 입력 필드들
-            const flightInputSelectors = [
-                '#departureDate',
-                '#returnDate',
-                '#departureAirport',
-                '#arrivalAirport',
-                '#ticketPrice',
-                '#currency',
-                '#priceSource',
-                '#purchaseLink',
-                '#flightImage',
-                'input[name="purchaseType"]'
-            ];
-            
-            let changedElements = 0;
-            
-            // 각 요소의 활성화/비활성화 처리
-            flightInputSelectors.forEach(selector => {
-                const elements = document.querySelectorAll(selector);
-                elements.forEach(element => {
-                    if (element) {
-                        element.disabled = !enabled;
-                        
-                        // 시각적 스타일 변경
-                        if (enabled) {
-                            element.style.opacity = '1';
-                            element.style.cursor = 'auto';
-                            element.style.backgroundColor = '';
-                        } else {
-                            element.style.opacity = '0.5';
-                            element.style.cursor = 'not-allowed';
-                            element.style.backgroundColor = '#f9fafb';
-                        }
-                        
-                        changedElements++;
-                    }
-                });
-            });
-            
-            // 항공권 정보 섹션 전체 스타일 변경
-            const flightInfoSection = this.findFlightInfoSection();
-            if (flightInfoSection) {
-                if (enabled) {
-                    flightInfoSection.style.opacity = '1';
-                    flightInfoSection.style.filter = 'none';
-                    flightInfoSection.classList.remove('disabled');
-                } else {
-                    flightInfoSection.style.opacity = '0.6';
-                    flightInfoSection.style.filter = 'grayscale(30%)';
-                    flightInfoSection.classList.add('disabled');
-                }
+        console.log('🔄 [전제조건] 항공권 입력 필드:', enabled ? '활성화' : '비활성화');
+    
+        const flightSection = document.getElementById('flightInfoSection');
+    
+        if (flightSection) {
+            if (enabled) {
+                flightSection.classList.remove('flight-section-disabled');
+                flightSection.classList.add('flight-section-enabled');
+            } else {
+                flightSection.classList.add('flight-section-disabled');
+                flightSection.classList.remove('flight-section-enabled');
             }
-            
-            // 제출 버튼 상태 변경
-            const submitBtn = document.getElementById('submitBtn');
-            if (submitBtn) {
-                submitBtn.disabled = !enabled;
-                
-                if (enabled) {
-                    submitBtn.style.opacity = '1';
-                    submitBtn.style.cursor = 'pointer';
-                } else {
-                    submitBtn.style.opacity = '0.5';
-                    submitBtn.style.cursor = 'not-allowed';
-                }
-            }
-            
-            console.log('✅ [전제조건] v8.2.6: 항공권 입력 필드 상태 변경 완료:', {
-                활성화상태: enabled,
-                변경된요소수: changedElements,
-                섹션스타일변경: !!flightInfoSection,
-                제출버튼변경: !!submitBtn
-            });
-            
-        } catch (error) {
-            console.error('❌ [전제조건] v8.2.6: 항공권 입력 필드 상태 변경 실패:', error);
         }
+        
+        console.log('✅ [전제조건] 항공권 입력 필드 상태 변경 완료');
     }
 
     findFlightInfoSection() {
