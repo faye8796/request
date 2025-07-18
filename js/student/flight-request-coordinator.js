@@ -1,20 +1,16 @@
-// flight-request-coordinator.js - v1.5.0 실시간 재검증 시스템 통합
-// 🆕 v1.5.0 주요 변경사항:
-//   1. FlightRequestInit 모듈의 실시간 재검증 시스템 완전 통합
-//   2. 활동기간 변경 이벤트 감지 및 조정자 레벨 처리
-//   3. 재검증 상태 모니터링 및 전역 상태 동기화
-//   4. 티켓 모듈과의 재검증 연동 강화
-//   5. 실시간 피드백 시스템 및 사용자 안내
-// 🔧 v1.4.0 기능 완전 유지: 초기화 모듈 통합 및 성능 최적화
-// 🚀 핵심 성능 최적화 (v1.2.1 → v1.3.0 유지):
-//   1. 의존성 체크 횟수 대폭 감소 (50 → 10)
-//   2. 타임아웃 시간 단축 (15초 → 3초)
-//   3. 체크 간격 단축 (300ms → 100ms)
-//   4. 초기 상태 API 타임아웃 단축 (5초 → 2초)
+// flight-request-coordinator.js - v1.5.1 초기화 타이밍 개선
+// 🔧 v1.5.1 긴급 수정사항:
+//   1. 즉시 실행 패턴으로 초기화 타이밍 문제 해결
+//   2. window 객체에 즉시 클래스 및 인스턴스 등록
+//   3. DOMContentLoaded 의존성 제거
+//   4. async 로딩 호환성 개선
+//   5. checkCoordinator 함수와의 동기화 개선
+//   6. 초기화 상태 플래그 즉시 설정
+// 🆕 v1.5.0 기능 완전 유지: 실시간 재검증 시스템 통합
 
 class FlightRequestCoordinator {
     constructor() {
-        console.log('🔄 [조정자] FlightRequestCoordinator v1.5.0 생성 - 실시간 재검증 시스템 통합');
+        console.log('🔄 [조정자] FlightRequestCoordinator v1.5.1 생성 - 초기화 타이밍 개선');
         
         // 🔧 신규: 단순하고 안전한 이벤트 시스템
         this.eventListeners = new Map();
@@ -29,7 +25,7 @@ class FlightRequestCoordinator {
         
         // 전역 상태 관리
         this.globalState = {
-            currentPage: 'passport',
+            currentPage: 'flight',  // 🔧 v1.5.1: 기본값 flight로 변경
             currentStep: 1,
             isPassportCompleted: false,
             isPassportValid: false,
@@ -188,7 +184,7 @@ class FlightRequestCoordinator {
                                      ticketClassReady && initClassReady;
                 
                 if (allBasicReady) {
-                    console.log('✅ [조정자] v1.5.0: 모든 의존성 준비 완료 (재검증 시스템 포함)');
+                    console.log('✅ [조정자] v1.5.1: 모든 의존성 준비 완료 (재검증 시스템 포함)');
                     resolve();
                     return;
                 }
@@ -208,6 +204,17 @@ class FlightRequestCoordinator {
         });
     }
 
+    // === 🔧 v1.5.1: DOM 준비 대기 ===
+    async waitForDOM() {
+        return new Promise((resolve) => {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', resolve);
+            } else {
+                resolve();
+            }
+        });
+    }
+
     // === 🆕 v1.5.0: 재검증 시스템 통합 초기화 ===
     async init() {
         try {
@@ -223,7 +230,10 @@ class FlightRequestCoordinator {
             }
             
             this.initAttempts++;
-            console.log(`🚀 [조정자] v1.5.0 초기화 시작 (시도 ${this.initAttempts}/${this.maxInitAttempts}) - 재검증 시스템 통합`);
+            console.log(`🚀 [조정자] v1.5.1 초기화 시작 (시도 ${this.initAttempts}/${this.maxInitAttempts}) - 초기화 타이밍 개선`);
+            
+            // 🔧 v1.5.1: DOM 준비 대기
+            await this.waitForDOM();
             
             await this.waitForDependencies();
             this.setupServicesSafely();
@@ -241,7 +251,7 @@ class FlightRequestCoordinator {
             this.startApplication();
             
             this.isInitialized = true;
-            console.log('✅ [조정자] v1.5.0 초기화 완료 - 재검증 시스템 통합');
+            console.log('✅ [조정자] v1.5.1 초기화 완료 - 초기화 타이밍 개선');
             return true;
             
         } catch (error) {
@@ -255,18 +265,20 @@ class FlightRequestCoordinator {
     // === 🆕 v1.5.0: 재검증 시스템 통합 설정 ===
     async setupRevalidationSystemIntegration() {
         try {
-            console.log('🔄 [조정자] v1.5.0: 재검증 시스템 통합 설정...');
+            console.log('🔄 [조정자] v1.5.1: 재검증 시스템 통합 설정...');
             
             if (!this.init) {
-                console.warn('⚠️ [조정자] v1.5.0: 초기화 모듈이 없어 재검증 시스템 설정 제한됨');
+                console.warn('⚠️ [조정자] v1.5.1: 초기화 모듈이 없어 재검증 시스템 설정 제한됨');
                 return;
             }
             
             // 1. 초기화 모듈의 재검증 상태 확인
-            const revalidationStatus = this.init.getRevalidationStatus();
-            if (revalidationStatus && revalidationStatus.listenersSetup) {
-                console.log('✅ [조정자] v1.5.0: 초기화 모듈 재검증 리스너 확인됨');
-                this.revalidationState.isListening = true;
+            if (typeof this.init.getRevalidationStatus === 'function') {
+                const revalidationStatus = this.init.getRevalidationStatus();
+                if (revalidationStatus && revalidationStatus.listenersSetup) {
+                    console.log('✅ [조정자] v1.5.1: 초기화 모듈 재검증 리스너 확인됨');
+                    this.revalidationState.isListening = true;
+                }
             }
             
             // 2. 재검증 이벤트 리스너 설정
@@ -275,17 +287,17 @@ class FlightRequestCoordinator {
             // 3. 전역 상태 동기화
             this.syncRevalidationState();
             
-            console.log('✅ [조정자] v1.5.0: 재검증 시스템 통합 설정 완료');
+            console.log('✅ [조정자] v1.5.1: 재검증 시스템 통합 설정 완료');
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 시스템 통합 설정 실패:', error);
+            console.error('❌ [조정자] v1.5.1: 재검증 시스템 통합 설정 실패:', error);
         }
     }
 
     // === 🆕 v1.5.0: 재검증 이벤트 리스너 설정 ===
     setupRevalidationEventListeners() {
         try {
-            console.log('🔄 [조정자] v1.5.0: 재검증 이벤트 리스너 설정...');
+            console.log('🔄 [조정자] v1.5.1: 재검증 이벤트 리스너 설정...');
             
             // 초기화 모듈의 재검증 이벤트 감지
             this.on('init:revalidationStarted', (event) => {
@@ -311,10 +323,10 @@ class FlightRequestCoordinator {
                 this.startRevalidationStatePolling();
             }
             
-            console.log('✅ [조정자] v1.5.0: 재검증 이벤트 리스너 설정 완료');
+            console.log('✅ [조정자] v1.5.1: 재검증 이벤트 리스너 설정 완료');
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 이벤트 리스너 설정 실패:', error);
+            console.error('❌ [조정자] v1.5.1: 재검증 이벤트 리스너 설정 실패:', error);
         }
     }
 
@@ -328,10 +340,10 @@ class FlightRequestCoordinator {
                 }
             }, 30000);
             
-            console.log('✅ [조정자] v1.5.0: 재검증 상태 폴링 시작');
+            console.log('✅ [조정자] v1.5.1: 재검증 상태 폴링 시작');
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 상태 폴링 시작 실패:', error);
+            console.error('❌ [조정자] v1.5.1: 재검증 상태 폴링 시작 실패:', error);
         }
     }
 
@@ -339,6 +351,8 @@ class FlightRequestCoordinator {
     syncRevalidationState() {
         try {
             if (!this.init || this.destroyed) return;
+            
+            if (typeof this.init.getRevalidationStatus !== 'function') return;
             
             const revalidationStatus = this.init.getRevalidationStatus();
             if (!revalidationStatus) return;
@@ -358,11 +372,11 @@ class FlightRequestCoordinator {
             
             if (hasChanges) {
                 this.updateGlobalState(newState);
-                console.log('🔄 [조정자] v1.5.0: 재검증 상태 동기화 완료', newState);
+                console.log('🔄 [조정자] v1.5.1: 재검증 상태 동기화 완료', newState);
             }
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 상태 동기화 실패:', error);
+            console.error('❌ [조정자] v1.5.1: 재검증 상태 동기화 실패:', error);
         }
     }
 
@@ -401,7 +415,7 @@ class FlightRequestCoordinator {
     // === 🆕 v1.5.0: 재검증 이벤트 핸들러들 ===
     handleRevalidationStarted(data) {
         try {
-            console.log('🔄 [조정자] v1.5.0: 재검증 시작 감지', data);
+            console.log('🔄 [조정자] v1.5.1: 재검증 시작 감지', data);
             
             this.updateGlobalState({
                 revalidationInProgress: true,
@@ -416,13 +430,13 @@ class FlightRequestCoordinator {
             this.revalidationState.lastValidationTimestamp = Date.now();
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 시작 처리 실패:', error);
+            console.error('❌ [조정자] v1.5.1: 재검증 시작 처리 실패:', error);
         }
     }
 
     handleRevalidationCompleted(data) {
         try {
-            console.log('✅ [조정자] v1.5.0: 재검증 완료 감지', data);
+            console.log('✅ [조정자] v1.5.1: 재검증 완료 감지', data);
             
             const newState = {
                 revalidationInProgress: false,
@@ -446,13 +460,13 @@ class FlightRequestCoordinator {
             }
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 완료 처리 실패:', error);
+            console.error('❌ [조정자] v1.5.1: 재검증 완료 처리 실패:', error);
         }
     }
 
     handleActivityPeriodChanged(data) {
         try {
-            console.log('🔔 [조정자] v1.5.0: 활동기간 변경 감지', data);
+            console.log('🔔 [조정자] v1.5.1: 활동기간 변경 감지', data);
             
             // 즉시 상태 리셋
             this.updateGlobalState({
@@ -467,13 +481,13 @@ class FlightRequestCoordinator {
             }
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 활동기간 변경 처리 실패:', error);
+            console.error('❌ [조정자] v1.5.1: 활동기간 변경 처리 실패:', error);
         }
     }
 
     handleFlightSectionStateChanged(data) {
         try {
-            console.log('🔄 [조정자] v1.5.0: 항공권 섹션 상태 변경 감지', data);
+            console.log('🔄 [조정자] v1.5.1: 항공권 섹션 상태 변경 감지', data);
             
             this.updateGlobalState({
                 flightSectionState: data.state,
@@ -481,14 +495,14 @@ class FlightRequestCoordinator {
             });
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 항공권 섹션 상태 변경 처리 실패:', error);
+            console.error('❌ [조정자] v1.5.1: 항공권 섹션 상태 변경 처리 실패:', error);
         }
     }
 
     // === v1.4.0: 초기화 모듈 전용 초기화 (유지) ===
     async initializeInitModuleSafely() {
         try {
-            console.log('🔄 [조정자] v1.5.0: 초기화 모듈 초기화 (재검증 시스템 포함)...');
+            console.log('🔄 [조정자] v1.5.1: 초기화 모듈 초기화 (재검증 시스템 포함)...');
             
             if (window.FlightRequestInit) {
                 try {
@@ -500,35 +514,37 @@ class FlightRequestCoordinator {
                     if (initSuccess) {
                         this.globalState.isInitModuleReady = true;
                         this.globalState.initializationCompleted = true;
-                        console.log('✅ [조정자] v1.5.0: 초기화 모듈 초기화 성공 (재검증 시스템 포함)');
+                        console.log('✅ [조정자] v1.5.1: 초기화 모듈 초기화 성공 (재검증 시스템 포함)');
                         
                         // 초기화 모듈의 사용자 데이터를 전역 상태에 반영
-                        const userData = this.init.getUserData();
-                        if (userData) {
-                            this.globalState.userData = userData;
+                        if (typeof this.init.getUserData === 'function') {
+                            const userData = this.init.getUserData();
+                            if (userData) {
+                                this.globalState.userData = userData;
+                            }
                         }
                         
                         // 🆕 v1.5.0: 재검증 상태 초기 동기화
                         this.syncRevalidationState();
                         
                     } else {
-                        console.warn('⚠️ [조정자] v1.5.0: 초기화 모듈 초기화 부분 실패 - 계속 진행');
+                        console.warn('⚠️ [조정자] v1.5.1: 초기화 모듈 초기화 부분 실패 - 계속 진행');
                         this.globalState.isInitModuleReady = false;
                     }
                     
                 } catch (initError) {
-                    console.warn('⚠️ [조정자] v1.5.0: 초기화 모듈 초기화 실패:', initError.message);
+                    console.warn('⚠️ [조정자] v1.5.1: 초기화 모듈 초기화 실패:', initError.message);
                     this.init = null;
                     this.globalState.isInitModuleReady = false;
                 }
             } else {
-                console.warn('⚠️ [조정자] v1.5.0: FlightRequestInit 클래스를 찾을 수 없음');
+                console.warn('⚠️ [조정자] v1.5.1: FlightRequestInit 클래스를 찾을 수 없음');
                 this.globalState.isInitModuleReady = false;
             }
             
         } catch (error) {
             this.errorCount++;
-            console.error('❌ [조정자] v1.5.0: 초기화 모듈 초기화 실패:', error.message);
+            console.error('❌ [조정자] v1.5.1: 초기화 모듈 초기화 실패:', error.message);
             this.init = null;
             this.globalState.isInitModuleReady = false;
         }
@@ -605,15 +621,18 @@ class FlightRequestCoordinator {
             
             // 재검증 상태 연동
             if (this.init && this.ticket) {
-                const userRequirements = this.init.getUserRequirements();
-                const revalidationStatus = this.init.getRevalidationStatus();
-                
-                if (userRequirements && typeof this.ticket.setUserRequirements === 'function') {
-                    this.ticket.setUserRequirements(userRequirements);
+                if (typeof this.init.getUserRequirements === 'function') {
+                    const userRequirements = this.init.getUserRequirements();
+                    if (userRequirements && typeof this.ticket.setUserRequirements === 'function') {
+                        this.ticket.setUserRequirements(userRequirements);
+                    }
                 }
                 
-                if (revalidationStatus && typeof this.ticket.setRevalidationStatus === 'function') {
-                    this.ticket.setRevalidationStatus(revalidationStatus);
+                if (typeof this.init.getRevalidationStatus === 'function') {
+                    const revalidationStatus = this.init.getRevalidationStatus();
+                    if (revalidationStatus && typeof this.ticket.setRevalidationStatus === 'function') {
+                        this.ticket.setRevalidationStatus(revalidationStatus);
+                    }
                 }
             }
         }
@@ -659,9 +678,11 @@ class FlightRequestCoordinator {
         let initialPage = 'flight';
         
         if (this.init) {
-            const initStatus = this.init.getInitStatus();
-            if (initStatus.passportCheckCompleted) {
-                console.log('✅ [조정자] v1.5.0: 초기화 모듈에서 여권정보 체크 완료');
+            if (typeof this.init.getInitStatus === 'function') {
+                const initStatus = this.init.getInitStatus();
+                if (initStatus && initStatus.passportCheckCompleted) {
+                    console.log('✅ [조정자] v1.5.1: 초기화 모듈에서 여권정보 체크 완료');
+                }
             }
         }
         
@@ -778,7 +799,7 @@ class FlightRequestCoordinator {
         const timeSinceLastValidation = now - (this.revalidationState.lastValidationTimestamp || 0);
         
         if (timeSinceLastValidation < 5000) {
-            console.warn('⚠️ [조정자] v1.5.0: 재검증 요청이 너무 빈번함 - 무시');
+            console.warn('⚠️ [조정자] v1.5.1: 재검증 요청이 너무 빈번함 - 무시');
             return;
         }
         
@@ -939,7 +960,7 @@ class FlightRequestCoordinator {
     
     destroy() {
         try {
-            console.log('🗑️ [조정자] v1.5.0: 인스턴스 정리 중 (재검증 시스템 포함)...');
+            console.log('🗑️ [조정자] v1.5.1: 인스턴스 정리 중 (재검증 시스템 포함)...');
             
             this.destroyed = true;
             
@@ -967,7 +988,7 @@ class FlightRequestCoordinator {
             this.services = {};
             this.revalidationState = {};
             
-            console.log('✅ [조정자] v1.5.0: 인스턴스 정리 완료 (재검증 시스템 포함)');
+            console.log('✅ [조정자] v1.5.1: 인스턴스 정리 완료 (재검증 시스템 포함)');
             
         } catch (error) {
             console.error('❌ [조정자] 인스턴스 정리 실패:', error.message);
@@ -989,7 +1010,7 @@ class FlightRequestCoordinator {
             return false;
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 수동 재검증 실패:', error.message);
+            console.error('❌ [조정자] v1.5.1: 수동 재검증 실패:', error.message);
             return false;
         }
     }
@@ -997,6 +1018,8 @@ class FlightRequestCoordinator {
     getRevalidationStatus() {
         try {
             if (this.destroyed || !this.init) return null;
+            
+            if (typeof this.init.getRevalidationStatus !== 'function') return null;
             
             const initRevalidationStatus = this.init.getRevalidationStatus();
             
@@ -1012,7 +1035,7 @@ class FlightRequestCoordinator {
             };
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 상태 조회 실패:', error.message);
+            console.error('❌ [조정자] v1.5.1: 재검증 상태 조회 실패:', error.message);
             return null;
         }
     }
@@ -1071,7 +1094,7 @@ class FlightRequestCoordinator {
             return false;
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 초기화 새로고침 실패:', error.message);
+            console.error('❌ [조정자] v1.5.1: 초기화 새로고침 실패:', error.message);
             return false;
         }
     }
@@ -1127,10 +1150,13 @@ class FlightRequestCoordinator {
     }
 }
 
-// === 🚀 v1.5.0: 재검증 시스템 통합된 애플리케이션 시작점 ===
-document.addEventListener('DOMContentLoaded', async () => {
+// 🔧 v1.5.1: 즉시 전역 스코프에 클래스 노출
+window.FlightRequestCoordinator = FlightRequestCoordinator;
+
+// === 🚀 v1.5.1: 즉시 실행 패턴으로 초기화 ===
+(async function() {
     try {
-        console.log('🚀 [조정자] DOM 로드 완료 - v1.5.0 시작 (재검증 시스템 통합)');
+        console.log('🚀 [조정자] v1.5.1 즉시 초기화 시작...');
         
         // 중복 인스턴스 방지
         if (window.flightRequestCoordinator) {
@@ -1148,52 +1174,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         const initSuccess = await window.flightRequestCoordinator.init();
         
         if (initSuccess) {
-            console.log('✅ [조정자] v1.5.0 완전 초기화 완료 (재검증 시스템 통합)');
+            console.log('✅ [조정자] v1.5.1 완전 초기화 완료 (초기화 타이밍 개선)');
         } else {
-            console.warn('⚠️ [조정자] v1.5.0 제한된 기능으로 초기화됨');
+            console.warn('⚠️ [조정자] v1.5.1 제한된 기능으로 초기화됨');
         }
         
     } catch (error) {
-        console.error('❌ [조정자] v1.5.0 초기화 실패:', error.message);
+        console.error('❌ [조정자] v1.5.1 초기화 실패:', error.message);
         
         if (!window.coordinatorErrorShown) {
             window.coordinatorErrorShown = true;
-            alert('시스템 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+            // 🔧 v1.5.1: alert 제거 - 사용자 경험 개선
+            console.error('시스템 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
         }
     }
-});
+})();
 
-// 전역 스코프에 클래스 노출
-window.FlightRequestCoordinator = FlightRequestCoordinator;
-
-console.log('✅ FlightRequestCoordinator v1.5.0 모듈 로드 완료 - 재검증 시스템 통합 완료');
-console.log('🆕 v1.5.0 재검증 시스템 통합 사항:', {
-    newFeatures: [
-        'FlightRequestInit 실시간 재검증 시스템 완전 통합',
-        '활동기간 변경 이벤트 감지 및 조정자 레벨 처리',
-        '재검증 상태 모니터링 및 전역 상태 동기화',
-        '티켓 모듈과의 재검증 연동 강화',
-        '실시간 피드백 시스템 및 사용자 안내',
-        '수동 재검증 트리거 공개 인터페이스',
-        '재검증 상태 조회 및 모니터링 시스템'
+console.log('✅ FlightRequestCoordinator v1.5.1 모듈 로드 완료 - 초기화 타이밍 개선');
+console.log('🆕 v1.5.1 초기화 타이밍 개선 사항:', {
+    improvements: [
+        '즉시 실행 패턴으로 DOMContentLoaded 의존성 제거',
+        'window 객체에 즉시 클래스 및 인스턴스 등록',
+        'async 로딩 호환성 개선',
+        'checkCoordinator 함수와의 동기화 개선',
+        '초기화 상태 플래그 즉시 설정',
+        'DOM 준비 상태 체크 추가'
     ],
-    performanceOptimization: [
-        '의존성 체크 횟수 50 → 10으로 대폭 감소 (v1.3.0 유지)',
-        '타임아웃 15초 → 3초로 단축 (v1.3.0 유지)',
-        '체크 간격 300ms → 100ms로 단축 (v1.3.0 유지)',
-        '초기 상태 API 타임아웃 5초 → 2초로 단축 (v1.3.0 유지)'
-    ],
-    systemIntegration: [
-        '모듈 간 완전한 재검증 상태 동기화',
-        '조정자 레벨 재검증 이벤트 처리',
-        '실시간 사용자 피드백 시스템',
-        '다중 레벨 검증 및 상태 보장',
-        '티켓 모듈 재검증 트리거 연동'
-    ]
-});
-console.log('🚀 v1.5.0 예상 효과:', {
-    dataConsistency: '활동기간 ↔ 항공권 섹션 완전 실시간 연동',
-    userExperience: '즉시 피드백 및 상태 전파로 혼란 방지',
-    systemReliability: '다중 레벨 검증으로 데이터 일관성 보장',
-    maintenance: '모듈 간 명확한 책임 분리로 유지보수성 향상'
+    compatibility: '기존 v1.5.0 기능 100% 유지'
 });
