@@ -111,249 +111,129 @@ class FlightRequestCoordinator {
 
     // 🔧 의존성 대기 (타임아웃 강화)
     async waitForDependencies(timeout = 3000) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             const startTime = Date.now();
-            let attempts = 0;
+            let checkCount = 0;
             
-            const check = () => {
-                attempts++;
+            const checkDependencies = () => {
+                checkCount++;
+                const elapsed = Date.now() - startTime;
                 
                 // 타임아웃 체크
-                if (Date.now() - startTime > timeout) {
-                    console.warn(`⚠️ 의존성 로드 타임아웃 (${timeout}ms), 폴백 모드 활성화`);
-                    resolve(false); // 폴백 허용
-                    return;
-                }
-                
-                // 시도 횟수 제한
-                if (attempts > this.maxDependencyChecks) {
-                    console.warn(`⚠️ 의존성 체크 횟수 초과 (${this.maxDependencyChecks}회), 폴백 모드 활성화`);
-                    resolve(false); // 폴백 허용
+                if (elapsed > timeout || checkCount > this.maxDependencyChecks) {
+                    console.warn(`⚠️ 의존성 대기 타임아웃 (${elapsed}ms, ${checkCount}회)`);
+                    resolve(false);
                     return;
                 }
                 
                 // 의존성 확인
-                const apiExists = window.FlightRequestApi && window.supabaseApiAdapter;
-                const utilsReady = window.FlightRequestUtils;
-                const passportClassReady = window.FlightRequestPassport;
-                const ticketClassReady = window.FlightRequestTicket;
-                const initClassReady = window.FlightRequestInit;
+                const apiExists = !!window.supabaseApiAdapter;
+                const utilsReady = !!window.FlightRequestUtils;
+                const passportClassReady = !!window.FlightRequestPassport;
+                const ticketClassReady = !!window.FlightRequestTicket;
+                const initClassReady = !!window.FlightRequestInit;
                 
-                // 의존성 상태 업데이트
+                // 종속성 상태 업데이트
                 this.dependencies.FlightRequestInit = initClassReady;
                 this.dependencies.FlightRequestTicket = ticketClassReady;
                 this.dependencies.FlightRequestPassport = passportClassReady;
                 this.dependencies.FlightRequestApi = apiExists;
                 this.dependencies.FlightRequestUtils = utilsReady;
                 
-                const allReady = apiExists && utilsReady && passportClassReady && 
-                               ticketClassReady && initClassReady;
+                const basicReady = apiExists && utilsReady;
+                const moduleClassesReady = passportClassReady && ticketClassReady && initClassReady;
+                const allDependenciesReady = basicReady && moduleClassesReady;
                 
-                if (allReady) {
-                    console.log(`✅ 모든 의존성 로드 완료 (${attempts}회 시도, ${Date.now() - startTime}ms)`);
+                if (allDependenciesReady) {
+                    console.log(`✅ 모든 의존성 준비 완료 (${elapsed}ms, ${checkCount}회)`);
                     resolve(true);
                     return;
                 }
                 
-                // 부분적 성공 로깅
-                if (attempts % 5 === 0) {
-                    console.log(`🔄 의존성 체크 중... (${attempts}/${this.maxDependencyChecks}) - API: ${apiExists}, Utils: ${utilsReady}, Init: ${initClassReady}`);
+                if (basicReady) {
+                    console.log(`🔄 기본 의존성 준비됨, 모듈 클래스 대기 중... (${elapsed}ms)`);
+                } else {
+                    console.log(`🔄 기본 의존성 대기 중... (${elapsed}ms)`);
                 }
                 
-                setTimeout(check, this.checkInterval);
+                setTimeout(checkDependencies, this.checkInterval);
             };
             
-            setTimeout(check, 100); // 초기 지연
+            // 즉시 첫 체크 시작
+            checkDependencies();
         });
     }
 
-    // 🚨 긴급 수정: 초기화 모듈 안전한 초기화
-    async initializeInitModuleSafely() {
-        if (!window.FlightRequestInit) {
-            console.warn('⚠️ FlightRequestInit 클래스가 없음, 폴백 모드 활성화');
-            await this.activateFallbackMode();
-            return;
-        }
-
-        try {
-            console.log('🔧 초기화 모듈 안전한 초기화 시작...');
-            
-            this.init = new window.FlightRequestInit();
-            
-            // 🚨 무한루프 방지: 이벤트 리스너 제한
-            this.init.coordinator = this; // 참조 설정
-            this.init.emit = this.createSafeEmitForModule(this.init, 'init');
-            
-            // 초기화 실행 (타임아웃 설정)
-            const initPromise = this.init.init();
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('초기화 타임아웃')), 5000);
-            });
-            
-            await Promise.race([initPromise, timeoutPromise]);
-            
-            console.log('✅ 초기화 모듈 안전한 초기화 완료');
-            
-        } catch (error) {
-            console.error('❌ 초기화 모듈 초기화 실패:', error);
-            await this.activateFallbackMode();
-        }
-    }
-
-    // 🚨 모듈용 안전한 emit 함수 생성
-    createSafeEmitForModule(module, moduleName) {
-        return (eventName, data) => {
-            // 순환 참조 방지
-            if (this.eventCallStack.length >= this.eventDepthLimit) {
-                console.warn(`⚠️ 모듈 ${moduleName}에서 이벤트 깊이 제한 도달: ${eventName}`);
-                return;
-            }
-            
-            // 소스 정보 추가
-            const safeData = { ...data, source: moduleName };
-            this.safeEmit(eventName, safeData, moduleName);
-        };
-    }
-
-    // 🚨 긴급 폴백 모드 활성화
+    // 🔧 폴백 모드 활성화
     async activateFallbackMode() {
-        console.log('🚨 폴백 모드 활성화 - 직접 사용자 데이터 로드');
+        console.log('🚨 폴백 모드 활성화');
         
         try {
-            // localStorage에서 직접 사용자 데이터 읽기
-            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+            // 기본 UI 활성화
+            const app = document.getElementById('app');
+            if (app) app.style.display = 'block';
             
-            // 필수 활동일 직접 계산 및 표시
-            await this.displayRequiredDaysDirectly(userData);
+            // 기본 메시지 표시
+            const messageEl = document.getElementById('systemMessage');
+            if (messageEl) {
+                messageEl.innerHTML = `
+                    <div class="alert alert-info">
+                        <strong>시스템 초기화 중</strong><br>
+                        일부 고급 기능이 제한될 수 있습니다.
+                    </div>
+                `;
+                messageEl.style.display = 'block';
+            }
             
-            // 기본 기능 활성화
-            this.enableBasicFunctionality();
+            // 기본 필수활동일 표시
+            const requiredEl = document.getElementById('requiredDays');
+            if (requiredEl && requiredEl.textContent === '로딩중...') {
+                requiredEl.textContent = '90';
+                requiredEl.className = 'value required-days-value fallback';
+            }
             
             console.log('✅ 폴백 모드 활성화 완료');
             
         } catch (error) {
             console.error('❌ 폴백 모드 활성화 실패:', error);
-            
-            // 최후의 수단: 하드코딩된 기본값
-            this.setHardcodedDefaults();
         }
     }
 
-    // 📊 필수 활동일 직접 표시
-    async displayRequiredDaysDirectly(userData) {
-        const requiredEl = document.getElementById('requiredDays');
-        const maximumEl = document.getElementById('maximumDays');
-        
-        if (!requiredEl) return;
-        
+    // 🔧 모듈별 안전한 emit 함수 생성
+    createSafeEmitForModule(module, moduleName) {
+        return (eventName, data) => {
+            // 순환 참조 방지: 모듈에서 발생한 이벤트에 source 정보 추가
+            const safeData = { ...data, source: moduleName };
+            this.safeEmit(eventName, safeData, moduleName);
+        };
+    }
+
+    // 🔧 초기화 모듈 안전한 실행
+    async initializeInitModuleSafely() {
         try {
-            let requiredDays = 90; // 기본값
-            let maximumDays = 365; // 기본값
+            console.log('🔧 초기화 모듈 안전한 실행...');
             
-            // API 어댑터가 있으면 직접 호출
-            if (window.supabaseApiAdapter && userData.id) {
-                try {
-                    const response = await window.supabaseApiAdapter.getUserProfile(userData.id);
-                    if (response.success && response.data) {
-                        requiredDays = response.data.minimum_required_days || 90;
-                        maximumDays = response.data.maximum_allowed_days || 365;
-                    }
-                } catch (apiError) {
-                    console.warn('⚠️ API 어댑터 호출 실패, 기본값 사용:', apiError);
+            if (window.FlightRequestInit) {
+                this.init = new window.FlightRequestInit();
+                this.init.coordinator = this;
+                this.init.emit = this.createSafeEmitForModule(this.init, 'init');
+                
+                // 초기화 모듈 실행 (비동기)
+                if (typeof this.init.init === 'function') {
+                    await this.init.init();
+                    console.log('✅ 초기화 모듈 실행 완료');
+                } else {
+                    console.warn('⚠️ 초기화 모듈의 init 메서드가 없습니다');
                 }
+            } else {
+                console.warn('⚠️ FlightRequestInit 클래스가 없습니다, 폴백 모드로 진행');
+                await this.activateFallbackMode();
             }
-            
-            // UI 업데이트
-            requiredEl.textContent = requiredDays;
-            requiredEl.className = 'value required-days-value success';
-            
-            if (maximumEl) {
-                maximumEl.textContent = maximumDays;
-                maximumEl.className = 'value maximum-days-value success';
-            }
-            
-            console.log(`✅ 필수 활동일 직접 표시 완료: ${requiredDays}일 (최대: ${maximumDays}일)`);
             
         } catch (error) {
-            console.error('❌ 필수 활동일 직접 표시 실패:', error);
-            
-            // 최후의 수단: 기본값 설정
-            requiredEl.textContent = '90';
-            requiredEl.className = 'value required-days-value fallback';
+            console.error('❌ 초기화 모듈 실행 실패:', error);
+            await this.activateFallbackMode();
         }
-    }
-
-    // 🔧 기본 기능 활성화
-    enableBasicFunctionality() {
-        // 활동기간 입력 활성화
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-        
-        if (startDateInput && endDateInput) {
-            startDateInput.disabled = false;
-            endDateInput.disabled = false;
-            
-            // 기본 이벤트 리스너 추가 (무한루프 없이)
-            this.setupBasicEventListeners();
-        }
-        
-        console.log('✅ 기본 기능 활성화 완료');
-    }
-
-    // 🔧 기본 이벤트 리스너 설정 (무한루프 방지)
-    setupBasicEventListeners() {
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-        
-        if (startDateInput && endDateInput) {
-            let isProcessing = false; // 중복 처리 방지
-            
-            const handleDateChange = () => {
-                if (isProcessing) return;
-                isProcessing = true;
-                
-                try {
-                    const startDate = startDateInput.value;
-                    const endDate = endDateInput.value;
-                    
-                    if (startDate && endDate) {
-                        // 항공권 섹션 활성화
-                        const flightSection = document.getElementById('flightTicketSection');
-                        if (flightSection) {
-                            flightSection.style.display = 'block';
-                            console.log('✅ 항공권 섹션 활성화 (폴백 모드)');
-                        }
-                    }
-                } catch (error) {
-                    console.error('❌ 날짜 변경 처리 실패:', error);
-                } finally {
-                    setTimeout(() => { isProcessing = false; }, 100);
-                }
-            };
-            
-            startDateInput.addEventListener('change', handleDateChange);
-            endDateInput.addEventListener('change', handleDateChange);
-        }
-    }
-
-    // 🚨 최후의 수단: 하드코딩된 기본값
-    setHardcodedDefaults() {
-        console.log('🚨 최후의 수단: 하드코딩된 기본값 설정');
-        
-        const requiredEl = document.getElementById('requiredDays');
-        const maximumEl = document.getElementById('maximumDays');
-        
-        if (requiredEl) {
-            requiredEl.textContent = '90';
-            requiredEl.className = 'value required-days-value hardcoded';
-        }
-        
-        if (maximumEl) {
-            maximumEl.textContent = '365';
-            maximumEl.className = 'value maximum-days-value hardcoded';
-        }
-        
-        console.log('✅ 하드코딩된 기본값 설정 완료');
     }
     // 🔧 다른 모듈들 안전한 초기화
     initializeModulesSafely() {
