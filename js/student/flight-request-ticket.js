@@ -744,13 +744,440 @@ class FlightRequestTicket {
             eventSystemSetup: this.isEventSystemSetup
         };
     }
-            } catch (error) {
-                // CSS4 선택자 지원하지 않는 경우 무시
+
+
+// ================================
+// 누락된 핵심 메서드들 - Part1과 Part2 사이에 추가해야 함
+// ================================
+
+// === 항공권 섹션 찾기 ===
+findFlightInfoSection() {
+    try {
+        // 여러 가능한 선택자로 항공권 섹션 찾기
+        const selectors = [
+            '#flightInfoSection',
+            '.flight-info-section',
+            '.flight-section',
+            '#step2',
+            '[data-step="flight"]',
+            '.step[data-step="2"]'
+        ];
+        
+        for (const selector of selectors) {
+            const element = document.querySelector(selector);
+            if (element) {
+                return element;
+            }
+        }
+        
+        // CSS4 선택자 시도 (최신 브라우저에서만 동작)
+        try {
+            const advancedElement = document.querySelector('section:has(#departureDate), div:has(#departureAirport)');
+            if (advancedElement) {
+                return advancedElement;
+            }
+        } catch (error) {
+            // CSS4 선택자 지원하지 않는 경우 무시
+        }
+        
+        // 폴백: departureDate 입력 필드의 부모 섹션 찾기
+        const departureDateEl = document.getElementById('departureDate');
+        if (departureDateEl) {
+            let parent = departureDateEl.parentElement;
+            while (parent && parent !== document.body) {
+                if (parent.tagName === 'SECTION' || 
+                    parent.classList.contains('section') ||
+                    parent.classList.contains('step')) {
+                    return parent;
+                }
+                parent = parent.parentElement;
             }
         }
         
         return null;
+        
+    } catch (error) {
+        console.error('❌ [항공권섹션] 섹션 찾기 실패:', error);
+        return null;
     }
+}
+
+// === 항공권 입력 필드들 활성화/비활성화 ===
+toggleFlightInputFields(enabled) {
+    try {
+        console.log(`🔄 [입력필드] 항공권 입력 필드 ${enabled ? '활성화' : '비활성화'}...`);
+        
+        // 항공권 관련 입력 필드들
+        const flightInputSelectors = [
+            '#departureDate',
+            '#returnDate', 
+            '#departureAirport',
+            '#arrivalAirport',
+            '#ticketPrice',
+            '#currency',
+            '#priceSource',
+            '#purchaseLink',
+            'input[name="purchaseType"]',
+            '#flightImageInput',
+            '#receiptImageInput'
+        ];
+        
+        flightInputSelectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                if (element) {
+                    element.disabled = !enabled;
+                    
+                    // 스타일 적용
+                    if (enabled) {
+                        element.style.opacity = '1';
+                        element.style.cursor = 'auto';
+                        element.removeAttribute('readonly');
+                    } else {
+                        element.style.opacity = '0.5';
+                        element.style.cursor = 'not-allowed';
+                        // readonly 속성은 입력을 막지만 폼 제출은 허용
+                        if (element.type !== 'radio' && element.type !== 'checkbox') {
+                            element.setAttribute('readonly', 'readonly');
+                        }
+                    }
+                }
+            });
+        });
+        
+        // 버튼들도 처리
+        const flightButtons = document.querySelectorAll('.flight-section button, [data-step="flight"] button');
+        flightButtons.forEach(button => {
+            button.disabled = !enabled;
+            button.style.opacity = enabled ? '1' : '0.5';
+        });
+        
+        console.log(`✅ [입력필드] 항공권 입력 필드 ${enabled ? '활성화' : '비활성화'} 완료`);
+        
+    } catch (error) {
+        console.error(`❌ [입력필드] 항공권 입력 필드 ${enabled ? '활성화' : '비활성화'} 실패:`, error);
+    }
+}
+
+// === 사용자 요구사항 설정 ===
+setUserRequirements(requirements) {
+    try {
+        console.log('🔄 [사용자요구사항] 설정:', requirements);
+        
+        this.userRequirements = {
+            ...this.userRequirements,
+            ...requirements,
+            isLoaded: true
+        };
+        
+        console.log('✅ [사용자요구사항] 설정 완료:', this.userRequirements);
+        
+    } catch (error) {
+        console.error('❌ [사용자요구사항] 설정 실패:', error);
+    }
+}
+
+// === 이벤트 바인딩 ===
+bindEvents() {
+    try {
+        console.log('🔄 [이벤트바인딩] 이벤트 리스너 설정...');
+        
+        // 활동기간 입력 필드 이벤트
+        const arrivalDateEl = document.getElementById('actualArrivalDate');
+        const workEndDateEl = document.getElementById('actualWorkEndDate');
+        
+        if (arrivalDateEl) {
+            arrivalDateEl.addEventListener('change', () => {
+                this.handleActivityDateChange('arrival');
+            });
+            arrivalDateEl.addEventListener('input', () => {
+                this.debouncedActivityValidationWithLoading();
+            });
+        }
+        
+        if (workEndDateEl) {
+            workEndDateEl.addEventListener('change', () => {
+                this.handleActivityDateChange('workEnd');
+            });
+            workEndDateEl.addEventListener('input', () => {
+                this.debouncedActivityValidationWithLoading();
+            });
+        }
+        
+        // 항공권 날짜 입력 이벤트
+        const departureDateEl = document.getElementById('departureDate');
+        const returnDateEl = document.getElementById('returnDate');
+        
+        if (departureDateEl) {
+            departureDateEl.addEventListener('change', () => {
+                this.handleFlightDateChange('departure');
+            });
+        }
+        
+        if (returnDateEl) {
+            returnDateEl.addEventListener('change', () => {
+                this.handleFlightDateChange('return');
+            });
+        }
+        
+        // 구매방식 변경 이벤트
+        const purchaseTypeInputs = document.querySelectorAll('input[name="purchaseType"]');
+        purchaseTypeInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                this.handlePurchaseMethodChange();
+            });
+        });
+        
+        // 파일 업로드 이벤트
+        const flightImageInput = document.getElementById('flightImageInput');
+        const receiptImageInput = document.getElementById('receiptImageInput');
+        
+        if (flightImageInput) {
+            flightImageInput.addEventListener('change', (e) => {
+                this.handleFlightImageUpload(e);
+            });
+        }
+        
+        if (receiptImageInput) {
+            receiptImageInput.addEventListener('change', (e) => {
+                this.handleReceiptImageUpload(e);
+            });
+        }
+        
+        // 제출 버튼 이벤트
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleSubmit();
+            });
+        }
+        
+        console.log('✅ [이벤트바인딩] 이벤트 리스너 설정 완료');
+        
+    } catch (error) {
+        console.error('❌ [이벤트바인딩] 이벤트 리스너 설정 실패:', error);
+    }
+}
+
+// === 활동기간 날짜 변경 처리 ===
+handleActivityDateChange(type) {
+    try {
+        console.log(`🔄 [활동기간] ${type} 날짜 변경 처리...`);
+        
+        this.calculateAndShowActivityDaysImmediate();
+        this.debouncedActivityValidationWithLoading();
+        
+        // 이벤트 발행
+        this.emitEvent('activityDateChanged', {
+            type: type,
+            timestamp: Date.now()
+        });
+        
+    } catch (error) {
+        console.error(`❌ [활동기간] ${type} 날짜 변경 처리 실패:`, error);
+    }
+}
+
+// === 항공권 날짜 변경 처리 ===
+handleFlightDateChange(type) {
+    try {
+        console.log(`🔄 [항공권날짜] ${type} 날짜 변경 처리...`);
+        
+        // 항공권 날짜 검증
+        this.validateFlightDatesOnly();
+        
+        // 이벤트 발행
+        this.emitEvent('flightDateChanged', {
+            type: type,
+            timestamp: Date.now()
+        });
+        
+    } catch (error) {
+        console.error(`❌ [항공권날짜] ${type} 날짜 변경 처리 실패:`, error);
+    }
+}
+
+// === 즉시 활동일수 계산 및 표시 ===
+calculateAndShowActivityDaysImmediate() {
+    try {
+        const arrivalDate = document.getElementById('actualArrivalDate')?.value;
+        const workEndDate = document.getElementById('actualWorkEndDate')?.value;
+        
+        if (arrivalDate && workEndDate) {
+            const start = new Date(arrivalDate);
+            const end = new Date(workEndDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            
+            this.ticketData.calculatedActivityDays = diffDays;
+            
+            // UI 업데이트
+            const calculatedEl = document.getElementById('calculatedDays');
+            if (calculatedEl) {
+                calculatedEl.textContent = diffDays;
+                calculatedEl.className = 'value calculated-days-value';
+            }
+            
+            console.log('✅ [활동일수] 즉시 계산 완료:', diffDays);
+        }
+        
+    } catch (error) {
+        console.error('❌ [활동일수] 즉시 계산 실패:', error);
+    }
+}
+
+// === 디바운스된 활동기간 검증 ===
+debouncedActivityValidationWithLoading() {
+    try {
+        if (this.validationDebounceTimer) {
+            clearTimeout(this.validationDebounceTimer);
+        }
+        
+        this.validationDebounceTimer = setTimeout(() => {
+            this.validateActivityPeriodWithUI();
+        }, 500);
+        
+    } catch (error) {
+        console.error('❌ [디바운스검증] 실패:', error);
+    }
+}
+
+// === UI와 함께 활동기간 검증 ===
+validateActivityPeriodWithUI() {
+    try {
+        const validation = this.validateActivityPeriod();
+        
+        if (validation.valid) {
+            this.isActivityPeriodCompleted = true;
+            this.isActivityPeriodValid = true;
+            
+            // 항공권 섹션 활성화 요청
+            this.emitEvent('flightSectionStateChangeRequest', {
+                action: 'enable',
+                reason: 'activityPeriodValidated',
+                message: '현지 활동기간 검증 완료 - 항공권 정보를 입력할 수 있습니다.',
+                type: 'success',
+                validationResult: validation
+            });
+            
+        } else {
+            this.isActivityPeriodCompleted = false;
+            this.isActivityPeriodValid = false;
+            
+            // 항공권 섹션 비활성화 요청
+            this.emitEvent('flightSectionStateChangeRequest', {
+                action: 'disable',
+                reason: 'activityPeriodInvalid',
+                message: validation.message || '활동기간을 올바르게 입력해주세요.',
+                type: 'error',
+                validationResult: validation
+            });
+        }
+        
+    } catch (error) {
+        console.error('❌ [UI검증] 활동기간 검증 실패:', error);
+    }
+}
+
+// === 활동기간 검증 ===
+validateActivityPeriod() {
+    try {
+        const arrivalDate = document.getElementById('actualArrivalDate')?.value;
+        const workEndDate = document.getElementById('actualWorkEndDate')?.value;
+        
+        if (!arrivalDate || !workEndDate) {
+            return {
+                valid: false,
+                message: '현지 도착일과 근무 종료일을 모두 입력해주세요.',
+                code: 'MISSING_DATES'
+            };
+        }
+        
+        const start = new Date(arrivalDate);
+        const end = new Date(workEndDate);
+        
+        if (start >= end) {
+            return {
+                valid: false,
+                message: '근무 종료일은 도착일보다 늦어야 합니다.',
+                code: 'INVALID_DATE_ORDER'
+            };
+        }
+        
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        
+        // 사용자 요구사항과 비교
+        if (this.userRequirements.userRequiredDays && diffDays < this.userRequirements.userRequiredDays) {
+            return {
+                valid: false,
+                message: `최소 ${this.userRequirements.userRequiredDays}일 이상 활동해야 합니다. (현재: ${diffDays}일)`,
+                code: 'INSUFFICIENT_DAYS'
+            };
+        }
+        
+        if (this.userRequirements.userMaximumDays && diffDays > this.userRequirements.userMaximumDays) {
+            return {
+                valid: false,
+                message: `최대 ${this.userRequirements.userMaximumDays}일까지 활동 가능합니다. (현재: ${diffDays}일)`,
+                code: 'EXCEEDED_DAYS'
+            };
+        }
+        
+        return {
+            valid: true,
+            message: '활동기간이 올바르게 설정되었습니다.',
+            days: diffDays,
+            code: 'VALID'
+        };
+        
+    } catch (error) {
+        console.error('❌ [활동기간검증] 실패:', error);
+        return {
+            valid: false,
+            message: '활동기간 검증 중 오류가 발생했습니다.',
+            code: 'VALIDATION_ERROR'
+        };
+    }
+}
+
+// === 항공권 날짜만 검증 ===
+validateFlightDatesOnly() {
+    try {
+        const departureDate = document.getElementById('departureDate')?.value;
+        const returnDate = document.getElementById('returnDate')?.value;
+        
+        if (!departureDate || !returnDate) {
+            return {
+                valid: false,
+                message: '출국일과 귀국일을 모두 입력해주세요.'
+            };
+        }
+        
+        const departure = new Date(departureDate);
+        const returnD = new Date(returnDate);
+        
+        if (departure >= returnD) {
+            return {
+                valid: false,
+                message: '귀국일은 출국일보다 늦어야 합니다.'
+            };
+        }
+        
+        return {
+            valid: true,
+            message: '항공권 날짜가 올바르게 설정되었습니다.'
+        };
+        
+    } catch (error) {
+        console.error('❌ [항공권날짜검증] 실패:', error);
+        return {
+            valid: false,
+            message: '항공권 날짜 검증 중 오류가 발생했습니다.'
+        };
+    }
+}
 
     // 🚫 v2.1.0: 기존 전제조건 상태 메시지 메서드들 제거됨
     // - updatePrerequisiteStatusMessage() → updateUnifiedStatusMessage()로 대체

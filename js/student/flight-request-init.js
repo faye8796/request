@@ -186,7 +186,8 @@ class FlightRequestInit {
 
     // === 🔧 v1.2.0: 이벤트 기반 변경 감지 리스너 설정 ===
     setupEventBasedChangeListeners() {
-        try {\n            console.log('🔄 [초기화] v1.2.0: 이벤트 기반 변경 감지 리스너 설정...');
+        try {
+            console.log('🔄 [초기화] v1.2.0: 이벤트 기반 변경 감지 리스너 설정...');
             
             // 도착일 변경 감지
             if (this.activityPeriodFields.arrivalDate) {
