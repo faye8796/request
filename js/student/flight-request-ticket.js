@@ -244,13 +244,12 @@ class FlightRequestTicket {
             if (element) {
                 // 🔧 추가: 즉시 활동일 계산 표시
                 element.addEventListener('input', () => {
+                    // 즉시 활동일 계산
                     this.calculateAndShowActivityDaysImmediate();
-
+                    // 로딩 UI 표시 후 검증 시작
+                    this.debouncedActivityValidationWithLoading();
                 });
                 
-                element.addEventListener('input', () => {
-                    this.debouncedActivityValidation();
-                });
             }
         });
         
@@ -262,6 +261,34 @@ class FlightRequestTicket {
             clearTimeout(this.validationDebounceTimer);
         }
 
+        this.validationDebounceTimer = setTimeout(() => {
+
+    const activityValidation = this.validateActivityPeriod();
+            // 1. 검증 실행하고 결과 저장
+            const activityValidation = this.validateActivityPeriod();
+            
+            // 2. 완료 상태 확인 (validateActivityPeriod 재호출 없이)
+            const completionStatus = this.checkActivityPeriodCompletionDirect(activityValidation);
+            
+            // 3. 항공권 섹션 업데이트
+            this.updateFlightSectionAvailabilityDirect(completionStatus);
+        }, 100);
+    }
+
+    // 🔧 추가: 로딩 UI가 포함된 검증 메서드
+    debouncedActivityValidationWithLoading() {
+        if (this.validationDebounceTimer) {
+            clearTimeout(this.validationDebounceTimer);
+        }
+
+        // 즉시 로딩 상태 표시
+        const arrivalDate = document.getElementById('actualArrivalDate')?.value;
+        const workEndDate = document.getElementById('actualWorkEndDate')?.value;
+    
+        if (arrivalDate && workEndDate) {
+            this.updateActivityValidationUILoading();
+        }
+    
         this.validationDebounceTimer = setTimeout(() => {
             this.validateActivityPeriod();
             const completionStatus = this.checkActivityPeriodCompletion();
@@ -280,11 +307,7 @@ class FlightRequestTicket {
             const arrivalDate = arrivalDateEl?.value;
             const workEndDate = workEndDateEl?.value;
 
-            if (arrivalDate && workEndDate) {
-            this.updateActivityValidationUILoading();
-            }
-
-            
+         
             console.log('📋 [활동기간검증] v8.2.6: 입력된 날짜:', {
                 현지도착일: arrivalDate,
                 학당근무종료일: workEndDate,
@@ -567,6 +590,35 @@ class FlightRequestTicket {
             return { completed: false, valid: false };
         }
     }
+
+    // 🔧 추가: 검증 결과를 받아서 완료 상태만 확인 (재검증 없음)
+    checkActivityPeriodCompletionDirect(activityValidation) {
+        try {
+            console.log('🔄 [전제조건] 직접 완료 여부 확인...');
+        
+            const arrivalDate = document.getElementById('actualArrivalDate')?.value;
+            const workEndDate = document.getElementById('actualWorkEndDate')?.value;
+        
+            // 완료 조건 - 두 날짜가 모두 입력되어야 함
+            const completed = !!(arrivalDate && workEndDate);
+        
+            // 유효성 조건 - 전달받은 검증 결과 사용
+            const valid = completed && activityValidation && activityValidation.valid;
+        
+            // 상태 업데이트
+            this.isActivityPeriodCompleted = completed;
+            this.isActivityPeriodValid = valid;
+        
+            console.log('✅ [전제조건] 직접 완료 여부 확인 완료:', { completed, valid });
+        
+            return { completed, valid };
+        
+        } catch (error) {
+            console.error('❌ [전제조건] 직접 완료 여부 확인 실패:', error);
+            return { completed: false, valid: false };
+        }
+    }
+
 
     updateFlightSectionAvailability() {
         try {
