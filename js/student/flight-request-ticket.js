@@ -291,8 +291,9 @@ class FlightRequestTicket {
         }
     
         this.validationDebounceTimer = setTimeout(() => {
-            this.validateActivityPeriod();
-            const completionStatus = this.checkActivityPeriodCompletion();
+            // 1번만 실행하고 결과 재사용
+            const activityValidation = this.validateActivityPeriod();
+            const completionStatus = this.checkActivityPeriodCompletionDirect(activityValidation);
             this.updateFlightSectionAvailabilityDirect(completionStatus);
         }, 100);
     }
