@@ -502,228 +502,61 @@
     </div>
 
     <!-- 🚀 v9.1.0: 단순화된 초기화 시스템 -->
-    <!-- 1. Supabase JavaScript 라이브러리 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
+<!-- flight-request.html 파일의 </body> 태그 직전에 추가할 스크립트들 -->
+<!-- 기존의 v9.1.0 스크립트들을 이 순서로 교체하세요 -->
 
-    <!-- 2. CONFIG 로드 -->
+    <!-- 🚀 1단계: 기본 라이브러리 (기존 유지) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
     <script src="../js/config.js"></script>
-    
-    <!-- 3. 경량화된 SupabaseCore v1.0.1 로드 -->
     <script src="../js/common/supabase-core.js"></script>
-    
-    <!-- 4. Utils 로드 -->
     <script src="../js/utils.js"></script>
-    
-    <!-- 5. Storage Utils 로드 -->
     <script src="../js/common/storage-utils.js"></script>
 
-    <!-- 6. 기본 스크립트 -->
+    <!-- 🎯 2단계: 이벤트 버스 즉시 생성 (새로 추가) -->
     <script>
-        console.log('🚀 v9.1.0 항공권 신청 페이지 초기화 시작...');
-
-        // 🔧 최적화된 인증 체크
-        async function checkAuth() {
-            try {
-                console.log('🔐 사용자 인증 확인 중...');
-                
-                // SupabaseCore 대기
-                if (window.SupabaseAPI?.core) {
-                    const core = window.SupabaseAPI.core;
-                    const initialized = await core.ensureInitialized();
-                    if (!initialized) {
-                        console.error('❌ SupabaseCore 초기화 실패');
-                        return false;
+        console.log('⚡ 이벤트 시스템 초기화...');
+        
+        // 전역 이벤트 버스 생성
+        window.moduleEventBus = {
+            events: new Map(),
+            emit(event, data) {
+                const listeners = this.events.get(event) || [];
+                listeners.forEach(listener => {
+                    try {
+                        listener(data);
+                    } catch (error) {
+                        console.warn(`Event listener error: ${event}`, error);
                     }
-
-                    const supabase = core.getClient();
-                    if (!supabase) {
-                        console.error('❌ Supabase 클라이언트를 찾을 수 없습니다');
-                        return false;
-                    }
-
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (user) {
-                        console.log('✅ 사용자 인증 확인:', user.email);
-                        return true;
-                    }
+                });
+            },
+            on(event, listener) {
+                if (!this.events.has(event)) {
+                    this.events.set(event, []);
                 }
-
-                // 폴백: localStorage 확인
-                console.log('⚠️ Supabase 인증 실패 - localStorage 확인');
-                const currentStudentData = localStorage.getItem('currentStudent');
-                if (currentStudentData) {
-                    console.log('✅ localStorage에서 학생 정보 확인됨');
-                    return true;
-                }
-                
-                console.log('❌ 사용자 정보 없음');
-                return false;
-
-            } catch (error) {
-                console.error('❌ 인증 확인 오류:', error);
-                return false;
+                this.events.get(event).push(listener);
             }
-        }
+        };
+        
+        console.log('✅ 이벤트 버스 준비 완료');
+    </script>
 
-        // StorageUtils 초기화
-        setTimeout(async () => {
-            if (window.StorageUtils && window.SupabaseAPI?.core?.isInitialized) {
-                const supabase = window.SupabaseAPI.core.getClient();
-                window.StorageUtils.setSupabaseInstance(supabase);
-                console.log('✅ StorageUtils 설정 완료');
-            } else if (window.StorageUtils && window.SupabaseCore?.client) {
-                window.StorageUtils.setSupabaseInstance(window.SupabaseCore.client);
-                console.log('✅ StorageUtils 설정 완료 (폴백)');
-            }
-        }, 500);
+    <!-- 🔌 3단계: API 이벤트 어댑터 (새로 추가) -->
+    <script src="../js/student/api-event-adapter.js"></script>
 
-        // 네비게이션 설정
-        function setupNavigation() {
-            // 대시보드로 돌아가기 버튼
-            const backToDashboardBtn = document.getElementById('backToDashboard');
-            if (backToDashboardBtn) {
-                backToDashboardBtn.addEventListener('click', function() {
-                    window.location.href = 'dashboard.html';
-                });
-            }
 
-            // 여권정보 페이지에서 항공권 신청으로 돌아가기 버튼
-            const backToFlightRequestBtn = document.getElementById('backToFlightRequestFromPassport');
-            if (backToFlightRequestBtn) {
-                backToFlightRequestBtn.addEventListener('click', function() {
-                    showFlightRequestPage();
-                });
-            }
+    <!-- 🔄 4단계: 기존 모듈들 (폴백용 - 기존 유지하되 async 로드) -->
+    <script src="../js/student/flight-request-api.js" async></script>
+    <script src="../js/student/flight-request-utils.js" async></script>
+    <script src="../js/student/flight-request-passport.js" async></script>
+    <script src="../js/student/flight-request-ticket.js" async></script>
+    <script src="../js/student/flight-request-coordinator.js" async></script>
 
-            // 여권정보 설정 버튼
-            const passportBtn = document.getElementById('passportInfoBtn');
-            if (passportBtn) {
-                passportBtn.addEventListener('click', async function() {
-                    console.log('🔄 여권정보 설정 버튼 클릭됨');
-                    
-                    if (window.flightRequestCoordinator && typeof window.flightRequestCoordinator.showPassportInfoPage === 'function') {
-                        await window.flightRequestCoordinator.showPassportInfoPage();
-                    } else {
-                        showPassportInfoPage();
-                        setTimeout(async () => {
-                            if (window.flightRequestPassport) {
-                                await window.flightRequestPassport.loadExistingPassportDataAndSetMode();
-                            }
-                        }, 200);
-                    }
-                });
-            }
-
-            // 여권정보 등록 버튼 (알림에서)
-            const registerPassportBtn = document.getElementById('registerPassportBtn');
-            if (registerPassportBtn) {
-                registerPassportBtn.addEventListener('click', function() {
-                    showPassportInfoPage();
-                });
-            }
-
-            // 항공권 신청하기 버튼 (여권정보 저장 후)
-            const proceedBtn = document.getElementById('proceedToFlightRequest');
-            if (proceedBtn) {
-                proceedBtn.addEventListener('click', function() {
-                    showFlightRequestPage();
-                });
-            }
-        }
-
-        // 페이지 전환 함수들
-        function showPassportInfoPage() {
-            const flightRequestPage = document.getElementById('flightRequestPage');
-            const passportInfoPage = document.getElementById('passportInfoPage');
-            
-            if (flightRequestPage && passportInfoPage) {
-                flightRequestPage.classList.remove('active');
-                passportInfoPage.classList.add('active');
-                console.log('🔄 여권정보 수정 페이지로 전환 완료');
-            }
-        }
-
-        function showFlightRequestPage() {
-            const passportInfoPage = document.getElementById('passportInfoPage');
-            const flightRequestPage = document.getElementById('flightRequestPage');
-            
-            if (passportInfoPage && flightRequestPage) {
-                passportInfoPage.classList.remove('active');
-                flightRequestPage.classList.add('active');
-                
-                setTimeout(() => {
-                    if (window.flightRequestCoordinator && typeof window.flightRequestCoordinator.loadFlightRequestData === 'function') {
-                        console.log('✅ coordinator를 통한 항공권 신청 데이터 로드');
-                        window.flightRequestCoordinator.loadFlightRequestData();
-                    } else if (window.flightRequestTicket && typeof window.flightRequestTicket.loadFlightRequestData === 'function') {
-                        console.log('✅ 폴백 - 티켓 모듈로 항공권 신청 데이터 로드');
-                        window.flightRequestTicket.loadFlightRequestData();
-                    }
-                }, 200);
-                
-                console.log('🔄 항공권 신청 페이지로 전환 완료');
-            }
-        }
-
-        // 전역 함수로 노출
-        window.showPassportInfoPage = showPassportInfoPage;
-        window.showFlightRequestPage = showFlightRequestPage;
-        window.setupNavigation = setupNavigation;
-
-        function updateUserInfo() {
-            try {
-                const currentStudentData = localStorage.getItem('currentStudent');
-                if (currentStudentData) {
-                    const studentData = JSON.parse(currentStudentData);
-                    
-                    // 항공권 신청 페이지 헤더
-                    const welcomeEl = document.getElementById('userWelcome');
-                    const detailsEl = document.getElementById('userDetails');
-                    
-                    if (welcomeEl && studentData.name) {
-                        welcomeEl.textContent = `${studentData.name}님의 항공권 신청`;
-                    }
-                    
-                    if (detailsEl && studentData.sejong_institute) {
-                        const institute = studentData.sejong_institute;
-                        const field = studentData.field || '';
-                        detailsEl.textContent = field ? 
-                            `${institute} - ${field} 파견을 위한 항공권을 신청해주세요.` : 
-                            `${institute} 파견을 위한 항공권을 신청해주세요.`;
-                    }
-
-                    // 여권정보 수정 페이지 헤더
-                    const passportWelcomeEl = document.getElementById('passportWelcome');
-                    if (passportWelcomeEl && studentData.name) {
-                        passportWelcomeEl.textContent = `${studentData.name}님의 여권정보 수정`;
-                    }
-                }
-            } catch (error) {
-                console.error('❌ 사용자 정보 업데이트 실패:', error);
-            }
-        }
-
-        function showError(message) {
-            const errorEl = document.getElementById('errorMessage');
-            if (errorEl) {
-                errorEl.textContent = message;
-                errorEl.style.display = 'block';
-                
-                setTimeout(() => {
-                    errorEl.style.display = 'none';
-                }, 5000);
-            } else {
-                alert(message);
-            }
-        }
-
-        // 전역 함수로 노출
-        window.showError = showError;
-        window.updateUserInfo = updateUserInfo;
-
-        // DOM 초기화 완료 후 실행
-        function initializeApp() {
-            // 전역 로딩 상태 숨기기 및 앱 표시
+    <!-- 🎨 5단계: 기본 초기화 (기존 v9.1.0 로직 개선) -->
+    <script>
+        console.log('🚀 기본 초기화 시작...');
+        
+        // 즉시 앱 표시
+        function initializeAppImmediate() {
             const globalLoading = document.getElementById('globalLoadingState');
             const app = document.getElementById('app');
             
@@ -735,232 +568,140 @@
                 lucide.createIcons();
             }
             
-            // 네비게이션 설정
-            setupNavigation();
+            // 기본 네비게이션 설정
+            setupBasicNavigation();
             
-            // 사용자 정보 표시
+            // 사용자 정보 업데이트
             updateUserInfo();
             
-            console.log('✅ 항공권 신청 페이지 초기화 완료');
+            console.log('✅ 기본 초기화 완료');
         }
-
-        // DOM 로드 후 앱 표시
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeApp);
-        } else {
-            initializeApp();
-        }
-
-        // 페이지 로드 시 실행
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('📄 DOM 로드 완료');
-            
-            const authResult = await checkAuth();
-            if (authResult) {
-                console.log('✅ 인증 확인 완료');
-            } else {
-                console.log('⚠️ 인증 실패 - 기본 기능만 사용 가능');
+        
+        function setupBasicNavigation() {
+            // 대시보드로 돌아가기
+            const backBtn = document.getElementById('backToDashboard');
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
+                    window.location.href = 'dashboard.html';
+                });
             }
-        });
-    </script>
-
-    <!-- 🚀 v9.1.0: 단순화된 모듈 초기화 시스템 -->
-    <script>
-        // 🔧 단순한 초기화 시스템
-        async function initializeFlightRequest() {
-            const startTime = performance.now();
             
+            // 여권정보 버튼
+            const passportBtn = document.getElementById('passportInfoBtn');
+            if (passportBtn) {
+                passportBtn.addEventListener('click', () => {
+                    // 여권정보 페이지로 이동 (기존 로직 유지)
+                    if (window.flightRequestCoordinator?.showPassportInfoPage) {
+                        window.flightRequestCoordinator.showPassportInfoPage();
+                    } else {
+                        // 폴백: 간단한 페이지 전환
+                        showPassportInfoPage();
+                    }
+                });
+            }
+        }
+        
+        function updateUserInfo() {
             try {
-                console.log('🚀 v9.1.0 단순화된 초기화 시작...');
-                
-                // 즉시 앱 표시 (대기 없음)
-                const globalLoading = document.getElementById('globalLoadingState');
-                const app = document.getElementById('app');
-                
-                if (globalLoading) globalLoading.style.display = 'none';
-                if (app) app.style.display = 'block';
-                
-                // 병렬 초기화 (백그라운드)
-                const [supabaseReady, apiReady, modulesReady] = await Promise.allSettled([
-                    initializeSupabase(),
-                    initializeAPI(),
-                    loadModules()
-                ]);
-                
-                const endTime = performance.now();
-                console.log(`✅ 초기화 완료: ${(endTime - startTime).toFixed(2)}ms`);
-                
-                // 성공 처리
-                window.appReady = true;
-                setupEventListeners();
-                
-                // 초기화 결과 로깅
-                console.log('📊 초기화 결과:', {
-                    supabase: supabaseReady.status === 'fulfilled' ? '✅' : '❌',
-                    api: apiReady.status === 'fulfilled' ? '✅' : '❌',
-                    modules: modulesReady.status === 'fulfilled' ? '✅' : '❌'
-                });
-                
+                const userData = localStorage.getItem('currentStudent');
+                if (userData) {
+                    const student = JSON.parse(userData);
+                    
+                    const welcomeEl = document.getElementById('userWelcome');
+                    if (welcomeEl && student.name) {
+                        welcomeEl.textContent = `${student.name}님의 항공권 신청`;
+                    }
+                    
+                    const detailsEl = document.getElementById('userDetails');
+                    if (detailsEl && student.sejong_institute) {
+                        const field = student.field ? ` - ${student.field}` : '';
+                        detailsEl.textContent = `${student.sejong_institute}${field} 파견을 위한 항공권을 신청해주세요.`;
+                    }
+                }
             } catch (error) {
-                console.error('❌ 초기화 실패:', {
-                    message: error.message,
-                    stack: error.stack,
-                    timestamp: new Date().toISOString(),
-                    userAgent: navigator.userAgent,
-                    url: window.location.href
-                });
-                
-                showError('시스템 준비 중 문제가 발생했습니다. 새로고침 후 다시 시도해주세요.');
+                console.warn('사용자 정보 업데이트 실패:', error);
             }
         }
-
-        // Supabase 초기화
-        async function initializeSupabase() {
-            if (window.SupabaseAPI?.core?.isInitialized) {
-                return true;
+        
+        function showPassportInfoPage() {
+            const flightPage = document.getElementById('flightRequestPage');
+            const passportPage = document.getElementById('passportInfoPage');
+            
+            if (flightPage && passportPage) {
+                flightPage.classList.remove('active');
+                passportPage.classList.add('active');
             }
-            
-            // 최대 2초 대기
-            for (let i = 0; i < 20; i++) {
-                if (window.SupabaseAPI?.core?.isInitialized) {
-                    return true;
-                }
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-            throw new Error('Supabase 초기화 시간 초과');
         }
-
-        // API 초기화
-        async function initializeAPI() {
-            // 최대 1초 대기
-            for (let i = 0; i < 10; i++) {
-                if (window.flightRequestAPI?.isInitialized) {
-                    return true;
-                }
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-            console.warn('⚠️ API 초기화 지연 - 백그라운드에서 계속 진행');
-            return false;
-        }
-
-        // 모듈 로드
-        async function loadModules() {
-            // 모듈이 있으면 성공, 없어도 계속 진행
-            const moduleChecks = [
-                'flightRequestAPI',
-                'flightRequestUtils', 
-                'flightRequestPassport',
-                'flightRequestTicket',
-                'flightRequestCoordinator'
-            ];
-            
-            let loadedCount = 0;
-            moduleChecks.forEach(moduleName => {
-                if (window[moduleName]) {
-                    loadedCount++;
-                }
-            });
-            
-            console.log(`📦 모듈 로드 상태: ${loadedCount}/${moduleChecks.length}`);
-            return loadedCount > 0; // 최소 1개 모듈만 있으면 성공
-        }
-
-        // 이벤트 리스너 설정
-        function setupEventListeners() {
-            console.log('📱 이벤트 리스너 설정 완료');
-            
-            // 추가 이벤트 리스너 설정이 필요한 경우 여기에 추가
-        }
-
-        // DOM 로드 시 즉시 실행
+        
+        // DOM 준비되면 즉시 실행
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeFlightRequest);
+            document.addEventListener('DOMContentLoaded', initializeAppImmediate);
         } else {
-            initializeFlightRequest();
+            initializeAppImmediate();
         }
-
-        // 성능 모니터링
-        window.pageStartTime = Date.now();
-        document.addEventListener('DOMContentLoaded', function() {
-            window.domReadyTime = Date.now() - window.pageStartTime;
-            console.log(`⏱️ DOM 준비 시간: ${window.domReadyTime}ms`);
-        });
-
-        // 에러 로그 수집
-        window.errorLog = [];
-        window.addEventListener('error', function(e) {
-            window.errorLog.push({
-                message: e.message,
-                source: e.filename,
-                line: e.lineno,
-                timestamp: new Date().toISOString()
-            });
-        });
-
-        // 개발자 도구용 디버깅 함수
-        window.debugFlightRequest = function() {
-            return {
-                timestamp: new Date().toISOString(),
-                systemState: {
-                    appReady: !!window.appReady,
-                    supabaseReady: !!(window.SupabaseAPI?.core || window.SupabaseCore),
-                    apiReady: !!window.flightRequestAPI?.isInitialized,
-                    modulesLoaded: Object.keys(window).filter(k => k.startsWith('flightRequest')),
-                    ticketModuleReady: !!window.flightRequestTicket
-                },
-                performance: {
-                    domReadyTime: window.domReadyTime || 'not measured',
-                    memoryUsage: performance.memory ? 
-                        Math.round(performance.memory.usedJSHeapSize / 1000000) + 'MB' : 'unknown'
-                },
-                errors: window.errorLog || []
-            };
-        };
     </script>
 
-    <!-- 전역 에러 처리 -->
+    <!-- 🛡️ 7단계: 에러 처리 (기존 유지하되 개선) -->
     <script>
-        window.addEventListener('unhandledrejection', function(event) {
-            console.error('미처리 Promise 거부:', event.reason);
-            
-            if (event.reason && event.reason.message) {
-                const message = event.reason.message.toLowerCase();
-                
-                if (message.includes('api') || message.includes('초기화')) {
-                    showError('시스템 연결에 문제가 있습니다. 페이지를 새로고침해주세요.');
-                } else if (message.includes('network') || message.includes('fetch')) {
-                    showError('네트워크 연결을 확인하고 다시 시도해주세요.');
-                } else if (message.includes('사용자') || message.includes('인증')) {
-                    showError('로그인 상태를 확인해주세요. 필요시 다시 로그인해주세요.');
-                }
-            }
-        });
-
         window.addEventListener('error', function(event) {
-            console.error('전역 JavaScript 에러:', event.error);
+            console.error('전역 에러:', event.error);
             
             // 스크립트 로딩 에러 처리
-            if (event.target && event.target.tagName === 'SCRIPT') {
-                const scriptSrc = event.target.src;
-                console.error('스크립트 로딩 실패:', scriptSrc);
+            if (event.target?.tagName === 'SCRIPT') {
+                console.warn('스크립트 로딩 실패:', event.target.src);
                 
-                if (scriptSrc.includes('flight-request')) {
-                    showError('항공권 신청 모듈 로딩에 실패했습니다. 페이지를 새로고침해주세요.');
+                // 최적화된 모듈 실패 시 기본 기능 활성화
+                if (event.target.src.includes('optimized-flight-ticket')) {
+                    console.log('🔄 최적화 모듈 실패 - 기본 기능으로 폴백');
+                    setTimeout(activateBasicFlightFeatures, 1000);
                 }
             }
         });
+        
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('미처리 Promise 거부:', event.reason);
+        });
+        
+        // 기본 기능 활성화 (최후 폴백)
+        function activateBasicFlightFeatures() {
+            const arrivalEl = document.getElementById('actualArrivalDate');
+            const workEndEl = document.getElementById('actualWorkEndDate');
+            
+            if (arrivalEl && workEndEl) {
+                [arrivalEl, workEndEl].forEach(el => {
+                    el.addEventListener('input', () => {
+                        const arrival = arrivalEl.value;
+                        const workEnd = workEndEl.value;
+                        
+                        if (arrival && workEnd) {
+                            const days = Math.ceil(
+                                (new Date(workEnd) - new Date(arrival)) / (1000 * 60 * 60 * 24)
+                            );
+                            
+                            // 활동일 표시
+                            const calculatedEl = document.getElementById('calculatedDays');
+                            if (calculatedEl) {
+                                calculatedEl.textContent = days > 0 ? days : '-';
+                            }
+                            
+                            // 기본 검증 (90-120일)
+                            if (days >= 90 && days <= 120) {
+                                const flightSection = document.getElementById('flightInfoSection');
+                                if (flightSection) {
+                                    flightSection.classList.remove('flight-section-disabled');
+                                    flightSection.classList.add('flight-section-enabled');
+                                }
+                            }
+                        }
+                    });
+                });
+                
+                console.log('✅ 기본 항공권 기능 활성화 완료');
+            }
+        }
     </script>
-    
-    <!-- Flight Request 모듈들 순차 로드 -->
-    <script src="../js/student/flight-request-api.js" async></script>
-    <script src="../js/student/flight-request-utils.js" async></script>
-    <script src="../js/student/flight-request-passport.js" async></script>
-    <script src="../js/student/flight-request-ticket.js" async></script>
-    <script src="../js/student/flight-request-coordinator.js" async></script>
 
-    <!-- Lucide Icons 초기화 -->
+    <!-- 🎯 8단계: Lucide 아이콘 최종 초기화 -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof lucide !== 'undefined') {
@@ -968,5 +709,6 @@
             }
         });
     </script>
+
 </body>
 </html>
