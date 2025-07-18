@@ -547,101 +547,110 @@
     <!-- 🔄 4단계: 기존 모듈들 (폴백용 - 기존 유지하되 async 로드) -->
     <script src="../js/student/flight-request-api.js" async></script>
     <script src="../js/student/flight-request-utils.js" async></script>
+    <script src="../js/student/flight-request-init.js" async></script>
     <script src="../js/student/flight-request-passport.js" async></script>
     <script src="../js/student/flight-request-ticket.js" async></script>
     <script src="../js/student/flight-request-coordinator.js" async></script>
 
-    <!-- 🎨 5단계: 기본 초기화 (기존 v9.1.0 로직 개선) -->
-    <script>
-        console.log('🚀 기본 초기화 시작...');
+<!-- 🎨 5단계: 기본 초기화 (v1.4.0 초기화 모듈 통합) -->
+<script>
+    console.log('🚀 기본 초기화 시작 - v1.4.0 초기화 모듈 통합...');
+    
+    // 즉시 앱 표시 (coordinator가 로드되기 전까지 기본 기능)
+    function initializeAppImmediate() {
+        const globalLoading = document.getElementById('globalLoadingState');
+        const app = document.getElementById('app');
         
-        // 즉시 앱 표시
-        function initializeAppImmediate() {
-            const globalLoading = document.getElementById('globalLoadingState');
-            const app = document.getElementById('app');
-            
-            if (globalLoading) globalLoading.style.display = 'none';
-            if (app) app.style.display = 'block';
-            
-            // Lucide 아이콘 초기화
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-            
-            // 기본 네비게이션 설정
-            setupBasicNavigation();
-            
-            // 사용자 정보 업데이트
-            updateUserInfo();
-            
-            console.log('✅ 기본 초기화 완료');
+        if (globalLoading) globalLoading.style.display = 'none';
+        if (app) app.style.display = 'block';
+        
+        // Lucide 아이콘 초기화
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
         }
         
-        function setupBasicNavigation() {
-            // 대시보드로 돌아가기
-            const backBtn = document.getElementById('backToDashboard');
-            if (backBtn) {
-                backBtn.addEventListener('click', () => {
-                    window.location.href = 'dashboard.html';
-                });
-            }
-            
-            // 여권정보 버튼
-            const passportBtn = document.getElementById('passportInfoBtn');
-            if (passportBtn) {
-                passportBtn.addEventListener('click', () => {
-                    // 여권정보 페이지로 이동 (기존 로직 유지)
-                    if (window.flightRequestCoordinator?.showPassportInfoPage) {
-                        window.flightRequestCoordinator.showPassportInfoPage();
-                    } else {
-                        // 폴백: 간단한 페이지 전환
-                        showPassportInfoPage();
-                    }
-                });
-            }
+        // 기본 네비게이션 설정
+        setupBasicNavigation();
+        
+        console.log('✅ 기본 초기화 완료 - coordinator 로드 대기 중...');
+    }
+    
+    function setupBasicNavigation() {
+        // 대시보드로 돌아가기
+        const backBtn = document.getElementById('backToDashboard');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                window.location.href = 'dashboard.html';
+            });
         }
         
-        function updateUserInfo() {
-            try {
-                const userData = localStorage.getItem('currentStudent');
-                if (userData) {
-                    const student = JSON.parse(userData);
-                    
-                    const welcomeEl = document.getElementById('userWelcome');
-                    if (welcomeEl && student.name) {
-                        welcomeEl.textContent = `${student.name}님의 항공권 신청`;
-                    }
-                    
-                    const detailsEl = document.getElementById('userDetails');
-                    if (detailsEl && student.sejong_institute) {
-                        const field = student.field ? ` - ${student.field}` : '';
-                        detailsEl.textContent = `${student.sejong_institute}${field} 파견을 위한 항공권을 신청해주세요.`;
-                    }
+        // 여권정보 버튼 (coordinator 로드 후 재설정됨)
+        const passportBtn = document.getElementById('passportInfoBtn');
+        if (passportBtn) {
+            passportBtn.addEventListener('click', () => {
+                // coordinator가 준비되면 해당 메서드 사용, 아니면 폴백
+                if (window.flightRequestCoordinator?.showPassportInfoPage) {
+                    window.flightRequestCoordinator.showPassportInfoPage();
+                } else {
+                    // 폴백: 간단한 페이지 전환
+                    showPassportInfoPage();
                 }
-            } catch (error) {
-                console.warn('사용자 정보 업데이트 실패:', error);
-            }
+            });
         }
+    }
+    
+    function showPassportInfoPage() {
+        const flightPage = document.getElementById('flightRequestPage');
+        const passportPage = document.getElementById('passportInfoPage');
         
-        function showPassportInfoPage() {
-            const flightPage = document.getElementById('flightRequestPage');
-            const passportPage = document.getElementById('passportInfoPage');
+        if (flightPage && passportPage) {
+            flightPage.classList.remove('active');
+            flightPage.style.display = 'none';
             
-            if (flightPage && passportPage) {
-                flightPage.classList.remove('active');
-                passportPage.classList.add('active');
+            passportPage.classList.add('active');
+            passportPage.style.display = 'block';
+        }
+    }
+    
+    // DOM 준비되면 즉시 실행
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeAppImmediate);
+    } else {
+        initializeAppImmediate();
+    }
+    
+    // 🆕 coordinator 로드 후 초기화 완료 체크
+    function waitForCoordinatorAndInit() {
+        const checkCoordinator = () => {
+            if (window.flightRequestCoordinator && window.flightRequestCoordinator.isInitialized) {
+                console.log('✅ FlightRequestCoordinator v1.4.0 초기화 완료 - 초기화 모듈 통합됨');
+                
+                // 초기화 모듈 상태 확인
+                const initModule = window.flightRequestCoordinator.getModule('init');
+                if (initModule) {
+                    const initStatus = initModule.getInitStatus();
+                    console.log('✅ 초기화 모듈 상태:', initStatus);
+                }
+                
+                return true;
+            } else if (window.coordinatorLoadAttempts < 50) { // 5초 대기
+                window.coordinatorLoadAttempts = (window.coordinatorLoadAttempts || 0) + 1;
+                setTimeout(checkCoordinator, 100);
+            } else {
+                console.warn('⚠️ FlightRequestCoordinator 로드 타임아웃 - 기본 기능으로 동작');
+                return false;
             }
-        }
+        };
         
-        // DOM 준비되면 즉시 실행
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeAppImmediate);
-        } else {
-            initializeAppImmediate();
-        }
-    </script>
+        // DOM 로드 후 coordinator 대기
+        setTimeout(checkCoordinator, 500);
+    }
+    
+    // coordinator 대기 시작
+    waitForCoordinatorAndInit();
+</script>
 
-    <!-- 🛡️ 7단계: 에러 처리 (기존 유지하되 개선) -->
+    <!-- 🛡️ 6단계: 에러 처리 (기존 유지하되 개선) -->
     <script>
         window.addEventListener('error', function(event) {
             console.error('전역 에러:', event.error);
@@ -701,7 +710,7 @@
         }
     </script>
 
-    <!-- 🎯 8단계: Lucide 아이콘 최종 초기화 -->
+    <!-- 🎯 7단계: Lucide 아이콘 최종 초기화 -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof lucide !== 'undefined') {
