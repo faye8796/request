@@ -1534,6 +1534,18 @@ class FlightRequestTicket {
             }
         };
     }
+
+    // 🚀 v8.5.0: 모든 최적화 정보 통합 반환
+    getOptimizationStatus() {
+        return {
+            domOptimization: this.getDOMOptimizationInfo(),
+            debugInfo: this.getDebugInfo(),
+            userRequirements: this.getUserActivityRequirements(),
+            prerequisiteStatus: this.getPrerequisiteStatus(),
+            stepCompletion: this.getStepCompletionStatus(),
+            ticketData: this.getTicketData()
+        };
+    }
 }
 
 // 전역 스코프에 노출
