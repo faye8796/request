@@ -1,20 +1,25 @@
-// flight-request-coordinator.js - v1.3.0 성능 최적화 완료
-// 🚀 핵심 성능 최적화 (v1.2.1 → v1.3.0):
+// flight-request-coordinator.js - v1.4.0 초기화 모듈 통합 완료
+// 🆕 v1.4.0 주요 변경사항:
+//   1. FlightRequestInit 모듈 통합 및 초기화 책임 분리
+//   2. 의존성 체크에 FlightRequestInit 추가 
+//   3. 초기화 단계에서 FlightRequestInit 우선 실행
+//   4. 기존 성능 최적화 사항 완전 유지 (v1.3.0)
+// 🚀 핵심 성능 최적화 (v1.2.1 → v1.3.0 유지):
 //   1. 의존성 체크 횟수 대폭 감소 (50 → 10)
 //   2. 타임아웃 시간 단축 (15초 → 3초)
 //   3. 체크 간격 단축 (300ms → 100ms)
 //   4. 초기 상태 API 타임아웃 단축 (5초 → 2초)
-//   5. 성능 병목 제거로 사용자 경험 대폭 개선
 
 class FlightRequestCoordinator {
     constructor() {
-        console.log('🔄 [조정자] FlightRequestCoordinator v1.3.0 생성 - 성능 최적화 완료');
+        console.log('🔄 [조정자] FlightRequestCoordinator v1.4.0 생성 - 초기화 모듈 통합');
         
         // 🔧 신규: 단순하고 안전한 이벤트 시스템
         this.eventListeners = new Map();
         this.destroyed = false;
         
-        // 분리된 모듈 인스턴스들
+        // 🆕 v1.4.0: 분리된 모듈 인스턴스들 (FlightRequestInit 추가)
+        this.init = null;         // 🆕 초기화 전용 모듈
         this.passport = null;
         this.ticket = null;
         this.api = null;
@@ -34,7 +39,10 @@ class FlightRequestCoordinator {
             hasError: false,
             errorMessage: null,
             canAccessTicketSection: false,
-            prerequisitesMet: false
+            prerequisitesMet: false,
+            // 🆕 v1.4.0: 초기화 상태 추가
+            isInitModuleReady: false,
+            initializationCompleted: false
         };
         
         // 통합 서비스들
@@ -56,16 +64,16 @@ class FlightRequestCoordinator {
         this.isInitialized = false;
         this.initializationPromise = null;
         
-        // 🚀 성능 최적화된 안전장치 플래그
+        // 🚀 성능 최적화된 안전장치 플래그 (v1.3.0 유지)
         this.initAttempts = 0;
-        this.maxInitAttempts = 3; // 유지
+        this.maxInitAttempts = 3;
         this.dependencyCheckCount = 0;
         this.maxDependencyChecks = 10; // 50 → 10으로 대폭 감소 (5배 빠름)
         this.errorCount = 0;
-        this.maxErrors = 5; // 유지
+        this.maxErrors = 5;
     }
 
-    // === 🔧 개선된 안전한 이벤트 시스템 ===
+    // === 🔧 개선된 안전한 이벤트 시스템 (v1.3.0 유지) ===
     
     emit(eventName, data) {
         try {
@@ -139,7 +147,7 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 🚀 성능 최적화된 의존성 대기 ===
+    // === 🆕 v1.4.0: 초기화 모듈 포함 의존성 대기 ===
     async waitForDependencies(timeout = 3000) { // 15초 → 3초로 대폭 단축 (5배 빠름)
         const startTime = Date.now();
         
@@ -158,11 +166,14 @@ class FlightRequestCoordinator {
                 const utilsReady = window.utilsReady === true;
                 const passportClassReady = !!window.FlightRequestPassport;
                 const ticketClassReady = !!window.FlightRequestTicket;
+                // 🆕 v1.4.0: FlightRequestInit 클래스 확인 추가
+                const initClassReady = !!window.FlightRequestInit;
                 
-                const allBasicReady = apiExists && utilsReady && passportClassReady && ticketClassReady;
+                const allBasicReady = apiExists && utilsReady && passportClassReady && 
+                                     ticketClassReady && initClassReady;
                 
                 if (allBasicReady) {
-                    console.log('✅ [조정자] v1.3.0: 기본 의존성 준비 완료 (최적화됨)');
+                    console.log('✅ [조정자] v1.4.0: 모든 의존성 준비 완료 (초기화 모듈 포함)');
                     resolve();
                     return;
                 }
@@ -182,7 +193,7 @@ class FlightRequestCoordinator {
         });
     }
 
-    // === 🚀 성능 최적화된 초기화 ===
+    // === 🆕 v1.4.0: 초기화 모듈 우선 실행 ===
     async init() {
         try {
             // 🔧 재시도 횟수 유지
@@ -197,18 +208,22 @@ class FlightRequestCoordinator {
             }
             
             this.initAttempts++;
-            console.log(`🚀 [조정자] v1.3.0 초기화 시작 (시도 ${this.initAttempts}/${this.maxInitAttempts}) - 성능 최적화`);
+            console.log(`🚀 [조정자] v1.4.0 초기화 시작 (시도 ${this.initAttempts}/${this.maxInitAttempts}) - 초기화 모듈 통합`);
             
             await this.waitForDependencies();
             this.setupServicesSafely();
             this.initializePageElements();
+            
+            // 🆕 v1.4.0: 초기화 모듈 우선 실행
+            await this.initializeInitModuleSafely();
+            
             this.initializeModulesSafely();
             this.setupEventListeners();
             await this.determineInitialStateSafely();
             this.startApplication();
             
             this.isInitialized = true;
-            console.log('✅ [조정자] v1.3.0 초기화 완료 - 성능 최적화');
+            console.log('✅ [조정자] v1.4.0 초기화 완료 - 초기화 모듈 통합');
             return true;
             
         } catch (error) {
@@ -216,6 +231,51 @@ class FlightRequestCoordinator {
             console.error('❌ [조정자] 초기화 실패:', error.message);
             this.handleInitializationError(error);
             return false;
+        }
+    }
+
+    // === 🆕 v1.4.0: 초기화 모듈 전용 초기화 ===
+    async initializeInitModuleSafely() {
+        try {
+            console.log('🔄 [조정자] v1.4.0: 초기화 모듈 초기화...');
+            
+            if (window.FlightRequestInit) {
+                try {
+                    this.init = new window.FlightRequestInit();
+                    
+                    // 초기화 모듈 실행
+                    const initSuccess = await this.init.init();
+                    
+                    if (initSuccess) {
+                        this.globalState.isInitModuleReady = true;
+                        this.globalState.initializationCompleted = true;
+                        console.log('✅ [조정자] v1.4.0: 초기화 모듈 초기화 성공');
+                        
+                        // 초기화 모듈의 사용자 데이터를 전역 상태에 반영
+                        const userData = this.init.getUserData();
+                        if (userData) {
+                            this.globalState.userData = userData;
+                        }
+                    } else {
+                        console.warn('⚠️ [조정자] v1.4.0: 초기화 모듈 초기화 부분 실패 - 계속 진행');
+                        this.globalState.isInitModuleReady = false;
+                    }
+                    
+                } catch (initError) {
+                    console.warn('⚠️ [조정자] v1.4.0: 초기화 모듈 초기화 실패:', initError.message);
+                    this.init = null;
+                    this.globalState.isInitModuleReady = false;
+                }
+            } else {
+                console.warn('⚠️ [조정자] v1.4.0: FlightRequestInit 클래스를 찾을 수 없음');
+                this.globalState.isInitModuleReady = false;
+            }
+            
+        } catch (error) {
+            this.errorCount++;
+            console.error('❌ [조정자] v1.4.0: 초기화 모듈 초기화 실패:', error.message);
+            this.init = null;
+            this.globalState.isInitModuleReady = false;
         }
     }
 
@@ -283,10 +343,10 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 안전한 모듈 초기화 ===
+    // === 🔧 v1.4.0: 기존 모듈 초기화 (초기화 모듈 제외) ===
     initializeModulesSafely() {
         try {
-            console.log('🔄 [조정자] 안전한 모듈 초기화...');
+            console.log('🔄 [조정자] v1.4.0: 기존 모듈 초기화 (초기화 모듈 제외)...');
             
             // 여권 모듈 초기화
             if (window.FlightRequestPassport) {
@@ -302,7 +362,7 @@ class FlightRequestCoordinator {
                 }
             }
             
-            // 항공권 모듈 초기화
+            // 🔧 v1.4.0: 항공권 모듈 초기화 (초기화 모듈과 연동)
             if (window.FlightRequestTicket) {
                 try {
                     this.ticket = new window.FlightRequestTicket(
@@ -310,6 +370,15 @@ class FlightRequestCoordinator {
                         this.services.ui,
                         this.passport
                     );
+                    
+                    // 🆕 초기화 모듈에서 설정한 사용자 요구사항을 티켓 모듈에 전달
+                    if (this.init && this.ticket) {
+                        const userRequirements = this.init.getUserRequirements();
+                        if (userRequirements && typeof this.ticket.setUserRequirements === 'function') {
+                            this.ticket.setUserRequirements(userRequirements);
+                        }
+                    }
+                    
                     console.log('✅ [조정자] 항공권 모듈 초기화 성공');
                 } catch (ticketError) {
                     console.warn('⚠️ [조정자] 항공권 모듈 초기화 실패:', ticketError.message);
@@ -317,7 +386,7 @@ class FlightRequestCoordinator {
                 }
             }
             
-            console.log('✅ [조정자] 안전한 모듈 초기화 완료');
+            console.log('✅ [조정자] v1.4.0: 기존 모듈 초기화 완료');
             
         } catch (error) {
             this.errorCount++;
@@ -357,6 +426,11 @@ class FlightRequestCoordinator {
         this.on('state:changed', (event) => {
             this.syncModuleStates();
         });
+        
+        // 🆕 v1.4.0: 초기화 모듈 이벤트 추가
+        this.on('init:completed', (event) => {
+            this.handleInitCompletion(event.detail);
+        });
     }
 
     setupPageNavigationEvents() {
@@ -385,39 +459,49 @@ class FlightRequestCoordinator {
         });
     }
 
-    // === 🚀 성능 최적화된 초기 상태 설정 ===
+    // === 🚀 성능 최적화된 초기 상태 설정 (v1.3.0 유지) ===
     async determineInitialStateSafely() {
         try {
-            console.log('🔄 [조정자] 안전한 초기 상태 설정...');
+            console.log('🔄 [조정자] v1.4.0: 안전한 초기 상태 설정...');
             
-            let initialPage = 'passport';
+            let initialPage = 'flight'; // 🔧 v1.4.0: 기본값을 flight로 변경 (초기화 모듈이 처리함)
             
-            if (this.services.api && this.services.api.getPassportInfo) {
-                try {
-                    const existingPassport = await Promise.race([
-                        this.services.api.getPassportInfo(),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('타임아웃')), 2000)) // 5초 → 2초로 단축
-                    ]).catch(() => null); // 에러 시 null 반환
-                    
-                    const hasPassport = !!(existingPassport && existingPassport.passport_number);
-                    
-                    if (hasPassport) {
-                        initialPage = 'flight';
-                        console.log('✅ [조정자] 기존 여권정보 발견 - 항공권 페이지로 시작');
+            // 🆕 v1.4.0: 초기화 모듈에서 이미 여권정보 체크를 했으므로 간소화
+            if (this.init && typeof this.init.getInitStatus === 'function') {
+                const initStatus = this.init.getInitStatus();
+                if (initStatus.passportCheckCompleted) {
+                    // 초기화 모듈에서 이미 처리함
+                    console.log('✅ [조정자] v1.4.0: 초기화 모듈에서 여권정보 체크 완료');
+                }
+            } else {
+                // 폴백: 기존 로직 사용
+                if (this.services.api && this.services.api.getPassportInfo) {
+                    try {
+                        const existingPassport = await Promise.race([
+                            this.services.api.getPassportInfo(),
+                            new Promise((_, reject) => setTimeout(() => reject(new Error('타임아웃')), 2000)) // 5초 → 2초로 단축
+                        ]).catch(() => null); // 에러 시 null 반환
+                        
+                        const hasPassport = !!(existingPassport && existingPassport.passport_number);
+                        
+                        if (!hasPassport) {
+                            initialPage = 'passport';
+                            console.log('⚠️ [조정자] v1.4.0: 여권정보 없음 - 여권 페이지로 시작');
+                        }
+                        
+                    } catch (error) {
+                        console.warn('⚠️ [조정자] v1.4.0: 초기 데이터 확인 실패 - 기본값 사용');
                     }
-                    
-                } catch (error) {
-                    console.warn('⚠️ [조정자] 초기 데이터 확인 실패 - 기본값 사용');
                 }
             }
             
             this.updateGlobalState({ currentPage: initialPage });
-            console.log('✅ [조정자] 안전한 초기 상태 설정 완료:', { initialPage });
+            console.log('✅ [조정자] v1.4.0: 안전한 초기 상태 설정 완료:', { initialPage });
             
         } catch (error) {
             this.errorCount++;
-            console.error('❌ [조정자] 초기 상태 설정 실패:', error.message);
-            this.updateGlobalState({ currentPage: 'passport' });
+            console.error('❌ [조정자] v1.4.0: 초기 상태 설정 실패:', error.message);
+            this.updateGlobalState({ currentPage: 'flight' });
         }
     }
 
@@ -508,6 +592,22 @@ class FlightRequestCoordinator {
                 return;
             }
             
+            // 🆕 v1.4.0: 초기화 모듈 상태 동기화
+            if (this.init) {
+                const initStatus = this.init.getInitStatus && this.init.getInitStatus();
+                const userData = this.init.getUserData && this.init.getUserData();
+                const userRequirements = this.init.getUserRequirements && this.init.getUserRequirements();
+                
+                if (initStatus || userData || userRequirements) {
+                    this.updateGlobalState({
+                        initStatus: initStatus,
+                        userData: userData,
+                        userRequirements: userRequirements,
+                        isInitModuleReady: this.globalState.isInitModuleReady
+                    });
+                }
+            }
+            
             // 여권 모듈 상태 동기화
             if (this.passport) {
                 const passportCompleted = this.passport.isPassportInfoCompleted && this.passport.isPassportInfoCompleted();
@@ -542,7 +642,26 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 모듈 간 통신 핸들러 ===
+    // === 🆕 v1.4.0: 초기화 완료 핸들러 ===
+    handleInitCompletion(data) {
+        try {
+            console.log('✅ [조정자] v1.4.0: 초기화 모듈 완료 처리');
+            
+            this.updateGlobalState({
+                initializationCompleted: true,
+                isInitModuleReady: true
+            });
+            
+            // 초기화 완료 후 다른 모듈들과 데이터 동기화
+            this.syncModuleStates();
+            
+        } catch (error) {
+            this.errorCount++;
+            console.error('❌ [조정자] v1.4.0: 초기화 완료 처리 실패:', error.message);
+        }
+    }
+
+    // === 모듈 간 통신 핸들러 (기존 유지) ===
     handlePassportCompletion(data) {
         try {
             this.updateGlobalState({
@@ -598,13 +717,13 @@ class FlightRequestCoordinator {
     // === 애플리케이션 시작 ===
     startApplication() {
         try {
-            console.log('🚀 [조정자] 애플리케이션 시작...');
+            console.log('🚀 [조정자] v1.4.0: 애플리케이션 시작...');
             
             this.routeToPage(this.globalState.currentPage);
             this.syncModuleStates();
             this.setGlobalLoading(false);
             
-            console.log('✅ [조정자] 애플리케이션 시작 완료');
+            console.log('✅ [조정자] v1.4.0: 애플리케이션 시작 완료');
             
         } catch (error) {
             this.errorCount++;
@@ -737,7 +856,7 @@ class FlightRequestCoordinator {
     // === 🔧 개선된 안전한 종료 메서드 ===
     destroy() {
         try {
-            console.log('🗑️ [조정자] 인스턴스 정리 중...');
+            console.log('🗑️ [조정자] v1.4.0: 인스턴스 정리 중...');
             
             this.destroyed = true;
             
@@ -746,7 +865,8 @@ class FlightRequestCoordinator {
                 this.eventListeners.clear();
             }
             
-            // 모듈 정리
+            // 🆕 v1.4.0: 초기화 모듈 정리 추가
+            this.init = null;
             this.passport = null;
             this.ticket = null;
             this.api = null;
@@ -755,7 +875,7 @@ class FlightRequestCoordinator {
             // 서비스 정리
             this.services = {};
             
-            console.log('✅ [조정자] 인스턴스 정리 완료');
+            console.log('✅ [조정자] v1.4.0: 인스턴스 정리 완료');
             
         } catch (error) {
             console.error('❌ [조정자] 인스턴스 정리 실패:', error.message);
@@ -773,6 +893,8 @@ class FlightRequestCoordinator {
         }
         
         switch (moduleName) {
+            case 'init':      // 🆕 v1.4.0: 초기화 모듈 접근 추가
+                return this.init;
             case 'passport':
                 return this.passport;
             case 'ticket':
@@ -806,7 +928,32 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 공개 인터페이스 ===
+    // === 🆕 v1.4.0: 초기화 모듈 관련 공개 인터페이스 ===
+    getInitModule() {
+        return this.destroyed ? null : this.init;
+    }
+
+    async refreshInitialization() {
+        try {
+            if (this.destroyed) {
+                return false;
+            }
+            
+            if (this.init && typeof this.init.refreshRequiredDaysInfo === 'function') {
+                await this.init.refreshRequiredDaysInfo();
+                this.syncModuleStates();
+                return true;
+            }
+            
+            return false;
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.4.0: 초기화 새로고침 실패:', error.message);
+            return false;
+        }
+    }
+
+    // === 공개 인터페이스 (기존 유지) ===
     async showPassportInfoPage() {
         try {
             if (this.destroyed) {
@@ -870,10 +1017,10 @@ class FlightRequestCoordinator {
     }
 }
 
-// === 🚀 성능 최적화된 애플리케이션 시작점 ===
+// === 🚀 v1.4.0: 초기화 모듈 통합된 애플리케이션 시작점 ===
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        console.log('🚀 [조정자] DOM 로드 완료 - v1.3.0 시작 (성능 최적화 완료)');
+        console.log('🚀 [조정자] DOM 로드 완료 - v1.4.0 시작 (초기화 모듈 통합)');
         
         // 🔧 중복 인스턴스 방지
         if (window.flightRequestCoordinator) {
@@ -891,13 +1038,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const initSuccess = await window.flightRequestCoordinator.init();
         
         if (initSuccess) {
-            console.log('✅ [조정자] v1.3.0 완전 초기화 완료 (성능 최적화)');
+            console.log('✅ [조정자] v1.4.0 완전 초기화 완료 (초기화 모듈 통합)');
         } else {
-            console.warn('⚠️ [조정자] v1.3.0 제한된 기능으로 초기화됨');
+            console.warn('⚠️ [조정자] v1.4.0 제한된 기능으로 초기화됨');
         }
         
     } catch (error) {
-        console.error('❌ [조정자] v1.3.0 초기화 실패:', error.message);
+        console.error('❌ [조정자] v1.4.0 초기화 실패:', error.message);
         
         // 🔧 에러 상황에서도 한 번만 알림
         if (!window.coordinatorErrorShown) {
@@ -910,13 +1057,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 전역 스코프에 클래스 노출
 window.FlightRequestCoordinator = FlightRequestCoordinator;
 
-console.log('✅ FlightRequestCoordinator v1.3.0 모듈 로드 완료 - 성능 최적화 완료');
-console.log('🚀 v1.3.0 성능 최적화 사항:', {
-    dependencyCheckOptimization: '의존성 체크 횟수 50 → 10으로 대폭 감소 (5배 빠름)',
-    timeoutOptimization: '타임아웃 15초 → 3초로 단축 (5배 빠름)',
-    checkIntervalOptimization: '체크 간격 300ms → 100ms로 단축 (3배 빠름)',
-    initialStateApiTimeout: '초기 상태 API 타임아웃 5초 → 2초로 단축',
-    performanceImpact: '15초 지연 → 1-2초로 대폭 단축 예상',
-    userExperienceImprovement: '현지 활동기간 입력 후 항공권 섹션 활성화 속도 대폭 향상',
-    safetyMaintained: '에러 처리 로직 및 폴백 메커니즘 완전 유지'
+console.log('✅ FlightRequestCoordinator v1.4.0 모듈 로드 완료 - 초기화 모듈 통합 완료');
+console.log('🆕 v1.4.0 초기화 모듈 통합 사항:', {
+    newFeatures: [
+        'FlightRequestInit 모듈 통합 및 우선 실행',
+        '의존성 체크에 FlightRequestInit 클래스 확인 추가',
+        '초기화 모듈의 사용자 데이터를 전역 상태에 반영',
+        '티켓 모듈에 초기화 모듈의 사용자 요구사항 전달',
+        '초기화 모듈 관련 공개 인터페이스 추가'
+    ],
+    performanceOptimization: [
+        '의존성 체크 횟수 50 → 10으로 대폭 감소 (v1.3.0 유지)',
+        '타임아웃 15초 → 3초로 단축 (v1.3.0 유지)',
+        '체크 간격 300ms → 100ms로 단축 (v1.3.0 유지)',
+        '초기 상태 API 타임아웃 5초 → 2초로 단축 (v1.3.0 유지)'
+    ],
+    moduleSeparation: [
+        '초기화 책임 FlightRequestInit으로 완전 분리',
+        'flight-request-ticket.js 파일 크기 대폭 감소 예상',
+        '초기화 문제와 검증 문제 분리로 디버깅 용이성 확보',
+        '모듈 간 명확한 역할 분담 완성'
+    ]
+});
+console.log('🚀 v1.4.0 예상 효과:', {
+    codeQuality: '책임 분리로 코드 명확성 대폭 향상',
+    maintenance: '초기화와 검증 로직 분리로 유지보수성 향상',
+    debugging: '문제 발생 시 원인 분할로 디버깅 효율성 증대',
+    performance: '15초 지연 → 1-2초로 대폭 단축 (v1.3.0 성능 최적화 유지)',
+    scalability: '모듈별 독립적 확장 가능성 확보'
 });
