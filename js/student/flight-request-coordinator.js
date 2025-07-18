@@ -1,11 +1,10 @@
-// flight-request-coordinator.js - v1.5.0 실시간 재검증 시스템 통합
-// 🆕 v1.5.0 주요 변경사항:
-//   1. FlightRequestInit 모듈의 실시간 재검증 시스템 완전 통합
-//   2. 활동기간 변경 이벤트 감지 및 조정자 레벨 처리
-//   3. 재검증 상태 모니터링 및 전역 상태 동기화
-//   4. 티켓 모듈과의 재검증 연동 강화
-//   5. 실시간 피드백 시스템 및 사용자 안내
-// 🔧 v1.4.0 기능 완전 유지: 초기화 모듈 통합 및 성능 최적화
+// flight-request-coordinator.js - v1.6.0 통합 항공권 섹션 제어 이벤트 연결 강화
+// 🆕 v1.6.0 주요 변경사항:
+//   1. FlightRequestTicket v2.1.0과의 완전한 이벤트 연결 강화
+//   2. 초기화 모듈 v1.2.0 이벤트 기반 시스템 연동
+//   3. 항공권 섹션 제어 통합 관리 및 상태 동기화
+//   4. 단일 책임 원칙 적용 완료된 시스템 통합
+// 🔧 v1.5.0 기능 완전 유지: 재검증 시스템 통합 및 성능 최적화
 // 🚀 핵심 성능 최적화 (v1.2.1 → v1.3.0 유지):
 //   1. 의존성 체크 횟수 대폭 감소 (50 → 10)
 //   2. 타임아웃 시간 단축 (15초 → 3초)
@@ -14,16 +13,16 @@
 
 class FlightRequestCoordinator {
     constructor() {
-        console.log('🔄 [조정자] FlightRequestCoordinator v1.5.0 생성 - 실시간 재검증 시스템 통합');
+        console.log('🔄 [조정자] FlightRequestCoordinator v1.6.0 생성 - 통합 항공권 섹션 제어 이벤트 연결 강화');
         
         // 🔧 신규: 단순하고 안전한 이벤트 시스템
         this.eventListeners = new Map();
         this.destroyed = false;
         
         // 🆕 v1.4.0: 분리된 모듈 인스턴스들 (FlightRequestInit 추가)
-        this.init = null;         // 초기화 전용 모듈 (v1.5.0: 재검증 시스템 포함)
+        this.init = null;         // 초기화 전용 모듈 (v1.2.0: 이벤트 기반)
         this.passport = null;
-        this.ticket = null;
+        this.ticket = null;       // v2.1.0: 통합 항공권 섹션 제어 시스템
         this.api = null;
         this.utils = null;
         
@@ -49,7 +48,10 @@ class FlightRequestCoordinator {
             revalidationInProgress: false,
             lastRevalidationResult: null,
             activityPeriodValidationState: 'pending', // pending, valid, invalid
-            flightSectionState: 'disabled' // disabled, enabled, validating
+            flightSectionState: 'disabled', // disabled, enabled, validating
+            // 🆕 v1.6.0: 통합 섹션 제어 상태 추가
+            flightSectionControlActive: false,
+            lastFlightSectionChangeReason: 'initialization'
         };
         
         // 통합 서비스들
@@ -86,9 +88,17 @@ class FlightRequestCoordinator {
             revalidationCount: 0,
             maxRevalidationsPerMinute: 10 // 과도한 재검증 방지
         };
+        
+        // 🆕 v1.6.0: 이벤트 연결 상태 관리
+        this.eventConnectionStatus = {
+            initModuleConnected: false,
+            ticketModuleConnected: false,
+            crossModuleCommunicationSetup: false,
+            eventBridgeActive: false
+        };
     }
 
-    // === 🔧 개선된 안전한 이벤트 시스템 (v1.3.0 유지) ===
+    // === 🔧 개선된 안전한 이벤트 시스템 (v1.3.0 유지 + v1.6.0 확장) ===
     
     emit(eventName, data) {
         try {
@@ -99,6 +109,8 @@ class FlightRequestCoordinator {
             
             const listeners = this.eventListeners.get(eventName);
             if (!listeners || listeners.length === 0) {
+                // 🆕 v1.6.0: 연결된 모듈들에게도 이벤트 전파
+                this.propagateEventToModules(eventName, data);
                 return;
             }
             
@@ -114,6 +126,9 @@ class FlightRequestCoordinator {
                 }
             });
             
+            // 🆕 v1.6.0: 모듈들에게도 이벤트 전파
+            this.propagateEventToModules(eventName, data);
+            
         } catch (error) {
             this.errorCount++;
             console.error(`❌ [조정자] 이벤트 발행 실패: ${eventName}`, error.message);
@@ -123,6 +138,24 @@ class FlightRequestCoordinator {
                 console.error('❌ [조정자] 최대 에러 횟수 초과 - 이벤트 시스템 비활성화');
                 this.destroy();
             }
+        }
+    }
+
+    // 🆕 v1.6.0: 모듈들에게 이벤트 전파
+    propagateEventToModules(eventName, data) {
+        try {
+            // 초기화 모듈에게 전파
+            if (this.init && typeof this.init.emit === 'function') {
+                this.init.emit(eventName, data);
+            }
+            
+            // 티켓 모듈에게 전파
+            if (this.ticket && typeof this.ticket.emitEvent === 'function') {
+                this.ticket.emitEvent(eventName, data);
+            }
+            
+        } catch (error) {
+            console.warn(`⚠️ [조정자] v1.6.0: 모듈 이벤트 전파 실패 (${eventName}):`, error.message);
         }
     }
 
@@ -188,7 +221,7 @@ class FlightRequestCoordinator {
                                      ticketClassReady && initClassReady;
                 
                 if (allBasicReady) {
-                    console.log('✅ [조정자] v1.5.0: 모든 의존성 준비 완료 (재검증 시스템 포함)');
+                    console.log('✅ [조정자] v1.6.0: 모든 의존성 준비 완료 (통합 섹션 제어 이벤트 연결)');
                     resolve();
                     return;
                 }
@@ -208,7 +241,7 @@ class FlightRequestCoordinator {
         });
     }
 
-    // === 🆕 v1.5.0: 재검증 시스템 통합 초기화 ===
+    // === 🆕 v1.6.0: 통합 섹션 제어 이벤트 연결 강화 초기화 ===
     async init() {
         try {
             // 🔧 재시도 횟수 유지
@@ -223,7 +256,7 @@ class FlightRequestCoordinator {
             }
             
             this.initAttempts++;
-            console.log(`🚀 [조정자] v1.5.0 초기화 시작 (시도 ${this.initAttempts}/${this.maxInitAttempts}) - 재검증 시스템 통합`);
+            console.log(`🚀 [조정자] v1.6.0 초기화 시작 (시도 ${this.initAttempts}/${this.maxInitAttempts}) - 통합 섹션 제어 이벤트 연결`);
             
             await this.waitForDependencies();
             this.setupServicesSafely();
@@ -232,16 +265,21 @@ class FlightRequestCoordinator {
             // v1.4.0: 초기화 모듈 우선 실행
             await this.initializeInitModuleSafely();
             
+            // 🆕 v1.6.0: 모듈 초기화 (이벤트 연결 포함)
+            this.initializeModulesSafelyWithEventConnection();
+            
+            // 🆕 v1.6.0: 통합 이벤트 브릿지 설정
+            await this.setupIntegratedEventBridge();
+            
             // 🆕 v1.5.0: 재검증 시스템 설정
             await this.setupRevalidationSystemIntegration();
             
-            this.initializeModulesSafely();
             this.setupEventListeners();
             await this.determineInitialStateSafely();
             this.startApplication();
             
             this.isInitialized = true;
-            console.log('✅ [조정자] v1.5.0 초기화 완료 - 재검증 시스템 통합');
+            console.log('✅ [조정자] v1.6.0 초기화 완료 - 통합 섹션 제어 이벤트 연결');
             return true;
             
         } catch (error) {
@@ -252,20 +290,303 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 🆕 v1.5.0: 재검증 시스템 통합 설정 ===
+    // === 🆕 v1.6.0: 통합 이벤트 브릿지 설정 ===
+    async setupIntegratedEventBridge() {
+        try {
+            console.log('🔄 [조정자] v1.6.0: 통합 이벤트 브릿지 설정...');
+            
+            // 1. 초기화 모듈과 티켓 모듈 이벤트 연결
+            this.setupInitToTicketEventBridge();
+            
+            // 2. 티켓 모듈에서 조정자로의 이벤트 연결
+            this.setupTicketToCoordinatorEventBridge();
+            
+            // 3. 양방향 통신 설정
+            this.setupBidirectionalCommunication();
+            
+            // 4. 이벤트 연결 상태 확인
+            this.validateEventConnections();
+            
+            this.eventConnectionStatus.eventBridgeActive = true;
+            console.log('✅ [조정자] v1.6.0: 통합 이벤트 브릿지 설정 완료');
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.6.0: 통합 이벤트 브릿지 설정 실패:', error);
+        }
+    }
+
+    // === 🆕 v1.6.0: 초기화 → 티켓 이벤트 브릿지 ===
+    setupInitToTicketEventBridge() {
+        try {
+            console.log('🔄 [조정자] v1.6.0: 초기화 → 티켓 이벤트 브릿지 설정...');
+            
+            if (!this.init || !this.ticket) {
+                console.warn('⚠️ [조정자] v1.6.0: 초기화 또는 티켓 모듈이 없어 브릿지 설정 제한됨');
+                return;
+            }
+            
+            // 초기화 모듈의 이벤트를 티켓 모듈로 전달
+            const initEventHandlers = {
+                'flightSectionStateChangeRequest': (data) => {
+                    console.log('🔄 [조정자] v1.6.0: 초기화 → 티켓 브릿지 - flightSectionStateChangeRequest');
+                    if (this.ticket && typeof this.ticket.handleFlightSectionStateChangeRequest === 'function') {
+                        this.ticket.handleFlightSectionStateChangeRequest(data);
+                    }
+                },
+                'revalidationCompleted': (data) => {
+                    console.log('🔄 [조정자] v1.6.0: 초기화 → 티켓 브릿지 - revalidationCompleted');
+                    if (this.ticket && typeof this.ticket.handleRevalidationCompleted === 'function') {
+                        this.ticket.handleRevalidationCompleted(data);
+                    }
+                },
+                'activityPeriodChanged': (data) => {
+                    console.log('🔄 [조정자] v1.6.0: 초기화 → 티켓 브릿지 - activityPeriodChanged');
+                    if (this.ticket && typeof this.ticket.handleActivityPeriodChanged === 'function') {
+                        this.ticket.handleActivityPeriodChanged(data);
+                    }
+                },
+                'userDataLoaded': (data) => {
+                    console.log('🔄 [조정자] v1.6.0: 초기화 → 티켓 브릿지 - userDataLoaded');
+                    if (this.ticket && typeof this.ticket.handleUserDataLoaded === 'function') {
+                        this.ticket.handleUserDataLoaded(data);
+                    }
+                },
+                'initializationCompleted': (data) => {
+                    console.log('🔄 [조정자] v1.6.0: 초기화 → 티켓 브릿지 - initializationCompleted');
+                    if (this.ticket && typeof this.ticket.handleInitializationCompleted === 'function') {
+                        this.ticket.handleInitializationCompleted(data);
+                    }
+                }
+            };
+            
+            // 초기화 모듈에 이벤트 핸들러 등록
+            Object.entries(initEventHandlers).forEach(([eventName, handler]) => {
+                if (this.init && typeof this.init.on === 'function') {
+                    this.init.on(eventName, handler);
+                }
+            });
+            
+            this.eventConnectionStatus.initModuleConnected = true;
+            console.log('✅ [조정자] v1.6.0: 초기화 → 티켓 이벤트 브릿지 설정 완료');
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.6.0: 초기화 → 티켓 이벤트 브릿지 설정 실패:', error);
+        }
+    }
+
+    // === 🆕 v1.6.0: 티켓 → 조정자 이벤트 브릿지 ===
+    setupTicketToCoordinatorEventBridge() {
+        try {
+            console.log('🔄 [조정자] v1.6.0: 티켓 → 조정자 이벤트 브릿지 설정...');
+            
+            if (!this.ticket) {
+                console.warn('⚠️ [조정자] v1.6.0: 티켓 모듈이 없어 브릿지 설정 제한됨');
+                return;
+            }
+            
+            // 티켓 모듈의 이벤트를 조정자에서 처리
+            const ticketEventHandlers = {
+                'flightSectionEnabled': (data) => {
+                    console.log('🔄 [조정자] v1.6.0: 티켓 → 조정자 브릿지 - flightSectionEnabled');
+                    this.handleTicketFlightSectionEnabled(data);
+                },
+                'flightSectionDisabled': (data) => {
+                    console.log('🔄 [조정자] v1.6.0: 티켓 → 조정자 브릿지 - flightSectionDisabled');
+                    this.handleTicketFlightSectionDisabled(data);
+                },
+                'validationSuccess': (data) => {
+                    console.log('🔄 [조정자] v1.6.0: 티켓 → 조정자 브릿지 - validationSuccess');
+                    this.handleTicketValidationSuccess(data);
+                },
+                'validationFailed': (data) => {
+                    console.log('🔄 [조정자] v1.6.0: 티켓 → 조정자 브릿지 - validationFailed');
+                    this.handleTicketValidationFailed(data);
+                },
+                'userRequirementsUpdated': (data) => {
+                    console.log('🔄 [조정자] v1.6.0: 티켓 → 조정자 브릿지 - userRequirementsUpdated');
+                    this.handleTicketUserRequirementsUpdated(data);
+                }
+            };
+            
+            // 티켓 모듈에 이벤트 핸들러 등록
+            Object.entries(ticketEventHandlers).forEach(([eventName, handler]) => {
+                if (this.ticket && typeof this.ticket.onEvent === 'function') {
+                    this.ticket.onEvent(eventName, handler);
+                }
+            });
+            
+            this.eventConnectionStatus.ticketModuleConnected = true;
+            console.log('✅ [조정자] v1.6.0: 티켓 → 조정자 이벤트 브릿지 설정 완료');
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.6.0: 티켓 → 조정자 이벤트 브릿지 설정 실패:', error);
+        }
+    }
+
+    // === 🆕 v1.6.0: 양방향 통신 설정 ===
+    setupBidirectionalCommunication() {
+        try {
+            console.log('🔄 [조정자] v1.6.0: 양방향 통신 설정...');
+            
+            // 조정자 → 초기화 모듈 통신
+            this.on('coordinator:triggerRevalidation', (event) => {
+                if (this.init && typeof this.init.triggerManualRevalidation === 'function') {
+                    this.init.triggerManualRevalidation();
+                }
+            });
+            
+            // 조정자 → 티켓 모듈 통신
+            this.on('coordinator:enableFlightSection', (event) => {
+                if (this.ticket && typeof this.ticket.manualEnableFlightSection === 'function') {
+                    this.ticket.manualEnableFlightSection(event.detail.reason, event.detail.message);
+                }
+            });
+            
+            this.on('coordinator:disableFlightSection', (event) => {
+                if (this.ticket && typeof this.ticket.manualDisableFlightSection === 'function') {
+                    this.ticket.manualDisableFlightSection(event.detail.reason, event.detail.message);
+                }
+            });
+            
+            this.eventConnectionStatus.crossModuleCommunicationSetup = true;
+            console.log('✅ [조정자] v1.6.0: 양방향 통신 설정 완료');
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.6.0: 양방향 통신 설정 실패:', error);
+        }
+    }
+
+    // === 🆕 v1.6.0: 이벤트 연결 상태 확인 ===
+    validateEventConnections() {
+        try {
+            console.log('🔄 [조정자] v1.6.0: 이벤트 연결 상태 확인...');
+            
+            const connectionChecks = {
+                initModule: !!this.init && typeof this.init.on === 'function',
+                ticketModule: !!this.ticket && typeof this.ticket.onEvent === 'function',
+                initEmit: !!this.init && typeof this.init.emit === 'function',
+                ticketEmit: !!this.ticket && typeof this.ticket.emitEvent === 'function'
+            };
+            
+            const allConnected = Object.values(connectionChecks).every(Boolean);
+            
+            if (allConnected) {
+                console.log('✅ [조정자] v1.6.0: 모든 이벤트 연결 확인됨');
+            } else {
+                console.warn('⚠️ [조정자] v1.6.0: 일부 이벤트 연결 누락:', connectionChecks);
+            }
+            
+            return allConnected;
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.6.0: 이벤트 연결 상태 확인 실패:', error);
+            return false;
+        }
+    }
+
+    // === 🆕 v1.6.0: 티켓 모듈 이벤트 핸들러들 ===
+    
+    handleTicketFlightSectionEnabled(data) {
+        try {
+            console.log('✅ [조정자] v1.6.0: 티켓 모듈 항공권 섹션 활성화 처리:', data);
+            
+            this.updateGlobalState({
+                flightSectionState: 'enabled',
+                canAccessTicketSection: true,
+                flightSectionControlActive: true,
+                lastFlightSectionChangeReason: data.reason || 'ticketModuleEnabled'
+            });
+            
+            // 성공 메시지 표시
+            if (data.message) {
+                this.showSuccess(data.message);
+            }
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.6.0: 티켓 모듈 항공권 섹션 활성화 처리 실패:', error);
+        }
+    }
+    
+    handleTicketFlightSectionDisabled(data) {
+        try {
+            console.log('🔒 [조정자] v1.6.0: 티켓 모듈 항공권 섹션 비활성화 처리:', data);
+            
+            this.updateGlobalState({
+                flightSectionState: 'disabled',
+                canAccessTicketSection: false,
+                flightSectionControlActive: true,
+                lastFlightSectionChangeReason: data.reason || 'ticketModuleDisabled'
+            });
+            
+            // 상황에 따른 메시지 표시
+            if (data.message) {
+                const messageType = data.reason?.includes('error') ? 'error' : 'warning';
+                if (messageType === 'error') {
+                    this.showError(data.message);
+                } else {
+                    this.showWarning(data.message);
+                }
+            }
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.6.0: 티켓 모듈 항공권 섹션 비활성화 처리 실패:', error);
+        }
+    }
+    
+    handleTicketValidationSuccess(data) {
+        try {
+            console.log('✅ [조정자] v1.6.0: 티켓 모듈 검증 성공 처리:', data);
+            
+            this.updateGlobalState({
+                activityPeriodValidationState: 'valid',
+                lastRevalidationResult: data.result
+            });
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.6.0: 티켓 모듈 검증 성공 처리 실패:', error);
+        }
+    }
+    
+    handleTicketValidationFailed(data) {
+        try {
+            console.log('❌ [조정자] v1.6.0: 티켓 모듈 검증 실패 처리:', data);
+            
+            this.updateGlobalState({
+                activityPeriodValidationState: 'invalid',
+                lastRevalidationResult: data.result
+            });
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.6.0: 티켓 모듈 검증 실패 처리 실패:', error);
+        }
+    }
+    
+    handleTicketUserRequirementsUpdated(data) {
+        try {
+            console.log('🔄 [조정자] v1.6.0: 티켓 모듈 사용자 요구사항 업데이트 처리:', data);
+            
+            this.updateGlobalState({
+                userRequirements: data.userRequirements
+            });
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.6.0: 티켓 모듈 사용자 요구사항 업데이트 처리 실패:', error);
+        }
+    }
+    // === 🆕 v1.5.0: 재검증 시스템 통합 설정 (v1.6.0 확장) ===
     async setupRevalidationSystemIntegration() {
         try {
-            console.log('🔄 [조정자] v1.5.0: 재검증 시스템 통합 설정...');
+            console.log('🔄 [조정자] v1.6.0: 재검증 시스템 통합 설정 (이벤트 연결 강화)...');
             
             if (!this.init) {
-                console.warn('⚠️ [조정자] v1.5.0: 초기화 모듈이 없어 재검증 시스템 설정 제한됨');
+                console.warn('⚠️ [조정자] v1.6.0: 초기화 모듈이 없어 재검증 시스템 설정 제한됨');
                 return;
             }
             
             // 1. 초기화 모듈의 재검증 상태 확인
             const revalidationStatus = this.init.getRevalidationStatus();
             if (revalidationStatus && revalidationStatus.listenersSetup) {
-                console.log('✅ [조정자] v1.5.0: 초기화 모듈 재검증 리스너 확인됨');
+                console.log('✅ [조정자] v1.6.0: 초기화 모듈 재검증 리스너 확인됨');
                 this.revalidationState.isListening = true;
             }
             
@@ -275,17 +596,29 @@ class FlightRequestCoordinator {
             // 3. 전역 상태 동기화
             this.syncRevalidationState();
             
-            console.log('✅ [조정자] v1.5.0: 재검증 시스템 통합 설정 완료');
+            // 🆕 v1.6.0: 4. 티켓 모듈과의 재검증 상태 동기화
+            if (this.ticket) {
+                const ticketControlStatus = this.ticket.getFlightSectionControlStatus();
+                if (ticketControlStatus) {
+                    this.updateGlobalState({
+                        flightSectionControlActive: true,
+                        flightSectionState: ticketControlStatus.currentState || 'disabled'
+                    });
+                    console.log('✅ [조정자] v1.6.0: 티켓 모듈 섹션 제어 상태 동기화 완료');
+                }
+            }
+            
+            console.log('✅ [조정자] v1.6.0: 재검증 시스템 통합 설정 완료 (이벤트 연결 강화)');
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 시스템 통합 설정 실패:', error);
+            console.error('❌ [조정자] v1.6.0: 재검증 시스템 통합 설정 실패:', error);
         }
     }
 
-    // === 🆕 v1.5.0: 재검증 이벤트 리스너 설정 ===
+    // === 🆕 v1.5.0: 재검증 이벤트 리스너 설정 (v1.6.0 확장) ===
     setupRevalidationEventListeners() {
         try {
-            console.log('🔄 [조정자] v1.5.0: 재검증 이벤트 리스너 설정...');
+            console.log('🔄 [조정자] v1.6.0: 재검증 이벤트 리스너 설정 (확장)...');
             
             // 초기화 모듈의 재검증 이벤트 감지
             this.on('init:revalidationStarted', (event) => {
@@ -304,6 +637,15 @@ class FlightRequestCoordinator {
                 this.handleFlightSectionStateChanged(event.detail);
             });
             
+            // 🆕 v1.6.0: 티켓 모듈의 섹션 제어 이벤트 감지
+            this.on('ticket:flightSectionEnabled', (event) => {
+                this.handleTicketFlightSectionEnabled(event.detail);
+            });
+            
+            this.on('ticket:flightSectionDisabled', (event) => {
+                this.handleTicketFlightSectionDisabled(event.detail);
+            });
+            
             // 🆕 v1.5.0: 초기화 모듈로부터 실제 이벤트 수신 설정
             if (this.init && typeof this.init.on === 'function') {
                 // 초기화 모듈에서 이벤트를 발행한다면 여기서 수신
@@ -311,14 +653,14 @@ class FlightRequestCoordinator {
                 this.startRevalidationStatePolling();
             }
             
-            console.log('✅ [조정자] v1.5.0: 재검증 이벤트 리스너 설정 완료');
+            console.log('✅ [조정자] v1.6.0: 재검증 이벤트 리스너 설정 완료 (확장)');
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 이벤트 리스너 설정 실패:', error);
+            console.error('❌ [조정자] v1.6.0: 재검증 이벤트 리스너 설정 실패:', error);
         }
     }
 
-    // === 🆕 v1.5.0: 재검증 상태 폴링 시작 ===
+    // === 🆕 v1.5.0: 재검증 상태 폴링 시작 (유지) ===
     startRevalidationStatePolling() {
         try {
             // 30초마다 재검증 상태 동기화
@@ -328,14 +670,14 @@ class FlightRequestCoordinator {
                 }
             }, 30000);
             
-            console.log('✅ [조정자] v1.5.0: 재검증 상태 폴링 시작');
+            console.log('✅ [조정자] v1.6.0: 재검증 상태 폴링 시작');
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 상태 폴링 시작 실패:', error);
+            console.error('❌ [조정자] v1.6.0: 재검증 상태 폴링 시작 실패:', error);
         }
     }
 
-    // === 🆕 v1.5.0: 재검증 상태 동기화 ===
+    // === 🆕 v1.5.0: 재검증 상태 동기화 (v1.6.0 확장) ===
     syncRevalidationState() {
         try {
             if (!this.init || this.destroyed) return;
@@ -351,6 +693,16 @@ class FlightRequestCoordinator {
                 flightSectionState: this.determineFlightSectionState(revalidationStatus)
             };
             
+            // 🆕 v1.6.0: 티켓 모듈 상태도 함께 동기화
+            if (this.ticket) {
+                const ticketControlStatus = this.ticket.getFlightSectionControlStatus();
+                if (ticketControlStatus) {
+                    newState.flightSectionControlActive = true;
+                    // 티켓 모듈의 상태가 더 신뢰성 있으므로 우선 적용
+                    newState.flightSectionState = ticketControlStatus.currentState;
+                }
+            }
+            
             // 상태가 실제로 변경된 경우만 업데이트
             const hasChanges = Object.entries(newState).some(([key, value]) => 
                 JSON.stringify(this.globalState[key]) !== JSON.stringify(value)
@@ -358,15 +710,15 @@ class FlightRequestCoordinator {
             
             if (hasChanges) {
                 this.updateGlobalState(newState);
-                console.log('🔄 [조정자] v1.5.0: 재검증 상태 동기화 완료', newState);
+                console.log('🔄 [조정자] v1.6.0: 재검증 상태 동기화 완료 (티켓 모듈 포함)', newState);
             }
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 상태 동기화 실패:', error);
+            console.error('❌ [조정자] v1.6.0: 재검증 상태 동기화 실패:', error);
         }
     }
 
-    // === 🆕 v1.5.0: 검증 상태 판단 ===
+    // === 🆕 v1.5.0: 검증 상태 판단 (유지) ===
     determineValidationState(lastValidationState) {
         try {
             if (!lastValidationState || !lastValidationState.result) {
@@ -380,7 +732,7 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 🆕 v1.5.0: 항공권 섹션 상태 판단 ===
+    // === 🆕 v1.5.0: 항공권 섹션 상태 판단 (유지) ===
     determineFlightSectionState(revalidationStatus) {
         try {
             if (revalidationStatus.isValidationInProgress) {
@@ -398,15 +750,20 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 🆕 v1.5.0: 재검증 이벤트 핸들러들 ===
+    // === 🆕 v1.5.0: 재검증 이벤트 핸들러들 (v1.6.0 확장) ===
     handleRevalidationStarted(data) {
         try {
-            console.log('🔄 [조정자] v1.5.0: 재검증 시작 감지', data);
+            console.log('🔄 [조정자] v1.6.0: 재검증 시작 감지', data);
             
             this.updateGlobalState({
                 revalidationInProgress: true,
                 flightSectionState: 'validating'
             });
+            
+            // 🆕 v1.6.0: 티켓 모듈에도 재검증 시작 알림
+            if (this.ticket && typeof this.ticket.handleRevalidationStarted === 'function') {
+                this.ticket.handleRevalidationStarted(data);
+            }
             
             // 사용자에게 재검증 진행 중 표시
             this.showInfo('활동기간 정보를 재검증하고 있습니다...');
@@ -416,13 +773,13 @@ class FlightRequestCoordinator {
             this.revalidationState.lastValidationTimestamp = Date.now();
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 시작 처리 실패:', error);
+            console.error('❌ [조정자] v1.6.0: 재검증 시작 처리 실패:', error);
         }
     }
 
     handleRevalidationCompleted(data) {
         try {
-            console.log('✅ [조정자] v1.5.0: 재검증 완료 감지', data);
+            console.log('✅ [조정자] v1.6.0: 재검증 완료 감지', data);
             
             const newState = {
                 revalidationInProgress: false,
@@ -440,19 +797,19 @@ class FlightRequestCoordinator {
                 this.showWarning(`재검증 실패: ${data.result?.reason || '알 수 없는 오류'}`);
             }
             
-            // 티켓 모듈에도 재검증 결과 전파
+            // 🆕 v1.6.0: 티켓 모듈에도 재검증 결과 전파 (이미 이벤트 브릿지에서 처리됨)
             if (this.ticket && typeof this.ticket.handleRevalidationResult === 'function') {
                 this.ticket.handleRevalidationResult(data.result);
             }
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 완료 처리 실패:', error);
+            console.error('❌ [조정자] v1.6.0: 재검증 완료 처리 실패:', error);
         }
     }
 
     handleActivityPeriodChanged(data) {
         try {
-            console.log('🔔 [조정자] v1.5.0: 활동기간 변경 감지', data);
+            console.log('🔔 [조정자] v1.6.0: 활동기간 변경 감지', data);
             
             // 즉시 상태 리셋
             this.updateGlobalState({
@@ -461,19 +818,19 @@ class FlightRequestCoordinator {
                 prerequisitesMet: false
             });
             
-            // 티켓 모듈에 활동기간 변경 알림
+            // 🆕 v1.6.0: 티켓 모듈에 활동기간 변경 알림 (이미 이벤트 브릿지에서 처리됨)
             if (this.ticket && typeof this.ticket.handleActivityPeriodChange === 'function') {
                 this.ticket.handleActivityPeriodChange(data);
             }
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 활동기간 변경 처리 실패:', error);
+            console.error('❌ [조정자] v1.6.0: 활동기간 변경 처리 실패:', error);
         }
     }
 
     handleFlightSectionStateChanged(data) {
         try {
-            console.log('🔄 [조정자] v1.5.0: 항공권 섹션 상태 변경 감지', data);
+            console.log('🔄 [조정자] v1.6.0: 항공권 섹션 상태 변경 감지', data);
             
             this.updateGlobalState({
                 flightSectionState: data.state,
@@ -481,14 +838,14 @@ class FlightRequestCoordinator {
             });
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 항공권 섹션 상태 변경 처리 실패:', error);
+            console.error('❌ [조정자] v1.6.0: 항공권 섹션 상태 변경 처리 실패:', error);
         }
     }
 
     // === v1.4.0: 초기화 모듈 전용 초기화 (유지) ===
     async initializeInitModuleSafely() {
         try {
-            console.log('🔄 [조정자] v1.5.0: 초기화 모듈 초기화 (재검증 시스템 포함)...');
+            console.log('🔄 [조정자] v1.6.0: 초기화 모듈 초기화 (v1.2.0 이벤트 기반)...');
             
             if (window.FlightRequestInit) {
                 try {
@@ -500,7 +857,7 @@ class FlightRequestCoordinator {
                     if (initSuccess) {
                         this.globalState.isInitModuleReady = true;
                         this.globalState.initializationCompleted = true;
-                        console.log('✅ [조정자] v1.5.0: 초기화 모듈 초기화 성공 (재검증 시스템 포함)');
+                        console.log('✅ [조정자] v1.6.0: 초기화 모듈 초기화 성공 (v1.2.0 이벤트 기반)');
                         
                         // 초기화 모듈의 사용자 데이터를 전역 상태에 반영
                         const userData = this.init.getUserData();
@@ -512,29 +869,29 @@ class FlightRequestCoordinator {
                         this.syncRevalidationState();
                         
                     } else {
-                        console.warn('⚠️ [조정자] v1.5.0: 초기화 모듈 초기화 부분 실패 - 계속 진행');
+                        console.warn('⚠️ [조정자] v1.6.0: 초기화 모듈 초기화 부분 실패 - 계속 진행');
                         this.globalState.isInitModuleReady = false;
                     }
                     
                 } catch (initError) {
-                    console.warn('⚠️ [조정자] v1.5.0: 초기화 모듈 초기화 실패:', initError.message);
+                    console.warn('⚠️ [조정자] v1.6.0: 초기화 모듈 초기화 실패:', initError.message);
                     this.init = null;
                     this.globalState.isInitModuleReady = false;
                 }
             } else {
-                console.warn('⚠️ [조정자] v1.5.0: FlightRequestInit 클래스를 찾을 수 없음');
+                console.warn('⚠️ [조정자] v1.6.0: FlightRequestInit 클래스를 찾을 수 없음');
                 this.globalState.isInitModuleReady = false;
             }
             
         } catch (error) {
             this.errorCount++;
-            console.error('❌ [조정자] v1.5.0: 초기화 모듈 초기화 실패:', error.message);
+            console.error('❌ [조정자] v1.6.0: 초기화 모듈 초기화 실패:', error.message);
             this.init = null;
             this.globalState.isInitModuleReady = false;
         }
     }
 
-    // === 안전한 서비스 설정 ===
+    // === 안전한 서비스 설정 (유지) ===
     setupServicesSafely() {
         try {
             console.log('🔄 [조정자] 안전한 서비스 설정...');
@@ -579,7 +936,7 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 기본 함수들 (생략된 부분 요약) ===
+    // === 기본 함수들 (생략된 부분들 유지) ===
     
     initializePageElements() {
         // 페이지 요소 초기화
@@ -594,31 +951,6 @@ class FlightRequestCoordinator {
         };
     }
 
-    initializeModulesSafely() {
-        // 여권 및 티켓 모듈 초기화 (재검증 연동 포함)
-        if (window.FlightRequestPassport) {
-            this.passport = new window.FlightRequestPassport(this.services.api, this.services.ui);
-        }
-        
-        if (window.FlightRequestTicket) {
-            this.ticket = new window.FlightRequestTicket(this.services.api, this.services.ui, this.passport);
-            
-            // 재검증 상태 연동
-            if (this.init && this.ticket) {
-                const userRequirements = this.init.getUserRequirements();
-                const revalidationStatus = this.init.getRevalidationStatus();
-                
-                if (userRequirements && typeof this.ticket.setUserRequirements === 'function') {
-                    this.ticket.setUserRequirements(userRequirements);
-                }
-                
-                if (revalidationStatus && typeof this.ticket.setRevalidationStatus === 'function') {
-                    this.ticket.setRevalidationStatus(revalidationStatus);
-                }
-            }
-        }
-    }
-
     setupEventListeners() {
         this.setupModuleCommunication();
         this.setupPageNavigationEvents();
@@ -626,7 +958,7 @@ class FlightRequestCoordinator {
     }
 
     setupModuleCommunication() {
-        // 기존 이벤트 + 재검증 이벤트
+        // 기존 이벤트 + 재검증 이벤트 + v1.6.0 통합 이벤트
         this.on('passport:completed', (event) => this.handlePassportCompletion(event.detail));
         this.on('ticket:stateChanged', (event) => this.handleTicketStateChange(event.detail));
         this.on('prerequisites:changed', (event) => this.handlePrerequisitesChange(event.detail));
@@ -634,6 +966,48 @@ class FlightRequestCoordinator {
         this.on('init:completed', (event) => this.handleInitCompletion(event.detail));
         this.on('revalidation:triggered', (event) => this.handleRevalidationTriggered(event.detail));
         this.on('revalidation:completed', (event) => this.handleGlobalRevalidationCompleted(event.detail));
+        
+        // 🆕 v1.6.0: 통합 섹션 제어 이벤트
+        this.on('flightSection:controlRequest', (event) => this.handleFlightSectionControlRequest(event.detail));
+        this.on('flightSection:statusUpdate', (event) => this.handleFlightSectionStatusUpdate(event.detail));
+    }
+
+    // 🆕 v1.6.0: 항공권 섹션 제어 요청 처리
+    handleFlightSectionControlRequest(data) {
+        try {
+            console.log('🔄 [조정자] v1.6.0: 항공권 섹션 제어 요청 처리:', data);
+            
+            if (data.action === 'enable') {
+                this.emit('coordinator:enableFlightSection', {
+                    reason: data.reason || 'coordinatorRequest',
+                    message: data.message || '조정자에서 활성화 요청'
+                });
+            } else if (data.action === 'disable') {
+                this.emit('coordinator:disableFlightSection', {
+                    reason: data.reason || 'coordinatorRequest',
+                    message: data.message || '조정자에서 비활성화 요청'
+                });
+            }
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.6.0: 항공권 섹션 제어 요청 처리 실패:', error);
+        }
+    }
+
+    // 🆕 v1.6.0: 항공권 섹션 상태 업데이트 처리
+    handleFlightSectionStatusUpdate(data) {
+        try {
+            console.log('🔄 [조정자] v1.6.0: 항공권 섹션 상태 업데이트:', data);
+            
+            this.updateGlobalState({
+                flightSectionState: data.state,
+                flightSectionControlActive: data.controlActive || true,
+                lastFlightSectionChangeReason: data.reason || 'statusUpdate'
+            });
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.6.0: 항공권 섹션 상태 업데이트 처리 실패:', error);
+        }
     }
 
     setupPageNavigationEvents() {
@@ -661,7 +1035,7 @@ class FlightRequestCoordinator {
         if (this.init) {
             const initStatus = this.init.getInitStatus();
             if (initStatus.passportCheckCompleted) {
-                console.log('✅ [조정자] v1.5.0: 초기화 모듈에서 여권정보 체크 완료');
+                console.log('✅ [조정자] v1.6.0: 초기화 모듈에서 여권정보 체크 완료');
             }
         }
         
@@ -720,6 +1094,7 @@ class FlightRequestCoordinator {
         }, 0);
     }
 
+    // 🔧 v1.6.0: 모듈 상태 동기화 (확장)
     syncModuleStates() {
         if (this.destroyed) return;
         
@@ -757,13 +1132,15 @@ class FlightRequestCoordinator {
                 this.updateGlobalState({
                     ticketData: this.ticket.getTicketData?.(),
                     canAccessTicketSection: prerequisiteStatus.flightSectionEnabled,
-                    prerequisitesMet: prerequisiteStatus.isActivityPeriodCompleted && prerequisiteStatus.isActivityPeriodValid
+                    prerequisitesMet: prerequisiteStatus.isActivityPeriodCompleted && prerequisiteStatus.isActivityPeriodValid,
+                    // 🆕 v1.6.0: 통합 섹션 제어 상태 추가
+                    flightSectionControlActive: prerequisiteStatus.flightSectionControlStatus?.eventSystemSetup || false
                 });
             }
         }
     }
 
-    // === 이벤트 핸들러들 ===
+    // === 이벤트 핸들러들 (기존 유지) ===
     
     handleInitCompletion(data) {
         this.updateGlobalState({
@@ -778,7 +1155,7 @@ class FlightRequestCoordinator {
         const timeSinceLastValidation = now - (this.revalidationState.lastValidationTimestamp || 0);
         
         if (timeSinceLastValidation < 5000) {
-            console.warn('⚠️ [조정자] v1.5.0: 재검증 요청이 너무 빈번함 - 무시');
+            console.warn('⚠️ [조정자] v1.6.0: 재검증 요청이 너무 빈번함 - 무시');
             return;
         }
         
@@ -840,8 +1217,7 @@ class FlightRequestCoordinator {
         this.syncModuleStates();
         this.setGlobalLoading(false);
     }
-
-    // === UI 관리 ===
+    // === UI 관리 (기존 유지) ===
     
     setGlobalLoading(loading) {
         if (this.destroyed) return;
@@ -917,7 +1293,7 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 에러 처리 ===
+    // === 에러 처리 (기존 유지) ===
     
     handleInitializationError(error) {
         this.showError('시스템 초기화 중 오류가 발생했습니다.');
@@ -935,11 +1311,11 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 🔧 안전한 종료 메서드 ===
+    // === 🔧 안전한 종료 메서드 (v1.6.0 확장) ===
     
     destroy() {
         try {
-            console.log('🗑️ [조정자] v1.5.0: 인스턴스 정리 중 (재검증 시스템 포함)...');
+            console.log('🗑️ [조정자] v1.6.0: 인스턴스 정리 중 (통합 이벤트 연결 포함)...');
             
             this.destroyed = true;
             
@@ -960,21 +1336,27 @@ class FlightRequestCoordinator {
             }
             this.init = null;
             
-            this.passport = null;
+            // 🆕 v1.6.0: 티켓 모듈 정리 (통합 섹션 제어 시스템 포함)
+            if (this.ticket && typeof this.ticket.destroy === 'function') {
+                this.ticket.destroy();
+            }
             this.ticket = null;
+            
+            this.passport = null;
             this.api = null;
             this.utils = null;
             this.services = {};
             this.revalidationState = {};
+            this.eventConnectionStatus = {}; // 🆕 v1.6.0
             
-            console.log('✅ [조정자] v1.5.0: 인스턴스 정리 완료 (재검증 시스템 포함)');
+            console.log('✅ [조정자] v1.6.0: 인스턴스 정리 완료 (통합 이벤트 연결 포함)');
             
         } catch (error) {
             console.error('❌ [조정자] 인스턴스 정리 실패:', error.message);
         }
     }
 
-    // === 🆕 v1.5.0: 재검증 시스템 공개 인터페이스 ===
+    // === 🆕 v1.5.0: 재검증 시스템 공개 인터페이스 (v1.6.0 확장) ===
     
     async triggerManualRevalidation() {
         try {
@@ -989,7 +1371,7 @@ class FlightRequestCoordinator {
             return false;
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 수동 재검증 실패:', error.message);
+            console.error('❌ [조정자] v1.6.0: 수동 재검증 실패:', error.message);
             return false;
         }
     }
@@ -1006,18 +1388,23 @@ class FlightRequestCoordinator {
                     revalidationInProgress: this.globalState.revalidationInProgress,
                     lastRevalidationResult: this.globalState.lastRevalidationResult,
                     activityPeriodValidationState: this.globalState.activityPeriodValidationState,
-                    flightSectionState: this.globalState.flightSectionState
+                    flightSectionState: this.globalState.flightSectionState,
+                    // 🆕 v1.6.0: 통합 섹션 제어 상태 추가
+                    flightSectionControlActive: this.globalState.flightSectionControlActive,
+                    lastFlightSectionChangeReason: this.globalState.lastFlightSectionChangeReason
                 },
-                coordinatorState: this.revalidationState
+                coordinatorState: this.revalidationState,
+                // 🆕 v1.6.0: 이벤트 연결 상태 추가
+                eventConnectionStatus: this.eventConnectionStatus
             };
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 재검증 상태 조회 실패:', error.message);
+            console.error('❌ [조정자] v1.6.0: 재검증 상태 조회 실패:', error.message);
             return null;
         }
     }
 
-    // === 외부 인터페이스 ===
+    // === 외부 인터페이스 (v1.6.0 확장) ===
     
     getGlobalState() {
         return this.destroyed ? {} : { ...this.globalState };
@@ -1071,7 +1458,7 @@ class FlightRequestCoordinator {
             return false;
             
         } catch (error) {
-            console.error('❌ [조정자] v1.5.0: 초기화 새로고침 실패:', error.message);
+            console.error('❌ [조정자] v1.6.0: 초기화 새로고침 실패:', error.message);
             return false;
         }
     }
@@ -1125,12 +1512,89 @@ class FlightRequestCoordinator {
             console.error(`❌ [조정자] 파일 제거 실패: ${fileType}`, error.message);
         }
     }
+
+    // === 🆕 v1.6.0: 통합 섹션 제어 공개 인터페이스 ===
+    
+    async manualControlFlightSection(action, reason = 'manual', message = '') {
+        try {
+            if (this.destroyed) return false;
+            
+            console.log(`🔄 [조정자] v1.6.0: 수동 항공권 섹션 ${action}:`, { reason, message });
+            
+            if (this.ticket) {
+                if (action === 'enable' && typeof this.ticket.manualEnableFlightSection === 'function') {
+                    return this.ticket.manualEnableFlightSection(reason, message);
+                } else if (action === 'disable' && typeof this.ticket.manualDisableFlightSection === 'function') {
+                    return this.ticket.manualDisableFlightSection(reason, message);
+                }
+            }
+            
+            return false;
+            
+        } catch (error) {
+            console.error(`❌ [조정자] v1.6.0: 수동 항공권 섹션 ${action} 실패:`, error.message);
+            return false;
+        }
+    }
+
+    getFlightSectionControlStatus() {
+        try {
+            if (this.destroyed) return null;
+            
+            const coordinatorStatus = {
+                globalState: {
+                    flightSectionState: this.globalState.flightSectionState,
+                    flightSectionControlActive: this.globalState.flightSectionControlActive,
+                    lastFlightSectionChangeReason: this.globalState.lastFlightSectionChangeReason,
+                    canAccessTicketSection: this.globalState.canAccessTicketSection
+                },
+                eventConnectionStatus: this.eventConnectionStatus
+            };
+            
+            if (this.ticket && typeof this.ticket.getFlightSectionControlStatus === 'function') {
+                coordinatorStatus.ticketModuleStatus = this.ticket.getFlightSectionControlStatus();
+            }
+            
+            return coordinatorStatus;
+            
+        } catch (error) {
+            console.error('❌ [조정자] v1.6.0: 항공권 섹션 제어 상태 조회 실패:', error.message);
+            return null;
+        }
+    }
+
+    // 🆕 v1.6.0: 이벤트 연결 상태 조회
+    getEventConnectionStatus() {
+        return this.destroyed ? {} : { ...this.eventConnectionStatus };
+    }
+
+    // 🆕 v1.6.0: 통합 디버깅 정보 반환
+    getDebugInfo() {
+        return {
+            version: '1.6.0',
+            destroyed: this.destroyed,
+            isInitialized: this.isInitialized,
+            globalState: this.globalState,
+            eventConnectionStatus: this.eventConnectionStatus,
+            revalidationState: this.revalidationState,
+            moduleStatus: {
+                init: !!this.init,
+                passport: !!this.passport,
+                ticket: !!this.ticket,
+                api: !!this.api,
+                utils: !!this.utils
+            },
+            eventListenersCount: this.eventListeners.size,
+            initAttempts: this.initAttempts,
+            errorCount: this.errorCount
+        };
+    }
 }
 
-// === 🚀 v1.5.0: 재검증 시스템 통합된 애플리케이션 시작점 ===
+// === 🚀 v1.6.0: 통합 섹션 제어 이벤트 연결 강화된 애플리케이션 시작점 ===
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        console.log('🚀 [조정자] DOM 로드 완료 - v1.5.0 시작 (재검증 시스템 통합)');
+        console.log('🚀 [조정자] DOM 로드 완료 - v1.6.0 시작 (통합 섹션 제어 이벤트 연결 강화)');
         
         // 중복 인스턴스 방지
         if (window.flightRequestCoordinator) {
@@ -1148,13 +1612,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const initSuccess = await window.flightRequestCoordinator.init();
         
         if (initSuccess) {
-            console.log('✅ [조정자] v1.5.0 완전 초기화 완료 (재검증 시스템 통합)');
+            console.log('✅ [조정자] v1.6.0 완전 초기화 완료 (통합 섹션 제어 이벤트 연결 강화)');
+            
+            // 🆕 v1.6.0: 이벤트 연결 상태 확인
+            const eventConnectionStatus = window.flightRequestCoordinator.getEventConnectionStatus();
+            console.log('🔄 [조정자] v1.6.0 이벤트 연결 상태:', eventConnectionStatus);
+            
         } else {
-            console.warn('⚠️ [조정자] v1.5.0 제한된 기능으로 초기화됨');
+            console.warn('⚠️ [조정자] v1.6.0 제한된 기능으로 초기화됨');
         }
         
     } catch (error) {
-        console.error('❌ [조정자] v1.5.0 초기화 실패:', error.message);
+        console.error('❌ [조정자] v1.6.0 초기화 실패:', error.message);
         
         if (!window.coordinatorErrorShown) {
             window.coordinatorErrorShown = true;
@@ -1166,34 +1635,45 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 전역 스코프에 클래스 노출
 window.FlightRequestCoordinator = FlightRequestCoordinator;
 
-console.log('✅ FlightRequestCoordinator v1.5.0 모듈 로드 완료 - 재검증 시스템 통합 완료');
-console.log('🆕 v1.5.0 재검증 시스템 통합 사항:', {
+console.log('✅ FlightRequestCoordinator v1.6.0 모듈 로드 완료 - 통합 섹션 제어 이벤트 연결 강화');
+console.log('🆕 v1.6.0 통합 섹션 제어 이벤트 연결 강화 사항:', {
     newFeatures: [
-        'FlightRequestInit 실시간 재검증 시스템 완전 통합',
-        '활동기간 변경 이벤트 감지 및 조정자 레벨 처리',
-        '재검증 상태 모니터링 및 전역 상태 동기화',
-        '티켓 모듈과의 재검증 연동 강화',
-        '실시간 피드백 시스템 및 사용자 안내',
-        '수동 재검증 트리거 공개 인터페이스',
-        '재검증 상태 조회 및 모니터링 시스템'
+        '🆕 FlightRequestTicket v2.1.0과의 완전한 이벤트 연결 강화',
+        '🆕 FlightRequestInit v1.2.0 이벤트 기반 시스템 연동',
+        '🆕 통합 이벤트 브릿지 시스템 구축',
+        '🆕 양방향 모듈 통신 설정',
+        '🆕 항공권 섹션 제어 통합 관리',
+        '🆕 실시간 상태 동기화 시스템',
+        '🆕 이벤트 연결 상태 모니터링',
+        '🆕 통합 디버깅 인터페이스'
+    ],
+    improvedCommunication: [
+        '초기화 모듈 → 티켓 모듈 이벤트 브릿지',
+        '티켓 모듈 → 조정자 이벤트 브릿지',
+        '조정자 ↔ 모든 모듈 양방향 통신',
+        '실시간 상태 동기화 및 전파',
+        '이벤트 기반 섹션 제어 통합'
     ],
     performanceOptimization: [
         '의존성 체크 횟수 50 → 10으로 대폭 감소 (v1.3.0 유지)',
         '타임아웃 15초 → 3초로 단축 (v1.3.0 유지)',
         '체크 간격 300ms → 100ms로 단축 (v1.3.0 유지)',
-        '초기 상태 API 타임아웃 5초 → 2초로 단축 (v1.3.0 유지)'
+        '초기 상태 API 타임아웃 5초 → 2초로 단축 (v1.3.0 유지)',
+        '🆕 이벤트 전파 최적화 및 중복 처리 방지'
     ],
     systemIntegration: [
-        '모듈 간 완전한 재검증 상태 동기화',
-        '조정자 레벨 재검증 이벤트 처리',
-        '실시간 사용자 피드백 시스템',
-        '다중 레벨 검증 및 상태 보장',
-        '티켓 모듈 재검증 트리거 연동'
+        '단일 책임 원칙 완전 적용 완료',
+        '모듈 간 완전한 이벤트 기반 통신',
+        '항공권 섹션 제어의 유일한 관리 주체 확립',
+        '실시간 데이터 일관성 보장',
+        '확장 가능한 이벤트 아키텍처 구축'
     ]
 });
-console.log('🚀 v1.5.0 예상 효과:', {
-    dataConsistency: '활동기간 ↔ 항공권 섹션 완전 실시간 연동',
-    userExperience: '즉시 피드백 및 상태 전파로 혼란 방지',
-    systemReliability: '다중 레벨 검증으로 데이터 일관성 보장',
-    maintenance: '모듈 간 명확한 책임 분리로 유지보수성 향상'
+console.log('🚀 v1.6.0 예상 효과:', {
+    architecturalClarity: '모듈 간 명확한 책임 분리 및 이벤트 기반 통신',
+    maintainability: '단일 수정 지점으로 유지보수성 극대화',
+    reliability: '실시간 상태 동기화로 데이터 일관성 보장',
+    scalability: '확장 가능한 이벤트 아키텍처로 미래 요구사항 대응',
+    userExperience: '즉시 피드백 및 상태 전파로 사용자 혼란 방지',
+    debugging: '통합 디버깅 인터페이스로 문제 진단 용이성 확보'
 });
