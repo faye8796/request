@@ -1,18 +1,18 @@
-// FlightRequestCoordinator v1.6.2 - 속성명 충돌 해결
-// init 메서드와 init 모듈 속성명 분리
+// FlightRequestCoordinator v1.6.3 - 로그인 리다이렉트 수정
+// 사용자 데이터 체크 로직 개선
 
 /**
- * 🚨 긴급 수정: v1.6.2 - 속성명 충돌 해결
+ * 🚨 긴급 수정: v1.6.3 - 로그인 리다이렉트 수정
  * 
  * 주요 수정사항:
- * 1. 모듈 인스턴스 속성명 변경 (init → initModule)
- * 2. 메서드명과 속성명 충돌 완전 해결
- * 3. 모든 참조 업데이트
+ * 1. 로그인 페이지 경로 수정
+ * 2. 사용자 데이터 없을 때 폴백 처리
+ * 3. 리다이렉트 에러 방지
  */
 
 class FlightRequestCoordinator {
     constructor() {
-        this.version = "1.6.2";
+        this.version = "1.6.3";
         
         // 🔧 모듈 인스턴스 저장용 (메서드명과 분리)
         this.initModule = null;
@@ -342,10 +342,17 @@ class FlightRequestCoordinator {
             const userData = JSON.parse(localStorage.getItem('userData') || '{}');
             
             if (!userData.id) {
-                console.warn('⚠️ 사용자 데이터 없음, 로그인 페이지로 리다이렉트');
-                window.location.href = '/login.html';
+                console.warn('⚠️ 사용자 데이터 없음, 폴백 모드로 진행');
+                
+                // 🔧 로그인 안내 메시지 표시 (리다이렉트 없이)
+                this.showLoginRequiredMessage();
+                
+                // 폴백 모드 활성화
+                await this.activateFallbackMode();
                 return;
             }
+            
+            console.log('✅ 사용자 데이터 확인됨:', userData.id);
             
             // 여권 정보 확인 (API 호출 없이)
             await this.checkPassportStatusSafely(userData);
@@ -358,6 +365,24 @@ class FlightRequestCoordinator {
         } catch (error) {
             console.error('❌ 초기 상태 결정 실패:', error);
             // 기본 상태로 진행
+            await this.activateFallbackMode();
+        }
+    }
+
+    // 📋 로그인 필요 메시지 표시
+    showLoginRequiredMessage() {
+        const messageEl = document.getElementById('systemMessage');
+        if (messageEl) {
+            messageEl.innerHTML = `
+                <div class="alert alert-warning">
+                    <strong>로그인이 필요합니다</strong><br>
+                    항공권 신청을 위해서는 먼저 로그인해주세요.
+                    <br><br>
+                    <button onclick="window.history.back()" class="btn btn-sm btn-secondary">이전 페이지</button>
+                    <a href="../login.html" class="btn btn-sm btn-primary">로그인 페이지</a>
+                </div>
+            `;
+            messageEl.style.display = 'block';
         }
     }
 
