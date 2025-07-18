@@ -1,20 +1,19 @@
-// FlightRequestCoordinator v1.6.0 - 무한루프 긴급 수정 PART1
-// 이벤트 시스템 순환 참조 완전 제거
+// FlightRequestCoordinator v1.6.1 - 초기화 디버깅 강화
+// 인스턴스 생성 및 메서드 검증 로직 개선
 
 /**
- * 🚨 긴급 수정: v1.6.0 - 무한루프 완전 제거
+ * 🚨 긴급 수정: v1.6.1 - 초기화 디버깅 강화
  * 
  * 주요 수정사항:
- * 1. 이벤트 전파 깊이 제한 (최대 3단계)
- * 2. 처리된 이벤트 ID 추적으로 중복 방지
- * 3. emit 메서드에 순환 감지 로직 추가
- * 4. 타임아웃 안전장치 강화
- * 5. 폴백 시스템 완전 구축
+ * 1. 상세한 디버깅 정보 추가
+ * 2. 인스턴스 생성 과정 단계별 검증
+ * 3. 메서드 존재 여부 상세 확인
+ * 4. 폴백 모드 강화
  */
 
 class FlightRequestCoordinator {
     constructor() {
-        this.version = "1.6.0";
+        this.version = "1.6.1";
         this.init = null;
         this.passport = null;
         this.ticket = null;
@@ -44,7 +43,7 @@ class FlightRequestCoordinator {
             FlightRequestUtils: false
         };
         
-        console.log(`🚀 FlightRequestCoordinator v${this.version} 초기화 시작 (무한루프 방지 시스템 활성화)`);
+        console.log(`🚀 FlightRequestCoordinator v${this.version} 생성자 실행 완료`);
     }
 
     // 🚨 무한루프 방지: 안전한 이벤트 발행
@@ -535,8 +534,8 @@ class FlightRequestCoordinator {
     }
 }
 
-// 🌐 글로벌 인스턴스 생성 및 등록 (안전한 초기화)
-console.log('🌐 FlightRequestCoordinator 글로벌 등록...');
+// 🌐 글로벌 인스턴스 생성 및 등록 (강화된 디버깅)
+console.log('🌐 FlightRequestCoordinator 글로벌 등록 시작...');
 
 if (typeof window !== 'undefined') {
     // 기존 인스턴스가 있으면 정리
@@ -545,28 +544,94 @@ if (typeof window !== 'undefined') {
         window.flightRequestCoordinator = null;
     }
     
+    // 클래스 글로벌 등록
     window.FlightRequestCoordinator = FlightRequestCoordinator;
+    console.log('✅ FlightRequestCoordinator 클래스 글로벌 등록 완료');
     
-    // 🔧 안전한 인스턴스 생성 및 초기화
+    // 🔧 상세한 디버깅 정보와 함께 인스턴스 생성
     try {
-        const coordinator = new FlightRequestCoordinator();
+        console.log('🔧 FlightRequestCoordinator 인스턴스 생성 시도...');
         
-        // 메서드 존재 여부 확인
-        if (coordinator && typeof coordinator.init === 'function') {
+        // 클래스 타입 확인
+        console.log('📊 클래스 검증:', {
+            typeOfClass: typeof FlightRequestCoordinator,
+            isFunction: typeof FlightRequestCoordinator === 'function',
+            hasPrototype: !!FlightRequestCoordinator.prototype,
+            prototypeKeys: Object.getOwnPropertyNames(FlightRequestCoordinator.prototype)
+        });
+        
+        // 인스턴스 생성
+        const coordinator = new FlightRequestCoordinator();
+        console.log('✅ 인스턴스 생성 성공');
+        
+        // 인스턴스 상세 검증
+        console.log('📊 인스턴스 검증:', {
+            coordinatorExists: !!coordinator,
+            coordinatorType: typeof coordinator,
+            coordinatorConstructor: coordinator.constructor.name,
+            hasInit: 'init' in coordinator,
+            initType: typeof coordinator.init,
+            initMethod: typeof coordinator.init,
+            allMethods: Object.getOwnPropertyNames(Object.getPrototypeOf(coordinator))
+        });
+        
+        // init 메서드 존재 여부 정확한 확인
+        const hasValidInit = coordinator && 
+                            typeof coordinator.init === 'function' && 
+                            coordinator.init !== null;
+        
+        console.log('🔍 init 메서드 검증:', {
+            exists: 'init' in coordinator,
+            type: typeof coordinator.init,
+            isFunction: typeof coordinator.init === 'function',
+            isNull: coordinator.init === null,
+            isUndefined: coordinator.init === undefined,
+            hasValidInit: hasValidInit
+        });
+        
+        if (hasValidInit) {
             window.flightRequestCoordinator = coordinator;
+            console.log('✅ 글로벌 등록 완료');
             
-            // 다음 틱에서 초기화 실행 (안전한 비동기 처리)
+            // 안전한 초기화 실행
+            console.log('🚀 초기화 메서드 실행 시작...');
             setTimeout(() => {
+                console.log('⏰ setTimeout 콜백 실행 - init 호출');
                 window.flightRequestCoordinator.init().catch(error => {
                     console.error('🚨 Coordinator 초기화 최종 실패:', error);
                 });
             }, 0);
             
-            console.log('✅ FlightRequestCoordinator 글로벌 등록 완료');
+            console.log('✅ FlightRequestCoordinator 글로벌 등록 및 초기화 예약 완료');
+            
         } else {
-            console.error('🚨 FlightRequestCoordinator 인스턴스 또는 init 메서드 생성 실패');
+            console.error('🚨 FlightRequestCoordinator init 메서드 검증 실패');
+            console.error('📊 실패 원인 분석:', {
+                coordinatorNull: coordinator === null,
+                coordinatorUndefined: coordinator === undefined,
+                initMissing: !('init' in coordinator),
+                initNotFunction: typeof coordinator.init !== 'function',
+                initNull: coordinator.init === null
+            });
+            
+            // 폴백 모드 활성화
+            console.log('🚨 폴백 모드 활성화 시도...');
+            if (coordinator && typeof coordinator.activateFallbackMode === 'function') {
+                coordinator.activateFallbackMode();
+            } else {
+                console.error('❌ 폴백 모드도 사용할 수 없음');
+            }
         }
+        
     } catch (error) {
-        console.error('🚨 FlightRequestCoordinator 인스턴스 생성 실패:', error);
+        console.error('🚨 FlightRequestCoordinator 인스턴스 생성 완전 실패:', error);
+        console.error('📊 에러 상세:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
     }
+    
+} else {
+    console.error('🚨 window 객체가 존재하지 않음');
 }
