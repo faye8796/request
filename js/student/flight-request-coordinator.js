@@ -535,7 +535,7 @@ class FlightRequestCoordinator {
     }
 }
 
-// 🌐 글로벌 인스턴스 생성 및 등록
+// 🌐 글로벌 인스턴스 생성 및 등록 (안전한 초기화)
 console.log('🌐 FlightRequestCoordinator 글로벌 등록...');
 
 if (typeof window !== 'undefined') {
@@ -546,12 +546,27 @@ if (typeof window !== 'undefined') {
     }
     
     window.FlightRequestCoordinator = FlightRequestCoordinator;
-    window.flightRequestCoordinator = new FlightRequestCoordinator();
     
-    // 🚀 즉시 초기화 시작
-    window.flightRequestCoordinator.init().catch(error => {
-        console.error('🚨 Coordinator 초기화 최종 실패:', error);
-    });
-    
-    console.log('✅ FlightRequestCoordinator 글로벌 등록 완료');
+    // 🔧 안전한 인스턴스 생성 및 초기화
+    try {
+        const coordinator = new FlightRequestCoordinator();
+        
+        // 메서드 존재 여부 확인
+        if (coordinator && typeof coordinator.init === 'function') {
+            window.flightRequestCoordinator = coordinator;
+            
+            // 다음 틱에서 초기화 실행 (안전한 비동기 처리)
+            setTimeout(() => {
+                window.flightRequestCoordinator.init().catch(error => {
+                    console.error('🚨 Coordinator 초기화 최종 실패:', error);
+                });
+            }, 0);
+            
+            console.log('✅ FlightRequestCoordinator 글로벌 등록 완료');
+        } else {
+            console.error('🚨 FlightRequestCoordinator 인스턴스 또는 init 메서드 생성 실패');
+        }
+    } catch (error) {
+        console.error('🚨 FlightRequestCoordinator 인스턴스 생성 실패:', error);
+    }
 }
