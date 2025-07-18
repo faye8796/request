@@ -263,17 +263,18 @@ class FlightRequestTicket {
 
         this.validationDebounceTimer = setTimeout(() => {
 
-    const activityValidation = this.validateActivityPeriod();
             // 1. 검증 실행하고 결과 저장
             const activityValidation = this.validateActivityPeriod();
-            
+               
             // 2. 완료 상태 확인 (validateActivityPeriod 재호출 없이)
             const completionStatus = this.checkActivityPeriodCompletionDirect(activityValidation);
-            
+           
             // 3. 항공권 섹션 업데이트
             this.updateFlightSectionAvailabilityDirect(completionStatus);
+
         }, 100);
     }
+    
 
     // 🔧 추가: 로딩 UI가 포함된 검증 메서드
     debouncedActivityValidationWithLoading() {
