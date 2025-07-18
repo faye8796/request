@@ -316,6 +316,80 @@ class FlightRequestTicket {
         }, 100);
     }
 
+    // 🔧 추가: 즉시 활동일 계산 및 표시
+    calculateAndShowActivityDaysImmediate() {
+        try {
+            const arrivalDate = document.getElementById('actualArrivalDate')?.value;
+            const workEndDate = document.getElementById('actualWorkEndDate')?.value;
+        
+            if (arrivalDate && workEndDate) {
+                // 즉시 활동일 계산
+                const arrival = new Date(arrivalDate);
+                const workEnd = new Date(workEndDate);
+                let activityDays = 0;
+                
+                if (arrival < workEnd) {
+                    activityDays = Math.ceil((workEnd - arrival) / (1000 * 60 * 60 * 24));
+                }
+                
+                // 즉시 UI 업데이트
+                this.updateCalculatedActivityDays(activityDays);
+                
+                console.log('⚡ [즉시계산] 활동일 즉시 표시:', activityDays);
+            }
+            
+        } catch (error) {
+            console.error('❌ [즉시계산] 실패:', error);
+        }
+    }
+
+    // 🚀 v8.5.0: 계산된 활동일 UI 업데이트 (클래스 기반 최적화)
+    updateCalculatedActivityDays(activityDays) {
+        try {
+            console.log('🔄 [활동기간UI] 계산된 활동일 UI 업데이트:', activityDays);
+            
+            const calculatedDaysEl = document.getElementById('calculatedDays');
+            if (calculatedDaysEl) {
+                calculatedDaysEl.textContent = activityDays > 0 ? activityDays : '-';
+                calculatedDaysEl.className = activityDays > 0 ? 
+                    'value required-days-value success' : 
+                    'value required-days-value';
+                
+                console.log('✅ [활동기간UI] calculatedDays 요소 업데이트 완료:', {
+                    표시값: calculatedDaysEl.textContent,
+                    클래스: calculatedDaysEl.className
+                });
+            } else {
+                console.warn('⚠️ [활동기간UI] calculatedDays 요소를 찾을 수 없음');
+            }
+            
+        } catch (error) {
+            console.error('❌ [활동기간UI] 계산된 활동일 UI 업데이트 실패:', error);
+        }
+    }
+
+    // 🚀 v8.5.0: 활동기간 검증 로딩 상태 UI (클래스 기반 최적화)
+    updateActivityValidationUILoading() {
+        try {
+            console.log('🔄 [활동기간UI] 검증 로딩 상태 표시...');
+            
+            const validationStatusEl = document.getElementById('validationStatus');
+            if (validationStatusEl) {
+                validationStatusEl.className = 'validation-status loading';
+                validationStatusEl.innerHTML = 
+                    `<i data-lucide="loader-2"></i>활동일 체크중...`;
+                
+                // 아이콘 새로고침은 디바운스 적용
+                this.debouncedIconRefresh();
+            }
+            
+            console.log('✅ [활동기간UI] 검증 로딩 상태 표시 완료');
+            
+        } catch (error) {
+            console.error('❌ [활동기간UI] 로딩 상태 표시 실패:', error);
+        }
+    }
+
     // 🔧 v8.2.6: 현지 활동기간 검증 - 활동기간 범위 검증 포함
     validateActivityPeriod() {
         try {
@@ -422,58 +496,6 @@ class FlightRequestTicket {
         }
     }
 
-    // 🚀 v8.5.0: 계산된 활동일 UI 업데이트 (클래스 기반 최적화)
-    updateCalculatedActivityDays(activityDays) {
-        try {
-            console.log('🔄 [활동기간UI] 계산된 활동일 UI 업데이트:', activityDays);
-            
-            const calculatedDaysEl = document.getElementById('calculatedDays');
-            if (calculatedDaysEl) {
-                calculatedDaysEl.textContent = activityDays > 0 ? activityDays : '-';
-                calculatedDaysEl.className = activityDays > 0 ? 
-                    'value required-days-value success' : 
-                    'value required-days-value';
-                
-                console.log('✅ [활동기간UI] calculatedDays 요소 업데이트 완료:', {
-                    표시값: calculatedDaysEl.textContent,
-                    클래스: calculatedDaysEl.className
-                });
-            } else {
-                console.warn('⚠️ [활동기간UI] calculatedDays 요소를 찾을 수 없음');
-            }
-            
-        } catch (error) {
-            console.error('❌ [활동기간UI] 계산된 활동일 UI 업데이트 실패:', error);
-        }
-    }
-
-    // 🔧 추가: 즉시 활동일 계산 및 표시
-    calculateAndShowActivityDaysImmediate() {
-        try {
-            const arrivalDate = document.getElementById('actualArrivalDate')?.value;
-            const workEndDate = document.getElementById('actualWorkEndDate')?.value;
-        
-            if (arrivalDate && workEndDate) {
-                // 즉시 활동일 계산
-                const arrival = new Date(arrivalDate);
-                const workEnd = new Date(workEndDate);
-                let activityDays = 0;
-                
-                if (arrival < workEnd) {
-                    activityDays = Math.ceil((workEnd - arrival) / (1000 * 60 * 60 * 24));
-                }
-                
-                // 즉시 UI 업데이트
-                this.updateCalculatedActivityDays(activityDays);
-                
-                console.log('⚡ [즉시계산] 활동일 즉시 표시:', activityDays);
-            }
-            
-        } catch (error) {
-            console.error('❌ [즉시계산] 실패:', error);
-        }
-    }
-
     // 🚀 v8.5.0: 활동기간 검증 UI 업데이트 (클래스 기반 최적화)
     updateActivityValidationUI(validation) {
         try {
@@ -504,28 +526,6 @@ class FlightRequestTicket {
             
         } catch (error) {
             console.error('❌ [활동기간UI] 검증 결과 UI 업데이트 실패:', error);
-        }
-    }
-
-    // 🚀 v8.5.0: 활동기간 검증 로딩 상태 UI (클래스 기반 최적화)
-    updateActivityValidationUILoading() {
-        try {
-            console.log('🔄 [활동기간UI] 검증 로딩 상태 표시...');
-            
-            const validationStatusEl = document.getElementById('validationStatus');
-            if (validationStatusEl) {
-                validationStatusEl.className = 'validation-status loading';
-                validationStatusEl.innerHTML = 
-                    `<i data-lucide="loader-2"></i>활동일 체크중...`;
-                
-                // 아이콘 새로고침은 디바운스 적용
-                this.debouncedIconRefresh();
-            }
-            
-            console.log('✅ [활동기간UI] 검증 로딩 상태 표시 완료');
-            
-        } catch (error) {
-            console.error('❌ [활동기간UI] 로딩 상태 표시 실패:', error);
         }
     }
 
@@ -943,6 +943,105 @@ class FlightRequestTicket {
         }
     }
 
+    // === 단계별 네비게이션 ===
+
+    setupStepNavigation() {
+        console.log('🔄 [단계네비] 단계별 네비게이션 설정');
+        
+        // 단계별 완료 상태 체크 이벤트 설정
+        this.setupStepCompletionChecks();
+        
+        console.log('✅ [단계네비] 단계별 네비게이션 설정 완료');
+    }
+
+    setupStepCompletionChecks() {
+        // 1단계: 현지 활동기간
+        const activityElements = [
+            document.getElementById('actualArrivalDate'),
+            document.getElementById('actualWorkEndDate')
+        ];
+        
+        activityElements.forEach(element => {
+            if (element) {
+                element.addEventListener('change', () => {
+                    this.checkStepCompletion(1);
+                });
+            }
+        });
+        
+        // 2단계: 구매방식
+        const purchaseTypeRadios = document.querySelectorAll('input[name="purchaseType"]');
+        purchaseTypeRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                this.checkStepCompletion(2);
+            });
+        });
+        
+        // 3단계: 항공권 정보
+        const flightElements = [
+            document.getElementById('departureDate'),
+            document.getElementById('returnDate'),
+            document.getElementById('departureAirport'),
+            document.getElementById('arrivalAirport')
+        ];
+        
+        flightElements.forEach(element => {
+            if (element) {
+                element.addEventListener('change', () => {
+                    this.checkStepCompletion(3);
+                });
+            }
+        });
+        
+        // 4단계: 이미지 업로드
+        const imageElement = document.getElementById('flightImage');
+        if (imageElement) {
+            imageElement.addEventListener('change', () => {
+                this.checkStepCompletion(4);
+            });
+        }
+    }
+
+    checkStepCompletion(step) {
+        try {
+            let completed = false;
+            
+            switch (step) {
+                case 1: // 현지 활동기간
+                    const arrivalDate = document.getElementById('actualArrivalDate')?.value;
+                    const workEndDate = document.getElementById('actualWorkEndDate')?.value;
+                    completed = !!(arrivalDate && workEndDate);
+                    this.stepCompleted.activityPeriod = completed;
+                    break;
+                    
+                case 2: // 구매방식
+                    const purchaseType = document.querySelector('input[name="purchaseType"]:checked');
+                    completed = !!purchaseType;
+                    this.stepCompleted.purchaseMethod = completed;
+                    break;
+                    
+                case 3: // 항공권 정보
+                    const departureDate = document.getElementById('departureDate')?.value;
+                    const returnDate = document.getElementById('returnDate')?.value;
+                    const departureAirport = document.getElementById('departureAirport')?.value;
+                    const arrivalAirport = document.getElementById('arrivalAirport')?.value;
+                    completed = !!(departureDate && returnDate && departureAirport && arrivalAirport);
+                    this.stepCompleted.flightInfo = completed;
+                    break;
+                    
+                case 4: // 이미지 업로드
+                    completed = !!this.ticketImageFile;
+                    this.stepCompleted.imageUpload = completed;
+                    break;
+            }
+            
+            console.log(`✅ [단계네비] ${step}단계 완료 상태 업데이트:`, completed);
+            
+        } catch (error) {
+            console.error(`❌ [단계네비] ${step}단계 완료 상태 확인 실패:`, error);
+        }
+    }
+
     // === 이미지 업로드 관리 ===
 
     setupImageUploadEvents() {
@@ -1100,105 +1199,6 @@ class FlightRequestTicket {
         } catch (error) {
             console.error('❌ [가격검증] 실패:', error);
             return false;
-        }
-    }
-
-    // === 단계별 네비게이션 ===
-
-    setupStepNavigation() {
-        console.log('🔄 [단계네비] 단계별 네비게이션 설정');
-        
-        // 단계별 완료 상태 체크 이벤트 설정
-        this.setupStepCompletionChecks();
-        
-        console.log('✅ [단계네비] 단계별 네비게이션 설정 완료');
-    }
-
-    setupStepCompletionChecks() {
-        // 1단계: 현지 활동기간
-        const activityElements = [
-            document.getElementById('actualArrivalDate'),
-            document.getElementById('actualWorkEndDate')
-        ];
-        
-        activityElements.forEach(element => {
-            if (element) {
-                element.addEventListener('change', () => {
-                    this.checkStepCompletion(1);
-                });
-            }
-        });
-        
-        // 2단계: 구매방식
-        const purchaseTypeRadios = document.querySelectorAll('input[name="purchaseType"]');
-        purchaseTypeRadios.forEach(radio => {
-            radio.addEventListener('change', () => {
-                this.checkStepCompletion(2);
-            });
-        });
-        
-        // 3단계: 항공권 정보
-        const flightElements = [
-            document.getElementById('departureDate'),
-            document.getElementById('returnDate'),
-            document.getElementById('departureAirport'),
-            document.getElementById('arrivalAirport')
-        ];
-        
-        flightElements.forEach(element => {
-            if (element) {
-                element.addEventListener('change', () => {
-                    this.checkStepCompletion(3);
-                });
-            }
-        });
-        
-        // 4단계: 이미지 업로드
-        const imageElement = document.getElementById('flightImage');
-        if (imageElement) {
-            imageElement.addEventListener('change', () => {
-                this.checkStepCompletion(4);
-            });
-        }
-    }
-
-    checkStepCompletion(step) {
-        try {
-            let completed = false;
-            
-            switch (step) {
-                case 1: // 현지 활동기간
-                    const arrivalDate = document.getElementById('actualArrivalDate')?.value;
-                    const workEndDate = document.getElementById('actualWorkEndDate')?.value;
-                    completed = !!(arrivalDate && workEndDate);
-                    this.stepCompleted.activityPeriod = completed;
-                    break;
-                    
-                case 2: // 구매방식
-                    const purchaseType = document.querySelector('input[name="purchaseType"]:checked');
-                    completed = !!purchaseType;
-                    this.stepCompleted.purchaseMethod = completed;
-                    break;
-                    
-                case 3: // 항공권 정보
-                    const departureDate = document.getElementById('departureDate')?.value;
-                    const returnDate = document.getElementById('returnDate')?.value;
-                    const departureAirport = document.getElementById('departureAirport')?.value;
-                    const arrivalAirport = document.getElementById('arrivalAirport')?.value;
-                    completed = !!(departureDate && returnDate && departureAirport && arrivalAirport);
-                    this.stepCompleted.flightInfo = completed;
-                    break;
-                    
-                case 4: // 이미지 업로드
-                    completed = !!this.ticketImageFile;
-                    this.stepCompleted.imageUpload = completed;
-                    break;
-            }
-            
-            console.log(`✅ [단계네비] ${step}단계 완료 상태 업데이트:`, completed);
-            
-        } catch (error) {
-            console.error(`❌ [단계네비] ${step}단계 완료 상태 확인 실패:`, error);
         }
     }
 
