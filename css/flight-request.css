@@ -1,5 +1,5 @@
-/* flight-request.css - 항공권 신청 페이지 스타일 v8.5.0 */
-/* 완전 통합 버전: 인라인 스타일 통합 + UI 변환 최적화 */
+/* flight-request.css - 항공권 신청 페이지 스타일 v8.5.1 DOM 최적화 */
+/* 완전 통합 버전: 인라인 스타일 통합 + UI 변환 최적화 + DOM 조작 최적화 */
 
 /* 전역 로딩 상태 */
 .global-loading-state {
@@ -1606,6 +1606,106 @@
     pointer-events: auto;
     filter: none;
     transition: all 0.3s ease;
+}
+
+/* ================================ */
+/* 🚀 DOM 조작 최적화 클래스 (신규)  */
+/* ================================ */
+
+/* 🔧 검증 상태 기본 스타일 */
+.validation-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease; /* 부드러운 전환 */
+}
+
+.validation-status.valid {
+    color: #059669;
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
+
+.validation-status.invalid {
+    color: #dc2626;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
+.validation-status.loading {
+    color: #6b7280;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+}
+
+.validation-status.pending {
+    color: #d97706;
+    background-color: #fffbeb;
+    border: 1px solid #fed7aa;
+}
+
+/* 로딩 애니메이션 */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.validation-status.loading i {
+    animation: spin 1s linear infinite;
+}
+
+/* 🔧 필수 활동일 UI 스타일 */
+.required-days-value {
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.required-days-value.success { 
+    color: #059669; 
+}
+
+.required-days-value.loading { 
+    color: #6b7280; 
+}
+
+.required-days-value.error { 
+    color: #dc2626; 
+}
+
+/* 🔧 전제조건 상태 메시지 */
+.prerequisite-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.prerequisite-status.completed {
+    color: #059669;
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
+
+.prerequisite-status.invalid {
+    color: #dc2626;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
+.prerequisite-status.pending {
+    color: #d97706;
+    background-color: #fffbeb;
+    border: 1px solid #fed7aa;
 }
 
 /* 반응형 조정 */
