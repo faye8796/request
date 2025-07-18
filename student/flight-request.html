@@ -552,270 +552,13 @@
     <script src="../js/student/flight-request-init.js" async></script>
     <script src="../js/student/flight-request-passport.js" async></script>
     <script src="../js/student/flight-request-ticket.js" async></script>
+    <script src="../js/student/flight-request-coordinator.js" async></script>
 
-<!-- 5단계: 🔧 v9.2.1 완전 개선된 기본 초기화 + FlightRequestManager 통합 -->
+    <!-- 5단계: 🔧 v9.2.1 완전 개선된 기본 초기화 - 검증 로직 JS 모듈 완전 위임 -->
     <script>
-        console.log('🚀 v9.2.1: 완전 개선된 초기화 시스템 - FlightRequestManager 통합');
+        console.log('🚀 v9.2.1: 완전 개선된 초기화 시스템 - 검증 로직 JS 모듈 완전 위임');
         
-        // 🆕 FlightRequestManager 클래스 - coordinator 기능 통합
-        class FlightRequestManager {
-            constructor() {
-                this.modules = {
-                    init: null,
-                    passport: null,
-                    ticket: null,
-                    api: null,
-                    utils: null
-                };
-                this.isInitialized = false;
-                
-                // 성능 최적화된 안전장치
-                this.maxDependencyChecks = 10;
-                this.dependencyTimeout = 3000;
-                this.checkInterval = 100;
-            }
-
-            async waitForDependencies(timeout = 3000) {
-                return new Promise((resolve) => {
-                    let checks = 0;
-                    const startTime = Date.now();
-                    
-                    const check = () => {
-                        checks++;
-                        const elapsed = Date.now() - startTime;
-                        
-                        if (elapsed > timeout || checks > this.maxDependencyChecks) {
-                            console.warn('⚠️ 모듈 로딩 타임아웃, 사용 가능한 모듈로 진행');
-                            resolve();
-                            return;
-                        }
-                        
-                        const apiExists = window.SupabaseCore && window.supabase;
-                        const utilsReady = window.FlightRequestUtils;
-                        const passportClassReady = window.FlightRequestPassport;
-                        const ticketClassReady = window.FlightRequestTicket;
-                        const initClassReady = window.FlightRequestInit;
-                        
-                        const allReady = apiExists && utilsReady && passportClassReady && 
-                                       ticketClassReady && initClassReady;
-                        
-                        if (allReady) {
-                            console.log('✅ 모든 모듈 로딩 완료');
-                            resolve();
-                            return;
-                        }
-                        
-                        setTimeout(check, this.checkInterval);
-                    };
-                    
-                    check();
-                });
-            }
-
-            async initializeModulesSafely() {
-                try {
-                    // 초기화 모듈 우선 실행
-                    if (window.FlightRequestInit) {
-                        this.modules.init = new window.FlightRequestInit();
-                        console.log('✅ FlightRequestInit 모듈 초기화 완료');
-                    }
-
-                    if (window.FlightRequestAPI) {
-                        this.modules.api = new window.FlightRequestAPI();
-                        console.log('✅ FlightRequestAPI 모듈 초기화 완료');
-                    }
-
-                    if (window.FlightRequestUtils) {
-                        this.modules.utils = new window.FlightRequestUtils();
-                        console.log('✅ FlightRequestUtils 모듈 초기화 완료');
-                    }
-
-                    if (window.FlightRequestPassport) {
-                        this.modules.passport = new window.FlightRequestPassport();
-                        console.log('✅ FlightRequestPassport 모듈 초기화 완료');
-                    }
-
-                    if (window.FlightRequestTicket) {
-                        this.modules.ticket = new window.FlightRequestTicket();
-                        console.log('✅ FlightRequestTicket 모듈 초기화 완료');
-                    }
-
-                } catch (error) {
-                    console.error('모듈 초기화 중 오류:', error);
-                }
-            }
-
-            setupEventListeners() {
-                try {
-                    // 활동기간 검증 이벤트 리스너 (이벤트 버스 활용)
-                    if (window.moduleEventBus) {
-                        window.moduleEventBus.on('activityPeriodChanged', (data) => {
-                            this.handleActivityPeriodChange(data);
-                        });
-                        
-                        window.moduleEventBus.on('activityPeriodCleared', () => {
-                            this.handleActivityPeriodClear();
-                        });
-                    }
-
-                    // 구매방식 선택 이벤트
-                    const purchaseMethodRadios = document.querySelectorAll('input[name="purchaseMethod"]');
-                    purchaseMethodRadios.forEach(radio => {
-                        radio.addEventListener('change', (e) => {
-                            this.handlePurchaseMethodChange(e.target.value);
-                        });
-                    });
-
-                    console.log('✅ 이벤트 리스너 설정 완료');
-                } catch (error) {
-                    console.error('이벤트 리스너 설정 중 오류:', error);
-                }
-            }
-
-// 🔧 수정된 determineInitialStateSafely 메서드
-async determineInitialStateSafely() {
-    try {
-        console.log('🔄 초기 상태 결정 시작...');
-        
-        // 초기화 모듈 우선 실행
-        if (this.modules.init) {
-            console.log('✅ 초기화 모듈 실행 중...');
-            await this.modules.init.init();
-            
-            const userRequirements = this.modules.init.getUserRequirements();
-            if (userRequirements && userRequirements.userRequiredDays) {
-                const requiredEl = document.getElementById('requiredDays');
-                if (requiredEl) {
-                    requiredEl.textContent = userRequirements.userRequiredDays;
-                    requiredEl.className = 'value required-days-value success';
-                }
-            }
-        }
-
-        // 🔧 여권 정보 확인 - 안전한 호출로 수정
-        if (this.modules.passport && typeof this.modules.passport.checkPassportExists === 'function') {
-            try {
-                console.log('🔄 여권 정보 확인 중...');
-                const hasPassport = await this.modules.passport.checkPassportExists();
-                if (!hasPassport) {
-                    console.log('⚠️ 여권 정보 없음 - 입력 모달 표시');
-                    // 여권 정보 입력 모달 표시 로직을 안전하게 처리
-                    if (typeof this.modules.passport.showPassportInputModal === 'function') {
-                        this.modules.passport.showPassportInputModal();
-                    } else {
-                        // 폴백: 직접 여권정보 페이지 표시
-                        this.showPassportInfoPage();
-                    }
-                    return;
-                } else {
-                    console.log('✅ 여권 정보 확인 완료');
-                }
-            } catch (passportError) {
-                console.warn('⚠️ 여권 정보 확인 중 에러 (무시하고 계속):', passportError);
-                // 여권 에러는 무시하고 계속 진행
-            }
-        } else {
-            console.warn('⚠️ Passport 모듈 또는 checkPassportExists 메서드 없음');
-        }
-
-        // 🔧 기존 신청 내역 확인 - 안전한 호출로 수정
-        if (this.modules.api && typeof this.modules.api.getExistingRequest === 'function') {
-            try {
-                console.log('🔄 기존 신청 내역 확인 중...');
-                const existingRequest = await this.modules.api.getExistingRequest();
-                if (existingRequest) {
-                    console.log('✅ 기존 신청 내역 발견:', existingRequest);
-                    this.displayExistingRequest(existingRequest);
-                    return;
-                } else {
-                    console.log('✅ 신규 신청 가능');
-                }
-            } catch (apiError) {
-                console.warn('⚠️ API 호출 중 에러 (무시하고 계속):', apiError);
-                // 🚨 API 에러가 인증 문제인지 확인
-                if (apiError.message && apiError.message.includes('auth')) {
-                    console.error('🚨 인증 에러 감지:', apiError);
-                    // 인증 에러 시 다시 로그인하도록 유도하지 말고, 기본 동작 유지
-                    console.log('💡 인증 에러 무시하고 기본 UI 표시');
-                }
-            }
-        } else {
-            console.warn('⚠️ API 모듈 또는 getExistingRequest 메서드 없음');
-        }
-
-        console.log('✅ 초기 상태 결정 완료 (에러 무시)');
-    } catch (error) {
-        console.error('❌ 초기 상태 결정 중 치명적 오류:', error);
-        // 🚨 치명적 에러가 발생해도 로그인 페이지로 리다이렉트하지 않음
-        console.log('💡 에러 무시하고 기본 UI 유지');
-    }
-}
-            handleActivityPeriodChange(data) {
-                // ticket 모듈에 검증 위임
-                if (this.modules.ticket) {
-                    this.modules.ticket.validateActivityPeriod(data);
-                }
-            }
-
-            handleActivityPeriodClear() {
-                // 항공권 섹션 비활성화
-                const flightSection = document.getElementById('flightInfoSection');
-                if (flightSection) {
-                    flightSection.style.display = 'none';
-                }
-            }
-
-            handlePurchaseMethodChange(method) {
-                if (this.modules.ticket) {
-                    this.modules.ticket.handlePurchaseMethodChange(method);
-                }
-            }
-
-            displayExistingRequest(request) {
-                if (this.modules.ticket) {
-                    this.modules.ticket.displayExistingRequest(request);
-                }
-            }
-
-            // coordinator 호환성 메서드들
-            getModule(name) {
-                return this.modules[name];
-            }
-
-            showPassportInfoPage() {
-                const flightPage = document.getElementById('flightRequestPage');
-                const passportPage = document.getElementById('passportInfoPage');
-                
-                if (flightPage && passportPage) {
-                    flightPage.classList.remove('active');
-                    flightPage.style.display = 'none';
-                    
-                    passportPage.classList.add('active');
-                    passportPage.style.display = 'block';
-                }
-            }
-
-            startApplication() {
-                this.isInitialized = true;
-                console.log('🚀 Flight Request Manager 초기화 완료');
-                
-                // 전역 참조 설정 (기존 호환성)
-                window.flightRequestCoordinator = this; // coordinator 호환성
-                window.flightRequestManager = this;
-            }
-
-            async init() {
-                console.log('🚀 Flight Request Manager 초기화 시작...');
-                
-                await this.waitForDependencies();
-                await this.initializeModulesSafely();
-                this.setupEventListeners();
-                await this.determineInitialStateSafely();
-                this.startApplication();
-            }
-        }
-        
-        // 즉시 앱 표시 (기존 UI 로직 유지)
+        // 즉시 앱 표시 (UI만 담당)
         function initializeAppImmediate() {
             const globalLoading = document.getElementById('globalLoadingState');
             const app = document.getElementById('app');
@@ -831,10 +574,10 @@ async determineInitialStateSafely() {
             // 기본 네비게이션 설정
             setupBasicNavigation();
             
-            // 기본 활동기간 입력 표시만 담당 (검증 로직 제거)
+            // ✅ v9.2.1: 기본 활동기간 입력 표시만 담당 (검증 로직 제거)
             setupBasicActivityPeriodDisplay();
             
-            console.log('✅ 기본 초기화 완료 - Manager 로드 대기 중...');
+            console.log('✅ 기본 초기화 완료 - coordinator 로드 대기 중...');
         }
         
         function setupBasicNavigation() {
@@ -850,8 +593,8 @@ async determineInitialStateSafely() {
             const passportBtn = document.getElementById('passportInfoBtn');
             if (passportBtn) {
                 passportBtn.addEventListener('click', () => {
-                    if (window.flightRequestManager?.showPassportInfoPage) {
-                        window.flightRequestManager.showPassportInfoPage();
+                    if (window.flightRequestCoordinator?.showPassportInfoPage) {
+                        window.flightRequestCoordinator.showPassportInfoPage();
                     } else {
                         showPassportInfoPage();
                     }
@@ -872,7 +615,7 @@ async determineInitialStateSafely() {
             }
         }
         
-        // 기본 활동기간 표시 기능 (기존 로직 유지)
+        // ✅ v9.2.1: 기본 활동기간 표시 기능 (검증 로직 완전 제거)
         function setupBasicActivityPeriodDisplay() {
             const arrivalEl = document.getElementById('actualArrivalDate');
             const workEndEl = document.getElementById('actualWorkEndDate');
@@ -888,10 +631,11 @@ async determineInitialStateSafely() {
                         const workEndDate = new Date(workEnd);
                         const days = Math.ceil((workEndDate - arrivalDate) / (1000 * 60 * 60 * 24)) + 1;
                         
-                        // 활동일 표시만 담당
+                        // ✅ 활동일 표시만 담당 (검증 로직 없음)
                         calculatedEl.textContent = days > 0 ? days : '-';
                         
-                        // 이벤트 발생으로 Manager에게 알림
+                        // 🔔 v9.2.1: 모든 검증 로직은 JS 모듈에 위임
+                        // 이벤트 발생으로 JS 모듈에게 알림
                         if (window.moduleEventBus) {
                             window.moduleEventBus.emit('activityPeriodChanged', {
                                 arrival: arrival,
@@ -902,6 +646,7 @@ async determineInitialStateSafely() {
                     } else {
                         calculatedEl.textContent = '-';
                         
+                        // 이벤트 발생
                         if (window.moduleEventBus) {
                             window.moduleEventBus.emit('activityPeriodCleared');
                         }
@@ -911,7 +656,7 @@ async determineInitialStateSafely() {
                 arrivalEl.addEventListener('input', updateActivityDaysDisplay);
                 workEndEl.addEventListener('input', updateActivityDaysDisplay);
                 
-                console.log('✅ 기본 활동기간 표시 기능 설정 완료');
+                console.log('✅ 기본 활동기간 표시 기능 설정 완료 (검증 로직 JS 모듈 위임)');
             }
         }
         
@@ -922,15 +667,19 @@ async determineInitialStateSafely() {
             initializeAppImmediate();
         }
         
-        // Manager와 동기화된 로드 체크
-        function waitForManagerAndInit() {
-            const checkManager = () => {
-                if (window.flightRequestManager && window.flightRequestManager.isInitialized) {
-                    console.log('✅ FlightRequestManager 초기화 완료');
+        // 🔧 v9.2.1: Coordinator와 동기화된 로드 체크
+        function waitForCoordinatorAndInit() {
+            const checkCoordinator = () => {
+                if (window.flightRequestCoordinator && window.flightRequestCoordinator.isInitialized) {
+                    console.log('✅ FlightRequestCoordinator 초기화 완료');
                     
                     // 초기화 모듈 상태 확인
-                    const initModule = window.flightRequestManager.getModule('init');
+                    const initModule = window.flightRequestCoordinator.getModule('init');
                     if (initModule) {
+                        const initStatus = initModule.getInitStatus();
+                        console.log('✅ 초기화 모듈 상태:', initStatus);
+                        
+                        // ✅ v9.2.1: 사용자 데이터가 로드되었으면 필수활동일 업데이트
                         const userRequirements = initModule.getUserRequirements();
                         if (userRequirements && userRequirements.userRequiredDays) {
                             const requiredEl = document.getElementById('requiredDays');
@@ -942,12 +691,13 @@ async determineInitialStateSafely() {
                     }
                     
                     return true;
-                } else if (window.managerLoadAttempts < 30) {
-                    window.managerLoadAttempts = (window.managerLoadAttempts || 0) + 1;
-                    setTimeout(checkManager, 100);
+                } else if (window.coordinatorLoadAttempts < 30) { // 🔧 v9.2.1: 30회로 제한 (Coordinator와 동기화)
+                    window.coordinatorLoadAttempts = (window.coordinatorLoadAttempts || 0) + 1;
+                    setTimeout(checkCoordinator, 100);
                 } else {
-                    console.warn('⚠️ FlightRequestManager 로드 타임아웃 - 기본 기능으로 동작');
+                    console.warn('⚠️ FlightRequestCoordinator 로드 타임아웃 - 기본 기능으로 동작');
                     
+                    // ✅ v9.2.1: 타임아웃 시 사용자에게 알림 (기본값 제거)
                     const requiredEl = document.getElementById('requiredDays');
                     if (requiredEl && requiredEl.textContent === '로딩중...') {
                         requiredEl.textContent = '알 수 없음';
@@ -959,18 +709,10 @@ async determineInitialStateSafely() {
                 }
             };
             
-            // Manager 초기화
-            const manager = new FlightRequestManager();
-            manager.init().then(() => {
-                setTimeout(checkManager, 100);
-            }).catch(error => {
-                console.error('Manager 초기화 실패:', error);
-                setTimeout(checkManager, 500);
-            });
+            setTimeout(checkCoordinator, 500);
         }
         
-        // 페이지 로드 후 Manager 시작
-        setTimeout(waitForManagerAndInit, 500);
+        waitForCoordinatorAndInit();
     </script>
 
     <!-- 6단계: 에러 처리 -->
