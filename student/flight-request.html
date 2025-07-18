@@ -507,7 +507,7 @@
         </div>
     </div>
 
-    <!-- 🚀 v9.2.0: 수정된 초기화 시스템 -->
+    <!-- 🚀 v9.2.1: 완전 개선된 초기화 시스템 - JS 모듈 완전 위임 -->
     <!-- 1단계: 기본 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
     <script src="../js/config.js"></script>
@@ -554,11 +554,11 @@
     <script src="../js/student/flight-request-ticket.js" async></script>
     <script src="../js/student/flight-request-coordinator.js" async></script>
 
-    <!-- 5단계: 🔧 수정된 기본 초기화 및 폴백 기능 -->
+    <!-- 5단계: 🔧 v9.2.1 완전 개선된 기본 초기화 - 검증 로직 JS 모듈 완전 위임 -->
     <script>
-        console.log('🚀 v9.2.1: 수정된 초기화 시스템 - 타임아웃 동기화');
+        console.log('🚀 v9.2.1: 완전 개선된 초기화 시스템 - 검증 로직 JS 모듈 완전 위임');
         
-        // 즉시 앱 표시
+        // 즉시 앱 표시 (UI만 담당)
         function initializeAppImmediate() {
             const globalLoading = document.getElementById('globalLoadingState');
             const app = document.getElementById('app');
@@ -574,8 +574,8 @@
             // 기본 네비게이션 설정
             setupBasicNavigation();
             
-            // 🆕 기본 활동기간 입력 기능 설정
-            setupBasicActivityPeriodInputs();
+            // ✅ v9.2.1: 기본 활동기간 입력 표시만 담당 (검증 로직 제거)
+            setupBasicActivityPeriodDisplay();
             
             console.log('✅ 기본 초기화 완료 - coordinator 로드 대기 중...');
         }
@@ -615,16 +615,14 @@
             }
         }
         
-        // 🆕 기본 활동기간 입력 기능
-        function setupBasicActivityPeriodInputs() {
+        // ✅ v9.2.1: 기본 활동기간 표시 기능 (검증 로직 완전 제거)
+        function setupBasicActivityPeriodDisplay() {
             const arrivalEl = document.getElementById('actualArrivalDate');
             const workEndEl = document.getElementById('actualWorkEndDate');
             const calculatedEl = document.getElementById('calculatedDays');
-            const requiredEl = document.getElementById('requiredDays');
-            const flightSection = document.getElementById('flightInfoSection');
             
             if (arrivalEl && workEndEl && calculatedEl) {
-                function updateActivityDays() {
+                function updateActivityDaysDisplay() {
                     const arrival = arrivalEl.value;
                     const workEnd = workEndEl.value;
                     
@@ -633,80 +631,32 @@
                         const workEndDate = new Date(workEnd);
                         const days = Math.ceil((workEndDate - arrivalDate) / (1000 * 60 * 60 * 24)) + 1;
                         
-                        // 활동일 표시
+                        // ✅ 활동일 표시만 담당 (검증 로직 없음)
                         calculatedEl.textContent = days > 0 ? days : '-';
                         
-                        // 🔧 v9.2.1: 기본 필수활동일 표시 (폴백)
-                        if (requiredEl && requiredEl.textContent === '로딩중...') {
-                            // 기본값: 90일 (사용자 데이터를 불러올 수 없는 경우)
-                            requiredEl.textContent = '90';
-                            requiredEl.className = 'value required-days-value fallback';
-                        }
-                        
-                        // 기본 검증 (90-120일) 및 항공권 섹션 활성화
-                        if (days >= 90 && days <= 120) {
-                            enableFlightSection();
-                        } else {
-                            disableFlightSection();
+                        // 🔔 v9.2.1: 모든 검증 로직은 JS 모듈에 위임
+                        // 이벤트 발생으로 JS 모듈에게 알림
+                        if (window.moduleEventBus) {
+                            window.moduleEventBus.emit('activityPeriodChanged', {
+                                arrival: arrival,
+                                workEnd: workEnd,
+                                calculatedDays: days > 0 ? days : 0
+                            });
                         }
                     } else {
                         calculatedEl.textContent = '-';
-                        disableFlightSection();
+                        
+                        // 이벤트 발생
+                        if (window.moduleEventBus) {
+                            window.moduleEventBus.emit('activityPeriodCleared');
+                        }
                     }
                 }
                 
-                arrivalEl.addEventListener('input', updateActivityDays);
-                workEndEl.addEventListener('input', updateActivityDays);
+                arrivalEl.addEventListener('input', updateActivityDaysDisplay);
+                workEndEl.addEventListener('input', updateActivityDaysDisplay);
                 
-                console.log('✅ 기본 활동기간 입력 기능 설정 완료');
-            }
-        }
-        
-        function enableFlightSection() {
-            const flightSection = document.getElementById('flightInfoSection');
-            const prerequisiteStatus = document.getElementById('prerequisiteStatus');
-            
-            if (flightSection) {
-                flightSection.classList.remove('flight-section-disabled');
-                flightSection.classList.add('flight-section-enabled');
-                
-                // 입력 필드 활성화
-                const inputs = flightSection.querySelectorAll('input, select');
-                inputs.forEach(input => input.disabled = false);
-                
-                // 상태 메시지 업데이트
-                if (prerequisiteStatus) {
-                    prerequisiteStatus.className = 'prerequisite-status success';
-                    prerequisiteStatus.innerHTML = '<i data-lucide="check-circle"></i><span>항공권 정보를 입력할 수 있습니다.</span>';
-                    
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
-                }
-            }
-        }
-        
-        function disableFlightSection() {
-            const flightSection = document.getElementById('flightInfoSection');
-            const prerequisiteStatus = document.getElementById('prerequisiteStatus');
-            
-            if (flightSection) {
-                flightSection.classList.add('flight-section-disabled');
-                flightSection.classList.remove('flight-section-enabled');
-                
-                // 입력 필드 비활성화
-                const inputs = flightSection.querySelectorAll('input, select');
-                inputs.forEach(input => input.disabled = true);
-                
-                // 상태 메시지 업데이트
-                if (prerequisiteStatus) {
-                    prerequisiteStatus.className = 'prerequisite-status pending';
-                    prerequisiteStatus.innerHTML = '<i data-lucide="info"></i><span>항공권 정보를 입력하려면 먼저 현지 활동기간을 입력해주세요.</span>';
-                    
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
-                }
+                console.log('✅ 기본 활동기간 표시 기능 설정 완료 (검증 로직 JS 모듈 위임)');
             }
         }
         
@@ -729,7 +679,7 @@
                         const initStatus = initModule.getInitStatus();
                         console.log('✅ 초기화 모듈 상태:', initStatus);
                         
-                        // 🔧 v9.2.1: 사용자 데이터가 로드되었으면 필수활동일 업데이트
+                        // ✅ v9.2.1: 사용자 데이터가 로드되었으면 필수활동일 업데이트
                         const userRequirements = initModule.getUserRequirements();
                         if (userRequirements && userRequirements.userRequiredDays) {
                             const requiredEl = document.getElementById('requiredDays');
@@ -747,12 +697,12 @@
                 } else {
                     console.warn('⚠️ FlightRequestCoordinator 로드 타임아웃 - 기본 기능으로 동작');
                     
-                    // 🔧 v9.2.1: 타임아웃 시 사용자에게 알림 및 기본 기능 활성화
+                    // ✅ v9.2.1: 타임아웃 시 사용자에게 알림 (기본값 제거)
                     const requiredEl = document.getElementById('requiredDays');
                     if (requiredEl && requiredEl.textContent === '로딩중...') {
-                        requiredEl.textContent = '90';
-                        requiredEl.className = 'value required-days-value fallback';
-                        requiredEl.title = '기본값 (시스템 로딩 제한시간 초과)';
+                        requiredEl.textContent = '알 수 없음';
+                        requiredEl.className = 'value required-days-value error';
+                        requiredEl.title = '시스템 로딩 제한시간 초과 - 페이지를 새로고침해주세요';
                     }
                     
                     return false;
@@ -776,13 +726,14 @@
                 
                 // 특정 모듈 실패 시 대응
                 if (event.target.src.includes('flight-request-init')) {
-                    console.log('🔄 초기화 모듈 로딩 실패 - 기본 기능으로 폴백');
-                    // 필수활동일 기본값 설정
+                    console.log('🔄 초기화 모듈 로딩 실패 - 페이지 새로고침 권장');
+                    // ✅ v9.2.1: 하드코딩된 기본값 제거, 사용자에게 알림
                     setTimeout(() => {
                         const requiredEl = document.getElementById('requiredDays');
                         if (requiredEl && requiredEl.textContent === '로딩중...') {
-                            requiredEl.textContent = '90';
-                            requiredEl.className = 'value required-days-value fallback';
+                            requiredEl.textContent = '로딩 실패';
+                            requiredEl.className = 'value required-days-value error';
+                            requiredEl.title = '초기화 모듈 로딩 실패 - 페이지를 새로고침해주세요';
                         }
                     }, 1000);
                 }
