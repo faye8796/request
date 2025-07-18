@@ -554,9 +554,9 @@
     <script src="../js/student/flight-request-ticket.js" async></script>
     <script src="../js/student/flight-request-coordinator.js" async></script>
 
-    <!-- 5단계: 기본 초기화 및 폴백 기능 -->
+    <!-- 5단계: 🔧 수정된 기본 초기화 및 폴백 기능 -->
     <script>
-        console.log('🚀 v9.2.0: 기본 초기화 시작 - flight-request-ui.js 제거됨');
+        console.log('🚀 v9.2.1: 수정된 초기화 시스템 - 타임아웃 동기화');
         
         // 즉시 앱 표시
         function initializeAppImmediate() {
@@ -620,6 +620,7 @@
             const arrivalEl = document.getElementById('actualArrivalDate');
             const workEndEl = document.getElementById('actualWorkEndDate');
             const calculatedEl = document.getElementById('calculatedDays');
+            const requiredEl = document.getElementById('requiredDays');
             const flightSection = document.getElementById('flightInfoSection');
             
             if (arrivalEl && workEndEl && calculatedEl) {
@@ -634,6 +635,13 @@
                         
                         // 활동일 표시
                         calculatedEl.textContent = days > 0 ? days : '-';
+                        
+                        // 🔧 v9.2.1: 기본 필수활동일 표시 (폴백)
+                        if (requiredEl && requiredEl.textContent === '로딩중...') {
+                            // 기본값: 90일 (사용자 데이터를 불러올 수 없는 경우)
+                            requiredEl.textContent = '90';
+                            requiredEl.className = 'value required-days-value fallback';
+                        }
                         
                         // 기본 검증 (90-120일) 및 항공권 섹션 활성화
                         if (days >= 90 && days <= 120) {
@@ -709,7 +717,7 @@
             initializeAppImmediate();
         }
         
-        // Coordinator 로드 체크
+        // 🔧 v9.2.1: Coordinator와 동기화된 로드 체크
         function waitForCoordinatorAndInit() {
             const checkCoordinator = () => {
                 if (window.flightRequestCoordinator && window.flightRequestCoordinator.isInitialized) {
@@ -720,14 +728,33 @@
                     if (initModule) {
                         const initStatus = initModule.getInitStatus();
                         console.log('✅ 초기화 모듈 상태:', initStatus);
+                        
+                        // 🔧 v9.2.1: 사용자 데이터가 로드되었으면 필수활동일 업데이트
+                        const userRequirements = initModule.getUserRequirements();
+                        if (userRequirements && userRequirements.userRequiredDays) {
+                            const requiredEl = document.getElementById('requiredDays');
+                            if (requiredEl) {
+                                requiredEl.textContent = userRequirements.userRequiredDays;
+                                requiredEl.className = 'value required-days-value success';
+                            }
+                        }
                     }
                     
                     return true;
-                } else if (window.coordinatorLoadAttempts < 30) {
+                } else if (window.coordinatorLoadAttempts < 30) { // 🔧 v9.2.1: 30회로 제한 (Coordinator와 동기화)
                     window.coordinatorLoadAttempts = (window.coordinatorLoadAttempts || 0) + 1;
                     setTimeout(checkCoordinator, 100);
                 } else {
                     console.warn('⚠️ FlightRequestCoordinator 로드 타임아웃 - 기본 기능으로 동작');
+                    
+                    // 🔧 v9.2.1: 타임아웃 시 사용자에게 알림 및 기본 기능 활성화
+                    const requiredEl = document.getElementById('requiredDays');
+                    if (requiredEl && requiredEl.textContent === '로딩중...') {
+                        requiredEl.textContent = '90';
+                        requiredEl.className = 'value required-days-value fallback';
+                        requiredEl.title = '기본값 (시스템 로딩 제한시간 초과)';
+                    }
+                    
                     return false;
                 }
             };
@@ -747,10 +774,17 @@
             if (event.target?.tagName === 'SCRIPT') {
                 console.warn('스크립트 로딩 실패:', event.target.src);
                 
-                // UI 모듈 실패 시 기본 기능 활성화
-                if (event.target.src.includes('flight-request-ui')) {
-                    console.log('🔄 UI 모듈 없음 - 기본 기능으로 폴백');
-                    // UI 모듈 없이도 정상 동작하도록 이미 설정됨
+                // 특정 모듈 실패 시 대응
+                if (event.target.src.includes('flight-request-init')) {
+                    console.log('🔄 초기화 모듈 로딩 실패 - 기본 기능으로 폴백');
+                    // 필수활동일 기본값 설정
+                    setTimeout(() => {
+                        const requiredEl = document.getElementById('requiredDays');
+                        if (requiredEl && requiredEl.textContent === '로딩중...') {
+                            requiredEl.textContent = '90';
+                            requiredEl.className = 'value required-days-value fallback';
+                        }
+                    }, 1000);
                 }
             }
         });
