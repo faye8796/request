@@ -1,15 +1,17 @@
-// flight-request-init.js - v1.2.0 이벤트 기반 재검증 시스템
+// flight-request-init.js - v1.2.1 최대활동일 검증 추가
 // 🎯 핵심 책임:
 //   1. 항공권 신청 페이지의 초기 세팅
 //   2. api-event-adapter 기반 사용자데이터로 필수활동일 정보 확인 및 표시
 //   3. 🔧 v1.2.0: UI 직접 제어 제거, 이벤트 발행으로 변경
 //   4. 실시간 활동기간 변경 감지 및 재검증 시스템 (이벤트 기반)
+//   5. 🆕 v1.2.1: 최대활동일 검증 로직 추가
 // 🔧 분리 목적: flight-request-ticket.js의 초기화 로직 분리로 책임 명확화
 // 🆕 v1.2.0: 단일 책임 원칙 적용 - UI 제어 로직 완전 제거
+// 🆕 v1.2.1: 최소활동일 + 최대활동일 범위 검증 완성
 
 class FlightRequestInit {
     constructor() {
-        console.log('🔄 [초기화] FlightRequestInit v1.2.0 생성 시작 - 이벤트 기반 시스템...');
+        console.log('🔄 [초기화] FlightRequestInit v1.2.1 생성 시작 - 최대활동일 검증 포함...');
         
         // 초기화 상태 관리
         this.isInitialized = false;
@@ -85,7 +87,7 @@ class FlightRequestInit {
             activityPeriodFieldsFound: false
         };
         
-        console.log('✅ [초기화] FlightRequestInit v1.2.0 생성 완료 - 이벤트 기반');
+        console.log('✅ [초기화] FlightRequestInit v1.2.1 생성 완료 - 최대활동일 검증 포함');
     }
 
     // === 🚀 메인 초기화 메서드 ===
@@ -124,7 +126,7 @@ class FlightRequestInit {
             await this.setupEventBasedRevalidationSystem();
             
             this.isInitialized = true;
-            console.log('✅ [초기화] 모든 초기화 완료 (v1.2.0 이벤트 기반)');
+            console.log('✅ [초기화] 모든 초기화 완료 (v1.2.1 최대활동일 검증 포함)');
             
             // 초기화 완료 이벤트 발행
             this.eventBus.emit('initializationCompleted', {
@@ -145,7 +147,7 @@ class FlightRequestInit {
     // === 🔧 v1.2.0: 초기 항공권 섹션 상태 이벤트 발행 ===
     emitInitialFlightSectionState() {
         try {
-            console.log('🔄 [초기화] v1.2.0: 초기 항공권 섹션 상태 이벤트 발행...');
+            console.log('🔄 [초기화] v1.2.1: 초기 항공권 섹션 상태 이벤트 발행...');
             
             // 초기에는 항상 비활성화 상태로 시작
             this.eventBus.emit('flightSectionStateChangeRequest', {
@@ -155,17 +157,17 @@ class FlightRequestInit {
                 type: 'info'
             });
             
-            console.log('✅ [초기화] v1.2.0: 초기 항공권 섹션 상태 이벤트 발행 완료');
+            console.log('✅ [초기화] v1.2.1: 초기 항공권 섹션 상태 이벤트 발행 완료');
             
         } catch (error) {
-            console.error('❌ [초기화] v1.2.0: 초기 상태 이벤트 발행 실패:', error);
+            console.error('❌ [초기화] v1.2.1: 초기 상태 이벤트 발행 실패:', error);
         }
     }
 
     // === 🔧 v1.2.0: 이벤트 기반 재검증 시스템 설정 ===
     async setupEventBasedRevalidationSystem() {
         try {
-            console.log('🔄 [초기화] v1.2.0: 이벤트 기반 재검증 시스템 설정...');
+            console.log('🔄 [초기화] v1.2.1: 이벤트 기반 재검증 시스템 설정...');
             
             // 1. 활동기간 필드 탐지
             await this.findActivityPeriodFields();
@@ -177,17 +179,17 @@ class FlightRequestInit {
             this.saveInitialValidationState();
             
             this.initStatus.revalidationListenersSetup = true;
-            console.log('✅ [초기화] v1.2.0: 이벤트 기반 재검증 시스템 설정 완료');
+            console.log('✅ [초기화] v1.2.1: 이벤트 기반 재검증 시스템 설정 완료');
             
         } catch (error) {
-            console.error('❌ [초기화] v1.2.0: 이벤트 기반 재검증 시스템 설정 실패:', error);
+            console.error('❌ [초기화] v1.2.1: 이벤트 기반 재검증 시스템 설정 실패:', error);
         }
     }
 
     // === 🔧 v1.2.0: 이벤트 기반 변경 감지 리스너 설정 ===
     setupEventBasedChangeListeners() {
         try {
-            console.log('🔄 [초기화] v1.2.0: 이벤트 기반 변경 감지 리스너 설정...');
+            console.log('🔄 [초기화] v1.2.1: 이벤트 기반 변경 감지 리스너 설정...');
             
             // 도착일 변경 감지
             if (this.activityPeriodFields.arrivalDate) {
@@ -195,7 +197,7 @@ class FlightRequestInit {
                 
                 ['input', 'change', 'blur'].forEach(eventType => {
                     const listener = (event) => {
-                        console.log('🔔 [초기화] v1.2.0: 도착일 변경 감지:', event.target.value);
+                        console.log('🔔 [초기화] v1.2.1: 도착일 변경 감지:', event.target.value);
                         this.handleActivityPeriodChangeEvent('arrivalDate', event.target.value);
                     };
                     
@@ -216,7 +218,7 @@ class FlightRequestInit {
                 
                 ['input', 'change', 'blur'].forEach(eventType => {
                     const listener = (event) => {
-                        console.log('🔔 [초기화] v1.2.0: 근무 종료일 변경 감지:', event.target.value);
+                        console.log('🔔 [초기화] v1.2.1: 근무 종료일 변경 감지:', event.target.value);
                         this.handleActivityPeriodChangeEvent('workEndDate', event.target.value);
                     };
                     
@@ -231,10 +233,10 @@ class FlightRequestInit {
                 console.log('✅ [초기화] 근무 종료일 필드 이벤트 리스너 설정 완료');
             }
             
-            console.log('✅ [초기화] v1.2.0: 이벤트 기반 변경 감지 리스너 설정 완료');
+            console.log('✅ [초기화] v1.2.1: 이벤트 기반 변경 감지 리스너 설정 완료');
             
         } catch (error) {
-            console.error('❌ [초기화] v1.2.0: 이벤트 기반 변경 감지 리스너 설정 실패:', error);
+            console.error('❌ [초기화] v1.2.1: 이벤트 기반 변경 감지 리스너 설정 실패:', error);
         }
     }
 
@@ -243,12 +245,12 @@ class FlightRequestInit {
         try {
             // 재검증이 진행 중이면 중복 실행 방지
             if (this.isValidationInProgress) {
-                console.log('⏳ [초기화] v1.2.0: 재검증 진행 중 - 대기');
+                console.log('⏳ [초기화] v1.2.1: 재검증 진행 중 - 대기');
                 return;
             }
             
             this.isValidationInProgress = true;
-            console.log(`🔄 [초기화] v1.2.0: 활동기간 변경 이벤트 처리 시작 (${fieldType}: ${newValue})`);
+            console.log(`🔄 [초기화] v1.2.1: 활동기간 변경 이벤트 처리 시작 (${fieldType}: ${newValue})`);
             
             // 1. 활동기간 변경 이벤트 발행
             this.eventBus.emit('activityPeriodChanged', {
@@ -297,10 +299,10 @@ class FlightRequestInit {
                 timestamp: Date.now()
             });
             
-            console.log(`✅ [초기화] v1.2.0: 활동기간 변경 이벤트 처리 완료 (성공: ${revalidationResult.success})`);
+            console.log(`✅ [초기화] v1.2.1: 활동기간 변경 이벤트 처리 완료 (성공: ${revalidationResult.success})`);
             
         } catch (error) {
-            console.error('❌ [초기화] v1.2.0: 활동기간 변경 이벤트 처리 실패:', error);
+            console.error('❌ [초기화] v1.2.1: 활동기간 변경 이벤트 처리 실패:', error);
             
             // 에러 시에도 적절한 이벤트 발행
             this.eventBus.emit('flightSectionStateChangeRequest', {
@@ -315,21 +317,10 @@ class FlightRequestInit {
         }
     }
 
-    // === 🔧 v1.2.0: 기존 UI 제어 메서드들 제거 및 이벤트 발행으로 대체 ===
-    
-    // 🚫 제거됨: disableFlightSectionWithMessage()
-    // 🚫 제거됨: enableFlightSectionWithMessage()
-    // 🚫 제거됨: updatePrerequisiteStatusMessage()
-    // 🚫 제거됨: createPrerequisiteStatusMessage()
-    // 🚫 제거됨: saveFlightSectionState()
-    // 🚫 제거됨: restoreFlightSectionState()
-    // 🚫 제거됨: extractFlightFormData()
-    // 🚫 제거됨: restoreFlightFormData()
-
     // === 활동기간 필드 탐지 (유지) ===
     async findActivityPeriodFields() {
         try {
-            console.log('🔄 [초기화] v1.2.0: 활동기간 필드 탐지...');
+            console.log('🔄 [초기화] v1.2.1: 활동기간 필드 탐지...');
             
             // 여러 가능한 셀렉터로 필드 탐색
             const arrivalSelectors = [
@@ -371,20 +362,20 @@ class FlightRequestInit {
             this.initStatus.activityPeriodFieldsFound = fieldsFound;
             
             if (fieldsFound) {
-                console.log('✅ [초기화] v1.2.0: 활동기간 필드 탐지 완료');
+                console.log('✅ [초기화] v1.2.1: 활동기간 필드 탐지 완료');
             } else {
-                console.warn('⚠️ [초기화] v1.2.0: 활동기간 필드를 찾을 수 없음 - 재검증 시스템 제한됨');
+                console.warn('⚠️ [초기화] v1.2.1: 활동기간 필드를 찾을 수 없음 - 재검증 시스템 제한됨');
             }
             
         } catch (error) {
-            console.error('❌ [초기화] v1.2.0: 활동기간 필드 탐지 실패:', error);
+            console.error('❌ [초기화] v1.2.1: 활동기간 필드 탐지 실패:', error);
         }
     }
 
     // === 재검증 실행 (유지) ===
     async performRevalidation() {
         try {
-            console.log('🔄 [초기화] v1.2.0: 재검증 실행...');
+            console.log('🔄 [초기화] v1.2.1: 재검증 실행...');
             
             // 1. 현재 활동기간 데이터 수집
             const currentData = this.getCurrentActivityPeriodData();
@@ -399,11 +390,11 @@ class FlightRequestInit {
                 result: validationResult
             };
             
-            console.log('✅ [초기화] v1.2.0: 재검증 완료:', validationResult);
+            console.log('✅ [초기화] v1.2.1: 재검증 완료:', validationResult);
             return validationResult;
             
         } catch (error) {
-            console.error('❌ [초기화] v1.2.0: 재검증 실행 실패:', error);
+            console.error('❌ [초기화] v1.2.1: 재검증 실행 실패:', error);
             return {
                 success: false,
                 reason: '재검증 실행 중 오류 발생'
@@ -433,7 +424,7 @@ class FlightRequestInit {
             // 계산된 활동일 수집 (있다면)
             const calculatedDaysEl = document.getElementById('calculatedDays');
             if (calculatedDaysEl && calculatedDaysEl.textContent) {
-                const match = calculatedDaysEl.textContent.match(/(\\d+)/);
+                const match = calculatedDaysEl.textContent.match(/(\d+)/);
                 if (match) {
                     data.calculatedDays = parseInt(match[1]);
                 }
@@ -442,15 +433,15 @@ class FlightRequestInit {
             return data;
             
         } catch (error) {
-            console.error('❌ [초기화] v1.2.0: 활동기간 데이터 수집 실패:', error);
+            console.error('❌ [초기화] v1.2.1: 활동기간 데이터 수집 실패:', error);
             return {};
         }
     }
 
-    // === 활동기간 검증 (유지) ===
+    // === 🆕 v1.2.1: 활동기간 검증 (최대활동일 검증 추가) ===
     async validateActivityPeriod(data) {
         try {
-            console.log('🔄 [초기화] v1.2.0: 활동기간 검증 중...', data);
+            console.log('🔄 [초기화] v1.2.1: 활동기간 검증 중 (최대활동일 검증 포함)...', data);
             
             // 1. 기본 데이터 검증
             if (!data.arrivalDate && !data.workEndDate) {
@@ -477,28 +468,44 @@ class FlightRequestInit {
                 }
             }
             
-            // 3. 활동일수 검증 (최소 요구사항 확인)
-            if (data.calculatedDays !== null && this.userRequiredDays) {
-                if (data.calculatedDays < this.userRequiredDays) {
+            // 3. 🆕 v1.2.1: 활동일수 범위 검증 (최소 요구사항 + 최대 허용 확인)
+            if (data.calculatedDays !== null) {
+                // 3-1. 최소 활동일 검증 (기존 로직)
+                if (this.userRequiredDays && data.calculatedDays < this.userRequiredDays) {
                     validationResults.push(`활동일수가 최소 요구일(${this.userRequiredDays}일)보다 부족합니다`);
+                    console.warn(`⚠️ [초기화] v1.2.1: 최소활동일 미달 - 계산됨: ${data.calculatedDays}일, 요구됨: ${this.userRequiredDays}일`);
+                }
+                
+                // 3-2. 🆕 v1.2.1: 최대 활동일 검증 (새로운 로직)
+                if (this.userMaximumDays && data.calculatedDays > this.userMaximumDays) {
+                    validationResults.push(`활동일수가 최대 허용일(${this.userMaximumDays}일)을 초과했습니다`);
+                    console.warn(`⚠️ [초기화] v1.2.1: 최대활동일 초과 - 계산됨: ${data.calculatedDays}일, 최대허용: ${this.userMaximumDays}일`);
+                }
+                
+                // 3-3. 활동일수 검증 결과 로깅
+                if (this.userRequiredDays && this.userMaximumDays) {
+                    console.log(`📊 [초기화] v1.2.1: 활동일수 검증 - 최소: ${this.userRequiredDays}일 ≤ 계산됨: ${data.calculatedDays}일 ≤ 최대: ${this.userMaximumDays}일`);
                 }
             }
             
             // 4. 검증 결과 반환
             if (validationResults.length > 0) {
+                const errorMessage = validationResults.join(', ');
+                console.error(`❌ [초기화] v1.2.1: 활동기간 검증 실패 - ${errorMessage}`);
                 return {
                     success: false,
-                    reason: validationResults.join(', ')
+                    reason: errorMessage
                 };
             }
             
+            console.log('✅ [초기화] v1.2.1: 활동기간 검증 통과 (최소/최대 활동일 모두 만족)');
             return {
                 success: true,
-                reason: '활동기간 검증 통과'
+                reason: '활동기간 검증 통과 (최소/최대 활동일 범위 만족)'
             };
             
         } catch (error) {
-            console.error('❌ [초기화] v1.2.0: 활동기간 검증 실패:', error);
+            console.error('❌ [초기화] v1.2.1: 활동기간 검증 실패:', error);
             return {
                 success: false,
                 reason: '검증 중 오류 발생'
@@ -529,10 +536,10 @@ class FlightRequestInit {
                 result: { success: false, reason: '초기 상태' }
             };
             
-            console.log('💾 [초기화] v1.2.0: 초기 검증 상태 저장 완료');
+            console.log('💾 [초기화] v1.2.1: 초기 검증 상태 저장 완료');
             
         } catch (error) {
-            console.error('❌ [초기화] v1.2.0: 초기 검증 상태 저장 실패:', error);
+            console.error('❌ [초기화] v1.2.1: 초기 검증 상태 저장 실패:', error);
         }
     }
 
@@ -614,7 +621,7 @@ class FlightRequestInit {
             }
             
             if (this.userData) {
-                // 사용자별 활동 요구사항 추출
+                // 🆕 v1.2.1: 사용자별 활동 요구사항 추출 (최대활동일 포함)
                 this.userRequiredDays = this.userData.minimum_required_days || null;
                 this.userMaximumDays = this.userData.maximum_allowed_days || null;
                 this.dispatchEndDate = this.userData.dispatch_end_date || '2025-12-12';
@@ -623,7 +630,7 @@ class FlightRequestInit {
                 this.updatePageHeader();
                 
                 this.isUserDataLoaded = true;
-                console.log('✅ [초기화] 사용자 데이터 로드 완료:', {
+                console.log('✅ [초기화] v1.2.1: 사용자 데이터 로드 완료 (최대활동일 포함):', {
                     이름: this.userData.name,
                     학당: this.userData.sejong_institute,
                     최소활동일: this.userRequiredDays,
@@ -996,7 +1003,7 @@ class FlightRequestInit {
     // === 🔧 v1.2.0: 리스너 정리 메서드 ===
     cleanupRevalidationListeners() {
         try {
-            console.log('🗑️ [초기화] v1.2.0: 재검증 리스너 정리...');
+            console.log('🗑️ [초기화] v1.2.1: 재검증 리스너 정리...');
             
             this.revalidationListeners.forEach(({ element, eventType, listener }) => {
                 if (element && typeof element.removeEventListener === 'function') {
@@ -1005,10 +1012,10 @@ class FlightRequestInit {
             });
             
             this.revalidationListeners = [];
-            console.log('✅ [초기화] v1.2.0: 재검증 리스너 정리 완료');
+            console.log('✅ [초기화] v1.2.1: 재검증 리스너 정리 완료');
             
         } catch (error) {
-            console.error('❌ [초기화] v1.2.0: 재검증 리스너 정리 실패:', error);
+            console.error('❌ [초기화] v1.2.1: 재검증 리스너 정리 실패:', error);
         }
     }
 
@@ -1024,7 +1031,7 @@ class FlightRequestInit {
         return this.userData ? { ...this.userData } : null;
     }
     
-    // 사용자 활동 요구사항 반환
+    // 🆕 v1.2.1: 사용자 활동 요구사항 반환 (최대활동일 포함)
     getUserRequirements() {
         return {
             userRequiredDays: this.userRequiredDays,
@@ -1080,11 +1087,11 @@ class FlightRequestInit {
     async triggerManualRevalidation() {
         try {
             if (this.isValidationInProgress) {
-                console.warn('⚠️ [초기화] v1.2.0: 재검증이 이미 진행 중입니다');
+                console.warn('⚠️ [초기화] v1.2.1: 재검증이 이미 진행 중입니다');
                 return false;
             }
             
-            console.log('🔄 [초기화] v1.2.0: 수동 재검증 실행...');
+            console.log('🔄 [초기화] v1.2.1: 수동 재검증 실행...');
             
             // 재검증 시작 이벤트 발행
             this.eventBus.emit('manualRevalidationStarted', {
@@ -1116,7 +1123,7 @@ class FlightRequestInit {
             return result.success;
             
         } catch (error) {
-            console.error('❌ [초기화] v1.2.0: 수동 재검증 실패:', error);
+            console.error('❌ [초기화] v1.2.1: 수동 재검증 실패:', error);
             return false;
         }
     }
@@ -1131,10 +1138,10 @@ class FlightRequestInit {
         this.eventBus.emit(eventName, data);
     }
     
-    // 디버깅 정보 반환
+    // 🆕 v1.2.1: 디버깅 정보 반환 (최대활동일 포함)
     getDebugInfo() {
         return {
-            version: 'v1.2.0',
+            version: 'v1.2.1',
             isInitialized: this.isInitialized,
             initializationAttempts: this.initializationAttempts,
             initStatus: this.initStatus,
@@ -1162,7 +1169,7 @@ class FlightRequestInit {
     // 🔧 v1.2.0: 정리 메서드
     destroy() {
         try {
-            console.log('🗑️ [초기화] v1.2.0: 인스턴스 정리...');
+            console.log('🗑️ [초기화] v1.2.1: 인스턴스 정리...');
             
             // 재검증 리스너 정리
             this.cleanupRevalidationListeners();
@@ -1179,10 +1186,10 @@ class FlightRequestInit {
             this.initStatus = {};
             this.lastValidationState = null;
             
-            console.log('✅ [초기화] v1.2.0: 인스턴스 정리 완료');
+            console.log('✅ [초기화] v1.2.1: 인스턴스 정리 완료');
             
         } catch (error) {
-            console.error('❌ [초기화] v1.2.0: 인스턴스 정리 실패:', error);
+            console.error('❌ [초기화] v1.2.1: 인스턴스 정리 실패:', error);
         }
     }
 }
@@ -1190,42 +1197,30 @@ class FlightRequestInit {
 // 전역 스코프에 노출
 window.FlightRequestInit = FlightRequestInit;
 
-console.log('✅ FlightRequestInit v1.2.0 모듈 로드 완료 - 이벤트 기반 시스템');
-console.log('🔧 v1.2.0 주요 변경사항:', {
-    coreResponsibility: [
-        '항공권 신청 페이지의 초기 세팅',
-        'api-event-adapter 기반 사용자데이터로 필수활동일 정보 확인 및 표시', 
-        '🔧 UI 직접 제어 제거, 이벤트 발행으로 변경',
-        '실시간 활동기간 변경 감지 및 재검증 시스템 (이벤트 기반)'
+console.log('✅ FlightRequestInit v1.2.1 모듈 로드 완료 - 최대활동일 검증 포함');
+console.log('🆕 v1.2.1 주요 변경사항:', {
+    newValidationFeatures: [
+        '🆕 최대활동일(maximum_allowed_days) 검증 추가',
+        '🆕 활동일수 범위 검증: 최소 ≤ 계산값 ≤ 최대',
+        '🆕 최대활동일 초과 시 에러 메시지 출력',
+        '🆕 상세한 검증 로깅 및 디버깅 정보'
     ],
-    removedFeatures: [
-        '🚫 disableFlightSectionWithMessage() 제거',
-        '🚫 enableFlightSectionWithMessage() 제거',
-        '🚫 updatePrerequisiteStatusMessage() 제거',
-        '🚫 createPrerequisiteStatusMessage() 제거',
-        '🚫 saveFlightSectionState() 제거',
-        '🚫 restoreFlightSectionState() 제거',
-        '🚫 모든 직접적 UI 제어 로직 제거'
+    validationLogic: [
+        '기존: 최소활동일만 검증',
+        '신규: 최소활동일 + 최대활동일 범위 검증',
+        '에러: "활동일수가 최대 허용일(N일)을 초과했습니다"',
+        '성공: "활동기간 검증 통과 (최소/최대 활동일 범위 만족)"'
     ],
-    newFeatures: [
-        '🆕 이벤트 기반 통신 시스템',
-        '🆕 flightSectionStateChangeRequest 이벤트 발행',
-        '🆕 revalidationCompleted 이벤트 발행',
-        '🆕 activityPeriodChanged 이벤트 발행',
-        '🆕 외부 이벤트 구독 인터페이스 (on/emit)',
-        '🆕 단일 책임 원칙 적용 완료'
-    ],
-    benefits: [
-        '책임 분리 완성: 초기화 ↔ UI 제어 완전 분리',
-        '이벤트 기반 통신으로 결합도 감소',
-        '단일 진실 공급원 원칙 적용',
-        '유지보수성 및 테스트 가능성 향상',
-        'UI 제어 로직 중앙 집중화 준비 완료'
+    technicalDetails: [
+        'validateActivityPeriod() 메서드에 최대활동일 검증 로직 추가',
+        'this.userMaximumDays 데이터 활용',
+        'calculatedDays > userMaximumDays 조건 검증',
+        '기존 기능 100% 유지, 새 검증만 추가'
     ]
 });
-console.log('🚀 v1.2.0 예상 효과:', {
-    architecturalClarity: '모듈 간 명확한 책임 분리',
-    maintainability: '단일 수정 지점으로 유지보수성 향상',
-    reliability: '이벤트 기반 통신으로 안정성 향상',
-    scalability: '추후 기능 확장 시 영향 범위 최소화'
+console.log('🎯 v1.2.1 검증 로직:', {
+    minimumValidation: 'calculatedDays >= userRequiredDays (기존)',
+    maximumValidation: 'calculatedDays <= userMaximumDays (신규)',
+    errorHandling: '범위 초과 시 항공권 입력창 비활성화',
+    uiIntegration: '기존 UI 그대로 유지, 에러 메시지만 추가'
 });
