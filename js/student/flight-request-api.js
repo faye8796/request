@@ -1,9 +1,10 @@
-// flight-request-api.js - 무한루프 해결 v8.8.2
+// flight-request-api.js - 무한루프 해결 v8.8.3 + 항공권 취소 기능 추가
 // 🚨 핵심 수정사항:
 //   1. console.log 출력 대폭 최소화 - 디버깅 로그 제거
 //   2. 초기화 재시도 로직 간소화
 //   3. 메서드 별칭 중복 설정 방지
 //   4. 성능 최적화 및 메모리 사용량 감소
+//   5. 🆕 cancelFlightRequest 메서드 추가 - 항공권 신청 취소 기능
 
 class FlightRequestAPI {
     constructor() {
@@ -23,7 +24,7 @@ class FlightRequestAPI {
     // === 🚨 수정: 간소화된 초기화 시스템 ===
     async initialize() {
         try {
-            console.log('🔄 FlightRequestAPI v8.8.2 초기화 시작 (무한루프 해결)...');
+            console.log('🔄 FlightRequestAPI v8.8.3 초기화 시작 (무한루프 해결 + 취소기능)...');
             
             // SupabaseCore 연결
             await this.connectToSupabaseCore();
@@ -37,7 +38,7 @@ class FlightRequestAPI {
             // 🚨 수정: 메서드 별칭 설정 (중복 방지)
             this.setupMethodAliasesSafe();
             
-            console.log('✅ FlightRequestAPI v8.8.2 초기화 완료');
+            console.log('✅ FlightRequestAPI v8.8.3 초기화 완료');
             return true;
         } catch (error) {
             console.error('❌ FlightRequestAPI 초기화 실패:', error);
@@ -63,9 +64,9 @@ class FlightRequestAPI {
                 this.loadExistingFlightRequest = this.getExistingRequest.bind(this);
             }
             
-            console.log('✅ [API] v8.8.2 메서드 별칭 설정 완료 (중복 방지)');
+            console.log('✅ [API] v8.8.3 메서드 별칭 설정 완료 (중복 방지)');
         } catch (error) {
-            console.error('❌ [API] v8.8.2 메서드 별칭 설정 실패:', error);
+            console.error('❌ [API] v8.8.3 메서드 별칭 설정 실패:', error);
         }
     }
 
@@ -405,6 +406,166 @@ class FlightRequestAPI {
         }
     }
 
+    // 🆕 v8.8.3: 항공권 신청 취소 메서드 추가
+    async cancelFlightRequest(requestId = null) {
+        try {
+            console.log('🔄 [API] 항공권 신청 취소 시작...', requestId);
+            
+            await this.ensureInitialized();
+            
+            if (!this.user) {
+                await this.getCurrentUser();
+            }
+            
+            if (!this.user?.id) {
+                throw new Error('사용자 정보가 없습니다');
+            }
+
+            // 취소할 신청 ID 결정
+            let targetRequestId = requestId;
+            
+            if (!targetRequestId) {
+                // 현재 사용자의 최신 신청 조회
+                const existingRequest = await this.getExistingRequest();
+                if (!existingRequest) {
+                    throw new Error('취소할 항공권 신청을 찾을 수 없습니다');
+                }
+                targetRequestId = existingRequest.id;
+            }
+
+            // 취소 상태로 업데이트
+            const updateData = {
+                status: 'cancelled',
+                updated_at: new Date().toISOString(),
+                cancellation_date: new Date().toISOString()
+            };
+
+            const filters = {
+                id: targetRequestId,
+                user_id: this.user.id // 보안: 사용자 본인의 신청만 취소 가능
+            };
+
+            // SupabaseCore 사용 (가능하면)
+            if (this.core?.update) {
+                const result = await this.core.update('flight_requests', updateData, filters);
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                console.log('✅ [API] 항공권 신청 취소 완료 (SupabaseCore):', targetRequestId);
+                return {
+                    success: true,
+                    data: result.data[0],
+                    message: '항공권 신청이 성공적으로 취소되었습니다.'
+                };
+            }
+
+            // 폴백: 직접 supabase 사용
+            const { data, error } = await this.supabase
+                .from('flight_requests')
+                .update(updateData)
+                .eq('id', targetRequestId)
+                .eq('user_id', this.user.id)
+                .select()
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            console.log('✅ [API] 항공권 신청 취소 완료 (Direct Supabase):', targetRequestId);
+            
+            return {
+                success: true,
+                data: data,
+                message: '항공권 신청이 성공적으로 취소되었습니다.'
+            };
+
+        } catch (error) {
+            console.error('❌ [API] 항공권 신청 취소 실패:', error);
+            
+            return {
+                success: false,
+                error: error.message || '항공권 신청 취소 중 오류가 발생했습니다.',
+                data: null
+            };
+        }
+    }
+
+    // 🆕 v8.8.3: 항공권 신청 삭제 메서드 (완전 삭제)
+    async deleteFlightRequest(requestId = null) {
+        try {
+            console.log('🔄 [API] 항공권 신청 삭제 시작...', requestId);
+            
+            await this.ensureInitialized();
+            
+            if (!this.user) {
+                await this.getCurrentUser();
+            }
+            
+            if (!this.user?.id) {
+                throw new Error('사용자 정보가 없습니다');
+            }
+
+            // 삭제할 신청 ID 결정
+            let targetRequestId = requestId;
+            
+            if (!targetRequestId) {
+                // 현재 사용자의 최신 신청 조회
+                const existingRequest = await this.getExistingRequest();
+                if (!existingRequest) {
+                    throw new Error('삭제할 항공권 신청을 찾을 수 없습니다');
+                }
+                targetRequestId = existingRequest.id;
+            }
+
+            // SupabaseCore 사용 (가능하면)
+            if (this.core?.delete) {
+                const result = await this.core.delete('flight_requests', {
+                    id: targetRequestId,
+                    user_id: this.user.id // 보안: 사용자 본인의 신청만 삭제 가능
+                });
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+
+                console.log('✅ [API] 항공권 신청 삭제 완료 (SupabaseCore):', targetRequestId);
+                return {
+                    success: true,
+                    message: '항공권 신청이 완전히 삭제되었습니다.'
+                };
+            }
+
+            // 폴백: 직접 supabase 사용
+            const { error } = await this.supabase
+                .from('flight_requests')
+                .delete()
+                .eq('id', targetRequestId)
+                .eq('user_id', this.user.id);
+
+            if (error) {
+                throw error;
+            }
+
+            console.log('✅ [API] 항공권 신청 삭제 완료 (Direct Supabase):', targetRequestId);
+            
+            return {
+                success: true,
+                message: '항공권 신청이 완전히 삭제되었습니다.'
+            };
+
+        } catch (error) {
+            console.error('❌ [API] 항공권 신청 삭제 실패:', error);
+            
+            return {
+                success: false,
+                error: error.message || '항공권 신청 삭제 중 오류가 발생했습니다.'
+            };
+        }
+    }
+
     // === 데이터 조작 메서드들 ===
 
     async insertData(table, data) {
@@ -711,7 +872,7 @@ class FlightRequestAPI {
     // === 🚨 수정: 간소화된 상태 정보 ===
     getStatus() {
         return {
-            version: 'v8.8.2',
+            version: 'v8.8.3',
             isInitialized: this.isInitialized,
             hasCore: !!this.core,
             hasSupabase: !!this.supabase,
@@ -727,6 +888,11 @@ class FlightRequestAPI {
             methodAliases: {
                 loadPassportInfo: !!this.loadPassportInfo,
                 loadExistingFlightRequest: !!this.loadExistingFlightRequest
+            },
+            // 🆕 v8.8.3: 추가된 메서드들
+            newMethods: {
+                cancelFlightRequest: !!this.cancelFlightRequest,
+                deleteFlightRequest: !!this.deleteFlightRequest
             }
         };
     }
@@ -738,13 +904,13 @@ window.FlightRequestAPI = FlightRequestAPI;
 // 🚨 수정: 간소화된 인스턴스 생성
 function createFlightRequestAPI() {
     try {
-        console.log('🚀 FlightRequestAPI v8.8.2 인스턴스 생성 시작 (무한루프 해결)...');
+        console.log('🚀 FlightRequestAPI v8.8.3 인스턴스 생성 시작 (무한루프 해결 + 취소기능)...');
         window.flightRequestAPI = new FlightRequestAPI();
         
         // 호환성을 위한 passport API 인스턴스도 생성
         window.passportAPI = window.flightRequestAPI;
         
-        console.log('✅ FlightRequestAPI v8.8.2 인스턴스 생성 완료');
+        console.log('✅ FlightRequestAPI v8.8.3 인스턴스 생성 완료');
         return window.flightRequestAPI;
     } catch (error) {
         console.error('❌ FlightRequestAPI 인스턴스 생성 실패:', error);
@@ -761,12 +927,23 @@ if (document.readyState === 'loading') {
     setTimeout(createFlightRequestAPI, 50); // 즉시 실행에 가깝게
 }
 
-console.log('✅ FlightRequestAPI v8.8.2 모듈 로드 완료 - 무한루프 해결 (로그 최소화)');
-console.log('🚨 v8.8.2 무한루프 해결사항:', {
+console.log('✅ FlightRequestAPI v8.8.3 모듈 로드 완료 - 무한루프 해결 + 취소기능 추가');
+console.log('🚨 v8.8.3 주요 개선사항:', {
     logMinimization: 'console.log 출력 대폭 최소화',
     initializationRetryReduction: '초기화 재시도 횟수 단축 (5회 → 2회)',
     timeoutReduction: '타임아웃 시간 단축 (5초 → 3초)',
     methodAliasSafety: '메서드 별칭 중복 설정 방지',
     errorHandling: 'throw 제거로 무한루프 방지',
-    performanceOptimization: '메모리 사용량 및 실행 시간 최적화'
+    performanceOptimization: '메모리 사용량 및 실행 시간 최적화',
+    // 🆕 v8.8.3 추가
+    cancelFlightRequest: '항공권 신청 취소 기능 (상태를 cancelled로 변경)',
+    deleteFlightRequest: '항공권 신청 삭제 기능 (완전 삭제)',
+    enhancedSecurity: '본인 신청만 취소/삭제 가능하도록 보안 강화'
+});
+console.log('🎯 v8.8.3 새로운 메서드:', {
+    cancelFlightRequest: '항공권 신청을 취소 상태로 변경 (데이터 보존)',
+    deleteFlightRequest: '항공권 신청을 완전히 삭제 (데이터 제거)',
+    securityFilter: '사용자 본인의 신청만 취소/삭제 가능',
+    statusTracking: '취소 일시 기록 및 상태 추적',
+    fallbackSupport: 'SupabaseCore 및 직접 Supabase 연결 모두 지원'
 });
