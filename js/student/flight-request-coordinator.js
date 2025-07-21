@@ -18,6 +18,7 @@ class FlightRequestCoordinator {
         this.ticket = null;
         this.api = null;
         this.utils = null;
+        this.formHandler = null;
         
         // 전역 상태 관리 (간소화)
         this.globalState = {
@@ -251,6 +252,9 @@ class FlightRequestCoordinator {
             // 8. 초기 상태 결정
             await this.determineInitialStateSafely();
             
+            // 🆕 v1.0.0: 폼 핸들러 초기화
+            await this.initializeFormHandler();
+
             // 9. 애플리케이션 시작
             this.startApplication();
             
@@ -263,6 +267,29 @@ class FlightRequestCoordinator {
             console.error('❌ [조정자] 초기화 실패:', error.message);
             this.handleInitializationError(error);
             return false;
+        }
+    }
+    
+    // === 🆕 v1.0.0: 폼 핸들러 초기화 ===
+    async initializeFormHandler() {
+        try {
+            console.log('🔄 [조정자] 폼 핸들러 초기화...');
+
+            if (typeof window.FlightRequestFormHandler === 'function') {
+                this.formHandler = new window.FlightRequestFormHandler();
+                const success = await this.formHandler.init(this.api, this.utils);
+
+                if (success) {
+                    console.log('✅ [조정자] 폼 핸들러 초기화 완료');
+                } else {
+                    console.warn('⚠️ [조정자] 폼 핸들러 초기화 실패');
+                }
+            } else {
+                console.warn('⚠️ [조정자] FlightRequestFormHandler 클래스를 찾을 수 없음');
+            }
+
+        } catch (error) {
+            console.error('❌ [조정자] 폼 핸들러 초기화 실패:', error);
         }
     }
 
