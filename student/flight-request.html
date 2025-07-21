@@ -549,7 +549,6 @@
     <!-- 4단계: 핵심 모듈들 (UI 모듈 제외) -->
     <script src="../js/student/flight-request-api.js" async></script>
     <script src="../js/student/flight-request-utils.js" async></script>
-    <script src="../js/student/flight-request-init.js" async></script>
     <script src="../js/student/flight-request-passport.js" async></script>
     <script src="../js/student/flight-request-ticket.js" async></script>
     <script src="../js/student/flight-request-coordinator.js" async></script>
@@ -558,26 +557,432 @@
     <script>
         console.log('🚀 v9.2.1: 완전 개선된 초기화 시스템 - 검증 로직 JS 모듈 완전 위임');
         
-        // 즉시 앱 표시 (UI만 담당)
-        function initializeAppImmediate() {
+        // 🔧 v9.3.0: init 모듈 기능 통합된 완전한 초기화
+        async function initializeAppImmediate() {
             const globalLoading = document.getElementById('globalLoadingState');
             const app = document.getElementById('app');
-            
+
             if (globalLoading) globalLoading.style.display = 'none';
             if (app) app.style.display = 'block';
-            
+
             // Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
-            
+
             // 기본 네비게이션 설정
             setupBasicNavigation();
-            
-           
-            console.log('✅ 기본 초기화 완료 - coordinator 로드 대기 중...');
+
+            try {
+                console.log('🚀 v9.3.0: 통합 초기화 시작 - init 모듈 기능 포함');
+
+                // 1. API 어댑터 연결 확인
+                await checkApiAdapterConnection();
+
+                // 2. 사용자 데이터 로드 및 표시
+                const userData = await loadAndDisplayUserDataDirect();
+
+                // 3. 필수활동일 정보 표시
+                await displayRequiredDaysInfoDirect(userData);
+
+                // 4. 여권정보 체크
+                await checkPassportStatusDirect(userData);
+
+                // 5. 기존 신청 내역 확인
+                await checkExistingRequestDirect(userData);
+
+                console.log('✅ v9.3.0: 통합 초기화 완료');
+
+            } catch (error) {
+                console.error('❌ v9.3.0: 통합 초기화 실패:', error);
+                showFallbackMode();
+            }
+
+            console.log('✅ 완전한 초기화 완료 - coordinator 로드 대기 중...');
         }
-        
+        // === 🆕 v9.3.0: init 모듈 기능들을 HTML로 통합 ===
+
+        // API 어댑터 연결 확인
+        async function checkApiAdapterConnection() {
+            try {
+                console.log('🔧 API 어댑터 연결 확인...');
+
+                if (!window.apiEventAdapter && !window.supabaseApiAdapter) {
+                    console.warn('⚠️ API 어댑터 없음');
+                    return false;
+                }
+
+                console.log('✅ API 어댑터 연결 확인 완료');
+                return true;
+
+            } catch (error) {
+                console.error('❌ API 어댑터 연결 확인 실패:', error);
+                return false;
+            }
+        }
+
+        // 사용자 데이터 직접 로드
+        async function loadAndDisplayUserDataDirect() {
+            try {
+                console.log('📊 사용자 데이터 로드...');
+
+                // localStorage에서 사용자 데이터 로드
+                const userDataStr = localStorage.getItem('currentStudent');
+                if (!userDataStr) {
+                    console.warn('⚠️ currentStudent 키에서 데이터 없음');
+
+                    // 이벤트 기반 데이터 로드 시도
+                    if (window.moduleEventBus) {
+                        return new Promise((resolve, reject) => {
+                            const timeout = setTimeout(() => {
+                                reject(new Error('사용자 데이터 로드 타임아웃'));
+                            }, 3000);
+
+                            window.moduleEventBus.emit('request:userProfile', {
+                                callback: (userData) => {
+                                    clearTimeout(timeout);
+                                    if (userData && userData.id) {
+                                        console.log('✅ 이벤트로 사용자 데이터 로드 완료:', userData.name || userData.email);
+                                        resolve(userData);
+                                    } else {
+                                        reject(new Error('유효하지 않은 사용자 데이터'));
+                                    }
+                                }
+                            });
+                        });
+                    }
+
+                    throw new Error('사용자 데이터 없음');
+                }
+
+                const userData = JSON.parse(userDataStr);
+
+                if (!userData.id) {
+                    throw new Error('사용자 ID 없음');
+                }
+
+                console.log('✅ localStorage에서 사용자 데이터 로드 완료:', userData.name || userData.email);
+                return userData;
+
+            } catch (error) {
+                console.error('❌ 사용자 데이터 로드 실패:', error);
+
+                // 로그인 페이지로 리다이렉트
+                setTimeout(() => {
+                    window.location.href = '/login.html';
+                }, 2000);
+
+                return null;
+            }
+        }
+
+        // 필수활동일 정보 직접 표시
+        async function displayRequiredDaysInfoDirect(userData) {
+            try {
+                console.log('📅 필수활동일 정보 표시...');
+
+                const requiredEl = document.getElementById('requiredDays');
+                if (!requiredEl) {
+                    console.warn('⚠️ requiredDays 요소 없음');
+                    return;
+                }
+
+                // 기본값 설정
+                let requiredDays = 90;
+                let maximumDays = 365;
+
+                // 사용자 데이터에서 직접 가져오기
+                if (userData) {
+                    requiredDays = userData.minimum_required_days || 90;
+                    maximumDays = userData.maximum_allowed_days || 365;
+                    console.log('✅ 사용자 데이터에서 활동일 정보 확인:', requiredDays, '일');
+                }
+
+                // API 어댑터를 통한 추가 확인 (선택적)
+                if (window.supabaseApiAdapter && userData && userData.id) {
+                    try {
+                        const response = await window.supabaseApiAdapter.getUserProfile(userData.id);
+                        if (response.success && response.data) {
+                            requiredDays = response.data.minimum_required_days || requiredDays;
+                            maximumDays = response.data.maximum_allowed_days || maximumDays;
+                            console.log('✅ API에서 활동일 정보 업데이트:', requiredDays, '일');
+                        }
+                    } catch (apiError) {
+                        console.warn('⚠️ API 호출 실패, 기존값 사용:', apiError);
+                    }
+                }
+
+                // UI 업데이트
+                requiredEl.textContent = requiredDays;
+                requiredEl.className = 'value required-days-value success';
+
+                const maximumEl = document.getElementById('maximumDays');
+                if (maximumEl) {
+                    maximumEl.textContent = maximumDays;
+                    maximumEl.className = 'value maximum-days-value success';
+                }
+
+                console.log('✅ 필수활동일 정보 표시 완료:', requiredDays, '일');
+                return { requiredDays, maximumDays };
+
+            } catch (error) {
+                console.error('❌ 필수활동일 정보 표시 실패:', error);
+
+                // 폴백: 기본값 설정
+                return setDefaultRequiredDaysDirect();
+            }
+        }
+
+        // 기본 필수활동일 직접 설정
+        function setDefaultRequiredDaysDirect() {
+            try {
+                const requiredEl = document.getElementById('requiredDays');
+                const maximumEl = document.getElementById('maximumDays');
+
+                if (requiredEl) {
+                    requiredEl.textContent = '90';
+                    requiredEl.className = 'value required-days-value fallback';
+
+                    if (maximumEl) {
+                        maximumEl.textContent = '365';
+                        maximumEl.className = 'value maximum-days-value fallback';
+                    }
+
+                    console.log('✅ 기본 필수활동일 설정 완료: 90일 (폴백)');
+                }
+
+                return { requiredDays: 90, maximumDays: 365 };
+
+            } catch (error) {
+                console.error('❌ 기본 필수활동일 설정 실패:', error);
+                return { requiredDays: 90, maximumDays: 365 };
+            }
+        }
+
+        // 여권정보 직접 체크
+        async function checkPassportStatusDirect(userData) {
+            try {
+                console.log('🔍 여권정보 체크...');
+
+                if (!userData || !userData.id) {
+                    console.warn('⚠️ 사용자 데이터 없음');
+                    showPassportStatusDirect(false);
+                    return;
+                }
+
+                if (window.supabaseApiAdapter && window.supabaseApiAdapter.getPassportInfo) {
+                    const response = await window.supabaseApiAdapter.getPassportInfo(userData.id);
+
+                    if (response.success && response.data) {
+                        console.log('✅ 여권 정보 확인됨');
+                        showPassportStatusDirect(true);
+                    } else {
+                        console.log('ℹ️ 여권 정보 없음');
+                        showPassportStatusDirect(false);
+                    }
+                } else if (window.moduleEventBus) {
+                    // 이벤트 기반 체크
+                    window.moduleEventBus.emit('request:passportInfo', {
+                        callback: (passportInfo) => {
+                            if (passportInfo) {
+                                console.log('✅ 여권 정보 확인됨 (이벤트)');
+                                showPassportStatusDirect(true);
+                            } else {
+                                console.log('ℹ️ 여권 정보 없음 (이벤트)');
+                                showPassportStatusDirect(false);
+                            }
+                        }
+                    });
+                }
+
+            } catch (error) {
+                console.error('❌ 여권정보 체크 실패:', error);
+                showPassportStatusDirect(false);
+            }
+        }
+
+        // 여권 상태 직접 표시
+        function showPassportStatusDirect(hasPassport) {
+            try {
+                const passportAlert = document.getElementById('passportAlert');
+                if (!passportAlert) return;
+
+                if (hasPassport) {
+                    passportAlert.style.display = 'none';
+                } else {
+                    passportAlert.style.display = 'block';
+                    passportAlert.innerHTML = `
+                        <i data-lucide="alert-triangle"></i>
+                        <div>
+                            <strong>여권정보 등록이 필요합니다</strong><br>
+                            항공권 신청을 위해서는 먼저 여권정보를 등록해주세요.
+                            <button id="registerPassportBtn" class="alert-link btn-link">여권정보 등록하기</button>
+                        </div>
+                    `;
+
+                    // 여권정보 등록 버튼 이벤트
+                    const registerBtn = document.getElementById('registerPassportBtn');
+                    if (registerBtn) {
+                        registerBtn.addEventListener('click', () => {
+                            if (window.flightRequestCoordinator?.showPassportInfoPage) {
+                                window.flightRequestCoordinator.showPassportInfoPage();
+                            } else {
+                                showPassportInfoPage();
+                            }
+                        });
+                    }
+
+                    // Lucide 아이콘 새로고침
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+
+            } catch (error) {
+                console.error('❌ 여권 상태 표시 실패:', error);
+            }
+        }
+
+        // 기존 신청 내역 직접 확인
+        async function checkExistingRequestDirect(userData) {
+            try {
+                console.log('📝 기존 신청 내역 확인...');
+
+                if (!userData || !userData.id) {
+                    console.warn('⚠️ 사용자 데이터 없음');
+                    enableNewRequestDirect();
+                    return;
+                }
+
+                if (window.supabaseApiAdapter && window.supabaseApiAdapter.getFlightRequest) {
+                    const response = await window.supabaseApiAdapter.getFlightRequest(userData.id);
+
+                    if (response.success && response.data) {
+                        console.log('✅ 기존 신청 내역 발견');
+                        showExistingRequestInfoDirect(response.data);
+                        disableNewRequestDirect();
+                    } else {
+                        console.log('ℹ️ 기존 신청 내역 없음, 새 신청 가능');
+                        enableNewRequestDirect();
+                    }
+                } else if (window.moduleEventBus) {
+                    // 이벤트 기반 체크
+                    window.moduleEventBus.emit('request:existingRequest', {
+                        callback: (existingRequest) => {
+                            if (existingRequest) {
+                                console.log('✅ 기존 신청 내역 발견 (이벤트)');
+                                showExistingRequestInfoDirect(existingRequest);
+                                disableNewRequestDirect();
+                            } else {
+                                console.log('ℹ️ 기존 신청 내역 없음 (이벤트)');
+                                enableNewRequestDirect();
+                            }
+                        }
+                    });
+                } else {
+                    // 어댑터 없으면 기본적으로 신청 허용
+                    enableNewRequestDirect();
+                }
+
+            } catch (error) {
+                console.error('❌ 기존 신청 내역 확인 실패:', error);
+                // 오류 시 기본적으로 신청 허용
+                enableNewRequestDirect();
+            }
+        }
+
+        // 기존 신청 정보 직접 표시
+        function showExistingRequestInfoDirect(requestData) {
+            try {
+                const existingRequest = document.getElementById('existingRequest');
+                if (!existingRequest) return;
+
+                const statusText = getStatusTextDirect(requestData.status);
+                const statusClass = getStatusClassDirect(requestData.status);
+
+                existingRequest.innerHTML = `
+                    <div class="alert ${statusClass}">
+                        <strong>기존 신청 내역</strong><br>
+                        상태: ${statusText}<br>
+                        신청일: ${new Date(requestData.created_at).toLocaleDateString()}<br>
+                        구매방식: ${requestData.purchase_method === 'direct' ? '직접구매' : '구매대행'}
+                    </div>
+                `;
+                existingRequest.style.display = 'block';
+
+            } catch (error) {
+                console.error('❌ 기존 신청 정보 표시 실패:', error);
+            }
+        }
+
+        // 상태 텍스트 직접 변환
+        function getStatusTextDirect(status) {
+            const statusMap = {
+                'pending': '검토 중',
+                'approved': '승인됨', 
+                'rejected': '반려됨',
+                'completed': '완료됨'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 상태 클래스 직접 변환
+        function getStatusClassDirect(status) {
+            const classMap = {
+                'pending': 'alert-warning',
+                'approved': 'alert-success',
+                'rejected': 'alert-danger',
+                'completed': 'alert-info'
+            };
+            return classMap[status] || 'alert-secondary';
+        }
+
+        // 신규 신청 직접 비활성화
+        function disableNewRequestDirect() {
+            try {
+                const requestForm = document.getElementById('requestForm');
+                if (requestForm) {
+                    requestForm.style.display = 'none';
+                }
+
+                console.log('✅ 신규 신청 비활성화 완료');
+
+            } catch (error) {
+                console.error('❌ 신규 신청 비활성화 실패:', error);
+            }
+        }
+
+        // 신규 신청 직접 활성화
+        function enableNewRequestDirect() {
+            try {
+                const requestForm = document.getElementById('requestForm');
+                if (requestForm) {
+                    requestForm.style.display = 'block';
+                }
+
+                console.log('✅ 신규 신청 활성화 완료');
+
+            } catch (error) {
+                console.error('❌ 신규 신청 활성화 실패:', error);
+            }
+        }
+
+        // 폴백 모드 표시
+        function showFallbackMode() {
+            try {
+                const requiredEl = document.getElementById('requiredDays');
+                if (requiredEl && requiredEl.textContent === '로딩중...') {
+                    requiredEl.textContent = '기본값';
+                    requiredEl.className = 'value required-days-value fallback';
+                    requiredEl.title = '일부 기능 제한 - 페이지를 새로고침해주세요';
+                }
+
+                console.log('🚨 폴백 모드 활성화');
+
+            } catch (error) {
+                console.error('❌ 폴백 모드 표시 실패:', error);
+            }
+        }
         function setupBasicNavigation() {
             // 대시보드로 돌아가기
             const backBtn = document.getElementById('backToDashboard');
@@ -993,83 +1398,50 @@
 
 
         
-        // 🔧 v9.2.1: Coordinator와 동기화된 로드 체크
+        // 🔧 v9.3.0: init 모듈 의존성 제거된 Coordinator 로드 체크
         function waitForCoordinatorAndInit() {
             const checkCoordinator = () => {
                 if (window.flightRequestCoordinator && window.flightRequestCoordinator.isInitialized) {
-                    console.log('✅ FlightRequestCoordinator 초기화 완료');
-                    
-                    // 초기화 모듈 상태 확인
-                    const initModule = window.flightRequestCoordinator.getModule('init');
-                    if (initModule) {
-                        const initStatus = initModule.getInitStatus();
-                        console.log('✅ 초기화 모듈 상태:', initStatus);
-                        
-                        // ✅ v9.2.1: 사용자 데이터가 로드되었으면 필수활동일 업데이트
-                        const userRequirements = initModule.getUserRequirements();
-                        if (userRequirements && userRequirements.userRequiredDays) {
-                            const requiredEl = document.getElementById('requiredDays');
-                            if (requiredEl) {
-                                requiredEl.textContent = userRequirements.userRequiredDays;
-                                requiredEl.className = 'value required-days-value success';
-                            }
-                        }
-                    }
-                    
+                    console.log('✅ FlightRequestCoordinator 초기화 완료 (init 모듈 없이)');
                     return true;
-                } else if (window.coordinatorLoadAttempts < 30) { // 🔧 v9.2.1: 30회로 제한 (Coordinator와 동기화)
+                } else if (window.coordinatorLoadAttempts < 30) {
                     window.coordinatorLoadAttempts = (window.coordinatorLoadAttempts || 0) + 1;
                     setTimeout(checkCoordinator, 100);
                 } else {
                     console.warn('⚠️ FlightRequestCoordinator 로드 타임아웃 - 기본 기능으로 동작');
-                    
-                    // ✅ v9.2.1: 타임아웃 시 사용자에게 알림 (기본값 제거)
-                    const requiredEl = document.getElementById('requiredDays');
-                    if (requiredEl && requiredEl.textContent === '로딩중...') {
-                        requiredEl.textContent = '알 수 없음';
-                        requiredEl.className = 'value required-days-value error';
-                        requiredEl.title = '시스템 로딩 제한시간 초과 - 페이지를 새로고침해주세요';
-                    }
-                    
                     return false;
                 }
             };
-            
+
             setTimeout(checkCoordinator, 500);
         }
         
-        waitForCoordinatorAndInit();
     </script>
 
-    <!-- 6단계: 에러 처리 -->
     <script>
+    // 6단계: 에러 처리 (init 모듈 제거)
+
         window.addEventListener('error', function(event) {
             console.error('전역 에러:', event.error);
-            
+
             // 스크립트 로딩 에러 처리
             if (event.target?.tagName === 'SCRIPT') {
                 console.warn('스크립트 로딩 실패:', event.target.src);
-                
-                // 특정 모듈 실패 시 대응
-                if (event.target.src.includes('flight-request-init')) {
-                    console.log('🔄 초기화 모듈 로딩 실패 - 페이지 새로고침 권장');
-                    // ✅ v9.2.1: 하드코딩된 기본값 제거, 사용자에게 알림
+
+                // coordinator나 다른 중요 모듈 실패 시 폴백
+                if (event.target.src.includes('flight-request-coordinator')) {
                     setTimeout(() => {
-                        const requiredEl = document.getElementById('requiredDays');
-                        if (requiredEl && requiredEl.textContent === '로딩중...') {
-                            requiredEl.textContent = '로딩 실패';
-                            requiredEl.className = 'value required-days-value error';
-                            requiredEl.title = '초기화 모듈 로딩 실패 - 페이지를 새로고침해주세요';
-                        }
+                        showFallbackMode();
                     }, 1000);
                 }
             }
         });
-        
+
         window.addEventListener('unhandledrejection', function(event) {
             console.error('미처리 Promise 거부:', event.reason);
         });
     </script>
+
 
     <!-- 7단계: Lucide 아이콘 최종 초기화 -->
     <script>
