@@ -1,20 +1,20 @@
-// FlightRequestInit v1.2.1 - 무한루프 긴급 수정
+// FlightRequestInit v1.2.2 - localStorage 키 수정
 // 이벤트 발행 최소화 및 중복 방지
 
 /**
- * 🚨 긴급 수정: v1.2.1 - 이벤트 시스템 무한루프 완전 제거
+ * 🚨 긴급 수정: v1.2.2 - localStorage 키 수정
  * 
  * 주요 수정사항:
- * 1. 이벤트 발행 전 중복 체크
- * 2. 초기화 완료 후 추가 이벤트 발행 방지
- * 3. emit 호출 최소화
- * 4. 안전한 초기화 패턴 적용
- * 5. 폴백 시스템 강화
+ * 1. localStorage 키 수정: 'userData' → 'currentStudent'
+ * 2. API Event Adapter와 호환성 개선
+ * 3. 이벤트 기반 데이터 로드 대체 방안 추가
+ * 4. 이벤트 발행 전 중복 체크
+ * 5. 초기화 완료 후 추가 이벤트 발행 방지
  */
 
 class FlightRequestInit {
     constructor() {
-        this.version = "1.2.1";
+        this.version = "1.2.2";
         this.userData = null;
         this.userRequiredDays = null;
         this.userMaximumDays = null;
@@ -36,7 +36,7 @@ class FlightRequestInit {
             existingRequestChecked: false
         };
         
-        console.log(`🔧 FlightRequestInit v${this.version} 생성 (무한루프 방지 시스템 활성화)`);
+        console.log(`🔧 FlightRequestInit v${this.version} 생성 (localStorage 키 수정)`);
     }
 
     // 🚨 안전한 이벤트 발행 (무한루프 방지)
@@ -178,8 +178,9 @@ class FlightRequestInit {
         try {
             console.log('🔧 API 어댑터 연동...');
             
-            if (!window.supabaseApiAdapter) {
-                console.warn('⚠️ Supabase API 어댑터 없음');
+            // window.apiEventAdapter 확인 (api-event-adapter.js가 생성하는 인스턴스)
+            if (!window.apiEventAdapter && !window.supabaseApiAdapter) {
+                console.warn('⚠️ API 어댑터 없음');
                 return false;
             }
             
@@ -193,14 +194,39 @@ class FlightRequestInit {
         }
     }
 
-    // 📊 사용자 데이터 로드 및 표시
+    // 📊 사용자 데이터 로드 및 표시 (v1.2.2: localStorage 키 수정)
     async loadAndDisplayUserData() {
         try {
             console.log('📊 사용자 데이터 로드...');
             
-            // localStorage에서 사용자 데이터 읽기
-            const userDataStr = localStorage.getItem('userData');
+            // 🔧 v1.2.2: 'currentStudent' 키 사용 (api-event-adapter.js와 동일)
+            const userDataStr = localStorage.getItem('currentStudent');
             if (!userDataStr) {
+                console.warn('⚠️ currentStudent 키에서 데이터 없음, 이벤트 기반 로드 시도...');
+                
+                // 이벤트 기반 데이터 로드 시도
+                if (window.moduleEventBus) {
+                    return new Promise((resolve, reject) => {
+                        const timeout = setTimeout(() => {
+                            reject(new Error('사용자 데이터 로드 타임아웃'));
+                        }, 3000);
+                        
+                        window.moduleEventBus.emit('request:userProfile', {
+                            callback: (userData) => {
+                                clearTimeout(timeout);
+                                if (userData && userData.id) {
+                                    this.userData = userData;
+                                    this.initStatus.userDataLoaded = true;
+                                    console.log(`✅ 이벤트로 사용자 데이터 로드 완료: ${userData.name || userData.email}`);
+                                    resolve();
+                                } else {
+                                    reject(new Error('유효하지 않은 사용자 데이터'));
+                                }
+                            }
+                        });
+                    });
+                }
+                
                 throw new Error('사용자 데이터 없음');
             }
             
@@ -211,7 +237,7 @@ class FlightRequestInit {
             }
             
             this.initStatus.userDataLoaded = true;
-            console.log(`✅ 사용자 데이터 로드 완료: ${this.userData.name || this.userData.email}`);
+            console.log(`✅ localStorage에서 사용자 데이터 로드 완료: ${this.userData.name || this.userData.email}`);
             
         } catch (error) {
             console.error('❌ 사용자 데이터 로드 실패:', error);
@@ -241,17 +267,27 @@ class FlightRequestInit {
             let requiredDays = 90;
             let maximumDays = 365;
             
-            // API 어댑터를 통한 사용자 정보 조회 (1회만)
-            if (window.supabaseApiAdapter && this.userData && this.userData.id) {
+            // 사용자 데이터에서 직접 가져오기 (이미 로드됨)
+            if (this.userData) {
+                requiredDays = this.userData.minimum_required_days || 90;
+                maximumDays = this.userData.maximum_allowed_days || 365;
+                console.log(`✅ 사용자 데이터에서 활동일 정보 확인: 필수 ${requiredDays}일, 최대 ${maximumDays}일`);
+            }
+            
+            // API 어댑터를 통한 추가 확인 (선택적)
+            if ((window.apiEventAdapter || window.supabaseApiAdapter) && this.userData && this.userData.id) {
                 try {
-                    const response = await window.supabaseApiAdapter.getUserProfile(this.userData.id);
-                    if (response.success && response.data) {
-                        requiredDays = response.data.minimum_required_days || 90;
-                        maximumDays = response.data.maximum_allowed_days || 365;
-                        console.log(`✅ API에서 활동일 정보 조회: 필수 ${requiredDays}일, 최대 ${maximumDays}일`);
+                    // supabaseApiAdapter가 있으면 사용
+                    if (window.supabaseApiAdapter && window.supabaseApiAdapter.getUserProfile) {
+                        const response = await window.supabaseApiAdapter.getUserProfile(this.userData.id);
+                        if (response.success && response.data) {
+                            requiredDays = response.data.minimum_required_days || requiredDays;
+                            maximumDays = response.data.maximum_allowed_days || maximumDays;
+                            console.log(`✅ API에서 활동일 정보 업데이트: 필수 ${requiredDays}일, 최대 ${maximumDays}일`);
+                        }
                     }
                 } catch (apiError) {
-                    console.warn('⚠️ API 호출 실패, 기본값 사용:', apiError);
+                    console.warn('⚠️ API 호출 실패, 기존값 사용:', apiError);
                 }
             }
             
@@ -383,20 +419,36 @@ class FlightRequestInit {
         try {
             console.log('🔍 여권정보 체크...');
             
-            if (!window.supabaseApiAdapter || !this.userData || !this.userData.id) {
+            if ((!window.apiEventAdapter && !window.supabaseApiAdapter) || !this.userData || !this.userData.id) {
                 console.warn('⚠️ API 어댑터 또는 사용자 데이터 없음');
                 this.initStatus.passportCheckCompleted = false;
                 return;
             }
             
-            const response = await window.supabaseApiAdapter.getPassportInfo(this.userData.id);
-            
-            if (response.success && response.data) {
-                console.log('✅ 여권 정보 확인됨');
-                this.showPassportStatus(true);
-            } else {
-                console.log('ℹ️ 여권 정보 없음');
-                this.showPassportStatus(false);
+            // supabaseApiAdapter 우선 사용
+            if (window.supabaseApiAdapter && window.supabaseApiAdapter.getPassportInfo) {
+                const response = await window.supabaseApiAdapter.getPassportInfo(this.userData.id);
+                
+                if (response.success && response.data) {
+                    console.log('✅ 여권 정보 확인됨');
+                    this.showPassportStatus(true);
+                } else {
+                    console.log('ℹ️ 여권 정보 없음');
+                    this.showPassportStatus(false);
+                }
+            } else if (window.moduleEventBus) {
+                // 이벤트 기반 체크
+                window.moduleEventBus.emit('request:passportInfo', {
+                    callback: (passportInfo) => {
+                        if (passportInfo) {
+                            console.log('✅ 여권 정보 확인됨 (이벤트)');
+                            this.showPassportStatus(true);
+                        } else {
+                            console.log('ℹ️ 여권 정보 없음 (이벤트)');
+                            this.showPassportStatus(false);
+                        }
+                    }
+                });
             }
             
             this.initStatus.passportCheckCompleted = true;
@@ -443,23 +495,40 @@ class FlightRequestInit {
         try {
             console.log('📝 기존 신청 내역 확인...');
             
-            if (!window.supabaseApiAdapter || !this.userData || !this.userData.id) {
+            if ((!window.apiEventAdapter && !window.supabaseApiAdapter) || !this.userData || !this.userData.id) {
                 console.warn('⚠️ API 어댑터 또는 사용자 데이터 없음');
                 this.initStatus.existingRequestChecked = false;
                 return;
             }
             
-            const response = await window.supabaseApiAdapter.getFlightRequest(this.userData.id);
-            
-            if (response.success && response.data) {
-                console.log('✅ 기존 신청 내역 발견');
-                this.showExistingRequestInfo(response.data);
+            // supabaseApiAdapter 우선 사용
+            if (window.supabaseApiAdapter && window.supabaseApiAdapter.getFlightRequest) {
+                const response = await window.supabaseApiAdapter.getFlightRequest(this.userData.id);
                 
-                // 기존 신청이 있으면 신규 신청 비활성화
-                this.disableNewRequest();
-            } else {
-                console.log('ℹ️ 기존 신청 내역 없음, 새 신청 가능');
-                this.enableNewRequest();
+                if (response.success && response.data) {
+                    console.log('✅ 기존 신청 내역 발견');
+                    this.showExistingRequestInfo(response.data);
+                    
+                    // 기존 신청이 있으면 신규 신청 비활성화
+                    this.disableNewRequest();
+                } else {
+                    console.log('ℹ️ 기존 신청 내역 없음, 새 신청 가능');
+                    this.enableNewRequest();
+                }
+            } else if (window.moduleEventBus) {
+                // 이벤트 기반 체크
+                window.moduleEventBus.emit('request:existingRequest', {
+                    callback: (existingRequest) => {
+                        if (existingRequest) {
+                            console.log('✅ 기존 신청 내역 발견 (이벤트)');
+                            this.showExistingRequestInfo(existingRequest);
+                            this.disableNewRequest();
+                        } else {
+                            console.log('ℹ️ 기존 신청 내역 없음 (이벤트)');
+                            this.enableNewRequest();
+                        }
+                    }
+                });
             }
             
             this.initStatus.existingRequestChecked = true;
