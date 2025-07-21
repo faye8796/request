@@ -1,15 +1,17 @@
-// flight-request-ticket.js - v2.2.0 항공권 날짜 검증 로직 추가
+// flight-request-ticket.js - v2.3.0 required_return_date 기반 귀국일 검증 추가
 // 🎯 핵심 책임:
 //   1. 현지 활동기간 검증 로직 (항공권 날짜와 독립적)
-//   2. 🆕 v2.2.0: 항공권 날짜 실시간 검증 로직 (활동기간 기반)
-//   3. 🆕 v2.1.0: 모든 항공권 정보 입력창 활성화/비활성화 통합 관리
-//   4. 🆕 v2.1.0: 초기화 모듈의 이벤트를 수신하여 UI 제어
-//   5. 항공권 정보 이미지 등록 및 Supabase 등록 기능
+//   2. 🆕 v2.3.0: required_return_date 기반 귀국일 상한선 검증 추가
+//   3. 🆕 v2.2.0: 항공권 날짜 실시간 검증 로직 (활동기간 기반)
+//   4. 🆕 v2.1.0: 모든 항공권 정보 입력창 활성화/비활성화 통합 관리
+//   5. 🆕 v2.1.0: 초기화 모듈의 이벤트를 수신하여 UI 제어
+//   6. 항공권 정보 이미지 등록 및 Supabase 등록 기능
 // 🔧 분리 완료: 초기화 로직은 flight-request-init.js로 완전 이전
 // 🔧 v2.1.0: 단일 책임 원칙 - 항공권 섹션 제어의 유일한 관리 주체
 // 🆕 v2.2.0: 활동기간 기반 항공권 날짜 검증 시스템 완성
+// 🆕 v2.3.0: DB required_return_date 기반 귀국일 상한선 검증 추가
 
-console.log('🚀 FlightRequestTicket v2.2.0 로딩 시작 - 항공권 날짜 검증 로직 추가');
+console.log('🚀 FlightRequestTicket v2.3.0 로딩 시작 - required_return_date 기반 귀국일 검증 추가');
 
 // ================================
 // 파트 1: 메인 FlightRequestTicket 클래스
@@ -17,7 +19,7 @@ console.log('🚀 FlightRequestTicket v2.2.0 로딩 시작 - 항공권 날짜 �
 
 class FlightRequestTicket {
     constructor(apiService, uiService, passportService) {
-        console.log('🔄 [티켓모듈] FlightRequestTicket v2.2.0 생성 - 항공권 날짜 검증 시스템');
+        console.log('🔄 [티켓모듈] FlightRequestTicket v2.3.0 생성 - required_return_date 검증 시스템');
         
         // 의존성 주입 (초기화 모듈에서 주입)
         this.apiService = apiService;
@@ -76,11 +78,12 @@ class FlightRequestTicket {
             }
         };
         
-        // 🔧 v2.1.0: 사용자별 활동 요구사항 (초기화 모듈에서 주입)
+        // 🔧 v2.3.0: 사용자별 활동 요구사항 (required_return_date 추가)
         this.userRequirements = {
             userRequiredDays: null,
             userMaximumDays: null,
             dispatchEndDate: null,
+            requiredReturnDate: null, // 🆕 v2.3.0: DB 저장된 필수 귀국일
             isLoaded: false
         };
         
@@ -108,7 +111,7 @@ class FlightRequestTicket {
         this.ticketImageFile = null;
         this.receiptImageFile = null;
         
-        console.log('✅ [티켓모듈] FlightRequestTicket v2.2.0 생성 완료');
+        console.log('✅ [티켓모듈] FlightRequestTicket v2.3.0 생성 완료');
         this.init();
     }
 
@@ -118,7 +121,7 @@ class FlightRequestTicket {
 
     init() {
         try {
-            console.log('🔄 [티켓모듈] v2.2.0 통합 초기화 시작...');
+            console.log('🔄 [티켓모듈] v2.3.0 통합 초기화 시작...');
             
             // 🆕 v2.1.0: 이벤트 시스템 설정 (최우선)
             this.setupEventSystem();
@@ -134,16 +137,16 @@ class FlightRequestTicket {
             // 🆕 v2.2.0: 항공권 날짜 검증 시스템 초기화
             this.initFlightDateValidation();
             
-            console.log('✅ [티켓모듈] v2.2.0 통합 초기화 완료');
+            console.log('✅ [티켓모듈] v2.3.0 통합 초기화 완료');
         } catch (error) {
-            console.error('❌ [티켓모듈] v2.2.0 초기화 실패:', error);
+            console.error('❌ [티켓모듈] v2.3.0 초기화 실패:', error);
         }
     }
 
     // === 🆕 v2.2.0: 항공권 날짜 검증 시스템 초기화 ===
     initFlightDateValidation() {
         try {
-            console.log('🔄 [항공권검증] v2.2.0: 날짜 검증 시스템 초기화...');
+            console.log('🔄 [항공권검증] v2.3.0: 날짜 검증 시스템 초기화...');
             
             // 검증 UI 요소 생성
             this.createFlightDateValidationUI();
@@ -151,17 +154,17 @@ class FlightRequestTicket {
             // 검증 이벤트 리스너 추가
             this.setupFlightDateValidationEvents();
             
-            console.log('✅ [항공권검증] v2.2.0: 날짜 검증 시스템 초기화 완료');
+            console.log('✅ [항공권검증] v2.3.0: 날짜 검증 시스템 초기화 완료');
             
         } catch (error) {
-            console.error('❌ [항공권검증] v2.2.0: 날짜 검증 시스템 초기화 실패:', error);
+            console.error('❌ [항공권검증] v2.3.0: 날짜 검증 시스템 초기화 실패:', error);
         }
     }
 
     // === 🆕 v2.2.0: 항공권 날짜 검증 UI 생성 ===
     createFlightDateValidationUI() {
         try {
-            console.log('🔄 [항공권검증UI] v2.2.0: 검증 UI 요소 생성...');
+            console.log('🔄 [항공권검증UI] v2.3.0: 검증 UI 요소 생성...');
             
             // 출국일 오류 메시지 영역 생성
             const departureDateInput = document.getElementById('departureDate');
@@ -186,10 +189,10 @@ class FlightRequestTicket {
             // CSS 스타일 추가
             this.addFlightDateValidationStyles();
             
-            console.log('✅ [항공권검증UI] v2.2.0: 검증 UI 요소 생성 완료');
+            console.log('✅ [항공권검증UI] v2.3.0: 검증 UI 요소 생성 완료');
             
         } catch (error) {
-            console.error('❌ [항공권검증UI] v2.2.0: 검증 UI 요소 생성 실패:', error);
+            console.error('❌ [항공권검증UI] v2.3.0: 검증 UI 요소 생성 실패:', error);
         }
     }
 
@@ -246,14 +249,14 @@ class FlightRequestTicket {
             document.head.appendChild(style);
             
         } catch (error) {
-            console.error('❌ [항공권검증스타일] v2.2.0: 스타일 추가 실패:', error);
+            console.error('❌ [항공권검증스타일] v2.3.0: 스타일 추가 실패:', error);
         }
     }
 
     // === 🆕 v2.2.0: 항공권 날짜 검증 이벤트 설정 ===
     setupFlightDateValidationEvents() {
         try {
-            console.log('🔄 [항공권검증이벤트] v2.2.0: 검증 이벤트 설정...');
+            console.log('🔄 [항공권검증이벤트] v2.3.0: 검증 이벤트 설정...');
             
             // 출국일 검증 이벤트
             const departureDateInput = document.getElementById('departureDate');
@@ -283,15 +286,15 @@ class FlightRequestTicket {
                 });
             }
             
-            console.log('✅ [항공권검증이벤트] v2.2.0: 검증 이벤트 설정 완료');
+            console.log('✅ [항공권검증이벤트] v2.3.0: 검증 이벤트 설정 완료');
             
         } catch (error) {
-            console.error('❌ [항공권검증이벤트] v2.2.0: 검증 이벤트 설정 실패:', error);
+            console.error('❌ [항공권검증이벤트] v2.3.0: 검증 이벤트 설정 실패:', error);
         }
     }
 
     // ================================
-    // 파트 3: 🆕 v2.2.0 항공권 날짜 검증 로직
+    // 파트 3: 🆕 v2.3.0 항공권 날짜 검증 로직 (required_return_date 추가)
     // ================================
 
     // === 🆕 v2.2.0: 디바운스된 항공권 날짜 검증 ===
@@ -306,18 +309,18 @@ class FlightRequestTicket {
             }, 300);
             
         } catch (error) {
-            console.error(`❌ [디바운스검증] v2.2.0: ${dateType} 검증 실패:`, error);
+            console.error(`❌ [디바운스검증] v2.3.0: ${dateType} 검증 실패:`, error);
         }
     }
 
     // === 🆕 v2.2.0: 즉시 항공권 날짜 검증 ===
     validateFlightDateImmediate(dateType) {
         try {
-            console.log(`🔄 [즉시검증] v2.2.0: ${dateType} 날짜 검증...`);
+            console.log(`🔄 [즉시검증] v2.3.0: ${dateType} 날짜 검증...`);
             
             // 활동기간 데이터 확인
             if (!this.ticketData.actualArrivalDate || !this.ticketData.actualWorkEndDate) {
-                console.log('⚠️ [즉시검증] v2.2.0: 활동기간 데이터 없음 - 검증 스킵');
+                console.log('⚠️ [즉시검증] v2.3.0: 활동기간 데이터 없음 - 검증 스킵');
                 return;
             }
             
@@ -331,7 +334,7 @@ class FlightRequestTicket {
             this.updateOverallFlightDateValidation();
             
         } catch (error) {
-            console.error(`❌ [즉시검증] v2.2.0: ${dateType} 검증 실패:`, error);
+            console.error(`❌ [즉시검증] v2.3.0: ${dateType} 검증 실패:`, error);
         }
     }
 
@@ -380,15 +383,15 @@ class FlightRequestTicket {
             // ticketData 업데이트
             this.ticketData.departureDate = departureDate;
             
-            console.log(`✅ [출국일검증] v2.2.0: 검증 완료 - ${this.flightDateValidation.departureValid ? '유효' : '무효'}`);
+            console.log(`✅ [출국일검증] v2.3.0: 검증 완료 - ${this.flightDateValidation.departureValid ? '유효' : '무효'}`);
             
         } catch (error) {
-            console.error('❌ [출국일검증] v2.2.0: 검증 실패:', error);
+            console.error('❌ [출국일검증] v2.3.0: 검증 실패:', error);
             this.flightDateValidation.departureValid = false;
         }
     }
 
-    // === 🆕 v2.2.0: 귀국일 검증 ===
+    // === 🔧 v2.3.0: 귀국일 검증 (required_return_date 추가) ===
     validateReturnDate() {
         try {
             const returnDateInput = document.getElementById('returnDate');
@@ -405,15 +408,37 @@ class FlightRequestTicket {
             const returnD = new Date(returnDate);
             const workEnd = new Date(this.ticketData.actualWorkEndDate);
             
-            // 검증 범위 계산: 학당 근무 종료일 < 귀국일 < (학당 근무 종료일 +10일)
+            // 🆕 v2.3.0: required_return_date 검증 (우선순위 1)
+            if (this.userRequirements.requiredReturnDate) {
+                const requiredReturnDate = new Date(this.userRequirements.requiredReturnDate);
+                
+                if (returnD > requiredReturnDate) {
+                    this.showValidationError('return', 
+                        `귀국일은 필수 귀국일(${this.formatDate(requiredReturnDate)}) 이전이어야 합니다.`);
+                    this.flightDateValidation.returnValid = false;
+                    this.ticketData.returnDate = returnDate;
+                    return; // 가장 제한적인 조건이므로 여기서 종료
+                }
+            }
+            
+            // 기존 검증 범위 계산: 학당 근무 종료일 < 귀국일 < (학당 근무 종료일 +10일)
             const minReturnDate = workEnd;
             const maxReturnDate = new Date(workEnd);
             maxReturnDate.setDate(workEnd.getDate() + 10);
             
-            // 검증 범위 저장
+            // 🔧 v2.3.0: required_return_date와 기존 범위 중 더 제한적인 것 선택
+            let effectiveMaxReturnDate = maxReturnDate;
+            if (this.userRequirements.requiredReturnDate) {
+                const requiredReturnDate = new Date(this.userRequirements.requiredReturnDate);
+                if (requiredReturnDate < maxReturnDate) {
+                    effectiveMaxReturnDate = requiredReturnDate;
+                }
+            }
+            
+            // 검증 범위 저장 (효과적인 최대 날짜로 업데이트)
             this.flightDateValidation.validationRanges.return = {
                 min: minReturnDate,
-                max: maxReturnDate
+                max: effectiveMaxReturnDate
             };
             
             // 검증 수행
@@ -421,9 +446,15 @@ class FlightRequestTicket {
                 this.showValidationError('return', 
                     `귀국일은 학당 근무 종료일(${this.formatDate(workEnd)}) 이후여야 합니다.`);
                 this.flightDateValidation.returnValid = false;
-            } else if (returnD > maxReturnDate) {
-                this.showValidationError('return', 
-                    `귀국일은 학당 근무 종료일(${this.formatDate(workEnd)}) 10일 이내인 ${this.formatDate(maxReturnDate)} 이전이어야 합니다.`);
+            } else if (returnD > effectiveMaxReturnDate) {
+                // 🆕 v2.3.0: 어떤 제한조건에 의해 거부되었는지 명확히 표시
+                if (this.userRequirements.requiredReturnDate && effectiveMaxReturnDate.getTime() === new Date(this.userRequirements.requiredReturnDate).getTime()) {
+                    this.showValidationError('return', 
+                        `귀국일은 필수 귀국일(${this.formatDate(effectiveMaxReturnDate)}) 이전이어야 합니다.`);
+                } else {
+                    this.showValidationError('return', 
+                        `귀국일은 학당 근무 종료일(${this.formatDate(workEnd)}) 10일 이내인 ${this.formatDate(effectiveMaxReturnDate)} 이전이어야 합니다.`);
+                }
                 this.flightDateValidation.returnValid = false;
             } else {
                 this.clearValidationMessage('return');
@@ -433,10 +464,10 @@ class FlightRequestTicket {
             // ticketData 업데이트
             this.ticketData.returnDate = returnDate;
             
-            console.log(`✅ [귀국일검증] v2.2.0: 검증 완료 - ${this.flightDateValidation.returnValid ? '유효' : '무효'}`);
+            console.log(`✅ [귀국일검증] v2.3.0: 검증 완료 - ${this.flightDateValidation.returnValid ? '유효' : '무효'}`);
             
         } catch (error) {
-            console.error('❌ [귀국일검증] v2.2.0: 검증 실패:', error);
+            console.error('❌ [귀국일검증] v2.3.0: 검증 실패:', error);
             this.flightDateValidation.returnValid = false;
         }
     }
@@ -469,7 +500,7 @@ class FlightRequestTicket {
             }
             
         } catch (error) {
-            console.error(`❌ [검증오류표시] v2.2.0: ${dateType} 오류 표시 실패:`, error);
+            console.error(`❌ [검증오류표시] v2.3.0: ${dateType} 오류 표시 실패:`, error);
         }
     }
 
@@ -493,7 +524,7 @@ class FlightRequestTicket {
             }
             
         } catch (error) {
-            console.error(`❌ [검증메시지제거] v2.2.0: ${dateType} 메시지 제거 실패:`, error);
+            console.error(`❌ [검증메시지제거] v2.3.0: ${dateType} 메시지 제거 실패:`, error);
         }
     }
 
@@ -516,10 +547,10 @@ class FlightRequestTicket {
                 timestamp: this.flightDateValidation.lastValidationTime
             });
             
-            console.log(`✅ [전체검증상태] v2.2.0: 업데이트 완료 - ${overallValid ? '전체 유효' : '일부 무효'}`);
+            console.log(`✅ [전체검증상태] v2.3.0: 업데이트 완료 - ${overallValid ? '전체 유효' : '일부 무효'}`);
             
         } catch (error) {
-            console.error('❌ [전체검증상태] v2.2.0: 업데이트 실패:', error);
+            console.error('❌ [전체검증상태] v2.3.0: 업데이트 실패:', error);
         }
     }
 
@@ -536,7 +567,7 @@ class FlightRequestTicket {
             return `${year}-${month}-${day}`;
             
         } catch (error) {
-            console.error('❌ [날짜포맷] v2.2.0: 포맷 실패:', error);
+            console.error('❌ [날짜포맷] v2.3.0: 포맷 실패:', error);
             return '';
         }
     }
@@ -544,7 +575,7 @@ class FlightRequestTicket {
     // === 🆕 v2.2.0: 활동기간 변경 시 항공권 날짜 재검증 ===
     revalidateFlightDatesOnActivityChange() {
         try {
-            console.log('🔄 [재검증] v2.2.0: 활동기간 변경으로 항공권 날짜 재검증...');
+            console.log('🔄 [재검증] v2.3.0: 활동기간 변경으로 항공권 날짜 재검증...');
             
             // 현재 입력된 항공권 날짜가 있으면 재검증
             const departureDate = document.getElementById('departureDate')?.value;
@@ -558,21 +589,21 @@ class FlightRequestTicket {
                 this.validateFlightDateImmediate('return');
             }
             
-            console.log('✅ [재검증] v2.2.0: 항공권 날짜 재검증 완료');
+            console.log('✅ [재검증] v2.3.0: 항공권 날짜 재검증 완료');
             
         } catch (error) {
-            console.error('❌ [재검증] v2.2.0: 항공권 날짜 재검증 실패:', error);
+            console.error('❌ [재검증] v2.3.0: 항공권 날짜 재검증 실패:', error);
         }
     }
 
     // ================================
-    // 파트 4: 🔧 v2.2.0 기존 메서드 업데이트
+    // 파트 4: 🔧 v2.3.0 기존 메서드 업데이트
     // ================================
 
     // === 🔧 v2.2.0: 활동기간 날짜 변경 처리 업데이트 ===
     handleActivityDateChange(type) {
         try {
-            console.log(`🔄 [활동기간] v2.2.0: ${type} 날짜 변경 처리...`);
+            console.log(`🔄 [활동기간] v2.3.0: ${type} 날짜 변경 처리...`);
             
             // 기존 로직
             this.calculateAndShowActivityDaysImmediate();
@@ -597,14 +628,14 @@ class FlightRequestTicket {
             });
             
         } catch (error) {
-            console.error(`❌ [활동기간] v2.2.0: ${type} 날짜 변경 처리 실패:`, error);
+            console.error(`❌ [활동기간] v2.3.0: ${type} 날짜 변경 처리 실패:`, error);
         }
     }
 
     // === 🔧 v2.2.0: 항공권 날짜 변경 처리 업데이트 ===
     handleFlightDateChange(type) {
         try {
-            console.log(`🔄 [항공권날짜] v2.2.0: ${type} 날짜 변경 처리...`);
+            console.log(`🔄 [항공권날짜] v2.3.0: ${type} 날짜 변경 처리...`);
             
             // 🆕 v2.2.0: 실시간 검증 수행
             this.validateFlightDateImmediate(type);
@@ -616,11 +647,11 @@ class FlightRequestTicket {
             });
             
         } catch (error) {
-            console.error(`❌ [항공권날짜] v2.2.0: ${type} 날짜 변경 처리 실패:`, error);
+            console.error(`❌ [항공권날짜] v2.3.0: ${type} 날짜 변경 처리 실패:`, error);
         }
     }
 
-    // === 🔧 v2.2.0: 전체 데이터 검증 업데이트 ===
+    // === 🔧 v2.3.0: 전체 데이터 검증 업데이트 ===
     validateAllData() {
         try {
             // 활동기간 검증
@@ -630,7 +661,7 @@ class FlightRequestTicket {
                 return false;
             }
             
-            // 🆕 v2.2.0: 항공권 날짜 검증 (활동기간 기반)
+            // 🆕 v2.3.0: 항공권 날짜 검증 (활동기간 + required_return_date 기반)
             const flightDateValidation = this.validateFlightDatesWithActivity();
             if (!flightDateValidation.valid) {
                 this.showError(flightDateValidation.message);
@@ -652,12 +683,12 @@ class FlightRequestTicket {
             return true;
             
         } catch (error) {
-            console.error('❌ [검증] v2.2.0: 전체 데이터 검증 실패:', error);
+            console.error('❌ [검증] v2.3.0: 전체 데이터 검증 실패:', error);
             return false;
         }
     }
 
-    // === 🆕 v2.2.0: 활동기간 기반 항공권 날짜 검증 ===
+    // === 🔧 v2.3.0: 활동기간 기반 항공권 날짜 검증 (required_return_date 추가) ===
     validateFlightDatesWithActivity() {
         try {
             const departureDate = document.getElementById('departureDate')?.value;
@@ -688,7 +719,18 @@ class FlightRequestTicket {
                 };
             }
             
-            // 🆕 v2.2.0: 활동기간 기반 검증
+            // 🆕 v2.3.0: required_return_date 우선 검증
+            if (this.userRequirements.requiredReturnDate) {
+                const requiredReturnDate = new Date(this.userRequirements.requiredReturnDate);
+                if (returnD > requiredReturnDate) {
+                    return {
+                        valid: false,
+                        message: `귀국일은 필수 귀국일 ${this.formatDate(requiredReturnDate)} 이전이어야 합니다.`
+                    };
+                }
+            }
+            
+            // 기존 활동기간 기반 검증
             const arrival = new Date(this.ticketData.actualArrivalDate);
             const workEnd = new Date(this.ticketData.actualWorkEndDate);
             
@@ -703,14 +745,23 @@ class FlightRequestTicket {
                 };
             }
             
-            // 귀국일 범위 검증
-            const maxReturnDate = new Date(workEnd);
-            maxReturnDate.setDate(workEnd.getDate() + 10);
+            // 귀국일 범위 검증 (기존 + required_return_date 통합)
+            const maxReturnDateBasic = new Date(workEnd);
+            maxReturnDateBasic.setDate(workEnd.getDate() + 10);
             
-            if (returnD <= workEnd || returnD > maxReturnDate) {
+            // 🆕 v2.3.0: 더 제한적인 날짜 선택
+            let effectiveMaxReturnDate = maxReturnDateBasic;
+            if (this.userRequirements.requiredReturnDate) {
+                const requiredReturnDate = new Date(this.userRequirements.requiredReturnDate);
+                if (requiredReturnDate < maxReturnDateBasic) {
+                    effectiveMaxReturnDate = requiredReturnDate;
+                }
+            }
+            
+            if (returnD <= workEnd || returnD > effectiveMaxReturnDate) {
                 return {
                     valid: false,
-                    message: `귀국일은 학당 근무 종료일 ${this.formatDate(workEnd)} 이후부터 ${this.formatDate(maxReturnDate)} 이전이어야 합니다.`
+                    message: `귀국일은 학당 근무 종료일 ${this.formatDate(workEnd)} 이후부터 ${this.formatDate(effectiveMaxReturnDate)} 이전이어야 합니다.`
                 };
             }
             
@@ -720,7 +771,7 @@ class FlightRequestTicket {
             };
             
         } catch (error) {
-            console.error('❌ [항공권날짜검증] v2.2.0: 검증 실패:', error);
+            console.error('❌ [항공권날짜검증] v2.3.0: 검증 실패:', error);
             return {
                 valid: false,
                 message: '항공권 날짜 검증 중 오류가 발생했습니다.'
@@ -729,7 +780,7 @@ class FlightRequestTicket {
     }
 
     // ================================
-    // 파트 5: 🆕 v2.2.0 외부 인터페이스 확장
+    // 파트 5: 🆕 v2.3.0 외부 인터페이스 확장
     // ================================
 
     // === 🆕 v2.2.0: 항공권 날짜 검증 상태 반환 ===
@@ -743,16 +794,16 @@ class FlightRequestTicket {
     // === 🆕 v2.2.0: 수동 항공권 날짜 검증 트리거 ===
     triggerFlightDateValidation() {
         try {
-            console.log('🔄 [수동검증] v2.2.0: 항공권 날짜 검증 트리거...');
+            console.log('🔄 [수동검증] v2.3.0: 항공권 날짜 검증 트리거...');
             
             this.validateFlightDateImmediate('departure');
             this.validateFlightDateImmediate('return');
             
-            console.log('✅ [수동검증] v2.2.0: 항공권 날짜 검증 트리거 완료');
+            console.log('✅ [수동검증] v2.3.0: 항공권 날짜 검증 트리거 완료');
             return true;
             
         } catch (error) {
-            console.error('❌ [수동검증] v2.2.0: 항공권 날짜 검증 트리거 실패:', error);
+            console.error('❌ [수동검증] v2.3.0: 항공권 날짜 검증 트리거 실패:', error);
             return false;
         }
     }
@@ -760,7 +811,7 @@ class FlightRequestTicket {
     // === 🆕 v2.2.0: 항공권 날짜 검증 초기화 ===
     resetFlightDateValidation() {
         try {
-            console.log('🔄 [검증초기화] v2.2.0: 항공권 날짜 검증 초기화...');
+            console.log('🔄 [검증초기화] v2.3.0: 항공권 날짜 검증 초기화...');
             
             // 검증 상태 초기화
             this.flightDateValidation = {
@@ -781,10 +832,10 @@ class FlightRequestTicket {
             this.clearValidationMessage('departure');
             this.clearValidationMessage('return');
             
-            console.log('✅ [검증초기화] v2.2.0: 항공권 날짜 검증 초기화 완료');
+            console.log('✅ [검증초기화] v2.3.0: 항공권 날짜 검증 초기화 완료');
             
         } catch (error) {
-            console.error('❌ [검증초기화] v2.2.0: 항공권 날짜 검증 초기화 실패:', error);
+            console.error('❌ [검증초기화] v2.3.0: 항공권 날짜 검증 초기화 실패:', error);
         }
     }
 
@@ -973,9 +1024,10 @@ class FlightRequestTicket {
         }
     }
 
+    // === 🔧 v2.3.0: 사용자 요구사항 설정 (requiredReturnDate 추가) ===
     setUserRequirements(requirements) {
         try {
-            console.log('🔄 [사용자요구사항] 설정:', requirements);
+            console.log('🔄 [사용자요구사항] v2.3.0 설정:', requirements);
             
             this.userRequirements = {
                 ...this.userRequirements,
@@ -983,10 +1035,18 @@ class FlightRequestTicket {
                 isLoaded: true
             };
             
-            console.log('✅ [사용자요구사항] 설정 완료:', this.userRequirements);
+            // 🆕 v2.3.0: required_return_date가 설정되면 항공권 날짜 재검증
+            if (requirements.requiredReturnDate) {
+                console.log('🔄 [사용자요구사항] v2.3.0: required_return_date 설정으로 항공권 날짜 재검증 트리거');
+                setTimeout(() => {
+                    this.revalidateFlightDatesOnActivityChange();
+                }, 100);
+            }
+            
+            console.log('✅ [사용자요구사항] v2.3.0 설정 완료:', this.userRequirements);
             
         } catch (error) {
-            console.error('❌ [사용자요구사항] 설정 실패:', error);
+            console.error('❌ [사용자요구사항] v2.3.0 설정 실패:', error);
         }
     }
 
@@ -1473,15 +1533,15 @@ class FlightRequestTicket {
         };
     }
 
-    // 디버깅 정보 반환 (v2.2.0 확장)
+    // 디버깅 정보 반환 (v2.3.0 확장)
     getDebugInfo() {
         return {
-            version: '2.2.0',
+            version: '2.3.0',
             ticketData: this.ticketData,
             userRequirements: this.userRequirements,
             prerequisiteStatus: this.getPrerequisiteStatus(),
             flightSectionControl: this.flightSectionControl,
-            flightDateValidation: this.flightDateValidation, // 🆕 v2.2.0
+            flightDateValidation: this.flightDateValidation,
             eventSystemStatus: this.getEventSystemStatus(),
             hasApiService: !!this.apiService,
             hasUiService: !!this.uiService,
@@ -1491,7 +1551,7 @@ class FlightRequestTicket {
 
     destroy() {
         try {
-            console.log('🗑️ [티켓모듈] v2.2.0: 인스턴스 정리...');
+            console.log('🗑️ [티켓모듈] v2.3.0: 인스턴스 정리...');
             
             if (this.eventListeners) {
                 this.eventListeners.clear();
@@ -1512,10 +1572,10 @@ class FlightRequestTicket {
             this.userRequirements = null;
             this.flightDateValidation = null;
             
-            console.log('✅ [티켓모듈] v2.2.0: 인스턴스 정리 완료');
+            console.log('✅ [티켓모듈] v2.3.0: 인스턴스 정리 완료');
             
         } catch (error) {
-            console.error('❌ [티켓모듈] v2.2.0: 인스턴스 정리 실패:', error);
+            console.error('❌ [티켓모듈] v2.3.0: 인스턴스 정리 실패:', error);
         }
     }
 }
@@ -1527,28 +1587,29 @@ class FlightRequestTicket {
 // 전역 스코프에 클래스 노출
 window.FlightRequestTicket = FlightRequestTicket;
 
-console.log('✅ FlightRequestTicket v2.2.0 모듈 로드 완료 - 항공권 날짜 검증 로직 추가');
-console.log('🎯 v2.2.0 핵심 변경사항:', {
+console.log('✅ FlightRequestTicket v2.3.0 모듈 로드 완료 - required_return_date 기반 귀국일 검증 추가');
+console.log('🎯 v2.3.0 핵심 변경사항:', {
     newFeatures: [
-        '🆕 활동기간 기반 항공권 날짜 실시간 검증',
-        '🆕 출국일 검증: (현지 도착일 -2일) < 출국일 < 현지 도착일',
-        '🆕 귀국일 검증: 학당 근무 종료일 < 귀국일 < (학당 근무 종료일 +10일)',
-        '🆕 조용한 성공: 조건 만족 시 별도 메시지 없음',
-        '🆕 명확한 오류: 조건 위반 시 빨간색 오류 메시지',
-        '🆕 실시간 검증: 입력 시 즉시 검증 (디바운스 적용)',
-        '🆕 검증 UI: 전용 오류 메시지 영역 및 스타일',
-        '🆕 활동기간 변경 시 항공권 날짜 자동 재검증'
+        '🆕 DB required_return_date 필드 기반 귀국일 상한선 검증',
+        '🆕 귀국일 검증 규칙 확장: 기존 2개 조건 + 신규 1개 조건',
+        '🆕 기존: 학당 근무 종료일 < 귀국일 < (학당 근무 종료일 +10일)',
+        '🆕 신규: 귀국일 ≤ required_return_date (DB 저장된 필수 귀국일)',
+        '🆕 userRequirements에 requiredReturnDate 필드 추가',
+        '🆕 통합 검증 시스템: 3개 조건 모두 만족해야 유효',
+        '🆕 더 제한적인 조건 우선 적용 로직',
+        '🆕 명확한 오류 메시지: 어떤 제약조건에 의해 거부되었는지 표시'
     ],
     improvements: [
-        '기존 검증 로직과 통합된 완전한 검증 시스템',
-        '사용자 경험 개선: 실시간 피드백',
-        '데이터 무결성 보장: 활동기간 기반 제약 조건',
-        '확장 가능한 검증 아키텍처 구축'
+        '기존 v2.2.0 검증 로직과 완전히 통합',
+        'DB 제약 조건 기반 데이터 무결성 보장',
+        '관리자 설정 필수 귀국일 자동 준수',
+        '실시간 피드백으로 즉시 오류 감지',
+        '확장 가능한 검증 아키텍처 유지'
     ]
 });
-console.log('🚀 v2.2.0 예상 효과:', {
+console.log('🚀 v2.3.0 예상 효과:', {
+    dataIntegrity: 'DB 제약 조건 기반 완전한 날짜 검증',
+    managementEfficiency: '관리자가 설정한 필수 귀국일 자동 준수',
     userExperience: '실시간 검증으로 즉각적인 피드백 제공',
-    dataIntegrity: '활동기간 기반 제약 조건으로 데이터 무결성 보장',
-    usability: '조용한 성공과 명확한 오류로 직관적인 인터페이스',
-    maintainability: '모듈화된 검증 시스템으로 유지보수성 향상'
+    systemStability: '3중 검증 시스템으로 데이터 무결성 보장'
 });
