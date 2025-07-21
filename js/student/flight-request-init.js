@@ -1,18 +1,20 @@
-// FlightRequestInit v1.3.0 - 활동일 변경 실시간 감지 및 재검증 시스템
+// FlightRequestInit v1.2.2 - localStorage 키 수정
 // 이벤트 발행 최소화 및 중복 방지
 
 /**
- * 🚨 v1.3.0 주요 변경사항:
+ * 🚨 긴급 수정: v1.2.2 - localStorage 키 수정
  * 
- * 1. 활동일 변경 실시간 감지 기능 추가
- * 2. Coordinator와 연동된 재검증 시스템
- * 3. 이벤트 기반 상태 변경 알림
- * 4. 활동일 검증 로직 추가
+ * 주요 수정사항:
+ * 1. localStorage 키 수정: 'userData' → 'currentStudent'
+ * 2. API Event Adapter와 호환성 개선
+ * 3. 이벤트 기반 데이터 로드 대체 방안 추가
+ * 4. 이벤트 발행 전 중복 체크
+ * 5. 초기화 완료 후 추가 이벤트 발행 방지
  */
 
 class FlightRequestInit {
     constructor() {
-        this.version = "1.3.0";
+        this.version = "1.2.2";
         this.userData = null;
         this.userRequiredDays = null;
         this.userMaximumDays = null;
@@ -25,27 +27,16 @@ class FlightRequestInit {
         this.maxEmitCount = 5; // 최대 이벤트 발행 횟수
         this.emitCount = 0;
         
-        // 🆕 v1.3.0: 활동일 관련 상태
-        this.activityPeriodState = {
-            actualArrivalDate: null,
-            actualWorkEndDate: null,
-            calculatedDays: 0,
-            isValid: false,
-            lastValidationResult: null,
-            validationInProgress: false
-        };
-        
         this.initStatus = {
             pageElementsReady: false,
             userDataLoaded: false,
             requiredDaysDisplayed: false,
             flightSectionDisabled: false,
             passportCheckCompleted: false,
-            existingRequestChecked: false,
-            activityListenersSetup: false // 🆕 v1.3.0
+            existingRequestChecked: false
         };
         
-        console.log(`🔧 FlightRequestInit v${this.version} 생성 (활동일 실시간 감지 포함)`);
+        console.log(`🔧 FlightRequestInit v${this.version} 생성 (localStorage 키 수정)`);
     }
 
     // 🚨 안전한 이벤트 발행 (무한루프 방지)
@@ -67,16 +58,11 @@ class FlightRequestInit {
         this.emitCount++;
         
         try {
-            console.log(`📡 FlightRequestInit: 안전한 이벤트 발행: ${eventName} (${this.emitCount}/${this.maxEmitCount})`, data);
+            console.log(`📡 FlightRequestInit: 안전한 이벤트 발행: ${eventName} (${this.emitCount}/${this.maxEmitCount})`);
             
             // Coordinator를 통한 안전한 이벤트 전파
-            if (this.coordinator && typeof this.coordinator.emit === 'function') {
-                this.coordinator.emit(`init:${eventName}`, { ...data, source: 'init' });
-            }
-            
-            // 글로벌 coordinator 인스턴스를 통한 이벤트 발행 (폴백)
-            if (!this.coordinator && window.flightRequestCoordinator && typeof window.flightRequestCoordinator.emit === 'function') {
-                window.flightRequestCoordinator.emit(`init:${eventName}`, { ...data, source: 'init' });
+            if (this.coordinator && typeof this.coordinator.safeEmit === 'function') {
+                this.coordinator.safeEmit(eventName, { ...data, source: 'init' });
             }
             
         } catch (error) {
@@ -120,13 +106,10 @@ class FlightRequestInit {
             // 5. 항공권 섹션 초기 비활성화
             this.disableFlightSectionInitially();
             
-            // 6. 🆕 v1.3.0: 활동일 변경 감지 리스너 설정
-            this.setupActivityPeriodChangeListeners();
-            
-            // 7. 여권정보 체크
+            // 6. 여권정보 체크
             await this.checkPassportStatus();
             
-            // 8. 기존 신청 내역 확인
+            // 7. 기존 신청 내역 확인
             await this.checkExistingRequest();
             
             this.isInitialized = true;
@@ -134,7 +117,7 @@ class FlightRequestInit {
             
             // 🚨 초기화 완료 이벤트 (1회만 발행)
             if (this.emitCount === 0) {
-                this.emit('completed', { 
+                this.emit('init:completed', { 
                     version: this.version,
                     userRequiredDays: this.userRequiredDays,
                     userMaximumDays: this.userMaximumDays
@@ -161,8 +144,8 @@ class FlightRequestInit {
             const requiredElements = [
                 'requiredDays',
                 'maximumDays', 
-                'actualArrivalDate',  // v1.3.0: 변경
-                'actualWorkEndDate',  // v1.3.0: 변경
+                'startDate',
+                'endDate',
                 'flightTicketSection'
             ];
             
@@ -211,12 +194,12 @@ class FlightRequestInit {
         }
     }
 
-    // 📊 사용자 데이터 로드 및 표시
+    // 📊 사용자 데이터 로드 및 표시 (v1.2.2: localStorage 키 수정)
     async loadAndDisplayUserData() {
         try {
             console.log('📊 사용자 데이터 로드...');
             
-            // 'currentStudent' 키 사용 (api-event-adapter.js와 동일)
+            // 🔧 v1.2.2: 'currentStudent' 키 사용 (api-event-adapter.js와 동일)
             const userDataStr = localStorage.getItem('currentStudent');
             if (!userDataStr) {
                 console.warn('⚠️ currentStudent 키에서 데이터 없음, 이벤트 기반 로드 시도...');
@@ -363,12 +346,14 @@ class FlightRequestInit {
         try {
             console.log('✈️ 항공권 섹션 초기 비활성화...');
             
-            // 초기 상태 이벤트 발행
-            this.emit('flightSectionStateChanged', {
-                state: 'disabled',
-                reason: 'initialization',
-                message: '항공권 정보를 입력하려면 먼저 현지 활동기간을 입력해주세요.'
-            });
+            const flightSection = document.getElementById('flightTicketSection');
+            if (flightSection) {
+                flightSection.style.display = 'none';
+                console.log('✅ 항공권 섹션 비활성화 완료');
+            }
+            
+            // 활동기간 입력 이벤트 리스너 설정 (무한루프 방지)
+            this.setupActivityPeriodListeners();
             
             this.initStatus.flightSectionDisabled = true;
             
@@ -378,142 +363,57 @@ class FlightRequestInit {
         }
     }
 
-    // 🆕 v1.3.0: 활동일 변경 감지 리스너 설정
-    setupActivityPeriodChangeListeners() {
-        try {
-            console.log('🔧 v1.3.0: 활동일 변경 감지 리스너 설정...');
+    // 🔧 활동기간 입력 리스너 설정 (무한루프 방지)
+    setupActivityPeriodListeners() {
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        
+        if (startDateInput && endDateInput) {
+            let isProcessing = false; // 중복 처리 방지
             
-            const arrivalDateInput = document.getElementById('actualArrivalDate');
-            const workEndDateInput = document.getElementById('actualWorkEndDate');
-            
-            if (!arrivalDateInput || !workEndDateInput) {
-                console.warn('⚠️ 활동일 입력 필드를 찾을 수 없음');
-                return;
-            }
-            
-            // 변경 핸들러
-            const handleDateChange = (fieldType) => {
-                console.log(`🔄 [활동일변경] ${fieldType} 필드 변경 감지`);
+            const handleDateChange = () => {
+                if (isProcessing) return;
+                isProcessing = true;
                 
-                // 즉시 변경 이벤트 발행
-                this.emit('activityPeriodChanged', {
-                    fieldType: fieldType,
-                    arrivalDate: arrivalDateInput.value,
-                    workEndDate: workEndDateInput.value,
-                    timestamp: Date.now()
-                });
-                
-                // 재검증 트리거
-                this.validateActivityPeriod();
+                try {
+                    const startDate = startDateInput.value;
+                    const endDate = endDateInput.value;
+                    
+                    if (startDate && endDate) {
+                        this.enableFlightSection();
+                    }
+                } catch (error) {
+                    console.error('❌ 날짜 변경 처리 실패:', error);
+                } finally {
+                    setTimeout(() => { isProcessing = false; }, 100);
+                }
             };
             
-            // 이벤트 리스너 추가
-            arrivalDateInput.addEventListener('change', () => handleDateChange('arrival'));
-            arrivalDateInput.addEventListener('input', () => handleDateChange('arrival'));
+            // 이벤트 리스너 추가 (once 옵션으로 중복 방지)
+            startDateInput.addEventListener('change', handleDateChange);
+            endDateInput.addEventListener('change', handleDateChange);
             
-            workEndDateInput.addEventListener('change', () => handleDateChange('workEnd'));
-            workEndDateInput.addEventListener('input', () => handleDateChange('workEnd'));
-            
-            this.initStatus.activityListenersSetup = true;
-            console.log('✅ v1.3.0: 활동일 변경 감지 리스너 설정 완료');
-            
-        } catch (error) {
-            console.error('❌ v1.3.0: 활동일 변경 감지 리스너 설정 실패:', error);
+            console.log('✅ 활동기간 입력 리스너 설정 완료');
         }
     }
 
-    // 🆕 v1.3.0: 활동일 검증
-    validateActivityPeriod() {
+    // ✈️ 항공권 섹션 활성화 (중복 방지)
+    enableFlightSection() {
         try {
-            if (this.activityPeriodState.validationInProgress) {
-                console.log('⚠️ 이미 검증이 진행 중입니다.');
-                return;
-            }
-            
-            this.activityPeriodState.validationInProgress = true;
-            console.log('🔍 v1.3.0: 활동일 검증 시작...');
-            
-            // 재검증 시작 이벤트
-            this.emit('revalidationStarted', {
-                reason: 'activityPeriodChange',
-                timestamp: Date.now()
-            });
-            
-            const arrivalDate = document.getElementById('actualArrivalDate')?.value;
-            const workEndDate = document.getElementById('actualWorkEndDate')?.value;
-            
-            // 값 저장
-            this.activityPeriodState.actualArrivalDate = arrivalDate;
-            this.activityPeriodState.actualWorkEndDate = workEndDate;
-            
-            let validationResult = {
-                success: false,
-                reason: '',
-                message: '',
-                days: 0
-            };
-            
-            if (!arrivalDate || !workEndDate) {
-                validationResult.reason = 'MISSING_DATES';
-                validationResult.message = '현지 도착일과 근무 종료일을 모두 입력해주세요.';
-            } else {
-                const start = new Date(arrivalDate);
-                const end = new Date(workEndDate);
+            const flightSection = document.getElementById('flightTicketSection');
+            if (flightSection && flightSection.style.display === 'none') {
+                flightSection.style.display = 'block';
+                console.log('✅ 항공권 섹션 활성화');
                 
-                if (start >= end) {
-                    validationResult.reason = 'INVALID_DATE_ORDER';
-                    validationResult.message = '근무 종료일은 도착일보다 늦어야 합니다.';
-                } else {
-                    const diffTime = Math.abs(end - start);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                    
-                    this.activityPeriodState.calculatedDays = diffDays;
-                    validationResult.days = diffDays;
-                    
-                    // 필수/최대 활동일 검증
-                    if (this.userRequiredDays && diffDays < this.userRequiredDays) {
-                        validationResult.reason = 'INSUFFICIENT_DAYS';
-                        validationResult.message = `최소 ${this.userRequiredDays}일 이상 활동해야 합니다. (현재: ${diffDays}일)`;
-                    } else if (this.userMaximumDays && diffDays > this.userMaximumDays) {
-                        validationResult.reason = 'EXCEEDED_DAYS';
-                        validationResult.message = `최대 ${this.userMaximumDays}일까지 활동 가능합니다. (현재: ${diffDays}일)`;
-                    } else {
-                        validationResult.success = true;
-                        validationResult.reason = 'VALID';
-                        validationResult.message = '활동기간이 올바르게 설정되었습니다.';
-                    }
+                // 활성화 이벤트 발행 (1회만)
+                if (!this.eventEmitted.has('flight-section-enabled')) {
+                    this.emit('flightSection:enabled', { timestamp: Date.now() });
                 }
             }
-            
-            this.activityPeriodState.isValid = validationResult.success;
-            this.activityPeriodState.lastValidationResult = validationResult;
-            
-            // 재검증 완료 이벤트
-            this.emit('revalidationCompleted', {
-                result: validationResult,
-                activityDays: this.activityPeriodState.calculatedDays,
-                timestamp: Date.now()
-            });
-            
-            console.log('✅ v1.3.0: 활동일 검증 완료', validationResult);
-            
         } catch (error) {
-            console.error('❌ v1.3.0: 활동일 검증 실패:', error);
-            
-            this.emit('revalidationCompleted', {
-                result: {
-                    success: false,
-                    reason: 'VALIDATION_ERROR',
-                    message: '활동일 검증 중 오류가 발생했습니다.'
-                },
-                timestamp: Date.now()
-            });
-            
-        } finally {
-            this.activityPeriodState.validationInProgress = false;
+            console.error('❌ 항공권 섹션 활성화 실패:', error);
         }
     }
-
     // 🔍 여권정보 체크 (API 호출 최소화)
     async checkPassportStatus() {
         try {
@@ -697,7 +597,7 @@ class FlightRequestInit {
             }
             
             // 입력 필드들 비활성화
-            const inputs = document.querySelectorAll('#actualArrivalDate, #actualWorkEndDate, #purchaseMethod');
+            const inputs = document.querySelectorAll('#startDate, #endDate, #purchaseMethod');
             inputs.forEach(input => {
                 input.disabled = true;
             });
@@ -713,7 +613,7 @@ class FlightRequestInit {
     enableNewRequest() {
         try {
             // 입력 필드들 활성화
-            const inputs = document.querySelectorAll('#actualArrivalDate, #actualWorkEndDate, #purchaseMethod');
+            const inputs = document.querySelectorAll('#startDate, #endDate, #purchaseMethod');
             inputs.forEach(input => {
                 input.disabled = false;
             });
@@ -764,33 +664,13 @@ class FlightRequestInit {
         }
     }
 
-    // 🆕 v1.3.0: 재검증 관련 메서드들
-    getRevalidationStatus() {
-        return {
-            listenersSetup: this.initStatus.activityListenersSetup,
-            isValidationInProgress: this.activityPeriodState.validationInProgress,
-            lastValidationState: {
-                result: this.activityPeriodState.lastValidationResult,
-                isValid: this.activityPeriodState.isValid,
-                calculatedDays: this.activityPeriodState.calculatedDays
-            }
-        };
-    }
-
-    async triggerManualRevalidation() {
-        console.log('🔄 v1.3.0: 수동 재검증 트리거');
-        this.validateActivityPeriod();
-        return true;
-    }
-
     // 📊 사용자 요구사항 반환
     getUserRequirements() {
         return {
             userRequiredDays: this.userRequiredDays,
             userMaximumDays: this.userMaximumDays,
             userData: this.userData,
-            initStatus: this.initStatus,
-            activityPeriodState: this.activityPeriodState // v1.3.0 추가
+            initStatus: this.initStatus
         };
     }
 
@@ -809,20 +689,8 @@ class FlightRequestInit {
             maxEmitCount: this.maxEmitCount,
             initStatus: this.initStatus,
             userRequiredDays: this.userRequiredDays,
-            userMaximumDays: this.userMaximumDays,
-            activityPeriodState: this.activityPeriodState // v1.3.0 추가
+            userMaximumDays: this.userMaximumDays
         };
-    }
-
-    // 사용자 데이터 반환
-    getUserData() {
-        return this.userData;
-    }
-
-    // Coordinator 설정
-    setCoordinator(coordinator) {
-        this.coordinator = coordinator;
-        console.log('✅ v1.3.0: Coordinator 연결 완료');
     }
 
     // 🔄 리셋 (디버깅용)
@@ -839,34 +707,14 @@ class FlightRequestInit {
             this.initStatus[key] = false;
         });
         
-        // 활동일 상태 리셋
-        this.activityPeriodState = {
-            actualArrivalDate: null,
-            actualWorkEndDate: null,
-            calculatedDays: 0,
-            isValid: false,
-            lastValidationResult: null,
-            validationInProgress: false
-        };
-        
         console.log('✅ FlightRequestInit 리셋 완료');
-    }
-
-    // 정리
-    destroy() {
-        console.log('🗑️ FlightRequestInit v1.3.0 정리');
-        
-        this.reset();
-        this.coordinator = null;
-        
-        // 이벤트 리스너 제거 필요시 추가
     }
 }
 
 // 🌐 글로벌 등록
-console.log('🌐 FlightRequestInit v1.3.0 글로벌 등록...');
+console.log('🌐 FlightRequestInit 글로벌 등록...');
 
 if (typeof window !== 'undefined') {
     window.FlightRequestInit = FlightRequestInit;
-    console.log('✅ FlightRequestInit v1.3.0 글로벌 등록 완료');
+    console.log('✅ FlightRequestInit 글로벌 등록 완료');
 }
