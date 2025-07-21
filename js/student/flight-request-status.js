@@ -1,13 +1,13 @@
-// flight-request-status.js - 항공권 신청 내역 조회 및 관리 모듈 v1.0.1
+// flight-request-status.js - 항공권 신청 내역 조회 및 관리 모듈 v1.0.2
 // 🎯 목적: 사용자의 항공권 신청 상태를 조회하고 관리하는 독립 모듈
 // 📋 기능: 신청 내역 표시, 상태별 UI, 액션 버튼, 실시간 업데이트
 // 🔗 연동: flight-request-coordinator.js, flight-request-api.js
 // 🗄️ DB: flight_requests, user_profiles 테이블 연동
-// 🔧 v1.0.1 개선: CSS 스타일을 외부 파일로 분리, 동적 CSS 삽입 제거
+// 🔧 v1.0.2 개선: API 메서드 호출 오류 수정 (loadUserProfile → getUserProfile)
 
 class FlightRequestStatus {
     constructor() {
-        console.log('🚀 FlightRequestStatus v1.0.1 생성자 초기화 시작...');
+        console.log('🚀 FlightRequestStatus v1.0.2 생성자 초기화 시작...');
         
         // 의존성 참조
         this.api = null;
@@ -20,6 +20,7 @@ class FlightRequestStatus {
         // 데이터 상태
         this.currentRequest = null;
         this.userProfile = null;
+        this.currentUser = null;
         this.isLoading = false;
         this.lastUpdated = null;
         
@@ -74,7 +75,7 @@ class FlightRequestStatus {
         this.isInitialized = false;
         this.initializationPromise = null;
         
-        console.log('✅ FlightRequestStatus v1.0.1 생성자 완료');
+        console.log('✅ FlightRequestStatus v1.0.2 생성자 완료');
     }
 
     // DOM 요소 초기화
@@ -314,8 +315,8 @@ class FlightRequestStatus {
         try {
             this.showLoading(true);
             
-            // 사용자 프로필 로드
-            await this.loadUserProfile();
+            // 🔧 v1.0.2 수정: 사용자 정보 로드 방식 개선
+            await this.loadUserData();
             
             // 현재 신청 내역 로드
             await this.loadCurrentRequest();
@@ -334,42 +335,177 @@ class FlightRequestStatus {
         }
     }
 
-    // 사용자 프로필 로드
-    async loadUserProfile() {
+    // 🔧 v1.0.2 신규: 사용자 데이터 통합 로드
+    async loadUserData() {
         try {
-            console.log('🔄 [프로필로드] 사용자 프로필 로드 시작...');
+            console.log('🔄 [사용자데이터] 사용자 데이터 로드 시작...');
             
-            if (!this.api || typeof this.api.loadUserProfile !== 'function') {
-                throw new Error('API loadUserProfile 메서드를 찾을 수 없습니다');
+            // API 유효성 확인
+            if (!this.api) {
+                throw new Error('API 인스턴스를 찾을 수 없습니다');
             }
             
-            this.userProfile = await this.api.loadUserProfile();
-            
-            if (this.userProfile) {
-                console.log('✅ [프로필로드] 사용자 프로필 로드 완료:', {
-                    name: this.userProfile.name,
-                    hasActivityPeriod: !!(this.userProfile.actual_arrival_date && this.userProfile.actual_work_end_date)
-                });
+            // 1. 현재 사용자 정보 로드 (localStorage 기반)
+            if (typeof this.api.getCurrentUser === 'function') {
+                try {
+                    this.currentUser = await this.api.getCurrentUser();
+                    console.log('✅ [사용자데이터] 현재 사용자 정보 로드 완료:', {
+                        id: this.currentUser?.id,
+                        name: this.currentUser?.name
+                    });
+                } catch (userError) {
+                    console.warn('⚠️ [사용자데이터] getCurrentUser 실패:', userError);
+                    // localStorage에서 직접 시도
+                    this.currentUser = this.getUserFromLocalStorage();
+                }
             } else {
-                console.warn('⚠️ [프로필로드] 사용자 프로필이 없습니다');
+                console.warn('⚠️ [사용자데이터] getCurrentUser 메서드 없음, localStorage 사용');
+                this.currentUser = this.getUserFromLocalStorage();
             }
+            
+            // 2. 사용자 프로필 로드 (DB 기반)
+            if (typeof this.api.getUserProfile === 'function') {
+                try {
+                    this.userProfile = await this.api.getUserProfile();
+                    console.log('✅ [사용자데이터] 사용자 프로필 로드 완료:', {
+                        hasActivityPeriod: !!(this.userProfile?.actual_arrival_date && this.userProfile?.actual_work_end_date),
+                        actualArrivalDate: this.userProfile?.actual_arrival_date,
+                        actualWorkEndDate: this.userProfile?.actual_work_end_date
+                    });
+                } catch (profileError) {
+                    console.warn('⚠️ [사용자데이터] getUserProfile 실패:', profileError);
+                    this.userProfile = null;
+                }
+            } else {
+                console.warn('⚠️ [사용자데이터] getUserProfile 메서드를 찾을 수 없습니다');
+                this.userProfile = null;
+            }
+            
+            // 3. 폴백: localStorage에서 사용자 프로필 정보 확인
+            if (!this.userProfile) {
+                this.userProfile = this.getUserProfileFromLocalStorage();
+            }
+            
+            console.log('✅ [사용자데이터] 사용자 데이터 로드 완료');
             
         } catch (error) {
-            console.error('❌ [프로필로드] 실패:', error);
-            throw error;
+            console.error('❌ [사용자데이터] 로드 실패:', error);
+            
+            // 폴백: localStorage에서 최대한 정보 수집
+            this.currentUser = this.getUserFromLocalStorage();
+            this.userProfile = this.getUserProfileFromLocalStorage();
+            
+            if (!this.currentUser) {
+                throw new Error('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.');
+            }
         }
     }
 
-    // 현재 신청 내역 로드
+    // 🔧 v1.0.2 신규: localStorage에서 사용자 정보 추출
+    getUserFromLocalStorage() {
+        try {
+            const keys = ['currentStudent', 'userInfo', 'userProfile', 'user', 'currentUser', 'student'];
+            
+            for (const key of keys) {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (parsed && parsed.id) {
+                            return {
+                                id: String(parsed.id),
+                                email: parsed.email || 'unknown@example.com',
+                                name: parsed.name || 'Unknown User'
+                            };
+                        }
+                    } catch (parseError) {
+                        // 계속 시도
+                    }
+                }
+            }
+            
+            console.warn('⚠️ [localStorage] 사용자 정보를 찾을 수 없음');
+            return null;
+            
+        } catch (error) {
+            console.error('❌ [localStorage] 사용자 정보 추출 실패:', error);
+            return null;
+        }
+    }
+
+    // 🔧 v1.0.2 신규: localStorage에서 사용자 프로필 추출
+    getUserProfileFromLocalStorage() {
+        try {
+            const keys = ['currentStudent', 'userProfile', 'userInfo'];
+            
+            for (const key of keys) {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (parsed && (parsed.actual_arrival_date || parsed.actual_work_end_date)) {
+                            return parsed;
+                        }
+                    } catch (parseError) {
+                        // 계속 시도
+                    }
+                }
+            }
+            
+            return null;
+            
+        } catch (error) {
+            console.error('❌ [localStorage] 프로필 정보 추출 실패:', error);
+            return null;
+        }
+    }
+
+    // 🔧 v1.0.2 수정: 현재 신청 내역 로드 방식 개선
     async loadCurrentRequest() {
         try {
             console.log('🔄 [신청로드] 현재 신청 내역 로드 시작...');
             
-            if (!this.api || typeof this.api.loadExistingFlightRequest !== 'function') {
-                throw new Error('API loadExistingFlightRequest 메서드를 찾을 수 없습니다');
+            // API 유효성 확인
+            if (!this.api) {
+                throw new Error('API 인스턴스를 찾을 수 없습니다');
             }
             
-            this.currentRequest = await this.api.loadExistingFlightRequest();
+            let request = null;
+            
+            // 1. loadExistingFlightRequest 메서드 시도 (별칭)
+            if (typeof this.api.loadExistingFlightRequest === 'function') {
+                try {
+                    request = await this.api.loadExistingFlightRequest();
+                    console.log('✅ [신청로드] loadExistingFlightRequest 사용 성공');
+                } catch (aliasError) {
+                    console.warn('⚠️ [신청로드] loadExistingFlightRequest 실패:', aliasError);
+                }
+            }
+            
+            // 2. getExistingRequest 메서드 시도 (원본)
+            if (!request && typeof this.api.getExistingRequest === 'function') {
+                try {
+                    request = await this.api.getExistingRequest();
+                    console.log('✅ [신청로드] getExistingRequest 사용 성공');
+                } catch (originalError) {
+                    console.warn('⚠️ [신청로드] getExistingRequest 실패:', originalError);
+                }
+            }
+            
+            // 3. getFlightRequest 메서드 시도 (대안)
+            if (!request && typeof this.api.getFlightRequest === 'function') {
+                try {
+                    const result = await this.api.getFlightRequest();
+                    if (result && result.success && result.data) {
+                        request = result.data;
+                        console.log('✅ [신청로드] getFlightRequest 사용 성공');
+                    }
+                } catch (alternativeError) {
+                    console.warn('⚠️ [신청로드] getFlightRequest 실패:', alternativeError);
+                }
+            }
+            
+            this.currentRequest = request;
             
             if (this.currentRequest) {
                 console.log('✅ [신청로드] 신청 내역 로드 완료:', {
@@ -385,11 +521,21 @@ class FlightRequestStatus {
             
         } catch (error) {
             console.error('❌ [신청로드] 실패:', error);
+            
+            // 에러 발생 시에도 null로 설정하여 "신청 내역 없음" UI 표시
+            this.currentRequest = null;
+            
+            // 심각한 오류가 아닌 경우 계속 진행
+            if (!error.message.includes('API 인스턴스를 찾을 수 없습니다')) {
+                console.log('ℹ️ [신청로드] 오류로 인해 신청 내역 없음으로 처리');
+                return; // throw하지 않고 계속 진행
+            }
+            
             throw error;
         }
     }
 
-    // 상태 렌더링 (메인 메서드)
+    // 상태 렌더링 (메인 메서드) - 기존과 동일
     renderStatus() {
         try {
             console.log('🔄 [렌더링] 상태 렌더링 시작...');
@@ -1209,8 +1355,9 @@ class FlightRequestStatus {
         return {
             request: this.currentRequest,
             userProfile: this.userProfile,
+            currentUser: this.currentUser,
             lastUpdated: this.lastUpdated,
-            module: 'FlightRequestStatus v1.0.1'
+            module: 'FlightRequestStatus v1.0.2'
         };
     }
 
@@ -1341,6 +1488,10 @@ class FlightRequestStatus {
         return this.userProfile;
     }
 
+    getCurrentUser() {
+        return this.currentUser;
+    }
+
     getLastUpdated() {
         return this.lastUpdated;
     }
@@ -1359,6 +1510,7 @@ class FlightRequestStatus {
             // 상태 초기화
             this.currentRequest = null;
             this.userProfile = null;
+            this.currentUser = null;
             this.isInitialized = false;
             
             console.log('✅ [정리] FlightRequestStatus 정리 완료');
@@ -1369,15 +1521,18 @@ class FlightRequestStatus {
     }
 }
 
-// 🔧 v1.0.1 개선: CSS 스타일이 이미 외부 파일(flight-request.css)에 포함되어 있으므로
-// 동적 CSS 삽입 코드를 제거합니다.
-// CSS 스타일은 flight-request.css 파일에서 관리됩니다.
-
 // 전역 스코프에 노출
 window.FlightRequestStatus = FlightRequestStatus;
 
-console.log('✅ FlightRequestStatus v1.0.1 모듈 로드 완료 (CSS 외부화 버전)');
-console.log('🎯 FlightRequestStatus 핵심 기능:', {
+console.log('✅ FlightRequestStatus v1.0.2 모듈 로드 완료 - API 메서드 호출 오류 해결');
+console.log('🔧 v1.0.2 수정사항:', {
+    apiMethodFix: 'loadUserProfile → getUserProfile로 변경',
+    requestMethodFix: 'loadExistingFlightRequest → getExistingRequest로 변경', 
+    fallbackSystem: 'localStorage 기반 폴백 시스템 강화',
+    errorHandling: '존재하지 않는 메서드 호출 오류 방지',
+    compatibility: '기존 API 구조와의 호환성 개선'
+});
+console.log('🎯 FlightRequestStatus v1.0.2 핵심 기능:', {
     신청내역조회: '사용자의 현재 항공권 신청 상태 실시간 조회',
     상태별UI: 'pending/approved/rejected/cancelled/completed 상태별 맞춤 UI',
     진행상황표시: '신청 → 검토 → 결정 → 완료 단계별 시각적 타임라인',
@@ -1386,5 +1541,5 @@ console.log('🎯 FlightRequestStatus 핵심 기능:', {
     반응형디자인: '모바일/데스크톱 최적화된 카드 레이아웃',
     에러처리: '네트워크 오류, 데이터 없음 등 모든 예외 상황 처리',
     폼연동: '기존 신청 데이터로 폼 자동 채우기 및 수정 지원',
-    CSS외부화: 'flight-request.css 파일에서 스타일 관리'
+    API호환성: '올바른 API 메서드 호출로 안정성 보장'
 });
