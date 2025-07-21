@@ -1078,10 +1078,21 @@
         }
     
         function getMaximumDays() {
-            // 향후 최대활동일이 DB에서 제공되면 이 함수를 수정
+            try {
+                // 실시간으로 사용자 데이터에서 가져오기
+                const userData = JSON.parse(localStorage.getItem('currentStudent') || '{}');
+                const userMaximumDays = userData.maximum_allowed_days;
+
+                if (userMaximumDays && userMaximumDays > 0) {
+                    ValidationState.maximumDays = userMaximumDays;  // 상태도 업데이트
+                    return userMaximumDays;
+                }
+            } catch (error) {
+                console.warn('⚠️ 최대활동일 가져오기 실패, 기본값 사용:', error);
+            }
             return ValidationState.maximumDays;
         }
-    
+        
         // ===== 3. 활동기간 검증 로직 =====
         function validateActivityPeriod(arrivalDate, workEndDate) {
             // 입력값 체크
