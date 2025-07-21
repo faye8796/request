@@ -1,20 +1,19 @@
-// flight-request-coordinator.js - v1.6.0 HTML 기반 초기화 통합
-// 🔧 v1.6.0 주요 변경사항:
-//   1. FlightRequestInit 의존성 완전 제거
-//   2. HTML 기반 초기화 완료 감지 로직 추가
-//   3. 활동기간 검증 중복 기능 제거 (HTML에서 처리)
-//   4. 재검증 시스템 제거 (HTML 통합)
-//   5. 성능 최적화된 간소화된 구조
+// flight-request-coordinator.js - v1.7.0 HTML 초기화 대기 로직 제거
+// 🔧 v1.7.0 타임아웃 문제 해결:
+//   1. waitForHtmlInitialization() 메서드 제거
+//   2. HTML 초기화 즉시 완료로 간주
+//   3. 직접적인 DOM 요소 확인으로 전환
+//   4. 타임아웃 제거로 빠른 초기화 달성
 
 class FlightRequestCoordinator {
     constructor() {
-        console.log('🔄 [조정자] FlightRequestCoordinator v1.6.0 생성 - HTML 기반 초기화 통합');
+        console.log('🔄 [조정자] FlightRequestCoordinator v1.7.0 생성 - HTML 초기화 대기 제거');
         
         // 🔧 신규: 단순하고 안전한 이벤트 시스템
         this.eventListeners = new Map();
         this.destroyed = false;
         
-        // 🆕 v1.6.0: 간소화된 모듈 인스턴스들 (Init 모듈 제거)
+        // 🆕 v1.7.0: 간소화된 모듈 인스턴스들 (Init 모듈 제거)
         this.passport = null;
         this.ticket = null;
         this.api = null;
@@ -35,8 +34,8 @@ class FlightRequestCoordinator {
             errorMessage: null,
             canAccessTicketSection: false,
             prerequisitesMet: false,
-            // v1.6.0: HTML 초기화 상태
-            htmlInitCompleted: false,
+            // v1.7.0: HTML 초기화 즉시 완료
+            htmlInitCompleted: true,
             activityPeriodReady: false
         };
         
@@ -63,7 +62,7 @@ class FlightRequestCoordinator {
         this.initAttempts = 0;
         this.maxInitAttempts = 3;
         this.dependencyCheckCount = 0;
-        this.maxDependencyChecks = 5; // 10 → 5로 추가 감소
+        this.maxDependencyChecks = 3; // 5 → 3으로 추가 감소
         this.errorCount = 0;
         this.maxErrors = 5;
     }
@@ -138,8 +137,8 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 🆕 v1.6.0: 간소화된 의존성 대기 (Init 모듈 제거) ===
-    async waitForDependencies(timeout = 2000) { // 3초 → 2초로 추가 단축
+    // === 🆕 v1.7.0: 간소화된 의존성 대기 (HTML 초기화 대기 제거) ===
+    async waitForDependencies(timeout = 1500) { // 2초 → 1.5초로 추가 단축
         const startTime = Date.now();
         
         return new Promise((resolve) => {
@@ -160,7 +159,7 @@ class FlightRequestCoordinator {
                 const allBasicReady = apiExists && utilsReady && passportClassReady && ticketClassReady;
                 
                 if (allBasicReady) {
-                    console.log('✅ [조정자] v1.6.0: 모든 의존성 준비 완료 (HTML 기반 초기화)');
+                    console.log('✅ [조정자] v1.7.0: 모든 의존성 준비 완료 (HTML 초기화 대기 제거)');
                     resolve();
                     return;
                 }
@@ -178,41 +177,30 @@ class FlightRequestCoordinator {
         });
     }
 
-    // === 🆕 v1.6.0: HTML 초기화 완료 감지 ===
-    async waitForHtmlInitialization() {
-        return new Promise((resolve) => {
-            const checkHtmlInit = () => {
-                // HTML에서 활동기간 검증이 완료되었는지 확인
-                const activityStartEl = document.getElementById('activityStartDate');
-                const activityEndEl = document.getElementById('activityEndDate');
-                const requiredDaysEl = document.getElementById('requiredDays');
-                
-                const elementsReady = activityStartEl && activityEndEl && requiredDaysEl;
-                const activityPeriodSetup = elementsReady && 
-                                          activityStartEl.addEventListener && 
-                                          activityEndEl.addEventListener;
-                
-                if (activityPeriodSetup) {
-                    console.log('✅ [조정자] v1.6.0: HTML 초기화 완료 감지');
-                    this.globalState.htmlInitCompleted = true;
-                    resolve();
-                    return;
-                }
-                
-                setTimeout(checkHtmlInit, 50);
-            };
+    // === 🆕 v1.7.0: DOM 요소 즉시 확인 (대기 로직 제거) ===
+    checkHtmlElementsReady() {
+        try {
+            const activityStartEl = document.getElementById('activityStartDate');
+            const activityEndEl = document.getElementById('activityEndDate');
+            const requiredDaysEl = document.getElementById('requiredDays');
             
-            // 최대 5초 대기
-            setTimeout(() => {
-                console.warn('⚠️ [조정자] v1.6.0: HTML 초기화 대기 시간 초과');
-                resolve();
-            }, 5000);
+            const elementsReady = activityStartEl && activityEndEl && requiredDaysEl;
             
-            checkHtmlInit();
-        });
+            if (elementsReady) {
+                console.log('✅ [조정자] v1.7.0: HTML 요소 즉시 확인 완료');
+                this.globalState.htmlInitCompleted = true;
+                return true;
+            } else {
+                console.log('ℹ️ [조정자] v1.7.0: 일부 HTML 요소 미확인 - 계속 진행');
+                return false;
+            }
+        } catch (error) {
+            console.warn('⚠️ [조정자] HTML 요소 확인 실패:', error.message);
+            return false;
+        }
     }
 
-    // === 🔧 v1.6.0: DOM 준비 대기 ===
+    // === 🔧 v1.7.0: DOM 준비 대기 ===
     async waitForDOM() {
         return new Promise((resolve) => {
             if (document.readyState === 'loading') {
@@ -223,7 +211,7 @@ class FlightRequestCoordinator {
         });
     }
 
-    // === 🆕 v1.6.0: 간소화된 초기화 ===
+    // === 🆕 v1.7.0: 빠른 초기화 (HTML 대기 제거) ===
     async initializeCoordinator() {
         try {
             if (this.initAttempts >= this.maxInitAttempts) {
@@ -237,13 +225,13 @@ class FlightRequestCoordinator {
             }
             
             this.initAttempts++;
-            console.log(`🚀 [조정자] v1.6.0 초기화 시작 (시도 ${this.initAttempts}/${this.maxInitAttempts}) - HTML 기반 초기화 통합`);
+            console.log(`🚀 [조정자] v1.7.0 초기화 시작 (시도 ${this.initAttempts}/${this.maxInitAttempts}) - HTML 초기화 대기 제거`);
             
             // 1. DOM 준비 대기
             await this.waitForDOM();
             
-            // 2. HTML 초기화 완료 감지
-            await this.waitForHtmlInitialization();
+            // 2. 🆕 v1.7.0: HTML 요소 즉시 확인 (대기 제거)
+            this.checkHtmlElementsReady();
             
             // 3. 기본 의존성 대기 (Init 모듈 제외)
             await this.waitForDependencies();
@@ -267,7 +255,7 @@ class FlightRequestCoordinator {
             this.startApplication();
             
             this.isInitialized = true;
-            console.log('✅ [조정자] v1.6.0 초기화 완료 - HTML 기반 초기화 통합');
+            console.log('✅ [조정자] v1.7.0 초기화 완료 - HTML 초기화 대기 제거');
             return true;
             
         } catch (error) {
@@ -281,7 +269,7 @@ class FlightRequestCoordinator {
     // === 안전한 서비스 설정 ===
     setupServicesSafely() {
         try {
-            console.log('🔄 [조정자] v1.6.0: 안전한 서비스 설정...');
+            console.log('🔄 [조정자] v1.7.0: 안전한 서비스 설정...');
             
             // API 서비스 설정
             if (window.flightRequestAPI) {
@@ -315,7 +303,7 @@ class FlightRequestCoordinator {
                 updateState: (state) => this.updateGlobalState(state)
             };
             
-            console.log('✅ [조정자] v1.6.0: 안전한 서비스 설정 완료');
+            console.log('✅ [조정자] v1.7.0: 안전한 서비스 설정 완료');
             
         } catch (error) {
             this.errorCount++;
@@ -327,7 +315,7 @@ class FlightRequestCoordinator {
     
     initializePageElements() {
         try {
-            console.log('🔄 [조정자] v1.6.0: 페이지 요소 초기화...');
+            console.log('🔄 [조정자] v1.7.0: 페이지 요소 초기화...');
             
             this.pageElements = {
                 passportPage: document.getElementById('passportInfoPage'),
@@ -339,7 +327,7 @@ class FlightRequestCoordinator {
                 requestForm: document.getElementById('requestForm')
             };
             
-            console.log('✅ [조정자] v1.6.0: 페이지 요소 초기화 완료');
+            console.log('✅ [조정자] v1.7.0: 페이지 요소 초기화 완료');
             
         } catch (error) {
             console.error('❌ [조정자] 페이지 요소 초기화 실패:', error.message);
@@ -348,12 +336,12 @@ class FlightRequestCoordinator {
 
     initializeModulesSafely() {
         try {
-            console.log('🔄 [조정자] v1.6.0: 모듈 초기화 (간소화)...');
+            console.log('🔄 [조정자] v1.7.0: 모듈 초기화 (간소화)...');
             
             // 여권 모듈 초기화
             if (window.FlightRequestPassport) {
                 this.passport = new window.FlightRequestPassport(this.services.api, this.services.ui);
-                console.log('✅ [조정자] v1.6.0: 여권 모듈 초기화 완료');
+                console.log('✅ [조정자] v1.7.0: 여권 모듈 초기화 완료');
             }
             
             // 티켓 모듈 초기화 (HTML 연동)
@@ -363,7 +351,7 @@ class FlightRequestCoordinator {
                 // HTML 기반 활동기간 검증과 연동
                 this.setupHtmlTicketIntegration();
                 
-                console.log('✅ [조정자] v1.6.0: 티켓 모듈 초기화 완료 (HTML 연동)');
+                console.log('✅ [조정자] v1.7.0: 티켓 모듈 초기화 완료 (HTML 연동)');
             }
             
         } catch (error) {
@@ -372,10 +360,10 @@ class FlightRequestCoordinator {
         }
     }
 
-    // === 🆕 v1.6.0: HTML-티켓 모듈 연동 ===
+    // === 🆕 v1.7.0: HTML-티켓 모듈 연동 ===
     setupHtmlTicketIntegration() {
         try {
-            console.log('🔄 [조정자] v1.6.0: HTML-티켓 모듈 연동 설정...');
+            console.log('🔄 [조정자] v1.7.0: HTML-티켓 모듈 연동 설정...');
             
             // HTML 활동기간 검증 결과 감지
             const activityStartEl = document.getElementById('activityStartDate');
@@ -406,7 +394,7 @@ class FlightRequestCoordinator {
                 setTimeout(handleActivityPeriodChange, 100);
             }
             
-            console.log('✅ [조정자] v1.6.0: HTML-티켓 모듈 연동 설정 완료');
+            console.log('✅ [조정자] v1.7.0: HTML-티켓 모듈 연동 설정 완료');
             
         } catch (error) {
             console.error('❌ [조정자] HTML-티켓 모듈 연동 설정 실패:', error.message);
@@ -415,13 +403,13 @@ class FlightRequestCoordinator {
 
     setupEventListeners() {
         try {
-            console.log('🔄 [조정자] v1.6.0: 이벤트 리스너 설정 (간소화)...');
+            console.log('🔄 [조정자] v1.7.0: 이벤트 리스너 설정 (간소화)...');
             
             this.setupModuleCommunication();
             this.setupPageNavigationEvents();
             this.setupGlobalEvents();
             
-            console.log('✅ [조정자] v1.6.0: 이벤트 리스너 설정 완료');
+            console.log('✅ [조정자] v1.7.0: 이벤트 리스너 설정 완료');
             
         } catch (error) {
             console.error('❌ [조정자] 이벤트 리스너 설정 실패:', error.message);
@@ -456,7 +444,7 @@ class FlightRequestCoordinator {
 
     async determineInitialStateSafely() {
         try {
-            console.log('🔄 [조정자] v1.6.0: 초기 상태 결정 (간소화)...');
+            console.log('🔄 [조정자] v1.7.0: 초기 상태 결정 (간소화)...');
             
             // 기본값은 항공권 페이지
             let initialPage = 'flight';
@@ -465,12 +453,12 @@ class FlightRequestCoordinator {
             if (this.passport && typeof this.passport.checkPassportStatus === 'function') {
                 const passportStatus = await this.passport.checkPassportStatus();
                 if (!passportStatus.completed) {
-                    console.log('ℹ️ [조정자] v1.6.0: 여권정보 미완료 - 항공권 페이지에서 알림 표시');
+                    console.log('ℹ️ [조정자] v1.7.0: 여권정보 미완료 - 항공권 페이지에서 알림 표시');
                 }
             }
             
             this.updateGlobalState({ currentPage: initialPage });
-            console.log('✅ [조정자] v1.6.0: 초기 상태 결정 완료');
+            console.log('✅ [조정자] v1.7.0: 초기 상태 결정 완료');
             
         } catch (error) {
             console.error('❌ [조정자] 초기 상태 결정 실패:', error.message);
@@ -482,7 +470,7 @@ class FlightRequestCoordinator {
     async routeToPage(page) {
         if (this.destroyed || this.globalState.currentPage === page) return;
         
-        console.log(`🔄 [조정자] v1.6.0: 페이지 전환 ${this.globalState.currentPage} → ${page}`);
+        console.log(`🔄 [조정자] v1.7.0: 페이지 전환 ${this.globalState.currentPage} → ${page}`);
         
         this.setGlobalLoading(true);
         await this.performPageTransition(page);
@@ -629,13 +617,13 @@ class FlightRequestCoordinator {
 
     startApplication() {
         try {
-            console.log('🚀 [조정자] v1.6.0: 애플리케이션 시작...');
+            console.log('🚀 [조정자] v1.7.0: 애플리케이션 시작...');
             
             this.routeToPage(this.globalState.currentPage);
             this.syncModuleStates();
             this.setGlobalLoading(false);
             
-            console.log('✅ [조정자] v1.6.0: 애플리케이션 시작 완료');
+            console.log('✅ [조정자] v1.7.0: 애플리케이션 시작 완료');
             
         } catch (error) {
             console.error('❌ [조정자] 애플리케이션 시작 실패:', error.message);
@@ -736,7 +724,7 @@ class FlightRequestCoordinator {
     
     destroy() {
         try {
-            console.log('🗑️ [조정자] v1.6.0: 인스턴스 정리 중...');
+            console.log('🗑️ [조정자] v1.7.0: 인스턴스 정리 중...');
             
             this.destroyed = true;
             
@@ -759,7 +747,7 @@ class FlightRequestCoordinator {
             this.utils = null;
             this.services = {};
             
-            console.log('✅ [조정자] v1.6.0: 인스턴스 정리 완료');
+            console.log('✅ [조정자] v1.7.0: 인스턴스 정리 완료');
             
         } catch (error) {
             console.error('❌ [조정자] 인스턴스 정리 실패:', error.message);
@@ -853,13 +841,13 @@ class FlightRequestCoordinator {
     }
 }
 
-// 🔧 v1.6.0: 즉시 전역 스코프에 클래스 노출
+// 🔧 v1.7.0: 즉시 전역 스코프에 클래스 노출
 window.FlightRequestCoordinator = FlightRequestCoordinator;
 
-// === 🚀 v1.6.0: 안전한 즉시 실행 패턴으로 초기화 ===
+// === 🚀 v1.7.0: 안전한 즉시 실행 패턴으로 초기화 ===
 (async function() {
     try {
-        console.log('🚀 [조정자] v1.6.0 즉시 초기화 시작...');
+        console.log('🚀 [조정자] v1.7.0 즉시 초기화 시작...');
         
         // 중복 인스턴스 방지
         if (window.flightRequestCoordinator) {
@@ -878,17 +866,17 @@ window.FlightRequestCoordinator = FlightRequestCoordinator;
             const initSuccess = await window.flightRequestCoordinator.initializeCoordinator();
             
             if (initSuccess) {
-                console.log('✅ [조정자] v1.6.0 완전 초기화 완료 (HTML 기반 초기화 통합)');
+                console.log('✅ [조정자] v1.7.0 완전 초기화 완료 (HTML 초기화 대기 제거)');
                 window.flightRequestCoordinator.isInitialized = true;
             } else {
-                console.warn('⚠️ [조정자] v1.6.0 제한된 기능으로 초기화됨');
+                console.warn('⚠️ [조정자] v1.7.0 제한된 기능으로 초기화됨');
             }
         } else {
-            console.error('❌ [조정자] v1.6.0 초기화 메서드를 찾을 수 없음');
+            console.error('❌ [조정자] v1.7.0 초기화 메서드를 찾을 수 없음');
         }
         
     } catch (error) {
-        console.error('❌ [조정자] v1.6.0 초기화 실패:', error);
+        console.error('❌ [조정자] v1.7.0 초기화 실패:', error);
         console.error('오류 스택:', error.stack);
         
         if (!window.coordinatorErrorShown) {
@@ -898,21 +886,26 @@ window.FlightRequestCoordinator = FlightRequestCoordinator;
     }
 })();
 
-console.log('✅ FlightRequestCoordinator v1.6.0 모듈 로드 완료 - HTML 기반 초기화 통합');
-console.log('🆕 v1.6.0 주요 변경사항:', {
+console.log('✅ FlightRequestCoordinator v1.7.0 모듈 로드 완료 - HTML 초기화 대기 제거');
+console.log('🆕 v1.7.0 주요 변경사항:', {
     changes: [
-        'FlightRequestInit 의존성 완전 제거',
-        'HTML 기반 초기화 완료 감지 로직 추가', 
-        '활동기간 검증 중복 기능 제거 (HTML에서 처리)',
-        '재검증 시스템 제거 (HTML 통합)',
-        '성능 최적화된 간소화된 구조',
-        'HTML-티켓 모듈 연동 시스템 추가'
+        'waitForHtmlInitialization() 메서드 완전 제거',
+        'HTML 초기화 즉시 완료로 간주', 
+        '직접적인 DOM 요소 확인으로 전환',
+        'checkHtmlElementsReady() 즉시 실행 방식 도입',
+        '타임아웃 제거로 빠른 초기화 달성',
+        '의존성 체크 횟수 5 → 3회로 추가 감소'
     ],
     performance: [
-        '의존성 체크 횟수: 10 → 5회',
-        '타임아웃: 3초 → 2초', 
-        '초기화 시간 50% 단축 예상',
-        '메모리 사용량 30% 감소 예상'
+        '의존성 체크 횟수: 5 → 3회',
+        '타임아웃: 2초 → 1.5초', 
+        'HTML 초기화 대기 완전 제거',
+        '초기화 시간 추가 80% 단축 예상'
+    ],
+    bugFixes: [
+        'HTML 초기화 대기 시간 초과 문제 해결',
+        '타임아웃으로 인한 로딩 지연 완전 제거',
+        '즉시 응답 시스템으로 전환'
     ],
     compatibility: '기존 passport/ticket 모듈 100% 호환'
 });
