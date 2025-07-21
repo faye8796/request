@@ -1093,6 +1093,36 @@
             return ValidationState.maximumDays;
         }
         
+        // 🆕 최대 귀국일 추가
+        function getRequiredReturnDate() {
+            try {
+                const userData = JSON.parse(localStorage.getItem('currentStudent') || '{}');
+                const requiredReturnDate = userData.required_return_date;
+
+                if (requiredReturnDate) {
+                    console.log('✅ required_return_date 확인:', requiredReturnDate);
+
+                    // 티켓 모듈에 전달
+                    const ticketModule = window.flightRequestCoordinator?.ticket;
+                    if (ticketModule && typeof ticketModule.setUserRequirements === 'function') {
+                        ticketModule.setUserRequirements({
+                            userRequiredDays: userData.minimum_required_days || 90,
+                            userMaximumDays: userData.maximum_allowed_days || 365,
+                            dispatchEndDate: userData.dispatch_end_date,
+                            requiredReturnDate: requiredReturnDate
+                        });
+                        console.log('✅ 티켓 모듈에 required_return_date 설정 완료');
+                    }
+
+                    return requiredReturnDate;
+                }
+            } catch (error) {
+                console.warn('⚠️ required_return_date 가져오기 실패:', error);
+            }
+            return null;
+        }
+
+        
         // ===== 3. 활동기간 검증 로직 =====
         function validateActivityPeriod(arrivalDate, workEndDate) {
             // 입력값 체크
@@ -1375,6 +1405,11 @@
         
             // 필수활동일 초기 로드
             getRequiredDays();
+            
+            // 🆕 required_return_date 로드 (약간의 지연 후)
+            setTimeout(() => {
+                getRequiredReturnDate();
+            }, 2000);
         
             // 이벤트 리스너 설정
             setupEventListeners();
