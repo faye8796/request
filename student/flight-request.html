@@ -1443,13 +1443,47 @@
     </script>
 
 
-    <!-- 7단계: Lucide 아이콘 최종 초기화 -->
+   <!-- 7단계: 완전한 초기화 시스템 -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM 로드 완료 - 전체 초기화 시작');
+
+            // 1. Lucide 아이콘 초기화
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
+
+            // 2. 즉시 앱 표시 (로딩 화면 제거)
+            if (typeof initializeAppImmediate === 'function') {
+                initializeAppImmediate();
+            } else {
+                console.error('❌ initializeAppImmediate 함수를 찾을 수 없음');
+            }
+
+            // 3. coordinator 로드 확인 시작
+            if (typeof waitForCoordinatorAndInit === 'function') {
+                waitForCoordinatorAndInit();
+            } else {
+                console.error('❌ waitForCoordinatorAndInit 함수를 찾을 수 없음');
+            }
         });
+
+        // DOM이 이미 로드된 경우를 위한 추가 처리
+        if (document.readyState !== 'loading') {
+            console.log('🚀 DOM 이미 로드됨 - 즉시 초기화 실행');
+
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            if (typeof initializeAppImmediate === 'function') {
+                initializeAppImmediate();
+            }
+
+            if (typeof waitForCoordinatorAndInit === 'function') {
+                waitForCoordinatorAndInit();
+            }
+        }
     </script>
 
 </body>
