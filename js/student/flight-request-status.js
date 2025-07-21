@@ -1,13 +1,14 @@
-// flight-request-status.js - 항공권 신청 내역 조회 및 관리 모듈 v1.0.2
+// flight-request-status.js - 항공권 신청 내역 조회 및 관리 모듈 v1.0.3
 // 🎯 목적: 사용자의 항공권 신청 상태를 조회하고 관리하는 독립 모듈
 // 📋 기능: 신청 내역 표시, 상태별 UI, 액션 버튼, 실시간 업데이트
 // 🔗 연동: flight-request-coordinator.js, flight-request-api.js
 // 🗄️ DB: flight_requests, user_profiles 테이블 연동
 // 🔧 v1.0.2 개선: API 메서드 호출 오류 수정 (loadUserProfile → getUserProfile)
+// 🚨 v1.0.3 대폭 개편: 신청 수정 기능 완전 제거, 삭제 중심 UX로 통일
 
 class FlightRequestStatus {
     constructor() {
-        console.log('🚀 FlightRequestStatus v1.0.2 생성자 초기화 시작...');
+        console.log('🚀 FlightRequestStatus v1.0.3 생성자 초기화 시작...');
         
         // 의존성 참조
         this.api = null;
@@ -75,7 +76,7 @@ class FlightRequestStatus {
         this.isInitialized = false;
         this.initializationPromise = null;
         
-        console.log('✅ FlightRequestStatus v1.0.2 생성자 완료');
+        console.log('✅ FlightRequestStatus v1.0.3 생성자 완료');
     }
 
     // DOM 요소 초기화
@@ -254,7 +255,7 @@ class FlightRequestStatus {
         });
     }
 
-    // 이벤트 리스너 설정
+    // 🚨 v1.0.3 수정: 이벤트 리스너 설정 (수정 기능 제거)
     setupEventListeners() {
         console.log('🔄 [이벤트] 이벤트 리스너 설정 시작...');
         
@@ -266,15 +267,13 @@ class FlightRequestStatus {
                     this.handleRefreshStatus();
                 }
                 
-                if (event.target.matches('.cancel-request-btn, [data-action="cancel-request"]')) {
+                // 🚨 v1.0.3: 취소/삭제 기능 (수정 기능 제거)
+                if (event.target.matches('.delete-request-btn, [data-action="delete-request"]')) {
                     event.preventDefault();
-                    this.handleCancelRequest();
+                    this.handleDeleteRequest();
                 }
                 
-                if (event.target.matches('.edit-request-btn, [data-action="edit-request"]')) {
-                    event.preventDefault();
-                    this.handleEditRequest();
-                }
+                // 🚨 v1.0.3: edit-request 이벤트 핸들러 제거
                 
                 if (event.target.matches('.new-request-btn, [data-action="new-request"]')) {
                     event.preventDefault();
@@ -301,7 +300,7 @@ class FlightRequestStatus {
                 this.handleStatusChange(event.detail);
             });
             
-            console.log('✅ [이벤트] 이벤트 리스너 설정 완료');
+            console.log('✅ [이벤트] 이벤트 리스너 설정 완료 (수정 기능 제거됨)');
             
         } catch (error) {
             console.error('❌ [이벤트] 설정 실패:', error);
@@ -620,7 +619,7 @@ class FlightRequestStatus {
             // 진행 단계 계산
             const progressSteps = this.calculateProgressSteps(request.status);
             
-            // 액션 버튼 생성
+            // 🚨 v1.0.3 수정: 액션 버튼 생성 (삭제 중심)
             const actionButtons = this.generateActionButtons(request.status);
             
             // 활동 기간 정보
@@ -1012,66 +1011,73 @@ class FlightRequestStatus {
         `;
     }
 
-    // 액션 버튼 생성
+    // 🚨 v1.0.3 대폭 수정: 액션 버튼 생성 (삭제 중심 UX)
     generateActionButtons(status) {
         const buttons = [];
         
         switch (status) {
             case 'pending':
+                // 검토 중: 삭제하기만 가능
                 buttons.push({
-                    action: 'cancel-request',
-                    label: '신청 취소',
-                    icon: 'x',
+                    action: 'delete-request',
+                    label: '신청 삭제',
+                    icon: 'trash-2',
                     variant: 'outline-danger',
-                    confirmation: true
-                });
-                buttons.push({
-                    action: 'edit-request',
-                    label: '신청 수정',
-                    icon: 'edit',
-                    variant: 'outline-primary'
+                    confirmation: true,
+                    description: '신청을 삭제하고 새로 작성할 수 있습니다.'
                 });
                 break;
                 
             case 'approved':
+                // 승인됨: 삭제 불가 (승인된 상태는 보존)
                 buttons.push({
                     action: 'view-details',
                     label: '승인 세부사항',
                     icon: 'info',
-                    variant: 'outline-success'
+                    variant: 'outline-success',
+                    description: '승인된 신청의 상세 정보를 확인합니다.'
                 });
                 break;
                 
             case 'rejected':
+                // 거부됨: 삭제하고 재신청
                 buttons.push({
-                    action: 'new-request',
-                    label: '새 신청',
-                    icon: 'plus',
-                    variant: 'primary'
+                    action: 'delete-request',
+                    label: '삭제하고 재신청',
+                    icon: 'trash-2',
+                    variant: 'outline-danger',
+                    confirmation: true,
+                    description: '거부된 신청을 삭제하고 새로 신청합니다.'
                 });
                 buttons.push({
                     action: 'view-details',
                     label: '거부 사유 확인',
                     icon: 'alert-circle',
-                    variant: 'outline-danger'
+                    variant: 'outline-warning',
+                    description: '신청이 거부된 이유를 확인합니다.'
                 });
                 break;
                 
             case 'cancelled':
+                // 취소됨: 삭제하고 재신청
                 buttons.push({
-                    action: 'new-request',
-                    label: '새 신청',
-                    icon: 'plus',
-                    variant: 'primary'
+                    action: 'delete-request',
+                    label: '삭제하고 재신청',
+                    icon: 'trash-2',
+                    variant: 'outline-danger',
+                    confirmation: true,
+                    description: '취소된 신청을 삭제하고 새로 신청합니다.'
                 });
                 break;
                 
             case 'completed':
+                // 완료됨: 삭제 불가 (완료된 상태는 보존)
                 buttons.push({
                     action: 'view-details',
                     label: '완료 상세',
                     icon: 'check-circle',
-                    variant: 'outline-success'
+                    variant: 'outline-success',
+                    description: '완료된 신청의 상세 정보를 확인합니다.'
                 });
                 break;
         }
@@ -1081,14 +1087,16 @@ class FlightRequestStatus {
             action: 'refresh-status',
             label: '상태 새로고침',
             icon: 'refresh-cw',
-            variant: 'outline'
+            variant: 'outline',
+            description: '최신 신청 상태를 확인합니다.'
         });
         
         return buttons.map(button => `
             <button type="button" 
                     class="btn btn-${button.variant} ${button.action}-btn" 
                     data-action="${button.action}"
-                    ${button.confirmation ? 'data-confirmation="true"' : ''}>
+                    ${button.confirmation ? 'data-confirmation="true"' : ''}
+                    title="${button.description || ''}">
                 <i data-lucide="${button.icon}"></i>
                 ${button.label}
             </button>
@@ -1119,26 +1127,47 @@ class FlightRequestStatus {
         }
     }
 
-    async handleCancelRequest() {
-        console.log('🔄 [액션] 신청 취소 요청...');
+    // 🚨 v1.0.3 신규: 삭제 요청 핸들러 (취소 기능 대체)
+    async handleDeleteRequest() {
+        console.log('🔄 [액션] 신청 삭제 요청...');
         
         try {
             // 확인 대화상자
-            const confirmed = confirm(
-                '정말로 항공권 신청을 취소하시겠습니까?\n\n' +
-                '취소된 신청은 복구할 수 없습니다.'
-            );
+            const currentStatus = this.currentRequest?.status || 'unknown';
+            let confirmMessage = '';
+            
+            switch (currentStatus) {
+                case 'pending':
+                    confirmMessage = '정말로 검토 중인 항공권 신청을 삭제하시겠습니까?\n\n삭제된 신청은 복구할 수 없으며, 필요하시면 새로 신청해야 합니다.';
+                    break;
+                case 'rejected':
+                    confirmMessage = '거부된 항공권 신청을 삭제하시겠습니까?\n\n삭제 후 새로운 신청을 진행할 수 있습니다.';
+                    break;
+                case 'cancelled':
+                    confirmMessage = '취소된 항공권 신청을 삭제하시겠습니까?\n\n삭제 후 새로운 신청을 진행할 수 있습니다.';
+                    break;
+                default:
+                    confirmMessage = '정말로 항공권 신청을 삭제하시겠습니까?\n\n삭제된 신청은 복구할 수 없습니다.';
+            }
+            
+            const confirmed = confirm(confirmMessage);
             
             if (!confirmed) {
-                console.log('ℹ️ [액션] 신청 취소가 사용자에 의해 취소됨');
+                console.log('ℹ️ [액션] 신청 삭제가 사용자에 의해 취소됨');
                 return;
             }
             
             this.showLoading(true);
             
-            // API를 통해 취소 처리
+            // 🔧 v1.0.3: API를 통해 삭제 처리 (cancelFlightRequest 사용)
             if (this.api && typeof this.api.cancelFlightRequest === 'function') {
-                await this.api.cancelFlightRequest(this.currentRequest.id);
+                const result = await this.api.cancelFlightRequest(this.currentRequest.id);
+                
+                if (!result.success) {
+                    throw new Error(result.error || '신청 삭제에 실패했습니다.');
+                }
+                
+                console.log('✅ [액션] 신청 삭제 성공 (cancelFlightRequest):', result);
             } else {
                 throw new Error('API cancelFlightRequest 메서드를 찾을 수 없습니다');
             }
@@ -1147,43 +1176,22 @@ class FlightRequestStatus {
             await this.loadCurrentRequest();
             this.renderStatus();
             
-            this.showSuccess('항공권 신청이 취소되었습니다.');
+            // 성공 메시지
+            const statusMessage = currentStatus === 'rejected' ? '거부된 신청이 삭제되었습니다. 새로운 신청을 진행해주세요.' :
+                                currentStatus === 'cancelled' ? '취소된 신청이 삭제되었습니다. 새로운 신청을 진행해주세요.' :
+                                '항공권 신청이 삭제되었습니다.';
+            
+            this.showSuccess(statusMessage);
             
         } catch (error) {
-            console.error('❌ [액션] 신청 취소 실패:', error);
-            this.showError('신청을 취소할 수 없습니다.', error);
+            console.error('❌ [액션] 신청 삭제 실패:', error);
+            this.showError('신청을 삭제할 수 없습니다.', error);
         } finally {
             this.showLoading(false);
         }
     }
 
-    handleEditRequest() {
-        console.log('🔄 [액션] 신청 수정 요청...');
-        
-        try {
-            // 기존 신청 데이터로 폼 채우기
-            this.populateFormWithExistingData();
-            
-            // 신청 폼 표시
-            if (this.elements.requestForm) {
-                this.elements.requestForm.style.display = 'block';
-            }
-            
-            // 상태 카드 숨기기
-            if (this.elements.statusContainer) {
-                this.elements.statusContainer.style.display = 'none';
-            }
-            
-            // 폼으로 스크롤
-            this.scrollToForm();
-            
-            this.showSuccess('기존 정보로 폼이 채워졌습니다. 수정 후 다시 제출해주세요.');
-            
-        } catch (error) {
-            console.error('❌ [액션] 신청 수정 실패:', error);
-            this.showError('신청을 수정할 수 없습니다.', error);
-        }
-    }
+    // 🚨 v1.0.3: handleEditRequest 메서드 완전 제거
 
     handleNewRequest() {
         console.log('🔄 [액션] 새 신청 요청...');
@@ -1292,64 +1300,7 @@ class FlightRequestStatus {
         }
     }
 
-    populateFormWithExistingData() {
-        try {
-            if (!this.currentRequest || !this.elements.requestForm) {
-                return;
-            }
-            
-            const request = this.currentRequest;
-            const form = this.elements.requestForm;
-            
-            // 날짜 필드들
-            this.setFormValue(form, 'departureDate', request.departure_date);
-            this.setFormValue(form, 'returnDate', request.return_date);
-            
-            // 공항 정보
-            this.setFormValue(form, 'departureAirport', request.departure_airport);
-            this.setFormValue(form, 'arrivalAirport', request.arrival_airport);
-            
-            // 가격 정보
-            this.setFormValue(form, 'ticketPrice', request.ticket_price);
-            this.setFormValue(form, 'currency', request.currency);
-            this.setFormValue(form, 'priceSource', request.price_source);
-            
-            // 구매 방식
-            this.setRadioValue(form, 'purchaseType', request.purchase_type);
-            
-            // 구매 링크
-            this.setFormValue(form, 'purchaseLink', request.purchase_link);
-            
-            console.log('✅ [폼채우기] 기존 데이터로 폼 채우기 완료');
-            
-        } catch (error) {
-            console.error('❌ [폼채우기] 실패:', error);
-        }
-    }
-
-    setFormValue(form, fieldName, value) {
-        try {
-            const field = form.querySelector(`[name="${fieldName}"], #${fieldName}`);
-            if (field && value !== null && value !== undefined) {
-                field.value = value;
-            }
-        } catch (error) {
-            console.warn('⚠️ [폼설정] 필드 설정 실패:', fieldName, error);
-        }
-    }
-
-    setRadioValue(form, fieldName, value) {
-        try {
-            const radios = form.querySelectorAll(`[name="${fieldName}"]`);
-            radios.forEach(radio => {
-                if (radio.value === value) {
-                    radio.checked = true;
-                }
-            });
-        } catch (error) {
-            console.warn('⚠️ [라디오설정] 설정 실패:', fieldName, error);
-        }
-    }
+    // 🚨 v1.0.3: populateFormWithExistingData 메서드 제거 (수정 기능 제거)
 
     formatDetailedInfo() {
         return {
@@ -1357,7 +1308,7 @@ class FlightRequestStatus {
             userProfile: this.userProfile,
             currentUser: this.currentUser,
             lastUpdated: this.lastUpdated,
-            module: 'FlightRequestStatus v1.0.2'
+            module: 'FlightRequestStatus v1.0.3'
         };
     }
 
@@ -1524,22 +1475,28 @@ class FlightRequestStatus {
 // 전역 스코프에 노출
 window.FlightRequestStatus = FlightRequestStatus;
 
-console.log('✅ FlightRequestStatus v1.0.2 모듈 로드 완료 - API 메서드 호출 오류 해결');
-console.log('🔧 v1.0.2 수정사항:', {
-    apiMethodFix: 'loadUserProfile → getUserProfile로 변경',
-    requestMethodFix: 'loadExistingFlightRequest → getExistingRequest로 변경', 
-    fallbackSystem: 'localStorage 기반 폴백 시스템 강화',
-    errorHandling: '존재하지 않는 메서드 호출 오류 방지',
-    compatibility: '기존 API 구조와의 호환성 개선'
+console.log('✅ FlightRequestStatus v1.0.3 모듈 로드 완료 - 수정 기능 제거, 삭제 중심 UX');
+console.log('🚨 v1.0.3 주요 변경사항:', {
+    editFunctionRemoval: 'handleEditRequest 메서드 완전 제거',
+    editButtonRemoval: 'edit-request 액션 버튼 완전 제거',
+    deleteOnlyUX: '모든 상황에서 삭제 중심 UX로 통일',
+    enhancedDeleteLogic: '상태별 맞춤 삭제 확인 메시지',
+    improvedUserExperience: '일관된 사용자 경험 제공'
 });
-console.log('🎯 FlightRequestStatus v1.0.2 핵심 기능:', {
+console.log('🎯 FlightRequestStatus v1.0.3 핵심 기능:', {
     신청내역조회: '사용자의 현재 항공권 신청 상태 실시간 조회',
     상태별UI: 'pending/approved/rejected/cancelled/completed 상태별 맞춤 UI',
     진행상황표시: '신청 → 검토 → 결정 → 완료 단계별 시각적 타임라인',
-    액션버튼: '상태에 따른 취소/수정/새신청/상세보기 액션',
+    삭제중심액션: '상태에 따른 삭제/새신청/상세보기 액션만 제공',
     실시간업데이트: 'API 이벤트 및 전역 이벤트를 통한 자동 상태 동기화',
     반응형디자인: '모바일/데스크톱 최적화된 카드 레이아웃',
     에러처리: '네트워크 오류, 데이터 없음 등 모든 예외 상황 처리',
-    폼연동: '기존 신청 데이터로 폼 자동 채우기 및 수정 지원',
-    API호환성: '올바른 API 메서드 호출로 안정성 보장'
+    일관된UX: '삭제 후 재신청 방식으로 사용자 경험 통일',
+    cancelFlightRequest연동: 'v8.8.3 API의 신규 취소 메서드 활용'
+});
+console.log('🗑️ v1.0.3 제거된 기능:', {
+    신청수정: 'handleEditRequest 메서드 및 수정 버튼 완전 제거',
+    폼채우기: 'populateFormWithExistingData 메서드 제거',
+    수정이벤트: 'edit-request 이벤트 핸들러 제거',
+    혼란방지: '수정/삭제 혼재로 인한 사용자 혼란 해결'
 });
