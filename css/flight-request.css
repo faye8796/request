@@ -1,6 +1,10 @@
-/* flight-request.css - 항공권 신청 페이지 스타일 v8.5.1 DOM 최적화 */
-/* 완전 통합 버전: 인라인 스타일 통합 + UI 변환 최적화 + DOM 조작 최적화 */
+/* ===================================================================== */
+/* flight-request.css - 항공권 신청 페이지 스타일 v8.5.2 Status 스타일 통합 */
+/* 📋 v8.5.2 변경사항: flight-request-status.js의 CSS 스타일을 통합 */
+/* 🔧 통합된 컴포넌트: 기존 스타일 + FlightRequestStatus 전용 스타일 */
+/* ===================================================================== */
 
+/* 기존 스타일들 (전체 유지) */
 /* 전역 로딩 상태 */
 .global-loading-state {
     position: fixed;
@@ -33,7 +37,7 @@
     margin: 0;
 }
 
-/* 페이지 전환 스타일 (Equipment-request 구조 참고) */
+/* 페이지 전환 스타일 */
 .page {
     display: none;
 }
@@ -42,7 +46,7 @@
     display: block;
 }
 
-/* 헤더 스타일 개선 - equipment-request.html 스타일과 통일 */
+/* 헤더 스타일 개선 */
 .header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -113,7 +117,7 @@
     padding: 2rem 1.5rem;
 }
 
-/* 🆕 Passport Info 배너 (통합됨) */
+/* Passport Info 배너 */
 .info-banner {
     background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
     color: white;
@@ -157,7 +161,7 @@
     line-height: 1.6;
 }
 
-/* 🆕 여권정보 성공 전환 스타일 */
+/* 여권정보 성공 전환 스타일 */
 .success-transition {
     text-align: center;
     padding: 3rem 2rem;
@@ -187,7 +191,7 @@
     margin: 0 0 2rem 0;
 }
 
-/* 🛠️ v8.4.0: 여권정보 보기 모드 스타일 */
+/* 여권정보 보기 모드 스타일 */
 .passport-view-container {
     max-width: 800px;
     margin: 0 auto;
@@ -570,7 +574,7 @@
     margin: 0;
 }
 
-/* 신청 폼 (flight-request와 passport-info 모두 지원) */
+/* 신청 폼 */
 .request-form,
 .passport-form {
     background: white;
@@ -583,6 +587,7 @@
 .form-section {
     padding: 2rem;
     border-bottom: 1px solid #e5e7eb;
+    will-change: opacity, filter;
 }
 
 .form-section:last-of-type {
@@ -719,7 +724,7 @@
     margin-top: 0.25rem;
 }
 
-/* 🆕 Passport Info 전용 - 폼 경고 메시지 */
+/* Passport Info 전용 - 폼 경고 메시지 */
 .form-warning {
     display: block;
     font-size: 0.75rem;
@@ -885,7 +890,7 @@
     border-top: 1px solid #e5e7eb;
 }
 
-/* 🛠️ v8.4.0: 여권정보 수정을 위한 단일 버튼 스타일 */
+/* 여권정보 수정을 위한 단일 버튼 스타일 */
 .button-group.single-button {
     justify-content: center;
     gap: 0;
@@ -1120,23 +1125,478 @@
     }
 }
 
-/* ================================ */
-/* 📦 HTML 인라인 스타일 통합 영역   */
-/* ================================ */
+/* ========================================== */
+/* 🆕 FlightRequestStatus 전용 스타일 (통합됨) */
+/* ========================================== */
 
-/* 🆕 가격 정보 스타일 */
+/* FlightRequestStatus 전용 스타일 */
+.flight-status-container {
+    margin-bottom: 24px;
+    transition: all 0.3s ease;
+}
+
+.flight-request-status-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.status-header {
+    padding: 20px;
+    border-radius: 12px 12px 0 0;
+}
+
+.status-header-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.status-icon-wrapper {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-icon {
+    width: 24px;
+    height: 24px;
+}
+
+.status-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.status-title {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.status-description {
+    margin: 0 0 12px 0;
+    opacity: 0.9;
+    font-size: 14px;
+}
+
+.status-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.status-actions-header {
+    flex-shrink: 0;
+}
+
+.progress-timeline {
+    padding: 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.timeline-title {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #374151;
+}
+
+.timeline-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.timeline-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.timeline-step.completed {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
+
+.timeline-step.current {
+    background: #fffbeb;
+    border: 1px solid #fed7aa;
+}
+
+.timeline-step-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.timeline-step.completed .timeline-step-icon {
+    background: #059669;
+    color: white;
+}
+
+.timeline-step.current .timeline-step-icon {
+    background: #f59e0b;
+    color: white;
+}
+
+.timeline-step:not(.completed):not(.current) .timeline-step-icon {
+    background: #e5e7eb;
+    color: #6b7280;
+}
+
+.timeline-step-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.timeline-step-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #111827;
+}
+
+.timeline-step-description {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 4px;
+}
+
+.timeline-step-date {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.request-details {
+    padding: 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.details-title {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #374151;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.detail-item {
+    background: #f9fafb;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.detail-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.detail-item.rejection-reason {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.detail-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.detail-value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: #111827;
+    font-weight: 500;
+}
+
+.detail-value i {
+    width: 16px;
+    height: 16px;
+    color: #6b7280;
+}
+
+.rejection-text {
+    color: #dc2626 !important;
+}
+
+.purchase-link {
+    color: #2563eb;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.purchase-link:hover {
+    color: #1d4ed8;
+}
+
+.activity-period-info,
+.price-info {
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+    border: 1px solid #e2e8f0;
+}
+
+.activity-title,
+.price-title {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #475569;
+}
+
+.activity-details,
+.price-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+.activity-item,
+.price-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.activity-item label,
+.price-item label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.activity-item span,
+.price-item span {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.activity-item.highlight span {
+    color: #059669;
+}
+
+.price-value {
+    color: #059669 !important;
+    font-size: 16px !important;
+}
+
+.attachments-info {
+    padding: 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.attachments-title {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #374151;
+}
+
+.attachments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.attachment-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+.attachment-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.attachment-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.attachment-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.status-actions {
+    padding: 20px 24px;
+    background: #f9fafb;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.no-request-status {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 32px;
+    text-align: center;
+}
+
+.no-request-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.no-request-icon {
+    width: 48px;
+    height: 48px;
+    color: #6b7280;
+}
+
+.no-request-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.no-request-content {
+    margin-bottom: 24px;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+.no-request-actions {
+    display: flex;
+    justify-content: center;
+}
+
+/* 버튼 스타일 확장 */
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.btn-outline-primary {
+    background: transparent;
+    border-color: #2563eb;
+    color: #2563eb;
+}
+
+.btn-outline-primary:hover:not(:disabled) {
+    background: #2563eb;
+    color: white;
+}
+
+.btn-outline-success {
+    background: transparent;
+    border-color: #059669;
+    color: #059669;
+}
+
+.btn-outline-success:hover:not(:disabled) {
+    background: #059669;
+    color: white;
+}
+
+.btn-outline-danger {
+    background: transparent;
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
+.btn-outline-danger:hover:not(:disabled) {
+    background: #dc2626;
+    color: white;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 에러 및 성공 메시지 스타일 */
+.error-content,
+.success-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.error-content {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.success-content {
+    background: #f0fdf4;
+    color: #059669;
+    border: 1px solid #bbf7d0;
+}
+
+/* ============================= */
+/* 기존 HTML 인라인 스타일 통합   */
+/* ============================= */
+
+/* 가격 정보 스타일 */
 .price-info-section {
     margin-top: 24px;
     padding: 20px;
     background: #f8fafc;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
-}
-
-/* 로딩 아이콘 회전 애니메이션 */
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
 }
 
 /* 검증 상태 부드러운 전환 */
@@ -1209,7 +1669,7 @@
     font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
 }
 
-/* 🆕 v8.3.0: 귀국 필수 완료일 제약사항 스타일 */
+/* 귀국 필수 완료일 제약사항 스타일 */
 .required-return-date-info {
     margin-bottom: 20px;
     padding: 16px;
@@ -1274,7 +1734,7 @@
     color: #64748b;
 }
 
-/* 🆕 v8.3.0: 귀국일 제약사항 알림 스타일 */
+/* 귀국일 제약사항 알림 스타일 */
 .return-date-constraint-info {
     margin-top: 8px;
     padding: 8px 12px;
@@ -1315,7 +1775,7 @@
     line-height: 1.4;
 }
 
-/* 🆕 v9.0.0: 현지 활동기간 관리 스타일 개선 (2열 레이아웃) */
+/* 현지 활동기간 관리 스타일 개선 (2열 레이아웃) */
 .activity-period-info {
     margin-top: 16px;
     padding: 16px;
@@ -1360,7 +1820,7 @@
     white-space: nowrap;
 }
 
-/* 🔧 v9.0.0: 로딩 상태 스타일 */
+/* 로딩 상태 스타일 */
 .requirement-status .value.loading {
     color: #6b7280;
     font-style: italic;
@@ -1400,7 +1860,7 @@
     margin-right: 8px;
 }
 
-/* 🆕 v8.2.2: 단계별 진행 안내 스타일 */
+/* 단계별 진행 안내 스타일 */
 .step-indicator {
     display: flex;
     align-items: center;
@@ -1440,7 +1900,7 @@
     line-height: 1.4;
 }
 
-/* 🆕 개선된 로딩 상태 스타일 */
+/* 개선된 로딩 상태 스타일 */
 .loading-message {
     text-align: center;
     padding: 40px 20px;
@@ -1476,7 +1936,7 @@
     animation: loadingDots 1.5s infinite;
 }
 
-/* 🆕 v8.2.2: 폼 섹션 순서 시각적 강조 */
+/* 폼 섹션 순서 시각적 강조 */
 .form-section.priority {
     border: 2px solid #3b82f6;
     background: #f8fafc;
@@ -1486,7 +1946,7 @@
     color: #1e40af;
 }
 
-/* 🔧 여권정보 페이지 스타일 */
+/* 여권정보 페이지 스타일 */
 .passport-form {
     max-width: 800px;
     margin: 0 auto;
@@ -1531,17 +1991,15 @@
     line-height: 1.5;
 }
 
-/* ================================ */
-/* 🎯 UI 변환 최적화 클래스 (신규)   */
-/* ================================ */
-
-/* 🚀 항공권 정보 섹션 비활성화 스타일 */
+/* UI 변환 최적화 클래스 */
+/* 항공권 정보 섹션 비활성화 스타일 */
 .flight-section-disabled {
     opacity: 0.6;
     pointer-events: none;
     filter: grayscale(20%);
     transition: all 0.3s ease;
     position: relative;
+    will-change: opacity, filter;
 }
 
 .flight-section-disabled::before {
@@ -1600,7 +2058,7 @@
     color: #9ca3af;
 }
 
-/* 🎯 활성화 상태 강조 */
+/* 활성화 상태 강조 */
 .flight-section-enabled {
     opacity: 1;
     pointer-events: auto;
@@ -1608,11 +2066,8 @@
     transition: all 0.3s ease;
 }
 
-/* ================================ */
-/* 🚀 DOM 조작 최적화 클래스 (신규)  */
-/* ================================ */
-
-/* 🔧 검증 상태 기본 스타일 */
+/* DOM 조작 최적화 클래스 */
+/* 검증 상태 기본 스타일 */
 .validation-status {
     display: flex;
     align-items: center;
@@ -1622,7 +2077,7 @@
     margin-top: 8px;
     font-size: 14px;
     font-weight: 500;
-    transition: all 0.2s ease; /* 부드러운 전환 */
+    transition: all 0.2s ease;
 }
 
 .validation-status.valid {
@@ -1650,16 +2105,11 @@
 }
 
 /* 로딩 애니메이션 */
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
 .validation-status.loading i {
     animation: spin 1s linear infinite;
 }
 
-/* 🔧 필수 활동일 UI 스타일 */
+/* 필수 활동일 UI 스타일 */
 .required-days-value {
     font-weight: 600;
     transition: color 0.2s ease;
@@ -1677,7 +2127,7 @@
     color: #dc2626; 
 }
 
-/* 🔧 전제조건 상태 메시지 */
+/* 전제조건 상태 메시지 */
 .prerequisite-status {
     display: flex;
     align-items: center;
@@ -1706,54 +2156,6 @@
     color: #d97706;
     background-color: #fffbeb;
     border: 1px solid #fed7aa;
-}
-
-/* 반응형 조정 */
-@media (max-width: 768px) {
-    .price-info-section,
-    .activity-period-info {
-        margin-top: 16px;
-        padding: 16px;
-    }
-    
-    .subsection-title {
-        font-size: 15px;
-    }
-    
-    .notice-content {
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .activity-summary {
-        grid-template-columns: 1fr;
-        gap: 8px;
-    }
-
-    .step-indicator {
-        flex-direction: column;
-        text-align: center;
-        gap: 8px;
-    }
-
-    .step-number {
-        margin-right: 0;
-    }
-
-    .required-return-date-info {
-        flex-direction: column;
-        gap: 8px;
-        padding: 12px;
-    }
-}
-
-/* 🎯 추가 최적화: 트랜지션 성능 향상 */
-.form-section {
-    will-change: opacity, filter;
-}
-
-.flight-section-disabled {
-    will-change: opacity, filter;
 }
 
 /* 반응형 디자인 */
@@ -1826,7 +2228,7 @@
         grid-template-columns: 1fr;
     }
 
-    /* 🆕 Passport Info 반응형 */
+    /* Passport Info 반응형 */
     .info-banner {
         flex-direction: column;
         text-align: center;
@@ -1841,7 +2243,7 @@
         font-size: 1rem;
     }
 
-    /* 🛠️ v8.4.0: 여권정보 보기 모드 반응형 */
+    /* 여권정보 보기 모드 반응형 */
     .passport-view-container {
         padding: 15px;
     }
@@ -1870,13 +2272,80 @@
         max-height: 250px;
     }
 
-    /* 🛠️ v8.4.0: 단일 버튼 반응형 */
+    /* 단일 버튼 반응형 */
     .button-group.single-button {
         flex-direction: column;
     }
 
     .button-group.single-button .btn {
         width: 100%;
+    }
+
+    /* 🆕 FlightRequestStatus 반응형 */
+    .status-header-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .status-actions-header {
+        align-self: flex-start;
+    }
+
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .status-actions {
+        justify-content: stretch;
+        flex-direction: column;
+    }
+
+    .attachment-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .attachment-actions {
+        justify-content: center;
+    }
+
+    /* 기존 스타일들 */
+    .price-info-section,
+    .activity-period-info {
+        margin-top: 16px;
+        padding: 16px;
+    }
+    
+    .subsection-title {
+        font-size: 15px;
+    }
+    
+    .notice-content {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .activity-summary {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .step-indicator {
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+
+    .step-number {
+        margin-right: 0;
+    }
+
+    .required-return-date-info {
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
     }
 }
 
@@ -1914,7 +2383,7 @@
     }
 }
 
-/* 🛠️ v8.4.0: 다크 모드 지원 (여권정보 보기 모드) */
+/* 다크 모드 지원 (여권정보 보기 모드) */
 @media (prefers-color-scheme: dark) {
     .passport-info-card {
         background: #1f2937;
@@ -1960,3 +2429,12 @@
         border-color: #6b7280;
     }
 }
+
+/* ===================================================== */
+/* 📊 v8.5.2 통합 완료 */
+/* 🎯 포함된 컴포넌트: */
+/* - 기존 flight-request 모든 스타일 */
+/* - FlightRequestStatus 전용 스타일 */
+/* - 반응형 디자인 개선 */
+/* - 트랜지션 성능 최적화 */
+/* ===================================================== */
