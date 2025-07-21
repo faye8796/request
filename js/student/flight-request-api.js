@@ -447,6 +447,201 @@ class FlightRequestAPI {
         return result;
     }
 
+    // === 🆕 v8.9.0: 항공권 전용 메서드들 ===
+
+    async uploadFlightImage(imageFile) {
+        try {
+            console.log('📤 [API] 항공권 이미지 업로드 시작:', imageFile.name);
+            
+            await this.ensureInitialized();
+            
+            if (!this.user) {
+                await this.getCurrentUser();
+            }
+            
+            if (!this.user?.id) {
+                throw new Error('사용자 정보가 없습니다');
+            }
+
+            // 파일명 생성: user_id_timestamp_original_name
+            const timestamp = Date.now();
+            const fileExtension = imageFile.name.split('.').pop();
+            const fileName = `${this.user.id}_${timestamp}_flight_image.${fileExtension}`;
+            const filePath = `flight-requests/${fileName}`;
+            
+            // 항공권 이미지 전용 버켓에 업로드
+            const imageUrl = await this.uploadFile('flight-images', filePath, imageFile, {
+                upsert: false,
+                cacheControl: '3600'
+            });
+            
+            console.log('✅ [API] 항공권 이미지 업로드 완료:', imageUrl);
+            
+            return {
+                success: true,
+                url: imageUrl,
+                fileName: fileName,
+                filePath: filePath
+            };
+            
+        } catch (error) {
+            console.error('❌ [API] 항공권 이미지 업로드 실패:', error);
+            return {
+                success: false,
+                error: error.message || '이미지 업로드 중 오류가 발생했습니다.'
+            };
+        }
+    }
+
+    async saveFlightRequest(formData) {
+        try {
+            console.log('💾 [API] 항공권 신청 저장 시작:', formData);
+
+            await this.ensureInitialized();
+
+            if (!this.user) {
+                await this.getCurrentUser();
+            }
+
+            if (!this.user?.id) {
+                throw new Error('사용자 정보가 없습니다');
+            }
+
+            // 🔧 1단계: user_profiles에 활동기간 및 파견정보 완전 업데이트
+            if (formData.actualArrivalDate && formData.actualWorkEndDate && 
+                formData.departureDate && formData.returnDate) {
+
+                // 날짜 파싱
+                const actualArrival = new Date(formData.actualArrivalDate);
+                const actualWorkEnd = new Date(formData.actualWorkEndDate);
+                const departureDate = new Date(formData.departureDate);
+                const returnDate = new Date(formData.returnDate);
+
+                // 활동일수 계산 (actual_work_days)
+                const actualWorkDays = Math.ceil((actualWorkEnd - actualArrival) / (1000 * 60 * 60 * 24)) + 1;
+
+                // 체류일수 계산 (dispatch_duration)
+                const dispatchDuration = Math.ceil((returnDate - departureDate) / (1000 * 60 * 60 * 24)) + 1;
+
+                const userProfileData = {
+                    // 활동 기간
+                    actual_arrival_date: formData.actualArrivalDate,
+                    actual_work_end_date: formData.actualWorkEndDate,
+                    actual_work_days: actualWorkDays,
+
+                    // 파견 기간 (출국/귀국일)
+                    dispatch_start_date: formData.departureDate,
+                    dispatch_end_date: formData.returnDate,
+                    dispatch_duration: dispatchDuration,
+
+                    // 메타데이터
+                    updated_at: new Date().toISOString()
+                };
+
+                await this.updateData('user_profiles', userProfileData, { id: this.user.id });
+                console.log('✅ [API] user_profiles 완전 업데이트 완료:', {
+                    actualWorkDays,
+                    dispatchDuration,
+                    actualArrivalDate: formData.actualArrivalDate,
+                    actualWorkEndDate: formData.actualWorkEndDate,
+                    dispatchStartDate: formData.departureDate,
+                    dispatchEndDate: formData.returnDate
+                });
+            }
+
+            // 🔧 2단계: flight_requests에 항공권 정보 저장 (올바른 컬럼명 사용)
+            const flightRequestData = {
+                user_id: this.user.id,
+
+                // 올바른 컬럼명 사용
+                purchase_type: formData.purchaseMethod, // purchase_method → purchase_type
+                purchase_link: formData.purchaseLink || null,
+
+                // 항공권 정보
+                departure_date: formData.departureDate,
+                return_date: formData.returnDate,
+                departure_airport: formData.departureAirport,
+                arrival_airport: formData.returnAirport, // return_airport → arrival_airport
+
+                // 가격 정보 (올바른 컬럼명)
+                ticket_price: formData.totalPrice, // total_price → ticket_price
+                currency: formData.currency,
+                price_source: formData.priceSource,
+
+                // 이미지
+                flight_image_url: formData.flightImageUrl,
+
+                // 메타데이터
+                status: formData.status || 'pending',
+                version: 1,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            // flight_requests 테이블에 저장
+            const savedData = await this.insertData('flight_requests', flightRequestData);
+
+            console.log('✅ [API] 항공권 신청 저장 완료:', savedData.id);
+
+            return {
+                success: true,
+                data: savedData,
+                message: '항공권 신청이 성공적으로 저장되었습니다.'
+            };
+
+        } catch (error) {
+            console.error('❌ [API] 항공권 신청 저장 실패:', error);
+            return {
+                success: false,
+                error: error.message || '항공권 신청 저장 중 오류가 발생했습니다.'
+            };
+        }
+    }
+
+    async getFlightRequest(userId = null) {
+        try {
+            await this.ensureInitialized();
+            
+            const targetUserId = userId || this.user?.id;
+            
+            if (!targetUserId) {
+                if (!this.user) {
+                    await this.getCurrentUser();
+                }
+                if (!this.user?.id) {
+                    throw new Error('사용자 정보가 없습니다');
+                }
+            }
+
+            // getExistingRequest와 동일한 로직
+            const { data, error } = await this.supabase
+                .from('flight_requests')
+                .select('*')
+                .eq('user_id', targetUserId || this.user.id)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (error) {
+                throw error;
+            }
+
+            const result = data && data.length > 0 ? data[0] : null;
+            
+            return {
+                success: true,
+                data: result
+            };
+
+        } catch (error) {
+            console.error('❌ [API] getFlightRequest() 실패:', error);
+            return {
+                success: false,
+                error: error.message || '항공권 신청 조회 중 오류가 발생했습니다.',
+                data: null
+            };
+        }
+    }
+
     // === 파일 업로드 ===
 
     async uploadFile(bucket, path, file, options = {}) {

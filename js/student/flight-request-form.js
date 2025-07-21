@@ -591,28 +591,28 @@ class FlightRequestFormHandler {
             const purchaseLink = document.getElementById('purchaseLink')?.value || '';
             
             const formData = {
-                // 활동 기간
+                // 활동 기간 (user_profiles 업데이트용)
                 actualArrivalDate: document.getElementById('actualArrivalDate')?.value,
                 actualWorkEndDate: document.getElementById('actualWorkEndDate')?.value,
-                
+
                 // 구매 방식
-                purchaseMethod: purchaseType, // 'direct' or 'agency'
+                purchaseMethod: purchaseType, // API에서 purchase_type으로 변환됨
                 purchaseLink: purchaseLink,
-                
+
                 // 항공권 정보
                 departureDate: document.getElementById('departureDate')?.value,
                 returnDate: document.getElementById('returnDate')?.value,
                 departureAirport: document.getElementById('departureAirport')?.value,
-                returnAirport: document.getElementById('arrivalAirport')?.value, // HTML에서는 arrivalAirport
-                
+                returnAirport: document.getElementById('arrivalAirport')?.value, // HTML ID 주의
+
                 // 가격 정보
-                totalPrice: parseFloat(document.getElementById('ticketPrice')?.value) || 0,
+                totalPrice: parseFloat(document.getElementById('ticketPrice')?.value) || 0, // API에서 ticket_price로 변환됨
                 currency: document.getElementById('currency')?.value,
                 priceSource: document.getElementById('priceSource')?.value,
-                
+
                 // 이미지
                 flightImageUrl: imageUrl,
-                
+
                 // 메타데이터
                 status: 'pending',
                 submittedAt: new Date().toISOString()
