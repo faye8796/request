@@ -605,6 +605,11 @@ class FlightRequestInit {
         };
     }
 
+    // 📊 초기화 상태 반환 (HTML에서 호출하는 메서드)
+    getInitStatus() {
+        return this.initStatus;
+    }
+
     // 📊 상태 확인
     getStatus() {
         return {
