@@ -415,6 +415,16 @@
 
                 <!-- 성공 메시지 -->
                 <div id="successMessage" class="success-message" style="display: none;"></div>
+
+                <!-- 🆕 Status 모듈용 메시지들 추가 -->
+                <div id="statusLoadingIndicator" class="loading-indicator" style="display: none;">
+                    <div class="spinner"></div>
+                    <span>상태를 확인하는 중...</span>
+                </div>
+
+                <div id="statusErrorMessage" class="error-message" style="display: none;"></div>
+
+                <div id="statusSuccessMessage" class="success-message" style="display: none;"></div>
             </main>
         </div>
 
@@ -551,6 +561,7 @@
     <script src="../js/student/flight-request-utils.js" async></script>
     <script src="../js/student/flight-request-passport.js" async></script>
     <script src="../js/student/flight-request-ticket.js" async></script>
+    <script src="../js/student/flight-request-status.js" async></script>
     <script src="../js/student/flight-request-coordinator.js" async></script>
     <script src="../js/student/flight-request-form.js" async></script>
 

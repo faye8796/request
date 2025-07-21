@@ -19,6 +19,7 @@ class FlightRequestCoordinator {
         this.api = null;
         this.utils = null;
         this.formHandler = null;
+        this.status = null;
         
         // 전역 상태 관리 (간소화)
         this.globalState = {
@@ -269,6 +270,90 @@ class FlightRequestCoordinator {
             return false;
         }
     }
+    // === 🆕 Status 모듈 초기화 ===
+    async initializeStatusModule() {
+        try {
+            console.log('🔄 [조정자] Status 모듈 초기화...');
+
+            if (this.status && typeof this.status.ensureInitialized === 'function') {
+                const success = await this.status.ensureInitialized();
+
+                if (success) {
+                    console.log('✅ [조정자] Status 모듈 초기화 완료');
+
+                    // Status 모듈 이벤트 연결
+                    this.setupStatusModuleEvents();
+
+                    // 초기 상태 로드
+                    await this.status.refresh();
+                } else {
+                    console.warn('⚠️ [조정자] Status 모듈 초기화 실패');
+                }
+            } else {
+                console.warn('⚠️ [조정자] FlightRequestStatus 클래스를 찾을 수 없음');
+            }
+
+        } catch (error) {
+            console.error('❌ [조정자] Status 모듈 초기화 실패:', error);
+        }
+    }
+
+    // === 🆕 Status 모듈 이벤트 설정 ===
+    setupStatusModuleEvents() {
+        try {
+            if (!this.status) return;
+
+            // Status 모듈에서 발생하는 이벤트들을 coordinator에서 처리
+            this.on('status:requestUpdated', (event) => {
+                console.log('📡 [조정자] Status 업데이트 이벤트:', event.detail);
+                this.handleStatusUpdate(event.detail);
+            });
+
+            this.on('status:newRequestStarted', (event) => {
+                console.log('📡 [조정자] 새 신청 시작 이벤트:', event.detail);
+                this.handleNewRequestStart(event.detail);
+            });
+
+            console.log('✅ [조정자] Status 모듈 이벤트 설정 완료');
+
+        } catch (error) {
+            console.error('❌ [조정자] Status 모듈 이벤트 설정 실패:', error);
+        }
+    }
+
+    // === 🆕 Status 이벤트 핸들러들 ===
+    handleStatusUpdate(data) {
+        try {
+            // 다른 모듈들에게 상태 변경 알림
+            this.syncModuleStates();
+
+            // 폼 상태 업데이트
+            if (this.formHandler && typeof this.formHandler.handleStatusChange === 'function') {
+                this.formHandler.handleStatusChange(data);
+            }
+
+        } catch (error) {
+            console.error('❌ [조정자] Status 업데이트 처리 실패:', error);
+        }
+    }
+
+    handleNewRequestStart(data) {
+        try {
+            // 새 신청 시작 시 폼 초기화
+            if (this.formHandler && typeof this.formHandler.resetForm === 'function') {
+                this.formHandler.resetForm();
+            }
+
+            // UI 상태 업데이트
+            this.updateGlobalState({
+                hasExistingRequest: false,
+                currentRequestStatus: null
+            });
+
+        } catch (error) {
+            console.error('❌ [조정자] 새 신청 시작 처리 실패:', error);
+        }
+    }
     
     // === 🆕 v1.0.0: 폼 핸들러 초기화 ===
     async initializeFormHandler() {
@@ -364,23 +449,30 @@ class FlightRequestCoordinator {
     initializeModulesSafely() {
         try {
             console.log('🔄 [조정자] v1.7.0: 모듈 초기화 (간소화)...');
-            
+
             // 여권 모듈 초기화
             if (window.FlightRequestPassport) {
                 this.passport = new window.FlightRequestPassport(this.services.api, this.services.ui);
                 console.log('✅ [조정자] v1.7.0: 여권 모듈 초기화 완료');
             }
-            
+
             // 티켓 모듈 초기화 (HTML 연동)
             if (window.FlightRequestTicket) {
                 this.ticket = new window.FlightRequestTicket(this.services.api, this.services.ui, this.passport);
-                
+
                 // HTML 기반 활동기간 검증과 연동
                 this.setupHtmlTicketIntegration();
-                
+
                 console.log('✅ [조정자] v1.7.0: 티켓 모듈 초기화 완료 (HTML 연동)');
             }
-            
+
+            // 🆕 Status 모듈 초기화
+            if (window.FlightRequestStatus) {
+                this.status = new window.FlightRequestStatus();
+                this.initializeStatusModule();
+                console.log('✅ [조정자] v1.7.0: Status 모듈 초기화 완료');
+            }
+
         } catch (error) {
             this.errorCount++;
             console.error('❌ [조정자] 모듈 초기화 실패:', error.message);
@@ -752,14 +844,14 @@ class FlightRequestCoordinator {
     destroy() {
         try {
             console.log('🗑️ [조정자] v1.7.0: 인스턴스 정리 중...');
-            
+
             this.destroyed = true;
-            
+
             // 이벤트 리스너 정리
             if (this.eventListeners) {
                 this.eventListeners.clear();
             }
-            
+
             // 모듈 정리
             if (this.passport && typeof this.passport.destroy === 'function') {
                 this.passport.destroy();
@@ -767,15 +859,19 @@ class FlightRequestCoordinator {
             if (this.ticket && typeof this.ticket.destroy === 'function') {
                 this.ticket.destroy();
             }
-            
+            if (this.status && typeof this.status.destroy === 'function') {  // 🆕 추가
+                this.status.destroy();
+            }
+
             this.passport = null;
             this.ticket = null;
+            this.status = null;  // 🆕 추가
             this.api = null;
             this.utils = null;
             this.services = {};
-            
+
             console.log('✅ [조정자] v1.7.0: 인스턴스 정리 완료');
-            
+
         } catch (error) {
             console.error('❌ [조정자] 인스턴스 정리 실패:', error.message);
         }
@@ -789,10 +885,11 @@ class FlightRequestCoordinator {
 
     getModule(moduleName) {
         if (this.destroyed) return null;
-        
+
         switch (moduleName) {
             case 'passport': return this.passport;
             case 'ticket': return this.ticket;
+            case 'status': return this.status;  // 🆕 추가
             default: return null;
         }
     }
