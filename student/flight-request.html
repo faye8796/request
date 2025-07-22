@@ -1095,6 +1095,7 @@
                 console.error('❌ 폴백 모드 표시 실패:', error);
             }
         }
+        
         function setupBasicNavigation() {
             // 대시보드로 돌아가기
             const backBtn = document.getElementById('backToDashboard');
@@ -1103,7 +1104,7 @@
                     window.location.href = 'dashboard.html';
                 });
             }
-            
+
             // 여권정보 버튼
             const passportBtn = document.getElementById('passportInfoBtn');
             if (passportBtn) {
@@ -1113,6 +1114,22 @@
                     } else {
                         showPassportInfoPage();
                     }
+                });
+            }
+
+            // 🆕 여권정보에서 항공권으로 돌아가기 (헤더 버튼)
+            const backToFlightBtn = document.getElementById('backToFlightRequestFromPassport');
+            if (backToFlightBtn) {
+                backToFlightBtn.addEventListener('click', () => {
+                    window.location.reload(); // 단순하고 확실한 방법
+                });
+            }
+
+            // 🆕 여권정보 저장 후 항공권으로 이동 (성공 메시지 버튼)
+            const proceedToFlightBtn = document.getElementById('proceedToFlightRequest');
+            if (proceedToFlightBtn) {
+                proceedToFlightBtn.addEventListener('click', () => {
+                    window.location.reload(); // 단순하고 확실한 방법
                 });
             }
         }
@@ -1129,6 +1146,7 @@
                 passportPage.style.display = 'block';
             }
         }
+        
         
     // ===================================================
     // 현지 활동기간 검증 및 항공권 섹션 제어 시스템
