@@ -877,8 +877,8 @@
                 console.log('🔍 여권정보 체크...');
 
                 if (!userData || !userData.id) {
-                    console.warn('⚠️ 사용자 데이터 없음');
-                    showPassportStatusDirect(false);
+                    console.warn('⚠️ 사용자 데이터 없음 - 여권정보 페이지로 이동');
+                    showPassportInfoPage();  // ← 수정: 바로 이동
                     return;
                 }
 
@@ -889,9 +889,10 @@
                         console.log('✅ 여권 정보 확인됨');
                         showPassportStatusDirect(true);
                     } else {
-                        console.log('ℹ️ 여권 정보 없음');
-                        showPassportStatusDirect(false);
+                        console.log('ℹ️ 여권 정보 없음 - 바로 여권정보 페이지로 이동');
+                        showPassportInfoPage();  // ← 올바름
                     }
+
                 } else if (window.moduleEventBus) {
                     // 이벤트 기반 체크
                     window.moduleEventBus.emit('request:passportInfo', {
@@ -900,60 +901,23 @@
                                 console.log('✅ 여권 정보 확인됨 (이벤트)');
                                 showPassportStatusDirect(true);
                             } else {
-                                console.log('ℹ️ 여권 정보 없음 (이벤트)');
-                                showPassportStatusDirect(false);
+                                console.log('ℹ️ 여권 정보 없음 (이벤트) - 바로 여권정보 페이지로 이동');
+                                showPassportInfoPage();  // ← 수정: 일관성 맞춤
                             }
                         }
                     });
+                } else {
+                    // ← 추가: API 어댑터와 이벤트 버스 모두 없는 경우
+                    console.warn('⚠️ API 어댑터 없음 - 여권정보 페이지로 이동');
+                    showPassportInfoPage();
                 }
 
             } catch (error) {
                 console.error('❌ 여권정보 체크 실패:', error);
-                showPassportStatusDirect(false);
+                showPassportInfoPage();  // ← 수정: 오류 시에도 바로 이동
             }
         }
 
-        // 여권 상태 직접 표시
-        function showPassportStatusDirect(hasPassport) {
-            try {
-                const passportAlert = document.getElementById('passportAlert');
-                if (!passportAlert) return;
-
-                if (hasPassport) {
-                    passportAlert.style.display = 'none';
-                } else {
-                    passportAlert.style.display = 'block';
-                    passportAlert.innerHTML = `
-                        <i data-lucide="alert-triangle"></i>
-                        <div>
-                            <strong>여권정보 등록이 필요합니다</strong><br>
-                            항공권 신청을 위해서는 먼저 여권정보를 등록해주세요.
-                            <button id="registerPassportBtn" class="alert-link btn-link">여권정보 등록하기</button>
-                        </div>
-                    `;
-
-                    // 여권정보 등록 버튼 이벤트
-                    const registerBtn = document.getElementById('registerPassportBtn');
-                    if (registerBtn) {
-                        registerBtn.addEventListener('click', () => {
-                            if (window.flightRequestCoordinator?.showPassportInfoPage) {
-                                window.flightRequestCoordinator.showPassportInfoPage();
-                            } else {
-                                showPassportInfoPage();
-                            }
-                        });
-                    }
-
-                    // Lucide 아이콘 새로고침
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
-                }
-
-            } catch (error) {
-                console.error('❌ 여권 상태 표시 실패:', error);
-            }
-        }
 
         // 기존 신청 내역 직접 확인
         async function checkExistingRequestDirect(userData) {
