@@ -1,10 +1,9 @@
-// flight-request-passport.js - 무한루프 완전 해결 v1.1.0
-// 🚨 핵심 수정사항:
-//   1. console.log 출력 90% 제거 - 필수 로그만 유지
-//   2. setTimeout 무한 호출 방지 - 플래그 기반 제어
-//   3. 이벤트 리스너 중복 방지 - once 옵션 및 중복 체크
-//   4. API 호출 타임아웃 적용 - 3초 제한
-//   5. 메모리 누수 방지 - 불필요한 참조 제거
+// flight-request-passport.js - v1.1.1 이미지 로딩 및 페이지 전환 문제 해결
+// 🚨 핵심 수정사항 (v1.1.1):
+//   1. 여권 이미지 로딩 로직 추가 - loadExistingPassportDataSafely()에 이미지 처리 추가
+//   2. 페이지 전환 버그 수정 - showFlightRequestPage()에서 올바른 coordinator 메서드 호출
+//   3. 여권 이미지 URL 처리 로직 강화
+//   4. 기존 무한루프 해결 기능 모두 유지
 
 class FlightRequestPassport {
     constructor(apiService, uiService) {
@@ -43,7 +42,7 @@ class FlightRequestPassport {
             this.isInitialized = true;
             
             // 🚨 로그 최소화: 중요한 로그만 출력
-            console.log('🔄 [여권모듈] v1.1.0 초기화 시작 (무한루프 해결)');
+            console.log('🔄 [여권모듈] v1.1.1 초기화 시작 (이미지 로딩 + 페이지 전환 수정)');
             
             // 이벤트 리스너 설정 (중복 방지)
             this.bindEvents();
@@ -51,7 +50,7 @@ class FlightRequestPassport {
             // 여권정보 로드 (안전하게)
             this.loadPassportInfoSafely();
             
-            console.log('✅ [여권모듈] v1.1.0 초기화 완료');
+            console.log('✅ [여권모듈] v1.1.1 초기화 완료');
         } catch (error) {
             console.error('❌ [여권모듈] 초기화 실패:', error);
             this.isInitialized = false;
@@ -115,7 +114,7 @@ class FlightRequestPassport {
                 this.elements.removePassportImage.addEventListener('click', () => this.removePassportImage());
             }
 
-            // 항공권 신청 페이지로 진행
+            // 🔧 v1.1.1 수정: 항공권 신청 페이지로 진행 (올바른 메서드 호출)
             if (this.elements.proceedToFlightRequest) {
                 this.elements.proceedToFlightRequest.addEventListener('click', () => this.showFlightRequestPage());
             }
@@ -180,11 +179,11 @@ class FlightRequestPassport {
         }
     }
 
-    // 🚨 수정: 무한 setTimeout 방지
+    // 🔧 v1.1.1 수정: 여권 이미지 로딩 로직 추가
     async loadExistingPassportDataSafely() {
         try {
             if (this.existingPassportInfo) {
-                // 폼에 기존 데이터 채우기 (로그 제거)
+                // 폼에 기존 데이터 채우기
                 if (this.elements.passportNumber) {
                     this.elements.passportNumber.value = this.existingPassportInfo.passport_number || '';
                 }
@@ -196,6 +195,20 @@ class FlightRequestPassport {
                 }
                 if (this.elements.expiryDate) {
                     this.elements.expiryDate.value = this.existingPassportInfo.expiry_date || '';
+                }
+                
+                // 🆕 v1.1.1: 여권 이미지 로딩 로직 추가
+                if (this.existingPassportInfo.passport_image_url && this.elements.passportPreviewImg) {
+                    console.log('🖼️ [여권모듈] 기존 여권 이미지 로딩:', this.existingPassportInfo.passport_image_url);
+                    
+                    // 이미지 미리보기 표시
+                    this.elements.passportPreviewImg.src = this.existingPassportInfo.passport_image_url;
+                    
+                    if (this.elements.passportImagePreview) {
+                        this.elements.passportImagePreview.style.display = 'block';
+                    }
+                    
+                    console.log('✅ [여권모듈] 기존 여권 이미지 로딩 완료');
                 }
                 
                 this.isPassportMode = true;
@@ -492,13 +505,45 @@ class FlightRequestPassport {
         }
     }
 
+    // 🔧 v1.1.1 수정: 항공권 신청 페이지 전환 버그 수정
     showFlightRequestPage() {
         try {
-            if (typeof window.showFlightRequestPage === 'function') {
-                window.showFlightRequestPage();
+            console.log('🔄 [여권모듈] 항공권 신청 페이지로 전환 시도...');
+            
+            // 1. Coordinator 인스턴스 확인 및 페이지 전환
+            if (window.flightRequestCoordinator && typeof window.flightRequestCoordinator.routeToPage === 'function') {
+                console.log('✅ [여권모듈] Coordinator를 통한 페이지 전환');
+                window.flightRequestCoordinator.routeToPage('flight');
+                return;
             }
+            
+            // 2. 대체 방법: 직접 페이지 전환
+            const passportInfoPage = document.getElementById('passportInfoPage');
+            const flightRequestPage = document.getElementById('flightRequestPage');
+            
+            if (passportInfoPage && flightRequestPage) {
+                console.log('✅ [여권모듈] 직접 페이지 전환');
+                passportInfoPage.classList.remove('active');
+                passportInfoPage.style.display = 'none';
+                flightRequestPage.classList.add('active');
+                flightRequestPage.style.display = 'block';
+                return;
+            }
+            
+            // 3. 마지막 수단: 페이지 새로고침으로 항공권 페이지로 이동
+            console.warn('⚠️ [여권모듈] 페이지 요소를 찾을 수 없음 - 새로고침');
+            window.location.reload();
+            
         } catch (error) {
-            console.error('❌ [페이지표시] 실패:', error);
+            console.error('❌ [여권모듈] 페이지 전환 실패:', error);
+            
+            // 오류 발생 시 새로고침
+            try {
+                window.location.reload();
+            } catch (reloadError) {
+                console.error('❌ [여권모듈] 새로고침도 실패:', reloadError);
+                this.showError('페이지 전환에 실패했습니다. 수동으로 새로고침해주세요.');
+            }
         }
     }
 
@@ -637,13 +682,13 @@ window.createFlightRequestPassport = (apiService, uiService) => {
 window.FlightRequestPassport = FlightRequestPassport;
 
 // 🚨 수정: 로그 최소화
-console.log('✅ FlightRequestPassport v1.1.0 로드 완료 - 무한루프 완전 해결');
-console.log('🚨 v1.1.0 무한루프 해결사항:', {
-    logReduction: 'console.log 출력 90% 제거',
-    timeoutPrevention: 'setTimeout 무한 호출 방지',
-    eventDuplication: '이벤트 리스너 중복 방지',
-    apiTimeout: 'API 호출 3초 타임아웃',
-    memoryLeak: '메모리 누수 방지',
-    loadAttempts: '로딩 시도 횟수 제한',
-    safetyFlags: '안전장치 플래그 시스템'
+console.log('✅ FlightRequestPassport v1.1.1 로드 완료 - 이미지 로딩 + 페이지 전환 수정');
+console.log('🔧 v1.1.1 주요 수정사항:', {
+    imageLoading: '여권 이미지 로딩 로직 추가 - loadExistingPassportDataSafely()에 이미지 URL 처리',
+    pageTransition: '페이지 전환 버그 수정 - showFlightRequestPage()에서 coordinator 메서드 호출',
+    imageDisplay: '기존 여권 이미지 자동 표시 기능',
+    fallbackMethods: '페이지 전환 실패 시 대체 방법 제공',
+    compatibility: '기존 무한루프 해결 기능 100% 유지',
+    errorHandling: '페이지 전환 실패 시 새로고침 폴백',
+    debugLogging: '페이지 전환 과정 디버깅 로그 추가'
 });
