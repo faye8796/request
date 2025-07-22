@@ -161,15 +161,7 @@
             <main class="container">
                 <!-- 메인 컨텐츠 -->
                 <div id="mainContent">
-                    <!-- 여권정보 체크 알림 -->
-                    <div id="passportAlert" class="alert alert-warning" style="display: none;">
-                        <i data-lucide="alert-triangle"></i>
-                        <div>
-                            <strong>여권정보 등록이 필요합니다</strong><br>
-                            항공권 신청을 위해서는 먼저 여권정보를 등록해주세요.
-                            <button id="registerPassportBtn" class="alert-link btn-link">여권정보 등록하기</button>
-                        </div>
-                    </div>
+                                        
 
                     <!-- 기존 신청 내역 -->
                     <div id="existingRequest" class="existing-request" style="display: none;">
@@ -697,9 +689,12 @@
                 // 3. 필수활동일 정보 표시
                 await displayRequiredDaysInfoDirect(userData);
 
-                // 4. 여권정보 체크
-                await checkPassportStatusDirect(userData);
-
+                // 4. 여권정보 체크 (모든 초기화 완료 후 지연 실행)
+                setTimeout(() => {
+                    console.log('🔍 지연된 여권정보 체크 시작...');
+                    checkPassportStatusDirect(userData);
+                }, 2000);
+                
                 // 5. 기존 신청 내역 확인
                 await checkExistingRequestDirect(userData);
 
@@ -872,6 +867,7 @@
         }
 
         // 여권정보 직접 체크
+
         async function checkPassportStatusDirect(userData) {
             try {
                 console.log('🔍 여권정보 체크...');
@@ -887,7 +883,7 @@
 
                     if (response.success && response.data) {
                         console.log('✅ 여권 정보 확인됨');
-                        showPassportStatusDirect(true);
+                        
                     } else {
                         console.log('ℹ️ 여권 정보 없음 - 바로 여권정보 페이지로 이동');
                         showPassportInfoPage();  // ← 올바름
@@ -899,7 +895,7 @@
                         callback: (passportInfo) => {
                             if (passportInfo) {
                                 console.log('✅ 여권 정보 확인됨 (이벤트)');
-                                showPassportStatusDirect(true);
+                                
                             } else {
                                 console.log('ℹ️ 여권 정보 없음 (이벤트) - 바로 여권정보 페이지로 이동');
                                 showPassportInfoPage();  // ← 수정: 일관성 맞춤
@@ -1640,39 +1636,38 @@
             const directPurchaseSection = document.getElementById('directPurchaseFilesSection');
             const purchaseLinkGroup = document.getElementById('purchaseLinkGroup');
 
-            function toggleDirectPurchaseSection() {
+            function handlePurchaseTypeChange() {
                 const selectedType = document.querySelector('input[name="purchaseType"]:checked')?.value;
 
-                if (selectedType === 'direct') {
-                    if (directPurchaseSection) {
-                        directPurchaseSection.style.display = 'block';
-                    }
-                    if (purchaseLinkGroup) {
-                        purchaseLinkGroup.style.display = 'none';
-                    }
-                } else {
-                    if (directPurchaseSection) {
-                        directPurchaseSection.style.display = 'none';
-                    }
-                    if (purchaseLinkGroup) {
-                        purchaseLinkGroup.style.display = 'block';
-                    }
+                // ✅ 직접구매 증빙서류 섹션은 항상 숨김 (status.js에서만 관리)
+                if (directPurchaseSection) {
+                    directPurchaseSection.style.display = 'none';
+                }
+
+                // ✅ 구매 링크 그룹만 제어 (구매대행 선택 시에만 표시)
+                if (purchaseLinkGroup) {
+                    purchaseLinkGroup.style.display = selectedType === 'agency' ? 'block' : 'none';
                 }
             }
 
-            // 초기 상태 설정
-            toggleDirectPurchaseSection();
+            // ✅ 초기 상태: 직접구매 섹션 항상 숨김
+            if (directPurchaseSection) {
+                directPurchaseSection.style.display = 'none';
+            }
+
+            // 초기 구매 링크 그룹 설정
+            handlePurchaseTypeChange();
 
             // 라디오 버튼 변경 감지
             purchaseTypeRadios.forEach(radio => {
-                radio.addEventListener('change', toggleDirectPurchaseSection);
+                radio.addEventListener('change', handlePurchaseTypeChange);
             });
 
             // 파일 업로드 미리보기 기능
             setupFilePreview('receiptFile', 'receiptPreview', 'receiptFileName', 'receiptFileSize', 'removeReceiptFile');
             setupFilePreview('ticketFile', 'ticketPreview', 'ticketFileName', 'ticketFileSize', 'removeTicketFile');
 
-            console.log('✅ 직접구매 섹션 초기화 완료');
+            console.log('✅ 직접구매 섹션 초기화 완료 (항상 숨김, status.js에서 관리)');
         }
 
         // 파일 미리보기 설정 함수
