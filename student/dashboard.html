@@ -392,9 +392,9 @@
     <script src="../js/student/notification-system.js?v=5.2.0"></script>
     <script src="../js/student/dashboard.js?v=5.2.0"></script>
     
-    <!-- 대시보드 초기화 - v8.1.1 테스트 사용자 지원 버전 -->
+    <!-- 대시보드 초기화 - v9.3.1 개별 기능 활성화 지원 버전 -->
     <script>
-        console.log('🎯 Dashboard v8.1.1 - 테스트 사용자 지원 버전 시작');
+        console.log('🎯 Dashboard v9.3.1 - 개별 기능 활성화 지원 버전 시작');
         
         // 모듈 상태 추적 및 학생 정보 관리 통합 시스템
         const ModuleStatusTracker = {
@@ -414,6 +414,20 @@
             isTestUser() {
                 if (!this.studentData) return false;
                 return this.studentData.name === '이가짜' || this.studentData.email === 'test@example.com';
+            },
+
+            // 🆕 v9.3.1 개별 기능 활성화 확인 함수
+            checkIndividualFeatureAccess(featureName) {
+                if (!this.studentData) return false;
+                
+                switch(featureName) {
+                    case 'flight_request':
+                        return this.studentData.individual_flight_request_enabled === true;
+                    case 'equipment_request':
+                        return this.studentData.individual_equipment_request_enabled === true;
+                    default:
+                        return false;
+                }
             },
 
             // 상태 업데이트 (무한루프 해결)
@@ -470,6 +484,16 @@
                     // 🆕 v8.1.1 테스트 사용자 확인 로그
                     if (this.isTestUser()) {
                         console.log('🧪 테스트 사용자 감지: 모든 기능이 활성화됩니다.');
+                    }
+
+                    // 🆕 v9.3.1 개별 활성화 로그
+                    const flightIndividual = this.checkIndividualFeatureAccess('flight_request');
+                    const equipmentIndividual = this.checkIndividualFeatureAccess('equipment_request');
+                    if (flightIndividual || equipmentIndividual) {
+                        console.log('🔓 개별 기능 활성화 감지:', {
+                            flight_request: flightIndividual,
+                            equipment_request: equipmentIndividual
+                        });
                     }
                     
                     // UI 업데이트
@@ -564,6 +588,18 @@
                         // 🆕 v8.1.1 테스트 사용자 추가 정보
                         if (this.isTestUser()) {
                             detailsDisplay += ' (모든 기능 활성화됨)';
+                        } else {
+                            // 🆕 v9.3.1 개별 활성화 정보 표시
+                            const individualFeatures = [];
+                            if (this.checkIndividualFeatureAccess('flight_request')) {
+                                individualFeatures.push('항공권 신청');
+                            }
+                            if (this.checkIndividualFeatureAccess('equipment_request')) {
+                                individualFeatures.push('교구 신청');
+                            }
+                            if (individualFeatures.length > 0) {
+                                detailsDisplay += ` (개별 활성화: ${individualFeatures.join(', ')})`;
+                            }
                         }
                         
                         studentDetailsElement.textContent = detailsDisplay;
@@ -574,7 +610,9 @@
                         name: student.name,
                         institute: student.sejong_institute,
                         field: student.field,
-                        isTestUser: this.isTestUser()
+                        isTestUser: this.isTestUser(),
+                        individualFlightAccess: this.checkIndividualFeatureAccess('flight_request'),
+                        individualEquipmentAccess: this.checkIndividualFeatureAccess('equipment_request')
                     });
                     
                 } catch (error) {
@@ -602,9 +640,9 @@
                 this.showSystemMessage(message, 'error');
             },
 
-            // 🆕 v8.1.1 메뉴 항목 로드 (테스트 사용자 지원)
+            // 🆕 v9.3.1 메뉴 항목 로드 (개별 기능 활성화 지원)
             loadMenuItems() {
-                console.log('📋 메뉴 항목 로딩 시작... (v8.1.1 - 테스트 사용자 지원)');
+                console.log('📋 메뉴 항목 로딩 시작... (v9.3.1 - 개별 기능 활성화 지원)');
                 const menuGrid = document.getElementById('menuGrid');
                 if (!menuGrid) return;
 
@@ -627,11 +665,11 @@
                     lucide.createIcons();
                 }
                 
-                console.log('✅ 메뉴 항목 로딩 완료 (v8.1.1 - 테스트 사용자 지원)');
+                console.log('✅ 메뉴 항목 로딩 완료 (v9.3.1 - 개별 기능 활성화 지원)');
                 this.showSystemReady();
             },
 
-            // 🆕 v8.1.1 메뉴 카드 설정 가져오기 (테스트 사용자 지원)
+            // 🆕 v9.3.1 메뉴 카드 설정 가져오기 (개별 기능 활성화 지원)
             getMenuCardConfig(feature) {
                 const configs = {
                     'institute_info': {
@@ -686,14 +724,28 @@
 
                 const config = configs[feature.feature_name];
                 if (config) {
-                    // 🆕 v8.1.1 테스트 사용자의 경우 모든 기능 활성화
+                    // 🆕 v9.3.1 활성화 로직: 테스트 사용자 > 전체 활성화 > 개별 활성화
+                    const isGloballyActive = feature.is_active;
+                    const isIndividuallyActive = this.checkIndividualFeatureAccess(feature.feature_name);
+                    
                     if (this.isTestUser()) {
                         config.isActive = true;
                         config.isTestUserOverride = true;
+                        config.activationSource = 'test_user';
                         console.log(`🧪 테스트 사용자: ${feature.feature_name} 기능 강제 활성화`);
-                    } else {
-                        config.isActive = feature.is_active;
+                    } else if (isGloballyActive) {
+                        config.isActive = true;
                         config.isTestUserOverride = false;
+                        config.activationSource = 'global';
+                    } else if (isIndividuallyActive) {
+                        config.isActive = true;
+                        config.isTestUserOverride = false;
+                        config.activationSource = 'individual';
+                        console.log(`🔓 개별 활성화: ${feature.feature_name} 기능 활성화`);
+                    } else {
+                        config.isActive = false;
+                        config.isTestUserOverride = false;
+                        config.activationSource = 'none';
                     }
                     
                     config.featureName = feature.feature_name;
@@ -702,11 +754,11 @@
                 return null;
             },
 
-            // 🆕 v8.1.1 메뉴 카드 HTML 생성 (테스트 사용자 지원)
+            // 🆕 v9.3.1 메뉴 카드 HTML 생성 (개별 기능 활성화 지원)
             generateMenuCardHTML(config) {
                 const { 
                     icon, title, description, url, buttonText, buttonIcon, 
-                    isActive, featureName, isTestUserOverride 
+                    isActive, featureName, isTestUserOverride, activationSource 
                 } = config;
                 
                 let cardClass = 'menu-card';
@@ -718,7 +770,7 @@
                         // 🆕 v8.1.1 테스트 사용자가 활성화한 기능
                         cardClass += ' test-user-enabled';
                     } else {
-                        // 일반적으로 활성화된 기능
+                        // 일반적으로 활성화된 기능 (전체 또는 개별)
                         cardClass += ' available';
                     }
                     cardOnClick = `onclick="navigateToPage('${url}')"`;
@@ -746,13 +798,25 @@
             showSystemReady() {
                 const systemStatus = document.getElementById('systemStatus');
                 if (systemStatus) {
-                    let statusMessage = '🚀 시스템이 정상적으로 초기화되었습니다! (v8.1.1)';
+                    let statusMessage = '🚀 시스템이 정상적으로 초기화되었습니다! (v9.3.1)';
                     
                     // 🆕 v8.1.1 테스트 사용자 메시지
                     if (this.isTestUser()) {
-                        statusMessage = '🧪 테스트 모드가 활성화되었습니다! 모든 기능을 사용할 수 있습니다. (v8.1.1)';
+                        statusMessage = '🧪 테스트 모드가 활성화되었습니다! 모든 기능을 사용할 수 있습니다. (v9.3.1)';
                     } else {
-                        statusMessage += '<br>항공권 신청 시스템이 활성화되어 모든 기능을 사용할 수 있습니다.';
+                        statusMessage += '<br>개별 기능 활성화 지원이 추가되었습니다.';
+                        
+                        // 개별 활성화된 기능 표시
+                        const individualFeatures = [];
+                        if (this.checkIndividualFeatureAccess('flight_request')) {
+                            individualFeatures.push('항공권 신청');
+                        }
+                        if (this.checkIndividualFeatureAccess('equipment_request')) {
+                            individualFeatures.push('교구 신청');
+                        }
+                        if (individualFeatures.length > 0) {
+                            statusMessage += `<br>🔓 개별 활성화된 기능: ${individualFeatures.join(', ')}`;
+                        }
                     }
                     
                     systemStatus.innerHTML = `
@@ -769,7 +833,7 @@
                 
                 this.isInitialized = true;
                 this.initializationStep = 'complete';
-                console.log('🎉 대시보드 초기화 완전 완료 - v8.1.1 테스트 사용자 지원');
+                console.log('🎉 대시보드 초기화 완전 완료 - v9.3.1 개별 기능 활성화 지원');
             },
 
             // 시스템 메시지 표시
@@ -803,7 +867,11 @@
                     studentData: this.studentData,
                     featureSettings: this.featureSettings,
                     isTestUser: this.isTestUser(),
-                    version: 'v8.1.1 - 테스트 사용자 지원'
+                    individualAccess: {
+                        flight_request: this.checkIndividualFeatureAccess('flight_request'),
+                        equipment_request: this.checkIndividualFeatureAccess('equipment_request')
+                    },
+                    version: 'v9.3.1 - 개별 기능 활성화 지원'
                 };
             }
         };
@@ -852,7 +920,7 @@
         // DOMContentLoaded 이벤트 핸들러 - 즉시 시작
         document.addEventListener('DOMContentLoaded', function() {
             try {
-                console.log('🎯 DOMContentLoaded - v8.1.1 테스트 사용자 지원 초기화 시작');
+                console.log('🎯 DOMContentLoaded - v9.3.1 개별 기능 활성화 지원 초기화 시작');
                 
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
@@ -930,24 +998,25 @@
         // 전역 디버그 함수
         window.showDashboardDebug = function() {
             const debugInfo = ModuleStatusTracker.getDebugInfo();
-            console.group('🔍 Dashboard Debug Info - v8.1.1');
+            console.group('🔍 Dashboard Debug Info - v9.3.1');
             console.log('초기화 상태:', debugInfo.isInitialized);
             console.log('현재 단계:', debugInfo.initializationStep);
             console.log('모듈 상태:', debugInfo.modules);
             console.log('학생 데이터:', debugInfo.studentData);
             console.log('기능 설정:', debugInfo.featureSettings);
             console.log('테스트 사용자:', debugInfo.isTestUser);
+            console.log('개별 활성화:', debugInfo.individualAccess);
             console.log('버전:', debugInfo.version);
             console.groupEnd();
             
-            alert(`Dashboard Debug Info (v8.1.1):\\n\\n초기화: ${debugInfo.isInitialized}\\n단계: ${debugInfo.initializationStep}\\n학생: ${debugInfo.studentData?.name || 'N/A'}\\n기능: ${debugInfo.featureSettings?.length || 0}개\\n테스트 사용자: ${debugInfo.isTestUser}\\n\\n자세한 정보는 콘솔을 확인하세요.`);
+            alert(`Dashboard Debug Info (v9.3.1):\\n\\n초기화: ${debugInfo.isInitialized}\\n단계: ${debugInfo.initializationStep}\\n학생: ${debugInfo.studentData?.name || 'N/A'}\\n기능: ${debugInfo.featureSettings?.length || 0}개\\n테스트 사용자: ${debugInfo.isTestUser}\\n개별 항공권: ${debugInfo.individualAccess.flight_request}\\n개별 교구: ${debugInfo.individualAccess.equipment_request}\\n\\n자세한 정보는 콘솔을 확인하세요.`);
         };
 
         // 전역 변수로 노출 (dashboard.js와의 호환성)
         window.ModuleStatusTracker = ModuleStatusTracker;
         window.navigateToPage = navigateToPage;
         
-        console.log('✅ Dashboard v8.1.1 초기화 스크립트 로딩 완료 - 테스트 사용자 지원');
+        console.log('✅ Dashboard v9.3.1 초기화 스크립트 로딩 완료 - 개별 기능 활성화 지원');
     </script>
 </body>
 </html>
