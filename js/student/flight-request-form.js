@@ -1,4 +1,4 @@
-// flight-request-form.js - v1.0.1 폼 제출 후 새로고침 수정
+// flight-request-form.js - v1.0.0 폼 제출 및 검증 통합 관리자
 // 🎯 핵심 책임:
 //   1. 기존 검증 시스템들의 결과 확인 (검증은 하지 않음)
 //   2. 활동기간 검증 + 항공권 날짜 검증 통합 확인
@@ -6,13 +6,12 @@
 //   4. 폼 제출 프로세스 전체 관리
 //   5. 최종 성공/실패 피드백 제공
 // 🔧 원칙: 기존 검증 로직은 수정하지 않고, 결과만 확인
-// 🆕 v1.0.1: 새로고침 로직 수정 - finally 블록에서 성공 상태 보호
 
-console.log('🚀 FlightRequestFormHandler v1.0.1 로딩 시작 - 새로고침 수정');
+console.log('🚀 FlightRequestFormHandler v1.0.0 로딩 시작');
 
 class FlightRequestFormHandler {
     constructor() {
-        console.log('🔄 [폼핸들러] FlightRequestFormHandler v1.0.1 생성');
+        console.log('🔄 [폼핸들러] FlightRequestFormHandler v1.0.0 생성');
         
         // 폼 관련 요소들
         this.form = null;
@@ -24,13 +23,12 @@ class FlightRequestFormHandler {
         this.selectedImageFile = null;
         this.uploadedImageUrl = null;
         this.isSubmitting = false;
-        this.isSuccessfullySubmitted = false; // 🆕 v1.0.1: 성공 제출 플래그
         
         // API 서비스 (coordinator에서 주입)
         this.apiService = null;
         this.uiService = null;
         
-        console.log('✅ [폼핸들러] FlightRequestFormHandler v1.0.1 생성 완료');
+        console.log('✅ [폼핸들러] FlightRequestFormHandler v1.0.0 생성 완료');
     }
 
     // ================================
@@ -247,4 +245,626 @@ class FlightRequestFormHandler {
                 }
             }
             
-            // 구매
+            // 구매 방식 확인
+            const purchaseType = document.querySelector('input[name="purchaseType"]:checked');
+            if (!purchaseType) {
+                missingInputs.push('구매 방식');
+            }
+            
+            // 이미지 파일 확인
+            if (!this.selectedImageFile) {
+                missingInputs.push('항공권 정보 이미지');
+            }
+            
+            if (missingInputs.length > 0) {
+                console.warn('⚠️ [입력확인] 누락된 필수 입력:', missingInputs);
+                return {
+                    valid: false,
+                    missingInputs: missingInputs,
+                    message: `다음 항목을 입력해주세요: ${missingInputs.join(', ')}`
+                };
+            }
+            
+            console.log('✅ [입력확인] 모든 필수 입력 완료');
+            return {
+                valid: true,
+                message: '모든 필수 입력이 완료되었습니다'
+            };
+            
+        } catch (error) {
+            console.error('❌ [입력확인] 필수 입력 확인 실패:', error);
+            return {
+                valid: false,
+                message: '입력 확인 중 오류가 발생했습니다'
+            };
+        }
+    }
+
+    // ================================
+    // 파트 3: 폼 제출 메인 로직
+    // ================================
+
+    async handleFormSubmit(event) {
+        try {
+            event.preventDefault();
+            
+            console.log('🚀 [폼제출] 항공권 신청 제출 시작...');
+            
+            // 이미 제출 중인지 확인
+            if (this.isSubmitting) {
+                console.warn('⚠️ [폼제출] 이미 제출 중입니다');
+                return;
+            }
+            
+            this.isSubmitting = true;
+            this.updateSubmitButton(true, '제출 중...');
+            
+            // 1단계: 활동기간 검증 확인
+            console.log('🔍 [폼제출] 1단계: 활동기간 검증 확인...');
+            const activityValid = this.checkActivityPeriodValidation();
+            if (!activityValid) {
+                this.showValidationError('활동기간 검증이 완료되지 않았습니다. 현지 도착일과 학당 근무 종료일을 올바르게 입력해주세요.');
+                return;
+            }
+            console.log('✅ [폼제출] 활동기간 검증 통과');
+            
+            // 2단계: 항공권 날짜 검증 확인
+            console.log('🔍 [폼제출] 2단계: 항공권 날짜 검증 확인...');
+            const flightDatesValid = this.checkFlightDateValidation();
+            if (!flightDatesValid) {
+                this.showValidationError('항공권 날짜 검증이 완료되지 않았습니다. 출국일과 귀국일을 올바르게 입력해주세요.');
+                return;
+            }
+            console.log('✅ [폼제출] 항공권 날짜 검증 통과');
+            
+            // 3단계: 필수 입력 확인
+            console.log('🔍 [폼제출] 3단계: 필수 입력 확인...');
+            const inputCheck = this.checkRequiredInputs();
+            if (!inputCheck.valid) {
+                this.showValidationError(inputCheck.message);
+                return;
+            }
+            console.log('✅ [폼제출] 필수 입력 확인 통과');
+            
+            // 4단계: 이미지 업로드
+            console.log('🔍 [폼제출] 4단계: 이미지 업로드...');
+            this.updateSubmitButton(true, '이미지 업로드 중...');
+            const imageUploadResult = await this.uploadImage();
+            if (!imageUploadResult.success) {
+                this.showValidationError(`이미지 업로드 실패: ${imageUploadResult.error}`);
+                return;
+            }
+            console.log('✅ [폼제출] 이미지 업로드 완료:', imageUploadResult.url);
+            
+            // 5단계: 데이터베이스 저장
+            console.log('🔍 [폼제출] 5단계: 데이터베이스 저장...');
+            this.updateSubmitButton(true, '데이터 저장 중...');
+            const saveResult = await this.saveFlightRequest(imageUploadResult.url);
+            if (!saveResult.success) {
+                this.showValidationError(`저장 실패: ${saveResult.error}`);
+                return;
+            }
+            console.log('✅ [폼제출] 데이터베이스 저장 완료');
+            
+            // 6단계: 성공 처리
+            console.log('🎉 [폼제출] 항공권 신청 제출 완료!');
+            this.showSuccessMessage('항공권 신청이 성공적으로 제출되었습니다!');
+            this.updateSubmitButton(false, '제출 완료');
+            
+            // 페이지 새로고침 또는 리다이렉트
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+            
+        } catch (error) {
+            console.error('❌ [폼제출] 항공권 신청 제출 실패:', error);
+            this.showValidationError('제출 중 오류가 발생했습니다. 다시 시도해주세요.');
+            
+        } finally {
+            this.isSubmitting = false;
+            if (!this.submitBtn.textContent.includes('완료')) {
+                this.updateSubmitButton(false, '신청하기');
+            }
+        }
+    }
+
+    // ================================
+    // 파트 4: 이미지 업로드 관리
+    // ================================
+
+    handleImageSelect(event) {
+        try {
+            const file = event.target.files[0];
+            if (!file) {
+                this.resetImageUpload();
+                return;
+            }
+            
+            console.log('🖼️ [이미지] 파일 선택:', file.name, file.size);
+            
+            // 파일 유효성 검사
+            const validation = this.validateImageFile(file);
+            if (!validation.valid) {
+                this.showValidationError(validation.message);
+                this.resetImageUpload();
+                return;
+            }
+            
+            // 파일 저장
+            this.selectedImageFile = file;
+            
+            // 미리보기 표시
+            this.showImagePreview(file);
+            
+            console.log('✅ [이미지] 파일 선택 완료');
+            
+        } catch (error) {
+            console.error('❌ [이미지] 파일 선택 실패:', error);
+            this.resetImageUpload();
+        }
+    }
+
+    validateImageFile(file) {
+        try {
+            // 파일 크기 확인 (5MB)
+            const maxSize = 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                return {
+                    valid: false,
+                    message: '파일 크기는 5MB 이하여야 합니다.'
+                };
+            }
+            
+            // 파일 타입 확인
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!allowedTypes.includes(file.type)) {
+                return {
+                    valid: false,
+                    message: 'JPG, PNG, GIF 형식의 이미지만 업로드 가능합니다.'
+                };
+            }
+            
+            return {
+                valid: true,
+                message: '파일이 유효합니다.'
+            };
+            
+        } catch (error) {
+            console.error('❌ [이미지검증] 파일 검증 실패:', error);
+            return {
+                valid: false,
+                message: '파일 검증 중 오류가 발생했습니다.'
+            };
+        }
+    }
+
+    showImagePreview(file) {
+        try {
+            if (!this.imagePreview) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.imagePreview.innerHTML = `
+                    <img id="previewImg" src="${e.target.result}" alt="항공권 정보 이미지" style="max-width: 100%; height: auto;">
+                    <button type="button" id="removeImage" class="remove-image">
+                        <i data-lucide="x"></i>
+                    </button>
+                `;
+                this.imagePreview.style.display = 'block';
+                
+                // Lucide 아이콘 새로고침
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            };
+            reader.readAsDataURL(file);
+            
+        } catch (error) {
+            console.error('❌ [이미지미리보기] 미리보기 표시 실패:', error);
+        }
+    }
+
+    handleImageRemove(event) {
+        try {
+            event.preventDefault();
+            console.log('🗑️ [이미지] 이미지 제거');
+            
+            this.resetImageUpload();
+            
+        } catch (error) {
+            console.error('❌ [이미지] 이미지 제거 실패:', error);
+        }
+    }
+
+    resetImageUpload() {
+        try {
+            this.selectedImageFile = null;
+            this.uploadedImageUrl = null;
+            
+            if (this.imageInput) {
+                this.imageInput.value = '';
+            }
+            
+            if (this.imagePreview) {
+                this.imagePreview.style.display = 'none';
+                this.imagePreview.innerHTML = '';
+            }
+            
+        } catch (error) {
+            console.error('❌ [이미지리셋] 이미지 업로드 리셋 실패:', error);
+        }
+    }
+
+    async uploadImage() {
+        try {
+            if (!this.selectedImageFile) {
+                return {
+                    success: false,
+                    error: '업로드할 이미지가 없습니다.'
+                };
+            }
+            
+            if (!this.apiService?.uploadFlightImage) {
+                return {
+                    success: false,
+                    error: 'API 서비스를 사용할 수 없습니다.'
+                };
+            }
+            
+            console.log('📤 [이미지업로드] 시작:', this.selectedImageFile.name);
+            
+            const result = await this.apiService.uploadFlightImage(this.selectedImageFile);
+            
+            if (result.success) {
+                this.uploadedImageUrl = result.url;
+                console.log('✅ [이미지업로드] 성공:', result.url);
+                return {
+                    success: true,
+                    url: result.url
+                };
+            } else {
+                console.error('❌ [이미지업로드] 실패:', result.error);
+                return {
+                    success: false,
+                    error: result.error
+                };
+            }
+            
+        } catch (error) {
+            console.error('❌ [이미지업로드] 예외 발생:', error);
+            return {
+                success: false,
+                error: '이미지 업로드 중 오류가 발생했습니다.'
+            };
+        }
+    }
+
+    // ================================
+    // 파트 5: 데이터베이스 저장
+    // ================================
+
+    async saveFlightRequest(imageUrl) {
+        try {
+            if (!this.apiService?.saveFlightRequest) {
+                return {
+                    success: false,
+                    error: 'API 서비스를 사용할 수 없습니다.'
+                };
+            }
+            
+            // 폼 데이터 수집
+            const formData = this.collectFormData(imageUrl);
+            
+            console.log('💾 [데이터저장] 시작:', formData);
+            
+            const result = await this.apiService.saveFlightRequest(formData);
+            
+            if (result.success) {
+                console.log('✅ [데이터저장] 성공');
+                return {
+                    success: true,
+                    data: result.data
+                };
+            } else {
+                console.error('❌ [데이터저장] 실패:', result.error);
+                return {
+                    success: false,
+                    error: result.error
+                };
+            }
+            
+        } catch (error) {
+            console.error('❌ [데이터저장] 예외 발생:', error);
+            return {
+                success: false,
+                error: '데이터 저장 중 오류가 발생했습니다.'
+            };
+        }
+    }
+
+    collectFormData(imageUrl) {
+        try {
+            // 구매 방식
+            const purchaseType = document.querySelector('input[name="purchaseType"]:checked')?.value;
+            
+            // 구매 링크 (구매 대행인 경우)
+            const purchaseLink = document.getElementById('purchaseLink')?.value || '';
+            
+            const formData = {
+                // 활동 기간 (user_profiles 업데이트용)
+                actualArrivalDate: document.getElementById('actualArrivalDate')?.value,
+                actualWorkEndDate: document.getElementById('actualWorkEndDate')?.value,
+
+                // 구매 방식
+                purchaseMethod: purchaseType, // API에서 purchase_type으로 변환됨
+                purchaseLink: purchaseLink,
+
+                // 항공권 정보
+                departureDate: document.getElementById('departureDate')?.value,
+                returnDate: document.getElementById('returnDate')?.value,
+                departureAirport: document.getElementById('departureAirport')?.value,
+                returnAirport: document.getElementById('arrivalAirport')?.value, // HTML ID 주의
+
+                // 가격 정보
+                totalPrice: parseFloat(document.getElementById('ticketPrice')?.value) || 0, // API에서 ticket_price로 변환됨
+                currency: document.getElementById('currency')?.value,
+                priceSource: document.getElementById('priceSource')?.value,
+
+                // 이미지
+                flightImageUrl: imageUrl,
+
+                // 메타데이터
+                status: 'pending',
+                submittedAt: new Date().toISOString()
+            };
+            
+            console.log('📋 [데이터수집] 폼 데이터 수집 완료:', formData);
+            return formData;
+            
+        } catch (error) {
+            console.error('❌ [데이터수집] 폼 데이터 수집 실패:', error);
+            throw error;
+        }
+    }
+
+    // ================================
+    // 파트 6: UI 업데이트 및 피드백
+    // ================================
+
+    updateSubmitButton(isLoading, text) {
+        try {
+            if (!this.submitBtn) return;
+            
+            this.submitBtn.disabled = isLoading;
+            this.submitBtn.style.opacity = isLoading ? '0.7' : '1';
+            this.submitBtn.style.cursor = isLoading ? 'not-allowed' : 'pointer';
+            
+            // 버튼 텍스트 업데이트
+            const textElement = this.submitBtn.querySelector('#submitBtnText') || this.submitBtn;
+            textElement.textContent = text;
+            
+            // 로딩 중일 때 아이콘 변경
+            const iconElement = this.submitBtn.querySelector('i[data-lucide]');
+            if (iconElement) {
+                if (isLoading) {
+                    iconElement.setAttribute('data-lucide', 'loader-2');
+                    iconElement.style.animation = 'spin 1s linear infinite';
+                } else {
+                    iconElement.setAttribute('data-lucide', 'send');
+                    iconElement.style.animation = '';
+                }
+                
+                // Lucide 아이콘 새로고침
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+            
+        } catch (error) {
+            console.error('❌ [UI업데이트] 제출 버튼 업데이트 실패:', error);
+        }
+    }
+
+    showValidationError(message) {
+        try {
+            console.error('🚨 [검증오류]', message);
+            
+            // 오류 메시지 표시
+            this.showMessage(message, 'error');
+            
+            // 제출 상태 리셋
+            this.isSubmitting = false;
+            this.updateSubmitButton(false, '신청하기');
+            
+        } catch (error) {
+            console.error('❌ [UI업데이트] 검증 오류 표시 실패:', error);
+        }
+    }
+
+    showSuccessMessage(message) {
+        try {
+            console.log('🎉 [성공메시지]', message);
+            
+            // 성공 메시지 표시
+            this.showMessage(message, 'success');
+            
+        } catch (error) {
+            console.error('❌ [UI업데이트] 성공 메시지 표시 실패:', error);
+        }
+    }
+
+    showMessage(message, type = 'info') {
+        try {
+            // 기존 메시지 제거
+            const existingMessage = document.querySelector('.form-message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            // 새 메시지 생성
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `form-message alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'}`;
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                max-width: 400px;
+                padding: 15px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                background: white;
+                border-left: 4px solid ${type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#007bff'};
+            `;
+            
+            messageDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i data-lucide="${type === 'error' ? 'alert-circle' : type === 'success' ? 'check-circle' : 'info'}" 
+                       style="color: ${type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#007bff'}; flex-shrink: 0;"></i>
+                    <span style="color: #333;">${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" 
+                            style="margin-left: auto; background: none; border: none; font-size: 18px; cursor: pointer; color: #666;">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(messageDiv);
+            
+            // Lucide 아이콘 새로고침
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+            // 자동 제거 (오류는 더 오래 표시)
+            const autoRemoveTime = type === 'error' ? 8000 : type === 'success' ? 5000 : 3000;
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.remove();
+                }
+            }, autoRemoveTime);
+            
+        } catch (error) {
+            console.error('❌ [메시지표시] 메시지 표시 실패:', error);
+            // 폴백: alert 사용
+            alert(message);
+        }
+    }
+
+    // ================================
+    // 파트 7: 외부 인터페이스 및 디버깅
+    // ================================
+
+    // 외부에서 호출 가능한 메서드들
+    getFormData() {
+        try {
+            return this.collectFormData(this.uploadedImageUrl);
+        } catch (error) {
+            console.error('❌ [외부인터페이스] 폼 데이터 가져오기 실패:', error);
+            return null;
+        }
+    }
+
+    getValidationStatus() {
+        return {
+            activityPeriodValid: this.checkActivityPeriodValidation(),
+            flightDatesValid: this.checkFlightDateValidation(),
+            requiredInputsValid: this.checkRequiredInputs().valid,
+            imageSelected: !!this.selectedImageFile,
+            isSubmitting: this.isSubmitting
+        };
+    }
+
+    triggerValidation() {
+        try {
+            console.log('🔍 [외부인터페이스] 수동 검증 트리거');
+            
+            const status = this.getValidationStatus();
+            console.log('📊 [외부인터페이스] 현재 검증 상태:', status);
+            
+            return status;
+            
+        } catch (error) {
+            console.error('❌ [외부인터페이스] 수동 검증 트리거 실패:', error);
+            return null;
+        }
+    }
+
+    // 디버깅 정보
+    getDebugInfo() {
+        return {
+            version: '1.0.0',
+            isInitialized: !!(this.form && this.submitBtn),
+            hasApiService: !!this.apiService,
+            hasUiService: !!this.uiService,
+            selectedImageFile: this.selectedImageFile ? {
+                name: this.selectedImageFile.name,
+                size: this.selectedImageFile.size,
+                type: this.selectedImageFile.type
+            } : null,
+            uploadedImageUrl: this.uploadedImageUrl,
+            isSubmitting: this.isSubmitting,
+            validationStatus: this.getValidationStatus(),
+            domElements: {
+                form: !!this.form,
+                submitBtn: !!this.submitBtn,
+                imageInput: !!this.imageInput,
+                imagePreview: !!this.imagePreview
+            }
+        };
+    }
+
+    // 인스턴스 정리
+    destroy() {
+        try {
+            console.log('🗑️ [폼핸들러] 인스턴스 정리...');
+            
+            // 이벤트 리스너 제거
+            if (this.form) {
+                this.form.removeEventListener('submit', this.handleFormSubmit);
+            }
+            
+            if (this.imageInput) {
+                this.imageInput.removeEventListener('change', this.handleImageSelect);
+            }
+            
+            // 참조 정리
+            this.form = null;
+            this.submitBtn = null;
+            this.imageInput = null;
+            this.imagePreview = null;
+            this.selectedImageFile = null;
+            this.uploadedImageUrl = null;
+            this.apiService = null;
+            this.uiService = null;
+            
+            console.log('✅ [폼핸들러] 인스턴스 정리 완료');
+            
+        } catch (error) {
+            console.error('❌ [폼핸들러] 인스턴스 정리 실패:', error);
+        }
+    }
+}
+
+// ================================
+// 전역 스코프 노출
+// ================================
+
+window.FlightRequestFormHandler = FlightRequestFormHandler;
+
+console.log('✅ FlightRequestFormHandler v1.0.0 모듈 로드 완료');
+console.log('🎯 v1.0.0 핵심 기능:', {
+    features: [
+        '🎯 기존 검증 시스템 결과 확인 (활동기간 + 항공권 날짜)',
+        '📋 모든 필수 입력 확인',
+        '🖼️ 이미지 업로드 관리 (선택, 미리보기, 검증, 업로드)',
+        '💾 통합 폼 제출 워크플로우 (검증 → 업로드 → 저장)',
+        '🎨 실시간 UI 피드백 (진행 상태, 성공/실패 메시지)',
+        '🔧 외부 인터페이스 제공 (수동 검증, 디버깅)',
+        '⚡ 이벤트 기반 아키텍처 (기존 시스템과 완벽 연동)'
+    ],
+    principles: [
+        '기존 검증 로직 수정 금지 - 결과만 확인',
+        '책임 분리 - 각 모듈은 자신의 역할만 담당',
+        '확장 가능 - 새로운 검증이 추가되어도 쉽게 연동',
+        '사용자 친화적 - 명확한 피드백과 진행 상태 표시'
+    ]
+});
