@@ -394,7 +394,107 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- 5단계 - 직접구매 증빙서류 업로드 (purchase_type이 'direct'일 때만 표시) -->
+                            <div class="form-section" id="directPurchaseFilesSection" style="display: none;">
+                                <div class="step-indicator">
+                                    <div class="step-number">5</div>
+                                    <div class="step-content">
+                                        <h3>직접구매 증빙서류</h3>
+                                        <p>직접구매 선택 시 영수증과 항공권을 업로드해주세요.</p>
+                                    </div>
+                                </div>
 
+                                <h2 class="section-title">
+                                    <i data-lucide="upload"></i>
+                                    직접구매 증빙서류
+                                </h2>
+                                <p class="section-description">항공권을 직접 구매하신 경우, 구매 영수증과 항공권 파일을 업로드해주세요.</p>
+
+                                <!-- 영수증 업로드 -->
+                                <div class="upload-section">
+                                    <h3 class="subsection-title">
+                                        <i data-lucide="receipt"></i>
+                                        구매 영수증
+                                    </h3>
+
+                                    <div class="upload-container">
+                                        <input type="file" id="receiptFile" name="receiptFile" accept="application/pdf,image/*" class="file-input">
+                                        <label for="receiptFile" class="upload-label">
+                                            <div class="upload-content">
+                                                <i data-lucide="receipt" class="upload-icon"></i>
+                                                <p class="upload-text">클릭하여 영수증 업로드</p>
+                                                <p class="upload-hint">PDF, JPG, PNG 형식 (최대 10MB)</p>
+                                            </div>
+                                        </label>
+
+                                        <!-- 영수증 미리보기 -->
+                                        <div id="receiptPreview" class="file-preview" style="display: none;">
+                                            <div class="file-info">
+                                                <i data-lucide="file-check"></i>
+                                                <div>
+                                                    <p id="receiptFileName" class="file-name"></p>
+                                                    <p id="receiptFileSize" class="file-size"></p>
+                                                </div>
+                                            </div>
+                                            <button type="button" id="removeReceiptFile" class="remove-file">
+                                                <i data-lucide="x"></i>
+                                                제거
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 항공권 업로드 -->
+                                <div class="upload-section">
+                                    <h3 class="subsection-title">
+                                        <i data-lucide="plane"></i>
+                                        항공권 파일
+                                    </h3>
+
+                                    <div class="upload-container">
+                                        <input type="file" id="ticketFile" name="ticketFile" accept="application/pdf,image/*" class="file-input">
+                                        <label for="ticketFile" class="upload-label">
+                                            <div class="upload-content">
+                                                <i data-lucide="plane" class="upload-icon"></i>
+                                                <p class="upload-text">클릭하여 항공권 업로드</p>
+                                                <p class="upload-hint">PDF, JPG, PNG 형식 (최대 10MB)</p>
+                                            </div>
+                                        </label>
+
+                                        <!-- 항공권 미리보기 -->
+                                        <div id="ticketPreview" class="file-preview" style="display: none;">
+                                            <div class="file-info">
+                                                <i data-lucide="file-check"></i>
+                                                <div>
+                                                    <p id="ticketFileName" class="file-name"></p>
+                                                    <p id="ticketFileSize" class="file-size"></p>
+                                                </div>
+                                            </div>
+                                            <button type="button" id="removeTicketFile" class="remove-file">
+                                                <i data-lucide="x"></i>
+                                                제거
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 업로드 안내 -->
+                                <div class="upload-notice">
+                                    <div class="notice-content">
+                                        <i data-lucide="info"></i>
+                                        <div>
+                                            <h4>업로드 안내</h4>
+                                            <ul>
+                                                <li>영수증과 항공권은 신청 후에도 업로드할 수 있습니다.</li>
+                                                <li>파일은 PDF 또는 이미지 형식(JPG, PNG)만 지원됩니다.</li>
+                                                <li>파일 크기는 최대 10MB까지 업로드 가능합니다.</li>
+                                                <li>업로드된 파일은 관리자 승인 후 처리됩니다.</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <!-- 버튼 그룹 -->
                             <div class="button-group">
                                 <button type="button" class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
@@ -1501,7 +1601,8 @@
     </script>
 
 
-   <!-- 7단계: 완전한 초기화 시스템 -->
+   
+        <!-- 7단계: 완전한 초기화 시스템 -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 DOM 로드 완료 - 전체 초기화 시작');
@@ -1524,6 +1625,9 @@
             } else {
                 console.error('❌ waitForCoordinatorAndInit 함수를 찾을 수 없음');
             }
+
+            // 🆕 4. 직접구매 섹션 초기화 (새로 추가)
+            setupDirectPurchaseSection();
         });
 
         // DOM이 이미 로드된 경우를 위한 추가 처리
@@ -1541,6 +1645,120 @@
             if (typeof waitForCoordinatorAndInit === 'function') {
                 waitForCoordinatorAndInit();
             }
+
+            // 🆕 직접구매 섹션 초기화 (새로 추가)
+            setupDirectPurchaseSection();
+        }
+
+        // 🆕 직접구매 섹션 설정 함수 (새로 추가)
+        function setupDirectPurchaseSection() {
+            console.log('🔧 직접구매 섹션 초기화...');
+
+            const purchaseTypeRadios = document.querySelectorAll('input[name="purchaseType"]');
+            const directPurchaseSection = document.getElementById('directPurchaseFilesSection');
+            const purchaseLinkGroup = document.getElementById('purchaseLinkGroup');
+
+            function toggleDirectPurchaseSection() {
+                const selectedType = document.querySelector('input[name="purchaseType"]:checked')?.value;
+
+                if (selectedType === 'direct') {
+                    if (directPurchaseSection) {
+                        directPurchaseSection.style.display = 'block';
+                    }
+                    if (purchaseLinkGroup) {
+                        purchaseLinkGroup.style.display = 'none';
+                    }
+                } else {
+                    if (directPurchaseSection) {
+                        directPurchaseSection.style.display = 'none';
+                    }
+                    if (purchaseLinkGroup) {
+                        purchaseLinkGroup.style.display = 'block';
+                    }
+                }
+            }
+
+            // 초기 상태 설정
+            toggleDirectPurchaseSection();
+
+            // 라디오 버튼 변경 감지
+            purchaseTypeRadios.forEach(radio => {
+                radio.addEventListener('change', toggleDirectPurchaseSection);
+            });
+
+            // 파일 업로드 미리보기 기능
+            setupFilePreview('receiptFile', 'receiptPreview', 'receiptFileName', 'receiptFileSize', 'removeReceiptFile');
+            setupFilePreview('ticketFile', 'ticketPreview', 'ticketFileName', 'ticketFileSize', 'removeTicketFile');
+
+            console.log('✅ 직접구매 섹션 초기화 완료');
+        }
+
+        // 파일 미리보기 설정 함수
+        function setupFilePreview(inputId, previewId, fileNameId, fileSizeId, removeButtonId) {
+            const fileInput = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+            const fileName = document.getElementById(fileNameId);
+            const fileSize = document.getElementById(fileSizeId);
+            const removeButton = document.getElementById(removeButtonId);
+
+            if (!fileInput || !preview || !fileName || !fileSize || !removeButton) {
+                return;
+            }
+
+            fileInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+
+                if (file) {
+                    // 파일 크기 검증 (10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('파일 크기는 10MB 이하여야 합니다.');
+                        fileInput.value = '';
+                        return;
+                    }
+
+                    // 파일 형식 검증
+                    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+                    if (!allowedTypes.includes(file.type)) {
+                        alert('PDF 또는 이미지 파일(JPG, PNG)만 업로드할 수 있습니다.');
+                        fileInput.value = '';
+                        return;
+                    }
+
+                    // 미리보기 표시
+                    fileName.textContent = file.name;
+                    fileSize.textContent = formatFileSize(file.size);
+                    preview.style.display = 'block';
+
+                    // 업로드 라벨 숨기기
+                    const uploadLabel = fileInput.nextElementSibling;
+                    if (uploadLabel && uploadLabel.classList.contains('upload-label')) {
+                        uploadLabel.style.display = 'none';
+                    }
+                }
+            });
+
+            // 파일 제거 버튼
+            removeButton.addEventListener('click', function() {
+                fileInput.value = '';
+                preview.style.display = 'none';
+
+                // 업로드 라벨 다시 표시
+                const uploadLabel = fileInput.nextElementSibling;
+                if (uploadLabel && uploadLabel.classList.contains('upload-label')) {
+                    uploadLabel.style.display = 'block';
+                }
+            });
+        }
+
+        // 파일 크기 포맷팅 함수
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
     </script>
 
