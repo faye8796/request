@@ -261,17 +261,22 @@ class FlightRequestStatus {
         console.log('🔄 [이벤트] 이벤트 리스너 설정 시작...');
         
         try {
+            // 🚀 캐프처 단계에서 delete 버튼 우선 처리
+            document.addEventListener('click', (event) => {
+                if (event.target.matches('.delete-request-btn, [data-action="delete-request"]')) {
+                    event.stopImmediatePropagation(); // 다른 리스너 차단
+                    event.preventDefault();
+                    console.log('🚀 캐프처 단계에서 삭제 처리');
+                    this.handleDeleteRequest();
+                    return;
+                }
+            }, true); // 🔑 여기가 핵심: 캐프처 단계
+
             // 새로고침 버튼 이벤트 (동적 생성되므로 이벤트 위임 사용)
             document.addEventListener('click', (event) => {
                 if (event.target.matches('.refresh-status-btn, [data-action="refresh-status"]')) {
                     event.preventDefault();
                     this.handleRefreshStatus();
-                }
-                
-                // 🚨 v1.1.0: 완전삭제 로직으로 변경
-                if (event.target.matches('.delete-request-btn, [data-action="delete-request"]')) {
-                    event.preventDefault();
-                    this.handleDeleteRequest();
                 }
                 
                 if (event.target.matches('.new-request-btn, [data-action="new-request"]')) {
@@ -803,6 +808,8 @@ class FlightRequestStatus {
         }
     }
 
+    
+    
     // 진행 단계 계산
     calculateProgressSteps(status) {
         const steps = [
@@ -1271,9 +1278,6 @@ class FlightRequestStatus {
                 case 'rejected':
                     confirmMessage = '거부된 항공권 신청을 완전삭제하시겠습니까?\\n\\n삭제 후 새로운 신청을 진행할 수 있습니다.';
                     break;
-                case 'cancelled':
-                    confirmMessage = '취소된 항공권 신청을 완전삭제하시겠습니까?\\n\\n삭제 후 새로운 신청을 진행할 수 있습니다.';
-                    break;
                 default:
                     confirmMessage = '정말로 항공권 신청을 완전삭제하시겠습니까?\\n\\n삭제된 신청은 복구할 수 없습니다.';
             }
@@ -1304,7 +1308,7 @@ class FlightRequestStatus {
                 
                 this.showSuccess(statusMessage + ' 잠시 후 페이지가 새로고침됩니다.');
                 
-                // 1.5초 후 페이지 새로고침
+                // 1초 후 페이지 새로고침
                 setTimeout(() => {
                     window.location.reload();
                 }, 1000);
