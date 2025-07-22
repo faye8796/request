@@ -371,7 +371,7 @@ class FlightRequestTicket {
                 this.showValidationError('departure', 
                     `출국일은 현지 도착일(${this.formatDate(arrival)}) 2일 전인 ${this.formatDate(minDepartureDate)} 이후여야 합니다.`);
                 this.flightDateValidation.departureValid = false;
-            } else if (departure >= maxDepartureDate) {
+            } else if (departure > maxDepartureDate) {
                 this.showValidationError('departure', 
                     `출국일은 현지 도착일(${this.formatDate(arrival)}) 이전이어야 합니다.`);
                 this.flightDateValidation.departureValid = false;
@@ -738,7 +738,7 @@ class FlightRequestTicket {
             const minDepartureDate = new Date(arrival);
             minDepartureDate.setDate(arrival.getDate() - 2);
             
-            if (departure <= minDepartureDate || departure >= arrival) {
+            if (departure <= minDepartureDate || departure > arrival) {
                 return {
                     valid: false,
                     message: `출국일은 현지 도착일 2일 전인 ${this.formatDate(minDepartureDate)} 이후부터 ${this.formatDate(arrival)} 이전이어야 합니다.`
