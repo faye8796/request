@@ -961,8 +961,8 @@ class FlightRequestStatus {
         const hasTicket = !!(request.ticket_url);
         
         return `
-            <div class="direct-purchase-files">
-                <h5 class="files-title">
+            <div class="upload-section">  <!-- 기존: direct-purchase-files -->
+                <h5 class="subsection-title">  <!-- 기존: files-title -->
                     <i data-lucide="upload"></i>
                     직접구매 파일 관리
                 </h5>
@@ -975,24 +975,36 @@ class FlightRequestStatus {
                                 ${hasReceipt ? '업로드됨' : '업로드 필요'}
                             </div>
                         </div>
+                        <!-- 파일이 있는 경우 미리보기 표시 -->
+                        ${hasReceipt ? `
+                            <div class="file-preview">
+                                <div class="file-info">
+                                    <i data-lucide="file-check"></i>
+                                    <div>
+                                        <p class="file-name">영수증 파일</p>
+                                        <p class="file-size">업로드 완료</p>
+                                    </div>
+                                </div>
+                                <div class="file-actions">
+                                    <a href="${request.receipt_url}" target="_blank" class="btn btn-sm btn-outline">
+                                        <i data-lucide="external-link"></i>
+                                        보기
+                                    </a>
+                                    <a href="${request.receipt_url}" download class="btn btn-sm btn-outline">
+                                        <i data-lucide="download"></i>
+                                        다운로드
+                                    </a>
+                                </div>
+                            </div>
+                        ` : ''}
                         <div class="file-upload-actions">
-                            ${hasReceipt ? `
-                                <a href="${request.receipt_url}" target="_blank" class="btn btn-sm btn-outline">
-                                    <i data-lucide="external-link"></i>
-                                    보기
-                                </a>
-                                <a href="${request.receipt_url}" download class="btn btn-sm btn-outline">
-                                    <i data-lucide="download"></i>
-                                    다운로드
-                                </a>
-                            ` : ''}
                             <button type="button" class="btn btn-sm btn-primary upload-receipt-btn" data-action="upload-receipt">
                                 <i data-lucide="upload"></i>
                                 ${hasReceipt ? '재업로드' : '업로드'}
                             </button>
                         </div>
                     </div>
-                    
+
                     <div class="file-upload-item">
                         <div class="file-upload-header">
                             <i data-lucide="plane"></i>
@@ -1001,17 +1013,29 @@ class FlightRequestStatus {
                                 ${hasTicket ? '업로드됨' : '업로드 필요'}
                             </div>
                         </div>
+                        <!-- 파일이 있는 경우 미리보기 표시 -->
+                        ${hasTicket ? `
+                            <div class="file-preview">
+                                <div class="file-info">
+                                    <i data-lucide="file-check"></i>
+                                    <div>
+                                        <p class="file-name">항공권 파일</p>
+                                        <p class="file-size">업로드 완료</p>
+                                    </div>
+                                </div>
+                                <div class="file-actions">
+                                    <a href="${request.ticket_url}" target="_blank" class="btn btn-sm btn-outline">
+                                        <i data-lucide="external-link"></i>
+                                        보기
+                                    </a>
+                                    <a href="${request.ticket_url}" download class="btn btn-sm btn-outline">
+                                        <i data-lucide="download"></i>
+                                        다운로드
+                                    </a>
+                                </div>
+                            </div>
+                        ` : ''}
                         <div class="file-upload-actions">
-                            ${hasTicket ? `
-                                <a href="${request.ticket_url}" target="_blank" class="btn btn-sm btn-outline">
-                                    <i data-lucide="external-link"></i>
-                                    보기
-                                </a>
-                                <a href="${request.ticket_url}" download class="btn btn-sm btn-outline">
-                                    <i data-lucide="download"></i>
-                                    다운로드
-                                </a>
-                            ` : ''}
                             <button type="button" class="btn btn-sm btn-primary upload-ticket-btn" data-action="upload-ticket">
                                 <i data-lucide="upload"></i>
                                 ${hasTicket ? '재업로드' : '업로드'}
@@ -1019,8 +1043,24 @@ class FlightRequestStatus {
                         </div>
                     </div>
                 </div>
+
+                <!-- 업로드 안내 -->
+                <div class="upload-notice">
+                    <div class="notice-content">
+                        <i data-lucide="info"></i>
+                        <div>
+                            <h4>파일 업로드 안내</h4>
+                            <ul>
+                                <li>지원 파일 형식: JPG, PNG, PDF (최대 10MB)</li>
+                                <li>영수증: 항공권 구매 영수증 또는 결제 확인서</li>
+                                <li>항공권: 전자 항공권(e-ticket) 또는 항공권 확인서</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
+
     }
 
     // 첨부 파일 렌더링
@@ -1265,7 +1305,7 @@ class FlightRequestStatus {
                 // 1.5초 후 페이지 새로고침
                 setTimeout(() => {
                     window.location.reload();
-                }, 1500);
+                }, 1000);
                 
             } else {
                 throw new Error('API deleteFlightRequest 메서드를 찾을 수 없습니다');
@@ -1436,7 +1476,7 @@ class FlightRequestStatus {
             const fileName = `${this.currentUser.id}_${timestamp}_receipt.${fileExtension}`;
             
             // Storage 업로드
-            const result = await this.api.uploadFile(file, 'receipt-files', fileName);
+            const result = await this.api.uploadFile('receipt-files', fileName, file);
             
             if (!result.success) {
                 throw new Error(result.error || '파일 업로드에 실패했습니다.');
@@ -1466,7 +1506,7 @@ class FlightRequestStatus {
             const fileName = `${this.currentUser.id}_${timestamp}_ticket.${fileExtension}`;
             
             // Storage 업로드
-            const result = await this.api.uploadFile(file, 'flight-tickets', fileName);
+            const result = await this.api.uploadFile('flight-tickets', fileName, file);
             
             if (!result.success) {
                 throw new Error(result.error || '파일 업로드에 실패했습니다.');

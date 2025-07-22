@@ -351,19 +351,25 @@ class FlightRequestFormHandler {
             this.showSuccessMessage('항공권 신청이 성공적으로 제출되었습니다!');
             this.updateSubmitButton(false, '제출 완료');
             
-            // 페이지 새로고침 또는 리다이렉트
+            // 🆕 여기에 추가!
+            this.isSuccessfullySubmitted = true;
+            console.log('⏰ [폼제출] 2초 후 페이지 새로고침 예정...');
+
             setTimeout(() => {
+                console.log('🔄 [폼제출] 페이지 새로고침 실행');
                 window.location.reload();
-            }, 2000);
+            }, 1000);
             
         } catch (error) {
             console.error('❌ [폼제출] 항공권 신청 제출 실패:', error);
             this.showValidationError('제출 중 오류가 발생했습니다. 다시 시도해주세요.');
             
         } finally {
-            this.isSubmitting = false;
-            if (!this.submitBtn.textContent.includes('완료')) {
-                this.updateSubmitButton(false, '신청하기');
+            if (!this.isSuccessfullySubmitted) { // 성공하지 않은 경우만
+                this.isSubmitting = false;
+                if (!this.submitBtn.textContent.includes('완료')) {
+                    this.updateSubmitButton(false, '신청하기');
+                }
             }
         }
     }

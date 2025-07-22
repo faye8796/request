@@ -442,7 +442,7 @@ class FlightRequestTicket {
             };
             
             // 검증 수행
-            if (returnD <= minReturnDate) {
+            if (returnD < minReturnDate) {
                 this.showValidationError('return', 
                     `귀국일은 학당 근무 종료일(${this.formatDate(workEnd)}) 이후여야 합니다.`);
                 this.flightDateValidation.returnValid = false;
