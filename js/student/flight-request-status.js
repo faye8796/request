@@ -1478,14 +1478,17 @@ class FlightRequestStatus {
             const fileName = `${this.currentUser.id}_${timestamp}_receipt.${fileExtension}`;
             
             // Storage 업로드
-            const result = await this.api.uploadFile('receipt-files', fileName, file);
-            
-            if (!result.success) {
-                throw new Error(result.error || '파일 업로드에 실패했습니다.');
+            const uploadedUrl = await this.api.uploadFile('flight-tickets', fileName, file);
+
+            if (!uploadedUrl || typeof uploadedUrl !== 'string') {
+                throw new Error('파일 업로드에 실패했습니다.');
             }
-            
-            console.log('✅ [파일업로드] 영수증 파일 업로드 성공:', result);
-            return result;
+
+            console.log('✅ [파일업로드] 항공권 파일 업로드 성공:', uploadedUrl);
+            return {
+                success: true,
+                url: uploadedUrl
+            };
             
         } catch (error) {
             console.error('❌ [파일업로드] 영수증 파일 업로드 실패:', error);
@@ -1508,14 +1511,17 @@ class FlightRequestStatus {
             const fileName = `${this.currentUser.id}_${timestamp}_ticket.${fileExtension}`;
             
             // Storage 업로드
-            const result = await this.api.uploadFile('flight-tickets', fileName, file);
-            
-            if (!result.success) {
-                throw new Error(result.error || '파일 업로드에 실패했습니다.');
+            const uploadedUrl = await this.api.uploadFile('receipt-files', fileName, file);
+
+            if (!uploadedUrl || typeof uploadedUrl !== 'string') {
+                throw new Error('파일 업로드에 실패했습니다.');
             }
-            
-            console.log('✅ [파일업로드] 항공권 파일 업로드 성공:', result);
-            return result;
+
+            console.log('✅ [파일업로드] 영수증 파일 업로드 성공:', uploadedUrl);
+            return {
+                success: true,
+                url: uploadedUrl
+            };
             
         } catch (error) {
             console.error('❌ [파일업로드] 항공권 파일 업로드 실패:', error);
@@ -1532,19 +1538,22 @@ class FlightRequestStatus {
                 throw new Error('데이터 업데이트 API를 찾을 수 없습니다.');
             }
             
-            const result = await this.api.updateData('flight_requests', {
+            const updatedData = await this.api.updateData('flight_requests', {
                 receipt_url: receiptUrl,
                 updated_at: new Date().toISOString()
             }, {
                 id: this.currentRequest.id
             });
-            
-            if (!result.success) {
-                throw new Error(result.error || 'DB 업데이트에 실패했습니다.');
+
+            if (!updatedData || !updatedData.id) {
+                throw new Error('DB 업데이트에 실패했습니다.');
             }
-            
+
             console.log('✅ [DB업데이트] 영수증 URL 업데이트 성공');
-            return result;
+            return {
+                success: true,
+                data: updatedData
+            };
             
         } catch (error) {
             console.error('❌ [DB업데이트] 영수증 URL 업데이트 실패:', error);
@@ -1561,19 +1570,22 @@ class FlightRequestStatus {
                 throw new Error('데이터 업데이트 API를 찾을 수 없습니다.');
             }
             
-            const result = await this.api.updateData('flight_requests', {
+            const updatedData = await this.api.updateData('flight_requests', {
                 ticket_url: ticketUrl,
                 updated_at: new Date().toISOString()
             }, {
                 id: this.currentRequest.id
             });
-            
-            if (!result.success) {
-                throw new Error(result.error || 'DB 업데이트에 실패했습니다.');
+
+            if (!updatedData || !updatedData.id) {
+                throw new Error('DB 업데이트에 실패했습니다.');
             }
-            
+
             console.log('✅ [DB업데이트] 항공권 URL 업데이트 성공');
-            return result;
+            return {
+                success: true,
+                data: updatedData
+            };
             
         } catch (error) {
             console.error('❌ [DB업데이트] 항공권 URL 업데이트 실패:', error);
