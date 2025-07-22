@@ -955,27 +955,28 @@ class FlightRequestStatus {
         `;
     }
 
-    // 🆕 v1.1.0: 직접구매 파일 업로드 섹션 렌더링
+    // 🔧 전체 메서드를 이것으로 교체:
     renderDirectPurchaseFileUpload(request) {
         const hasReceipt = !!(request.receipt_url);
         const hasTicket = !!(request.ticket_url);
-        
+
         return `
-            <div class="upload-section">  <!-- 기존: direct-purchase-files -->
-                <h5 class="subsection-title">  <!-- 기존: files-title -->
+            <div class="direct-purchase-section">
+                <h5 class="subsection-title">
                     <i data-lucide="upload"></i>
                     직접구매 파일 관리
                 </h5>
-                <div class="file-upload-grid">
-                    <div class="file-upload-item">
-                        <div class="file-upload-header">
+
+                <div class="file-cards-grid">
+                    <div class="file-card receipt-card">
+                        <div class="file-card-header">
                             <i data-lucide="receipt"></i>
                             <span>영수증</span>
                             <div class="file-status ${hasReceipt ? 'uploaded' : 'pending'}">
                                 ${hasReceipt ? '업로드됨' : '업로드 필요'}
                             </div>
                         </div>
-                        <!-- 파일이 있는 경우 미리보기 표시 -->
+
                         ${hasReceipt ? `
                             <div class="file-preview">
                                 <div class="file-info">
@@ -997,7 +998,8 @@ class FlightRequestStatus {
                                 </div>
                             </div>
                         ` : ''}
-                        <div class="file-upload-actions">
+
+                        <div class="file-card-actions">
                             <button type="button" class="btn btn-sm btn-primary upload-receipt-btn" data-action="upload-receipt">
                                 <i data-lucide="upload"></i>
                                 ${hasReceipt ? '재업로드' : '업로드'}
@@ -1005,15 +1007,15 @@ class FlightRequestStatus {
                         </div>
                     </div>
 
-                    <div class="file-upload-item">
-                        <div class="file-upload-header">
+                    <div class="file-card ticket-card">
+                        <div class="file-card-header">
                             <i data-lucide="plane"></i>
                             <span>항공권</span>
                             <div class="file-status ${hasTicket ? 'uploaded' : 'pending'}">
                                 ${hasTicket ? '업로드됨' : '업로드 필요'}
                             </div>
                         </div>
-                        <!-- 파일이 있는 경우 미리보기 표시 -->
+
                         ${hasTicket ? `
                             <div class="file-preview">
                                 <div class="file-info">
@@ -1035,7 +1037,8 @@ class FlightRequestStatus {
                                 </div>
                             </div>
                         ` : ''}
-                        <div class="file-upload-actions">
+
+                        <div class="file-card-actions">
                             <button type="button" class="btn btn-sm btn-primary upload-ticket-btn" data-action="upload-ticket">
                                 <i data-lucide="upload"></i>
                                 ${hasTicket ? '재업로드' : '업로드'}
@@ -1044,7 +1047,6 @@ class FlightRequestStatus {
                     </div>
                 </div>
 
-                <!-- 업로드 안내 -->
                 <div class="upload-notice">
                     <div class="notice-content">
                         <i data-lucide="info"></i>
@@ -1060,8 +1062,8 @@ class FlightRequestStatus {
                 </div>
             </div>
         `;
-
     }
+
 
     // 첨부 파일 렌더링
     renderAttachments(request) {

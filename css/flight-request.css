@@ -2284,6 +2284,65 @@
     background-color: #fef3c7;
     color: #92400e;
 }
+/* 직접구매 파일 관리 - 개선된 카드형 UI */
+.direct-purchase-section {
+    margin-bottom: 24px;
+    padding: 20px;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+}
+
+.file-cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.file-card {
+    padding: 16px;
+    background-color: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.file-card:hover {
+    border-color: #9ca3af;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.file-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.file-card-header i {
+    color: #6b7280;
+    width: 18px;
+    height: 18px;
+}
+
+.file-card-header span {
+    font-weight: 600;
+    color: #374151;
+    margin-left: 8px;
+    flex: 1;
+}
+
+.file-card-actions {
+    margin-top: 12px;
+}
+
+.file-card-actions .btn {
+    width: 100%;
+    justify-content: center;
+}
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
@@ -2556,7 +2615,41 @@
         border-color: #6b7280;
     }
 }
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .file-cards-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .direct-purchase-section {
+        padding: 16px;
+    }
+}
 
+/* 파일 상태별 카드 스타일 */
+.receipt-card.has-file {
+    border-color: #10b981;
+    background-color: #f0fdf4;
+}
+
+.ticket-card.has-file {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+}
+
+/* 업로드 완료 상태 강조 */
+.file-card .file-status.uploaded {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.file-card .file-status.pending {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
 /* ===================================================== */
 /* 📊 v8.5.2 통합 완료 */
 /* 🎯 포함된 컴포넌트: */
