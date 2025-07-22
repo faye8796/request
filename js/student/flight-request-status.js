@@ -1,14 +1,15 @@
-// flight-request-status.js - 항공권 신청 내역 조회 및 관리 모듈 v1.0.3
+// flight-request-status.js - 항공권 신청 내역 조회 및 관리 모듈 v1.1.0
 // 🎯 목적: 사용자의 항공권 신청 상태를 조회하고 관리하는 독립 모듈
 // 📋 기능: 신청 내역 표시, 상태별 UI, 액션 버튼, 실시간 업데이트
 // 🔗 연동: flight-request-coordinator.js, flight-request-api.js
 // 🗄️ DB: flight_requests, user_profiles 테이블 연동
 // 🔧 v1.0.2 개선: API 메서드 호출 오류 수정 (loadUserProfile → getUserProfile)
 // 🚨 v1.0.3 대폭 개편: 신청 수정 기능 완전 제거, 삭제 중심 UX로 통일
+// 🚀 v1.1.0 핵심 업데이트: DB값 직접 사용 + 완전삭제 로직 + 직접구매 파일 업로드
 
 class FlightRequestStatus {
     constructor() {
-        console.log('🚀 FlightRequestStatus v1.0.3 생성자 초기화 시작...');
+        console.log('🚀 FlightRequestStatus v1.1.0 생성자 초기화 시작...');
         
         // 의존성 참조
         this.api = null;
@@ -76,7 +77,7 @@ class FlightRequestStatus {
         this.isInitialized = false;
         this.initializationPromise = null;
         
-        console.log('✅ FlightRequestStatus v1.0.3 생성자 완료');
+        console.log('✅ FlightRequestStatus v1.1.0 생성자 완료');
     }
 
     // DOM 요소 초기화
@@ -255,7 +256,7 @@ class FlightRequestStatus {
         });
     }
 
-    // 🚨 v1.0.3 수정: 이벤트 리스너 설정 (수정 기능 제거)
+    // 🚨 v1.1.0 수정: 이벤트 리스너 설정 (직접구매 파일 업로드 추가)
     setupEventListeners() {
         console.log('🔄 [이벤트] 이벤트 리스너 설정 시작...');
         
@@ -267,13 +268,11 @@ class FlightRequestStatus {
                     this.handleRefreshStatus();
                 }
                 
-                // 🚨 v1.0.3: 취소/삭제 기능 (수정 기능 제거)
+                // 🚨 v1.1.0: 완전삭제 로직으로 변경
                 if (event.target.matches('.delete-request-btn, [data-action="delete-request"]')) {
                     event.preventDefault();
                     this.handleDeleteRequest();
                 }
-                
-                // 🚨 v1.0.3: edit-request 이벤트 핸들러 제거
                 
                 if (event.target.matches('.new-request-btn, [data-action="new-request"]')) {
                     event.preventDefault();
@@ -283,6 +282,17 @@ class FlightRequestStatus {
                 if (event.target.matches('.view-details-btn, [data-action="view-details"]')) {
                     event.preventDefault();
                     this.handleViewDetails();
+                }
+                
+                // 🆕 v1.1.0: 직접구매 파일 업로드 이벤트
+                if (event.target.matches('.upload-receipt-btn, [data-action="upload-receipt"]')) {
+                    event.preventDefault();
+                    this.handleUploadReceipt();
+                }
+                
+                if (event.target.matches('.upload-ticket-btn, [data-action="upload-ticket"]')) {
+                    event.preventDefault();
+                    this.handleUploadTicket();
                 }
             });
             
@@ -300,7 +310,7 @@ class FlightRequestStatus {
                 this.handleStatusChange(event.detail);
             });
             
-            console.log('✅ [이벤트] 이벤트 리스너 설정 완료 (수정 기능 제거됨)');
+            console.log('✅ [이벤트] 이벤트 리스너 설정 완료 (직접구매 파일 업로드 포함)');
             
         } catch (error) {
             console.error('❌ [이벤트] 설정 실패:', error);
@@ -369,7 +379,9 @@ class FlightRequestStatus {
                     console.log('✅ [사용자데이터] 사용자 프로필 로드 완료:', {
                         hasActivityPeriod: !!(this.userProfile?.actual_arrival_date && this.userProfile?.actual_work_end_date),
                         actualArrivalDate: this.userProfile?.actual_arrival_date,
-                        actualWorkEndDate: this.userProfile?.actual_work_end_date
+                        actualWorkEndDate: this.userProfile?.actual_work_end_date,
+                        actualWorkDays: this.userProfile?.actual_work_days,
+                        dispatchDuration: this.userProfile?.dispatch_duration
                     });
                 } catch (profileError) {
                     console.warn('⚠️ [사용자데이터] getUserProfile 실패:', profileError);
@@ -512,7 +524,8 @@ class FlightRequestStatus {
                     status: this.currentRequest.status,
                     createdAt: this.currentRequest.created_at,
                     departureDate: this.currentRequest.departure_date,
-                    returnDate: this.currentRequest.return_date
+                    returnDate: this.currentRequest.return_date,
+                    purchaseType: this.currentRequest.purchase_type
                 });
             } else {
                 console.log('ℹ️ [신청로드] 신청 내역이 없습니다');
@@ -619,14 +632,18 @@ class FlightRequestStatus {
             // 진행 단계 계산
             const progressSteps = this.calculateProgressSteps(request.status);
             
-            // 🚨 v1.0.3 수정: 액션 버튼 생성 (삭제 중심)
-            const actionButtons = this.generateActionButtons(request.status);
+            // 🚨 v1.1.0 수정: 액션 버튼 생성 (직접구매 파일 업로드 포함)
+            const actionButtons = this.generateActionButtons(request.status, request.purchase_type);
             
-            // 활동 기간 정보
-            const activityPeriodInfo = this.renderActivityPeriodInfo();
+            // 🚨 v1.1.0 수정: 활동 기간 정보 (DB값 직접 사용)
+            const activityPeriodInfo = this.renderActivityPeriodInfoFromDB();
             
             // 가격 정보
             const priceInfo = this.renderPriceInfo(request);
+            
+            // 🆕 v1.1.0: 직접구매 파일 업로드 섹션
+            const directPurchaseFileUpload = request.purchase_type === 'direct' ? 
+                this.renderDirectPurchaseFileUpload(request) : '';
             
             this.elements.statusContainer.innerHTML = `
                 <div class="flight-request-status-card">
@@ -729,7 +746,7 @@ class FlightRequestStatus {
                                 <label class="detail-label">체류 기간</label>
                                 <div class="detail-value">
                                     <i data-lucide="clock"></i>
-                                    ${this.calculateStayDuration(request.departure_date, request.return_date)}일
+                                    ${this.getStayDurationFromDB()}일
                                 </div>
                             </div>
                         </div>
@@ -759,6 +776,9 @@ class FlightRequestStatus {
                             </div>
                         ` : ''}
                     </div>
+
+                    <!-- 🆕 v1.1.0: 직접구매 파일 업로드 섹션 -->
+                    ${directPurchaseFileUpload}
 
                     <!-- 첨부 파일 정보 -->
                     ${this.renderAttachments(request)}
@@ -872,16 +892,14 @@ class FlightRequestStatus {
         }
     }
 
-    // 활동 기간 정보 렌더링
-    renderActivityPeriodInfo() {
+    // 🚨 v1.1.0 수정: 활동 기간 정보 렌더링 (DB값 직접 사용)
+    renderActivityPeriodInfoFromDB() {
         if (!this.userProfile?.actual_arrival_date || !this.userProfile?.actual_work_end_date) {
             return '';
         }
         
-        const activityDays = this.calculateActivityDays(
-            this.userProfile.actual_arrival_date,
-            this.userProfile.actual_work_end_date
-        );
+        // 🚨 v1.1.0: DB값 직접 사용 (계산 대신)
+        const activityDays = this.userProfile.actual_work_days || 0;
         
         return `
             <div class="activity-period-info">
@@ -932,6 +950,74 @@ class FlightRequestStatus {
                             <span>${request.price_source}</span>
                         </div>
                     ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    // 🆕 v1.1.0: 직접구매 파일 업로드 섹션 렌더링
+    renderDirectPurchaseFileUpload(request) {
+        const hasReceipt = !!(request.receipt_url);
+        const hasTicket = !!(request.ticket_url);
+        
+        return `
+            <div class="direct-purchase-files">
+                <h5 class="files-title">
+                    <i data-lucide="upload"></i>
+                    직접구매 파일 관리
+                </h5>
+                <div class="file-upload-grid">
+                    <div class="file-upload-item">
+                        <div class="file-upload-header">
+                            <i data-lucide="receipt"></i>
+                            <span>영수증</span>
+                            <div class="file-status ${hasReceipt ? 'uploaded' : 'pending'}">
+                                ${hasReceipt ? '업로드됨' : '업로드 필요'}
+                            </div>
+                        </div>
+                        <div class="file-upload-actions">
+                            ${hasReceipt ? `
+                                <a href="${request.receipt_url}" target="_blank" class="btn btn-sm btn-outline">
+                                    <i data-lucide="external-link"></i>
+                                    보기
+                                </a>
+                                <a href="${request.receipt_url}" download class="btn btn-sm btn-outline">
+                                    <i data-lucide="download"></i>
+                                    다운로드
+                                </a>
+                            ` : ''}
+                            <button type="button" class="btn btn-sm btn-primary upload-receipt-btn" data-action="upload-receipt">
+                                <i data-lucide="upload"></i>
+                                ${hasReceipt ? '재업로드' : '업로드'}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="file-upload-item">
+                        <div class="file-upload-header">
+                            <i data-lucide="plane"></i>
+                            <span>항공권</span>
+                            <div class="file-status ${hasTicket ? 'uploaded' : 'pending'}">
+                                ${hasTicket ? '업로드됨' : '업로드 필요'}
+                            </div>
+                        </div>
+                        <div class="file-upload-actions">
+                            ${hasTicket ? `
+                                <a href="${request.ticket_url}" target="_blank" class="btn btn-sm btn-outline">
+                                    <i data-lucide="external-link"></i>
+                                    보기
+                                </a>
+                                <a href="${request.ticket_url}" download class="btn btn-sm btn-outline">
+                                    <i data-lucide="download"></i>
+                                    다운로드
+                                </a>
+                            ` : ''}
+                            <button type="button" class="btn btn-sm btn-primary upload-ticket-btn" data-action="upload-ticket">
+                                <i data-lucide="upload"></i>
+                                ${hasTicket ? '재업로드' : '업로드'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -1011,8 +1097,8 @@ class FlightRequestStatus {
         `;
     }
 
-    // 🚨 v1.0.3 대폭 수정: 액션 버튼 생성 (삭제 중심 UX)
-    generateActionButtons(status) {
+    // 🚨 v1.1.0 수정: 액션 버튼 생성 (직접구매 파일 업로드 버튼 추가)
+    generateActionButtons(status, purchaseType = null) {
         const buttons = [];
         
         switch (status) {
@@ -1127,9 +1213,9 @@ class FlightRequestStatus {
         }
     }
 
-    // 🚨 v1.0.3 신규: 삭제 요청 핸들러 (취소 기능 대체)
+    // 🚨 v1.1.0 대폭 수정: 완전삭제 로직 (deleteFlightRequest + 페이지 새로고침)
     async handleDeleteRequest() {
-        console.log('🔄 [액션] 신청 삭제 요청...');
+        console.log('🔄 [액션] 신청 완전삭제 요청...');
         
         try {
             // 확인 대화상자
@@ -1138,16 +1224,16 @@ class FlightRequestStatus {
             
             switch (currentStatus) {
                 case 'pending':
-                    confirmMessage = '정말로 검토 중인 항공권 신청을 삭제하시겠습니까?\n\n삭제된 신청은 복구할 수 없으며, 필요하시면 새로 신청해야 합니다.';
+                    confirmMessage = '정말로 검토 중인 항공권 신청을 완전삭제하시겠습니까?\\n\\n삭제된 신청은 복구할 수 없으며, 필요하시면 새로 신청해야 합니다.';
                     break;
                 case 'rejected':
-                    confirmMessage = '거부된 항공권 신청을 삭제하시겠습니까?\n\n삭제 후 새로운 신청을 진행할 수 있습니다.';
+                    confirmMessage = '거부된 항공권 신청을 완전삭제하시겠습니까?\\n\\n삭제 후 새로운 신청을 진행할 수 있습니다.';
                     break;
                 case 'cancelled':
-                    confirmMessage = '취소된 항공권 신청을 삭제하시겠습니까?\n\n삭제 후 새로운 신청을 진행할 수 있습니다.';
+                    confirmMessage = '취소된 항공권 신청을 완전삭제하시겠습니까?\\n\\n삭제 후 새로운 신청을 진행할 수 있습니다.';
                     break;
                 default:
-                    confirmMessage = '정말로 항공권 신청을 삭제하시겠습니까?\n\n삭제된 신청은 복구할 수 없습니다.';
+                    confirmMessage = '정말로 항공권 신청을 완전삭제하시겠습니까?\\n\\n삭제된 신청은 복구할 수 없습니다.';
             }
             
             const confirmed = confirm(confirmMessage);
@@ -1159,29 +1245,31 @@ class FlightRequestStatus {
             
             this.showLoading(true);
             
-            // 🔧 v1.0.3: API를 통해 삭제 처리 (cancelFlightRequest 사용)
-            if (this.api && typeof this.api.cancelFlightRequest === 'function') {
-                const result = await this.api.cancelFlightRequest(this.currentRequest.id);
+            // 🚨 v1.1.0: API를 통해 완전삭제 처리 (deleteFlightRequest 사용)
+            if (this.api && typeof this.api.deleteFlightRequest === 'function') {
+                const result = await this.api.deleteFlightRequest(this.currentRequest.id);
                 
                 if (!result.success) {
                     throw new Error(result.error || '신청 삭제에 실패했습니다.');
                 }
                 
-                console.log('✅ [액션] 신청 삭제 성공 (cancelFlightRequest):', result);
+                console.log('✅ [액션] 신청 완전삭제 성공 (deleteFlightRequest):', result);
+                
+                // 🚨 v1.1.0: 성공 메시지 표시 후 페이지 새로고침
+                const statusMessage = currentStatus === 'rejected' ? '거부된 신청이 완전삭제되었습니다. 새로운 신청을 진행해주세요.' :
+                                    currentStatus === 'cancelled' ? '취소된 신청이 완전삭제되었습니다. 새로운 신청을 진행해주세요.' :
+                                    '항공권 신청이 완전삭제되었습니다.';
+                
+                this.showSuccess(statusMessage + ' 잠시 후 페이지가 새로고침됩니다.');
+                
+                // 1.5초 후 페이지 새로고침
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+                
             } else {
-                throw new Error('API cancelFlightRequest 메서드를 찾을 수 없습니다');
+                throw new Error('API deleteFlightRequest 메서드를 찾을 수 없습니다');
             }
-            
-            // 데이터 새로고침
-            await this.loadCurrentRequest();
-            this.renderStatus();
-            
-            // 성공 메시지
-            const statusMessage = currentStatus === 'rejected' ? '거부된 신청이 삭제되었습니다. 새로운 신청을 진행해주세요.' :
-                                currentStatus === 'cancelled' ? '취소된 신청이 삭제되었습니다. 새로운 신청을 진행해주세요.' :
-                                '항공권 신청이 삭제되었습니다.';
-            
-            this.showSuccess(statusMessage);
             
         } catch (error) {
             console.error('❌ [액션] 신청 삭제 실패:', error);
@@ -1191,7 +1279,265 @@ class FlightRequestStatus {
         }
     }
 
-    // 🚨 v1.0.3: handleEditRequest 메서드 완전 제거
+    // 🆕 v1.1.0: 영수증 업로드 핸들러
+    async handleUploadReceipt() {
+        console.log('🔄 [파일업로드] 영수증 업로드 시작...');
+        
+        try {
+            // 파일 선택 dialog
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.gif';
+            input.style.display = 'none';
+            
+            const fileSelected = new Promise((resolve, reject) => {
+                input.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        resolve(file);
+                    } else {
+                        reject(new Error('파일이 선택되지 않았습니다.'));
+                    }
+                });
+                
+                input.addEventListener('cancel', () => {
+                    reject(new Error('파일 선택이 취소되었습니다.'));
+                });
+                
+                setTimeout(() => {
+                    reject(new Error('파일 선택 시간이 초과되었습니다.'));
+                }, 60000); // 60초 타임아웃
+            });
+            
+            // 파일 선택 dialog 열기
+            document.body.appendChild(input);
+            input.click();
+            
+            // 파일 선택 대기
+            const file = await fileSelected;
+            document.body.removeChild(input);
+            
+            console.log('📄 [파일업로드] 선택된 영수증 파일:', {
+                name: file.name,
+                size: file.size,
+                type: file.type
+            });
+            
+            // 파일 크기 검증 (10MB 제한)
+            if (file.size > 10 * 1024 * 1024) {
+                throw new Error('파일 크기는 10MB를 초과할 수 없습니다.');
+            }
+            
+            this.showLoading(true);
+            
+            // 파일 업로드
+            const uploadResult = await this.uploadReceiptFile(file);
+            
+            // DB 업데이트
+            const updateResult = await this.updateRequestWithReceiptUrl(uploadResult.url);
+            
+            // 현재 데이터 새로고침
+            await this.loadCurrentRequest();
+            this.renderStatus();
+            
+            this.showSuccess('영수증이 성공적으로 업로드되었습니다.');
+            
+        } catch (error) {
+            console.error('❌ [파일업로드] 영수증 업로드 실패:', error);
+            this.showError('영수증 업로드에 실패했습니다.', error);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    // 🆕 v1.1.0: 항공권 업로드 핸들러
+    async handleUploadTicket() {
+        console.log('🔄 [파일업로드] 항공권 업로드 시작...');
+        
+        try {
+            // 파일 선택 dialog
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.gif';
+            input.style.display = 'none';
+            
+            const fileSelected = new Promise((resolve, reject) => {
+                input.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        resolve(file);
+                    } else {
+                        reject(new Error('파일이 선택되지 않았습니다.'));
+                    }
+                });
+                
+                input.addEventListener('cancel', () => {
+                    reject(new Error('파일 선택이 취소되었습니다.'));
+                });
+                
+                setTimeout(() => {
+                    reject(new Error('파일 선택 시간이 초과되었습니다.'));
+                }, 60000); // 60초 타임아웃
+            });
+            
+            // 파일 선택 dialog 열기
+            document.body.appendChild(input);
+            input.click();
+            
+            // 파일 선택 대기
+            const file = await fileSelected;
+            document.body.removeChild(input);
+            
+            console.log('🎫 [파일업로드] 선택된 항공권 파일:', {
+                name: file.name,
+                size: file.size,
+                type: file.type
+            });
+            
+            // 파일 크기 검증 (10MB 제한)
+            if (file.size > 10 * 1024 * 1024) {
+                throw new Error('파일 크기는 10MB를 초과할 수 없습니다.');
+            }
+            
+            this.showLoading(true);
+            
+            // 파일 업로드
+            const uploadResult = await this.uploadTicketFile(file);
+            
+            // DB 업데이트
+            const updateResult = await this.updateRequestWithTicketUrl(uploadResult.url);
+            
+            // 현재 데이터 새로고침
+            await this.loadCurrentRequest();
+            this.renderStatus();
+            
+            this.showSuccess('항공권이 성공적으로 업로드되었습니다.');
+            
+        } catch (error) {
+            console.error('❌ [파일업로드] 항공권 업로드 실패:', error);
+            this.showError('항공권 업로드에 실패했습니다.', error);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    // 🆕 v1.1.0: 영수증 파일 업로드 유틸리티
+    async uploadReceiptFile(file) {
+        try {
+            console.log('📤 [파일업로드] 영수증 파일 스토리지 업로드...');
+            
+            if (!this.api || typeof this.api.uploadFile !== 'function') {
+                throw new Error('파일 업로드 API를 찾을 수 없습니다.');
+            }
+            
+            // 파일명 생성 (사용자ID_timestamp_receipt.확장자)
+            const timestamp = Date.now();
+            const fileExtension = file.name.split('.').pop();
+            const fileName = `${this.currentUser.id}_${timestamp}_receipt.${fileExtension}`;
+            
+            // Storage 업로드
+            const result = await this.api.uploadFile(file, 'receipt-files', fileName);
+            
+            if (!result.success) {
+                throw new Error(result.error || '파일 업로드에 실패했습니다.');
+            }
+            
+            console.log('✅ [파일업로드] 영수증 파일 업로드 성공:', result);
+            return result;
+            
+        } catch (error) {
+            console.error('❌ [파일업로드] 영수증 파일 업로드 실패:', error);
+            throw error;
+        }
+    }
+
+    // 🆕 v1.1.0: 항공권 파일 업로드 유틸리티
+    async uploadTicketFile(file) {
+        try {
+            console.log('📤 [파일업로드] 항공권 파일 스토리지 업로드...');
+            
+            if (!this.api || typeof this.api.uploadFile !== 'function') {
+                throw new Error('파일 업로드 API를 찾을 수 없습니다.');
+            }
+            
+            // 파일명 생성 (사용자ID_timestamp_ticket.확장자)
+            const timestamp = Date.now();
+            const fileExtension = file.name.split('.').pop();
+            const fileName = `${this.currentUser.id}_${timestamp}_ticket.${fileExtension}`;
+            
+            // Storage 업로드
+            const result = await this.api.uploadFile(file, 'flight-tickets', fileName);
+            
+            if (!result.success) {
+                throw new Error(result.error || '파일 업로드에 실패했습니다.');
+            }
+            
+            console.log('✅ [파일업로드] 항공권 파일 업로드 성공:', result);
+            return result;
+            
+        } catch (error) {
+            console.error('❌ [파일업로드] 항공권 파일 업로드 실패:', error);
+            throw error;
+        }
+    }
+
+    // 🆕 v1.1.0: 영수증 URL로 DB 업데이트
+    async updateRequestWithReceiptUrl(receiptUrl) {
+        try {
+            console.log('💾 [DB업데이트] 영수증 URL 업데이트...');
+            
+            if (!this.api || typeof this.api.updateData !== 'function') {
+                throw new Error('데이터 업데이트 API를 찾을 수 없습니다.');
+            }
+            
+            const result = await this.api.updateData('flight_requests', {
+                receipt_url: receiptUrl,
+                updated_at: new Date().toISOString()
+            }, {
+                id: this.currentRequest.id
+            });
+            
+            if (!result.success) {
+                throw new Error(result.error || 'DB 업데이트에 실패했습니다.');
+            }
+            
+            console.log('✅ [DB업데이트] 영수증 URL 업데이트 성공');
+            return result;
+            
+        } catch (error) {
+            console.error('❌ [DB업데이트] 영수증 URL 업데이트 실패:', error);
+            throw error;
+        }
+    }
+
+    // 🆕 v1.1.0: 항공권 URL로 DB 업데이트
+    async updateRequestWithTicketUrl(ticketUrl) {
+        try {
+            console.log('💾 [DB업데이트] 항공권 URL 업데이트...');
+            
+            if (!this.api || typeof this.api.updateData !== 'function') {
+                throw new Error('데이터 업데이트 API를 찾을 수 없습니다.');
+            }
+            
+            const result = await this.api.updateData('flight_requests', {
+                ticket_url: ticketUrl,
+                updated_at: new Date().toISOString()
+            }, {
+                id: this.currentRequest.id
+            });
+            
+            if (!result.success) {
+                throw new Error(result.error || 'DB 업데이트에 실패했습니다.');
+            }
+            
+            console.log('✅ [DB업데이트] 항공권 URL 업데이트 성공');
+            return result;
+            
+        } catch (error) {
+            console.error('❌ [DB업데이트] 항공권 URL 업데이트 실패:', error);
+            throw error;
+        }
+    }
 
     handleNewRequest() {
         console.log('🔄 [액션] 새 신청 요청...');
@@ -1230,7 +1576,7 @@ class FlightRequestStatus {
             // 현재는 간단히 알림으로 처리
             const details = this.formatDetailedInfo();
             
-            if (confirm('세부사항을 콘솔에서 확인하시겠습니까?\n\n확인을 누르면 브라우저 개발자 도구의 콘솔에서 상세 정보를 볼 수 있습니다.')) {
+            if (confirm('세부사항을 콘솔에서 확인하시겠습니까?\\n\\n확인을 누르면 브라우저 개발자 도구의 콘솔에서 상세 정보를 볼 수 있습니다.')) {
                 console.log('📋 [세부사항] 항공권 신청 상세 정보:', details);
                 this.showSuccess('세부사항이 콘솔에 출력되었습니다. 개발자 도구(F12)를 확인해주세요.');
             }
@@ -1261,28 +1607,13 @@ class FlightRequestStatus {
         }
     }
 
-    calculateStayDuration(departureDate, returnDate) {
+    // 🚨 v1.1.0 수정: DB값 직접 사용으로 변경
+    getStayDurationFromDB() {
         try {
-            const departure = new Date(departureDate);
-            const returnFlight = new Date(returnDate);
-            const diffTime = returnFlight - departure;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            return diffDays > 0 ? diffDays : 0;
+            // DB에서 직접 가져온 값 사용
+            return this.userProfile?.dispatch_duration || 0;
         } catch (error) {
-            console.error('❌ [체류기간계산] 실패:', error);
-            return 0;
-        }
-    }
-
-    calculateActivityDays(arrivalDate, workEndDate) {
-        try {
-            const arrival = new Date(arrivalDate);
-            const workEnd = new Date(workEndDate);
-            const diffTime = workEnd - arrival;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            return diffDays > 0 ? diffDays : 0;
-        } catch (error) {
-            console.error('❌ [활동일계산] 실패:', error);
+            console.error('❌ [체류기간DB] 실패:', error);
             return 0;
         }
     }
@@ -1300,15 +1631,13 @@ class FlightRequestStatus {
         }
     }
 
-    // 🚨 v1.0.3: populateFormWithExistingData 메서드 제거 (수정 기능 제거)
-
     formatDetailedInfo() {
         return {
             request: this.currentRequest,
             userProfile: this.userProfile,
             currentUser: this.currentUser,
             lastUpdated: this.lastUpdated,
-            module: 'FlightRequestStatus v1.0.3'
+            module: 'FlightRequestStatus v1.1.0'
         };
     }
 
@@ -1475,28 +1804,36 @@ class FlightRequestStatus {
 // 전역 스코프에 노출
 window.FlightRequestStatus = FlightRequestStatus;
 
-console.log('✅ FlightRequestStatus v1.0.3 모듈 로드 완료 - 수정 기능 제거, 삭제 중심 UX');
-console.log('🚨 v1.0.3 주요 변경사항:', {
-    editFunctionRemoval: 'handleEditRequest 메서드 완전 제거',
-    editButtonRemoval: 'edit-request 액션 버튼 완전 제거',
-    deleteOnlyUX: '모든 상황에서 삭제 중심 UX로 통일',
-    enhancedDeleteLogic: '상태별 맞춤 삭제 확인 메시지',
-    improvedUserExperience: '일관된 사용자 경험 제공'
+console.log('✅ FlightRequestStatus v1.1.0 모듈 로드 완료 - DB값 직접 사용 + 완전삭제 로직 + 직접구매 파일 업로드');
+console.log('🚨 v1.1.0 주요 업데이트:', {
+    dbDirectUsage: 'calculateActivityDays/calculateStayDuration 제거, DB값 직접 사용',
+    completeDeleteLogic: 'cancelFlightRequest → deleteFlightRequest + 페이지 새로고침',
+    directPurchaseFileUpload: '직접구매 시 영수증/항공권 파일 업로드 기능 추가',
+    improvedDataAccuracy: 'DB값과 UI표시값 100% 일치',
+    enhancedUserExperience: '완전삭제 후 자동 새로고침으로 자연스러운 UX'
 });
-console.log('🎯 FlightRequestStatus v1.0.3 핵심 기능:', {
+console.log('🎯 FlightRequestStatus v1.1.0 핵심 기능:', {
     신청내역조회: '사용자의 현재 항공권 신청 상태 실시간 조회',
     상태별UI: 'pending/approved/rejected/cancelled/completed 상태별 맞춤 UI',
     진행상황표시: '신청 → 검토 → 결정 → 완료 단계별 시각적 타임라인',
-    삭제중심액션: '상태에 따른 삭제/새신청/상세보기 액션만 제공',
+    완전삭제액션: 'deleteFlightRequest + 페이지 새로고침으로 깔끔한 삭제 경험',
+    파일업로드: '직접구매 시 영수증/항공권 파일 업로드 및 관리',
     실시간업데이트: 'API 이벤트 및 전역 이벤트를 통한 자동 상태 동기화',
     반응형디자인: '모바일/데스크톱 최적화된 카드 레이아웃',
     에러처리: '네트워크 오류, 데이터 없음 등 모든 예외 상황 처리',
-    일관된UX: '삭제 후 재신청 방식으로 사용자 경험 통일',
-    cancelFlightRequest연동: 'v8.8.3 API의 신규 취소 메서드 활용'
+    DB값정확성: 'actual_work_days, dispatch_duration DB값 직접 사용으로 정확성 보장'
 });
-console.log('🗑️ v1.0.3 제거된 기능:', {
-    신청수정: 'handleEditRequest 메서드 및 수정 버튼 완전 제거',
-    폼채우기: 'populateFormWithExistingData 메서드 제거',
-    수정이벤트: 'edit-request 이벤트 핸들러 제거',
-    혼란방지: '수정/삭제 혼재로 인한 사용자 혼란 해결'
+console.log('📂 v1.1.0 새로운 파일 업로드 기능:', {
+    지원파일형식: 'image/*, PDF 파일 (10MB 제한)',
+    Storage버켓: 'receipt-files, flight-tickets',
+    파일명규칙: '사용자ID_timestamp_타입.확장자',
+    업로드API: 'uploadFile() 메서드 활용',
+    DB업데이트: 'receipt_url, ticket_url 컬럼 자동 업데이트',
+    실시간표시: '업로드 상태 및 다운로드 링크 즉시 반영'
+});
+console.log('🗑️ v1.1.0 개선된 삭제 로직:', {
+    기존방식: 'cancelFlightRequest → status만 cancelled로 변경',
+    새로운방식: 'deleteFlightRequest → DB에서 완전삭제 + 페이지 새로고침',
+    사용자경험: '삭제 후 자동 새로고침으로 자연스러운 폼 표시',
+    데이터정리: '불필요한 cancelled 상태 데이터 제거'
 });
