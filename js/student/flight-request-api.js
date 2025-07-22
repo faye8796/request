@@ -402,7 +402,7 @@ class FlightRequestAPI {
                 
                 try {
                     // 여권 이미지 전용 버켓에 업로드
-                    imageUrl = await this.uploadFile('passport-images', filePath, imageFile, {
+                    imageUrl = await this.uploadFile('passports', fileName, imageFile, {
                         upsert: false,
                         cacheControl: '3600'
                     });
@@ -421,7 +421,7 @@ class FlightRequestAPI {
                 name_english: passportData.name_english,
                 issue_date: passportData.issue_date,
                 expiry_date: passportData.expiry_date,
-                passport_image_url: imageUrl,
+                image_url: imageUrl,
                 updated_at: new Date().toISOString()
             };
 
@@ -480,7 +480,7 @@ class FlightRequestAPI {
             const filePath = `passports/${fileName}`;
             
             // 여권 이미지 전용 버켓에 업로드
-            const imageUrl = await this.uploadFile('passport-images', filePath, imageFile, {
+            const imageUrl = await this.uploadFile('passports', fileName, imageFile, {
                 upsert: false,
                 cacheControl: '3600'
             });
@@ -524,15 +524,15 @@ class FlightRequestAPI {
             const existingPassport = await this.getPassportInfo();
             
             // 이미지 파일 삭제 (있는 경우)
-            if (existingPassport && existingPassport.passport_image_url) {
+            if (existingPassport && existingPassport.image_url) {
                 try {
                     // URL에서 파일 경로 추출
-                    const url = new URL(existingPassport.passport_image_url);
+                    const url = new URL(existingPassport.image_url);
                     const pathParts = url.pathname.split('/');
                     const fileName = pathParts[pathParts.length - 1];
                     const filePath = `passports/${fileName}`;
                     
-                    await this.deleteFile('passport-images', filePath);
+                    await this.deleteFile('passports', fileName);
                     console.log('✅ [API] 여권 이미지 파일 삭제 완료');
                 } catch (fileError) {
                     console.warn('⚠️ [API] 여권 이미지 파일 삭제 실패 (계속 진행):', fileError.message);

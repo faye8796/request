@@ -198,11 +198,11 @@ class FlightRequestPassport {
                 }
                 
                 // 🆕 v1.1.1: 여권 이미지 로딩 로직 추가
-                if (this.existingPassportInfo.passport_image_url && this.elements.passportPreviewImg) {
-                    console.log('🖼️ [여권모듈] 기존 여권 이미지 로딩:', this.existingPassportInfo.passport_image_url);
+                if (this.existingPassportInfo.image_url && this.elements.passportPreviewImg) {
+                    console.log('🖼️ [여권모듈] 기존 여권 이미지 로딩:', this.existingPassportInfo.image_url);
                     
                     // 이미지 미리보기 표시
-                    this.elements.passportPreviewImg.src = this.existingPassportInfo.passport_image_url;
+                    this.elements.passportPreviewImg.src = this.existingPassportInfo.image_url;
                     
                     if (this.elements.passportImagePreview) {
                         this.elements.passportImagePreview.style.display = 'block';
