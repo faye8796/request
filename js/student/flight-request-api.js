@@ -372,6 +372,220 @@ class FlightRequestAPI {
         }
     }
 
+    // === 🆕 v8.9.1: 여권정보 저장 및 관리 메서드들 ===
+
+    async savePassportInfo(passportData, imageFile = null) {
+        try {
+            console.log('💾 [API] 여권정보 저장 시작:', passportData);
+            
+            await this.ensureInitialized();
+            
+            if (!this.user) {
+                await this.getCurrentUser();
+            }
+            
+            if (!this.user?.id) {
+                throw new Error('사용자 정보가 없습니다');
+            }
+
+            let imageUrl = null;
+            
+            // 1. 이미지 파일이 있으면 먼저 업로드
+            if (imageFile) {
+                console.log('📤 [API] 여권 이미지 업로드 시작...');
+                
+                // 파일명 생성
+                const timestamp = Date.now();
+                const fileExtension = imageFile.name.split('.').pop();
+                const fileName = `${this.user.id}_${timestamp}_passport.${fileExtension}`;
+                const filePath = `passports/${fileName}`;
+                
+                try {
+                    // 여권 이미지 전용 버켓에 업로드
+                    imageUrl = await this.uploadFile('passport-images', filePath, imageFile, {
+                        upsert: false,
+                        cacheControl: '3600'
+                    });
+                    
+                    console.log('✅ [API] 여권 이미지 업로드 완료:', imageUrl);
+                } catch (uploadError) {
+                    console.error('❌ [API] 여권 이미지 업로드 실패:', uploadError);
+                    // 이미지 업로드 실패해도 여권정보는 저장 진행
+                }
+            }
+
+            // 2. 여권정보 데이터 준비
+            const finalPassportData = {
+                user_id: this.user.id,
+                passport_number: passportData.passport_number,
+                name_english: passportData.name_english,
+                issue_date: passportData.issue_date,
+                expiry_date: passportData.expiry_date,
+                passport_image_url: imageUrl,
+                updated_at: new Date().toISOString()
+            };
+
+            // 3. 기존 여권정보 확인
+            const existingPassport = await this.getPassportInfo();
+            
+            let savedData;
+            
+            if (existingPassport) {
+                // 기존 정보 업데이트
+                console.log('🔄 [API] 기존 여권정보 업데이트...');
+                savedData = await this.updateData('passport_info', finalPassportData, { user_id: this.user.id });
+            } else {
+                // 새로운 정보 삽입
+                console.log('➕ [API] 새 여권정보 삽입...');
+                finalPassportData.created_at = new Date().toISOString();
+                savedData = await this.insertData('passport_info', finalPassportData);
+            }
+
+            console.log('✅ [API] 여권정보 저장 완료:', savedData.id || 'updated');
+            
+            return {
+                success: true,
+                data: savedData,
+                imageUrl: imageUrl,
+                message: '여권정보가 성공적으로 저장되었습니다.'
+            };
+            
+        } catch (error) {
+            console.error('❌ [API] 여권정보 저장 실패:', error);
+            return {
+                success: false,
+                error: error.message || '여권정보 저장 중 오류가 발생했습니다.'
+            };
+        }
+    }
+
+    async uploadPassportImage(imageFile) {
+        try {
+            console.log('📤 [API] 여권 이미지 업로드 시작:', imageFile.name);
+            
+            await this.ensureInitialized();
+            
+            if (!this.user) {
+                await this.getCurrentUser();
+            }
+            
+            if (!this.user?.id) {
+                throw new Error('사용자 정보가 없습니다');
+            }
+
+            // 파일명 생성: user_id_timestamp_passport.extension
+            const timestamp = Date.now();
+            const fileExtension = imageFile.name.split('.').pop();
+            const fileName = `${this.user.id}_${timestamp}_passport.${fileExtension}`;
+            const filePath = `passports/${fileName}`;
+            
+            // 여권 이미지 전용 버켓에 업로드
+            const imageUrl = await this.uploadFile('passport-images', filePath, imageFile, {
+                upsert: false,
+                cacheControl: '3600'
+            });
+            
+            console.log('✅ [API] 여권 이미지 업로드 완료:', imageUrl);
+            
+            return {
+                success: true,
+                url: imageUrl,
+                fileName: fileName,
+                filePath: filePath
+            };
+            
+        } catch (error) {
+            console.error('❌ [API] 여권 이미지 업로드 실패:', error);
+            return {
+                success: false,
+                error: error.message || '이미지 업로드 중 오류가 발생했습니다.'
+            };
+        }
+    }
+
+    async deletePassportInfo(userId = null) {
+        try {
+            console.log('🗑️ [API] 여권정보 삭제 시작...');
+            
+            await this.ensureInitialized();
+            
+            const targetUserId = userId || this.user?.id;
+            
+            if (!targetUserId) {
+                if (!this.user) {
+                    await this.getCurrentUser();
+                }
+                if (!this.user?.id) {
+                    throw new Error('사용자 정보가 없습니다');
+                }
+            }
+
+            // 기존 여권정보 조회 (이미지 URL 확인용)
+            const existingPassport = await this.getPassportInfo();
+            
+            // 이미지 파일 삭제 (있는 경우)
+            if (existingPassport && existingPassport.passport_image_url) {
+                try {
+                    // URL에서 파일 경로 추출
+                    const url = new URL(existingPassport.passport_image_url);
+                    const pathParts = url.pathname.split('/');
+                    const fileName = pathParts[pathParts.length - 1];
+                    const filePath = `passports/${fileName}`;
+                    
+                    await this.deleteFile('passport-images', filePath);
+                    console.log('✅ [API] 여권 이미지 파일 삭제 완료');
+                } catch (fileError) {
+                    console.warn('⚠️ [API] 여권 이미지 파일 삭제 실패 (계속 진행):', fileError.message);
+                }
+            }
+
+            // 데이터베이스에서 여권정보 삭제
+            if (this.core?.delete) {
+                const result = await this.core.delete('passport_info', {
+                    user_id: targetUserId || this.user.id
+                });
+                
+                if (!result.success) {
+                    throw new Error(result.error);
+                }
+            } else {
+                const { error } = await this.supabase
+                    .from('passport_info')
+                    .delete()
+                    .eq('user_id', targetUserId || this.user.id);
+
+                if (error) {
+                    throw error;
+                }
+            }
+
+            console.log('✅ [API] 여권정보 삭제 완료');
+            
+            return {
+                success: true,
+                message: '여권정보가 완전히 삭제되었습니다.'
+            };
+            
+        } catch (error) {
+            console.error('❌ [API] 여권정보 삭제 실패:', error);
+            
+            return {
+                success: false,
+                error: error.message || '여권정보 삭제 중 오류가 발생했습니다.'
+            };
+        }
+    }
+
+    // === 🆕 호환성을 위한 메서드 별칭 ===
+    async loadPassportInfo() {
+        // getPassportInfo와 동일한 기능
+        return await this.getPassportInfo();
+    }
+
+    async updatePassportInfo(passportData, imageFile = null) {
+        // savePassportInfo와 동일한 기능
+        return await this.savePassportInfo(passportData, imageFile);
+    }
     // === 항공권 신청 관리 ===
 
     async getExistingRequest() {
