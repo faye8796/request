@@ -192,7 +192,13 @@ class FlightManagementAPI {
                         name,
                         email,
                         sejong_institute,
-                        dispatch_duration
+                        dispatch_duration,
+                        actual_arrival_date,      
+                        actual_work_end_date,     
+                        actual_work_days,         
+                        minimum_required_days,    
+                        maximum_allowed_days,     
+                        field                     
                     )
                 `)
                 .order('created_at', { ascending: false });
@@ -237,7 +243,13 @@ class FlightManagementAPI {
                         name,
                         email,
                         sejong_institute,
-                        dispatch_duration
+                        dispatch_duration,
+                        actual_arrival_date,    
+                        actual_work_end_date,   
+                        actual_work_days,       
+                        minimum_required_days,  
+                        maximum_allowed_days,   
+                        field                   
                     )
                 `)
                 .eq('id', requestId)

@@ -846,27 +846,7 @@
             }
         }
 
-        /* 다크 모드 지원 (선택사항) */
-        @media (prefers-color-scheme: dark) {
-            .flight-management-container {
-                background: #1a202c;
-            }
-
-            .management-header,
-            .budget-overview-section,
-            .controls-section,
-            .request-group {
-                background: #2d3748;
-                color: #e2e8f0;
-            }
-
-            .flight-request-card {
-                background: #4a5568;
-                border-color: #718096;
-                color: #e2e8f0;
-            }
-        }
-
+        
         /* 인쇄 스타일 */
         @media print {
             .header-actions,
@@ -1190,26 +1170,11 @@
         // 🔐 관리자 인증 확인
         function checkAdminAuthentication() {
             console.log('🔐 관리자 인증 확인 중...');
-            
-            // 세션 스토리지 확인
+
             const adminSession = localStorage.getItem('adminSession');
             if (!adminSession) {
                 console.warn('⚠️ 관리자 세션이 없습니다');
                 alert('관리자 로그인이 필요합니다.');
-                window.location.href = '../admin.html';
-                return false;
-            }
-
-            // 세션 유효성 검증 (추가적인 보안 체크)
-            try {
-                const sessionData = JSON.parse(adminSession);
-                if (!sessionData.userType || sessionData.userType !== 'admin') {
-                    throw new Error('유효하지 않은 관리자 세션');
-                }
-            } catch (error) {
-                console.error('❌ 세션 검증 실패:', error);
-                localStorage.removeItem('adminSession');
-                alert('세션이 만료되었습니다. 다시 로그인해주세요.');
                 window.location.href = '../admin.html';
                 return false;
             }
