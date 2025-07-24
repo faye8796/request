@@ -188,6 +188,7 @@ function extendSupabaseAPI() {
     }
 }
 
+
 // 교구 신청 모듈 정의
 const EquipmentRequestModule = {
     // 모듈 정보
@@ -240,15 +241,18 @@ const EquipmentRequestModule = {
     init: function(studentManager) {
         try {
             console.log('🛒 EquipmentRequestModule 초기화 v4.3.1 - setTimeout 컨텍스트 오류 해결');
-            
+
             this.studentManager = studentManager;
-            
+
             // SupabaseAPI 확장
             extendSupabaseAPI();
-            
+
+            // 🆕 예산 매니저 초기화
+            this.initBudgetManager();
+
             // 이벤트 리스너 설정
             this.setupEventListeners();
-            
+
             console.log('✅ EquipmentRequestModule v4.3.1 초기화 완료');
             return true;
         } catch (error) {
@@ -264,10 +268,15 @@ const EquipmentRequestModule = {
             this.safeAddEventListener('#newApplicationBtn', 'click', () => {
                 this.showApplicationModal();
             });
-            
+
             // 묶음 신청 버튼
             this.safeAddEventListener('#bundleApplicationBtn', 'click', () => {
                 this.showBundleModal();
+            });
+
+            // 🆕 특별 예산 지원 신청 버튼
+            this.safeAddEventListener('#budgetRequestBtn', 'click', () => {
+                this.handleBudgetRequest();
             });
             
             // 일반 신청 모달 이벤트
@@ -1804,7 +1813,70 @@ const EquipmentRequestModule = {
 
     getPurchaseMethodText: function(method) {
         return method === 'offline' ? '오프라인' : '온라인';
+    },
+    
+    // === 🆕 특별 예산 지원 기능 ===
+    
+    // 예산 매니저 초기화
+    initBudgetManager: function() {
+        try {
+            if (typeof window.EquipmentBudgetManager !== 'undefined') {
+                console.log('✅ EquipmentBudgetManager 클래스 발견');
+            } else {
+                console.warn('⚠️ EquipmentBudgetManager를 찾을 수 없음');
+            }
+        } catch (error) {
+            console.error('❌ 예산 매니저 초기화 오류:', error);
+        }
+    },
+    
+    // 특별 예산 지원 신청 처리
+    handleBudgetRequest: async function() {  // ← async 추가
+        try {
+            console.log('💰 특별 예산 지원 신청 버튼 클릭됨');
+
+            if (typeof window.EquipmentBudgetManager !== 'undefined') {
+                const currentUser = this.getCurrentUserSafely();
+                if (!currentUser) {
+                    alert('로그인이 필요합니다.');
+                    return;
+                }
+
+                // 올바른 supabase 클라이언트 전달
+                let supabaseClient = null;
+
+                // 다양한 클라이언트 소스 시도
+                if (window.SupabaseAPI && window.SupabaseAPI.supabase) {
+                    supabaseClient = window.SupabaseAPI.supabase;
+                } else if (window.SupabaseAPI && window.SupabaseAPI.ensureClient) {
+                    // SupabaseAPI의 ensureClient 메서드 사용
+                    supabaseClient = window.SupabaseAPI;
+                } else if (window.supabase) {
+                    supabaseClient = window.supabase;
+                } else {
+                    console.error('❌ Supabase 클라이언트를 찾을 수 없음');
+                    alert('시스템 연결에 문제가 있습니다. 페이지를 새로고침해주세요.');
+                    return;
+                }
+
+                // 예산 매니저 인스턴스 생성 및 초기화
+                const budgetManager = new window.EquipmentBudgetManager();
+
+                console.log('🔄 예산 매니저 초기화 시작...');
+                await budgetManager.initialize(currentUser.id, supabaseClient);  // ← await 추가
+                console.log('✅ 예산 매니저 초기화 완료, 모달 표시 시작');
+
+                budgetManager.showBudgetRequestModal();  // ← 초기화 완료 후 실행
+            } else {
+                console.warn('⚠️ EquipmentBudgetManager가 사용 불가능함');
+                alert('특별 예산 지원 기능이 일시적으로 사용할 수 없습니다.');
+            }
+        } catch (error) {
+            console.error('❌ 특별 예산 지원 신청 처리 오류:', error);
+            alert('특별 예산 지원 신청 중 오류가 발생했습니다.');
+        }
     }
+    
 };
 
 // 전역 접근을 위한 등록

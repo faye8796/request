@@ -460,6 +460,8 @@ class EquipmentBudgetManager {
 
         // 🎨 모달 표시
         this.modalElement.style.display = 'flex';
+        this.modalElement.style.opacity = '1';        // ← 추가
+        this.modalElement.style.visibility = 'visible'; // ← 추가
         this.isModalOpen = true;
         document.body.style.overflow = 'hidden';
 
@@ -572,10 +574,12 @@ class EquipmentBudgetManager {
      * 🎨 모달 닫기
      */
     closeModal() {
-        if (this.modalElement) {
-            this.modalElement.style.display = 'none';
-            this.isModalOpen = false;
-            document.body.style.overflow = '';
+            if (this.modalElement) {
+                this.modalElement.style.display = 'none';
+                this.modalElement.style.opacity = '0';        // ← 추가
+                this.modalElement.style.visibility = 'hidden'; // ← 추가
+                this.isModalOpen = false;
+                document.body.style.overflow = '';
             
             // 📄 컨텐츠 정리
             const contentContainer = this.modalElement.querySelector('#budgetModalContent');
