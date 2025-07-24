@@ -1557,43 +1557,107 @@ class FlightManagementModals {
     }
     
     /**
-     * 📋 첨부 파일 생성
+     * 📋 첨부 파일 생성 (보기 전용 버전)
      */
     generateFileAttachments(request) {
         const attachments = [];
-        
+
+        // 항공권 이미지 (학생이 업로드한 것)
         if (request.flight_image_url) {
             attachments.push(`
-                <div class="file-attachment" onclick="window.flightModals.showImagePreview('${request.flight_image_url}')">
-                    <i data-lucide="image"></i>
-                    <p>항공권 이미지</p>
+                <div class="file-view-item">
+                    <div class="file-icon">
+                        <i data-lucide="image"></i>
+                    </div>
+                    <div class="file-details">
+                        <h5>항공권 이미지</h5>
+                        <p>학생이 제출한 항공권 정보</p>
+                    </div>
+                    <div class="file-view-actions">
+                        <button class="view-btn" onclick="window.flightModals.showImagePreview('${request.flight_image_url}', '항공권 이미지')" title="미리보기">
+                            <i data-lucide="eye"></i>
+                            보기
+                        </button>
+                    </div>
                 </div>
             `);
         }
-        
+
+        // 구매 링크
+        if (request.purchase_link) {
+            attachments.push(`
+                <div class="file-view-item">
+                    <div class="file-icon link-icon">
+                        <i data-lucide="link"></i>
+                    </div>
+                    <div class="file-details">
+                        <h5>구매 링크</h5>
+                        <p>학생이 제출한 항공권 구매 링크</p>
+                    </div>
+                    <div class="file-view-actions">
+                        <button class="view-btn" onclick="window.flightModals.openLink('${request.purchase_link}')" title="링크 열기">
+                            <i data-lucide="external-link"></i>
+                            열기
+                        </button>
+                    </div>
+                </div>
+            `);
+        }
+
+        // 구매 영수증 (직접구매의 경우)
         if (request.receipt_url) {
+            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(request.receipt_url);
             attachments.push(`
-                <div class="file-attachment" onclick="window.flightModals.showImagePreview('${request.receipt_url}')">
-                    <i data-lucide="receipt"></i>
-                    <p>구매 영수증</p>
+                <div class="file-view-item">
+                    <div class="file-icon receipt-icon">
+                        <i data-lucide="receipt"></i>
+                    </div>
+                    <div class="file-details">
+                        <h5>구매 영수증</h5>
+                        <p>직접구매 결제 영수증</p>
+                    </div>
+                    <div class="file-view-actions">
+                        <button class="view-btn" onclick="window.flightModals.${isImage ? `showImagePreview('${request.receipt_url}', '구매 영수증')` : `openLink('${request.receipt_url}')`}" title="보기">
+                            <i data-lucide="eye"></i>
+                            보기
+                        </button>
+                    </div>
                 </div>
             `);
         }
-        
+
+        // 관리자 최종 항공권 (구매대행 완료의 경우)
         if (request.admin_ticket_url) {
+            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(request.admin_ticket_url);
             attachments.push(`
-                <div class="file-attachment" onclick="window.flightModals.showImagePreview('${request.admin_ticket_url}')">
-                    <i data-lucide="ticket"></i>
-                    <p>최종 항공권</p>
+                <div class="file-view-item admin-file">
+                    <div class="file-icon admin-icon">
+                        <i data-lucide="ticket"></i>
+                    </div>
+                    <div class="file-details">
+                        <h5>최종 항공권</h5>
+                        <p>관리자가 등록한 구매 완료 항공권</p>
+                    </div>
+                    <div class="file-view-actions">
+                        <button class="view-btn" onclick="window.flightModals.${isImage ? `showImagePreview('${request.admin_ticket_url}', '최종 항공권')` : `openLink('${request.admin_ticket_url}')`}" title="보기">
+                            <i data-lucide="eye"></i>
+                            보기
+                        </button>
+                    </div>
                 </div>
             `);
         }
-        
+
         if (attachments.length === 0) {
-            return '<p style="text-align: center; color: #a0aec0;">첨부된 파일이 없습니다.</p>';
+            return `
+                <div class="no-files-message">
+                    <i data-lucide="file-x" style="width: 32px; height: 32px; margin: 0 auto 0.5rem; color: #a0aec0;"></i>
+                    <p>등록된 파일이 없습니다.</p>
+                </div>
+            `;
         }
-        
-        return attachments.join('');
+
+        return `<div class="files-view-list">${attachments.join('')}</div>`;
     }
 
     /**
