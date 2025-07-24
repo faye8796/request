@@ -1,1360 +1,1580 @@
 /**
- * 🎛️ 항공권 관리 컨트롤 시스템 v10.0.0 - Phase 3 완전 구현
- * 필터링, 검색, 정렬, 일괄처리, 키보드단축키 기능
+ * 🪟 항공권 관리 모달 시스템 v10.0.0 - PART 1
+ * 완전한 모달 시스템 구현 - 상세보기, 승인, 반려 모달
+ * 
+ * 🎯 주요 기능:
+ * - 항공권 신청 상세보기 모달
+ * - 승인/반려 처리 모달
+ * - 여권정보 표시 모달
+ * - 파일 미리보기 시스템
+ * - 워크플로우 처리 시스템
+ * 
+ * @version 10.0.0
+ * @author 세종학당 개발팀
+ * @created 2025-07-23
  */
 
-(function() {
-    'use strict';
-
-    console.log('🎛️ FlightManagementControls v10.0.0 로드 중... (Phase 3 완전 구현)');
-
-    // 🌐 컨트롤 시스템 전역 상태
-    window.FlightManagementControls = {
-        version: '10.0.0',
-        phase: 'Phase 3 - Control System 완전 구현',
-        isInitialized: false,
+class FlightManagementModals {
+    constructor(flightManagementSystem) {
+        console.log('🪟 FlightManagementModals v10.0.0 초기화 시작...');
         
-        // 필터 상태
-        filters: {
-            status: 'all',        // all, pending, approved, rejected, completed
-            type: 'all',          // all, agency, direct
-            urgent: false,        // 출국 임박 필터
-            search: ''            // 검색어
-        },
-        
-        // 정렬 상태
-        sorting: {
-            field: 'created_at',  // created_at, departure_date, name, ticket_price
-            direction: 'desc'     // asc, desc
-        },
-        
-        // 선택 상태
-        selection: {
-            selectedIds: new Set(),
-            allSelected: false,
-            lastSelectedIndex: -1
-        },
+        this.system = flightManagementSystem;
+        this.isInitialized = false;
 
-        // 실행 중인 작업
-        operations: {
-            isFiltering: false,
-            isSorting: false,
-            isBulkProcessing: false
-        },
+        // 🎯 모달 상태 관리
+        this.modalStates = {
+            activeModals: new Set(),
+            modalHistory: [],
+            currentModal: null,
+            preventClose: false
+        };
 
-        // 키보드 단축키 상태
-        keyboard: {
-            enabled: true,
-            activeKeys: new Set()
-        }
-    };
-
-    // 🎛️ 필터링 컨트롤러
-    class FilterController {
-        constructor() {
-            this.debounceTimer = null;
-            this.filterButtons = null;
-            this.searchInput = null;
-        }
-
-        init() {
-            console.log('🔍 FilterController 초기화 중...');
-            this.setupFilterButtons();
-            this.setupSearchInput();
-            this.restoreFilters();
-            console.log('✅ FilterController 초기화 완료');
-        }
-
-        setupFilterButtons() {
-            this.filterButtons = document.querySelectorAll('.filter-btn');
-            
-            this.filterButtons.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const filter = e.target.dataset.filter;
-                    this.handleFilterClick(filter, e.target);
-                });
-            });
-        }
-
-        setupSearchInput() {
-            this.searchInput = document.getElementById('searchInput');
-            
-            if (this.searchInput) {
-                this.searchInput.addEventListener('input', (e) => {
-                    this.handleSearchInput(e.target.value);
-                });
-
-                // 검색 입력 시 Enter 키 처리
-                this.searchInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        this.applySearch(e.target.value);
-                    }
-                });
+        // 🎨 모달 설정
+        this.modalConfig = {
+            animationDuration: 300,
+            backdropClose: true,
+            escapeKeyClose: true,
+            stackable: true,
+            maxWidth: {
+                small: '400px',
+                medium: '600px',
+                large: '800px',
+                extraLarge: '1000px'
             }
-        }
+        };
 
-        handleFilterClick(filter, buttonElement) {
-            // 활성 버튼 업데이트
-            this.filterButtons.forEach(btn => btn.classList.remove('active'));
-            buttonElement.classList.add('active');
+        // 📋 모달 템플릿 저장
+        this.templates = new Map();
 
-            // 특수 필터 처리
-            if (filter === 'urgent') {
-                window.FlightManagementControls.filters.urgent = !window.FlightManagementControls.filters.urgent;
-                buttonElement.classList.toggle('active', window.FlightManagementControls.filters.urgent);
-            } else if (['agency', 'direct'].includes(filter)) {
-                window.FlightManagementControls.filters.type = filter;
-            } else {
-                window.FlightManagementControls.filters.status = filter;
-            }
+        this.init();
+    }
 
-            // 즉시 필터 적용
-            this.applyFilters();
-        }
+    /**
+     * 🚀 모달 시스템 초기화
+     */
+    async init() {
+        try {
+            console.log('🚀 FlightManagementModals 초기화 중...');
 
-        handleSearchInput(searchTerm) {
-            window.FlightManagementControls.filters.search = searchTerm;
-            
-            // 디바운스 처리
-            clearTimeout(this.debounceTimer);
-            this.debounceTimer = setTimeout(() => {
-                this.applySearch(searchTerm);
-            }, 300);
-        }
+            // 모달 컨테이너 확인/생성
+            this.setupModalContainer();
 
-        applySearch(searchTerm) {
-            console.log(`🔍 검색 적용: "${searchTerm}"`);
-            this.applyFilters();
-        }
+            // 이벤트 리스너 설정
+            this.setupEventListeners();
 
-        applyFilters() {
-            if (window.FlightManagementControls.operations.isFiltering) {
-                return; // 이미 필터링 중이면 스킵
-            }
+            // 모달 템플릿 등록
+            this.registerModalTemplates();
 
-            window.FlightManagementControls.operations.isFiltering = true;
+            // 시스템 이벤트 구독
+            this.subscribeToSystemEvents();
 
-            try {
-                const system = window.FlightManagementPage?.system;
-                if (!system || !system.cards) {
-                    console.warn('⚠️ 시스템 또는 카드 모듈이 준비되지 않음');
-                    return;
-                }
+            this.isInitialized = true;
+            console.log('✅ FlightManagementModals 초기화 완료');
 
-                const filters = window.FlightManagementControls.filters;
-                console.log('🎛️ 필터 적용:', filters);
-
-                // 필터링된 데이터 가져오기
-                const filteredData = this.filterData(system.state.requestsData, filters);
-                
-                // 카드 업데이트
-                system.cards.updateCards(filteredData);
-                
-                // 통계 업데이트
-                if (system.statistics) {
-                    system.statistics.updateStatistics(filteredData);
-                }
-
-                // 선택 상태 초기화
-                this.clearSelection();
-
-                // 필터 저장
-                this.saveFilters();
-
-                // UI 업데이트 완료 표시
-                this.showFilterFeedback(filteredData.length);
-
-            } catch (error) {
-                console.error('❌ 필터 적용 실패:', error);
-            } finally {
-                window.FlightManagementControls.operations.isFiltering = false;
-            }
-        }
-
-        filterData(data, filters) {
-            if (!data || !Array.isArray(data)) {
-                return [];
-            }
-
-            return data.filter(item => {
-                // 상태 필터
-                if (filters.status !== 'all' && item.status !== filters.status) {
-                    return false;
-                }
-
-                // 타입 필터
-                if (filters.type !== 'all') {
-                    if (filters.type === 'agency' && item.purchase_type !== 'agency') {
-                        return false;
-                    }
-                    if (filters.type === 'direct' && item.purchase_type !== 'direct') {
-                        return false;
-                    }
-                }
-
-                // 출국 임박 필터
-                if (filters.urgent) {
-                    if (!this.isUrgentDeparture(item.departure_date)) {
-                        return false;
-                    }
-                }
-
-                // 검색 필터
-                if (filters.search && filters.search.trim()) {
-                    if (!this.matchesSearch(item, filters.search)) {
-                        return false;
-                    }
-                }
-
-                return true;
-            });
-        }
-
-        isUrgentDeparture(departureDate) {
-            if (!departureDate) return false;
-            
-            const departure = new Date(departureDate);
-            const now = new Date();
-            const diffDays = Math.ceil((departure - now) / (1000 * 60 * 60 * 24));
-            
-            // 14일 이내 출국을 임박으로 간주
-            return diffDays >= 0 && diffDays <= 14;
-        }
-
-        matchesSearch(item, searchTerm) {
-            const searchLower = searchTerm.toLowerCase();
-            const user = item.user_profiles;
-            
-            const searchFields = [
-                user?.name,
-                user?.sejong_institute,
-                user?.email,
-                item.departure_airport,
-                item.arrival_airport,
-                item.purchase_type === 'agency' ? '구매대행' : '직접구매',
-                item.purchase_type === 'agency' ? 'agency' : 'direct',
-                item.status
-            ].filter(Boolean);
-
-            return searchFields.some(field => 
-                String(field).toLowerCase().includes(searchLower)
-            );
-        }
-
-        clearSelection() {
-            const selection = window.FlightManagementControls.selection;
-            selection.selectedIds.clear();
-            selection.allSelected = false;
-            selection.lastSelectedIndex = -1;
-            
-            // UI 업데이트
-            this.updateSelectionUI();
-        }
-
-        updateSelectionUI() {
-            const selectedCount = window.FlightManagementControls.selection.selectedIds.size;
-            
-            // 선택 개수 업데이트
-            const countElement = document.getElementById('selectedCount');
-            if (countElement) {
-                countElement.textContent = `선택된 항목: ${selectedCount}개`;
-            }
-
-            // 일괄 처리 버튼 상태 업데이트
-            const bulkApprove = document.getElementById('bulkApprove');
-            const bulkReject = document.getElementById('bulkReject');
-            
-            if (bulkApprove) bulkApprove.disabled = selectedCount === 0;
-            if (bulkReject) bulkReject.disabled = selectedCount === 0;
-
-            // 모든 선택 버튼 상태 업데이트
-            const selectAllBtn = document.getElementById('selectAllBtn');
-            if (selectAllBtn) {
-                selectAllBtn.textContent = window.FlightManagementControls.selection.allSelected ? '모두 해제' : '모두 선택';
-            }
-        }
-
-        showFilterFeedback(resultCount) {
-            // 임시 피드백 표시
-            const indicator = document.getElementById('realTimeIndicator');
-            if (indicator) {
-                indicator.innerHTML = `
-                    <div class="pulse-dot"></div>
-                    <span>필터 적용됨 (${resultCount}개 항목)</span>
-                `;
-                indicator.classList.add('show');
-                
-                setTimeout(() => {
-                    indicator.classList.remove('show');
-                }, 2000);
-            }
-        }
-
-        saveFilters() {
-            try {
-                localStorage.setItem('flightManagementFilters', JSON.stringify(window.FlightManagementControls.filters));
-            } catch (error) {
-                console.warn('⚠️ 필터 저장 실패:', error);
-            }
-        }
-
-        restoreFilters() {
-            try {
-                const saved = localStorage.getItem('flightManagementFilters');
-                if (saved) {
-                    const filters = JSON.parse(saved);
-                    Object.assign(window.FlightManagementControls.filters, filters);
-                    
-                    // UI 상태 복원
-                    this.restoreUIState();
-                }
-            } catch (error) {
-                console.warn('⚠️ 필터 복원 실패:', error);
-            }
-        }
-
-        restoreUIState() {
-            const filters = window.FlightManagementControls.filters;
-            
-            // 필터 버튼 상태 복원
-            this.filterButtons.forEach(btn => {
-                btn.classList.remove('active');
-                const filter = btn.dataset.filter;
-                
-                if (filter === filters.status || filter === filters.type || 
-                    (filter === 'urgent' && filters.urgent)) {
-                    btn.classList.add('active');
-                }
-            });
-
-            // 검색 입력 복원
-            if (this.searchInput && filters.search) {
-                this.searchInput.value = filters.search;
-            }
-        }
-
-        // 공개 메서드
-        resetFilters() {
-            window.FlightManagementControls.filters = {
-                status: 'all',
-                type: 'all',
-                urgent: false,
-                search: ''
-            };
-
-            // UI 초기화
-            this.filterButtons.forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.filter === 'all') {
-                    btn.classList.add('active');
-                }
-            });
-
-            if (this.searchInput) {
-                this.searchInput.value = '';
-            }
-
-            this.applyFilters();
-        }
-
-        getCurrentFilterCount() {
-            const filters = window.FlightManagementControls.filters;
-            let count = 0;
-            
-            if (filters.status !== 'all') count++;
-            if (filters.type !== 'all') count++;
-            if (filters.urgent) count++;
-            if (filters.search && filters.search.trim()) count++;
-            
-            return count;
+        } catch (error) {
+            console.error('❌ FlightManagementModals 초기화 실패:', error);
+            throw error;
         }
     }
 
-    // 🔄 정렬 컨트롤러
-    class SortController {
-        constructor() {
-            this.sortSelect = null;
-        }
-
-        init() {
-            console.log('🔄 SortController 초기화 중...');
-            this.setupSortSelect();
-            this.restoreSorting();
-            console.log('✅ SortController 초기화 완료');
-        }
-
-        setupSortSelect() {
-            this.sortSelect = document.getElementById('sortSelect');
-            
-            if (this.sortSelect) {
-                this.sortSelect.addEventListener('change', (e) => {
-                    this.handleSortChange(e.target.value);
-                });
-            }
-        }
-
-        handleSortChange(sortValue) {
-            const [field, direction] = sortValue.split('-');
-            
-            window.FlightManagementControls.sorting = {
-                field: field,
-                direction: direction
-            };
-
-            this.applySorting();
-            this.saveSorting();
-        }
-
-        applySorting() {
-            if (window.FlightManagementControls.operations.isSorting) {
-                return;
-            }
-
-            window.FlightManagementControls.operations.isSorting = true;
-
-            try {
-                const system = window.FlightManagementPage?.system;
-                if (!system || !system.cards) {
-                    console.warn('⚠️ 시스템 또는 카드 모듈이 준비되지 않음');
-                    return;
-                }
-
-                const sorting = window.FlightManagementControls.sorting;
-                console.log('🔄 정렬 적용:', sorting);
-
-                // 현재 표시된 데이터 가져오기
-                let currentData = system.state.filteredData || system.state.requestsData;
-                
-                // 데이터 정렬
-                const sortedData = this.sortData(currentData, sorting);
-                
-                // 카드 업데이트
-                system.cards.updateCards(sortedData);
-
-                // 정렬 피드백 표시
-                this.showSortFeedback(sorting);
-
-            } catch (error) {
-                console.error('❌ 정렬 적용 실패:', error);
-            } finally {
-                window.FlightManagementControls.operations.isSorting = false;
-            }
-        }
-
-        sortData(data, sorting) {
-            if (!data || !Array.isArray(data)) {
-                return [];
-            }
-
-            const sortedData = [...data].sort((a, b) => {
-                let aValue = this.getSortValue(a, sorting.field);
-                let bValue = this.getSortValue(b, sorting.field);
-
-                // null/undefined 처리
-                if (aValue === null || aValue === undefined) aValue = '';
-                if (bValue === null || bValue === undefined) bValue = '';
-
-                // 타입별 비교
-                if (typeof aValue === 'string' && typeof bValue === 'string') {
-                    aValue = aValue.toLowerCase();
-                    bValue = bValue.toLowerCase();
-                }
-
-                let comparison = 0;
-                if (aValue < bValue) {
-                    comparison = -1;
-                } else if (aValue > bValue) {
-                    comparison = 1;
-                }
-
-                // 방향 적용
-                return sorting.direction === 'desc' ? -comparison : comparison;
-            });
-
-            return sortedData;
-        }
-
-        getSortValue(item, field) {
-            switch (field) {
-                case 'created_at':
-                    return new Date(item.created_at);
-                case 'departure_date':
-                    return item.departure_date ? new Date(item.departure_date) : null;
-                case 'return_date':
-                    return item.return_date ? new Date(item.return_date) : null;
-                case 'name':
-                    return item.user_profiles?.name || '';
-                case 'ticket_price':
-                    return parseFloat(item.ticket_price) || 0;
-                case 'institute':
-                    return item.user_profiles?.sejong_institute || '';
-                case 'status':
-                    return item.status || '';
-                case 'purchase_type':
-                    return item.purchase_type || '';
-                default:
-                    return '';
-            }
-        }
-
-        showSortFeedback(sorting) {
-            const sortNames = {
-                'created_at': '신청일',
-                'departure_date': '출국일',
-                'return_date': '귀국일',
-                'name': '이름',
-                'ticket_price': '항공료',
-                'institute': '학당',
-                'status': '상태',
-                'purchase_type': '구매방식'
-            };
-
-            const directionNames = {
-                'asc': '오름차순',
-                'desc': '내림차순'
-            };
-
-            const sortName = sortNames[sorting.field] || sorting.field;
-            const directionName = directionNames[sorting.direction] || sorting.direction;
-
-            // 피드백 표시
-            const indicator = document.getElementById('realTimeIndicator');
-            if (indicator) {
-                indicator.innerHTML = `
-                    <div class="pulse-dot"></div>
-                    <span>${sortName} ${directionName} 정렬됨</span>
-                `;
-                indicator.classList.add('show');
-                
-                setTimeout(() => {
-                    indicator.classList.remove('show');
-                }, 2000);
-            }
-        }
-
-        saveSorting() {
-            try {
-                localStorage.setItem('flightManagementSorting', JSON.stringify(window.FlightManagementControls.sorting));
-            } catch (error) {
-                console.warn('⚠️ 정렬 저장 실패:', error);
-            }
-        }
-
-        restoreSorting() {
-            try {
-                const saved = localStorage.getItem('flightManagementSorting');
-                if (saved) {
-                    const sorting = JSON.parse(saved);
-                    Object.assign(window.FlightManagementControls.sorting, sorting);
-                    
-                    // UI 상태 복원
-                    if (this.sortSelect) {
-                        this.sortSelect.value = `${sorting.field}-${sorting.direction}`;
-                    }
-                }
-            } catch (error) {
-                console.warn('⚠️ 정렬 복원 실패:', error);
-            }
-        }
-    }
-
-    // 🎯 선택 관리 컨트롤러
-    class SelectionController {
-        constructor() {
-            this.selectAllBtn = null;
-            this.clearSelectionBtn = null;
-        }
-
-        init() {
-            console.log('🎯 SelectionController 초기화 중...');
-            this.setupSelectionButtons();
-            this.setupCardSelection();
-            console.log('✅ SelectionController 초기화 완료');
-        }
-
-        setupSelectionButtons() {
-            this.selectAllBtn = document.getElementById('selectAllBtn');
-            this.clearSelectionBtn = document.getElementById('clearSelectionBtn');
-
-            if (this.selectAllBtn) {
-                this.selectAllBtn.addEventListener('click', () => {
-                    this.toggleSelectAll();
-                });
-            }
-
-            if (this.clearSelectionBtn) {
-                this.clearSelectionBtn.addEventListener('click', () => {
-                    this.clearSelection();
-                });
-            }
-        }
-
-        setupCardSelection() {
-            // 카드 선택 이벤트는 동적으로 설정됨 (카드 생성 시)
-            document.addEventListener('click', (e) => {
-                const card = e.target.closest('.flight-request-card');
-                if (card && e.target.type === 'checkbox') {
-                    this.handleCardSelection(card, e.target.checked, e);
-                }
-            });
-        }
-
-        handleCardSelection(card, isSelected, event) {
-            const requestId = card.dataset.requestId;
-            if (!requestId) return;
-
-            const selection = window.FlightManagementControls.selection;
-
-            if (isSelected) {
-                selection.selectedIds.add(requestId);
-            } else {
-                selection.selectedIds.delete(requestId);
-                selection.allSelected = false;
-            }
-
-            // Shift 클릭 처리 (범위 선택)
-            if (event.shiftKey && selection.lastSelectedIndex >= 0) {
-                this.handleRangeSelection(card, isSelected);
-            }
-
-            selection.lastSelectedIndex = Array.from(document.querySelectorAll('.flight-request-card')).indexOf(card);
-
-            this.updateSelectionUI();
-        }
-
-        handleRangeSelection(endCard, isSelected) {
-            const cards = Array.from(document.querySelectorAll('.flight-request-card'));
-            const endIndex = cards.indexOf(endCard);
-            const startIndex = window.FlightManagementControls.selection.lastSelectedIndex;
-
-            const start = Math.min(startIndex, endIndex);
-            const end = Math.max(startIndex, endIndex);
-
-            for (let i = start; i <= end; i++) {
-                const card = cards[i];
-                const checkbox = card.querySelector('input[type="checkbox"]');
-                const requestId = card.dataset.requestId;
-
-                if (checkbox && requestId) {
-                    checkbox.checked = isSelected;
-                    if (isSelected) {
-                        window.FlightManagementControls.selection.selectedIds.add(requestId);
-                    } else {
-                        window.FlightManagementControls.selection.selectedIds.delete(requestId);
-                    }
-                }
-            }
-        }
-
-        toggleSelectAll() {
-            const selection = window.FlightManagementControls.selection;
-            const visibleCards = document.querySelectorAll('.flight-request-card:not([style*="display: none"])');
-
-            if (selection.allSelected) {
-                // 모두 해제
-                this.clearSelection();
-            } else {
-                // 모두 선택
-                visibleCards.forEach(card => {
-                    const checkbox = card.querySelector('input[type="checkbox"]');
-                    const requestId = card.dataset.requestId;
-                    
-                    if (checkbox && requestId) {
-                        checkbox.checked = true;
-                        selection.selectedIds.add(requestId);
-                    }
-                });
-                
-                selection.allSelected = true;
-            }
-
-            this.updateSelectionUI();
-        }
-
-        clearSelection() {
-            const selection = window.FlightManagementControls.selection;
-            
-            // 모든 체크박스 해제
-            document.querySelectorAll('.flight-request-card input[type="checkbox"]').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-
-            // 선택 상태 초기화
-            selection.selectedIds.clear();
-            selection.allSelected = false;
-            selection.lastSelectedIndex = -1;
-
-            this.updateSelectionUI();
-        }
-
-        updateSelectionUI() {
-            const selection = window.FlightManagementControls.selection;
-            const selectedCount = selection.selectedIds.size;
-            
-            // 선택 개수 업데이트
-            const countElement = document.getElementById('selectedCount');
-            if (countElement) {
-                countElement.textContent = `선택된 항목: ${selectedCount}개`;
-            }
-
-            // 일괄 처리 버튼 상태 업데이트
-            const bulkApprove = document.getElementById('bulkApprove');
-            const bulkReject = document.getElementById('bulkReject');
-            
-            if (bulkApprove) bulkApprove.disabled = selectedCount === 0;
-            if (bulkReject) bulkReject.disabled = selectedCount === 0;
-
-            // 전체 선택 버튼 텍스트 업데이트
-            if (this.selectAllBtn) {
-                this.selectAllBtn.textContent = selection.allSelected ? '모두 해제' : '모두 선택';
-            }
-
-            // 카드 시각적 피드백
-            this.updateCardVisualFeedback();
-        }
-
-        updateCardVisualFeedback() {
-            document.querySelectorAll('.flight-request-card').forEach(card => {
-                const checkbox = card.querySelector('input[type="checkbox"]');
-                if (checkbox) {
-                    if (checkbox.checked) {
-                        card.style.borderColor = '#3182ce';
-                        card.style.backgroundColor = '#ebf8ff';
-                    } else {
-                        card.style.borderColor = '';
-                        card.style.backgroundColor = '';
-                    }
-                }
-            });
-        }
-
-        getSelectedRequests() {
-            return Array.from(window.FlightManagementControls.selection.selectedIds);
-        }
-
-        selectRequest(requestId) {
-            window.FlightManagementControls.selection.selectedIds.add(requestId);
-            this.updateSelectionUI();
-        }
-
-        deselectRequest(requestId) {
-            window.FlightManagementControls.selection.selectedIds.delete(requestId);
-            this.updateSelectionUI();
-        }
-
-        isSelected(requestId) {
-            return window.FlightManagementControls.selection.selectedIds.has(requestId);
-        }
-    }
-
-    // 🔥 일괄 처리 컨트롤러
-    class BulkActionsController {
-        constructor() {
-            this.bulkApproveBtn = null;
-            this.bulkRejectBtn = null;
-        }
-
-        init() {
-            console.log('🔥 BulkActionsController 초기화 중...');
-            this.setupBulkButtons();
-            console.log('✅ BulkActionsController 초기화 완료');
-        }
-
-        setupBulkButtons() {
-            this.bulkApproveBtn = document.getElementById('bulkApprove');
-            this.bulkRejectBtn = document.getElementById('bulkReject');
-
-            if (this.bulkApproveBtn) {
-                this.bulkApproveBtn.addEventListener('click', () => {
-                    this.handleBulkApprove();
-                });
-            }
-
-            if (this.bulkRejectBtn) {
-                this.bulkRejectBtn.addEventListener('click', () => {
-                    this.handleBulkReject();
-                });
-            }
-        }
-
-        async handleBulkApprove() {
-            const selectedIds = Array.from(window.FlightManagementControls.selection.selectedIds);
-            
-            if (selectedIds.length === 0) {
-                alert('승인할 항목을 선택해주세요.');
-                return;
-            }
-
-            const confirmed = confirm(`선택된 ${selectedIds.length}개 항목을 모두 승인하시겠습니까?`);
-            if (!confirmed) return;
-
-            window.FlightManagementControls.operations.isBulkProcessing = true;
-
-            try {
-                // 로딩 상태 표시
-                this.showBulkProcessingState('승인 처리 중...');
-
-                const api = window.FlightManagementPage?.system?.api;
-                if (!api) {
-                    throw new Error('API가 초기화되지 않았습니다');
-                }
-
-                // 순차적으로 처리 (동시 처리는 서버 부하 우려)
-                let successCount = 0;
-                let failCount = 0;
-                const errors = [];
-
-                for (const requestId of selectedIds) {
-                    try {
-                        await api.approveFlightRequest(requestId, {
-                            admin_notes: '일괄 승인 처리'
-                        });
-                        successCount++;
-                        
-                        // 진행 상황 업데이트
-                        this.updateBulkProgress(successCount + failCount, selectedIds.length, '승인 처리 중...');
-                        
-                        // 과부하 방지를 위한 짧은 대기
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        
-                    } catch (error) {
-                        failCount++;
-                        errors.push(`${requestId}: ${error.message}`);
-                        console.error(`승인 실패 (${requestId}):`, error);
-                    }
-                }
-
-                // 결과 표시
-                this.showBulkResult('승인', successCount, failCount, errors);
-
-                // 데이터 새로고침
-                if (window.FlightManagementPage.system) {
-                    await window.FlightManagementPage.system.refreshData(true);
-                }
-
-                // 선택 해제
-                this.clearSelection();
-
-            } catch (error) {
-                console.error('❌ 일괄 승인 실패:', error);
-                alert('일괄 승인 처리 중 오류가 발생했습니다: ' + error.message);
-            } finally {
-                window.FlightManagementControls.operations.isBulkProcessing = false;
-                this.hideBulkProcessingState();
-            }
-        }
-
-        async handleBulkReject() {
-            const selectedIds = Array.from(window.FlightManagementControls.selection.selectedIds);
-            
-            if (selectedIds.length === 0) {
-                alert('반려할 항목을 선택해주세요.');
-                return;
-            }
-
-            // 반려 사유 입력 받기
-            const reason = prompt(`선택된 ${selectedIds.length}개 항목의 반려 사유를 입력해주세요:`);
-            if (!reason || !reason.trim()) {
-                alert('반려 사유를 입력해야 합니다.');
-                return;
-            }
-
-            const confirmed = confirm(`선택된 ${selectedIds.length}개 항목을 모두 반려하시겠습니까?`);
-            if (!confirmed) return;
-
-            window.FlightManagementControls.operations.isBulkProcessing = true;
-
-            try {
-                // 로딩 상태 표시
-                this.showBulkProcessingState('반려 처리 중...');
-
-                const api = window.FlightManagementPage?.system?.api;
-                if (!api) {
-                    throw new Error('API가 초기화되지 않았습니다');
-                }
-
-                // 순차적으로 처리
-                let successCount = 0;
-                let failCount = 0;
-                const errors = [];
-
-                for (const requestId of selectedIds) {
-                    try {
-                        await api.rejectFlightRequest(requestId, {
-                            rejection_reason: reason.trim()
-                        });
-                        successCount++;
-                        
-                        // 진행 상황 업데이트
-                        this.updateBulkProgress(successCount + failCount, selectedIds.length, '반려 처리 중...');
-                        
-                        // 과부하 방지를 위한 짧은 대기
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        
-                    } catch (error) {
-                        failCount++;
-                        errors.push(`${requestId}: ${error.message}`);
-                        console.error(`반려 실패 (${requestId}):`, error);
-                    }
-                }
-
-                // 결과 표시
-                this.showBulkResult('반려', successCount, failCount, errors);
-
-                // 데이터 새로고침
-                if (window.FlightManagementPage.system) {
-                    await window.FlightManagementPage.system.refreshData(true);
-                }
-
-                // 선택 해제
-                this.clearSelection();
-
-            } catch (error) {
-                console.error('❌ 일괄 반려 실패:', error);
-                alert('일괄 반려 처리 중 오류가 발생했습니다: ' + error.message);
-            } finally {
-                window.FlightManagementControls.operations.isBulkProcessing = false;
-                this.hideBulkProcessingState();
-            }
-        }
-
-        showBulkProcessingState(message) {
-            // 전체 화면 로딩 오버레이 생성
-            const overlay = document.createElement('div');
-            overlay.id = 'bulkProcessingOverlay';
-            overlay.style.cssText = `
+    /**
+     * 🏗️ 모달 컨테이너 설정
+     */
+    setupModalContainer() {
+        let container = document.getElementById('modalContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'modalContainer';
+            container.style.cssText = `
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.7);
-                z-index: 10000;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-size: 1.2rem;
+                z-index: 9999;
+                pointer-events: none;
             `;
-
-            overlay.innerHTML = `
-                <div style="text-align: center; background: rgba(0,0,0,0.8); padding: 2rem; border-radius: 1rem;">
-                    <div style="width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #3182ce; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
-                    <div id="bulkProcessingMessage">${message}</div>
-                    <div id="bulkProcessingProgress" style="margin-top: 0.5rem; font-size: 0.9rem; color: #cbd5e0;"></div>
-                </div>
-            `;
-
-            document.body.appendChild(overlay);
+            document.body.appendChild(container);
         }
+        this.modalContainer = container;
+        console.log('✅ 모달 컨테이너 설정 완료');
+    }
 
-        updateBulkProgress(current, total, message) {
-            const messageElement = document.getElementById('bulkProcessingMessage');
-            const progressElement = document.getElementById('bulkProcessingProgress');
-            
-            if (messageElement) {
-                messageElement.textContent = message;
+    /**
+     * 🎮 이벤트 리스너 설정
+     */
+    setupEventListeners() {
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.modalConfig.escapeKeyClose) {
+                this.closeTopModal();
             }
-            
-            if (progressElement) {
-                progressElement.textContent = `${current} / ${total} 완료`;
-            }
-        }
+        });
 
-        hideBulkProcessingState() {
-            const overlay = document.getElementById('bulkProcessingOverlay');
-            if (overlay) {
-                document.body.removeChild(overlay);
-            }
-        }
+        // 전역 클릭 이벤트 (카드 액션 버튼)
+        document.addEventListener('click', (e) => {
+            this.handleGlobalClick(e);
+        });
 
-        showBulkResult(action, successCount, failCount, errors) {
-            let message = `${action} 처리 완료:\n`;
-            message += `성공: ${successCount}개\n`;
-            
-            if (failCount > 0) {
-                message += `실패: ${failCount}개\n`;
-                if (errors.length > 0) {
-                    message += '\n실패 상세:\n' + errors.slice(0, 5).join('\n');
-                    if (errors.length > 5) {
-                        message += `\n... 외 ${errors.length - 5}개`;
-                    }
-                }
-            }
+        console.log('✅ 모달 이벤트 리스너 설정 완료');
+    }
 
-            alert(message);
-        }
+    /**
+     * 🎯 전역 클릭 처리
+     */
+    handleGlobalClick(event) {
+        const button = event.target.closest('.action-btn');
+        if (!button) return;
 
-        clearSelection() {
-            if (window.FlightManagementControls.selection) {
-                const selectionController = window.flightControls?.selection;
-                if (selectionController) {
-                    selectionController.clearSelection();
-                }
-            }
+        const action = button.dataset.action;
+        const requestId = button.dataset.requestId;
+        const userId = button.dataset.userId;
+
+        if (!action) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        console.log('🎯 모달 액션 처리:', { action, requestId, userId });
+
+        switch (action) {
+            case 'view':
+                this.showRequestDetailModal(requestId);
+                break;
+            case 'approve':
+                this.showApproveModal(requestId);
+                break;
+            case 'reject':
+                this.showRejectModal(requestId);
+                break;
+            case 'passport':
+                this.showPassportModal(userId);
+                break;
+            case 'upload-ticket':
+                this.showUploadTicketModal(requestId);
+                break;
+            case 'final-amount':
+                this.showFinalAmountModal(requestId);
+                break;
+            case 'view-ticket':
+                this.showTicketViewModal(requestId);
+                break;
+            case 'view-receipt':
+                this.showReceiptViewModal(requestId);
+                break;
+            default:
+                console.warn('⚠️ 알 수 없는 액션:', action);
         }
     }
 
-    // ⌨️ 키보드 단축키 컨트롤러
-    class KeyboardController {
-        constructor() {
-            this.shortcuts = {
-                // 필터 단축키
-                'Digit1': () => this.triggerFilter('all'),
-                'Digit2': () => this.triggerFilter('pending'),
-                'Digit3': () => this.triggerFilter('approved'),
-                'Digit4': () => this.triggerFilter('completed'),
-                'KeyA': () => this.triggerFilter('agency'),
-                'KeyD': () => this.triggerFilter('direct'),
-                'KeyU': () => this.triggerFilter('urgent'),
-
-                // 선택 단축키
-                'KeyS': () => this.toggleSelectAll(),
-                'Escape': () => this.clearSelection(),
-
-                // 검색 단축키
-                'KeyF': () => this.focusSearch(),
-
-                // 새로고침 단축키
-                'KeyR': () => this.refreshData(),
-
-                // 디버그 단축키 (Ctrl+D는 메인에서 처리)
-            };
-
-            this.isEnabled = true;
-        }
-
-        init() {
-            console.log('⌨️ KeyboardController 초기화 중...');
-            this.setupKeyboardEvents();
-            console.log('✅ KeyboardController 초기화 완료');
-        }
-
-        setupKeyboardEvents() {
-            document.addEventListener('keydown', (e) => {
-                if (!this.isEnabled) return;
-                
-                // 입력 필드에서는 단축키 비활성화
-                if (this.isInputActive()) return;
-                
-                // 모달이 열려있으면 단축키 비활성화
-                if (this.isModalOpen()) return;
-
-                // Ctrl 키와 함께 사용하는 단축키
-                if (e.ctrlKey || e.metaKey) {
-                    this.handleCtrlShortcuts(e);
-                } else {
-                    this.handleRegularShortcuts(e);
-                }
-            });
-        }
-
-        isInputActive() {
-            const activeElement = document.activeElement;
-            const inputTags = ['INPUT', 'TEXTAREA', 'SELECT'];
-            return inputTags.includes(activeElement.tagName) || activeElement.isContentEditable;
-        }
-
-        isModalOpen() {
-            return document.querySelector('.modal-overlay.show') !== null;
-        }
-
-        handleCtrlShortcuts(e) {
-            switch (e.code) {
-                case 'KeyR':
-                    if (e.shiftKey) {
-                        e.preventDefault();
-                        this.refreshData();
-                    }
-                    break;
-                case 'KeyF':
-                    e.preventDefault();
-                    this.focusSearch();
-                    break;
-            }
-        }
-
-        handleRegularShortcuts(e) {
-            const shortcut = this.shortcuts[e.code];
-            if (shortcut) {
-                e.preventDefault();
-                shortcut();
-            }
-        }
-
-        triggerFilter(filter) {
-            const filterBtn = document.querySelector(`[data-filter="${filter}"]`);
-            if (filterBtn) {
-                filterBtn.click();
-                this.showShortcutFeedback(`필터: ${filter}`);
-            }
-        }
-
-        toggleSelectAll() {
-            const selectAllBtn = document.getElementById('selectAllBtn');
-            if (selectAllBtn) {
-                selectAllBtn.click();
-                this.showShortcutFeedback('전체 선택 토글');
-            }
-        }
-
-        clearSelection() {
-            const clearBtn = document.getElementById('clearSelectionBtn');
-            if (clearBtn) {
-                clearBtn.click();
-                this.showShortcutFeedback('선택 해제');
-            }
-        }
-
-        focusSearch() {
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.focus();
-                searchInput.select();
-                this.showShortcutFeedback('검색 포커스');
-            }
-        }
-
-        refreshData() {
-            if (window.FlightManagementPage?.system) {
-                window.FlightManagementPage.system.refreshData(true);
-                this.showShortcutFeedback('데이터 새로고침');
-            }
-        }
-
-        showShortcutFeedback(action) {
-            const indicator = document.getElementById('realTimeIndicator');
-            if (indicator) {
-                indicator.innerHTML = `
-                    <div class="pulse-dot"></div>
-                    <span>⌨️ ${action}</span>
-                `;
-                indicator.classList.add('show');
-                
-                setTimeout(() => {
-                    indicator.classList.remove('show');
-                }, 1500);
-            }
-        }
-
-        enable() {
-            this.isEnabled = true;
-        }
-
-        disable() {
-            this.isEnabled = false;
-        }
-
-        // 도움말 표시
-        showHelp() {
-            const helpModal = this.createHelpModal();
-            helpModal.show();
-        }
-
-        createHelpModal() {
-            const helpContent = `
-                <h3>⌨️ 키보드 단축키</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
-                    <div>
-                        <h4>필터 단축키</h4>
-                        <ul style="list-style: none; padding: 0;">
-                            <li><kbd>1</kbd> - 전체</li>
-                            <li><kbd>2</kbd> - 대기중</li>
-                            <li><kbd>3</kbd> - 승인됨</li>
-                            <li><kbd>4</kbd> - 완료</li>
-                            <li><kbd>A</kbd> - 구매대행</li>
-                            <li><kbd>D</kbd> - 직접구매</li>
-                            <li><kbd>U</kbd> - 출국임박</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4>기능 단축키</h4>
-                        <ul style="list-style: none; padding: 0;">
-                            <li><kbd>S</kbd> - 전체 선택/해제</li>
-                            <li><kbd>ESC</kbd> - 선택 해제</li>
-                            <li><kbd>Ctrl+F</kbd> - 검색 포커스</li>
-                            <li><kbd>Ctrl+Shift+R</kbd> - 데이터 새로고침</li>
-                            <li><kbd>Ctrl+D</kbd> - 디버그 정보</li>
-                        </ul>
+    /**
+     * 📋 모달 템플릿 등록
+     */
+    registerModalTemplates() {
+        // 기본 모달 템플릿
+        this.templates.set('base', {
+            html: `
+                <div class="modal-overlay">
+                    <div class="modal-container">
+                        <div class="modal-header">
+                            <h2 class="modal-title">{{title}}</h2>
+                            <button class="modal-close">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            {{body}}
+                        </div>
+                        <div class="modal-footer">
+                            {{footer}}
+                        </div>
                     </div>
                 </div>
-                <style>
-                    kbd {
-                        background: #f7fafc;
-                        border: 1px solid #e2e8f0;
-                        border-radius: 3px;
-                        padding: 2px 6px;
-                        font-family: monospace;
-                        font-size: 0.875rem;
-                    }
-                </style>
-            `;
+            `
+        });
 
-            // 간단한 모달 생성 (FlightModal 대신 간단한 구현)
-            const modal = {
-                show: () => {
-                    const overlay = document.createElement('div');
-                    overlay.className = 'modal-overlay show';
-                    overlay.innerHTML = `
-                        <div class="modal-container medium">
-                            <div class="modal-header">
-                                <h2 class="modal-title">키보드 단축키 도움말</h2>
-                                <button class="modal-close">
-                                    <i data-lucide="x" style="width: 20px; height: 20px;"></i>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                ${helpContent}
-                            </div>
-                            <div class="modal-footer">
-                                <button class="btn primary">확인</button>
+        console.log('✅ 모달 템플릿 등록 완료');
+    }
+
+    /**
+     * 📡 시스템 이벤트 구독
+     */
+    subscribeToSystemEvents() {
+        if (!this.system) return;
+
+        this.system.on('data:requestStatusChanged', (data) => {
+            this.handleRequestStatusChange(data);
+        });
+
+        console.log('✅ 시스템 이벤트 구독 완료');
+    }
+
+    /**
+     * 👁️ 요청 상세보기 모달
+     */
+    async showRequestDetailModal(requestId) {
+        try {
+            console.log('👁️ 요청 상세보기 모달 표시:', requestId);
+
+            // 데이터 로드
+            const request = await this.loadRequestData(requestId);
+            if (!request) {
+                this.showError('요청 정보를 찾을 수 없습니다.');
+                return;
+            }
+
+            const user = request.user_profiles;
+
+            // 모달 HTML 생성
+            const modalHtml = `
+                <div class="modal-overlay show" id="detailModal">
+                    <div class="modal-container large">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i data-lucide="eye"></i>
+                                항공권 신청 상세 정보
+                            </h2>
+                            <button class="modal-close" onclick="window.flightModals.closeModal('detailModal')">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="detail-grid">
+                                <!-- 신청자 정보 -->
+                                <div class="detail-section">
+                                    <h3><i data-lucide="user"></i> 신청자 정보</h3>
+                                    <div class="detail-content">
+                                        <div class="detail-row">
+                                            <span class="detail-label">이름</span>
+                                            <span class="detail-value">${user.name}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">이메일</span>
+                                            <span class="detail-value">${user.email}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">파견 학당</span>
+                                            <span class="detail-value">${user.sejong_institute || '미설정'}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">전공 분야</span>
+                                            <span class="detail-value">${user.field || '미설정'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 활동 기간 정보 -->
+                                <div class="detail-section">
+                                    <h3><i data-lucide="calendar"></i> 활동 기간</h3>
+                                    <div class="detail-content">
+                                        <div class="detail-row">
+                                            <span class="detail-label">현지 도착일</span>
+                                            <span class="detail-value">${this.formatDate(user.actual_arrival_date) || '미설정'}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">근무 종료일</span>
+                                            <span class="detail-value">${this.formatDate(user.actual_work_end_date) || '미설정'}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">실제 활동일</span>
+                                            <span class="detail-value">${user.actual_work_days || 0}일</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">최소 필요일</span>
+                                            <span class="detail-value">${user.minimum_required_days || 0}일</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 항공권 정보 -->
+                                <div class="detail-section">
+                                    <h3><i data-lucide="plane"></i> 항공권 정보</h3>
+                                    <div class="detail-content">
+                                        <div class="detail-row">
+                                            <span class="detail-label">구매 방식</span>
+                                            <span class="detail-value purchase-type ${request.purchase_type}">
+                                                ${request.purchase_type === 'direct' ? '직접구매' : '구매대행'}
+                                            </span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">출국일</span>
+                                            <span class="detail-value">${this.formatFullDate(request.departure_date)}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">귀국일</span>
+                                            <span class="detail-value">${this.formatFullDate(request.return_date)}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">출발공항</span>
+                                            <span class="detail-value">${request.departure_airport || '미입력'}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">도착공항</span>
+                                            <span class="detail-value">${request.arrival_airport || '미입력'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 가격 정보 -->
+                                <div class="detail-section">
+                                    <h3><i data-lucide="dollar-sign"></i> 가격 정보</h3>
+                                    <div class="detail-content">
+                                        <div class="detail-row">
+                                            <span class="detail-label">학생 제출 금액</span>
+                                            <span class="detail-value price">
+                                                ${this.formatPrice(request.ticket_price, request.currency)}
+                                            </span>
+                                        </div>
+                                        ${request.price_source ? `
+                                        <div class="detail-row">
+                                            <span class="detail-label">가격 출처</span>
+                                            <span class="detail-value">${request.price_source}</span>
+                                        </div>
+                                        ` : ''}
+                                        ${request.admin_final_amount ? `
+                                        <div class="detail-row">
+                                            <span class="detail-label">관리자 최종 금액</span>
+                                            <span class="detail-value price admin">
+                                                ${this.formatPrice(request.admin_final_amount, request.admin_final_currency)}
+                                            </span>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+
+                                <!-- 상태 정보 -->
+                                <div class="detail-section">
+                                    <h3><i data-lucide="info"></i> 신청 상태</h3>
+                                    <div class="detail-content">
+                                        <div class="detail-row">
+                                            <span class="detail-label">현재 상태</span>
+                                            <span class="detail-value">
+                                                <span class="status-badge status-${request.status}">
+                                                    ${this.getStatusText(request.status)}
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">신청일</span>
+                                            <span class="detail-value">${this.formatFullDate(request.created_at)}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">최종 업데이트</span>
+                                            <span class="detail-value">${this.formatFullDate(request.updated_at)}</span>
+                                        </div>
+                                        ${request.rejection_reason ? `
+                                        <div class="detail-row">
+                                            <span class="detail-label">반려 사유</span>
+                                            <span class="detail-value rejection-reason">${request.rejection_reason}</span>
+                                        </div>
+                                        ` : ''}
+                                        ${request.admin_notes ? `
+                                        <div class="detail-row">
+                                            <span class="detail-label">관리자 메모</span>
+                                            <span class="detail-value admin-notes">${request.admin_notes}</span>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+
+                                <!-- 첨부 파일 -->
+                                <div class="detail-section full-width">
+                                    <h3><i data-lucide="paperclip"></i> 첨부 파일</h3>
+                                    <div class="detail-content">
+                                        <div class="file-attachments">
+                                            ${this.generateFileAttachments(request)}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    `;
+                        <div class="modal-footer">
+                            <button class="btn secondary" onclick="window.flightModals.closeModal('detailModal')">
+                                닫기
+                            </button>
+                            ${this.generateDetailModalActions(request)}
+                        </div>
+                    </div>
+                </div>
+            `;
 
-                    // 닫기 이벤트
-                    overlay.addEventListener('click', (e) => {
-                        if (e.target === overlay || e.target.closest('.modal-close') || e.target.closest('.btn')) {
-                            document.body.removeChild(overlay);
-                        }
-                    });
+            // 모달 표시
+            this.showModal(modalHtml, 'detailModal');
 
-                    document.body.appendChild(overlay);
-                    
-                    // 아이콘 렌더링
-                    if (window.refreshIcons) {
-                        window.refreshIcons();
-                    }
-                }
-            };
-
-            return modal;
+        } catch (error) {
+            console.error('❌ 상세보기 모달 표시 실패:', error);
+            this.showError('상세 정보를 불러오는 중 오류가 발생했습니다.');
         }
     }
 
-    // 🎛️ 메인 컨트롤 시스템
-    class FlightManagementControlSystem {
-        constructor() {
-            this.filter = new FilterController();
-            this.sort = new SortController();
-            this.selection = new SelectionController();
-            this.bulkActions = new BulkActionsController();
-            this.keyboard = new KeyboardController();
-        }
+    /**
+     * ✅ 승인 모달
+     */
+    async showApproveModal(requestId) {
+        try {
+            console.log('✅ 승인 모달 표시:', requestId);
 
-        async init() {
-            console.log('🎛️ FlightManagementControlSystem v10.0.0 초기화 중...');
-
-            try {
-                // 각 컨트롤러 초기화
-                this.filter.init();
-                this.sort.init();
-                this.selection.init();
-                this.bulkActions.init();
-                this.keyboard.init();
-
-                window.FlightManagementControls.isInitialized = true;
-                console.log('✅ FlightManagementControlSystem v10.0.0 초기화 완료!');
-
-                return true;
-            } catch (error) {
-                console.error('❌ FlightManagementControlSystem 초기화 실패:', error);
-                throw error;
+            const request = await this.loadRequestData(requestId);
+            if (!request) {
+                this.showError('요청 정보를 찾을 수 없습니다.');
+                return;
             }
-        }
 
-        // 공개 메서드들
-        applyFilters() {
-            this.filter.applyFilters();
-        }
+            const modalHtml = `
+                <div class="modal-overlay show" id="approveModal">
+                    <div class="modal-container medium">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i data-lucide="check-circle"></i>
+                                항공권 신청 승인
+                            </h2>
+                            <button class="modal-close" onclick="window.flightModals.closeModal('approveModal')">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="approve-content">
+                                <div class="request-summary">
+                                    <h4>승인할 신청 정보</h4>
+                                    <div class="summary-item">
+                                        <span class="label">신청자:</span>
+                                        <span class="value">${request.user_profiles.name}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="label">구매방식:</span>
+                                        <span class="value">${request.purchase_type === 'direct' ? '직접구매' : '구매대행'}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="label">출국일:</span>
+                                        <span class="value">${this.formatFullDate(request.departure_date)}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="label">항공료:</span>
+                                        <span class="value">${this.formatPrice(request.ticket_price, request.currency)}</span>
+                                    </div>
+                                </div>
 
-        applySorting() {
-            this.sort.applySorting();
-        }
+                                <div class="form-group">
+                                    <label for="adminNotes">관리자 메모 (선택사항)</label>
+                                    <textarea id="adminNotes" 
+                                              placeholder="승인과 관련된 특별한 사항이나 메모를 입력하세요..."
+                                              rows="4"></textarea>
+                                </div>
 
-        clearSelection() {
-            this.selection.clearSelection();
-        }
+                                <div class="warning-box">
+                                    <i data-lucide="alert-triangle"></i>
+                                    <div>
+                                        <strong>승인 후 안내사항</strong>
+                                        <ul>
+                                            <li>${request.purchase_type === 'direct' ? '학생이 직접 항공권을 구매하게 됩니다.' : '관리자가 대신 항공권을 구매해야 합니다.'}</li>
+                                            <li>승인 후에는 상태를 되돌릴 수 없습니다.</li>
+                                            <li>학생에게 승인 알림이 자동으로 발송됩니다.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn secondary" onclick="window.flightModals.closeModal('approveModal')">
+                                취소
+                            </button>
+                            <button class="btn success" onclick="window.flightModals.confirmApproval('${requestId}')">
+                                <i data-lucide="check"></i>
+                                승인하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
 
-        resetAll() {
-            this.filter.resetFilters();
-            this.clearSelection();
-            window.FlightManagementControls.sorting = {
-                field: 'created_at',
-                direction: 'desc'
-            };
-            this.sort.restoreSorting();
-        }
+            this.showModal(modalHtml, 'approveModal');
 
-        // 상태 정보
-        getState() {
-            return {
-                filters: window.FlightManagementControls.filters,
-                sorting: window.FlightManagementControls.sorting,
-                selection: {
-                    count: window.FlightManagementControls.selection.selectedIds.size,
-                    allSelected: window.FlightManagementControls.selection.allSelected
-                },
-                operations: window.FlightManagementControls.operations
-            };
-        }
-
-        // 디버그 정보
-        getDebugInfo() {
-            return {
-                version: window.FlightManagementControls.version,
-                phase: window.FlightManagementControls.phase,
-                isInitialized: window.FlightManagementControls.isInitialized,
-                state: this.getState(),
-                controllers: {
-                    filter: !!this.filter,
-                    sort: !!this.sort,
-                    selection: !!this.selection,
-                    bulkActions: !!this.bulkActions,
-                    keyboard: !!this.keyboard
-                }
-            };
-        }
-
-        // 키보드 도움말
-        showKeyboardHelp() {
-            this.keyboard.showHelp();
-        }
-
-        // 컨트롤 비활성화/활성화
-        enableControls() {
-            this.keyboard.enable();
-        }
-
-        disableControls() {
-            this.keyboard.disable();
+        } catch (error) {
+            console.error('❌ 승인 모달 표시 실패:', error);
+            this.showError('승인 모달을 표시하는 중 오류가 발생했습니다.');
         }
     }
 
-    // 🌐 전역 객체 노출
-    const controlSystem = new FlightManagementControlSystem();
+    /**
+     * ❌ 반려 모달
+     */
+    async showRejectModal(requestId) {
+        try {
+            console.log('❌ 반려 모달 표시:', requestId);
+
+            const request = await this.loadRequestData(requestId);
+            if (!request) {
+                this.showError('요청 정보를 찾을 수 없습니다.');
+                return;
+            }
+
+            const modalHtml = `
+                <div class="modal-overlay show" id="rejectModal">
+                    <div class="modal-container medium">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i data-lucide="x-circle"></i>
+                                항공권 신청 반려
+                            </h2>
+                            <button class="modal-close" onclick="window.flightModals.closeModal('rejectModal')">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="reject-content">
+                                <div class="request-summary">
+                                    <h4>반려할 신청 정보</h4>
+                                    <div class="summary-item">
+                                        <span class="label">신청자:</span>
+                                        <span class="value">${request.user_profiles.name}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="label">구매방식:</span>
+                                        <span class="value">${request.purchase_type === 'direct' ? '직접구매' : '구매대행'}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="label">출국일:</span>
+                                        <span class="value">${this.formatFullDate(request.departure_date)}</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group required">
+                                    <label for="rejectionReason">반려 사유 *</label>
+                                    <textarea id="rejectionReason" 
+                                              placeholder="반려 사유를 구체적으로 입력해주세요. 학생이 이 내용을 확인하게 됩니다."
+                                              rows="6"
+                                              required></textarea>
+                                    <small class="help-text">명확하고 건설적인 피드백을 제공해주세요.</small>
+                                </div>
+
+                                <div class="common-reasons">
+                                    <h5>자주 사용되는 반려 사유 (클릭하여 선택)</h5>
+                                    <div class="reason-buttons">
+                                        <button type="button" class="reason-btn" 
+                                                onclick="window.flightModals.selectReason('출국일이 활동 기간과 맞지 않습니다.')">
+                                            출국일 불일치
+                                        </button>
+                                        <button type="button" class="reason-btn"
+                                                onclick="window.flightModals.selectReason('제출된 가격 정보가 부정확합니다.')">
+                                            가격 정보 오류
+                                        </button>
+                                        <button type="button" class="reason-btn"
+                                                onclick="window.flightModals.selectReason('필수 정보가 누락되었습니다.')">
+                                            정보 누락
+                                        </button>
+                                        <button type="button" class="reason-btn"
+                                                onclick="window.flightModals.selectReason('항공권 이미지가 명확하지 않습니다.')">
+                                            이미지 품질
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="warning-box danger">
+                                    <i data-lucide="alert-triangle"></i>
+                                    <div>
+                                        <strong>반려 처리 안내</strong>
+                                        <ul>
+                                            <li>반려 후에는 학생이 다시 신청할 수 있습니다.</li>
+                                            <li>반려 사유가 학생에게 자동으로 전송됩니다.</li>
+                                            <li>명확한 사유를 제공하여 재신청을 도와주세요.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn secondary" onclick="window.flightModals.closeModal('rejectModal')">
+                                취소
+                            </button>
+                            <button class="btn danger" onclick="window.flightModals.confirmRejection('${requestId}')">
+                                <i data-lucide="x"></i>
+                                반려하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            this.showModal(modalHtml, 'rejectModal');
+
+        } catch (error) {
+            console.error('❌ 반려 모달 표시 실패:', error);
+            this.showError('반려 모달을 표시하는 중 오류가 발생했습니다.');
+        }
+    }
+
+    /**
+     * 🛂 여권정보 모달
+     */
+    async showPassportModal(userId) {
+        try {
+            console.log('🛂 여권정보 모달 표시:', userId);
+
+            // 여권 정보 로드
+            const passportData = await this.loadPassportData(userId);
+            if (!passportData) {
+                this.showError('등록된 여권 정보가 없습니다.');
+                return;
+            }
+
+            const modalHtml = `
+                <div class="modal-overlay show" id="passportModal">
+                    <div class="modal-container medium">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i data-lucide="bookmark"></i>
+                                여권 정보
+                            </h2>
+                            <button class="modal-close" onclick="window.flightModals.closeModal('passportModal')">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="passport-content">
+                                <div class="passport-grid">
+                                    <div class="passport-section">
+                                        <h4>기본 정보</h4>
+                                        <div class="passport-details">
+                                            <div class="detail-row">
+                                                <span class="label">영문 성명</span>
+                                                <span class="value">${passportData.english_name || '미입력'}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="label">여권 번호</span>
+                                                <span class="value passport-number">${this.maskPassportNumber(passportData.passport_number)}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="label">국적</span>
+                                                <span class="value">${passportData.nationality || '대한민국'}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="label">생년월일</span>
+                                                <span class="value">${this.formatDate(passportData.birth_date)}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="label">성별</span>
+                                                <span class="value">${passportData.gender === 'M' ? '남성' : '여성'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="passport-section">
+                                        <h4>여권 유효기간</h4>
+                                        <div class="passport-details">
+                                            <div class="detail-row">
+                                                <span class="label">발급일</span>
+                                                <span class="value">${this.formatDate(passportData.issue_date)}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="label">만료일</span>
+                                                <span class="value expiry-date">${this.formatDate(passportData.expiry_date)}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="label">남은 유효기간</span>
+                                                <span class="value validity-status">
+                                                    ${this.calculateValidityStatus(passportData.expiry_date)}
+                                                </span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="label">발급 기관</span>
+                                                <span class="value">${passportData.issuing_authority || '외교부'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                ${this.generatePassportWarnings(passportData)}
+
+                                <div class="passport-image-section">
+                                    <h4>여권 이미지</h4>
+                                    ${passportData.passport_image_url ? `
+                                        <div class="passport-image">
+                                            <img src="${passportData.passport_image_url}" 
+                                                 alt="여권 이미지"
+                                                 onclick="window.flightModals.showImagePreview('${passportData.passport_image_url}')"
+                                                 style="cursor: pointer;">
+                                        </div>
+                                    ` : `
+                                        <div class="no-image">
+                                            <i data-lucide="image-off"></i>
+                                            <p>등록된 여권 이미지가 없습니다.</p>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn secondary" onclick="window.flightModals.closeModal('passportModal')">
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            this.showModal(modalHtml, 'passportModal');
+
+        } catch (error) {
+            console.error('❌ 여권정보 모달 표시 실패:', error);
+            this.showError('여권 정보를 불러오는 중 오류가 발생했습니다.');
+        }
+    }
+
+    // PART 1 여기까지 - 계속해서 PART 2로 이어집니다
     
-    window.flightControls = controlSystem;
-    window.FlightManagementControls.system = controlSystem;
-    window.FlightManagementControls.controllers = {
-        filter: controlSystem.filter,
-        sort: controlSystem.sort,
-        selection: controlSystem.selection,
-        bulkActions: controlSystem.bulkActions,
-        keyboard: controlSystem.keyboard
-    };
+    /**
+     * 📤 항공권 업로드 모달 (관리자용)
+     */
+    async showUploadTicketModal(requestId) {
+        try {
+            console.log('📤 항공권 업로드 모달 표시:', requestId);
 
-    // 전역 함수로 주요 기능 노출
-    window.flightControlsUtils = {
-        applyFilters: () => controlSystem.applyFilters(),
-        applySorting: () => controlSystem.applySorting(),
-        clearSelection: () => controlSystem.clearSelection(),
-        resetAll: () => controlSystem.resetAll(),
-        showKeyboardHelp: () => controlSystem.showKeyboardHelp(),
-        getDebugInfo: () => controlSystem.getDebugInfo()
-    };
+            const request = await this.loadRequestData(requestId);
+            if (!request) {
+                this.showError('요청 정보를 찾을 수 없습니다.');
+                return;
+            }
 
-    console.log('✅ FlightManagementControls v10.0.0 로드 완료! (Phase 3 컨트롤 시스템 완전 구현)');
+            const modalHtml = `
+                <div class="modal-overlay show" id="uploadTicketModal">
+                    <div class="modal-container medium">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i data-lucide="upload"></i>
+                                최종 항공권 등록
+                            </h2>
+                            <button class="modal-close" onclick="window.flightModals.closeModal('uploadTicketModal')">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="upload-content">
+                                <div class="request-summary">
+                                    <h4>구매대행 신청 정보</h4>
+                                    <div class="summary-item">
+                                        <span class="label">신청자:</span>
+                                        <span class="value">${request.user_profiles.name}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="label">출국일:</span>
+                                        <span class="value">${this.formatFullDate(request.departure_date)}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="label">예상 금액:</span>
+                                        <span class="value">${this.formatPrice(request.ticket_price, request.currency)}</span>
+                                    </div>
+                                </div>
 
-})();
+                                <div class="upload-section">
+                                    <h4>최종 항공권 파일 업로드</h4>
+                                    <div class="file-upload-area" id="ticketUploadArea">
+                                        <input type="file" id="ticketFileInput" accept="image/*,.pdf" style="display: none;">
+                                        <div class="upload-placeholder" onclick="document.getElementById('ticketFileInput').click()">
+                                            <i data-lucide="upload-cloud"></i>
+                                            <p>클릭하여 항공권 파일을 선택하세요</p>
+                                            <small>PNG, JPG, PDF 파일만 업로드 가능 (최대 10MB)</small>
+                                        </div>
+                                        <div class="upload-preview" id="ticketUploadPreview" style="display: none;"></div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="purchaseNotes">구매 메모 (선택사항)</label>
+                                    <textarea id="purchaseNotes" placeholder="항공권 구매와 관련된 특별한 사항을 입력하세요..." rows="3"></textarea>
+                                </div>
+
+                                <div class="info-box">
+                                    <i data-lucide="info"></i>
+                                    <div>
+                                        <strong>항공권 등록 안내</strong>
+                                        <ul>
+                                            <li>구매한 최종 항공권 파일을 업로드해주세요.</li>
+                                            <li>업로드 후 자동으로 구매 완료 상태로 변경됩니다.</li>
+                                            <li>학생이 최종 항공권을 확인할 수 있습니다.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn secondary" onclick="window.flightModals.closeModal('uploadTicketModal')">취소</button>
+                            <button class="btn primary" id="uploadTicketBtn" onclick="window.flightModals.confirmTicketUpload('${requestId}')" disabled>
+                                <i data-lucide="upload"></i>
+                                항공권 등록
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            this.showModal(modalHtml, 'uploadTicketModal');
+            this.setupFileUpload('ticketFileInput', 'ticketUploadArea', 'uploadTicketBtn');
+
+        } catch (error) {
+            console.error('❌ 항공권 업로드 모달 표시 실패:', error);
+            this.showError('항공권 업로드 모달을 표시하는 중 오류가 발생했습니다.');
+        }
+    }
+    
+    /*
+     * 💰 최종금액 입력 모달
+     */
+    async showFinalAmountModal(requestId) {
+        try {
+            console.log('💰 최종금액 입력 모달 표시:', requestId);
+
+            const request = await this.loadRequestData(requestId);
+            if (!request) {
+                this.showError('요청 정보를 찾을 수 없습니다.');
+                return;
+            }
+
+            const modalHtml = `
+                <div class="modal-overlay show" id="finalAmountModal">
+                    <div class="modal-container medium">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i data-lucide="dollar-sign"></i>
+                                최종 구매 금액 입력
+                            </h2>
+                            <button class="modal-close" onclick="window.flightModals.closeModal('finalAmountModal')">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="final-amount-content">
+                                <div class="request-summary">
+                                    <h4>구매 정보</h4>
+                                    <div class="summary-item">
+                                        <span class="label">신청자:</span>
+                                        <span class="value">${request.user_profiles.name}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="label">구매방식:</span>
+                                        <span class="value">${request.purchase_type === 'direct' ? '직접구매' : '구매대행'}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="label">학생 제출 금액:</span>
+                                        <span class="value">${this.formatPrice(request.ticket_price, request.currency)}</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group required">
+                                    <label for="finalAmount">실제 구매 금액 *</label>
+                                    <div class="amount-input-group">
+                                        <input type="number" 
+                                               id="finalAmount" 
+                                               placeholder="실제 결제된 금액을 입력하세요"
+                                               min="0"
+                                               step="1000"
+                                               required>
+                                        <select id="finalCurrency">
+                                            <option value="KRW" ${request.currency === 'KRW' ? 'selected' : ''}>원 (KRW)</option>
+                                            <option value="USD" ${request.currency === 'USD' ? 'selected' : ''}>달러 (USD)</option>
+                                            <option value="EUR" ${request.currency === 'EUR' ? 'selected' : ''}>유로 (EUR)</option>
+                                            <option value="JPY" ${request.currency === 'JPY' ? 'selected' : ''}>엔 (JPY)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="finalAmountNotes">구매 메모 (선택사항)</label>
+                                    <textarea id="finalAmountNotes" 
+                                              placeholder="실제 구매와 관련된 메모를 입력하세요..."
+                                              rows="3"></textarea>
+                                </div>
+
+                                <div class="info-box">
+                                    <i data-lucide="info"></i>
+                                    <div>
+                                        <strong>최종 금액 입력 안내</strong>
+                                        <ul>
+                                            <li>실제 결제된 정확한 금액을 입력해주세요.</li>
+                                            <li>입력 후 구매 완료 상태로 변경됩니다.</li>
+                                            <li>이 금액은 최종 정산에 사용됩니다.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn secondary" onclick="window.flightModals.closeModal('finalAmountModal')">취소</button>
+                            <button class="btn primary" onclick="window.flightModals.confirmFinalAmount('${requestId}')">
+                                <i data-lucide="check"></i>
+                                최종 금액 저장
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            this.showModal(modalHtml, 'finalAmountModal');
+
+        } catch (error) {
+            console.error('❌ 최종금액 입력 모달 표시 실패:', error);
+            this.showError('최종금액 입력 모달을 표시하는 중 오류가 발생했습니다.');
+        }
+    }    
+    
+    /**
+     * 🎫 항공권 보기 모달
+     */
+    async showTicketViewModal(requestId) {
+        try {
+            console.log('🎫 항공권 보기 모달 표시:', requestId);
+
+            const request = await this.loadRequestData(requestId);
+            if (!request) {
+                this.showError('요청 정보를 찾을 수 없습니다.');
+                return;
+            }
+
+            // 항공권 URL 확인
+            const ticketUrl = request.admin_ticket_url || request.ticket_url;
+            if (!ticketUrl) {
+                this.showError('등록된 항공권이 없습니다.');
+                return;
+            }
+
+            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(ticketUrl);
+            const isPDF = /\.pdf$/i.test(ticketUrl);
+
+            const modalHtml = `
+                <div class="modal-overlay show" id="ticketViewModal">
+                    <div class="modal-container large">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i data-lucide="ticket"></i>
+                                항공권 보기
+                            </h2>
+                            <button class="modal-close" onclick="window.flightModals.closeModal('ticketViewModal')">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="ticket-view-content">
+                                <div class="ticket-info">
+                                    <h4>항공권 정보</h4>
+                                    <div class="info-grid">
+                                        <div class="info-item">
+                                            <span class="label">신청자:</span>
+                                            <span class="value">${request.user_profiles.name}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">출국일:</span>
+                                            <span class="value">${this.formatFullDate(request.departure_date)}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">귀국일:</span>
+                                            <span class="value">${this.formatFullDate(request.return_date)}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">구매방식:</span>
+                                            <span class="value">${request.purchase_type === 'direct' ? '직접구매' : '구매대행'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="ticket-preview">
+                                    <h4>항공권 미리보기</h4>
+                                    <div class="preview-container">
+                                        ${isImage ? `
+                                            <img src="${ticketUrl}" 
+                                                 alt="항공권 이미지" 
+                                                 style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"
+                                                 onclick="window.open('${ticketUrl}', '_blank')">
+                                            <p style="text-align: center; margin-top: 1rem; color: #718096; font-size: 0.875rem;">
+                                                이미지를 클릭하면 새 창에서 확대해서 볼 수 있습니다.
+                                            </p>
+                                        ` : isPDF ? `
+                                            <div class="pdf-preview">
+                                                <iframe src="${ticketUrl}" 
+                                                        width="100%" 
+                                                        height="500px" 
+                                                        style="border: 1px solid #e2e8f0; border-radius: 8px;">
+                                                </iframe>
+                                                <p style="text-align: center; margin-top: 1rem;">
+                                                    <a href="${ticketUrl}" target="_blank" class="btn primary">
+                                                        <i data-lucide="external-link"></i>
+                                                        새 창에서 PDF 열기
+                                                    </a>
+                                                </p>
+                                            </div>
+                                        ` : `
+                                            <div class="file-download">
+                                                <i data-lucide="file" style="width: 48px; height: 48px; margin: 0 auto 1rem; color: #a0aec0;"></i>
+                                                <p>미리보기가 지원되지 않는 파일 형식입니다.</p>
+                                                <a href="${ticketUrl}" target="_blank" class="btn primary">
+                                                    <i data-lucide="download"></i>
+                                                    파일 다운로드
+                                                </a>
+                                            </div>
+                                        `}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn secondary" onclick="window.flightModals.closeModal('ticketViewModal')">
+                                닫기
+                            </button>
+                            <a href="${ticketUrl}" download class="btn primary">
+                                <i data-lucide="download"></i>
+                                다운로드
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            this.showModal(modalHtml, 'ticketViewModal');
+
+        } catch (error) {
+            console.error('❌ 항공권 보기 모달 표시 실패:', error);
+            this.showError('항공권 보기 모달을 표시하는 중 오류가 발생했습니다.');
+        }
+    }    
+    
+    /**
+     * 🧾 영수증 보기 모달
+     */
+    async showReceiptViewModal(requestId) {
+        try {
+            console.log('🧾 영수증 보기 모달 표시:', requestId);
+
+            const request = await this.loadRequestData(requestId);
+            if (!request) {
+                this.showError('요청 정보를 찾을 수 없습니다.');
+                return;
+            }
+
+            if (!request.receipt_url) {
+                this.showError('등록된 영수증이 없습니다.');
+                return;
+            }
+
+            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(request.receipt_url);
+            const isPDF = /\.pdf$/i.test(request.receipt_url);
+
+            const modalHtml = `
+                <div class="modal-overlay show" id="receiptViewModal">
+                    <div class="modal-container large">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i data-lucide="receipt"></i>
+                                구매 영수증 보기
+                            </h2>
+                            <button class="modal-close" onclick="window.flightModals.closeModal('receiptViewModal')">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="receipt-view-content">
+                                <div class="receipt-info">
+                                    <h4>구매 정보</h4>
+                                    <div class="info-grid">
+                                        <div class="info-item">
+                                            <span class="label">신청자:</span>
+                                            <span class="value">${request.user_profiles.name}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">구매 금액:</span>
+                                            <span class="value">${this.formatPrice(request.ticket_price, request.currency)}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">구매일:</span>
+                                            <span class="value">${this.formatFullDate(request.created_at)}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">구매방식:</span>
+                                            <span class="value">직접구매</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="receipt-preview">
+                                    <h4>영수증 미리보기</h4>
+                                    <div class="preview-container">
+                                        ${isImage ? `
+                                            <img src="${request.receipt_url}" 
+                                                 alt="영수증 이미지" 
+                                                 style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"
+                                                 onclick="window.open('${request.receipt_url}', '_blank')">
+                                            <p style="text-align: center; margin-top: 1rem; color: #718096; font-size: 0.875rem;">
+                                                이미지를 클릭하면 새 창에서 확대해서 볼 수 있습니다.
+                                            </p>
+                                        ` : isPDF ? `
+                                            <div class="pdf-preview">
+                                                <iframe src="${request.receipt_url}" 
+                                                        width="100%" 
+                                                        height="500px" 
+                                                        style="border: 1px solid #e2e8f0; border-radius: 8px;">
+                                                </iframe>
+                                                <p style="text-align: center; margin-top: 1rem;">
+                                                    <a href="${request.receipt_url}" target="_blank" class="btn primary">
+                                                        <i data-lucide="external-link"></i>
+                                                        새 창에서 PDF 열기
+                                                    </a>
+                                                </p>
+                                            </div>
+                                        ` : `
+                                            <div class="file-download">
+                                                <i data-lucide="file-text" style="width: 48px; height: 48px; margin: 0 auto 1rem; color: #a0aec0;"></i>
+                                                <p>미리보기가 지원되지 않는 파일 형식입니다.</p>
+                                                <a href="${request.receipt_url}" target="_blank" class="btn primary">
+                                                    <i data-lucide="download"></i>
+                                                    파일 다운로드
+                                                </a>
+                                            </div>
+                                        `}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn secondary" onclick="window.flightModals.closeModal('receiptViewModal')">
+                                닫기
+                            </button>
+                            <a href="${request.receipt_url}" download class="btn primary">
+                                <i data-lucide="download"></i>
+                                다운로드
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            this.showModal(modalHtml, 'receiptViewModal');
+
+        } catch (error) {
+            console.error('❌ 영수증 보기 모달 표시 실패:', error);
+            this.showError('영수증 보기 모달을 표시하는 중 오류가 발생했습니다.');
+        }
+    }
+    
+    
+    /**
+     * ✅ 승인 확정 처리
+     */
+    async confirmApproval(requestId) {
+        try {
+            this.showProcessing('승인 처리 중...');
+
+            const adminNotes = document.getElementById('adminNotes')?.value || '';
+            
+            if (!this.system || !this.system.modules.api) {
+                throw new Error('API가 초기화되지 않았습니다');
+            }
+
+            const result = await this.system.modules.api.updateRequestStatus(requestId, 'approved', null);
+            
+            // 관리자 메모가 있으면 추가 업데이트
+            if (adminNotes.trim()) {
+                await this.updateAdminNotes(requestId, adminNotes.trim());
+            }
+
+            this.hideProcessing();
+            this.closeModal('approveModal');
+            this.showSuccess('항공권 신청이 승인되었습니다.');
+
+            // 시스템 이벤트 발생
+            if (this.system) {
+                this.system.emitEvent('action:requestStatusChanged', {
+                    requestId: requestId,
+                    newStatus: 'approved',
+                    timestamp: new Date()
+                });
+            }
+
+            // 데이터 새로고침
+            this.refreshSystemData();
+
+        } catch (error) {
+            this.hideProcessing();
+            console.error('❌ 승인 처리 실패:', error);
+            this.showError('승인 처리 중 오류가 발생했습니다: ' + error.message);
+        }
+    }
+
+    /**
+     * ❌ 반려 확정 처리
+     */
+    async confirmRejection(requestId) {
+        try {
+            const rejectionReason = document.getElementById('rejectionReason')?.value?.trim();
+            
+            if (!rejectionReason) {
+                this.showError('반려 사유를 입력해주세요.');
+                return;
+            }
+
+            this.showProcessing('반려 처리 중...');
+
+            if (!this.system || !this.system.modules.api) {
+                throw new Error('API가 초기화되지 않았습니다');
+            }
+
+            const result = await this.system.modules.api.updateRequestStatus(requestId, 'rejected', rejectionReason);
+
+            this.hideProcessing();
+            this.closeModal('rejectModal');
+            this.showSuccess('항공권 신청이 반려되었습니다.');
+
+            // 시스템 이벤트 발생
+            if (this.system) {
+                this.system.emitEvent('action:requestStatusChanged', {
+                    requestId: requestId,
+                    newStatus: 'rejected',
+                    rejectionReason: rejectionReason,
+                    timestamp: new Date()
+                });
+            }
+
+            // 데이터 새로고침
+            this.refreshSystemData();
+
+        } catch (error) {
+            this.hideProcessing();
+            console.error('❌ 반려 처리 실패:', error);
+            this.showError('반려 처리 중 오류가 발생했습니다: ' + error.message);
+        }
+    }
+    
+    /**
+     * 💰 최종금액 확정 처리
+     */
+    async confirmFinalAmount(requestId) {
+        try {
+            const finalAmount = document.getElementById('finalAmount')?.value;
+            const finalCurrency = document.getElementById('finalCurrency')?.value || 'KRW';
+            const finalAmountNotes = document.getElementById('finalAmountNotes')?.value || '';
+            
+            if (!finalAmount || parseFloat(finalAmount) <= 0) {
+                this.showError('올바른 금액을 입력해주세요.');
+                return;
+            }
+
+            this.showProcessing('최종 금액 저장 중...');
+
+            if (!this.system || !this.system.modules.api) {
+                throw new Error('API가 초기화되지 않았습니다');
+            }
+
+            // 최종금액 정보 업데이트 (API에 메서드 추가 필요)
+            const updateData = {
+                admin_final_amount: parseFloat(finalAmount),
+                admin_final_currency: finalCurrency,
+                admin_notes: finalAmountNotes,
+                status: 'completed',
+                purchase_completed_at: new Date().toISOString()
+            };
+
+            // Supabase 직접 호출 (임시)
+            const supabase = this.system.modules.api.checkSupabaseInstance();
+            const { data, error } = await supabase
+                .from('flight_requests')
+                .update(updateData)
+                .eq('id', requestId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            this.hideProcessing();
+            this.closeModal('finalAmountModal');
+            this.showSuccess('최종 금액이 저장되었습니다.');
+
+            // 시스템 이벤트 발생
+            if (this.system) {
+                this.system.emitEvent('action:requestStatusChanged', {
+                    requestId: requestId,
+                    newStatus: 'completed',
+                    timestamp: new Date()
+                });
+            }
+
+            // 데이터 새로고침
+            this.refreshSystemData();
+
+        } catch (error) {
+            this.hideProcessing();
+            console.error('❌ 최종금액 저장 실패:', error);
+            this.showError('최종금액 저장 중 오류가 발생했습니다: ' + error.message);
+        }
+    }    
+    
+    /**
+     * 📋 요청 데이터 로드
+     */
+    async loadRequestData(requestId) {
+        try {
+            if (!this.system || !this.system.modules.api) {
+                throw new Error('API가 초기화되지 않았습니다');
+            }
+
+            const request = await this.system.modules.api.getFlightRequestDetail(requestId);
+            return request;
+
+        } catch (error) {
+            console.error('❌ 요청 데이터 로드 실패:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 🛂 여권 데이터 로드
+     */
+    async loadPassportData(userId) {
+        try {
+            if (!this.system || !this.system.modules.api) {
+                throw new Error('API가 초기화되지 않았습니다');
+            }
+
+            const passport = await this.system.modules.api.getPassportInfo(userId);
+            return passport;
+
+        } catch (error) {
+            console.error('❌ 여권 데이터 로드 실패:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 🪟 모달 표시 핵심 함수
+     */
+    showModal(modalHtml, modalId) {
+        // 기존 모달 정리
+        if (this.modalStates.currentModal) {
+            this.closeModal(this.modalStates.currentModal);
+        }
+
+        // 새 모달 추가
+        this.modalContainer.innerHTML = modalHtml;
+        this.modalContainer.style.pointerEvents = 'auto';
+
+        // 상태 업데이트
+        this.modalStates.currentModal = modalId;
+        this.modalStates.activeModals.add(modalId);
+
+        // 애니메이션
+        setTimeout(() => {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('show');
+            }
+        }, 10);
+
+        // 아이콘 새로고침
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        console.log('✅ 모달 표시 완료:', modalId);
+    }
+
+    /**
+     * ❌ 모달 닫기
+     */
+    closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
+        modal.classList.remove('show');
+        
+        setTimeout(() => {
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+            
+            // 상태 정리
+            this.modalStates.activeModals.delete(modalId);
+            if (this.modalStates.currentModal === modalId) {
+                this.modalStates.currentModal = null;
+            }
+
+            // 모든 모달이 닫혔으면 컨테이너 비활성화
+            if (this.modalStates.activeModals.size === 0) {
+                this.modalContainer.style.pointerEvents = 'none';
+            }
+        }, this.modalConfig.animationDuration);
+
+        console.log('✅ 모달 닫기 완료:', modalId);
+    }
+
+    /**
+     * 🔝 최상단 모달 닫기
+     */
+    closeTopModal() {
+        if (this.modalStates.currentModal) {
+            this.closeModal(this.modalStates.currentModal);
+        }
+    }
+
+    /**
+     * 📅 날짜 포맷팅 유틸리티
+     */
+    formatDate(dateString) {
+        if (!dateString) return '-';
+        return new Date(dateString).toLocaleDateString('ko-KR');
+    }
+
+    formatFullDate(dateString) {
+        if (!dateString) return '-';
+        return new Date(dateString).toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            weekday: 'short'
+        });
+    }
+
+    /**
+     * 💰 가격 포맷팅
+     */
+    formatPrice(price, currency = 'KRW') {
+        if (!price) return '-';
+        if (currency === 'KRW') {
+            return new Intl.NumberFormat('ko-KR').format(price) + '원';
+        }
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency
+        }).format(price);
+    }
+
+    /**
+     * 📊 상태 텍스트
+     */
+    getStatusText(status) {
+        const statusMap = {
+            'pending': '대기중',
+            'approved': '승인됨',
+            'rejected': '반려됨',
+            'completed': '완료'
+        };
+        return statusMap[status] || status;
+    }
+
+    /**
+     * 🛂 여권번호 마스킹
+     */
+    maskPassportNumber(passportNumber) {
+        if (!passportNumber) return '-';
+        if (passportNumber.length < 4) return passportNumber;
+        
+        const start = passportNumber.substring(0, 2);
+        const end = passportNumber.substring(passportNumber.length - 2);
+        const middle = '*'.repeat(passportNumber.length - 4);
+        
+        return start + middle + end;
+    }
+
+    /**
+     * ⚠️ 알림 함수들
+     */
+    showSuccess(message) {
+        this.showToast(message, 'success');
+    }
+
+    showError(message) {
+        this.showToast(message, 'error');
+    }
+
+    showProcessing(message) {
+        // 로딩 오버레이 표시
+        const overlay = document.createElement('div');
+        overlay.id = 'processingOverlay';
+        overlay.className = 'loading-overlay';
+        overlay.innerHTML = `
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <p>${message}</p>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    hideProcessing() {
+        const overlay = document.getElementById('processingOverlay');
+        if (overlay) {
+            document.body.removeChild(overlay);
+        }
+    }
+
+    showToast(message, type = 'info') {
+        // 간단한 토스트 알림
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#38a169' : type === 'error' ? '#e53e3e' : '#3182ce'};
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            z-index: 10000;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) {
+                document.body.removeChild(toast);
+            }
+        }, 3000);
+    }
+
+    /**
+     * 🔄 시스템 데이터 새로고침
+     */
+    refreshSystemData() {
+        if (this.system && this.system.refreshData) {
+            this.system.refreshData(false);
+        }
+    }
+
+    /**
+     * 🧹 정리 함수
+     */
+    destroy() {
+        console.log('🧹 FlightManagementModals 정리 중...');
+
+        // 모든 모달 닫기
+        this.modalStates.activeModals.forEach(modalId => {
+            this.closeModal(modalId);
+        });
+
+        // 상태 초기화
+        this.modalStates.activeModals.clear();
+        this.modalStates.currentModal = null;
+
+        this.isInitialized = false;
+        console.log('✅ FlightManagementModals 정리 완료');
+    }
+
+    /**
+     * 📋 디버그 정보
+     */
+    getDebugInfo() {
+        return {
+            version: '10.0.0',
+            isInitialized: this.isInitialized,
+            activeModals: Array.from(this.modalStates.activeModals),
+            currentModal: this.modalStates.currentModal,
+            systemConnected: !!this.system
+        };
+    }
+}
+
+// 전역 등록
+if (typeof window !== 'undefined') {
+    window.FlightManagementModals = FlightManagementModals;
+    window.flightModals = null; // 인스턴스는 시스템에서 생성
+    console.log('✅ FlightManagementModals v10.0.0 전역 등록 완료');
+}
+
+console.log('📦 FlightManagementModals v10.0.0 모듈 로드 완료 - 완전한 모달 시스템');

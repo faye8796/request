@@ -738,67 +738,99 @@ class FlightManagementCards {
     }
 
     /**
-     * 👁️ 요청 상세보기 (Phase 3에서 구현)
-     */
+    * 👁️ 요청 상세보기
+    */
     showRequestDetail(requestId) {
         console.log('👁️ 요청 상세보기:', requestId);
-        alert('상세보기 모달이 Phase 3에서 구현됩니다.');
+        if (this.system?.modules?.modals) {
+            this.system.modules.modals.showRequestDetailModal(requestId);
+        } else {
+            alert('모달 시스템이 초기화되지 않았습니다.');
+        }
     }
 
     /**
-     * ✅ 요청 승인 (Phase 3에서 구현)
+     * ✅ 요청 승인
      */
     approveRequest(requestId) {
         console.log('✅ 요청 승인:', requestId);
-        alert('승인 처리가 Phase 3에서 구현됩니다.');
+        if (this.system?.modules?.modals) {
+            this.system.modules.modals.showApproveModal(requestId);
+        } else {
+            alert('모달 시스템이 초기화되지 않았습니다.');
+        }
     }
 
     /**
-     * ❌ 요청 반려 (Phase 3에서 구현)
+     * ❌ 요청 반려
      */
     rejectRequest(requestId) {
         console.log('❌ 요청 반려:', requestId);
-        alert('반려 처리가 Phase 3에서 구현됩니다.');
+        if (this.system?.modules?.modals) {
+            this.system.modules.modals.showRejectModal(requestId);
+        } else {
+            alert('모달 시스템이 초기화되지 않았습니다.');
+        }
     }
 
     /**
-     * 📤 항공권 업로드 (Phase 3에서 구현)
+     * 📤 항공권 업로드
      */
     uploadTicket(requestId) {
         console.log('📤 항공권 업로드:', requestId);
-        alert('항공권 업로드가 Phase 3에서 구현됩니다.');
+        if (this.system?.modules?.modals) {
+            this.system.modules.modals.showUploadTicketModal(requestId);
+        } else {
+            alert('모달 시스템이 초기화되지 않았습니다.');
+        }
     }
 
     /**
-     * 🧾 영수증 보기 (Phase 3에서 구현)
+     * 🧾 영수증 보기
      */
     viewReceipt(requestId) {
         console.log('🧾 영수증 보기:', requestId);
-        alert('영수증 보기가 Phase 3에서 구현됩니다.');
+        if (this.system?.modules?.modals) {
+            this.system.modules.modals.showReceiptViewModal(requestId);
+        } else {
+            alert('영수증 보기 모달이 구현되지 않았습니다.');
+        }
     }
 
     /**
-     * 💰 최종금액 입력 (Phase 3에서 구현)
+     * 💰 최종금액 입력
      */
     inputFinalAmount(requestId) {
         console.log('💰 최종금액 입력:', requestId);
-        alert('최종금액 입력이 Phase 3에서 구현됩니다.');
+        if (this.system?.modules?.modals) {
+            this.system.modules.modals.showFinalAmountModal(requestId);
+        } else {
+            alert('최종금액 입력 모달이 구현되지 않았습니다.');
+        }
     }
 
     /**
-     * 🎫 항공권 보기 (Phase 3에서 구현)
+     * 🎫 항공권 보기
      */
     viewTicket(requestId) {
         console.log('🎫 항공권 보기:', requestId);
-        alert('항공권 보기가 Phase 3에서 구현됩니다.');
+        if (this.system?.modules?.modals) {
+            this.system.modules.modals.showTicketViewModal(requestId);
+        } else {
+            alert('항공권 보기 모달이 구현되지 않았습니다.');
+        }
     }
 
     /**
-     * 🛂 여권정보 보기 (Phase 3에서 구현)
+     * 🛂 여권정보 보기
      */
     showPassportInfo(userId) {
         console.log('🛂 여권정보 보기:', userId);
-        alert('여권정보 보기가 Phase 3에서 구현됩니다.');
+        if (this.system?.modules?.modals) {
+            this.system.modules.modals.showPassportModal(userId);
+        } else {
+            alert('모달 시스템이 초기화되지 않았습니다.');
+        }
     }
 
     /**

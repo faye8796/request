@@ -865,6 +865,201 @@
                 margin-bottom: 1rem;
             }
         }
+        
+            
+        /* 모달 기본 구조 */
+            .modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                z-index: 1000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s ease;
+            }
+
+            .modal-overlay.show {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            .modal-container {
+                background: white;
+                border-radius: 1rem;
+                max-width: 90vw;
+                max-height: 90vh;
+                overflow: hidden;
+                transform: scale(0.9);
+                transition: transform 0.3s ease;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            }
+
+            .modal-overlay.show .modal-container {
+                transform: scale(1);
+            }
+
+            .modal-container.small { width: 400px; }
+            .modal-container.medium { width: 600px; }
+            .modal-container.large { width: 800px; }
+            .modal-container.extra-large { width: 1000px; }
+
+            .modal-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1.5rem;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            .modal-title {
+                font-size: 1.25rem;
+                font-weight: 700;
+                color: #2d3748;
+                margin: 0;
+            }
+
+            .modal-close {
+                background: none;
+                border: none;
+                width: 32px;
+                height: 32px;
+                border-radius: 0.5rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                color: #718096;
+                transition: all 0.2s ease;
+            }
+
+            .modal-close:hover {
+                background: #f7fafc;
+                color: #2d3748;
+            }
+
+            .modal-body {
+                padding: 1.5rem;
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+
+            .modal-footer {
+                display: flex;
+                justify-content: flex-end;
+                gap: 0.75rem;
+                padding: 1.5rem;
+                border-top: 1px solid #e2e8f0;
+                background: #f7fafc;
+            }
+
+            /* 버튼 스타일 */
+            .btn {
+                padding: 0.75rem 1rem;
+                border: none;
+                border-radius: 0.5rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                text-decoration: none;
+            }
+
+            .btn.primary {
+                background: #3182ce;
+                color: white;
+            }
+
+            .btn.primary:hover {
+                background: #2c5282;
+            }
+
+            .btn.secondary {
+                background: #e2e8f0;
+                color: #4a5568;
+            }
+
+            .btn.secondary:hover {
+                background: #cbd5e0;
+            }
+
+            .btn.success {
+                background: #38a169;
+                color: white;
+            }
+
+            .btn.success:hover {
+                background: #2f855a;
+            }
+
+            .btn.danger {
+                background: #e53e3e;
+                color: white;
+            }
+
+            .btn.danger:hover {
+                background: #c53030;
+            }
+
+            /* 로딩 오버레이 */
+            .loading-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                z-index: 2000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .loading-content {
+                background: white;
+                padding: 2rem;
+                border-radius: 1rem;
+                text-align: center;
+                min-width: 200px;
+            }
+
+            .loading-spinner {
+                border: 3px solid #f3f3f3;
+                border-top: 3px solid #3182ce;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 1rem;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+
+            /* 모바일 반응형 */
+            @media (max-width: 768px) {
+                .modal-container {
+                    width: 95vw !important;
+                    max-width: none;
+                    margin: 1rem;
+                }
+
+                .modal-header,
+                .modal-body,
+                .modal-footer {
+                    padding: 1rem;
+                }
+            }
+        
     </style>
 </head>
 <body>
@@ -1100,7 +1295,18 @@
         </div>
     </div>
 
-    <!-- 모달들은 Phase 3에서 동적으로 생성됩니다 -->
+    <!-- 🪟 모달 시스템 (Phase 3에서 동적 생성 예정, 기본 구조만) -->
+    <div id="modalContainer">
+        <!-- 모달들은 JavaScript에서 동적으로 생성됩니다 -->
+    </div>
+
+    <!-- 🔄 로딩 오버레이 -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>처리 중...</p>
+        </div>
+    </div>
 
     <!-- 🔧 v10.0.0 JavaScript Files (Phase 2 UI 개발) -->
     <!-- 1. 기본 설정 모듈 -->
@@ -1124,7 +1330,7 @@
     <script src="../js/admin/flight-management-controls.js?v=10.0.0"></script>
     <script src="../js/admin/flight-management-ui.js?v=10.0.0"></script>
     
-    <!-- 6. 🪟 Phase 3 모달 모듈들 (예정) -->
+    <!-- 6. 🪟 Phase 3 모달 모듈들 (개발 완료) -->
     <script src="../js/admin/flight-management-modals.js?v=10.0.0"></script>
 
     <!-- 🚀 메인 초기화 스크립트 v10.0.0 -->

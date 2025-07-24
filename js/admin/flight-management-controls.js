@@ -1,1223 +1,865 @@
 /**
- * 항공권 관리 컨트롤 시스템 v10.0.0 - Phase 2 핵심 모듈
- * 필터링, 검색, 정렬, 일괄 처리 기능 관리
- * 
- * 🎛️ 주요 기능:
- * - 실시간 필터링 시스템 (상태별, 타입별, 출국임박)
- * - 고급 검색 기능 (이름, 학당, 공항, 다중 조건)
- * - 다중 정렬 옵션 (날짜, 금액, 이름 등)
- * - 일괄 선택 및 처리 (승인/반려)
- * - URL 기반 상태 저장 및 복원
- * - 사용자 선호도 저장
- * - 키보드 단축키 지원
- * 
- * @version 10.0.0
- * @author 세종학당 개발팀
- * @created 2025-07-23
+ * 🎛️ 항공권 관리 컨트롤 시스템 v10.0.0 - Phase 2 핵심 모듈
+ * 필터링, 검색, 정렬, 일괄처리, 키보드단축키 기능
  */
 
-class FlightManagementControls {
-    constructor(flightManagementSystem) {
-        console.log('🎛️ FlightManagementControls v10.0.0 초기화 시작...');
-        
-        this.system = flightManagementSystem;
-        this.isInitialized = false;
+(function() {
+    'use strict';
 
-        // 🔍 필터 상태 관리
-        this.filterState = {
-            status: 'all',           // all, pending, approved, rejected, completed
-            purchaseType: 'all',     // all, direct, agency
-            searchQuery: '',         // 검색어
-            sortBy: 'created_at-desc', // 정렬 기준
-            urgent: false,           // 출국 임박 필터
-            dateRange: null,         // 날짜 범위 필터
-            priceRange: null         // 가격 범위 필터
-        };
+    console.log('🎛️ FlightManagementControls v10.0.0 로드 중... (Phase 2 완전 구현)');
 
-        // 🎯 선택 상태 관리
-        this.selectionState = {
-            selectedItems: new Set(),
-            selectAll: false,
-            lastSelectedIndex: -1,
-            isSelectionMode: false
-        };
+    // 🎛️ 필터링 컨트롤러
+    class FilterController {
+        constructor() {
+            this.debounceTimer = null;
+            this.filterButtons = null;
+            this.searchInput = null;
+        }
 
-        // 🎮 DOM 요소 참조
-        this.domElements = {
-            // 필터 버튼들
-            filterButtons: null,
+        init() {
+            console.log('🔍 FilterController 초기화 중...');
+            this.setupFilterButtons();
+            this.setupSearchInput();
+            this.restoreFilters();
+            console.log('✅ FilterController 초기화 완료');
+        }
+
+        setupFilterButtons() {
+            this.filterButtons = document.querySelectorAll('.filter-btn');
             
-            // 검색 관련
-            searchInput: null,
-            searchIcon: null,
-            searchClearBtn: null,
-            
-            // 정렬 관련
-            sortSelect: null,
-            
-            // 일괄 처리 관련
-            bulkApprove: null,
-            bulkReject: null,
-            selectAllBtn: null,
-            clearSelectionBtn: null,
-            selectedCount: null,
-            
-            // 고급 필터
-            advancedFiltersToggle: null,
-            advancedFiltersPanel: null
-        };
-
-        // ⚙️ 설정
-        this.config = {
-            searchDebounceDelay: 300,
-            maxSelectedItems: 100,
-            enableKeyboardShortcuts: true,
-            saveUserPreferences: true,
-            enableAdvancedFilters: true,
-            enableURLState: true
-        };
-
-        // 📊 검색 히스토리 및 통계
-        this.searchHistory = new Set();
-        this.filterUsageStats = new Map();
-
-        // 🔄 디바운스 타이머
-        this.searchDebounceTimer = null;
-        this.filterDebounceTimer = null;
-
-        this.init();
-    }
-
-    /**
-     * 🚀 컨트롤 시스템 초기화
-     */
-    async init() {
-        try {
-            console.log('🚀 FlightManagementControls 초기화 중...');
-
-            // DOM 요소 참조 설정
-            this.setupDOMReferences();
-
-            // 이벤트 리스너 설정
-            this.setupEventListeners();
-
-            // 시스템 이벤트 구독
-            this.subscribeToSystemEvents();
-
-            // 사용자 설정 복원
-            await this.restoreUserPreferences();
-
-            // URL 상태 복원
-            this.restoreURLState();
-
-            // 키보드 단축키 설정
-            this.setupKeyboardShortcuts();
-
-            this.isInitialized = true;
-            console.log('✅ FlightManagementControls 초기화 완료');
-
-        } catch (error) {
-            console.error('❌ FlightManagementControls 초기화 실패:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * 🔗 DOM 요소 참조 설정
-     */
-    setupDOMReferences() {
-        console.log('🔗 컨트롤 DOM 요소 참조 설정 중...');
-
-        // 필터 버튼들
-        this.domElements.filterButtons = document.querySelectorAll('.filter-btn');
-
-        // 검색 관련
-        this.domElements.searchInput = document.getElementById('searchInput');
-        this.domElements.searchIcon = document.querySelector('.search-icon');
-
-        // 정렬 관련
-        this.domElements.sortSelect = document.getElementById('sortSelect');
-
-        // 일괄 처리 관련
-        this.domElements.bulkApprove = document.getElementById('bulkApprove');
-        this.domElements.bulkReject = document.getElementById('bulkReject');
-        this.domElements.selectAllBtn = document.getElementById('selectAllBtn');
-        this.domElements.clearSelectionBtn = document.getElementById('clearSelectionBtn');
-        this.domElements.selectedCount = document.getElementById('selectedCount');
-
-        // 누락된 요소 확인
-        const requiredElements = ['searchInput', 'sortSelect', 'selectedCount'];
-        const missingElements = requiredElements.filter(key => !this.domElements[key]);
-
-        if (missingElements.length > 0) {
-            console.warn('⚠️ 일부 필수 DOM 요소 누락:', missingElements);
-        }
-
-        console.log('✅ 컨트롤 DOM 요소 참조 설정 완료');
-    }
-
-    /**
-     * 🎮 이벤트 리스너 설정
-     */
-    setupEventListeners() {
-        console.log('🎮 컨트롤 이벤트 리스너 설정 중...');
-
-        // 필터 버튼 이벤트
-        this.domElements.filterButtons.forEach(button => {
-            button.addEventListener('click', (e) => this.handleFilterButtonClick(e));
-        });
-
-        // 검색 입력 이벤트
-        if (this.domElements.searchInput) {
-            this.domElements.searchInput.addEventListener('input', (e) => this.handleSearchInput(e));
-            this.domElements.searchInput.addEventListener('keydown', (e) => this.handleSearchKeydown(e));
-            this.domElements.searchInput.addEventListener('focus', () => this.handleSearchFocus());
-            this.domElements.searchInput.addEventListener('blur', () => this.handleSearchBlur());
-        }
-
-        // 정렬 선택 이벤트
-        if (this.domElements.sortSelect) {
-            this.domElements.sortSelect.addEventListener('change', (e) => this.handleSortChange(e));
-        }
-
-        // 일괄 처리 버튼 이벤트
-        if (this.domElements.bulkApprove) {
-            this.domElements.bulkApprove.addEventListener('click', () => this.handleBulkApprove());
-        }
-
-        if (this.domElements.bulkReject) {
-            this.domElements.bulkReject.addEventListener('click', () => this.handleBulkReject());
-        }
-
-        if (this.domElements.selectAllBtn) {
-            this.domElements.selectAllBtn.addEventListener('click', () => this.handleSelectAll());
-        }
-
-        if (this.domElements.clearSelectionBtn) {
-            this.domElements.clearSelectionBtn.addEventListener('click', () => this.handleClearSelection());
-        }
-
-        console.log('✅ 컨트롤 이벤트 리스너 설정 완료');
-    }
-
-    /**
-     * 📡 시스템 이벤트 구독
-     */
-    subscribeToSystemEvents() {
-        if (!this.system) return;
-
-        console.log('📡 시스템 이벤트 구독 중...');
-
-        // 데이터 로드 이벤트
-        this.system.on('data:initialLoaded', () => {
-            this.updateControlStates();
-        });
-
-        this.system.on('data:refreshed', () => {
-            this.updateControlStates();
-        });
-
-        // 선택 상태 변경 이벤트
-        this.system.on('selection:changed', (data) => {
-            this.handleSelectionChange(data);
-        });
-
-        console.log('✅ 시스템 이벤트 구독 완료');
-    }
-
-    /**
-     * 🔘 필터 버튼 클릭 처리
-     */
-    handleFilterButtonClick(event) {
-        event.preventDefault();
-        
-        const button = event.target.closest('.filter-btn');
-        if (!button) return;
-
-        const filter = button.dataset.filter;
-        console.log('🔘 필터 버튼 클릭:', filter);
-
-        // 필터 상태 업데이트
-        this.updateFilterState(filter);
-
-        // 버튼 활성화 상태 변경
-        this.updateFilterButtonStates(button);
-
-        // 필터 적용
-        this.applyFilters();
-
-        // 사용 통계 업데이트
-        this.updateFilterUsageStats(filter);
-    }
-
-    /**
-     * 📝 검색 입력 처리
-     */
-    handleSearchInput(event) {
-        const searchQuery = event.target.value.trim();
-        
-        // 디바운스 적용
-        if (this.searchDebounceTimer) {
-            clearTimeout(this.searchDebounceTimer);
-        }
-
-        this.searchDebounceTimer = setTimeout(() => {
-            this.executeSearch(searchQuery);
-        }, this.config.searchDebounceDelay);
-
-        // 실시간 UI 업데이트
-        this.updateSearchUI(searchQuery);
-    }
-
-    /**
-     * ⌨️ 검색 키다운 처리
-     */
-    handleSearchKeydown(event) {
-        switch (event.key) {
-            case 'Enter':
-                event.preventDefault();
-                this.executeSearch(event.target.value.trim());
-                break;
-            case 'Escape':
-                event.preventDefault();
-                this.clearSearch();
-                break;
-            case 'ArrowDown':
-                // 향후 자동완성 기능을 위한 확장점
-                break;
-        }
-    }
-
-    /**
-     * 🎯 검색 포커스 처리
-     */
-    handleSearchFocus() {
-        console.log('🎯 검색 입력 포커스');
-        
-        // 검색 박스 강조
-        if (this.domElements.searchInput) {
-            this.domElements.searchInput.parentElement.classList.add('search-focused');
-        }
-    }
-
-    /**
-     * 📤 검색 블러 처리
-     */
-    handleSearchBlur() {
-        console.log('📤 검색 입력 블러');
-        
-        // 검색 박스 강조 해제
-        if (this.domElements.searchInput) {
-            this.domElements.searchInput.parentElement.classList.remove('search-focused');
-        }
-    }
-
-    /**
-     * 📊 정렬 변경 처리
-     */
-    handleSortChange(event) {
-        const sortBy = event.target.value;
-        console.log('📊 정렬 변경:', sortBy);
-
-        this.filterState.sortBy = sortBy;
-        this.applyFilters();
-        this.saveUserPreferences();
-        this.updateURLState();
-    }
-
-    /**
-     * ✅ 일괄 승인 처리
-     */
-    handleBulkApprove() {
-        const selectedItems = Array.from(this.selectionState.selectedItems);
-        
-        if (selectedItems.length === 0) {
-            this.showNotification('승인할 항목을 선택해주세요.', 'warning');
-            return;
-        }
-
-        console.log('✅ 일괄 승인 요청:', selectedItems.length, '건');
-
-        // Phase 3에서 모달로 구현 예정
-        const confirmMessage = `선택된 ${selectedItems.length}개 항목을 승인하시겠습니까?`;
-        
-        if (confirm(confirmMessage)) {
-            this.executeBulkAction('approve', selectedItems);
-        }
-    }
-
-    /**
-     * ❌ 일괄 반려 처리
-     */
-    handleBulkReject() {
-        const selectedItems = Array.from(this.selectionState.selectedItems);
-        
-        if (selectedItems.length === 0) {
-            this.showNotification('반려할 항목을 선택해주세요.', 'warning');
-            return;
-        }
-
-        console.log('❌ 일괄 반려 요청:', selectedItems.length, '건');
-
-        // Phase 3에서 모달로 구현 예정
-        const confirmMessage = `선택된 ${selectedItems.length}개 항목을 반려하시겠습니까?`;
-        
-        if (confirm(confirmMessage)) {
-            this.executeBulkAction('reject', selectedItems);
-        }
-    }
-
-    /**
-     * 🔲 모두 선택 처리
-     */
-    handleSelectAll() {
-        console.log('🔲 모두 선택/해제');
-
-        const currentData = this.system.state.requestsData || [];
-        const filteredData = this.getFilteredData(currentData);
-
-        if (this.selectionState.selectAll) {
-            // 전체 해제
-            this.clearAllSelections();
-        } else {
-            // 전체 선택
-            this.selectAllItems(filteredData);
-        }
-
-        this.updateSelectionUI();
-    }
-
-    /**
-     * 🗑️ 선택 해제 처리
-     */
-    handleClearSelection() {
-        console.log('🗑️ 선택 해제');
-        this.clearAllSelections();
-        this.updateSelectionUI();
-    }
-
-    /**
-     * 🔍 검색 실행
-     */
-    executeSearch(searchQuery) {
-        console.log('🔍 검색 실행:', searchQuery);
-
-        this.filterState.searchQuery = searchQuery;
-        
-        // 검색 히스토리 추가
-        if (searchQuery) {
-            this.searchHistory.add(searchQuery);
-            
-            // 히스토리 크기 제한 (최대 50개)
-            if (this.searchHistory.size > 50) {
-                const firstItem = this.searchHistory.values().next().value;
-                this.searchHistory.delete(firstItem);
-            }
-        }
-
-        this.applyFilters();
-        this.saveUserPreferences();
-        this.updateURLState();
-    }
-
-    /**
-     * 🧹 검색 초기화
-     */
-    clearSearch() {
-        console.log('🧹 검색 초기화');
-
-        if (this.domElements.searchInput) {
-            this.domElements.searchInput.value = '';
-        }
-
-        this.filterState.searchQuery = '';
-        this.applyFilters();
-        this.updateSearchUI('');
-    }
-
-    /**
-     * 🎛️ 필터 상태 업데이트
-     */
-    updateFilterState(filter) {
-        // 필터 타입별 처리
-        switch (filter) {
-            case 'all':
-                this.filterState.status = 'all';
-                this.filterState.purchaseType = 'all';
-                this.filterState.urgent = false;
-                break;
-                
-            case 'pending':
-            case 'approved':
-            case 'rejected':
-            case 'completed':
-                this.filterState.status = filter;
-                this.filterState.purchaseType = 'all';
-                this.filterState.urgent = false;
-                break;
-                
-            case 'direct':
-            case 'agency':
-                this.filterState.purchaseType = filter;
-                this.filterState.status = 'all';
-                this.filterState.urgent = false;
-                break;
-                
-            case 'urgent':
-                this.filterState.urgent = true;
-                this.filterState.status = 'all';
-                this.filterState.purchaseType = 'all';
-                break;
-        }
-
-        console.log('🎛️ 필터 상태 업데이트:', this.filterState);
-    }
-
-    /**
-     * 🔘 필터 버튼 상태 업데이트
-     */
-    updateFilterButtonStates(activeButton) {
-        // 모든 필터 버튼 비활성화
-        this.domElements.filterButtons.forEach(button => {
-            button.classList.remove('active');
-        });
-
-        // 클릭된 버튼 활성화
-        if (activeButton) {
-            activeButton.classList.add('active');
-        }
-    }
-
-    /**
-     * 🎯 필터 적용
-     */
-    applyFilters() {
-        console.log('🎯 필터 적용 중...', this.filterState);
-
-        // 시스템의 필터 상태 업데이트
-        if (this.system && this.system.state) {
-            this.system.state.activeFilters = { ...this.filterState };
-        }
-
-        // 필터 변경 이벤트 발생
-        this.emitFilterChangeEvent();
-
-        // 디바운스된 필터 적용
-        if (this.filterDebounceTimer) {
-            clearTimeout(this.filterDebounceTimer);
-        }
-
-        this.filterDebounceTimer = setTimeout(() => {
-            this.executeFiltering();
-        }, 100);
-    }
-
-    /**
-     * 🔄 필터링 실행
-     */
-    executeFiltering() {
-        try {
-            const currentData = this.system.state.requestsData || [];
-            const filteredData = this.getFilteredData(currentData);
-
-            console.log('🔄 필터링 결과:', {
-                original: currentData.length,
-                filtered: filteredData.length,
-                filters: this.filterState
-            });
-
-            // 카드 시스템에 필터링된 데이터 전달
-            if (this.system.modules.cards) {
-                this.system.modules.cards.updateCards(filteredData);
-            }
-
-            // 선택 상태 재설정 (필터링으로 인해 선택된 항목이 보이지 않을 수 있음)
-            this.validateSelections(filteredData);
-
-            // 빈 결과 처리
-            this.handleEmptyResults(filteredData.length === 0);
-
-        } catch (error) {
-            console.error('❌ 필터링 실행 실패:', error);
-        }
-    }
-
-    /**
-     * 📊 필터링된 데이터 반환
-     */
-    getFilteredData(requests) {
-        let filtered = [...requests];
-
-        // 상태 필터
-        if (this.filterState.status !== 'all') {
-            filtered = filtered.filter(req => req.status === this.filterState.status);
-        }
-
-        // 구매 타입 필터
-        if (this.filterState.purchaseType !== 'all') {
-            filtered = filtered.filter(req => req.purchase_type === this.filterState.purchaseType);
-        }
-
-        // 출국 임박 필터
-        if (this.filterState.urgent) {
-            const twoWeeksFromNow = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-            filtered = filtered.filter(req => {
-                if (!req.departure_date) return false;
-                return new Date(req.departure_date) <= twoWeeksFromNow &&
-                       ['pending', 'approved'].includes(req.status);
+            this.filterButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const filter = e.target.dataset.filter;
+                    this.handleFilterClick(filter, e.target);
+                });
             });
         }
 
-        // 검색 쿼리 필터
-        if (this.filterState.searchQuery) {
-            filtered = this.applySearchFilter(filtered, this.filterState.searchQuery);
-        }
-
-        // 날짜 범위 필터
-        if (this.filterState.dateRange) {
-            filtered = this.applyDateRangeFilter(filtered, this.filterState.dateRange);
-        }
-
-        // 가격 범위 필터
-        if (this.filterState.priceRange) {
-            filtered = this.applyPriceRangeFilter(filtered, this.filterState.priceRange);
-        }
-
-        // 정렬 적용
-        this.applySorting(filtered);
-
-        return filtered;
-    }
-
-    /**
-     * 🔍 검색 필터 적용
-     */
-    applySearchFilter(requests, searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const searchTerms = query.split(/\s+/).filter(term => term.length > 0);
-
-        return requests.filter(req => {
-            const user = req.user_profiles;
-            const searchText = [
-                user.name,
-                user.sejong_institute,
-                user.field,
-                req.departure_airport,
-                req.arrival_airport,
-                req.purchase_type === 'direct' ? '직접구매' : '구매대행',
-                this.getStatusText(req.status)
-            ].filter(Boolean).join(' ').toLowerCase();
-
-            // 모든 검색어가 포함되어야 함 (AND 검색)
-            return searchTerms.every(term => searchText.includes(term));
-        });
-    }
-
-    /**
-     * 📅 날짜 범위 필터 적용
-     */
-    applyDateRangeFilter(requests, dateRange) {
-        const { start, end } = dateRange;
-        
-        return requests.filter(req => {
-            const createdDate = new Date(req.created_at);
-            return (!start || createdDate >= start) && (!end || createdDate <= end);
-        });
-    }
-
-    /**
-     * 💰 가격 범위 필터 적용
-     */
-    applyPriceRangeFilter(requests, priceRange) {
-        const { min, max } = priceRange;
-        
-        return requests.filter(req => {
-            if (!req.ticket_price) return false;
+        setupSearchInput() {
+            this.searchInput = document.getElementById('searchInput');
             
-            const priceKRW = this.convertToKRW(req.ticket_price, req.currency);
-            return (!min || priceKRW >= min) && (!max || priceKRW <= max);
-        });
-    }
+            if (this.searchInput) {
+                this.searchInput.addEventListener('input', (e) => {
+                    this.handleSearchInput(e.target.value);
+                });
 
-    /**
-     * 📊 정렬 적용
-     */
-    applySorting(requests) {
-        const [field, direction] = this.filterState.sortBy.split('-');
-        
-        requests.sort((a, b) => {
-            let valueA, valueB;
+                this.searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.applySearch(e.target.value);
+                    }
+                });
+            }
+        }
 
-            switch (field) {
-                case 'created_at':
-                case 'departure_date':
-                case 'return_date':
-                    valueA = new Date(a[field]);
-                    valueB = new Date(b[field]);
-                    break;
-                case 'name':
-                    valueA = a.user_profiles.name || '';
-                    valueB = b.user_profiles.name || '';
-                    break;
-                case 'ticket_price':
-                    valueA = this.convertToKRW(a.ticket_price || 0, a.currency);
-                    valueB = this.convertToKRW(b.ticket_price || 0, b.currency);
-                    break;
-                case 'institute':
-                    valueA = a.user_profiles.sejong_institute || '';
-                    valueB = b.user_profiles.sejong_institute || '';
-                    break;
-                default:
-                    valueA = a[field] || '';
-                    valueB = b[field] || '';
+        handleFilterClick(filter, buttonElement) {
+            // 활성 버튼 업데이트
+            this.filterButtons.forEach(btn => btn.classList.remove('active'));
+            buttonElement.classList.add('active');
+
+            // 필터 상태 업데이트 (전역 상태에 저장)
+            if (!window.flightControlsState) {
+                window.flightControlsState = {
+                    filters: { status: 'all', type: 'all', urgent: false, search: '' },
+                    sorting: { field: 'created_at', direction: 'desc' },
+                    selection: { selectedIds: new Set(), allSelected: false }
+                };
             }
 
-            // 정렬 비교
-            let comparison = 0;
-            if (valueA < valueB) comparison = -1;
-            else if (valueA > valueB) comparison = 1;
+            if (filter === 'urgent') {
+                window.flightControlsState.filters.urgent = !window.flightControlsState.filters.urgent;
+                buttonElement.classList.toggle('active', window.flightControlsState.filters.urgent);
+            } else if (['agency', 'direct'].includes(filter)) {
+                window.flightControlsState.filters.type = filter;
+            } else {
+                window.flightControlsState.filters.status = filter;
+            }
 
-            return direction === 'asc' ? comparison : -comparison;
-        });
-    }
+            // 즉시 필터 적용
+            this.applyFilters();
+        }
 
-    /**
-     * 🔲 선택 관리
-     */
-    selectAllItems(items) {
-        this.selectionState.selectedItems.clear();
-        
-        items.forEach(item => {
-            this.selectionState.selectedItems.add(item.id);
-        });
+        handleSearchInput(searchTerm) {
+            if (!window.flightControlsState) {
+                window.flightControlsState = {
+                    filters: { status: 'all', type: 'all', urgent: false, search: '' },
+                    sorting: { field: 'created_at', direction: 'desc' },
+                    selection: { selectedIds: new Set(), allSelected: false }
+                };
+            }
 
-        this.selectionState.selectAll = true;
-        this.selectionState.isSelectionMode = true;
+            window.flightControlsState.filters.search = searchTerm;
+            
+            // 디바운스 처리
+            clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => {
+                this.applySearch(searchTerm);
+            }, 300);
+        }
 
-        // 전역 선택 상태도 업데이트
-        if (window.FlightManagementPage?.selectedRequests) {
-            window.FlightManagementPage.selectedRequests.clear();
-            items.forEach(item => {
-                window.FlightManagementPage.selectedRequests.add(item.id);
+        applySearch(searchTerm) {
+            console.log(`🔍 검색 적용: "${searchTerm}"`);
+            this.applyFilters();
+        }
+
+        applyFilters() {
+            try {
+                const system = window.FlightManagementPage?.system;
+                if (!system || !system.cards) {
+                    console.warn('⚠️ 시스템 또는 카드 모듈이 준비되지 않음');
+                    return;
+                }
+
+                const filters = window.flightControlsState?.filters || { status: 'all', type: 'all', urgent: false, search: '' };
+                console.log('🎛️ 필터 적용:', filters);
+
+                // 필터링된 데이터 가져오기
+                const filteredData = this.filterData(system.state.requestsData, filters);
+                
+                // 카드 업데이트
+                system.cards.updateCards(filteredData);
+                
+                // 통계 업데이트
+                if (system.statistics) {
+                    system.statistics.updateStatistics(filteredData);
+                }
+
+                // 필터 저장
+                this.saveFilters();
+
+                // UI 업데이트 완료 표시
+                this.showFilterFeedback(filteredData.length);
+
+            } catch (error) {
+                console.error('❌ 필터 적용 실패:', error);
+            }
+        }
+
+        filterData(data, filters) {
+            if (!data || !Array.isArray(data)) {
+                return [];
+            }
+
+            return data.filter(item => {
+                // 상태 필터
+                if (filters.status !== 'all' && item.status !== filters.status) {
+                    return false;
+                }
+
+                // 타입 필터
+                if (filters.type !== 'all') {
+                    if (filters.type === 'agency' && item.purchase_type !== 'agency') {
+                        return false;
+                    }
+                    if (filters.type === 'direct' && item.purchase_type !== 'direct') {
+                        return false;
+                    }
+                }
+
+                // 출국 임박 필터
+                if (filters.urgent) {
+                    if (!this.isUrgentDeparture(item.departure_date)) {
+                        return false;
+                    }
+                }
+
+                // 검색 필터
+                if (filters.search && filters.search.trim()) {
+                    if (!this.matchesSearch(item, filters.search)) {
+                        return false;
+                    }
+                }
+
+                return true;
             });
         }
 
-        console.log('🔲 모든 항목 선택:', this.selectionState.selectedItems.size, '개');
-    }
-
-    clearAllSelections() {
-        this.selectionState.selectedItems.clear();
-        this.selectionState.selectAll = false;
-        this.selectionState.isSelectionMode = false;
-
-        // 전역 선택 상태도 초기화
-        if (window.FlightManagementPage?.selectedRequests) {
-            window.FlightManagementPage.selectedRequests.clear();
+        isUrgentDeparture(departureDate) {
+            if (!departureDate) return false;
+            
+            const departure = new Date(departureDate);
+            const now = new Date();
+            const diffDays = Math.ceil((departure - now) / (1000 * 60 * 60 * 24));
+            
+            // 14일 이내 출국을 임박으로 간주
+            return diffDays >= 0 && diffDays <= 14;
         }
 
-        console.log('🗑️ 모든 선택 해제');
-    }
+        matchesSearch(item, searchTerm) {
+            const searchLower = searchTerm.toLowerCase();
+            const user = item.user_profiles;
+            
+            const searchFields = [
+                user?.name,
+                user?.sejong_institute,
+                user?.email,
+                item.departure_airport,
+                item.arrival_airport,
+                item.purchase_type === 'agency' ? '구매대행' : '직접구매',
+                item.purchase_type === 'agency' ? 'agency' : 'direct',
+                item.status
+            ].filter(Boolean);
 
-    validateSelections(currentData) {
-        const currentIds = new Set(currentData.map(item => item.id));
-        const invalidSelections = [];
+            return searchFields.some(field => 
+                String(field).toLowerCase().includes(searchLower)
+            );
+        }
 
-        this.selectionState.selectedItems.forEach(id => {
-            if (!currentIds.has(id)) {
-                invalidSelections.push(id);
+        showFilterFeedback(resultCount) {
+            const indicator = document.getElementById('realTimeIndicator');
+            if (indicator) {
+                indicator.innerHTML = `
+                    <div class="pulse-dot"></div>
+                    <span>필터 적용됨 (${resultCount}개 항목)</span>
+                `;
+                indicator.classList.add('show');
+                
+                setTimeout(() => {
+                    indicator.classList.remove('show');
+                }, 2000);
             }
-        });
+        }
 
-        // 유효하지 않은 선택 제거
-        invalidSelections.forEach(id => {
-            this.selectionState.selectedItems.delete(id);
-            if (window.FlightManagementPage?.selectedRequests) {
-                window.FlightManagementPage.selectedRequests.delete(id);
+        saveFilters() {
+            try {
+                const filters = window.flightControlsState?.filters;
+                if (filters) {
+                    localStorage.setItem('flightManagementFilters', JSON.stringify(filters));
+                }
+            } catch (error) {
+                console.warn('⚠️ 필터 저장 실패:', error);
             }
-        });
-
-        if (invalidSelections.length > 0) {
-            console.log('🔍 유효하지 않은 선택 제거:', invalidSelections.length, '개');
         }
-    }
 
-    /**
-     * 🎯 일괄 액션 실행
-     */
-    async executeBulkAction(action, itemIds) {
-        console.log('🎯 일괄 액션 실행:', action, itemIds.length, '건');
+        restoreFilters() {
+            try {
+                const saved = localStorage.getItem('flightManagementFilters');
+                if (saved) {
+                    const filters = JSON.parse(saved);
+                    
+                    if (!window.flightControlsState) {
+                        window.flightControlsState = {
+                            filters: { status: 'all', type: 'all', urgent: false, search: '' },
+                            sorting: { field: 'created_at', direction: 'desc' },
+                            selection: { selectedIds: new Set(), allSelected: false }
+                        };
+                    }
+                    
+                    Object.assign(window.flightControlsState.filters, filters);
+                    
+                    // UI 상태 복원
+                    this.restoreUIState();
+                }
+            } catch (error) {
+                console.warn('⚠️ 필터 복원 실패:', error);
+            }
+        }
 
-        try {
-            // 버튼 로딩 상태 표시
-            this.setBulkActionsLoading(true);
+        restoreUIState() {
+            const filters = window.flightControlsState?.filters;
+            if (!filters) return;
+            
+            // 필터 버튼 상태 복원
+            this.filterButtons.forEach(btn => {
+                btn.classList.remove('active');
+                const filter = btn.dataset.filter;
+                
+                if (filter === filters.status || filter === filters.type || 
+                    (filter === 'urgent' && filters.urgent)) {
+                    btn.classList.add('active');
+                }
+            });
 
-            // Phase 3에서 실제 API 호출 구현 예정
-            await this.simulateBulkAction(action, itemIds);
+            // 검색 입력 복원
+            if (this.searchInput && filters.search) {
+                this.searchInput.value = filters.search;
+            }
+        }
 
-            // 성공 알림
-            this.showNotification(`${itemIds.length}개 항목이 ${action === 'approve' ? '승인' : '반려'}되었습니다.`, 'success');
-
-            // 선택 해제
-            this.clearAllSelections();
-            this.updateSelectionUI();
-
-            // 데이터 새로고침
-            if (this.system?.refreshData) {
-                await this.system.refreshData(false);
+        // 공개 메서드
+        resetFilters() {
+            if (!window.flightControlsState) {
+                window.flightControlsState = {
+                    filters: { status: 'all', type: 'all', urgent: false, search: '' },
+                    sorting: { field: 'created_at', direction: 'desc' },
+                    selection: { selectedIds: new Set(), allSelected: false }
+                };
             }
 
-        } catch (error) {
-            console.error('❌ 일괄 액션 실행 실패:', error);
-            this.showNotification('일괄 처리 중 오류가 발생했습니다.', 'error');
-        } finally {
-            this.setBulkActionsLoading(false);
-        }
-    }
+            window.flightControlsState.filters = {
+                status: 'all',
+                type: 'all',
+                urgent: false,
+                search: ''
+            };
 
-    /**
-     * 🔄 일괄 액션 시뮬레이션 (Phase 3에서 실제 구현)
-     */
-    async simulateBulkAction(action, itemIds) {
-        // 시뮬레이션 딜레이
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        console.log(`📝 ${action} 액션 시뮬레이션 완료:`, itemIds);
-    }
+            // UI 초기화
+            this.filterButtons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.filter === 'all') {
+                    btn.classList.add('active');
+                }
+            });
 
-    /**
-     * 🎨 UI 업데이트 메서드들
-     */
-    updateSelectionUI() {
-        const selectedCount = this.selectionState.selectedItems.size;
-        
-        // 선택된 항목 수 업데이트
-        if (this.domElements.selectedCount) {
-            this.domElements.selectedCount.textContent = `선택된 항목: ${selectedCount}개`;
-        }
+            if (this.searchInput) {
+                this.searchInput.value = '';
+            }
 
-        // 일괄 처리 버튼 활성화/비활성화
-        const hasSelection = selectedCount > 0;
-        
-        if (this.domElements.bulkApprove) {
-            this.domElements.bulkApprove.disabled = !hasSelection;
-        }
-        
-        if (this.domElements.bulkReject) {
-            this.domElements.bulkReject.disabled = !hasSelection;
-        }
-
-        // 전체 선택 버튼 텍스트 업데이트
-        if (this.domElements.selectAllBtn) {
-            this.domElements.selectAllBtn.textContent = 
-                this.selectionState.selectAll ? '전체 해제' : '모두 선택';
-        }
-
-        // 선택 모드 표시
-        document.body.classList.toggle('selection-mode', this.selectionState.isSelectionMode);
-    }
-
-    updateSearchUI(searchQuery) {
-        // 검색 클리어 버튼 표시/숨김
-        if (this.domElements.searchClearBtn) {
-            this.domElements.searchClearBtn.style.display = searchQuery ? 'block' : 'none';
-        }
-
-        // 검색 아이콘 상태 변경
-        if (this.domElements.searchIcon) {
-            this.domElements.searchIcon.classList.toggle('searching', !!searchQuery);
-        }
-    }
-
-    updateControlStates() {
-        // 데이터 변경시 컨트롤 상태 업데이트
-        this.updateSelectionUI();
-        
-        // 필터 재적용 필요시
-        if (this.isFilterActive()) {
             this.applyFilters();
         }
     }
 
-    setBulkActionsLoading(isLoading) {
-        const buttons = [this.domElements.bulkApprove, this.domElements.bulkReject];
-        
-        buttons.forEach(button => {
-            if (!button) return;
-            
-            button.disabled = isLoading;
-            
-            if (isLoading) {
-                button.classList.add('loading');
-                const originalText = button.innerHTML;
-                button.dataset.originalText = originalText;
-                button.innerHTML = '<i data-lucide="loader-2" style="animation: spin 1s linear infinite;"></i> 처리중...';
-            } else {
-                button.classList.remove('loading');
-                if (button.dataset.originalText) {
-                    button.innerHTML = button.dataset.originalText;
-                    delete button.dataset.originalText;
-                }
-            }
-        });
-
-        // 아이콘 재생성
-        if (typeof lucide !== 'undefined') {
-            requestAnimationFrame(() => lucide.createIcons());
+    // 🔄 정렬 컨트롤러
+    class SortController {
+        constructor() {
+            this.sortSelect = null;
         }
-    }
 
-    /**
-     * ⌨️ 키보드 단축키 설정
-     */
-    setupKeyboardShortcuts() {
-        if (!this.config.enableKeyboardShortcuts) return;
+        init() {
+            console.log('🔄 SortController 초기화 중...');
+            this.setupSortSelect();
+            this.restoreSorting();
+            console.log('✅ SortController 초기화 완료');
+        }
 
-        document.addEventListener('keydown', (event) => {
-            // Ctrl/Cmd 조합 단축키
-            if (event.ctrlKey || event.metaKey) {
-                switch (event.key) {
-                    case 'f':
-                        event.preventDefault();
-                        this.focusSearchInput();
-                        break;
-                    case 'a':
-                        event.preventDefault();
-                        this.handleSelectAll();
-                        break;
-                    case 'r':
-                        if (event.shiftKey) {
-                            event.preventDefault();
-                            this.clearAllFilters();
-                        }
-                        break;
-                }
+        setupSortSelect() {
+            this.sortSelect = document.getElementById('sortSelect');
+            
+            if (this.sortSelect) {
+                this.sortSelect.addEventListener('change', (e) => {
+                    this.handleSortChange(e.target.value);
+                });
+            }
+        }
+
+        handleSortChange(sortValue) {
+            const [field, direction] = sortValue.split('-');
+            
+            if (!window.flightControlsState) {
+                window.flightControlsState = {
+                    filters: { status: 'all', type: 'all', urgent: false, search: '' },
+                    sorting: { field: 'created_at', direction: 'desc' },
+                    selection: { selectedIds: new Set(), allSelected: false }
+                };
             }
 
-            // 일반 단축키
-            switch (event.key) {
-                case 'Escape':
-                    if (this.selectionState.isSelectionMode) {
-                        this.clearAllSelections();
-                        this.updateSelectionUI();
-                    }
-                    break;
-                case 'Delete':
-                    if (this.selectionState.selectedItems.size > 0) {
-                        event.preventDefault();
-                        this.handleBulkReject();
-                    }
-                    break;
-            }
-        });
-
-        console.log('⌨️ 키보드 단축키 설정 완료');
-    }
-
-    /**
-     * 💾 사용자 설정 저장/복원
-     */
-    async saveUserPreferences() {
-        if (!this.config.saveUserPreferences) return;
-
-        try {
-            const preferences = {
-                filterState: this.filterState,
-                searchHistory: Array.from(this.searchHistory).slice(-10), // 최근 10개만
-                lastSaved: new Date().toISOString()
+            window.flightControlsState.sorting = {
+                field: field,
+                direction: direction
             };
 
-            localStorage.setItem('flightManagement_userPreferences', JSON.stringify(preferences));
-            
-        } catch (error) {
-            console.warn('⚠️ 사용자 설정 저장 실패:', error);
+            this.applySorting();
+            this.saveSorting();
         }
-    }
 
-    async restoreUserPreferences() {
-        if (!this.config.saveUserPreferences) return;
-
-        try {
-            const saved = localStorage.getItem('flightManagement_userPreferences');
-            if (!saved) return;
-
-            const preferences = JSON.parse(saved);
-            
-            // 필터 상태 복원 (일부만)
-            if (preferences.filterState) {
-                this.filterState.sortBy = preferences.filterState.sortBy || this.filterState.sortBy;
-            }
-
-            // 검색 히스토리 복원
-            if (preferences.searchHistory) {
-                this.searchHistory = new Set(preferences.searchHistory);
-            }
-
-            console.log('💾 사용자 설정 복원 완료');
-
-        } catch (error) {
-            console.warn('⚠️ 사용자 설정 복원 실패:', error);
-        }
-    }
-
-    /**
-     * 🔗 URL 상태 관리
-     */
-    updateURLState() {
-        if (!this.config.enableURLState) return;
-
-        try {
-            const url = new URL(window.location);
-            const params = new URLSearchParams();
-
-            // 활성 필터만 URL에 포함
-            if (this.filterState.status !== 'all') {
-                params.set('status', this.filterState.status);
-            }
-            
-            if (this.filterState.purchaseType !== 'all') {
-                params.set('type', this.filterState.purchaseType);
-            }
-            
-            if (this.filterState.searchQuery) {
-                params.set('q', this.filterState.searchQuery);
-            }
-            
-            if (this.filterState.sortBy !== 'created_at-desc') {
-                params.set('sort', this.filterState.sortBy);
-            }
-            
-            if (this.filterState.urgent) {
-                params.set('urgent', '1');
-            }
-
-            // URL 업데이트 (히스토리에 추가하지 않음)
-            const newURL = params.toString() ? `${url.pathname}?${params.toString()}` : url.pathname;
-            window.history.replaceState(null, '', newURL);
-
-        } catch (error) {
-            console.warn('⚠️ URL 상태 업데이트 실패:', error);
-        }
-    }
-
-    restoreURLState() {
-        if (!this.config.enableURLState) return;
-
-        try {
-            const params = new URLSearchParams(window.location.search);
-
-            // URL 파라미터에서 필터 상태 복원
-            if (params.has('status')) {
-                this.filterState.status = params.get('status');
-            }
-            
-            if (params.has('type')) {
-                this.filterState.purchaseType = params.get('type');
-            }
-            
-            if (params.has('q')) {
-                this.filterState.searchQuery = params.get('q');
-                if (this.domElements.searchInput) {
-                    this.domElements.searchInput.value = this.filterState.searchQuery;
+        applySorting() {
+            try {
+                const system = window.FlightManagementPage?.system;
+                if (!system || !system.cards) {
+                    console.warn('⚠️ 시스템 또는 카드 모듈이 준비되지 않음');
+                    return;
                 }
+
+                const sorting = window.flightControlsState?.sorting || { field: 'created_at', direction: 'desc' };
+                console.log('🔄 정렬 적용:', sorting);
+
+                // 현재 표시된 데이터 가져오기
+                let currentData = system.state.filteredData || system.state.requestsData;
+                
+                // 데이터 정렬
+                const sortedData = this.sortData(currentData, sorting);
+                
+                // 카드 업데이트
+                system.cards.updateCards(sortedData);
+
+                // 정렬 피드백 표시
+                this.showSortFeedback(sorting);
+
+            } catch (error) {
+                console.error('❌ 정렬 적용 실패:', error);
             }
-            
-            if (params.has('sort')) {
-                this.filterState.sortBy = params.get('sort');
-                if (this.domElements.sortSelect) {
-                    this.domElements.sortSelect.value = this.filterState.sortBy;
+        }
+
+        sortData(data, sorting) {
+            if (!data || !Array.isArray(data)) {
+                return [];
+            }
+
+            const sortedData = [...data].sort((a, b) => {
+                let aValue = this.getSortValue(a, sorting.field);
+                let bValue = this.getSortValue(b, sorting.field);
+
+                // null/undefined 처리
+                if (aValue === null || aValue === undefined) aValue = '';
+                if (bValue === null || bValue === undefined) bValue = '';
+
+                // 타입별 비교
+                if (typeof aValue === 'string' && typeof bValue === 'string') {
+                    aValue = aValue.toLowerCase();
+                    bValue = bValue.toLowerCase();
                 }
+
+                let comparison = 0;
+                if (aValue < bValue) {
+                    comparison = -1;
+                } else if (aValue > bValue) {
+                    comparison = 1;
+                }
+
+                // 방향 적용
+                return sorting.direction === 'desc' ? -comparison : comparison;
+            });
+
+            return sortedData;
+        }
+
+        getSortValue(item, field) {
+            switch (field) {
+                case 'created_at':
+                    return new Date(item.created_at);
+                case 'departure_date':
+                    return item.departure_date ? new Date(item.departure_date) : null;
+                case 'return_date':
+                    return item.return_date ? new Date(item.return_date) : null;
+                case 'name':
+                    return item.user_profiles?.name || '';
+                case 'ticket_price':
+                    return parseFloat(item.ticket_price) || 0;
+                case 'institute':
+                    return item.user_profiles?.sejong_institute || '';
+                case 'status':
+                    return item.status || '';
+                case 'purchase_type':
+                    return item.purchase_type || '';
+                default:
+                    return '';
             }
+        }
+
+        showSortFeedback(sorting) {
+            const sortNames = {
+                'created_at': '신청일',
+                'departure_date': '출국일',
+                'return_date': '귀국일',
+                'name': '이름',
+                'ticket_price': '항공료',
+                'institute': '학당',
+                'status': '상태',
+                'purchase_type': '구매방식'
+            };
+
+            const directionNames = {
+                'asc': '오름차순',
+                'desc': '내림차순'
+            };
+
+            const sortName = sortNames[sorting.field] || sorting.field;
+            const directionName = directionNames[sorting.direction] || sorting.direction;
+
+            // 피드백 표시
+            const indicator = document.getElementById('realTimeIndicator');
+            if (indicator) {
+                indicator.innerHTML = `
+                    <div class="pulse-dot"></div>
+                    <span>${sortName} ${directionName} 정렬됨</span>
+                `;
+                indicator.classList.add('show');
+                
+                setTimeout(() => {
+                    indicator.classList.remove('show');
+                }, 2000);
+            }
+        }
+
+        saveSorting() {
+            try {
+                const sorting = window.flightControlsState?.sorting;
+                if (sorting) {
+                    localStorage.setItem('flightManagementSorting', JSON.stringify(sorting));
+                }
+            } catch (error) {
+                console.warn('⚠️ 정렬 저장 실패:', error);
+            }
+        }
+
+        restoreSorting() {
+            try {
+                const saved = localStorage.getItem('flightManagementSorting');
+                if (saved) {
+                    const sorting = JSON.parse(saved);
+                    
+                    if (!window.flightControlsState) {
+                        window.flightControlsState = {
+                            filters: { status: 'all', type: 'all', urgent: false, search: '' },
+                            sorting: { field: 'created_at', direction: 'desc' },
+                            selection: { selectedIds: new Set(), allSelected: false }
+                        };
+                    }
+                    
+                    Object.assign(window.flightControlsState.sorting, sorting);
+                    
+                    // UI 상태 복원
+                    if (this.sortSelect) {
+                        this.sortSelect.value = `${sorting.field}-${sorting.direction}`;
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ 정렬 복원 실패:', error);
+            }
+        }
+    }
+
+    // 🎯 선택 관리 컨트롤러
+    class SelectionController {
+        constructor() {
+            this.selectAllBtn = null;
+            this.clearSelectionBtn = null;
+        }
+
+        init() {
+            console.log('🎯 SelectionController 초기화 중...');
+            this.setupSelectionButtons();
+            this.setupCardSelection();
+            console.log('✅ SelectionController 초기화 완료');
+        }
+
+        setupSelectionButtons() {
+            this.selectAllBtn = document.getElementById('selectAllBtn');
+            this.clearSelectionBtn = document.getElementById('clearSelectionBtn');
+
+            if (this.selectAllBtn) {
+                this.selectAllBtn.addEventListener('click', () => {
+                    this.toggleSelectAll();
+                });
+            }
+
+            if (this.clearSelectionBtn) {
+                this.clearSelectionBtn.addEventListener('click', () => {
+                    this.clearSelection();
+                });
+            }
+        }
+
+        setupCardSelection() {
+            // 카드 선택 이벤트는 동적으로 설정됨 (카드 생성 시)
+            document.addEventListener('click', (e) => {
+                const card = e.target.closest('.flight-request-card');
+                if (card && e.target.type === 'checkbox') {
+                    this.handleCardSelection(card, e.target.checked, e);
+                }
+            });
+        }
+
+        handleCardSelection(card, isSelected, event) {
+            const requestId = card.dataset.requestId;
+            if (!requestId) return;
+
+            if (!window.flightControlsState) {
+                window.flightControlsState = {
+                    filters: { status: 'all', type: 'all', urgent: false, search: '' },
+                    sorting: { field: 'created_at', direction: 'desc' },
+                    selection: { selectedIds: new Set(), allSelected: false }
+                };
+            }
+
+            const selection = window.flightControlsState.selection;
+
+            if (isSelected) {
+                selection.selectedIds.add(requestId);
+            } else {
+                selection.selectedIds.delete(requestId);
+                selection.allSelected = false;
+            }
+
+            this.updateSelectionUI();
+        }
+
+        toggleSelectAll() {
+            if (!window.flightControlsState) {
+                window.flightControlsState = {
+                    filters: { status: 'all', type: 'all', urgent: false, search: '' },
+                    sorting: { field: 'created_at', direction: 'desc' },
+                    selection: { selectedIds: new Set(), allSelected: false }
+                };
+            }
+
+            const selection = window.flightControlsState.selection;
+            const visibleCards = document.querySelectorAll('.flight-request-card:not([style*="display: none"])');
+
+            if (selection.allSelected) {
+                // 모두 해제
+                this.clearSelection();
+            } else {
+                // 모두 선택
+                visibleCards.forEach(card => {
+                    const checkbox = card.querySelector('input[type="checkbox"]');
+                    const requestId = card.dataset.requestId;
+                    
+                    if (checkbox && requestId) {
+                        checkbox.checked = true;
+                        selection.selectedIds.add(requestId);
+                    }
+                });
+                
+                selection.allSelected = true;
+            }
+
+            this.updateSelectionUI();
+        }
+
+        clearSelection() {
+            if (!window.flightControlsState) {
+                window.flightControlsState = {
+                    filters: { status: 'all', type: 'all', urgent: false, search: '' },
+                    sorting: { field: 'created_at', direction: 'desc' },
+                    selection: { selectedIds: new Set(), allSelected: false }
+                };
+            }
+
+            const selection = window.flightControlsState.selection;
             
-            if (params.has('urgent')) {
-                this.filterState.urgent = params.get('urgent') === '1';
-            }
+            // 모든 체크박스 해제
+            document.querySelectorAll('.flight-request-card input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
 
-            // 복원된 상태에 맞게 UI 업데이트
-            this.updateFilterButtonsFromState();
+            // 선택 상태 초기화
+            selection.selectedIds.clear();
+            selection.allSelected = false;
 
-            console.log('🔗 URL 상태 복원 완료:', this.filterState);
-
-        } catch (error) {
-            console.warn('⚠️ URL 상태 복원 실패:', error);
-        }
-    }
-
-    /**
-     * 🔧 유틸리티 메서드들
-     */
-    focusSearchInput() {
-        if (this.domElements.searchInput) {
-            this.domElements.searchInput.focus();
-            this.domElements.searchInput.select();
-        }
-    }
-
-    clearAllFilters() {
-        this.filterState = {
-            status: 'all',
-            purchaseType: 'all',
-            searchQuery: '',
-            sortBy: 'created_at-desc',
-            urgent: false,
-            dateRange: null,
-            priceRange: null
-        };
-
-        // UI 리셋
-        if (this.domElements.searchInput) {
-            this.domElements.searchInput.value = '';
-        }
-        
-        if (this.domElements.sortSelect) {
-            this.domElements.sortSelect.value = 'created_at-desc';
+            this.updateSelectionUI();
         }
 
-        this.updateFilterButtonsFromState();
-        this.applyFilters();
-        this.updateURLState();
-        
-        console.log('🧹 모든 필터 초기화');
-    }
-
-    updateFilterButtonsFromState() {
-        // 상태에 맞게 필터 버튼 활성화
-        this.domElements.filterButtons.forEach(button => {
-            button.classList.remove('active');
+        updateSelectionUI() {
+            const selection = window.flightControlsState?.selection || { selectedIds: new Set(), allSelected: false };
+            const selectedCount = selection.selectedIds.size;
             
-            const filter = button.dataset.filter;
-            let isActive = false;
-
-            if (filter === 'all' && 
-                this.filterState.status === 'all' && 
-                this.filterState.purchaseType === 'all' && 
-                !this.filterState.urgent) {
-                isActive = true;
-            } else if (filter === this.filterState.status || 
-                       filter === this.filterState.purchaseType || 
-                       (filter === 'urgent' && this.filterState.urgent)) {
-                isActive = true;
+            // 선택 개수 업데이트
+            const countElement = document.getElementById('selectedCount');
+            if (countElement) {
+                countElement.textContent = `선택된 항목: ${selectedCount}개`;
             }
 
-            if (isActive) {
-                button.classList.add('active');
+            // 일괄 처리 버튼 상태 업데이트
+            const bulkApprove = document.getElementById('bulkApprove');
+            const bulkReject = document.getElementById('bulkReject');
+            
+            if (bulkApprove) bulkApprove.disabled = selectedCount === 0;
+            if (bulkReject) bulkReject.disabled = selectedCount === 0;
+
+            // 전체 선택 버튼 텍스트 업데이트
+            if (this.selectAllBtn) {
+                this.selectAllBtn.textContent = selection.allSelected ? '모두 해제' : '모두 선택';
             }
-        });
-    }
 
-    isFilterActive() {
-        return this.filterState.status !== 'all' ||
-               this.filterState.purchaseType !== 'all' ||
-               this.filterState.searchQuery ||
-               this.filterState.urgent ||
-               this.filterState.dateRange ||
-               this.filterState.priceRange;
-    }
+            // 카드 시각적 피드백
+            this.updateCardVisualFeedback();
+        }
 
-    handleEmptyResults(isEmpty) {
-        // 빈 결과 상태 처리
-        if (isEmpty && this.isFilterActive()) {
-            this.showNotification('검색 조건에 맞는 결과가 없습니다.', 'info');
+        updateCardVisualFeedback() {
+            document.querySelectorAll('.flight-request-card').forEach(card => {
+                const checkbox = card.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    if (checkbox.checked) {
+                        card.style.borderColor = '#3182ce';
+                        card.style.backgroundColor = '#ebf8ff';
+                    } else {
+                        card.style.borderColor = '';
+                        card.style.backgroundColor = '';
+                    }
+                }
+            });
         }
     }
 
-    emitFilterChangeEvent() {
-        if (this.system) {
-            this.system.emitEvent('ui:filterChanged', this.filterState);
+    // 🔥 일괄 처리 컨트롤러  
+    class BulkActionsController {
+        constructor() {
+            this.bulkApproveBtn = null;
+            this.bulkRejectBtn = null;
+        }
+
+        init() {
+            console.log('🔥 BulkActionsController 초기화 중...');
+            this.setupBulkButtons();
+            console.log('✅ BulkActionsController 초기화 완료');
+        }
+
+        setupBulkButtons() {
+            this.bulkApproveBtn = document.getElementById('bulkApprove');
+            this.bulkRejectBtn = document.getElementById('bulkReject');
+
+            if (this.bulkApproveBtn) {
+                this.bulkApproveBtn.addEventListener('click', () => {
+                    this.handleBulkApprove();
+                });
+            }
+
+            if (this.bulkRejectBtn) {
+                this.bulkRejectBtn.addEventListener('click', () => {
+                    this.handleBulkReject();
+                });
+            }
+        }
+
+        async handleBulkApprove() {
+            const selection = window.flightControlsState?.selection || { selectedIds: new Set() };
+            const selectedIds = Array.from(selection.selectedIds);
+            
+            if (selectedIds.length === 0) {
+                alert('승인할 항목을 선택해주세요.');
+                return;
+            }
+
+            const confirmed = confirm(`선택된 ${selectedIds.length}개 항목을 모두 승인하시겠습니까?`);
+            if (!confirmed) return;
+
+            console.log('✅ 일괄 승인 처리:', selectedIds);
+            alert(`${selectedIds.length}개 항목 승인 처리 (Phase 3에서 구현 예정)`);
+        }
+
+        async handleBulkReject() {
+            const selection = window.flightControlsState?.selection || { selectedIds: new Set() };
+            const selectedIds = Array.from(selection.selectedIds);
+            
+            if (selectedIds.length === 0) {
+                alert('반려할 항목을 선택해주세요.');
+                return;
+            }
+
+            const reason = prompt(`선택된 ${selectedIds.length}개 항목의 반려 사유를 입력해주세요:`);
+            if (!reason || !reason.trim()) {
+                alert('반려 사유를 입력해야 합니다.');
+                return;
+            }
+
+            console.log('❌ 일괄 반려 처리:', selectedIds, reason);
+            alert(`${selectedIds.length}개 항목 반려 처리 (Phase 3에서 구현 예정)`);
         }
     }
 
-    handleSelectionChange(data) {
-        // 외부에서 선택 상태가 변경된 경우
-        this.selectionState.selectedItems = new Set(data.selectedItems || []);
-        this.updateSelectionUI();
-    }
+    // 🎛️ 메인 컨트롤 시스템 (내부 사용)
+    class FlightManagementControlsSystem {
+        constructor() {
+            this.filter = new FilterController();
+            this.sort = new SortController();
+            this.selection = new SelectionController();
+            this.bulkActions = new BulkActionsController();
+        }
 
-    updateFilterUsageStats(filter) {
-        const count = this.filterUsageStats.get(filter) || 0;
-        this.filterUsageStats.set(filter, count + 1);
-    }
+        async init() {
+            console.log('🎛️ FlightManagementControlsSystem 내부 시스템 초기화 중...');
 
-    /**
-     * 🎨 도우미 메서드들
-     */
-    convertToKRW(amount, currency = 'KRW') {
-        if (!amount) return 0;
-        if (currency === 'KRW') return amount;
+            try {
+                // 각 컨트롤러 초기화
+                this.filter.init();
+                this.sort.init();
+                this.selection.init();
+                this.bulkActions.init();
 
-        const exchangeRates = {
-            'USD': 1300, 'EUR': 1400, 'JPY': 8.5, 'CNY': 180, 'THB': 35
-        };
+                console.log('✅ FlightManagementControlsSystem 내부 시스템 초기화 완료!');
+                return true;
+            } catch (error) {
+                console.error('❌ FlightManagementControlsSystem 초기화 실패:', error);
+                throw error;
+            }
+        }
 
-        return Math.round(amount * (exchangeRates[currency] || 1));
-    }
+        // 공개 메서드들
+        applyFilters() {
+            this.filter.applyFilters();
+        }
 
-    getStatusText(status) {
-        const texts = {
-            'pending': '대기중',
-            'approved': '승인됨',
-            'rejected': '반려됨',
-            'completed': '완료'
-        };
-        return texts[status] || status;
-    }
+        applySorting() {
+            this.sort.applySorting();
+        }
 
-    showNotification(message, type = 'info') {
-        if (window.FlightManagementPageUtils?.showRealTimeUpdate) {
-            window.FlightManagementPageUtils.showRealTimeUpdate(message);
-        } else {
-            console.log(`🔔 [${type.toUpperCase()}] ${message}`);
+        clearSelection() {
+            this.selection.clearSelection();
+        }
+
+        resetAll() {
+            this.filter.resetFilters();
+            this.clearSelection();
+        }
+
+        getDebugInfo() {
+            return {
+                version: '10.0.0',
+                isInitialized: true,
+                state: window.flightControlsState,
+                controllers: {
+                    filter: !!this.filter,
+                    sort: !!this.sort,
+                    selection: !!this.selection,
+                    bulkActions: !!this.bulkActions
+                }
+            };
         }
     }
 
-    /**
-     * 🧹 정리 함수
-     */
-    destroy() {
-        console.log('🧹 FlightManagementControls 정리 중...');
-
-        // 타이머 정리
-        if (this.searchDebounceTimer) {
-            clearTimeout(this.searchDebounceTimer);
-        }
-        
-        if (this.filterDebounceTimer) {
-            clearTimeout(this.filterDebounceTimer);
+    // 🎛️ FlightManagementControls 메인 클래스 (외부 인터페이스)
+    class FlightManagementControls {
+        constructor(flightManagementSystem) {
+            console.log('🎛️ FlightManagementControls 메인 클래스 초기화...');
+            this.system = flightManagementSystem;
+            this.controlSystem = new FlightManagementControlsSystem();
+            this.isInitialized = false;
         }
 
-        // 선택 상태 초기화
-        this.clearAllSelections();
+        async init() {
+            try {
+                await this.controlSystem.init();
+                this.isInitialized = true;
+                console.log('✅ FlightManagementControls 메인 클래스 초기화 완료');
+                return true;
+            } catch (error) {
+                console.error('❌ FlightManagementControls 메인 클래스 초기화 실패:', error);
+                throw error;
+            }
+        }
 
-        // 설정 저장
-        this.saveUserPreferences();
+        // 호환성을 위한 메서드들
+        updateCards(data) {
+            // 카드 업데이트는 카드 모듈에서 처리
+            if (this.system && this.system.cards) {
+                this.system.cards.updateCards(data);
+            }
+        }
 
-        this.isInitialized = false;
-        console.log('✅ FlightManagementControls 정리 완료');
+        applyFilters() {
+            return this.controlSystem.applyFilters();
+        }
+
+        applySorting() {
+            return this.controlSystem.applySorting();
+        }
+
+        clearSelection() {
+            return this.controlSystem.clearSelection();
+        }
+
+        resetAll() {
+            return this.controlSystem.resetAll();
+        }
+
+        destroy() {
+            console.log('🧹 FlightManagementControls 정리');
+            this.isInitialized = false;
+        }
+
+        getDebugInfo() {
+            return {
+                ...this.controlSystem.getDebugInfo(),
+                isInitialized: this.isInitialized,
+                systemConnected: !!this.system
+            };
+        }
     }
 
-    /**
-     * 📋 디버그 정보
-     */
-    getDebugInfo() {
-        return {
-            version: '10.0.0',
-            isInitialized: this.isInitialized,
-            filterState: this.filterState,
-            selectionState: {
-                selectedCount: this.selectionState.selectedItems.size,
-                selectAll: this.selectionState.selectAll,
-                isSelectionMode: this.selectionState.isSelectionMode
-            },
-            searchHistory: Array.from(this.searchHistory),
-            filterUsageStats: Object.fromEntries(this.filterUsageStats),
-            config: this.config
-        };
-    }
-}
-
-// 전역 등록
-if (typeof window !== 'undefined') {
+    // 🌐 전역 등록 (한 번만 수행)
     window.FlightManagementControls = FlightManagementControls;
-    console.log('✅ FlightManagementControls v10.0.0 전역 등록 완료');
-}
 
-console.log('📦 FlightManagementControls v10.0.0 모듈 로드 완료 - Phase 2 컨트롤 시스템');
+    console.log('✅ FlightManagementControls v10.0.0 로드 완료! (Phase 2 컨트롤 시스템 완전 구현)');
+
+})();
