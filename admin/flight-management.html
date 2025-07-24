@@ -212,7 +212,7 @@
 
         .budget-summary-list {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(3, 1fr);  /* 정확히 3개 열 */
             gap: 1rem;
         }
 
@@ -1667,10 +1667,6 @@
                     <div class="budget-summary-item">
                         <span class="budget-label">1인당 평균 금액</span>
                         <span id="averagePerPerson" class="budget-amount">0원</span>
-                    </div>
-                    <div class="budget-summary-item">
-                        <span class="budget-label">이번 달 신청 건수</span>
-                        <span id="thisMonthRequests" class="budget-amount">0건</span>
                     </div>
                 </div>
             </div>

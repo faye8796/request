@@ -52,14 +52,6 @@ class FlightRequestStatus {
                 icon: 'x-circle',
                 description: '항공권 신청이 거부되었습니다.'
             },
-            cancelled: {
-                label: '취소됨',
-                color: '#6b7280',
-                bgColor: '#f9fafb',
-                borderColor: '#d1d5db',
-                icon: 'slash',
-                description: '항공권 신청이 취소되었습니다.'
-            },
             completed: {
                 label: '완료됨',
                 color: '#7c3aed',
@@ -877,8 +869,6 @@ class FlightRequestStatus {
                 return '신청이 거부되었습니다';
             case 'completed':
                 return '신청이 승인되고 구매가 완료되었습니다';
-            case 'cancelled':
-                return '신청이 취소되었습니다';
             default:
                 return '검토 결과를 기다리고 있습니다';
         }
@@ -892,8 +882,6 @@ class FlightRequestStatus {
                 return 'check-circle';
             case 'rejected':
                 return 'x-circle';
-            case 'cancelled':
-                return 'slash';
             default:
                 return 'clock';
         }
@@ -1165,13 +1153,7 @@ class FlightRequestStatus {
                 
             case 'approved':
                 // 승인됨: 삭제 불가 (승인된 상태는 보존)
-                buttons.push({
-                    action: 'view-details',
-                    label: '승인 세부사항',
-                    icon: 'info',
-                    variant: 'outline-success',
-                    description: '승인된 신청의 상세 정보를 확인합니다.'
-                });
+                
                 break;
                 
             case 'rejected':
@@ -1184,36 +1166,12 @@ class FlightRequestStatus {
                     confirmation: true,
                     description: '거부된 신청을 삭제하고 새로 신청합니다.'
                 });
-                buttons.push({
-                    action: 'view-details',
-                    label: '거부 사유 확인',
-                    icon: 'alert-circle',
-                    variant: 'outline-warning',
-                    description: '신청이 거부된 이유를 확인합니다.'
-                });
-                break;
                 
-            case 'cancelled':
-                // 취소됨: 삭제하고 재신청
-                buttons.push({
-                    action: 'delete-request',
-                    label: '삭제하고 재신청',
-                    icon: 'trash-2',
-                    variant: 'outline-danger',
-                    confirmation: true,
-                    description: '취소된 신청을 삭제하고 새로 신청합니다.'
-                });
                 break;
                 
             case 'completed':
                 // 완료됨: 삭제 불가 (완료된 상태는 보존)
-                buttons.push({
-                    action: 'view-details',
-                    label: '완료 상세',
-                    icon: 'check-circle',
-                    variant: 'outline-success',
-                    description: '완료된 신청의 상세 정보를 확인합니다.'
-                });
+                
                 break;
         }
         
@@ -1303,8 +1261,7 @@ class FlightRequestStatus {
                 
                 // 🚨 v1.1.0: 성공 메시지 표시 후 페이지 새로고침
                 const statusMessage = currentStatus === 'rejected' ? '거부된 신청이 완전삭제되었습니다. 새로운 신청을 진행해주세요.' :
-                                    currentStatus === 'cancelled' ? '취소된 신청이 완전삭제되었습니다. 새로운 신청을 진행해주세요.' :
-                                    '항공권 신청이 완전삭제되었습니다.';
+                    '항공권 신청이 완전삭제되었습니다.';
                 
                 this.showSuccess(statusMessage + ' 잠시 후 페이지가 새로고침됩니다.');
                 

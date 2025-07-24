@@ -1724,6 +1724,80 @@ class FlightManagementModals {
             return `<span style="color: #38a169; font-weight: 600;">${daysUntilExpiry}일 남음</span>`;
         }
     }
+    
+    /**
+     * 🖼️ 이미지 미리보기 모달
+     */
+    showImagePreview(imageUrl, title = '이미지 미리보기') {
+        if (!imageUrl) {
+            this.showError('이미지 URL이 없습니다.');
+            return;
+        }
+
+        const modalHtml = `
+            <div class="modal-overlay show" id="imagePreviewModal">
+                <div class="modal-container large">
+                    <div class="modal-header">
+                        <h2 class="modal-title">
+                            <i data-lucide="image"></i>
+                            ${title}
+                        </h2>
+                        <button class="modal-close" onclick="window.flightModals.closeModal('imagePreviewModal')">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="image-preview-content">
+                            <div class="image-container" style="text-align: center;">
+                                <img src="${imageUrl}" 
+                                     alt="미리보기 이미지" 
+                                     style="max-width: 100%; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); opacity: 0; transition: opacity 0.3s ease;"
+                                     onload="this.style.opacity=1" 
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                                <div style="display: none; padding: 2rem; text-align: center; color: #e53e3e;">
+                                    <i data-lucide="image-off" style="width: 48px; height: 48px; margin: 0 auto 1rem;"></i>
+                                    <p>이미지를 불러올 수 없습니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn secondary" onclick="window.flightModals.closeModal('imagePreviewModal')">
+                            닫기
+                        </button>
+                        <a href="${imageUrl}" target="_blank" class="btn primary">
+                            <i data-lucide="external-link"></i>
+                            새 창에서 열기
+                        </a>
+                        <a href="${imageUrl}" download class="btn success">
+                            <i data-lucide="download"></i>
+                            다운로드
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        this.showModal(modalHtml, 'imagePreviewModal');
+    }
+
+    /**
+     * 🔗 링크 열기 (새 창)
+     */
+    openLink(url, title = '링크 열기') {
+        if (!url) {
+            this.showError('링크 URL이 없습니다.');
+            return;
+        }
+        
+        // URL 유효성 검사
+        try {
+            new URL(url);
+            window.open(url, '_blank', 'noopener,noreferrer');
+        } catch (error) {
+            this.showError('유효하지 않은 링크입니다.');
+        }
+    }
 
 
     /**
