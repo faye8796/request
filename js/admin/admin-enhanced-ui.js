@@ -1,6 +1,7 @@
-// 관리자 향상된 UI 모듈 v4.3.2 - 영수증 보기 기능 수정
+// 관리자 향상된 UI 모듈 v4.3.3 - 구매 완료 버튼 버그 수정
 // admin-addon.js 기능을 새로운 모듈 구조로 통합
 // v4.3 requests 테이블 구조 변경 완전 호환
+// v4.3.3 수정: 구매 완료 버튼이 올바른 모듈 경로로 함수 호출하도록 수정
 
 const AdminEnhancedUI = {
     // 캐시 및 상태 관리
@@ -16,7 +17,7 @@ const AdminEnhancedUI = {
             return;
         }
 
-        console.log('🎨 AdminEnhancedUI v4.3.2 초기화 시작 (영수증 보기 기능 수정)');
+        console.log('🎨 AdminEnhancedUI v4.3.3 초기화 시작 (구매 완료 버튼 버그 수정)');
         
         try {
             // 기존 AdminManager와 협업하는 방식으로 초기화
@@ -24,7 +25,7 @@ const AdminEnhancedUI = {
             this.setupEnhancedEventListeners();
             
             this.isInitialized = true;
-            console.log('✅ AdminEnhancedUI v4.3.2 초기화 완료');
+            console.log('✅ AdminEnhancedUI v4.3.3 초기화 완료');
         } catch (error) {
             console.error('❌ AdminEnhancedUI 초기화 실패:', error);
         }
@@ -120,7 +121,7 @@ const AdminEnhancedUI = {
     // 배송지 정보 포함하여 신청 내역 로드 (에러 처리 강화)
     async loadApplicationsWithShipping() {
         try {
-            console.log('📦 배송지 정보 포함하여 신청 내역 로드 시작 (v4.3.2)');
+            console.log('📦 배송지 정보 포함하여 신청 내역 로드 시작 (v4.3.3)');
             
             if (!window.SupabaseAPI || typeof window.SupabaseAPI.searchApplications !== 'function') {
                 console.warn('⚠️ SupabaseAPI.searchApplications를 찾을 수 없음');
@@ -151,11 +152,11 @@ const AdminEnhancedUI = {
             // 학생별 그룹화 렌더링
             this.renderGroupedApplications(groupedApplications);
             
-            console.log('✅ 배송지 정보 포함 신청 내역 로드 완료 (v4.3.2)');
+            console.log('✅ 배송지 정보 포함 신청 내역 로드 완료 (v4.3.3)');
             
         } catch (error) {
             console.error('❌ 배송지 정보 포함 신청 내역 로드 실패:', error);
-            
+
             // 실패시 기본 렌더링으로 폴백
             try {
                 if (window.AdminManager && typeof AdminManager.renderApplications === 'function') {
@@ -589,7 +590,7 @@ const AdminEnhancedUI = {
 
     // 데이터 새로고침 (에러 처리 강화)
     async refreshData() {
-        console.log('🔄 데이터 새로고침 시작 (v4.3.2)');
+        console.log('🔄 데이터 새로고침 시작 (v4.3.3)');
         
         try {
             const refreshPromises = [];
@@ -613,7 +614,7 @@ const AdminEnhancedUI = {
             // 향상된 신청 내역 다시 로드
             await this.loadApplicationsWithShipping();
             
-            console.log('✅ 데이터 새로고침 완료 (v4.3.2)');
+            console.log('✅ 데이터 새로고침 완료 (v4.3.3)');
             
         } catch (error) {
             console.error('❌ 데이터 새로고침 실패:', error);
@@ -675,27 +676,40 @@ const AdminEnhancedUI = {
         }
     },
 
-    // 개별 아이템 액션 처리 (에러 처리 강화)
+    // 🔧 v4.3.3 수정: 개별 아이템 액션 처리 - 올바른 모듈 경로로 함수 호출
     async handleItemAction(action, requestId, buttonElement) {
         try {
-            // AdminManager의 기존 함수 사용
-            if (window.AdminManager) {
+            console.log('🔧 아이템 액션 처리 (v4.3.3):', action, requestId);
+            
+            // AdminManager의 올바른 모듈 경로 사용
+            if (window.AdminManager && AdminManager.Applications) {
                 switch(action) {
                     case 'approve':
-                        if (typeof AdminManager.approveItem === 'function') {
-                            await AdminManager.approveItem(requestId, buttonElement);
+                        if (typeof AdminManager.Applications.approveItem === 'function') {
+                            console.log('✅ 승인 처리 시작');
+                            await AdminManager.Applications.approveItem(requestId, buttonElement);
+                        } else {
+                            console.error('❌ AdminManager.Applications.approveItem 함수를 찾을 수 없음');
                         }
                         break;
                     case 'reject':
-                        if (typeof AdminManager.rejectItem === 'function') {
-                            await AdminManager.rejectItem(requestId, buttonElement);
+                        if (typeof AdminManager.Applications.rejectItem === 'function') {
+                            console.log('❌ 반려 처리 시작');
+                            await AdminManager.Applications.rejectItem(requestId, buttonElement);
+                        } else {
+                            console.error('❌ AdminManager.Applications.rejectItem 함수를 찾을 수 없음');
                         }
                         break;
                     case 'purchase':
-                        if (typeof AdminManager.markAsPurchased === 'function') {
-                            await AdminManager.markAsPurchased(requestId, buttonElement);
+                        if (typeof AdminManager.Applications.markAsPurchased === 'function') {
+                            console.log('🛒 구매 완료 처리 시작 (v4.3.3 수정)');
+                            await AdminManager.Applications.markAsPurchased(requestId, buttonElement);
+                        } else {
+                            console.error('❌ AdminManager.Applications.markAsPurchased 함수를 찾을 수 없음');
                         }
                         break;
+                    default:
+                        console.warn('⚠️ 알 수 없는 액션:', action);
                 }
                 
                 // 액션 완료 후 데이터 새로고침 (에러 처리)
@@ -704,15 +718,17 @@ const AdminEnhancedUI = {
                         console.warn('⚠️ 액션 후 새로고침 실패:', error);
                     });
                 }, 1000);
+            } else {
+                console.error('❌ AdminManager.Applications 모듈을 찾을 수 없음');
             }
         } catch (error) {
             console.error('❌ 아이템 액션 처리 실패:', error);
         }
     },
 
-    // 그룹화된 UI의 이벤트 리스너 설정 (v4.3.2 영수증 보기 기능 수정)
+    // 그룹화된 UI의 이벤트 리스너 설정 (v4.3.3 - 구매 완료 버튼 버그 수정)
     setupGroupedActionListeners() {
-        console.log('🔧 그룹화 UI 이벤트 리스너 설정 (v4.3.2 - 영수증 보기 기능 수정)');
+        console.log('🔧 그룹화 UI 이벤트 리스너 설정 (v4.3.3 - 구매 완료 버튼 버그 수정)');
         
         try {
             // 토글 버튼들
@@ -732,7 +748,7 @@ const AdminEnhancedUI = {
                 });
             });
             
-            // 개별 아이템 액션 버튼들
+            // 🔧 v4.3.3 수정: 개별 아이템 액션 버튼들 - 올바른 함수 경로 사용
             const actionButtons = document.querySelectorAll('.application-item .item-actions button[data-action]');
             actionButtons.forEach(button => {
                 button.addEventListener('click', (e) => {
@@ -740,16 +756,17 @@ const AdminEnhancedUI = {
                     const itemElement = e.target.closest('.application-item');
                     const requestId = itemElement.dataset.requestId;
                     
+                    console.log('🔧 액션 버튼 클릭 (v4.3.3):', action, requestId);
                     this.handleItemAction(action, requestId, e.target);
                 });
             });
             
-            // 🔧 v4.3.2 수정: 영수증 보기 버튼들 - 올바른 함수 경로로 수정
+            // 영수증 보기 버튼들
             const receiptButtons = document.querySelectorAll('.view-receipt-btn');
             receiptButtons.forEach(button => {
                 button.addEventListener('click', (e) => {
                     const requestId = e.target.closest('button').dataset.requestId;
-                    console.log('🔍 영수증 보기 버튼 클릭됨 (v4.3.2):', requestId);
+                    console.log('🔍 영수증 보기 버튼 클릭됨 (v4.3.3):', requestId);
                     
                     // AdminManager.Utils.showViewReceiptModal로 올바른 경로 호출
                     if (window.AdminManager && 
@@ -781,7 +798,7 @@ const AdminEnhancedUI = {
                 });
             });
             
-            console.log('✅ 그룹화 UI 이벤트 리스너 설정 완료 (v4.3.2 - 영수증 보기 기능 수정)');
+            console.log('✅ 그룹화 UI 이벤트 리스너 설정 완료 (v4.3.3 - 구매 완료 버튼 버그 수정)');
         } catch (error) {
             console.error('❌ 이벤트 리스너 설정 실패:', error);
         }
