@@ -15,6 +15,8 @@
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         .admin-header {
@@ -155,36 +157,84 @@
             margin: 0;
         }
 
-        /* 테이블 스타일 */
-        .request-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 2rem;
+        /* 🆕 카드 기반 UI */
+        .requests-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
-        .request-table th,
-        .request-table td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
+        .request-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
         }
 
-        .request-table th {
-            background: #f7fafc;
+        .request-card:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e0;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .request-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .student-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .student-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .student-details h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .student-details .field {
+            margin: 0.25rem 0 0 0;
+            font-size: 0.875rem;
+            color: #718096;
             font-weight: 600;
-            color: #4a5568;
         }
 
-        .request-table tbody tr:hover {
-            background: #f7fafc;
+        .status-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
         /* 상태 배지 */
         .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
             font-size: 0.875rem;
             font-weight: 600;
+            text-align: center;
+            min-width: 80px;
         }
 
         .status-badge.pending {
@@ -202,15 +252,122 @@
             color: #4a5568;
         }
 
-        /* 액션 버튼 */
-        .action-buttons {
+        /* 카드 메인 컨텐츠 */
+        .request-card-body {
+            display: grid;
+            grid-template-columns: 1fr 200px 1fr 120px;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .budget-section {
             display: flex;
+            flex-direction: column;
             gap: 0.5rem;
+        }
+
+        .budget-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+        }
+
+        .budget-label {
+            color: #718096;
+            font-weight: 500;
+        }
+
+        .budget-value {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .budget-value.current {
+            color: #38a169;
+        }
+
+        .budget-value.request {
+            color: #e53e3e;
+            font-size: 1rem;
+        }
+
+        .budget-value.large {
+            color: #c53030;
+            font-weight: 700;
+        }
+
+        /* 신청 금액 섹션 */
+        .request-amount-section {
+            text-align: center;
+            padding: 1rem;
+            background: white;
+            border-radius: 0.5rem;
+            border: 2px solid #e2e8f0;
+        }
+
+        .request-amount-label {
+            font-size: 0.75rem;
+            color: #718096;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .request-amount-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #e53e3e;
+        }
+
+        .request-amount-value.large {
+            color: #c53030;
+        }
+
+        /* 신청 사유 섹션 - 넓은 영역 */
+        .reason-section {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .reason-label {
+            font-size: 0.75rem;
+            color: #718096;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .reason-content {
+            color: #2d3748;
+            line-height: 1.5;
+            font-size: 0.875rem;
+            max-height: 60px;
+            overflow-y: auto;
+        }
+
+        /* 액션 버튼 섹션 */
+        .action-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: stretch;
         }
 
         .btn-sm {
             padding: 0.5rem 0.75rem;
             font-size: 0.875rem;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            transition: all 0.3s ease;
         }
 
         .btn-success {
@@ -220,6 +377,7 @@
 
         .btn-success:hover {
             background: #38a169;
+            transform: translateY(-1px);
         }
 
         .btn-danger {
@@ -229,32 +387,51 @@
 
         .btn-danger:hover {
             background: #e53e3e;
+            transform: translateY(-1px);
+        }
+
+        /* 반려 사유 표시 */
+        .rejection-reason {
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: #fff5f5;
+            border-left: 4px solid #f56565;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            color: #c53030;
+        }
+
+        .rejection-reason-label {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
         }
 
         /* 인라인 반려 사유 입력 */
-        .reject-input-row {
+        .reject-input-card {
             background: #fff5f5;
+            border: 2px solid #f56565;
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            padding: 1rem;
         }
 
         .reject-form {
             display: flex;
-            align-items: center;
+            flex-direction: column;
             gap: 1rem;
-            padding: 1rem;
         }
 
         .reject-form label {
             font-weight: 600;
-            color: #2d3748;
-            min-width: 80px;
+            color: #c53030;
         }
 
         .reject-form input {
-            flex: 1;
-            padding: 0.5rem;
+            padding: 0.75rem;
             border: 1px solid #cbd5e0;
-            border-radius: 0.25rem;
+            border-radius: 0.5rem;
             font-size: 0.875rem;
+            background: white;
         }
 
         .reject-form input:focus {
@@ -263,14 +440,21 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+        .reject-form-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
         .btn-confirm {
             background: #667eea;
             color: white;
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1.5rem;
             border: none;
-            border-radius: 0.25rem;
+            border-radius: 0.5rem;
             cursor: pointer;
             font-size: 0.875rem;
+            font-weight: 600;
+            flex: 1;
         }
 
         .btn-confirm:hover {
@@ -280,49 +464,17 @@
         .btn-cancel {
             background: #e2e8f0;
             color: #4a5568;
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1.5rem;
             border: none;
-            border-radius: 0.25rem;
+            border-radius: 0.5rem;
             cursor: pointer;
             font-size: 0.875rem;
+            font-weight: 600;
+            flex: 1;
         }
 
         .btn-cancel:hover {
             background: #cbd5e0;
-        }
-
-        /* 금액 표시 */
-        .amount {
-            font-weight: 600;
-            color: #2d3748;
-        }
-
-        .amount.large {
-            color: #e53e3e;
-        }
-
-        /* 신청 사유 */
-        .reason {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            cursor: help;
-        }
-
-        /* 예산 정보 */
-        .budget-info {
-            font-size: 0.875rem;
-            color: #718096;
-        }
-
-        .budget-info .current {
-            color: #38a169;
-            font-weight: 600;
-        }
-
-        .budget-info .total {
-            color: #4a5568;
         }
 
         /* 로딩 상태 */
@@ -391,6 +543,24 @@
         }
 
         /* 반응형 디자인 */
+        @media (max-width: 1200px) {
+            .request-card-body {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .budget-section {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 1rem;
+            }
+
+            .action-section {
+                flex-direction: row;
+                justify-content: center;
+            }
+        }
+
         @media (max-width: 768px) {
             .admin-container {
                 padding: 1rem;
@@ -415,31 +585,27 @@
                 padding: 1.5rem;
             }
 
-            .request-table {
-                font-size: 0.875rem;
+            .request-card {
+                padding: 1rem;
             }
 
-            .request-table th,
-            .request-table td {
-                padding: 0.75rem 0.5rem;
-            }
-
-            .reason {
-                max-width: 120px;
-            }
-
-            .action-buttons {
+            .request-card-header {
                 flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
             }
 
-            .reject-form {
+            .student-info {
+                width: 100%;
+            }
+
+            .status-section {
+                align-self: stretch;
+                justify-content: center;
+            }
+
+            .reject-form-actions {
                 flex-direction: column;
-                align-items: stretch;
-                gap: 0.75rem;
-            }
-
-            .reject-form label {
-                min-width: auto;
             }
         }
     </style>
@@ -509,24 +675,9 @@
                 <p>신청 내역을 불러오는 중...</p>
             </div>
 
-            <!-- 신청 내역 테이블 -->
-            <div id="requestsTableContainer" style="display: none;">
-                <table class="request-table">
-                    <thead>
-                        <tr>
-                            <th>학생명</th>
-                            <th>분야</th>
-                            <th>현재 예산</th>
-                            <th>신청 금액</th>
-                            <th>신청 사유</th>
-                            <th>상태</th>
-                            <th>액션</th>
-                        </tr>
-                    </thead>
-                    <tbody id="requestsTableBody">
-                        <!-- 동적으로 채워짐 -->
-                    </tbody>
-                </table>
+            <!-- 신청 내역 카드 컨테이너 -->
+            <div id="requestsCardsContainer" class="requests-container" style="display: none;">
+                <!-- 동적으로 채워짐 -->
             </div>
 
             <!-- 빈 상태 -->
@@ -557,7 +708,7 @@
     <script src="../js/supabase-client.js"></script>
 
     <script>
-        // 🎯 특별 예산 관리 시스템 v1.0.1
+        // 🎯 특별 예산 관리 시스템 v1.1.0 - 카드 UI 개편
         class BudgetManagementSystem {
             constructor() {
                 this.supabaseClient = null;
@@ -573,7 +724,7 @@
             // 초기화
             async initialize() {
                 try {
-                    console.log('🔄 특별 예산 관리 시스템 초기화 중...');
+                    console.log('🔄 특별 예산 관리 시스템 초기화 중... (v1.1.0 카드 UI)');
                     
                     // Supabase 클라이언트 대기
                     await this.waitForSupabase();
@@ -583,7 +734,7 @@
                     
                     // UI 렌더링
                     this.renderStats();
-                    this.renderRequestsTable();
+                    this.renderRequestsCards();
                     
                     // 아이콘 초기화
                     if (typeof lucide !== 'undefined') {
@@ -598,37 +749,31 @@
                 }
             }
 
-            // 🐛 Fix: 개선된 Supabase 클라이언트 대기 함수
+            // Supabase 클라이언트 대기 함수 (수정 없음)
             async waitForSupabase() {
                 console.log('⏳ Supabase 클라이언트 초기화 대기...');
                 
                 return new Promise((resolve, reject) => {
                     let attempts = 0;
-                    const maxAttempts = 150; // 15초 (100ms * 150)
+                    const maxAttempts = 150;
                     
                     const check = () => {
                         attempts++;
-                        console.log(`🔍 Supabase 클라이언트 확인 시도 ${attempts}/${maxAttempts}`);
                         
-                        // 다양한 방식으로 클라이언트 접근 시도
                         let client = null;
                         
-                        // 방법 1: SupabaseAPI.supabase (가장 직접적)
                         if (window.SupabaseAPI && window.SupabaseAPI.supabase) {
                             client = window.SupabaseAPI.supabase;
                             console.log('✅ Method 1: SupabaseAPI.supabase 사용');
                         }
-                        // 방법 2: SupabaseAPI.client
                         else if (window.SupabaseAPI && window.SupabaseAPI.client) {
                             client = window.SupabaseAPI.client;
                             console.log('✅ Method 2: SupabaseAPI.client 사용');
                         }
-                        // 방법 3: SupabaseCore 직접 접근
                         else if (window.SupabaseCore && window.SupabaseCore.supabase) {
                             client = window.SupabaseCore.supabase;
                             console.log('✅ Method 3: SupabaseCore.supabase 사용');
                         }
-                        // 방법 4: 글로벌 supabase 클라이언트
                         else if (window.supabase) {
                             client = window.supabase;
                             console.log('✅ Method 4: window.supabase 사용');
@@ -640,26 +785,10 @@
                             resolve();
                         } else if (attempts >= maxAttempts) {
                             console.error('❌ Supabase 클라이언트 타임아웃');
-                            console.log('🔍 디버깅 정보:');
-                            console.log('- window.SupabaseAPI:', !!window.SupabaseAPI);
-                            console.log('- window.SupabaseCore:', !!window.SupabaseCore);
-                            console.log('- window.supabase:', !!window.supabase);
-                            console.log('- CONFIG:', !!window.CONFIG);
-                            
-                            if (window.SupabaseAPI) {
-                                console.log('- SupabaseAPI.supabase:', !!window.SupabaseAPI.supabase);
-                                console.log('- SupabaseAPI.client:', !!window.SupabaseAPI.client);
-                                console.log('- SupabaseAPI 상태:', window.SupabaseAPI.getModuleStats?.());
-                            }
-                            
                             reject(new Error('Supabase 클라이언트를 찾을 수 없습니다.'));
                         } else {
-                            // 로딩 상태 주기적 로그 (매 2초마다)
                             if (attempts % 20 === 0) {
                                 console.log(`⏳ 클라이언트 대기 중... (${attempts}/${maxAttempts})`);
-                                if (window.SupabaseAPI) {
-                                    console.log('📊 SupabaseAPI 상태:', window.SupabaseAPI.getModuleStats?.() || 'getModuleStats 없음');
-                                }
                             }
                             setTimeout(check, 100);
                         }
@@ -669,7 +798,7 @@
                 });
             }
 
-            // 신청 데이터 로드
+            // 신청 데이터 로드 (수정 없음)
             async loadRequestsData() {
                 try {
                     console.log('📊 특별 예산 신청 데이터 로드 시작...');
@@ -708,7 +837,7 @@
                 }
             }
 
-            // 통계 계산
+            // 통계 계산 (수정 없음)
             calculateStats() {
                 this.stats = {
                     total: this.requestsData.length,
@@ -718,7 +847,7 @@
                 };
             }
 
-            // 통계 렌더링
+            // 통계 렌더링 (수정 없음)
             renderStats() {
                 document.getElementById('totalRequestsCount').textContent = this.stats.total;
                 document.getElementById('pendingRequestsCount').textContent = this.stats.pending;
@@ -726,29 +855,28 @@
                 document.getElementById('rejectedRequestsCount').textContent = this.stats.rejected;
             }
 
-            // 테이블 렌더링
-            renderRequestsTable() {
+            // 🆕 카드 형태로 렌더링
+            renderRequestsCards() {
                 const loadingState = document.getElementById('loadingState');
-                const tableContainer = document.getElementById('requestsTableContainer');
+                const cardsContainer = document.getElementById('requestsCardsContainer');
                 const emptyState = document.getElementById('emptyState');
-                const tableBody = document.getElementById('requestsTableBody');
 
                 loadingState.style.display = 'none';
 
                 if (this.requestsData.length === 0) {
                     emptyState.style.display = 'block';
-                    tableContainer.style.display = 'none';
+                    cardsContainer.style.display = 'none';
                     return;
                 }
 
                 emptyState.style.display = 'none';
-                tableContainer.style.display = 'block';
+                cardsContainer.style.display = 'flex';
 
-                tableBody.innerHTML = this.requestsData.map(request => this.renderRequestRow(request)).join('');
+                cardsContainer.innerHTML = this.requestsData.map(request => this.renderRequestCard(request)).join('');
             }
 
-            // 신청 행 렌더링
-            renderRequestRow(request) {
+            // 🆕 개별 신청 카드 렌더링
+            renderRequestCard(request) {
                 const statusClass = request.special_request_status;
                 const statusText = {
                     pending: '검토 중',
@@ -757,55 +885,92 @@
                 }[statusClass] || '알 수 없음';
 
                 const amount = parseInt(request.special_request_amount);
-                const amountClass = amount > 100000 ? 'amount large' : 'amount';
+                const amountClass = amount > 100000 ? 'large' : '';
+                
+                // 학생 이름의 첫 글자로 아바타 생성
+                const studentName = request.user_profiles.name;
+                const avatarLetter = studentName.charAt(0).toUpperCase();
 
                 return `
-                    <tr data-user-id="${request.user_id}">
-                        <td>
-                            <strong>${request.user_profiles.name}</strong><br>
-                            <small>${request.user_profiles.email || '이메일 없음'}</small>
-                        </td>
-                        <td>${request.field}</td>
-                        <td>
-                            <div class="budget-info">
-                                <div class="current">${request.remaining_budget?.toLocaleString() || 0}원</div>
-                                <small class="total">/ ${request.allocated_budget?.toLocaleString() || 0}원</small>
+                    <div class="request-card" data-user-id="${request.user_id}">
+                        <!-- 카드 헤더 -->
+                        <div class="request-card-header">
+                            <div class="student-info">
+                                <div class="student-avatar">${avatarLetter}</div>
+                                <div class="student-details">
+                                    <h3>${studentName}</h3>
+                                    <div class="field">${request.field}</div>
+                                </div>
                             </div>
-                        </td>
-                        <td class="${amountClass}">${amount.toLocaleString()}원</td>
-                        <td class="reason" title="${request.special_request_reason}">
-                            ${request.special_request_reason}
-                        </td>
-                        <td>
-                            <span class="status-badge ${statusClass}">${statusText}</span>
-                            ${request.special_admin_rejection_reason ? `<br><small>반려 사유: ${request.special_admin_rejection_reason}</small>` : ''}
-                        </td>
-                        <td>
-                            ${this.renderActionButtons(request)}
-                        </td>
-                    </tr>
+                            <div class="status-section">
+                                <span class="status-badge ${statusClass}">${statusText}</span>
+                            </div>
+                        </div>
+
+                        <!-- 카드 메인 컨텐츠 -->
+                        <div class="request-card-body">
+                            <!-- 예산 정보 -->
+                            <div class="budget-section">
+                                <div class="budget-item">
+                                    <span class="budget-label">현재 잔액</span>
+                                    <span class="budget-value current">${request.remaining_budget?.toLocaleString() || 0}원</span>
+                                </div>
+                                <div class="budget-item">
+                                    <span class="budget-label">총 할당 예산</span>
+                                    <span class="budget-value">${request.allocated_budget?.toLocaleString() || 0}원</span>
+                                </div>
+                                <div class="budget-item">
+                                    <span class="budget-label">사용 예산</span>
+                                    <span class="budget-value">${request.used_budget?.toLocaleString() || 0}원</span>
+                                </div>
+                            </div>
+
+                            <!-- 신청 금액 -->
+                            <div class="request-amount-section">
+                                <div class="request-amount-label">신청 금액</div>
+                                <div class="request-amount-value ${amountClass}">${amount.toLocaleString()}원</div>
+                            </div>
+
+                            <!-- 신청 사유 -->
+                            <div class="reason-section">
+                                <div class="reason-label">신청 사유</div>
+                                <div class="reason-content">${request.special_request_reason}</div>
+                            </div>
+
+                            <!-- 액션 버튼 -->
+                            <div class="action-section">
+                                ${this.renderActionButtons(request)}
+                            </div>
+                        </div>
+
+                        <!-- 반려 사유 표시 -->
+                        ${request.special_admin_rejection_reason ? `
+                            <div class="rejection-reason">
+                                <div class="rejection-reason-label">반려 사유</div>
+                                ${request.special_admin_rejection_reason}
+                            </div>
+                        ` : ''}
+                    </div>
                 `;
             }
 
-            // 액션 버튼 렌더링
+            // 🆕 액션 버튼 렌더링 (카드용)
             renderActionButtons(request) {
                 if (request.special_request_status === 'pending') {
                     return `
-                        <div class="action-buttons">
-                            <button class="btn btn-success btn-sm" onclick="budgetManager.approveRequest('${request.user_id}')">
-                                <i data-lucide="check"></i> 승인
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="budgetManager.showRejectInput('${request.user_id}')">
-                                <i data-lucide="x"></i> 반려
-                            </button>
-                        </div>
+                        <button class="btn-sm btn-success" onclick="budgetManager.approveRequest('${request.user_id}')">
+                            <i data-lucide="check"></i> 승인
+                        </button>
+                        <button class="btn-sm btn-danger" onclick="budgetManager.showRejectInput('${request.user_id}')">
+                            <i data-lucide="x"></i> 반려
+                        </button>
                     `;
                 } else {
                     return `<span class="status-badge ${request.special_request_status}">처리 완료</span>`;
                 }
             }
 
-            // 승인 처리
+            // 승인 처리 (수정 없음)
             async approveRequest(userId) {
                 if (!confirm('이 신청을 승인하시겠습니까?\n\n승인 시 해당 학생의 예산이 자동으로 증가됩니다.')) {
                     return;
@@ -819,7 +984,6 @@
                     
                     console.log('💰 예산 승인 처리:', { userId, requestAmount });
                     
-                    // 예산 업데이트 및 상태 변경
                     const { error } = await this.supabaseClient
                         .from('student_budgets')
                         .update({
@@ -833,10 +997,9 @@
 
                     this.showToast('신청이 승인되었습니다. 학생의 예산이 증가되었습니다.', 'success');
                     
-                    // 데이터 새로고침
                     await this.loadRequestsData();
                     this.renderStats();
-                    this.renderRequestsTable();
+                    this.renderRequestsCards();
                     
                     if (typeof lucide !== 'undefined') {
                         lucide.createIcons();
@@ -848,35 +1011,35 @@
                 }
             }
 
-            // 반려 입력창 표시
+            // 🆕 반려 입력창 표시 (카드용)
             showRejectInput(userId) {
                 // 기존 반려 입력창 제거
-                const existingRejectRow = document.querySelector('.reject-input-row');
-                if (existingRejectRow) {
-                    existingRejectRow.remove();
+                const existingRejectCard = document.querySelector('.reject-input-card');
+                if (existingRejectCard) {
+                    existingRejectCard.remove();
                 }
 
-                const row = document.querySelector(`tr[data-user-id="${userId}"]`);
-                if (!row) return;
+                const card = document.querySelector(`div[data-user-id="${userId}"]`);
+                if (!card) return;
 
-                const rejectRow = document.createElement('tr');
-                rejectRow.className = 'reject-input-row';
-                rejectRow.innerHTML = `
-                    <td colspan="7">
-                        <div class="reject-form">
-                            <label>반려 사유:</label>
-                            <input type="text" id="rejectReason-${userId}" placeholder="반려 사유를 입력하세요" maxlength="200" required>
+                const rejectCard = document.createElement('div');
+                rejectCard.className = 'reject-input-card';
+                rejectCard.innerHTML = `
+                    <div class="reject-form">
+                        <label>반려 사유를 입력해주세요</label>
+                        <input type="text" id="rejectReason-${userId}" placeholder="반려 사유를 상세히 입력하세요" maxlength="200" required>
+                        <div class="reject-form-actions">
                             <button class="btn-confirm" onclick="budgetManager.confirmReject('${userId}')">반려 확정</button>
                             <button class="btn-cancel" onclick="budgetManager.cancelReject()">취소</button>
                         </div>
-                    </td>
+                    </div>
                 `;
 
-                row.insertAdjacentElement('afterend', rejectRow);
+                card.appendChild(rejectCard);
                 document.getElementById(`rejectReason-${userId}`).focus();
             }
 
-            // 반려 확정
+            // 반려 확정 (수정 없음)
             async confirmReject(userId) {
                 const reasonInput = document.getElementById(`rejectReason-${userId}`);
                 const reason = reasonInput?.value.trim();
@@ -902,13 +1065,11 @@
 
                     this.showToast('신청이 반려되었습니다.', 'info');
                     
-                    // 반려 입력창 제거
                     this.cancelReject();
                     
-                    // 데이터 새로고침
                     await this.loadRequestsData();
                     this.renderStats();
-                    this.renderRequestsTable();
+                    this.renderRequestsCards();
                     
                     if (typeof lucide !== 'undefined') {
                         lucide.createIcons();
@@ -920,15 +1081,15 @@
                 }
             }
 
-            // 반려 입력 취소
+            // 🆕 반려 입력 취소 (카드용)
             cancelReject() {
-                const rejectRow = document.querySelector('.reject-input-row');
-                if (rejectRow) {
-                    rejectRow.remove();
+                const rejectCard = document.querySelector('.reject-input-card');
+                if (rejectCard) {
+                    rejectCard.remove();
                 }
             }
 
-            // 토스트 알림 표시
+            // 토스트 알림 표시 (수정 없음)
             showToast(message, type = 'info') {
                 const toast = document.getElementById('toast');
                 const toastMessage = document.getElementById('toastMessage');
@@ -951,8 +1112,8 @@
             budgetManager.initialize();
         });
 
-        console.log('💰 특별 예산 관리 시스템 v1.0.1 로드 완료');
-        console.log('🐛 Fix: Supabase 클라이언트 초기화 문제 해결');
+        console.log('💰 특별 예산 관리 시스템 v1.1.0 로드 완료 - 카드 UI 개편');
+        console.log('🎨 새로운 기능: 카드 기반 UI, 넓은 신청 사유 영역, 학생 아바타');
     </script>
 </body>
 </html>
