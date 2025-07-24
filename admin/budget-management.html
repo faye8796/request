@@ -557,7 +557,7 @@
     <script src="../js/supabase-client.js"></script>
 
     <script>
-        // 🎯 특별 예산 관리 시스템 v1.0.0
+        // 🎯 특별 예산 관리 시스템 v1.0.1
         class BudgetManagementSystem {
             constructor() {
                 this.supabaseClient = null;
@@ -598,20 +598,69 @@
                 }
             }
 
-            // Supabase 클라이언트 대기
+            // 🐛 Fix: 개선된 Supabase 클라이언트 대기 함수
             async waitForSupabase() {
+                console.log('⏳ Supabase 클라이언트 초기화 대기...');
+                
                 return new Promise((resolve, reject) => {
                     let attempts = 0;
-                    const maxAttempts = 30;
+                    const maxAttempts = 150; // 15초 (100ms * 150)
                     
                     const check = () => {
-                        if (window.SupabaseAPI && window.SupabaseAPI.client) {
-                            this.supabaseClient = window.SupabaseAPI.client;
+                        attempts++;
+                        console.log(`🔍 Supabase 클라이언트 확인 시도 ${attempts}/${maxAttempts}`);
+                        
+                        // 다양한 방식으로 클라이언트 접근 시도
+                        let client = null;
+                        
+                        // 방법 1: SupabaseAPI.supabase (가장 직접적)
+                        if (window.SupabaseAPI && window.SupabaseAPI.supabase) {
+                            client = window.SupabaseAPI.supabase;
+                            console.log('✅ Method 1: SupabaseAPI.supabase 사용');
+                        }
+                        // 방법 2: SupabaseAPI.client
+                        else if (window.SupabaseAPI && window.SupabaseAPI.client) {
+                            client = window.SupabaseAPI.client;
+                            console.log('✅ Method 2: SupabaseAPI.client 사용');
+                        }
+                        // 방법 3: SupabaseCore 직접 접근
+                        else if (window.SupabaseCore && window.SupabaseCore.supabase) {
+                            client = window.SupabaseCore.supabase;
+                            console.log('✅ Method 3: SupabaseCore.supabase 사용');
+                        }
+                        // 방법 4: 글로벌 supabase 클라이언트
+                        else if (window.supabase) {
+                            client = window.supabase;
+                            console.log('✅ Method 4: window.supabase 사용');
+                        }
+                        
+                        if (client) {
+                            this.supabaseClient = client;
+                            console.log('🚀 Supabase 클라이언트 준비 완료:', typeof client);
                             resolve();
                         } else if (attempts >= maxAttempts) {
+                            console.error('❌ Supabase 클라이언트 타임아웃');
+                            console.log('🔍 디버깅 정보:');
+                            console.log('- window.SupabaseAPI:', !!window.SupabaseAPI);
+                            console.log('- window.SupabaseCore:', !!window.SupabaseCore);
+                            console.log('- window.supabase:', !!window.supabase);
+                            console.log('- CONFIG:', !!window.CONFIG);
+                            
+                            if (window.SupabaseAPI) {
+                                console.log('- SupabaseAPI.supabase:', !!window.SupabaseAPI.supabase);
+                                console.log('- SupabaseAPI.client:', !!window.SupabaseAPI.client);
+                                console.log('- SupabaseAPI 상태:', window.SupabaseAPI.getModuleStats?.());
+                            }
+                            
                             reject(new Error('Supabase 클라이언트를 찾을 수 없습니다.'));
                         } else {
-                            attempts++;
+                            // 로딩 상태 주기적 로그 (매 2초마다)
+                            if (attempts % 20 === 0) {
+                                console.log(`⏳ 클라이언트 대기 중... (${attempts}/${maxAttempts})`);
+                                if (window.SupabaseAPI) {
+                                    console.log('📊 SupabaseAPI 상태:', window.SupabaseAPI.getModuleStats?.() || 'getModuleStats 없음');
+                                }
+                            }
                             setTimeout(check, 100);
                         }
                     };
@@ -623,6 +672,8 @@
             // 신청 데이터 로드
             async loadRequestsData() {
                 try {
+                    console.log('📊 특별 예산 신청 데이터 로드 시작...');
+                    
                     const { data, error } = await this.supabaseClient
                         .from('student_budgets')
                         .select(`
@@ -639,16 +690,21 @@
                         `)
                         .not('special_request_status', 'is', null);
 
-                    if (error) throw error;
+                    if (error) {
+                        console.error('❌ 데이터베이스 쿼리 오류:', error);
+                        throw error;
+                    }
 
                     this.requestsData = data || [];
                     this.calculateStats();
                     
-                    console.log('📊 신청 데이터 로드 완료:', this.requestsData.length, '건');
+                    console.log('✅ 신청 데이터 로드 완료:', this.requestsData.length, '건');
+                    console.log('📈 통계:', this.stats);
                     
                 } catch (error) {
                     console.error('❌ 데이터 로드 실패:', error);
                     this.showToast('데이터를 불러오는데 실패했습니다.', 'error');
+                    throw error;
                 }
             }
 
@@ -761,6 +817,8 @@
 
                     const requestAmount = parseInt(request.special_request_amount);
                     
+                    console.log('💰 예산 승인 처리:', { userId, requestAmount });
+                    
                     // 예산 업데이트 및 상태 변경
                     const { error } = await this.supabaseClient
                         .from('student_budgets')
@@ -830,6 +888,8 @@
                 }
 
                 try {
+                    console.log('❌ 예산 신청 반려 처리:', { userId, reason });
+                    
                     const { error } = await this.supabaseClient
                         .from('student_budgets')
                         .update({
@@ -891,7 +951,8 @@
             budgetManager.initialize();
         });
 
-        console.log('💰 특별 예산 관리 시스템 v1.0.0 로드 완료');
+        console.log('💰 특별 예산 관리 시스템 v1.0.1 로드 완료');
+        console.log('🐛 Fix: Supabase 클라이언트 초기화 문제 해결');
     </script>
 </body>
 </html>
