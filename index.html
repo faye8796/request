@@ -27,20 +27,40 @@
                         <p>King Sejong Institute Cultural Intern Support System</p>
                     </div>
 
-                    <!-- 학생 로그인 폼 -->
+                    <!-- 학생 로그인 폼 - 🆕 2단계 로그인 플로우 -->
                     <div id="studentLogin" class="login-form active">
                         <div class="form-group">
                             <label>이름</label>
-                            <input type="text" id="studentName" placeholder="성명을 입력하세요">
+                            <input type="text" id="studentName" placeholder="성명을 입력하세요" required>
                         </div>
                         <div class="form-group">
                             <label>생년월일</label>
-                            <input type="date" id="studentBirth">
+                            <input type="date" id="studentBirth" required>
                         </div>
-                        <button id="studentLoginBtn" class="login-btn primary">
+                        
+                        <!-- 🆕 비밀번호 입력 필드 (처음엔 숨김) -->
+                        <div class="form-group" id="passwordGroup" style="display: none;">
+                            <label>비밀번호</label>
+                            <input type="password" id="loginPassword" placeholder="비밀번호를 입력하세요">
+                            <small class="password-hint">이 계정은 비밀번호가 설정되어 있습니다.</small>
+                        </div>
+                        
+                        <!-- 🆕 2단계 버튼 시스템 -->
+                        <button id="checkPasswordBtn" class="login-btn secondary">
+                            <i data-lucide="search"></i>
+                            로그인 확인
+                        </button>
+                        
+                        <button id="studentLoginBtn" class="login-btn primary" style="display: none;">
                             <i data-lucide="user"></i>
                             학생 로그인
                         </button>
+                        
+                        <!-- 🆕 로딩 상태 표시 -->
+                        <div id="loginLoading" class="login-loading" style="display: none;">
+                            <i data-lucide="loader-2" class="spin"></i>
+                            <span>확인 중...</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -103,8 +123,325 @@
                     }
                 }
                 
+                // 🆕 2단계 로그인 시스템 초기화
+                initializePasswordLogin();
+                
             } catch (error) {
                 console.error('시스템 초기화 실패:', error);
+            }
+        }
+
+        // 🆕 비밀번호 로그인 시스템 초기화
+        function initializePasswordLogin() {
+            try {
+                console.log('🔐 비밀번호 로그인 시스템 초기화...');
+                
+                const checkPasswordBtn = document.getElementById('checkPasswordBtn');
+                const studentLoginBtn = document.getElementById('studentLoginBtn');
+                
+                if (checkPasswordBtn) {
+                    checkPasswordBtn.addEventListener('click', handlePasswordCheck);
+                }
+                
+                if (studentLoginBtn) {
+                    studentLoginBtn.addEventListener('click', handleFinalLogin);
+                }
+                
+                // Enter 키 이벤트 추가
+                const loginPassword = document.getElementById('loginPassword');
+                if (loginPassword) {
+                    loginPassword.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter' && !studentLoginBtn.style.display.includes('none')) {
+                            handleFinalLogin();
+                        }
+                    });
+                }
+                
+                console.log('✅ 비밀번호 로그인 시스템 초기화 완료');
+                
+            } catch (error) {
+                console.error('❌ 비밀번호 로그인 시스템 초기화 실패:', error);
+            }
+        }
+
+        // 🔍 1단계: 비밀번호 필요 여부 확인
+        async function handlePasswordCheck() {
+            const nameInput = document.getElementById('studentName');
+            const birthInput = document.getElementById('studentBirth');
+            const checkBtn = document.getElementById('checkPasswordBtn');
+            const loading = document.getElementById('loginLoading');
+            
+            if (!nameInput || !birthInput || !checkBtn || !loading) return;
+            
+            const name = nameInput.value.trim();
+            const birthDate = birthInput.value;
+            
+            // 입력 검증
+            if (!name || !birthDate) {
+                showLoginMessage('이름과 생년월일을 입력해주세요.', 'error');
+                return;
+            }
+            
+            // 로딩 시작
+            checkBtn.style.display = 'none';
+            loading.style.display = 'flex';
+            
+            try {
+                console.log('🔍 비밀번호 필요 여부 확인 중...', { name, birthDate });
+                
+                // 사용자 조회 및 비밀번호 설정 여부 확인
+                const result = await checkPasswordRequired(name, birthDate);
+                
+                if (!result.found) {
+                    showLoginMessage('등록되지 않은 사용자입니다.', 'error');
+                    resetLoginForm();
+                    return;
+                }
+                
+                if (result.requirePassword) {
+                    // 비밀번호가 설정된 사용자 - 비밀번호 입력 필드 표시
+                    showPasswordInput();
+                    showLoginMessage('비밀번호를 입력해주세요.', 'info');
+                } else {
+                    // 비밀번호가 설정되지 않은 사용자 - 즉시 로그인
+                    await performDirectLogin(name, birthDate);
+                }
+                
+            } catch (error) {
+                console.error('❌ 비밀번호 확인 중 오류:', error);
+                showLoginMessage('사용자 확인 중 오류가 발생했습니다.', 'error');
+                resetLoginForm();
+            }
+        }
+
+        // 🔑 2단계: 최종 로그인 (비밀번호 포함)
+        async function handleFinalLogin() {
+            const nameInput = document.getElementById('studentName');
+            const birthInput = document.getElementById('studentBirth');
+            const passwordInput = document.getElementById('loginPassword');
+            const loginBtn = document.getElementById('studentLoginBtn');
+            const loading = document.getElementById('loginLoading');
+            
+            if (!nameInput || !birthInput || !passwordInput || !loginBtn || !loading) return;
+            
+            const name = nameInput.value.trim();
+            const birthDate = birthInput.value;
+            const password = passwordInput.value;
+            
+            if (!password) {
+                showLoginMessage('비밀번호를 입력해주세요.', 'error');
+                passwordInput.focus();
+                return;
+            }
+            
+            // 로딩 시작
+            loginBtn.style.display = 'none';
+            loading.style.display = 'flex';
+            
+            try {
+                console.log('🔑 비밀번호 인증 로그인 시도...', { name, birthDate });
+                
+                // 비밀번호 포함 인증
+                const result = await authenticateUserWithPassword(name, birthDate, password);
+                
+                if (result.success) {
+                    showLoginMessage('로그인 성공! 대시보드로 이동합니다.', 'success');
+                    
+                    // 사용자 정보 저장
+                    const userData = {
+                        ...result.user,
+                        hasPassword: result.hasPassword
+                    };
+                    localStorage.setItem('userData', JSON.stringify(userData));
+                    
+                    // 대시보드로 이동
+                    setTimeout(() => {
+                        window.location.href = 'student/dashboard.html';
+                    }, 1000);
+                } else {
+                    showLoginMessage(result.message || '로그인에 실패했습니다.', 'error');
+                    resetLoginForm();
+                }
+                
+            } catch (error) {
+                console.error('❌ 로그인 처리 중 오류:', error);
+                showLoginMessage('로그인 처리 중 오류가 발생했습니다.', 'error');
+                resetLoginForm();
+            }
+        }
+
+        // 🚀 직접 로그인 (비밀번호 없는 사용자)
+        async function performDirectLogin(name, birthDate) {
+            try {
+                console.log('🚀 직접 로그인 처리...', { name, birthDate });
+                
+                const result = await authenticateUserWithPassword(name, birthDate, null);
+                
+                if (result.success) {
+                    showLoginMessage('로그인 성공! 대시보드로 이동합니다.', 'success');
+                    
+                    // 사용자 정보 저장  
+                    const userData = {
+                        ...result.user,
+                        hasPassword: result.hasPassword
+                    };
+                    localStorage.setItem('userData', JSON.stringify(userData));
+                    
+                    // 대시보드로 이동
+                    setTimeout(() => {
+                        window.location.href = 'student/dashboard.html';
+                    }, 1000);
+                } else {
+                    showLoginMessage(result.message || '로그인에 실패했습니다.', 'error');
+                    resetLoginForm();
+                }
+                
+            } catch (error) {
+                console.error('❌ 직접 로그인 처리 중 오류:', error);
+                showLoginMessage('로그인 처리 중 오류가 발생했습니다.', 'error');
+                resetLoginForm();
+            }
+        }
+
+        // 🔍 비밀번호 필요 여부 확인 함수
+        async function checkPasswordRequired(name, birthDate) {
+            try {
+                if (!window.SupabaseCore?.client) {
+                    throw new Error('Supabase 클라이언트가 초기화되지 않았습니다.');
+                }
+                
+                const { data: users, error } = await window.SupabaseCore.client
+                    .from('user_profiles')
+                    .select('password_hash')
+                    .eq('name', name)
+                    .eq('birth_date', birthDate);
+                
+                if (error) {
+                    console.error('❌ 사용자 조회 실패:', error);
+                    return { found: false };
+                }
+                
+                if (!users || users.length === 0) {
+                    return { found: false };
+                }
+                
+                return { 
+                    found: true, 
+                    requirePassword: !!users[0].password_hash 
+                };
+                
+            } catch (error) {
+                console.error('❌ 비밀번호 확인 중 오류:', error);
+                throw error;
+            }
+        }
+
+        // 🔐 비밀번호 포함 인증 함수 (config.js의 함수를 호출)
+        async function authenticateUserWithPassword(name, birthDate, password) {
+            try {
+                // config.js의 authenticateUser 함수 호출 (확장된 버전)
+                if (typeof authenticateUser === 'function') {
+                    return await authenticateUser(name, birthDate, password);
+                } else {
+                    throw new Error('인증 함수를 찾을 수 없습니다.');
+                }
+            } catch (error) {
+                console.error('❌ 사용자 인증 중 오류:', error);
+                throw error;
+            }
+        }
+
+        // 🎨 비밀번호 입력 필드 표시
+        function showPasswordInput() {
+            const passwordGroup = document.getElementById('passwordGroup');
+            const studentLoginBtn = document.getElementById('studentLoginBtn');
+            const loading = document.getElementById('loginLoading');
+            const passwordInput = document.getElementById('loginPassword');
+            
+            if (passwordGroup) {
+                passwordGroup.style.display = 'block';
+            }
+            
+            if (studentLoginBtn) {
+                studentLoginBtn.style.display = 'block';
+            }
+            
+            if (loading) {
+                loading.style.display = 'none';
+            }
+            
+            // 비밀번호 입력 필드에 포커스
+            setTimeout(() => {
+                if (passwordInput) {
+                    passwordInput.focus();
+                }
+            }, 100);
+        }
+
+        // 🔄 로그인 폼 초기화
+        function resetLoginForm() {
+            const checkBtn = document.getElementById('checkPasswordBtn');
+            const loginBtn = document.getElementById('studentLoginBtn');
+            const passwordGroup = document.getElementById('passwordGroup');
+            const loading = document.getElementById('loginLoading');
+            const passwordInput = document.getElementById('loginPassword');
+            
+            if (checkBtn) {
+                checkBtn.style.display = 'block';
+            }
+            
+            if (loginBtn) {
+                loginBtn.style.display = 'none';
+            }
+            
+            if (passwordGroup) {
+                passwordGroup.style.display = 'none';
+            }
+            
+            if (loading) {
+                loading.style.display = 'none';
+            }
+            
+            if (passwordInput) {
+                passwordInput.value = '';
+            }
+        }
+
+        // 📢 로그인 메시지 표시
+        function showLoginMessage(message, type = 'info') {
+            // 기존 메시지 제거
+            const existingMessage = document.querySelector('.login-message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            const messageHTML = `
+                <div class="login-message message-${type}">
+                    <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            const loginForm = document.getElementById('studentLogin');
+            if (loginForm) {
+                loginForm.insertAdjacentHTML('beforeend', messageHTML);
+                
+                // 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                
+                // 3초 후 자동 제거 (성공 메시지가 아닌 경우)
+                if (type !== 'success') {
+                    setTimeout(() => {
+                        const message = document.querySelector('.login-message');
+                        if (message) {
+                            message.style.opacity = '0';
+                            message.style.transform = 'translateY(-10px)';
+                            setTimeout(() => message.remove(), 300);
+                        }
+                    }, 3000);
+                }
             }
         }
 
@@ -139,5 +476,107 @@
             });
         }
     </script>
+
+    <!-- 🎨 비밀번호 로그인 시스템 CSS -->
+    <style>
+        /* 🔐 비밀번호 입력 필드 스타일 */
+        #passwordGroup {
+            animation: slideDown 0.3s ease;
+        }
+        
+        .password-hint {
+            display: block;
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #6366f1;
+            font-weight: 500;
+        }
+        
+        /* 🎯 2단계 버튼 시스템 */
+        .login-btn.secondary {
+            background: linear-gradient(135deg, #64748b, #475569);
+            color: white;
+        }
+        
+        .login-btn.secondary:hover {
+            background: linear-gradient(135deg, #475569, #334155);
+            transform: translateY(-2px);
+        }
+        
+        /* 🔄 로딩 애니메이션 */
+        .login-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            color: #6366f1;
+            font-weight: 500;
+        }
+        
+        .login-loading i.spin {
+            animation: spin 1s infinite linear;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 📢 로그인 메시지 스타일 */
+        .login-message {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            margin-top: 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .login-message.message-success {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            color: #047857;
+            border-left: 4px solid #10b981;
+        }
+        
+        .login-message.message-error {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            color: #dc2626;
+            border-left: 4px solid #ef4444;
+        }
+        
+        .login-message.message-info {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            color: #1d4ed8;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        /* 📱 모바일 반응형 */
+        @media (max-width: 768px) {
+            .login-loading {
+                padding: 0.75rem;
+                font-size: 0.875rem;
+            }
+            
+            .login-message {
+                padding: 0.625rem 0.875rem;
+                font-size: 0.8125rem;
+            }
+        }
+    </style>
 </body>
 </html>
