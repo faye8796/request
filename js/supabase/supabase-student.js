@@ -840,11 +840,49 @@ const SupabaseStudent = {
     },
 
     // ===================
-    // 🔧 학생 예산 상태 조회 함수 수정 (approved_at, approved_by 컬럼 제거 반영)
+    // 🔧 학생 예산 상태 조회 함수 수정 - student_budgets 테이블 우선 사용
     // ===================
     async getStudentBudgetStatus(studentId) {
         try {
             const client = await this.core.ensureClient();
+            
+            // 🎯 1단계: student_budgets 테이블에서 직접 데이터 조회
+            const budgetResult = await client
+                .from('student_budgets')
+                .select(`
+                    allocated_budget,
+                    used_budget,
+                    remaining_budget,
+                    field,
+                    special_request_amount,
+                    special_request_status,
+                    special_admin_rejection_reason
+                `)
+                .eq('user_id', studentId)
+                .single();
+
+            // student_budgets 테이블에 데이터가 있으면 직접 사용
+            if (budgetResult.data && !budgetResult.error) {
+                const budgetData = budgetResult.data;
+                
+                console.log('✅ student_budgets 테이블에서 직접 조회:', budgetData);
+                
+                return {
+                    allocated: budgetData.allocated_budget || 0,
+                    used: budgetData.used_budget || 0,
+                    remaining: budgetData.remaining_budget || 0,
+                    field: budgetData.field || '미설정',
+                    lessonPlanStatus: 'approved', // student_budgets에 데이터가 있다면 승인됨
+                    specialRequest: {
+                        amount: budgetData.special_request_amount,
+                        status: budgetData.special_request_status,
+                        rejectionReason: budgetData.special_admin_rejection_reason
+                    }
+                };
+            }
+
+            // 🔄 2단계: student_budgets에 데이터가 없으면 기존 자동 계산 로직 사용
+            console.log('⚠️ student_budgets 테이블에 데이터 없음, 자동 계산 사용');
             
             // 1. 학생의 프로필 정보 조회 (분야 확인)
             const profileResult = await client

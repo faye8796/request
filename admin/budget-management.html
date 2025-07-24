@@ -15,10 +15,15 @@
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 2rem;
+            
+        }
+        .admin-header,
+        .stats-grid,
+        .main-content {
             max-width: 1400px;
             margin: 0 auto;
-        }
-
+        }        
+        
         .admin-header {
             background: white;
             border-radius: 1rem;
@@ -255,7 +260,7 @@
         /* 카드 메인 컨텐츠 */
         .request-card-body {
             display: grid;
-            grid-template-columns: 1fr 200px 1fr 120px;
+            grid-template-columns: 150px 180px 1fr 120px; /* 예산영역 축소, 신청사유 확대 */
             gap: 2rem;
             align-items: start;
         }
@@ -340,14 +345,15 @@
             text-transform: uppercase;
         }
 
+        /* 3. 신청 사유 영역 높이 자동 조정 */
         .reason-content {
             color: #2d3748;
             line-height: 1.5;
             font-size: 0.875rem;
-            max-height: 60px;
-            overflow-y: auto;
+            min-height: 40px; /* 최소 높이 */
+            max-height: none; /* 무제한 높이 */
+            overflow-y: visible; /* 스크롤 제거, 자동 확장 */
         }
-
         /* 액션 버튼 섹션 */
         .action-section {
             display: flex;
@@ -503,14 +509,16 @@
             padding: 1rem 1.5rem;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             z-index: 1000;
-            transform: translateX(100%);
+            transform: translateX(100%); /* 기본적으로 화면 밖으로 숨김 */
             transition: transform 0.3s ease;
+            display: none; /* 🆕 추가: 완전히 숨김 */
         }
 
         .toast.show {
+            display: block; /* 🆕 추가: 표시할 때 보임 */
             transform: translateX(0);
         }
-
+        
         .toast.success {
             border-left: 4px solid #48bb78;
         }
@@ -988,7 +996,6 @@
                         .from('student_budgets')
                         .update({
                             allocated_budget: request.allocated_budget + requestAmount,
-                            remaining_budget: request.remaining_budget + requestAmount,
                             special_request_status: 'approved'
                         })
                         .eq('user_id', userId);
@@ -1093,13 +1100,17 @@
             showToast(message, type = 'info') {
                 const toast = document.getElementById('toast');
                 const toastMessage = document.getElementById('toastMessage');
-                
+
                 toastMessage.textContent = message;
                 toast.className = `toast ${type}`;
+                toast.style.display = 'block'; // 🆕 추가
                 toast.classList.add('show');
-                
+
                 setTimeout(() => {
                     toast.classList.remove('show');
+                    setTimeout(() => {
+                        toast.style.display = 'none'; // 🆕 추가: 애니메이션 후 완전 숨김
+                    }, 300);
                 }, 3000);
             }
         }
