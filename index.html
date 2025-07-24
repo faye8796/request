@@ -303,51 +303,50 @@
             }
         }
 
-        // 🔍 비밀번호 필요 여부 확인 함수
+        // 🔍 비밀번호 필요 여부 확인 함수 (수정)
         async function checkPasswordRequired(name, birthDate) {
             try {
-                if (!window.SupabaseCore?.client) {
-                    throw new Error('Supabase 클라이언트가 초기화되지 않았습니다.');
+                if (!window.SupabaseStudent) {
+                    throw new Error('SupabaseStudent가 초기화되지 않았습니다.');
                 }
-                
-                const { data: users, error } = await window.SupabaseCore.client
-                    .from('user_profiles')
-                    .select('password_hash')
-                    .eq('name', name)
-                    .eq('birth_date', birthDate);
-                
-                if (error) {
-                    console.error('❌ 사용자 조회 실패:', error);
-                    return { found: false };
-                }
-                
-                if (!users || users.length === 0) {
-                    return { found: false };
-                }
-                
-                return { 
-                    found: true, 
-                    requirePassword: !!users[0].password_hash 
-                };
-                
+
+                return await window.SupabaseStudent.checkPasswordRequired(name, birthDate);
+
             } catch (error) {
                 console.error('❌ 비밀번호 확인 중 오류:', error);
                 throw error;
             }
         }
 
-        // 🔐 비밀번호 포함 인증 함수 (config.js의 함수를 호출)
+        // 🔐 비밀번호 포함 인증 함수 (수정)
         async function authenticateUserWithPassword(name, birthDate, password) {
             try {
-                // config.js의 authenticateUser 함수 호출 (확장된 버전)
-                if (typeof authenticateUser === 'function') {
-                    return await authenticateUser(name, birthDate, password);
-                } else {
-                    throw new Error('인증 함수를 찾을 수 없습니다.');
+                if (!window.SupabaseStudent) {
+                    throw new Error('SupabaseStudent가 초기화되지 않았습니다.');
                 }
+
+                const result = await window.SupabaseStudent.authenticateStudentWithPassword(name, birthDate, password);
+
+                if (result.success && result.data) {
+                    return {
+                        success: true,
+                        user: result.data,
+                        hasPassword: result.data.hasPassword
+                    };
+                } else {
+                    return {
+                        success: false,
+                        message: result.error?.message || '인증에 실패했습니다.',
+                        requirePassword: result.error?.requirePassword || false
+                    };
+                }
+
             } catch (error) {
                 console.error('❌ 사용자 인증 중 오류:', error);
-                throw error;
+                return {
+                    success: false,
+                    message: '인증 처리 중 오류가 발생했습니다.'
+                };
             }
         }
 
