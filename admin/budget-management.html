@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>특별 예산 지원 관리 - 세종학당 문화인턴 지원 시스템</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    
+    <style>
+        /* 기본 레이아웃 */
+        .admin-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+        }
+
+        .admin-header {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0;
+        }
+
+        .page-subtitle {
+            color: #718096;
+            margin: 0.5rem 0 0 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+            transform: translateY(-2px);
+        }
+
+        /* 통계 대시보드 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .stat-icon {
+            width: 4rem;
+            height: 4rem;
+            margin: 0 auto 1rem;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .stat-card.total .stat-icon {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .stat-card.pending .stat-icon {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .stat-card.approved .stat-icon {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+
+        .stat-card.rejected .stat-icon {
+            background: linear-gradient(135deg, #fc8181, #f56565);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-weight: 600;
+        }
+
+        /* 메인 컨텐츠 */
+        .main-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .content-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0;
+        }
+
+        /* 테이블 스타일 */
+        .request-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+        }
+
+        .request-table th,
+        .request-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .request-table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .request-table tbody tr:hover {
+            background: #f7fafc;
+        }
+
+        /* 상태 배지 */
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status-badge.pending {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        .status-badge.approved {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-badge.rejected {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        /* 액션 버튼 */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        /* 인라인 반려 사유 입력 */
+        .reject-input-row {
+            background: #fff5f5;
+        }
+
+        .reject-form {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .reject-form label {
+            font-weight: 600;
+            color: #2d3748;
+            min-width: 80px;
+        }
+
+        .reject-form input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #cbd5e0;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .reject-form input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-confirm {
+            background: #667eea;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .btn-confirm:hover {
+            background: #5a67d8;
+        }
+
+        .btn-cancel {
+            background: #e2e8f0;
+            color: #4a5568;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .btn-cancel:hover {
+            background: #cbd5e0;
+        }
+
+        /* 금액 표시 */
+        .amount {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .amount.large {
+            color: #e53e3e;
+        }
+
+        /* 신청 사유 */
+        .reason {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: help;
+        }
+
+        /* 예산 정보 */
+        .budget-info {
+            font-size: 0.875rem;
+            color: #718096;
+        }
+
+        .budget-info .current {
+            color: #38a169;
+            font-weight: 600;
+        }
+
+        .budget-info .total {
+            color: #4a5568;
+        }
+
+        /* 로딩 상태 */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #718096;
+        }
+
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 토스트 알림 */
+        .toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid #48bb78;
+        }
+
+        .toast.error {
+            border-left: 4px solid #f56565;
+        }
+
+        .toast.info {
+            border-left: 4px solid #667eea;
+        }
+
+        /* 빈 상태 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #718096;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #4a5568;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 1rem;
+            }
+
+            .admin-header {
+                padding: 1.5rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .stat-card {
+                padding: 1.5rem;
+            }
+
+            .request-table {
+                font-size: 0.875rem;
+            }
+
+            .request-table th,
+            .request-table td {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .reason {
+                max-width: 120px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .reject-form {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.75rem;
+            }
+
+            .reject-form label {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- 헤더 섹션 -->
+        <div class="admin-header">
+            <div class="header-content">
+                <div>
+                    <h1 class="page-title">💰 특별 예산 지원 관리</h1>
+                    <p class="page-subtitle">학생들의 추가 예산 신청을 검토하고 승인/반려 처리를 진행할 수 있습니다.</p>
+                </div>
+                <div class="header-actions">
+                    <a href="../admin.html" class="btn btn-secondary">
+                        <i data-lucide="arrow-left"></i>
+                        관리자 대시보드
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 통계 대시보드 -->
+        <div class="stats-grid">
+            <div class="stat-card total">
+                <div class="stat-icon">
+                    <i data-lucide="users"></i>
+                </div>
+                <div class="stat-number" id="totalRequestsCount">-</div>
+                <div class="stat-label">총 신청 건수</div>
+            </div>
+            
+            <div class="stat-card pending">
+                <div class="stat-icon">
+                    <i data-lucide="clock"></i>
+                </div>
+                <div class="stat-number" id="pendingRequestsCount">-</div>
+                <div class="stat-label">검토 대기 중</div>
+            </div>
+            
+            <div class="stat-card approved">
+                <div class="stat-icon">
+                    <i data-lucide="check-circle"></i>
+                </div>
+                <div class="stat-number" id="approvedRequestsCount">-</div>
+                <div class="stat-label">승인 완료</div>
+            </div>
+            
+            <div class="stat-card rejected">
+                <div class="stat-icon">
+                    <i data-lucide="x-circle"></i>
+                </div>
+                <div class="stat-number" id="rejectedRequestsCount">-</div>
+                <div class="stat-label">반려 완료</div>
+            </div>
+        </div>
+
+        <!-- 메인 컨텐츠 -->
+        <div class="main-content">
+            <div class="content-header">
+                <h2 class="content-title">특별 예산 신청 내역</h2>
+            </div>
+
+            <!-- 로딩 상태 -->
+            <div id="loadingState" class="loading">
+                <i data-lucide="loader-2"></i>
+                <p>신청 내역을 불러오는 중...</p>
+            </div>
+
+            <!-- 신청 내역 테이블 -->
+            <div id="requestsTableContainer" style="display: none;">
+                <table class="request-table">
+                    <thead>
+                        <tr>
+                            <th>학생명</th>
+                            <th>분야</th>
+                            <th>현재 예산</th>
+                            <th>신청 금액</th>
+                            <th>신청 사유</th>
+                            <th>상태</th>
+                            <th>액션</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requestsTableBody">
+                        <!-- 동적으로 채워짐 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 빈 상태 -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <i data-lucide="wallet"></i>
+                <h3>신청 내역이 없습니다</h3>
+                <p>현재 특별 예산 지원 신청이 없습니다.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 토스트 알림 -->
+    <div id="toast" class="toast">
+        <span id="toastMessage"></span>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <!-- 설정 및 유틸리티 -->
+    <script src="../js/config.js"></script>
+    <script src="../js/utils.js"></script>
+    
+    <!-- Supabase 클라이언트 -->
+    <script src="../js/supabase/supabase-core.js"></script>
+    <script src="../js/supabase/supabase-admin.js"></script>
+    <script src="../js/supabase-client.js"></script>
+
+    <script>
+        // 🎯 특별 예산 관리 시스템 v1.0.0
+        class BudgetManagementSystem {
+            constructor() {
+                this.supabaseClient = null;
+                this.requestsData = [];
+                this.stats = {
+                    total: 0,
+                    pending: 0,
+                    approved: 0,
+                    rejected: 0
+                };
+            }
+
+            // 초기화
+            async initialize() {
+                try {
+                    console.log('🔄 특별 예산 관리 시스템 초기화 중...');
+                    
+                    // Supabase 클라이언트 대기
+                    await this.waitForSupabase();
+                    
+                    // 데이터 로드
+                    await this.loadRequestsData();
+                    
+                    // UI 렌더링
+                    this.renderStats();
+                    this.renderRequestsTable();
+                    
+                    // 아이콘 초기화
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                    
+                    console.log('✅ 특별 예산 관리 시스템 초기화 완료');
+                    
+                } catch (error) {
+                    console.error('❌ 초기화 실패:', error);
+                    this.showToast('시스템 초기화에 실패했습니다.', 'error');
+                }
+            }
+
+            // Supabase 클라이언트 대기
+            async waitForSupabase() {
+                return new Promise((resolve, reject) => {
+                    let attempts = 0;
+                    const maxAttempts = 30;
+                    
+                    const check = () => {
+                        if (window.SupabaseAPI && window.SupabaseAPI.client) {
+                            this.supabaseClient = window.SupabaseAPI.client;
+                            resolve();
+                        } else if (attempts >= maxAttempts) {
+                            reject(new Error('Supabase 클라이언트를 찾을 수 없습니다.'));
+                        } else {
+                            attempts++;
+                            setTimeout(check, 100);
+                        }
+                    };
+                    
+                    check();
+                });
+            }
+
+            // 신청 데이터 로드
+            async loadRequestsData() {
+                try {
+                    const { data, error } = await this.supabaseClient
+                        .from('student_budgets')
+                        .select(`
+                            user_id,
+                            field,
+                            allocated_budget,
+                            used_budget,
+                            remaining_budget,
+                            special_request_amount,
+                            special_request_reason,
+                            special_request_status,
+                            special_admin_rejection_reason,
+                            user_profiles!inner(name, email)
+                        `)
+                        .not('special_request_status', 'is', null);
+
+                    if (error) throw error;
+
+                    this.requestsData = data || [];
+                    this.calculateStats();
+                    
+                    console.log('📊 신청 데이터 로드 완료:', this.requestsData.length, '건');
+                    
+                } catch (error) {
+                    console.error('❌ 데이터 로드 실패:', error);
+                    this.showToast('데이터를 불러오는데 실패했습니다.', 'error');
+                }
+            }
+
+            // 통계 계산
+            calculateStats() {
+                this.stats = {
+                    total: this.requestsData.length,
+                    pending: this.requestsData.filter(r => r.special_request_status === 'pending').length,
+                    approved: this.requestsData.filter(r => r.special_request_status === 'approved').length,
+                    rejected: this.requestsData.filter(r => r.special_request_status === 'rejected').length
+                };
+            }
+
+            // 통계 렌더링
+            renderStats() {
+                document.getElementById('totalRequestsCount').textContent = this.stats.total;
+                document.getElementById('pendingRequestsCount').textContent = this.stats.pending;
+                document.getElementById('approvedRequestsCount').textContent = this.stats.approved;
+                document.getElementById('rejectedRequestsCount').textContent = this.stats.rejected;
+            }
+
+            // 테이블 렌더링
+            renderRequestsTable() {
+                const loadingState = document.getElementById('loadingState');
+                const tableContainer = document.getElementById('requestsTableContainer');
+                const emptyState = document.getElementById('emptyState');
+                const tableBody = document.getElementById('requestsTableBody');
+
+                loadingState.style.display = 'none';
+
+                if (this.requestsData.length === 0) {
+                    emptyState.style.display = 'block';
+                    tableContainer.style.display = 'none';
+                    return;
+                }
+
+                emptyState.style.display = 'none';
+                tableContainer.style.display = 'block';
+
+                tableBody.innerHTML = this.requestsData.map(request => this.renderRequestRow(request)).join('');
+            }
+
+            // 신청 행 렌더링
+            renderRequestRow(request) {
+                const statusClass = request.special_request_status;
+                const statusText = {
+                    pending: '검토 중',
+                    approved: '승인됨',
+                    rejected: '반려됨'
+                }[statusClass] || '알 수 없음';
+
+                const amount = parseInt(request.special_request_amount);
+                const amountClass = amount > 100000 ? 'amount large' : 'amount';
+
+                return `
+                    <tr data-user-id="${request.user_id}">
+                        <td>
+                            <strong>${request.user_profiles.name}</strong><br>
+                            <small>${request.user_profiles.email || '이메일 없음'}</small>
+                        </td>
+                        <td>${request.field}</td>
+                        <td>
+                            <div class="budget-info">
+                                <div class="current">${request.remaining_budget?.toLocaleString() || 0}원</div>
+                                <small class="total">/ ${request.allocated_budget?.toLocaleString() || 0}원</small>
+                            </div>
+                        </td>
+                        <td class="${amountClass}">${amount.toLocaleString()}원</td>
+                        <td class="reason" title="${request.special_request_reason}">
+                            ${request.special_request_reason}
+                        </td>
+                        <td>
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                            ${request.special_admin_rejection_reason ? `<br><small>반려 사유: ${request.special_admin_rejection_reason}</small>` : ''}
+                        </td>
+                        <td>
+                            ${this.renderActionButtons(request)}
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // 액션 버튼 렌더링
+            renderActionButtons(request) {
+                if (request.special_request_status === 'pending') {
+                    return `
+                        <div class="action-buttons">
+                            <button class="btn btn-success btn-sm" onclick="budgetManager.approveRequest('${request.user_id}')">
+                                <i data-lucide="check"></i> 승인
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="budgetManager.showRejectInput('${request.user_id}')">
+                                <i data-lucide="x"></i> 반려
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    return `<span class="status-badge ${request.special_request_status}">처리 완료</span>`;
+                }
+            }
+
+            // 승인 처리
+            async approveRequest(userId) {
+                if (!confirm('이 신청을 승인하시겠습니까?\n\n승인 시 해당 학생의 예산이 자동으로 증가됩니다.')) {
+                    return;
+                }
+
+                try {
+                    const request = this.requestsData.find(r => r.user_id === userId);
+                    if (!request) throw new Error('신청 내역을 찾을 수 없습니다.');
+
+                    const requestAmount = parseInt(request.special_request_amount);
+                    
+                    // 예산 업데이트 및 상태 변경
+                    const { error } = await this.supabaseClient
+                        .from('student_budgets')
+                        .update({
+                            allocated_budget: request.allocated_budget + requestAmount,
+                            remaining_budget: request.remaining_budget + requestAmount,
+                            special_request_status: 'approved'
+                        })
+                        .eq('user_id', userId);
+
+                    if (error) throw error;
+
+                    this.showToast('신청이 승인되었습니다. 학생의 예산이 증가되었습니다.', 'success');
+                    
+                    // 데이터 새로고침
+                    await this.loadRequestsData();
+                    this.renderStats();
+                    this.renderRequestsTable();
+                    
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ 승인 실패:', error);
+                    this.showToast('승인 처리 중 오류가 발생했습니다.', 'error');
+                }
+            }
+
+            // 반려 입력창 표시
+            showRejectInput(userId) {
+                // 기존 반려 입력창 제거
+                const existingRejectRow = document.querySelector('.reject-input-row');
+                if (existingRejectRow) {
+                    existingRejectRow.remove();
+                }
+
+                const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+                if (!row) return;
+
+                const rejectRow = document.createElement('tr');
+                rejectRow.className = 'reject-input-row';
+                rejectRow.innerHTML = `
+                    <td colspan="7">
+                        <div class="reject-form">
+                            <label>반려 사유:</label>
+                            <input type="text" id="rejectReason-${userId}" placeholder="반려 사유를 입력하세요" maxlength="200" required>
+                            <button class="btn-confirm" onclick="budgetManager.confirmReject('${userId}')">반려 확정</button>
+                            <button class="btn-cancel" onclick="budgetManager.cancelReject()">취소</button>
+                        </div>
+                    </td>
+                `;
+
+                row.insertAdjacentElement('afterend', rejectRow);
+                document.getElementById(`rejectReason-${userId}`).focus();
+            }
+
+            // 반려 확정
+            async confirmReject(userId) {
+                const reasonInput = document.getElementById(`rejectReason-${userId}`);
+                const reason = reasonInput?.value.trim();
+
+                if (!reason) {
+                    alert('반려 사유를 입력해주세요.');
+                    reasonInput?.focus();
+                    return;
+                }
+
+                try {
+                    const { error } = await this.supabaseClient
+                        .from('student_budgets')
+                        .update({
+                            special_request_status: 'rejected',
+                            special_admin_rejection_reason: reason
+                        })
+                        .eq('user_id', userId);
+
+                    if (error) throw error;
+
+                    this.showToast('신청이 반려되었습니다.', 'info');
+                    
+                    // 반려 입력창 제거
+                    this.cancelReject();
+                    
+                    // 데이터 새로고침
+                    await this.loadRequestsData();
+                    this.renderStats();
+                    this.renderRequestsTable();
+                    
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ 반려 실패:', error);
+                    this.showToast('반려 처리 중 오류가 발생했습니다.', 'error');
+                }
+            }
+
+            // 반려 입력 취소
+            cancelReject() {
+                const rejectRow = document.querySelector('.reject-input-row');
+                if (rejectRow) {
+                    rejectRow.remove();
+                }
+            }
+
+            // 토스트 알림 표시
+            showToast(message, type = 'info') {
+                const toast = document.getElementById('toast');
+                const toastMessage = document.getElementById('toastMessage');
+                
+                toastMessage.textContent = message;
+                toast.className = `toast ${type}`;
+                toast.classList.add('show');
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        // 전역 인스턴스 생성
+        const budgetManager = new BudgetManagementSystem();
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            budgetManager.initialize();
+        });
+
+        console.log('💰 특별 예산 관리 시스템 v1.0.0 로드 완료');
+    </script>
+</body>
+</html>

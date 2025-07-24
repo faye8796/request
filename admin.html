@@ -724,6 +724,22 @@
                         </button>
                     </div>
 
+                    <!-- 🆕 특별 예산 지원 관리 -->
+                    <div class="menu-card" onclick="navigateToBudgetManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="wallet"></i>
+                        </div>
+                        <h2 class="menu-title">특별 예산 지원 관리</h2>
+                        <p class="menu-description">
+                            학생들의 특별 예산 지원 신청을 검토하고<br>
+                            승인 및 반려 처리를 관리할 수 있습니다.
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
+
                     <!-- 🆕 수료평가 관리 -->
                     <div class="menu-card" onclick="navigateToExamManagement()">
                         <div class="menu-icon">
@@ -1300,7 +1316,7 @@
                 }
             }
 
-            // 🆕 v5.2.1 네비게이션 함수들 (수료평가 관리 추가)
+            // 🆕 v5.2.1 네비게이션 함수들 (특별 예산 관리 추가)
             function navigateToInstituteManagement() {
                 window.location.href = 'admin/institute-management.html';
             }
@@ -1311,6 +1327,10 @@
 
             function navigateToEquipmentManagement() {
                 window.location.href = 'admin/equipment-management.html';
+            }
+
+            function navigateToBudgetManagement() {
+                window.location.href = 'admin/budget-management.html';
             }
 
             function navigateToExamManagement() {
@@ -1327,6 +1347,7 @@
             window.navigateToInstituteManagement = navigateToInstituteManagement;
             window.navigateToFlightManagement = navigateToFlightManagement;
             window.navigateToEquipmentManagement = navigateToEquipmentManagement;
+            window.navigateToBudgetManagement = navigateToBudgetManagement;
             window.navigateToExamManagement = navigateToExamManagement;
             window.navigateToCountrySafetyManagement = navigateToCountrySafetyManagement;
 
@@ -1340,6 +1361,7 @@
                 navigateToInstituteManagement,
                 navigateToFlightManagement,
                 navigateToEquipmentManagement,
+                navigateToBudgetManagement,
                 navigateToExamManagement,
                 navigateToCountrySafetyManagement
             };
