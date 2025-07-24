@@ -43,6 +43,120 @@ const SupabaseStudent = {
     },
 
     // ===================
+    // 🔐 비밀번호 지원 학생 인증 (신규)
+    // ===================
+    async authenticateStudentWithPassword(name, birthDate, password = null) {
+        const result = await this.core.safeApiCall('비밀번호 지원 학생 인증', async () => {
+            const client = await this.core.ensureClient();
+            
+            // 1. 기본 사용자 조회 (비밀번호 해시 포함)
+            const { data, error } = await client
+                .from('user_profiles')
+                .select('id, name, birth_date, password_hash, password_set_at, password_updated_at, user_type, field, sejong_institute, individual_flight_request_enabled, individual_equipment_request_enabled')
+                .eq('user_type', 'student')
+                .eq('name', name)
+                .eq('birth_date', birthDate);
+
+            if (error) {
+                return { data: null, error };
+            }
+
+            if (!data || data.length === 0) {
+                return { 
+                    data: null, 
+                    error: { message: '등록되지 않은 사용자입니다.' }
+                };
+            }
+
+            const user = data[0];
+
+            // 2. 비밀번호 설정 여부 확인 및 검증
+            if (user.password_hash) {
+                // 비밀번호가 설정된 사용자
+                if (!password) {
+                    return { 
+                        data: null, 
+                        error: { 
+                            message: '비밀번호를 입력해주세요.',
+                            requirePassword: true
+                        }
+                    };
+                }
+                
+                // 비밀번호 검증
+                const hashedInputPassword = await this.hashPassword(password);
+                if (hashedInputPassword !== user.password_hash) {
+                    return { 
+                        data: null, 
+                        error: { message: '비밀번호가 일치하지 않습니다.' }
+                    };
+                }
+            }
+
+            // 3. 인증 성공 - hasPassword 정보 추가
+            const userWithPasswordInfo = {
+                ...user,
+                hasPassword: !!user.password_hash
+            };
+
+            return { data: userWithPasswordInfo, error: null };
+        });
+
+        if (result.success && result.data) {
+            this.core.currentUser = result.data;
+            this.core.currentUserType = 'student';
+        }
+
+        return result;
+    },
+
+    // 🔐 비밀번호 해시화 함수 (SHA-256 + Salt)
+    async hashPassword(password) {
+        try {
+            const encoder = new TextEncoder();
+            const salt = 'sejong_cultural_intern_2025'; // dashboard-password.js와 동일한 솔트
+            const data = encoder.encode(password + salt);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (error) {
+            console.error('❌ 비밀번호 해시화 실패:', error);
+            throw new Error('비밀번호 암호화에 실패했습니다.');
+        }
+    },
+
+    // 🔍 비밀번호 설정 여부 확인 함수 (index.html용)
+    async checkPasswordRequired(name, birthDate) {
+        const result = await this.core.safeApiCall('비밀번호 필요 여부 확인', async () => {
+            const client = await this.core.ensureClient();
+            const { data, error } = await client
+                .from('user_profiles')
+                .select('password_hash')
+                .eq('user_type', 'student')
+                .eq('name', name)
+                .eq('birth_date', birthDate);
+
+            if (error || !data || data.length === 0) {
+                return { 
+                    data: { found: false }, 
+                    error: null 
+                };
+            }
+
+            return { 
+                data: { 
+                    found: true, 
+                    requirePassword: !!data[0].password_hash 
+                }, 
+                error: null 
+            };
+        });
+
+        return result.data || { found: false };
+    },    
+    
+    
+    // ===================
     // 🔧 배송지 정보 관리 - UPSERT 로직 완전 수정
     // ===================
     

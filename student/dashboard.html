@@ -373,6 +373,10 @@
     <script src="../js/student/notification-system.js?v=5.2.0"></script>
     <script src="../js/student/dashboard.js?v=5.2.0"></script>
     
+    <!-- 🆕 비밀번호 관리자 모듈 추가 -->
+    <script src="../js/student/dashboard-password.js?v=5.2.0"></script>
+
+    
     <!-- 대시보드 초기화 - v9.3.2 테스트 사용자 특권 제거 버전 -->
     <script>
         console.log('🎯 Dashboard v9.3.2 - 테스트 사용자 특권 제거 버전 시작');
@@ -475,6 +479,19 @@
                     
                     // UI 업데이트
                     this.updateStudentInfoUI(studentData);
+                    
+                    // 🆕 비밀번호 관리자 초기화 추가
+                    if (window.DashboardPasswordManager) {
+                        try {
+                            this.passwordManager = new window.DashboardPasswordManager();
+                            await this.passwordManager.initialize(studentData.id, window.SupabaseCore?.client);
+                            console.log('✅ 비밀번호 관리자 초기화 완료');
+                        } catch (error) {
+                            console.error('❌ 비밀번호 관리자 초기화 실패:', error);
+                        }
+                    } else {
+                        console.warn('⚠️ DashboardPasswordManager를 찾을 수 없습니다');
+                    }                    
                     
                     // 다음 단계로 진행 - 기능 설정 로드
                     console.log('✅ 학생 정보 로딩 완료 - 기능 설정 로딩 시작');
