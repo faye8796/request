@@ -219,7 +219,7 @@ class FlightManagementSystem {
     }
 
     /**
-     * 🔧 하위 모듈 초기화
+     * 🔧 하위 모듈 초기화 (수정된 버전)
      */
     async initializeModules() {
         console.log('🔧 하위 모듈들 초기화 중...');
@@ -236,6 +236,13 @@ class FlightManagementSystem {
             try {
                 if (window[module.className]) {
                     this.modules[module.name] = new window[module.className](this);
+
+                    // 🆕 중요: 모달 인스턴스를 전역에 할당
+                    if (module.name === 'modals') {
+                        window.flightModals = this.modules[module.name];
+                        console.log('✅ 모달 인스턴스 전역 할당 완료');
+                    }
+
                     console.log(`✅ ${module.name} 모듈 초기화 완료`);
                 } else if (module.required) {
                     throw new Error(`필수 모듈 ${module.className}을 찾을 수 없습니다`);

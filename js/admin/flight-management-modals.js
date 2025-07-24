@@ -1555,6 +1555,112 @@ class FlightManagementModals {
         this.isInitialized = false;
         console.log('✅ FlightManagementModals 정리 완료');
     }
+    
+    /**
+     * 📋 첨부 파일 생성
+     */
+    generateFileAttachments(request) {
+        const attachments = [];
+        
+        if (request.flight_image_url) {
+            attachments.push(`
+                <div class="file-attachment" onclick="window.flightModals.showImagePreview('${request.flight_image_url}')">
+                    <i data-lucide="image"></i>
+                    <p>항공권 이미지</p>
+                </div>
+            `);
+        }
+        
+        if (request.receipt_url) {
+            attachments.push(`
+                <div class="file-attachment" onclick="window.flightModals.showImagePreview('${request.receipt_url}')">
+                    <i data-lucide="receipt"></i>
+                    <p>구매 영수증</p>
+                </div>
+            `);
+        }
+        
+        if (request.admin_ticket_url) {
+            attachments.push(`
+                <div class="file-attachment" onclick="window.flightModals.showImagePreview('${request.admin_ticket_url}')">
+                    <i data-lucide="ticket"></i>
+                    <p>최종 항공권</p>
+                </div>
+            `);
+        }
+        
+        if (attachments.length === 0) {
+            return '<p style="text-align: center; color: #a0aec0;">첨부된 파일이 없습니다.</p>';
+        }
+        
+        return attachments.join('');
+    }
+
+    /**
+     * 📋 상세 모달 액션 버튼 생성
+     */
+    generateDetailModalActions(request) {
+        const actions = [];
+        
+        if (request.status === 'pending') {
+            actions.push(`
+                <button class="btn success" onclick="window.flightModals.showApproveModal('${request.id}')">
+                    <i data-lucide="check"></i>
+                    승인하기
+                </button>
+            `);
+            actions.push(`
+                <button class="btn danger" onclick="window.flightModals.showRejectModal('${request.id}')">
+                    <i data-lucide="x"></i>
+                    반려하기
+                </button>
+            `);
+        }
+        
+        return actions.join('');
+    }
+
+    /**
+     * 🛂 여권 경고 메시지 생성
+     */
+    generatePassportWarnings(passportData) {
+        const warnings = [];
+        const now = new Date();
+        const expiryDate = new Date(passportData.expiry_date);
+        const monthsUntilExpiry = (expiryDate - now) / (1000 * 60 * 60 * 24 * 30);
+        
+        if (monthsUntilExpiry < 6) {
+            warnings.push(`
+                <div class="warning-box danger">
+                    <i data-lucide="alert-triangle"></i>
+                    <div>
+                        <strong>여권 만료 임박 경고</strong>
+                        <p>여권이 6개월 이내에 만료됩니다. 대부분의 국가에서 입국 시 여권 유효기간이 6개월 이상 남아있어야 합니다.</p>
+                    </div>
+                </div>
+            `);
+        }
+        
+        return warnings.join('');
+    }
+
+    /**
+     * 🗓️ 여권 유효성 상태 계산
+     */
+    calculateValidityStatus(expiryDate) {
+        const now = new Date();
+        const expiry = new Date(expiryDate);
+        const daysUntilExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+        
+        if (daysUntilExpiry < 0) {
+            return '<span style="color: #e53e3e; font-weight: 600;">만료됨</span>';
+        } else if (daysUntilExpiry < 180) {
+            return `<span style="color: #ed8936; font-weight: 600;">${daysUntilExpiry}일 남음 (주의)</span>`;
+        } else {
+            return `<span style="color: #38a169; font-weight: 600;">${daysUntilExpiry}일 남음</span>`;
+        }
+    }
+
 
     /**
      * 📋 디버그 정보
