@@ -636,24 +636,20 @@ class FlightManagementModals {
                                         <h4>기본 정보</h4>
                                         <div class="passport-details">
                                             <div class="detail-row">
+                                                <span class="label">한글 성명</span>
+                                                <span class="value">${passportData.user_name || '미입력'}</span>
+                                            </div>
+                                            <div class="detail-row">
                                                 <span class="label">영문 성명</span>
-                                                <span class="value">${passportData.english_name || '미입력'}</span>
+                                                <span class="value">${passportData.name_english || '미입력'}</span>
                                             </div>
                                             <div class="detail-row">
                                                 <span class="label">여권 번호</span>
-                                                <span class="value passport-number">${this.maskPassportNumber(passportData.passport_number)}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <span class="label">국적</span>
-                                                <span class="value">${passportData.nationality || '대한민국'}</span>
+                                                <span class="value passport-number">${passportData.passport_number || '미입력'}</span>
                                             </div>
                                             <div class="detail-row">
                                                 <span class="label">생년월일</span>
                                                 <span class="value">${this.formatDate(passportData.birth_date)}</span>
-                                            </div>
-                                            <div class="detail-row">
-                                                <span class="label">성별</span>
-                                                <span class="value">${passportData.gender === 'M' ? '남성' : '여성'}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -676,8 +672,10 @@ class FlightManagementModals {
                                                 </span>
                                             </div>
                                             <div class="detail-row">
-                                                <span class="label">발급 기관</span>
-                                                <span class="value">${passportData.issuing_authority || '외교부'}</span>
+                                                <span class="label">여권 상태</span>
+                                                <span class="value passport-status-badge">
+                                                    ${this.getPassportStatusBadge(passportData.passport_status)}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -719,8 +717,18 @@ class FlightManagementModals {
             this.showError('여권 정보를 불러오는 중 오류가 발생했습니다.');
         }
     }
-
-    // PART 1 여기까지 - 계속해서 PART 2로 이어집니다
+    
+    /**
+     * 여권 상태 배지 생성
+     */
+    getPassportStatusBadge(status) {
+        const statusMap = {
+            'valid': '<span class="status-badge status-valid">✅ 유효</span>',
+            'expiring_soon': '<span class="status-badge status-warning">⚠️ 만료 임박</span>',
+            'expired': '<span class="status-badge status-danger">❌ 만료됨</span>'
+        };
+        return statusMap[status] || '<span class="status-badge status-unknown">❓ 알 수 없음</span>';
+    }
     
     /**
      * 📤 항공권 업로드 모달 (관리자용)

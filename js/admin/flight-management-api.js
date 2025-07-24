@@ -356,22 +356,22 @@ class FlightManagementAPI {
         }
     }
 
-    // 여권 정보 가져오기
+    // 여권 정보 가져오기 (passport_info_summary VIEW 사용)
     async getPassportInfo(userId) {
         try {
-            console.log('🛂 v8.1.0 여권 정보 조회 중...', userId);
-            
+            console.log('🛂 v8.1.0 여권 정보 조회 중... (passport_info_summary VIEW)', userId);
+
             const supabase = this.checkSupabaseInstance();
-            
+
             const { data, error } = await supabase
-                .from('passport_info')
+                .from('passport_info_summary')
                 .select('*')
                 .eq('user_id', userId)
                 .single();
 
             if (error && error.code !== 'PGRST116') throw error; // PGRST116: no rows returned
 
-            console.log('✅ v8.1.0 여권 정보 조회 성공:', data);
+            console.log('✅ v8.1.0 여권 정보 조회 성공 (passport_info_summary VIEW):', data);
             return data;
 
         } catch (error) {
