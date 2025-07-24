@@ -684,20 +684,23 @@ class FlightManagementModals {
                                 ${this.generatePassportWarnings(passportData)}
 
                                 <div class="passport-image-section">
-                                    <h4>여권 이미지</h4>
-                                    ${passportData.passport_image_url ? `
-                                        <div class="passport-image">
-                                            <img src="${passportData.passport_image_url}" 
-                                                 alt="여권 이미지"
-                                                 onclick="window.flightModals.showImagePreview('${passportData.passport_image_url}')"
-                                                 style="cursor: pointer;">
-                                        </div>
-                                    ` : `
-                                        <div class="no-image">
-                                            <i data-lucide="image-off"></i>
-                                            <p>등록된 여권 이미지가 없습니다.</p>
-                                        </div>
-                                    `}
+                                        <h4>여권 이미지</h4>
+                                        ${passportData.image_url ? `
+                                            <div class="passport-image">
+                                                <img src="${passportData.image_url}" 
+                                                     alt="여권 이미지"
+                                                     onclick="window.flightModals.showImagePreview('${passportData.image_url}')"
+                                                     style="cursor: pointer; max-width: 100%; max-height: 300px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                                            </div>
+                                            <p style="text-align: center; margin-top: 0.5rem; color: #718096; font-size: 0.875rem;">
+                                                이미지를 클릭하면 크게 볼 수 있습니다.
+                                            </p>
+                                        ` : `
+                                            <div class="no-image">
+                                                <i data-lucide="image-off"></i>
+                                                <p>등록된 여권 이미지가 없습니다.</p>
+                                            </div>
+                                        `}
                                 </div>
                             </div>
                         </div>
@@ -1042,6 +1045,136 @@ class FlightManagementModals {
             this.showError('항공권 보기 모달을 표시하는 중 오류가 발생했습니다.');
         }
     }    
+    
+    /**
+     * 🎫 학생 등록 항공권 확인 모달
+     */
+    async showStudentTicketModal(requestId) {
+        try {
+            console.log('🎫 학생 등록 항공권 확인 모달 표시:', requestId);
+
+            const request = await this.loadRequestData(requestId);
+            if (!request) {
+                this.showError('요청 정보를 찾을 수 없습니다.');
+                return;
+            }
+
+            // 학생이 등록한 항공권 URL 확인
+            if (!request.ticket_url) {
+                this.showError('학생이 등록한 항공권이 없습니다.');
+                return;
+            }
+
+            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(request.ticket_url);
+            const isPDF = /\.pdf$/i.test(request.ticket_url);
+
+            const modalHtml = `
+                <div class="modal-overlay show" id="studentTicketModal">
+                    <div class="modal-container large">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i data-lucide="plane"></i>
+                                학생 등록 항공권 확인
+                            </h2>
+                            <button class="modal-close" onclick="window.flightModals.closeModal('studentTicketModal')">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="student-ticket-content">
+                                <!-- 신청 정보 vs 실제 등록 비교 -->
+                                <div class="comparison-section">
+                                    <h4>📋 신청 정보 vs 실제 등록 항공권 비교</h4>
+                                    <div class="comparison-grid">
+                                        <div class="comparison-item">
+                                            <div class="comparison-label">신청 출국일</div>
+                                            <div class="comparison-value original">${this.formatFullDate(request.departure_date)}</div>
+                                        </div>
+                                        <div class="comparison-item">
+                                            <div class="comparison-label">신청 귀국일</div>
+                                            <div class="comparison-value original">${this.formatFullDate(request.return_date)}</div>
+                                        </div>
+                                        <div class="comparison-item">
+                                            <div class="comparison-label">신청 출발공항</div>
+                                            <div class="comparison-value original">${request.departure_airport || '미입력'}</div>
+                                        </div>
+                                        <div class="comparison-item">
+                                            <div class="comparison-label">신청 도착공항</div>
+                                            <div class="comparison-value original">${request.arrival_airport || '미입력'}</div>
+                                        </div>
+                                        <div class="comparison-item">
+                                            <div class="comparison-label">신청 금액</div>
+                                            <div class="comparison-value original">${this.formatPrice(request.ticket_price, request.currency)}</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="verification-note">
+                                        <i data-lucide="alert-circle"></i>
+                                        <strong>확인 사항:</strong> 학생이 실제 등록한 항공권이 위 신청 정보와 일치하는지 확인해주세요.
+                                    </div>
+                                </div>
+
+                                <!-- 실제 등록된 항공권 -->
+                                <div class="ticket-preview-section">
+                                    <h4>✈️ 학생이 등록한 항공권</h4>
+                                    <div class="preview-container">
+                                        ${isImage ? `
+                                            <img src="${request.ticket_url}" 
+                                                 alt="학생 등록 항공권" 
+                                                 style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"
+                                                 onclick="window.open('${request.ticket_url}', '_blank')">
+                                            <p style="text-align: center; margin-top: 1rem; color: #718096; font-size: 0.875rem;">
+                                                이미지를 클릭하면 새 창에서 확대해서 볼 수 있습니다.
+                                            </p>
+                                        ` : isPDF ? `
+                                            <div class="pdf-preview">
+                                                <iframe src="${request.ticket_url}" 
+                                                        width="100%" 
+                                                        height="500px" 
+                                                        style="border: 1px solid #e2e8f0; border-radius: 8px;">
+                                                </iframe>
+                                                <p style="text-align: center; margin-top: 1rem;">
+                                                    <a href="${request.ticket_url}" target="_blank" class="btn primary">
+                                                        <i data-lucide="external-link"></i>
+                                                        새 창에서 PDF 열기
+                                                    </a>
+                                                </p>
+                                            </div>
+                                        ` : `
+                                            <div class="file-download">
+                                                <i data-lucide="file" style="width: 48px; height: 48px; margin: 0 auto 1rem; color: #a0aec0;"></i>
+                                                <p>미리보기가 지원되지 않는 파일 형식입니다.</p>
+                                                <a href="${request.ticket_url}" target="_blank" class="btn primary">
+                                                    <i data-lucide="download"></i>
+                                                    파일 다운로드
+                                                </a>
+                                            </div>
+                                        `}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn secondary" onclick="window.flightModals.closeModal('studentTicketModal')">
+                                닫기
+                            </button>
+                            <a href="${request.ticket_url}" download class="btn primary">
+                                <i data-lucide="download"></i>
+                                다운로드
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            this.showModal(modalHtml, 'studentTicketModal');
+
+        } catch (error) {
+            console.error('❌ 학생 항공권 확인 모달 표시 실패:', error);
+            this.showError('학생 항공권 확인 모달을 표시하는 중 오류가 발생했습니다.');
+        }
+    }    
+    
     
     /**
      * 🧾 영수증 보기 모달

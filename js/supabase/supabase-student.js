@@ -54,7 +54,7 @@ const SupabaseStudent = {
                 .from('shipping_addresses')
                 .select('*')
                 .eq('user_id', userId)
-                .single();
+                .maybeSingle();
 
             // PGRST116은 데이터 없음을 의미하므로 정상 처리
             if (error && error.code === 'PGRST116') {

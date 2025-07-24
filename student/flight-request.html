@@ -57,9 +57,10 @@
                             <div class="form-group">
                                 <label for="passportNumber" class="form-label required">여권번호</label>
                                 <input type="text" id="passportNumber" name="passportNumber" class="form-input" 
-                                       placeholder="예: M12345678" required pattern="[A-Z][0-9]{8}" 
-                                       title="대문자 1자리 + 숫자 8자리 형식으로 입력해주세요">
-                                <span class="form-hint">대문자 1자리 + 숫자 8자리</span>
+                                       placeholder="예: M12345678 또는 M123A4567" required 
+                                       pattern="[MS][0-9]{8}|[MS][0-9]{3}[A-Z][0-9]{4}" 
+                                       title="구여권: M12345678 또는 신여권: M123A4567 형식으로 입력해주세요">
+                                <span class="form-hint">구여권: M12345678 또는 신여권: M123A4567 형식</span>
                             </div>
 
                             <div class="form-group">
@@ -92,14 +93,14 @@
                             </h2>
                             
                             <div class="upload-container">
-                                <input type="file" id="passportImage" name="passportImage" accept="image/*" class="file-input">
-                                <label for="passportImage" class="upload-label">
-                                    <div class="upload-content">
-                                        <i data-lucide="upload" class="upload-icon"></i>
-                                        <p class="upload-text">클릭하여 여권 사본 업로드</p>
-                                        <p class="upload-hint">JPG, PNG 형식 (최대 5MB)</p>
-                                    </div>
-                                </label>
+                                <input type="file" id="passportImage" name="passportImage" accept="image/*" class="file-input" required>
+                                    <label for="passportImage" class="upload-label">
+                                        <div class="upload-content">
+                                            <i data-lucide="upload" class="upload-icon"></i>
+                                            <p class="upload-text">클릭하여 여권 사본 업로드 <span class="required-mark">*</span></p>
+                                            <p class="upload-hint">JPG, PNG 형식 (최대 5MB) - 필수</p>
+                                        </div>
+                                    </label>
                                 
                                 <!-- 이미지 미리보기 -->
                                 <div id="passportImagePreview" class="image-preview" style="display: none;">
@@ -327,7 +328,7 @@
                                             <label for="ticketPrice" class="form-label required">항공권 가격</label>
                                             <input type="number" id="ticketPrice" name="ticketPrice" class="form-input" 
                                                    placeholder="예: 850000" min="0" step="1000" required disabled>
-                                            <span class="form-hint">숫자만 입력해주세요 (천 원 단위 권장)</span>
+                                            <span class="form-hint">숫자만 입력해주세요</span>
                                         </div>
                                         <div class="form-group">
                                             <label for="currency" class="form-label required">통화</label>
@@ -356,7 +357,7 @@
                                 <div class="step-indicator">
                                     <div class="step-number">4</div>
                                     <div class="step-content">
-                                        <h3>항공권 정보 이미지</h3>
+                                        <h3>항공권 정보 이미지 (필수)</h3>
                                         <p>항공권 정보를 확인할 수 있는 이미지를 업로드해주세요.</p>
                                     </div>
                                 </div>

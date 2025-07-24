@@ -234,7 +234,7 @@ class FlightRequestPassport {
             const nameEnglish = this.elements.nameEnglish?.value?.trim();
             const issueDate = this.elements.issueDate?.value;
             const expiryDate = this.elements.expiryDate?.value;
-            
+
             // 필수 필드 검증
             if (!passportNumber || !nameEnglish || !issueDate || !expiryDate) {
                 return {
@@ -242,12 +242,23 @@ class FlightRequestPassport {
                     message: '모든 필수 정보를 입력해주세요.'
                 };
             }
-            
-            // 여권번호 형식 검증 (기본적인 검증)
-            if (passportNumber.length < 6) {
+
+            // 🆕 여권 이미지 필수 검증 추가
+            if (!this.passportImageFile && !this.existingPassportInfo?.image_url) {
                 return {
                     valid: false,
-                    message: '올바른 여권번호를 입력해주세요.'
+                    message: '여권 사본 이미지를 업로드해주세요.'
+                };
+            }
+
+            // 여권번호 형식 검증 (수정된 정규식)
+            const oldPassportPattern = /^[MS][0-9]{8}$/;  // 구여권: M12345678
+            const newPassportPattern = /^[MS][0-9]{3}[A-Z][0-9]{4}$/;  // 신여권: M123A4567
+
+            if (!oldPassportPattern.test(passportNumber) && !newPassportPattern.test(passportNumber)) {
+                return {
+                    valid: false,
+                    message: '올바른 여권번호 형식이 아닙니다. 구여권: M12345678, 신여권: M123A4567'
                 };
             }
             
@@ -423,16 +434,22 @@ class FlightRequestPassport {
     async handlePassportSubmit(event) {
         try {
             event.preventDefault();
-            
+
+            // 🆕 이미지 파일 필수 검증 추가
+            if (!this.passportImageFile && !this.existingPassportInfo?.image_url) {
+                this.showError('여권 사본 이미지를 업로드해주세요.');
+                return;
+            }
+
             this.setLoading(true);
-            
+
             try {
                 await this.savePassportInfo();
                 this.showPassportSuccessMessage();
             } catch (error) {
                 this.showError('여권정보 저장 중 오류가 발생했습니다.');
             }
-            
+
         } catch (error) {
             console.error('❌ [여권제출] 처리 실패:', error);
             this.showError('여권정보 제출 중 오류가 발생했습니다.');

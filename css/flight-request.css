@@ -2650,6 +2650,23 @@
     color: #92400e;
     border: 1px solid #fcd34d;
 }
+
+.required-mark {
+    color: #dc2626;
+    font-weight: bold;
+    margin-left: 4px;
+}
+
+.upload-hint {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.upload-hint.required {
+    color: #dc2626;
+    font-weight: 500;
+}
+
 /* ===================================================== */
 /* 📊 v8.5.2 통합 완료 */
 /* 🎯 포함된 컴포넌트: */

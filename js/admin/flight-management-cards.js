@@ -580,8 +580,16 @@ class FlightManagementCards {
                             영수증 보기
                         </button>
                     `);
+
+                    // 🆕 학생이 등록한 항공권 보기 버튼 (항상 표시)
+                    buttons.push(`
+                        <button class="action-btn info" data-action="view-student-ticket" data-request-id="${request.id}">
+                            <i data-lucide="plane"></i>
+                            항공권 보기
+                        </button>
+                    `);
                 }
-                
+
                 buttons.push(`
                     <button class="action-btn success" data-action="final-amount" data-request-id="${request.id}">
                         <i data-lucide="dollar-sign"></i>
@@ -698,6 +706,9 @@ class FlightManagementCards {
                 case 'passport':
                     this.showPassportInfo(userId);
                     break;
+                case 'view-student-ticket':
+                    this.viewStudentTicket(requestId);
+                    break;    
                 default:
                     console.warn('⚠️ 알 수 없는 액션:', action);
             }
@@ -820,7 +831,18 @@ class FlightManagementCards {
             alert('항공권 보기 모달이 구현되지 않았습니다.');
         }
     }
-
+    /**
+     * 🎫 학생 등록 항공권 보기
+     */
+    viewStudentTicket(requestId) {
+        console.log('🎫 학생 등록 항공권 보기:', requestId);
+        if (this.system?.modules?.modals) {
+            this.system.modules.modals.showStudentTicketModal(requestId);
+        } else {
+            alert('모달 시스템이 초기화되지 않았습니다.');
+        }
+    }
+    
     /**
      * 🛂 여권정보 보기
      */
