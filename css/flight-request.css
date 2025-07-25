@@ -3320,11 +3320,19 @@
     color: #2563eb !important;
 }
 
+/* 🆕 추가: notice-content를 세로 배치로 명시 */
+.notice-content {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+}
+
 .notice-content h4 {
     margin: 0 0 12px 0 !important;
     font-size: 15px !important;
     font-weight: 600 !important;
     color: #1e40af !important;
+    
 }
 
 .notice-content ul {
@@ -3332,6 +3340,7 @@
     padding-left: 16px !important;
     list-style: none !important;
 }
+
 
 .notice-content li {
     position: relative !important;

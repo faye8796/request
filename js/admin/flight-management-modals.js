@@ -1382,6 +1382,28 @@ class FlightManagementModals {
     }
     
     /**
+     * 📋 반려 사유 선택 함수
+     */
+    selectReason(reason) {
+        const textarea = document.getElementById('rejectionReason');
+        if (textarea) {
+            // 기존 내용이 있으면 줄바꿈 후 추가, 없으면 바로 설정
+            const currentValue = textarea.value.trim();
+            if (currentValue) {
+                textarea.value = currentValue + '\n\n' + reason;
+            } else {
+                textarea.value = reason;
+            }
+
+            // 텍스트 영역에 포커스
+            textarea.focus();
+
+            // 커서를 끝으로 이동
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+    }    
+    
+    /**
      * 💰 최종금액 확정 처리
      */
     async confirmFinalAmount(requestId) {

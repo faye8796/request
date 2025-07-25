@@ -2283,8 +2283,6 @@ class FlightRequestStatus {
                                     <input type="number" 
                                            id="specialBaggageAmount" 
                                            class="special-form-input"
-                                           min="1000" 
-                                           step="1000" 
                                            required 
                                            placeholder="예: 50000">
                                     <span class="input-suffix">원</span>
@@ -2386,7 +2384,7 @@ class FlightRequestStatus {
             amountInput.addEventListener('input', function() {
                 let value = this.value.replace(/[^\d]/g, '');
                 if (value) {
-                    this.value = parseInt(value).toLocaleString();
+                    this.value = parseInt(value);
                 }
             });
 

@@ -73,7 +73,9 @@ class FlightManagementCards {
 
             // 시스템 이벤트 구독
             this.subscribeToSystemEvents();
-
+            
+            window.cardSystem = this;
+            
             this.isInitialized = true;
             console.log('✅ FlightManagementCards 초기화 완료');
 
@@ -520,6 +522,10 @@ class FlightManagementCards {
                         ${priceInfo}
                     </div>
                 </div>
+                                
+                <!-- 🆕 관리자 코멘트 섹션 추가 -->
+                ${this.generateCommentSection(request)}
+                
             </div>
 
             <!-- 카드 액션 버튼들 -->
@@ -621,6 +627,61 @@ class FlightManagementCards {
         return buttons.join('');
     }
 
+    /**
+     * 🗨️ 코멘트 섹션 생성
+     */
+    generateCommentSection(request) {
+        const hasComment = request.admin_comment && request.admin_comment.trim();
+        const commentId = `comment-${request.id}`;
+
+        return `
+            <div class="admin-comment-section">
+                <h4><i data-lucide="message-circle" style="width: 16px; height: 16px;"></i> 관리자 코멘트</h4>
+
+                <!-- 코멘트 표시 영역 -->
+                <div class="comment-display" id="display-${commentId}" 
+                     style="${hasComment ? 'display: block;' : 'display: none;'}">
+                    <div class="comment-content">
+                        ${hasComment ? this.escapeHtml(request.admin_comment) : ''}
+                    </div>
+                    <div class="comment-meta">
+                        ${request.admin_comment_updated_at ? 
+                            this.formatDate(request.admin_comment_updated_at) + ' 업데이트' : ''}
+                        <button class="comment-edit-btn" onclick="window.cardSystem.editComment('${request.id}')" 
+                                title="코멘트 편집">
+                            <i data-lucide="edit-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 코멘트 편집 영역 -->
+                <div class="comment-edit" id="edit-${commentId}" 
+                     style="${hasComment ? 'display: none;' : 'display: block;'}">
+                    <div class="comment-input-container">
+                        <textarea class="comment-input" 
+                                  placeholder="예: 롯데카드로 결제, 좌석 업그레이드 요청됨, 수수료 5,000원 별도"
+                                  maxlength="300"
+                                  rows="3">${hasComment ? this.escapeHtml(request.admin_comment) : ''}</textarea>
+                        <div class="comment-actions">
+                            <button class="btn-save" onclick="window.cardSystem.saveComment('${request.id}')" 
+                                    title="저장">
+                                <i data-lucide="check"></i>
+                                저장
+                            </button>
+                            <button class="btn-cancel" onclick="window.cardSystem.cancelComment('${request.id}')" 
+                                    title="취소">
+                                <i data-lucide="x"></i>
+                                취소
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                ${!hasComment ? '<div class="comment-placeholder">코멘트를 추가하려면 텍스트를 입력하세요</div>' : ''}
+            </div>
+        `;
+    }    
+    
     /**
      * 🎮 카드 클릭 이벤트 처리
      */
@@ -856,9 +917,148 @@ class FlightManagementCards {
     }
 
     /**
+     * 🗨️ 코멘트 편집 시작
+     */
+    editComment(requestId) {
+        const displayEl = document.getElementById(`display-comment-${requestId}`);
+        const editEl = document.getElementById(`edit-comment-${requestId}`);
+
+        if (displayEl && editEl) {
+            displayEl.style.display = 'none';
+            editEl.style.display = 'block';
+
+            // 텍스트 영역에 포커스
+            const textarea = editEl.querySelector('.comment-input');
+            if (textarea) {
+                textarea.focus();
+                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            }
+        }
+    }
+
+    /**
+     * 🗨️ 코멘트 저장
+     */
+    async saveComment(requestId) {
+        const editEl = document.getElementById(`edit-comment-${requestId}`);
+        const textarea = editEl?.querySelector('.comment-input');
+
+        if (!textarea) return;
+
+        const comment = textarea.value.trim();
+
+        try {
+            // 로딩 상태 표시
+            const saveBtn = editEl.querySelector('.btn-save');
+            if (saveBtn) {
+                this.setButtonLoading(saveBtn, true);
+            }
+
+            // API 호출
+            const result = await this.system.modules.api.updateAdminComment(requestId, comment);
+
+            if (result.success) {
+                // UI 업데이트
+                this.updateCommentDisplay(requestId, comment);
+                this.showToast('코멘트가 저장되었습니다.', 'success');
+
+                // 카드 데이터 새로고침 (부분 업데이트)
+                if (this.system) {
+                    this.system.refreshData(false);
+                }
+            } else {
+                this.showToast('코멘트 저장에 실패했습니다.', 'error');
+            }
+
+        } catch (error) {
+            console.error('🗨️ 코멘트 저장 오류:', error);
+            this.showToast('코멘트 저장 중 오류가 발생했습니다.', 'error');
+        } finally {
+            // 로딩 상태 해제
+            const saveBtn = editEl.querySelector('.btn-save');
+            if (saveBtn) {
+                this.setButtonLoading(saveBtn, false);
+            }
+        }
+    }
+
+    /**
+     * 🗨️ 코멘트 편집 취소
+     */
+    cancelComment(requestId) {
+        const displayEl = document.getElementById(`display-comment-${requestId}`);
+        const editEl = document.getElementById(`edit-comment-${requestId}`);
+
+        if (displayEl && editEl) {
+            // 원래 값으로 복원
+            const textarea = editEl.querySelector('.comment-input');
+            const originalComment = displayEl.querySelector('.comment-content')?.textContent || '';
+            if (textarea) {
+                textarea.value = originalComment;
+            }
+
+            if (originalComment) {
+                displayEl.style.display = 'block';
+                editEl.style.display = 'none';
+            } else {
+                displayEl.style.display = 'none';
+                editEl.style.display = 'block';
+            }
+        }
+    }
+
+    /**
+     * 🗨️ 코멘트 화면 업데이트
+     */
+    updateCommentDisplay(requestId, comment) {
+        const displayEl = document.getElementById(`display-comment-${requestId}`);
+        const editEl = document.getElementById(`edit-comment-${requestId}`);
+
+        if (comment.trim()) {
+            // 코멘트가 있는 경우
+            const contentEl = displayEl?.querySelector('.comment-content');
+            const metaEl = displayEl?.querySelector('.comment-meta');
+
+            if (contentEl) {
+                contentEl.textContent = comment;
+            }
+            if (metaEl) {
+                metaEl.innerHTML = `${this.formatDate(new Date().toISOString())} 업데이트 <button class="comment-edit-btn" onclick="window.cardSystem.editComment('${requestId}')" title="코멘트 편집"><i data-lucide="edit-2"></i></button>`;
+            }
+
+            if (displayEl) displayEl.style.display = 'block';
+            if (editEl) editEl.style.display = 'none';
+        } else {
+            // 코멘트가 없는 경우
+            if (displayEl) displayEl.style.display = 'none';
+            if (editEl) editEl.style.display = 'block';
+        }
+
+        // 아이콘 재생성
+        this.refreshIcons();
+    }
+
+    
+    /**
      * ⌨️ 키보드 네비게이션
      */
     handleKeyboardNavigation(event) {
+        // 모달이 열려있으면 키보드 네비게이션 무시
+        if (document.querySelector('.modal-overlay.show')) {
+            return;
+        }
+
+        // 입력 요소에서 발생한 이벤트는 무시
+        const activeElement = document.activeElement;
+        if (activeElement && (
+            activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.tagName === 'SELECT' ||
+            activeElement.isContentEditable
+        )) {
+            return;
+        }
+
         // Ctrl + A: 모든 카드 선택
         if (event.ctrlKey && event.key === 'a') {
             event.preventDefault();
@@ -874,6 +1074,49 @@ class FlightManagementCards {
         }
     }
 
+    /**
+     * ✅ 모든 카드 선택
+     */
+    selectAllCards() {
+        // 현재 화면에 표시된 모든 카드의 체크박스 선택
+        const checkboxes = document.querySelectorAll('.card-checkbox');
+        checkboxes.forEach(checkbox => {
+            if (!checkbox.checked) {
+                checkbox.checked = true;
+                const requestId = checkbox.dataset.requestId;
+                this.cardStates.selectedCards.add(requestId);
+
+                // 전역 선택 상태도 업데이트
+                if (window.FlightManagementPage && window.FlightManagementPage.selectedRequests) {
+                    window.FlightManagementPage.selectedRequests.add(requestId);
+                }
+            }
+        });
+
+        // UI 업데이트
+        if (window.FlightManagementPageUtils && window.FlightManagementPageUtils.updateSelectionUI) {
+            window.FlightManagementPageUtils.updateSelectionUI();
+        }
+
+        console.log('✅ 모든 카드 선택 완료:', this.cardStates.selectedCards.size);
+    }
+
+    /**
+     * ❌ 선택된 카드들 일괄 반려
+     */
+    bulkRejectCards() {
+        const selectedIds = Array.from(this.cardStates.selectedCards);
+        if (selectedIds.length === 0) return;
+
+        // 실제 구현은 모달 시스템을 통해 처리
+        if (this.system?.modules?.modals) {
+            // Phase 3에서 일괄 반려 모달 구현 예정
+            console.log('🔄 일괄 반료 처리:', selectedIds);
+            alert(`${selectedIds.length}개 항목의 일괄 반려 처리는 개별적으로 진행해주세요.`);
+        } else {
+            alert('모달 시스템이 초기화되지 않았습니다.');
+        }
+    }
     /**
      * 📐 화면 크기 변경 처리
      */
@@ -1051,6 +1294,46 @@ class FlightManagementCards {
         div.textContent = text;
         return div.innerHTML;
     }
+    
+
+    /**
+     * 🍞 토스트 알림
+     */
+    showToast(message, type = 'info') {
+        // 기존 토스트 제거
+        const existingToast = document.querySelector('.card-toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `card-toast card-toast-${type}`;
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#38a169' : type === 'error' ? '#e53e3e' : '#3182ce'};
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            z-index: 1000;
+            font-size: 0.875rem;
+            font-weight: 500;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        `;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, 3000);
+    }    
+    
 
     /**
      * 🎯 빈 상태 처리

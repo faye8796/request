@@ -448,6 +448,41 @@ class FlightManagementAPI {
             ]
         };
     }
+    
+    /**
+     * 🗨️ 관리자 코멘트 업데이트 (기존 FlightManagementAPI 클래스에 추가)
+     */
+    async updateAdminComment(requestId, comment) {
+        try {
+            console.log('🗨️ v8.2.0 관리자 코멘트 업데이트 중...', { requestId, comment });
+
+            const supabase = this.checkSupabaseInstance();
+
+            const updateData = {
+                admin_comment: comment || null,
+                admin_comment_updated_at: comment ? new Date().toISOString() : null,
+                updated_at: new Date().toISOString()
+            };
+
+            const { data, error } = await supabase
+                .from('flight_requests')
+                .update(updateData)
+                .eq('id', requestId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            console.log('✅ v8.2.0 관리자 코멘트 업데이트 성공:', data);
+            return { success: true, data };
+
+        } catch (error) {
+            console.error('❌ v8.2.0 관리자 코멘트 업데이트 실패:', error);
+            return { success: false, error: error.message };
+        }
+    }    
+    
+    
 }
 
 // 전역 객체에 등록
