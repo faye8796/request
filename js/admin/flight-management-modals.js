@@ -150,14 +150,8 @@ class FlightManagementModals {
             case 'passport':
                 this.showPassportModal(userId);
                 break;
-            case 'upload-ticket':
-                this.showUploadTicketModal(requestId);
-                break;
             case 'final-amount':
                 this.showFinalAmountModal(requestId);
-                break;
-            case 'view-ticket':
-                this.showTicketViewModal(requestId);
                 break;
             case 'view-receipt':
                 this.showReceiptViewModal(requestId);
@@ -736,229 +730,6 @@ class FlightManagementModals {
         return statusMap[status] || '<span class="status-badge status-unknown">❓ 알 수 없음</span>';
     }
     
-    /**
-     * 📤 항공권 업로드 모달 (관리자용)
-     */
-    async showUploadTicketModal(requestId) {
-        try {
-            console.log('📤 항공권 업로드 모달 표시:', requestId);
-
-            const request = await this.loadRequestData(requestId);
-            if (!request) {
-                this.showError('요청 정보를 찾을 수 없습니다.');
-                return;
-            }
-
-            const modalHtml = `
-                <div class="modal-overlay show" id="uploadTicketModal">
-                    <div class="modal-container medium">
-                        <div class="modal-header">
-                            <h2 class="modal-title">
-                                <i data-lucide="upload"></i>
-                                최종 항공권 등록
-                            </h2>
-                            <button class="modal-close" onclick="window.flightModals.closeModal('uploadTicketModal')">
-                                <i data-lucide="x"></i>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="upload-content">
-                                <div class="request-summary">
-                                    <h4>구매대행 신청 정보</h4>
-                                    <div class="summary-item">
-                                        <span class="label">신청자:</span>
-                                        <span class="value">${request.user_profiles.name}</span>
-                                    </div>
-                                    <div class="summary-item">
-                                        <span class="label">출국일:</span>
-                                        <span class="value">${this.formatFullDate(request.departure_date)}</span>
-                                    </div>
-                                    <div class="summary-item">
-                                        <span class="label">예상 금액:</span>
-                                        <span class="value">${this.formatPrice(request.ticket_price, request.currency)}</span>
-                                    </div>
-                                </div>
-
-                                <div class="upload-section">
-                                    <h4>최종 항공권 파일 업로드</h4>
-                                    <div class="file-upload-area" id="ticketUploadArea">
-                                        <input type="file" id="ticketFileInput" accept="image/*,.pdf" style="display: none;">
-                                        <div class="upload-placeholder" onclick="document.getElementById('ticketFileInput').click()">
-                                            <i data-lucide="upload-cloud"></i>
-                                            <p>클릭하여 항공권 파일을 선택하세요</p>
-                                            <small>PNG, JPG, PDF 파일만 업로드 가능 (최대 10MB)</small>
-                                        </div>
-                                        <div class="upload-preview" id="ticketUploadPreview" style="display: none;"></div>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="purchaseNotes">구매 메모 (선택사항)</label>
-                                    <textarea id="purchaseNotes" placeholder="항공권 구매와 관련된 특별한 사항을 입력하세요..." rows="3"></textarea>
-                                </div>
-
-                                <div class="info-box">
-                                    <i data-lucide="info"></i>
-                                    <div>
-                                        <strong>항공권 등록 안내</strong>
-                                        <ul>
-                                            <li>구매한 최종 항공권 파일을 업로드해주세요.</li>
-                                            <li>업로드 후 자동으로 구매 완료 상태로 변경됩니다.</li>
-                                            <li>학생이 최종 항공권을 확인할 수 있습니다.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button class="btn secondary" onclick="window.flightModals.closeModal('uploadTicketModal')">취소</button>
-                            <button class="btn primary" id="uploadTicketBtn" onclick="window.flightModals.confirmTicketUpload('${requestId}')" disabled>
-                                <i data-lucide="upload"></i>
-                                항공권 등록
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            this.showModal(modalHtml, 'uploadTicketModal');
-            // 파일 입력 이벤트 리스너 직접 설정
-            setTimeout(() => {
-                const fileInput = document.getElementById('ticketFileInput');
-                const uploadBtn = document.getElementById('uploadTicketBtn');
-
-                if (fileInput) {
-                    fileInput.addEventListener('change', (event) => {
-                        const file = event.target.files[0];
-                        if (file) {
-                            uploadBtn.disabled = false;
-                            // 파일 미리보기 처리 (선택사항)
-                            this.showFilePreview(file, 'ticketUploadPreview');
-                        } else {
-                            uploadBtn.disabled = true;
-                        }
-                    });
-                }
-            }, 100);
-
-        } catch (error) {
-            console.error('❌ 항공권 업로드 모달 표시 실패:', error);
-            this.showError('항공권 업로드 모달을 표시하는 중 오류가 발생했습니다.');
-        }
-    }
-    
-    /**
-     * 📤 항공권 업로드 확정 처리
-     */
-    async confirmTicketUpload(requestId) {
-        try {
-            const fileInput = document.getElementById('ticketFileInput');
-            const purchaseNotes = document.getElementById('purchaseNotes')?.value || '';
-
-            if (!fileInput || !fileInput.files[0]) {
-                this.showError('업로드할 항공권 파일을 선택해주세요.');
-                return;
-            }
-
-            const file = fileInput.files[0];
-
-            // 파일 크기 및 형식 검증
-            if (file.size > 10 * 1024 * 1024) {
-                this.showError('파일 크기는 10MB 이하여야 합니다.');
-                return;
-            }
-
-            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-            if (!allowedTypes.includes(file.type)) {
-                this.showError('JPG, PNG, PDF 파일만 업로드할 수 있습니다.');
-                return;
-            }
-
-            this.showProcessing('항공권을 업로드하는 중...');
-
-            // Supabase Storage에 파일 업로드
-            const supabase = this.system.modules.api.checkSupabaseInstance();
-            const fileName = `admin_ticket_${requestId}.${file.name.split('.').pop()}`;
-
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('ticket-files')
-                .upload(fileName, file, { upsert: true });
-
-            if (uploadError) throw uploadError;
-
-            // 파일 URL 생성
-            const { data: urlData } = supabase.storage
-                .from('ticket-files')
-                .getPublicUrl(fileName);
-
-            // 데이터베이스 업데이트
-            const updateData = {
-                admin_ticket_url: urlData.publicUrl,
-                status: 'completed',
-                purchase_completed_at: new Date().toISOString()
-            };
-
-            if (purchaseNotes.trim()) {
-                updateData.admin_notes = purchaseNotes.trim();
-            }
-
-            const { data: updateData2, error: updateError } = await supabase
-                .from('flight_requests')
-                .update(updateData)
-                .eq('id', requestId)
-                .select()
-                .single();
-
-            if (updateError) throw updateError;
-
-            this.hideProcessing();
-            this.showSuccess('항공권이 등록되었습니다.');
-
-            // 모달 닫기
-            this.closeModal('uploadTicketModal');
-
-            // 시스템 데이터 새로고침
-            this.refreshSystemData();
-
-        } catch (error) {
-            this.hideProcessing();
-            console.error('❌ 항공권 업로드 실패:', error);
-            this.showError('항공권 업로드에 실패했습니다: ' + error.message);
-        }
-    }
-    
-    /**
-     * 📁 파일 미리보기 표시
-     */
-    showFilePreview(file, previewElementId) {
-        const previewElement = document.getElementById(previewElementId);
-        if (!previewElement) return;
-
-        const isImage = file.type.startsWith('image/');
-
-        previewElement.innerHTML = `
-            <div class="file-preview-item">
-                <div class="file-icon">
-                    <i data-lucide="${isImage ? 'image' : 'file'}"></i>
-                </div>
-                <div class="file-info">
-                    <span class="file-name">${file.name}</span>
-                    <span class="file-size">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                </div>
-                <div class="file-status">
-                    <i data-lucide="check-circle" style="color: #38a169;"></i>
-                </div>
-            </div>
-        `;
-
-        previewElement.style.display = 'block';
-
-        // 아이콘 새로고침
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-    }    
-    
     
     /*
      * 💰 최종금액 입력 모달
@@ -1021,13 +792,6 @@ class FlightManagementModals {
                                     </div>
                                 </div>
 
-                                <div class="form-group">
-                                    <label for="finalAmountNotes">구매 메모 (선택사항)</label>
-                                    <textarea id="finalAmountNotes" 
-                                              placeholder="실제 구매와 관련된 메모를 입력하세요..."
-                                              rows="3"></textarea>
-                                </div>
-
                                 <div class="info-box">
                                     <i data-lucide="info"></i>
                                     <div>
@@ -1059,125 +823,7 @@ class FlightManagementModals {
             this.showError('최종금액 입력 모달을 표시하는 중 오류가 발생했습니다.');
         }
     }    
-    
-    /**
-     * 🎫 항공권 보기 모달
-     */
-    async showTicketViewModal(requestId) {
-        try {
-            console.log('🎫 항공권 보기 모달 표시:', requestId);
 
-            const request = await this.loadRequestData(requestId);
-            if (!request) {
-                this.showError('요청 정보를 찾을 수 없습니다.');
-                return;
-            }
-
-            // 항공권 URL 확인
-            const ticketUrl = request.admin_ticket_url || request.ticket_url;
-            if (!ticketUrl) {
-                this.showError('등록된 항공권이 없습니다.');
-                return;
-            }
-
-            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(ticketUrl);
-            const isPDF = /\.pdf$/i.test(ticketUrl);
-
-            const modalHtml = `
-                <div class="modal-overlay show" id="ticketViewModal">
-                    <div class="modal-container large">
-                        <div class="modal-header">
-                            <h2 class="modal-title">
-                                <i data-lucide="ticket"></i>
-                                항공권 보기
-                            </h2>
-                            <button class="modal-close" onclick="window.flightModals.closeModal('ticketViewModal')">
-                                <i data-lucide="x"></i>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="ticket-view-content">
-                                <div class="ticket-info">
-                                    <h4>항공권 정보</h4>
-                                    <div class="info-grid">
-                                        <div class="info-item">
-                                            <span class="label">신청자:</span>
-                                            <span class="value">${request.user_profiles.name}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <span class="label">출국일:</span>
-                                            <span class="value">${this.formatFullDate(request.departure_date)}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <span class="label">귀국일:</span>
-                                            <span class="value">${this.formatFullDate(request.return_date)}</span>
-                                        </div>
-                                        <div class="info-item">
-                                            <span class="label">구매방식:</span>
-                                            <span class="value">${request.purchase_type === 'direct' ? '직접구매' : '구매대행'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="ticket-preview">
-                                    <h4>항공권 미리보기</h4>
-                                    <div class="preview-container">
-                                        ${isImage ? `
-                                            <img src="${ticketUrl}" 
-                                                 alt="항공권 이미지" 
-                                                 style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"
-                                                 onclick="window.open('${ticketUrl}', '_blank')">
-                                            <p style="text-align: center; margin-top: 1rem; color: #718096; font-size: 0.875rem;">
-                                                이미지를 클릭하면 새 창에서 확대해서 볼 수 있습니다.
-                                            </p>
-                                        ` : isPDF ? `
-                                            <div class="pdf-preview">
-                                                <iframe src="${ticketUrl}" 
-                                                        width="100%" 
-                                                        height="500px" 
-                                                        style="border: 1px solid #e2e8f0; border-radius: 8px;">
-                                                </iframe>
-                                                <p style="text-align: center; margin-top: 1rem;">
-                                                    <a href="${ticketUrl}" target="_blank" class="btn primary">
-                                                        <i data-lucide="external-link"></i>
-                                                        새 창에서 PDF 열기
-                                                    </a>
-                                                </p>
-                                            </div>
-                                        ` : `
-                                            <div class="file-download">
-                                                <i data-lucide="file" style="width: 48px; height: 48px; margin: 0 auto 1rem; color: #a0aec0;"></i>
-                                                <p>미리보기가 지원되지 않는 파일 형식입니다.</p>
-                                                <a href="${ticketUrl}" target="_blank" class="btn primary">
-                                                    <i data-lucide="download"></i>
-                                                    파일 다운로드
-                                                </a>
-                                            </div>
-                                        `}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button class="btn secondary" onclick="window.flightModals.closeModal('ticketViewModal')">
-                                닫기
-                            </button>
-                            <a href="${ticketUrl}" download class="btn primary">
-                                <i data-lucide="download"></i>
-                                다운로드
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            this.showModal(modalHtml, 'ticketViewModal');
-
-        } catch (error) {
-            console.error('❌ 항공권 보기 모달 표시 실패:', error);
-            this.showError('항공권 보기 모달을 표시하는 중 오류가 발생했습니다.');
-        }
-    }    
     
     /**
      * 🎫 학생 등록 항공권 확인 모달
@@ -1900,7 +1546,7 @@ class FlightManagementModals {
             `);
         }
 
-        // 구매 영수증 (직접구매의 경우)
+        // 구매 영수증 (직접구매의 경우)    
         if (request.receipt_url) {
             const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(request.receipt_url);
             attachments.push(`
@@ -1943,7 +1589,27 @@ class FlightManagementModals {
                 </div>
             `);
         }
-
+        // 학생 최종 항공권 (직접구매 완료의 경우)
+        if (request.ticket_url) {
+            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(request.ticket_url);
+            attachments.push(`
+                <div class="file-view-item student-file">
+                    <div class="file-icon student-icon">
+                        <i data-lucide="plane"></i>
+                    </div>
+                    <div class="file-details">
+                        <h5>최종 항공권 보기</h5>
+                        <p>학생이 등록한 구매 완료 항공권</p>
+                    </div>
+                    <div class="file-view-actions">
+                        <button class="view-btn" onclick="window.flightModals.${isImage ? `showImagePreview('${request.ticket_url}', '최종 항공권')` : `openLink('${request.ticket_url}')`}" title="보기">
+                            <i data-lucide="eye"></i>
+                            최종 항공권 보기
+                        </button>
+                    </div>
+                </div>
+            `);
+        }
         if (attachments.length === 0) {
             return `
                 <div class="no-files-message">

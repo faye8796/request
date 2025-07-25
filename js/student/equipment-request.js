@@ -820,13 +820,17 @@ const EquipmentRequestModule = {
                 // 🔥 온라인 묶음 구매 - v4.3.0 최적화
                 const onlineData = this.collectOnlineBundleDataV43(formData, form);
                 if (!onlineData) return null;
-                
-                bundleData.link = onlineData.purchaseUrl;
+
+                bundleData.link = onlineData.purchaseUrl;  // 순수 URL만 저장
                 bundleData.account_id = onlineData.accountId;
                 bundleData.account_pw = onlineData.accountPassword;
-                
-                console.log('✅ 온라인 묶음 데이터 구성 완료 v4.3.0');
-                
+
+                // 🆕 장바구니 메모를 store_info에 별도 저장 (온라인에서는 미사용 컬럼 활용)
+                if (onlineData.cartNote) {
+                    bundleData.store_info = `[장바구니 메모] ${onlineData.cartNote}`;
+                }
+
+                console.log('✅ 온라인 묶음 데이터 구성 완료 v4.3.0 - 링크/메모 분리');
             } else {
                 // 🏪 오프라인 묶음 구매 - v4.3.0 최적화
                 const offlineData = this.collectOfflineBundleDataV43(formData, form);
@@ -899,17 +903,14 @@ const EquipmentRequestModule = {
                 siteUrl = siteUrls[purchaseSite] || purchaseSite;
             }
             
-            // 장바구니 메모가 있으면 구매 URL에 추가 정보로 포함
-            let purchaseUrl = siteUrl;
-            if (cartNote.trim()) {
-                purchaseUrl += ` (장바구니 메모: ${cartNote.trim()})`;
-            }
-            
+            // 🔧 수정: 링크와 장바구니 메모 분리 저장
             return {
-                purchaseUrl: purchaseUrl,
+                purchaseUrl: siteUrl,  // 순수 URL만 저장
                 accountId: accountId.trim(),
-                accountPassword: this.encryptPasswordV43(accountPassword.trim())
+                accountPassword: this.encryptPasswordV43(accountPassword.trim()),
+                cartNote: cartNote.trim() || null  // 장바구니 메모 별도 반환
             };
+
             
         } catch (error) {
             console.error('❌ 온라인 묶음 데이터 수집 오류:', error);
@@ -948,19 +949,7 @@ const EquipmentRequestModule = {
         }
     },
 
-    // === 🆕 v4.3.0 전용 비밀번호 암호화 ===
-    encryptPasswordV43: function(password) {
-        try {
-            // v4.3.0 전용 암호화 (실제 운영에서는 더 강력한 암호화 필요)
-            const timestamp = Date.now();
-            const salt = 'sejong_v43_' + timestamp;
-            return btoa(salt + ':' + password);
-        } catch (error) {
-            console.error('v4.3.0 비밀번호 암호화 오류:', error);
-            return password; // 암호화 실패 시 원본 반환
-        }
-    },
-
+    
     // === 🆕 v4.3.0 검증 함수 ===
     validateApplicationDataV43: function(data, form) {
         if (!data.item_name.trim()) {
@@ -1185,10 +1174,12 @@ const EquipmentRequestModule = {
                 `;
             }
             
-            // 일반 신청만 참고링크 표시 - v4.3.0 호환성 (link 컬럼 사용)
+            // 링크 및 장바구니 메모 표시 - v4.3.0 호환성
             let linkSection = '';
-            const linkValue = application.link || application.purchase_link; // 🔧 DB 변경 과도기 호환성
+            const linkValue = application.link || application.purchase_link;
+
             if (linkValue && !application.is_bundle) {
+                // 🔧 일반 신청: 순수 링크만 표시
                 linkSection = `
                     <div class="detail-item">
                         <span class="detail-label">${application.purchase_type === 'offline' ? '참고 링크' : '구매 링크'}</span>
@@ -1199,7 +1190,22 @@ const EquipmentRequestModule = {
                         </span>
                     </div>
                 `;
-            }
+            } else if (application.is_bundle && application.purchase_type === 'online') {
+                // 🆕 묶음 신청: 링크 + 장바구니 메모 표시
+                const cartNote = this.extractCartNoteFromStoreInfo(application.store_info);
+
+                linkSection = `
+                    <div class="detail-item">
+                        <span class="detail-label">구매 사이트</span>
+                        <span class="detail-value">
+                            <a href="${this.escapeHtml(linkValue)}" target="_blank" rel="noopener noreferrer">
+                                링크 보기 <i data-lucide="external-link"></i>
+                            </a>
+                            ${cartNote ? `<div class="cart-note-display">📝 ${this.escapeHtml(cartNote)}</div>` : ''}
+                        </span>
+                    </div>
+                `;
+            }          
             
             card.innerHTML = `
                 <div class="application-card-header">
@@ -1620,26 +1626,34 @@ const EquipmentRequestModule = {
         }
     },
 
-    // v4.3.0 온라인 묶음 데이터 채우기
+    // v4.3.0 온라인 묶음 데이터 채우기 - 🔧 링크/메모 분리 버전
     fillOnlineBundleDataV43: function(application, form) {
         try {
-            // account_id, account_pw는 직접 필드에 입력
+            // account_id는 직접 필드에 입력
             if (application.account_id) {
                 const accountIdField = form.querySelector('#accountId');
                 if (accountIdField) accountIdField.value = application.account_id;
             }
 
             // 비밀번호는 보안상 표시하지 않음
-            // link에서 사이트 정보와 메모 파싱
+
+            // 🔧 링크에서 사이트 정보 파싱 (순수 URL)
             if (application.link) {
-                this.parseLinkForSiteAndNote(application.link, form);
+                this.parsePureLinkForSite(application.link, form);
+            }
+
+            // 🆕 store_info에서 장바구니 메모 추출 및 입력
+            const cartNote = this.extractCartNoteFromStoreInfo(application.store_info);
+            if (cartNote) {
+                const cartNoteField = form.querySelector('#cartNote');
+                if (cartNoteField) cartNoteField.value = cartNote;
             }
 
         } catch (error) {
             console.error('❌ v4.3.0 온라인 묶음 데이터 채우기 오류:', error);
         }
     },
-
+    
     // v4.3.0 오프라인 묶음 데이터 채우기
     fillOfflineBundleDataV43: function(application, form) {
         try {
@@ -1875,7 +1889,56 @@ const EquipmentRequestModule = {
             console.error('❌ 특별 예산 지원 신청 처리 오류:', error);
             alert('특별 예산 지원 신청 중 오류가 발생했습니다.');
         }
-    }
+    },
+    
+    // 🆕 순수 링크에서 사이트 정보 파싱 (장바구니 메모 없는 URL)
+    parsePureLinkForSite: function(link, form) {
+        try {
+            // 사이트 매핑
+            const siteMapping = {
+                'https://www.coupang.com': 'coupang',
+                'https://www.11st.co.kr': '11st',
+                'https://www.gmarket.co.kr': 'gmarket',
+                'https://www.auction.co.kr': 'auction',
+                'https://shop.interpark.com': 'interpark',
+                'https://www.lotte.com': 'lotte',
+                'https://www.ssg.com': 'ssg',
+                'https://www.yes24.com': 'yes24',
+                'https://www.kyobobook.co.kr': 'kyobo'
+            };
+
+            const purchaseSiteField = form.querySelector('#purchaseSite');
+            if (purchaseSiteField) {
+                const siteValue = siteMapping[link] || 'other';
+                purchaseSiteField.value = siteValue;
+
+                if (siteValue === 'other') {
+                    const otherSiteField = form.querySelector('#otherSite');
+                    if (otherSiteField) {
+                        otherSiteField.value = link;
+                        otherSiteField.style.display = 'block';
+                    }
+                }
+            }
+
+        } catch (error) {
+            console.error('❌ 순수 링크 파싱 오류:', error);
+        }
+    },
+    
+    // 🆕 store_info에서 장바구니 메모 추출
+    extractCartNoteFromStoreInfo: function(storeInfo) {
+        try {
+            if (!storeInfo) return null;
+
+            // "[장바구니 메모] 내용" 형태에서 내용 추출
+            const match = storeInfo.match(/^\[장바구니 메모\]\s*(.+)$/);
+            return match ? match[1].trim() : null;
+        } catch (error) {
+            console.error('장바구니 메모 추출 오류:', error);
+            return null;
+        }
+    }    
     
 };
 
