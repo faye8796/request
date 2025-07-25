@@ -162,6 +162,9 @@ class FlightManagementModals {
             case 'view-receipt':
                 this.showReceiptViewModal(requestId);
                 break;
+            case 'extra-baggage':
+                this.showExtraBaggageModal(requestId);
+                break;    
             default:
                 console.warn('⚠️ 알 수 없는 액션:', action);
         }
@@ -1311,7 +1314,7 @@ class FlightManagementModals {
             
             // 관리자 메모가 있으면 추가 업데이트
             if (adminNotes.trim()) {
-                await this.updateAdminNotes(requestId, adminNotes.trim());
+                await this.system.modules.api.updateAdminNotes(requestId, adminNotes.trim());
             }
 
             this.hideProcessing();
@@ -1944,6 +1947,521 @@ class FlightManagementModals {
         this.showModal(modalHtml, 'imagePreviewModal');
     }
 
+    /**
+     * 🎒 추가 수하물 관리 모달
+     */
+    async showExtraBaggageModal(requestId) {
+        try {
+            console.log('🎒 추가 수하물 관리 모달 표시:', requestId);
+
+            const request = await this.loadRequestData(requestId);
+            if (!request) {
+                this.showError('요청 정보를 찾을 수 없습니다.');
+                return;
+            }
+
+            const modalHtml = `
+                <div class="modal-overlay show" id="extraBaggageModal">
+                    <div class="modal-container large">
+                        <div class="modal-header">
+                            <h2 class="modal-title">
+                                <i data-lucide="package-plus"></i>
+                                추가 수하물 관리
+                            </h2>
+                            <button class="modal-close" onclick="window.flightModals.closeModal('extraBaggageModal')">
+                                <i data-lucide="x"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="extra-baggage-content">
+                                <!-- 신청자 정보 요약 -->
+                                <div class="request-summary">
+                                    <h4>신청자 정보</h4>
+                                    <div class="summary-item">
+                                        <span class="label">신청자:</span>
+                                        <span class="value">${request.user_profiles.name}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="label">출국일:</span>
+                                        <span class="value">${this.formatFullDate(request.departure_date)}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="label">항공사/노선:</span>
+                                        <span class="value">${request.departure_airport} → ${request.arrival_airport}</span>
+                                    </div>
+                                </div>
+
+                                <!-- 1. 관리자 수하물 구매 영수증 업로드 -->
+                                <div class="baggage-section">
+                                    <h4><i data-lucide="upload"></i> 1. 관리자 수하물 구매 영수증</h4>
+                                    <div class="upload-section">
+                                        ${request.admin_baggage_receipt_url ? `
+                                            <div class="existing-file">
+                                                <div class="file-info">
+                                                    <i data-lucide="file-check"></i>
+                                                    <span>영수증이 등록되어 있습니다</span>
+                                                </div>
+                                                <div class="file-actions">
+                                                    <button class="btn secondary" onclick="window.flightModals.viewFile('${request.admin_baggage_receipt_url}', '관리자 수하물 영수증')">
+                                                        <i data-lucide="eye"></i>
+                                                        보기
+                                                    </button>
+                                                    <button class="btn primary" onclick="document.getElementById('adminBaggageInput-${requestId}').click()">
+                                                        <i data-lucide="upload"></i>
+                                                        교체
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ` : `
+                                            <div class="upload-placeholder" onclick="document.getElementById('adminBaggageInput-${requestId}').click()">
+                                                <i data-lucide="upload-cloud"></i>
+                                                <p>관리자가 직접 구매한 수하물 영수증을 업로드하세요</p>
+                                                <small>PNG, JPG, PDF 파일 지원 (최대 10MB)</small>
+                                            </div>
+                                        `}
+                                        <input type="file" id="adminBaggageInput-${requestId}" 
+                                               accept="image/*,.pdf" style="display: none;"
+                                               onchange="window.flightModals.uploadAdminBaggageReceipt('${requestId}', this)">
+                                    </div>
+                                </div>
+
+                                <!-- 2. 오프라인 수하물 구매 허용/영수증 확인 -->
+                                <div class="baggage-section">
+                                    <h4><i data-lucide="user-check"></i> 2. 학생 오프라인 구매 관리</h4>
+                                    ${this.generateOfflineSection(request)}
+                                </div>
+
+                                <!-- 3. 특별 추가 수하물 신청 확인 -->
+                                <div class="baggage-section">
+                                    <h4><i data-lucide="star"></i> 3. 특별 추가 수하물 신청</h4>
+                                    ${this.generateSpecialBaggageSection(request)}
+                                </div>
+
+                                <div class="info-box">
+                                    <i data-lucide="info"></i>
+                                    <div>
+                                        <strong>추가 수하물 관리 안내</strong>
+                                        <ul>
+                                            <li>관리자가 직접 구매한 경우 영수증을 업로드해주세요.</li>
+                                            <li>학생의 오프라인 구매를 허용하고 영수증을 확인할 수 있습니다.</li>
+                                            <li>특별한 사유로 추가 수하물이 필요한 경우 별도 신청을 검토할 수 있습니다.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn secondary" onclick="window.flightModals.closeModal('extraBaggageModal')">
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            this.showModal(modalHtml, 'extraBaggageModal');
+
+        } catch (error) {
+            console.error('❌ 추가 수하물 관리 모달 표시 실패:', error);
+            this.showError('추가 수하물 관리 모달을 표시하는 중 오류가 발생했습니다.');
+        }
+    }
+
+    /**
+     * 🎒 오프라인 섹션 동적 생성
+     */
+    generateOfflineSection(request) {
+        const isOfflineAllowed = request.baggage_type === 'offline_allowed';
+        
+        if (!isOfflineAllowed) {
+            // 허용되지 않은 상태 - 허용 버튼 표시
+            return `
+                <div class="permission-control">
+                    <div class="permission-status not-allowed">
+                        <i data-lucide="x-circle"></i>
+                        <span>오프라인 구매가 허용되지 않았습니다</span>
+                    </div>
+                    <button class="btn primary" onclick="window.flightModals.toggleOfflineBaggagePermission('${request.id}', true)">
+                        <i data-lucide="check"></i>
+                        오프라인 구매 허용
+                    </button>
+                    <p class="help-text">허용하면 학생이 직접 수하물을 구매하고 영수증을 제출할 수 있습니다.</p>
+                </div>
+            `;
+        } else {
+            // 허용된 상태 - 학생 영수증 목록 표시
+            return `
+                <div class="permission-control">
+                    <div class="permission-status allowed">
+                        <i data-lucide="check-circle"></i>
+                        <span>오프라인 구매가 허용되었습니다</span>
+                    </div>
+                    <button class="btn secondary" onclick="window.flightModals.toggleOfflineBaggagePermission('${request.id}', false)">
+                        <i data-lucide="x"></i>
+                        허용 취소
+                    </button>
+                </div>
+                
+                <div class="student-receipts">
+                    <h5>학생이 제출한 영수증</h5>
+                    ${request.user_baggage_receipt_url ? `
+                        <div class="receipt-item">
+                            <div class="receipt-info">
+                                <i data-lucide="receipt"></i>
+                                <div class="receipt-details">
+                                    <span class="receipt-title">수하물 구매 영수증</span>
+                                    <span class="receipt-date">제출일: ${this.formatDate(request.updated_at)}</span>
+                                </div>
+                            </div>
+                            <div class="receipt-actions">
+                                <button class="btn secondary" onclick="window.flightModals.viewFile('${request.user_baggage_receipt_url}', '학생 수하물 영수증')">
+                                    <i data-lucide="eye"></i>
+                                    보기
+                                </button>
+                                <button class="btn success" onclick="window.flightModals.approveStudentBaggageReceipt('${request.id}')">
+                                    <i data-lucide="check"></i>
+                                    승인
+                                </button>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="no-receipts">
+                            <i data-lucide="clock"></i>
+                            <span>학생이 아직 영수증을 제출하지 않았습니다</span>
+                        </div>
+                    `}
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * 🌟 특별 수하물 신청 섹션 생성
+     */
+    generateSpecialBaggageSection(request) {
+        const hasSpecialRequest = request.special_baggage_request_status !== 'none' && 
+                                 request.special_baggage_request_status !== null;
+
+        if (!hasSpecialRequest) {
+            return `
+                <div class="no-special-request">
+                    <i data-lucide="info"></i>
+                    <span>특별 추가 수하물 신청이 없습니다</span>
+                </div>
+            `;
+        }
+
+        const status = request.special_baggage_request_status;
+        const amount = request.special_baggage_request_amount;
+        const reason = request.special_baggage_request_reason;
+        const rejectionReason = request.special_baggage_rejection_reason;
+
+        return `
+            <div class="special-request-item">
+                <div class="special-request-header">
+                    <div class="special-request-info">
+                        <h5>특별 수하물 신청</h5>
+                        <div class="special-request-details">
+                            <span class="amount">${this.formatPrice(amount)}</span>
+                            <span class="status-badge status-${status}">${this.getSpecialBaggageStatusText(status)}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="special-request-content">
+                    <div class="request-reason">
+                        <strong>신청 사유:</strong>
+                        <p>${reason}</p>
+                    </div>
+                    
+                    ${rejectionReason ? `
+                        <div class="rejection-reason">
+                            <strong>반려 사유:</strong>
+                            <p>${rejectionReason}</p>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                ${status === 'pending' ? `
+                    <div class="special-request-actions">
+                        <button class="btn success" onclick="window.flightModals.approveSpecialBaggageRequest('${request.id}')">
+                            <i data-lucide="check"></i>
+                            승인
+                        </button>
+                        <button class="btn danger" onclick="window.flightModals.rejectSpecialBaggageRequest('${request.id}')">
+                            <i data-lucide="x"></i>
+                            반려
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
+     * 📤 관리자 수하물 영수증 업로드
+     */
+    async uploadAdminBaggageReceipt(requestId, fileInput) {
+        try {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            // 파일 크기 및 형식 검증
+            if (file.size > 10 * 1024 * 1024) {
+                this.showError('파일 크기는 10MB 이하여야 합니다.');
+                return;
+            }
+
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+            if (!allowedTypes.includes(file.type)) {
+                this.showError('JPG, PNG, PDF 파일만 업로드할 수 있습니다.');
+                return;
+            }
+
+            this.showProcessing('영수증을 업로드하는 중...');
+
+            // Supabase Storage에 파일 업로드
+            const supabase = this.system.modules.api.checkSupabaseInstance();
+            const fileName = `admin_baggage_${requestId}.${file.name.split('.').pop()}`;
+            
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('receipt-files')
+                .upload(fileName, file, { upsert: true });
+
+            if (uploadError) throw uploadError;
+
+            // 파일 URL 생성
+            const { data: urlData } = supabase.storage
+                .from('receipt-files')
+                .getPublicUrl(fileName);
+
+            // 데이터베이스 업데이트
+            const { data: updateData, error: updateError } = await supabase
+                .from('flight_requests')
+                .update({ admin_baggage_receipt_url: urlData.publicUrl })
+                .eq('id', requestId)
+                .select()
+                .single();
+
+            if (updateError) throw updateError;
+
+            this.hideProcessing();
+            this.showSuccess('관리자 수하물 영수증이 업로드되었습니다.');
+            
+            // 모달 새로고침
+            this.closeModal('extraBaggageModal');
+            setTimeout(() => this.showExtraBaggageModal(requestId), 500);
+
+            // 시스템 데이터 새로고침
+            this.refreshSystemData();
+
+        } catch (error) {
+            this.hideProcessing();
+            console.error('❌ 관리자 수하물 영수증 업로드 실패:', error);
+            this.showError('영수증 업로드에 실패했습니다: ' + error.message);
+        }
+    }
+
+    /**
+     * 🔄 오프라인 수하물 구매 허용 토글
+     */
+    async toggleOfflineBaggagePermission(requestId, allow) {
+        try {
+            this.showProcessing(allow ? '오프라인 구매를 허용하는 중...' : '오프라인 구매 허용을 취소하는 중...');
+
+            const supabase = this.system.modules.api.checkSupabaseInstance();
+            const baggageType = allow ? 'offline_allowed' : 'none';
+
+            const { data, error } = await supabase
+                .from('flight_requests')
+                .update({ baggage_type: baggageType })
+                .eq('id', requestId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            this.hideProcessing();
+            this.showSuccess(allow ? '오프라인 구매가 허용되었습니다.' : '오프라인 구매 허용이 취소되었습니다.');
+            
+            // 모달 새로고침
+            this.closeModal('extraBaggageModal');
+            setTimeout(() => this.showExtraBaggageModal(requestId), 500);
+
+            // 시스템 데이터 새로고침
+            this.refreshSystemData();
+
+        } catch (error) {
+            this.hideProcessing();
+            console.error('❌ 오프라인 수하물 구매 허용 설정 실패:', error);
+            this.showError('설정 변경에 실패했습니다: ' + error.message);
+        }
+    }
+
+    /**
+     * ✅ 학생 수하물 영수증 승인
+     */
+    async approveStudentBaggageReceipt(requestId) {
+        try {
+            if (!confirm('학생이 제출한 수하물 영수증을 승인하시겠습니까?')) {
+                return;
+            }
+
+            this.showProcessing('영수증을 승인하는 중...');
+
+            const supabase = this.system.modules.api.checkSupabaseInstance();
+            
+            // 영수증 승인 상태 업데이트 (필요시 새로운 컬럼 추가)
+            const { data, error } = await supabase
+                .from('flight_requests')
+                .update({ 
+                    user_baggage_receipt_approved: true,
+                    user_baggage_receipt_approved_at: new Date().toISOString()
+                })
+                .eq('id', requestId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            this.hideProcessing();
+            this.showSuccess('학생 수하물 영수증이 승인되었습니다.');
+            
+            // 모달 새로고침
+            this.closeModal('extraBaggageModal');
+            setTimeout(() => this.showExtraBaggageModal(requestId), 500);
+
+            // 시스템 데이터 새로고침
+            this.refreshSystemData();
+
+        } catch (error) {
+            this.hideProcessing();
+            console.error('❌ 학생 수하물 영수증 승인 실패:', error);
+            this.showError('영수증 승인에 실패했습니다: ' + error.message);
+        }
+    }
+
+    /**
+     * ✅ 특별 수하물 신청 승인
+     */
+    async approveSpecialBaggageRequest(requestId) {
+        try {
+            if (!confirm('특별 추가 수하물 신청을 승인하시겠습니까?')) {
+                return;
+            }
+
+            this.showProcessing('특별 신청을 승인하는 중...');
+
+            const supabase = this.system.modules.api.checkSupabaseInstance();
+            
+            const { data, error } = await supabase
+                .from('flight_requests')
+                .update({ 
+                    special_baggage_request_status: 'approved',
+                    special_baggage_rejection_reason: null
+                })
+                .eq('id', requestId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            this.hideProcessing();
+            this.showSuccess('특별 추가 수하물 신청이 승인되었습니다.');
+            
+            // 모달 새로고침
+            this.closeModal('extraBaggageModal');
+            setTimeout(() => this.showExtraBaggageModal(requestId), 500);
+
+            // 시스템 데이터 새로고침
+            this.refreshSystemData();
+
+        } catch (error) {
+            this.hideProcessing();
+            console.error('❌ 특별 수하물 신청 승인 실패:', error);
+            this.showError('특별 신청 승인에 실패했습니다: ' + error.message);
+        }
+    }
+
+    /**
+     * ❌ 특별 수하물 신청 반려
+     */
+    async rejectSpecialBaggageRequest(requestId) {
+        try {
+            const reason = prompt('반려 사유를 입력해주세요:');
+            if (!reason || !reason.trim()) {
+                this.showError('반려 사유를 입력해주세요.');
+                return;
+            }
+
+            this.showProcessing('특별 신청을 반려하는 중...');
+
+            const supabase = this.system.modules.api.checkSupabaseInstance();
+            
+            const { data, error } = await supabase
+                .from('flight_requests')
+                .update({ 
+                    special_baggage_request_status: 'rejected',
+                    special_baggage_rejection_reason: reason.trim()
+                })
+                .eq('id', requestId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            this.hideProcessing();
+            this.showSuccess('특별 추가 수하물 신청이 반려되었습니다.');
+            
+            // 모달 새로고침
+            this.closeModal('extraBaggageModal');
+            setTimeout(() => this.showExtraBaggageModal(requestId), 500);
+
+            // 시스템 데이터 새로고침
+            this.refreshSystemData();
+
+        } catch (error) {
+            this.hideProcessing();
+            console.error('❌ 특별 수하물 신청 반려 실패:', error);
+            this.showError('특별 신청 반려에 실패했습니다: ' + error.message);
+        }
+    }
+
+    /**
+     * 📄 파일 보기 (이미지/PDF)
+     */
+    viewFile(fileUrl, title) {
+        if (!fileUrl) {
+            this.showError('파일 URL이 없습니다.');
+            return;
+        }
+
+        const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl);
+        const isPDF = /\.pdf$/i.test(fileUrl);
+
+        if (isImage) {
+            this.showImagePreview(fileUrl, title);
+        } else {
+            // PDF나 기타 파일은 새 창에서 열기
+            window.open(fileUrl, '_blank', 'noopener,noreferrer');
+        }
+    }
+
+    /**
+     * 🌟 특별 수하물 상태 텍스트 반환
+     */
+    getSpecialBaggageStatusText(status) {
+        const statusMap = {
+            'pending': '검토 중',
+            'approved': '승인됨',
+            'rejected': '반려됨',
+            'none': '신청 없음'
+        };
+        return statusMap[status] || status;
+    }    
+    
+    
+    
     /**
      * 🔗 링크 열기 (새 창)
      */

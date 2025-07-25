@@ -481,7 +481,38 @@ class FlightManagementAPI {
             return { success: false, error: error.message };
         }
     }    
-    
+
+    /**
+     * 🗨️ 관리자 메모(승인시 학생 공유용) 업데이트
+     */
+    async updateAdminNotes(requestId, notes) {
+        try {
+            console.log('📝 v8.2.1 관리자 메모(학생 공유용) 업데이트 중...', { requestId, notes });
+
+            const supabase = this.checkSupabaseInstance();
+
+            const updateData = {
+                admin_notes: notes || null,
+                updated_at: new Date().toISOString()
+            };
+
+            const { data, error } = await supabase
+                .from('flight_requests')
+                .update(updateData)
+                .eq('id', requestId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            console.log('✅ v8.2.1 관리자 메모(학생 공유용) 업데이트 성공:', data);
+            return { success: true, data };
+
+        } catch (error) {
+            console.error('❌ v8.2.1 관리자 메모(학생 공유용) 업데이트 실패:', error);
+            return { success: false, error: error.message };
+        }
+    }    
     
 }
 

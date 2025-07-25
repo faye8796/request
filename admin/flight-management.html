@@ -1738,6 +1738,397 @@
                 }
             }
         
+        /* 🎒 추가 수하물 관리 모달 스타일 */
+        .extra-baggage-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .baggage-section {
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .baggage-section h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin: 0 0 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .baggage-section h4 i {
+            width: 16px;
+            height: 16px;
+            color: #4299e1;
+        }
+
+        /* 추가 수하물 버튼 스타일 */
+        .action-btn.warning {
+            background: linear-gradient(135deg, #ed8936, #dd6b20);
+            color: white;
+            border: none;
+            box-shadow: 0 2px 4px rgba(237, 137, 54, 0.2);
+        }
+
+        .action-btn.warning:hover {
+            background: linear-gradient(135deg, #dd6b20, #c05621);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(237, 137, 54, 0.3);
+        }
+
+        /* 업로드 섹션 */
+        .upload-section {
+            margin-top: 1rem;
+        }
+
+        .upload-placeholder {
+            border: 2px dashed #cbd5e0;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .upload-placeholder:hover {
+            border-color: #4299e1;
+            background: #f7fafc;
+        }
+
+        .upload-placeholder i {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 1rem;
+            color: #a0aec0;
+        }
+
+        .upload-placeholder p {
+            margin: 0 0 0.5rem 0;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .upload-placeholder small {
+            color: #718096;
+            font-size: 0.875rem;
+        }
+
+        .existing-file {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: #e6fffa;
+            border: 1px solid #81e6d9;
+            border-radius: 0.5rem;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #2f855a;
+            font-weight: 500;
+        }
+
+        .file-info i {
+            width: 20px;
+            height: 20px;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* 허가 컨트롤 */
+        .permission-control {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .permission-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+        }
+
+        .permission-status.not-allowed {
+            background: #fed7d7;
+            color: #c53030;
+            border: 1px solid #fc8181;
+        }
+
+        .permission-status.allowed {
+            background: #c6f6d5;
+            color: #2f855a;
+            border: 1px solid #9ae6b4;
+        }
+
+        .permission-status i {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* 학생 영수증 목록 */
+        .student-receipts {
+            margin-top: 1rem;
+        }
+
+        .student-receipts h5 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin: 0 0 0.75rem 0;
+        }
+
+        .receipt-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+        }
+
+        .receipt-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .receipt-info i {
+            width: 24px;
+            height: 24px;
+            color: #4299e1;
+        }
+
+        .receipt-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .receipt-title {
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        .receipt-date {
+            font-size: 0.75rem;
+            color: #718096;
+        }
+
+        .receipt-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .no-receipts {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            color: #718096;
+            font-style: italic;
+        }
+
+        .no-receipts i {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* 특별 수하물 신청 */
+        .no-special-request {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            color: #718096;
+        }
+
+        .no-special-request i {
+            width: 16px;
+            height: 16px;
+        }
+
+        .special-request-item {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .special-request-header {
+            background: #faf5ff;
+            padding: 1rem;
+            border-bottom: 1px solid #e9d8fd;
+        }
+
+        .special-request-info h5 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .special-request-details {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .special-request-details .amount {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #805ad5;
+        }
+
+        .special-request-content {
+            padding: 1rem;
+        }
+
+        .request-reason,
+        .rejection-reason {
+            margin-bottom: 1rem;
+        }
+
+        .request-reason strong,
+        .rejection-reason strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #2d3748;
+            font-size: 0.875rem;
+        }
+
+        .request-reason p,
+        .rejection-reason p {
+            margin: 0;
+            padding: 0.75rem;
+            background: #f7fafc;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: #4a5568;
+        }
+
+        .rejection-reason {
+            border-left: 3px solid #e53e3e;
+            padding-left: 0.75rem;
+        }
+
+        .rejection-reason p {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        .special-request-actions {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        /* 상태 배지 확장 */
+        .status-badge.status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-badge.status-approved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .baggage-section {
+                padding: 1rem;
+            }
+
+            .existing-file,
+            .receipt-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .file-actions,
+            .receipt-actions {
+                width: 100%;
+                justify-content: stretch;
+            }
+
+            .file-actions .btn,
+            .receipt-actions .btn {
+                flex: 1;
+            }
+
+            .special-request-details {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .special-request-actions {
+                flex-direction: column;
+            }
+
+            .upload-placeholder {
+                padding: 1.5rem 1rem;
+            }
+
+            .upload-placeholder i {
+                width: 36px;
+                height: 36px;
+            }
+        }
+
+        /* 업로드 애니메이션 */
+        .upload-placeholder.uploading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .upload-placeholder.uploading::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(66, 153, 225, 0.2), transparent);
+            animation: uploading-shimmer 1.5s infinite;
+        }
+
+        @keyframes uploading-shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
         
     </style>
 </head>

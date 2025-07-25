@@ -723,6 +723,26 @@ class FlightRequestStatus {
                                     </div>
                                 </div>
                             `).join('')}
+                            
+                        ${request.rejection_reason ? `
+                            <div class="detail-item full-width rejection-reason">
+                                <label class="detail-label">거부 사유</label>
+                                <div class="detail-value rejection-text">
+                                    <i data-lucide="alert-circle"></i>
+                                    ${request.rejection_reason}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        ${request.admin_notes ? `
+                            <div class="detail-item full-width admin-notes">
+                                <label class="detail-label">관리자 메모</label>
+                                <div class="detail-value admin-notes-text">
+                                    <i data-lucide="message-circle"></i>
+                                    ${request.admin_notes}
+                                </div>
+                            </div>
+                        ` : ''}                        
                         </div>
                     </div>
 
@@ -793,15 +813,6 @@ class FlightRequestStatus {
                             </div>
                         ` : ''}
                         
-                        ${request.rejection_reason ? `
-                            <div class="detail-item full-width rejection-reason">
-                                <label class="detail-label">거부 사유</label>
-                                <div class="detail-value rejection-text">
-                                    <i data-lucide="alert-circle"></i>
-                                    ${request.rejection_reason}
-                                </div>
-                            </div>
-                        ` : ''}
                     </div>
 
                     <!-- 🆕 v1.1.0: 직접구매 파일 업로드 섹션 -->

@@ -572,6 +572,15 @@ class FlightManagementCards {
                 break;
 
             case 'approved':
+                
+                // 🆕 추가 수하물 버튼 (승인된 모든 항공권 신청에 추가)
+                buttons.push(`
+                    <button class="action-btn warning" data-action="extra-baggage" data-request-id="${request.id}">
+                        <i data-lucide="package-plus"></i>
+                        추가 수하물
+                    </button>
+                `);
+                
                 if (request.purchase_type === 'agency') {
                     buttons.push(`
                         <button class="action-btn success" data-action="upload-ticket" data-request-id="${request.id}">
@@ -594,6 +603,8 @@ class FlightManagementCards {
                             항공권 보기
                         </button>
                     `);
+                    
+                    
                 }
 
                 buttons.push(`
@@ -602,6 +613,8 @@ class FlightManagementCards {
                         최종금액 입력
                     </button>
                 `);
+                
+                
                 break;
 
             case 'completed':
@@ -770,6 +783,10 @@ class FlightManagementCards {
                 case 'view-student-ticket':
                     this.viewStudentTicket(requestId);
                     break;    
+                case 'extra-baggage':
+                    this.showExtraBaggageModal(requestId);
+                    break;
+                    
                 default:
                     console.warn('⚠️ 알 수 없는 액션:', action);
             }
@@ -899,6 +916,18 @@ class FlightManagementCards {
         console.log('🎫 학생 등록 항공권 보기:', requestId);
         if (this.system?.modules?.modals) {
             this.system.modules.modals.showStudentTicketModal(requestId);
+        } else {
+            alert('모달 시스템이 초기화되지 않았습니다.');
+        }
+    }
+    
+    /**
+     * 🧳 추가 수하물 관리
+     */
+    showExtraBaggageModal(requestId) {
+        console.log('🧳 추가 수하물 관리:', requestId);
+        if (this.system?.modules?.modals) {
+            this.system.modules.modals.showExtraBaggageModal(requestId);
         } else {
             alert('모달 시스템이 초기화되지 않았습니다.');
         }
