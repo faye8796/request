@@ -798,6 +798,15 @@ const AdminEnhancedUI = {
                 });
             });
             
+            // 장바구니 메모 복사 버튼들
+            const copyMemoBtns = document.querySelectorAll('.copy-memo-btn');
+            copyMemoBtns.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const textToCopy = e.target.closest('button').dataset.copy;
+                    this.copyToClipboard(textToCopy, e.target);
+                });
+            });
+            
             console.log('✅ 그룹화 UI 이벤트 리스너 설정 완료 (v4.3.3 - 구매 완료 버튼 버그 수정)');
         } catch (error) {
             console.error('❌ 이벤트 리스너 설정 실패:', error);
@@ -1198,6 +1207,34 @@ const AdminEnhancedUI = {
                     </div>
                 `;
             }
+            
+            // 🆕 온라인 묶음 구매 - store_info (장바구니 메모) 표시 개선
+            if (isBundle && application.store_info) {
+                purchaseInfoHTML += `
+                    <div class="bundle-cart-memo-section">
+                        <div class="cart-memo-header">
+                            <div class="cart-memo-title">
+                                <i data-lucide="shopping-cart"></i>
+                                <strong>장바구니 메모</strong>
+                            </div>
+                            <div class="cart-memo-badge">
+                                <i data-lucide="sticky-note"></i>
+                                구매 참고사항
+                            </div>
+                        </div>
+                        <div class="cart-memo-content">
+                            <div class="memo-text">
+                                ${this.escapeHtml(application.store_info)}
+                            </div>
+                            <button class="copy-memo-btn" data-copy="${this.escapeHtml(application.store_info)}" title="메모 복사">
+                                <i data-lucide="copy"></i>
+                                메모 복사
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
         } else if (purchaseType === 'offline') {
             // 오프라인 구매 - 새로운 store_info 컬럼 활용
             if (application.store_info) {
@@ -1333,7 +1370,7 @@ const AdminEnhancedUI = {
                         </button>
                     `;
                 }
-            default:
+                default:
                 return '';
         }
     },

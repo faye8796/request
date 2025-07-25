@@ -314,7 +314,23 @@ const SupabaseAdmin = {
             let query = client
                 .from('requests')
                 .select(`
-                    *,
+                    id,
+                    user_id,
+                    item_name,
+                    purpose,
+                    price,
+                    status,
+                    purchase_type,
+                    is_bundle,
+                    link,
+                    store_info,
+                    account_id,
+                    account_pw,
+                    rejection_reason,
+                    created_at,
+                    updated_at,
+                    reviewed_at,
+                    reviewed_by,
                     user_profiles:user_id (
                         name,
                         field,

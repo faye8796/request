@@ -907,7 +907,7 @@ const EquipmentRequestModule = {
             return {
                 purchaseUrl: siteUrl,  // 순수 URL만 저장
                 accountId: accountId.trim(),
-                accountPassword: this.encryptPasswordV43(accountPassword.trim()),
+                accountPassword: accountPassword.trim(),
                 cartNote: cartNote.trim() || null  // 장바구니 메모 별도 반환
             };
 

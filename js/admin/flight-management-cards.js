@@ -571,60 +571,37 @@ class FlightManagementCards {
                 `);
                 break;
 
-            case 'approved':
-                
-                // 🆕 추가 수하물 버튼 (승인된 모든 항공권 신청에 추가)
+        case 'approved':
+            // 추가 수하물 버튼
+            buttons.push(`
+                <button class="action-btn warning" data-action="extra-baggage" data-request-id="${request.id}">
+                    <i data-lucide="package-plus"></i>
+                    추가 수하물
+                </button>
+            `);
+
+            // 구매대행인 경우만 항공권 등록 버튼
+            if (request.purchase_type === 'agency') {
                 buttons.push(`
-                    <button class="action-btn warning" data-action="extra-baggage" data-request-id="${request.id}">
-                        <i data-lucide="package-plus"></i>
-                        추가 수하물
+                    <button class="action-btn success" data-action="upload-ticket" data-request-id="${request.id}">
+                        <i data-lucide="upload"></i>
+                        항공권 등록
                     </button>
                 `);
-                
-                if (request.purchase_type === 'agency') {
-                    buttons.push(`
-                        <button class="action-btn success" data-action="upload-ticket" data-request-id="${request.id}">
-                            <i data-lucide="upload"></i>
-                            항공권 등록
-                        </button>
-                    `);
-                } else {
-                    buttons.push(`
-                        <button class="action-btn secondary" data-action="view-receipt" data-request-id="${request.id}">
-                            <i data-lucide="receipt"></i>
-                            영수증 보기
-                        </button>
-                    `);
+            }
 
-                    // 🆕 학생이 등록한 항공권 보기 버튼 (항상 표시)
-                    buttons.push(`
-                        <button class="action-btn info" data-action="view-student-ticket" data-request-id="${request.id}">
-                            <i data-lucide="plane"></i>
-                            항공권 보기
-                        </button>
-                    `);
-                    
-                    
-                }
+            // 최종금액 입력 버튼
+            buttons.push(`
+                <button class="action-btn success" data-action="final-amount" data-request-id="${request.id}">
+                    <i data-lucide="dollar-sign"></i>
+                    최종금액 입력
+                </button>
+            `);
+            break;
 
-                buttons.push(`
-                    <button class="action-btn success" data-action="final-amount" data-request-id="${request.id}">
-                        <i data-lucide="dollar-sign"></i>
-                        최종금액 입력
-                    </button>
-                `);
-                
-                
-                break;
-
-            case 'completed':
-                buttons.push(`
-                    <button class="action-btn secondary" data-action="view-ticket" data-request-id="${request.id}">
-                        <i data-lucide="ticket"></i>
-                        항공권 보기
-                    </button>
-                `);
-                break;
+        case 'completed':
+            // completed 상태에서는 파일 관련 버튼 제거 (상세보기에서 확인)
+            break;
         }
 
         // 여권 정보 버튼 (모든 상태에서)
@@ -766,7 +743,7 @@ class FlightManagementCards {
                     this.rejectRequest(requestId);
                     break;
                 case 'upload-ticket':
-                    this.uploadTicket(requestId);
+                    this.handleDirectTicketUpload(requestId);
                     break;
                 case 'view-receipt':
                     this.viewReceipt(requestId);
@@ -863,14 +840,209 @@ class FlightManagementCards {
     }
 
     /**
-     * 📤 항공권 업로드
+     * 🔄 flight-management-cards.js 업데이트 - 직접 항공권 업로드 기능
+     * 모달 방식에서 직접 업로드 방식으로 변경
      */
-    uploadTicket(requestId) {
-        console.log('📤 항공권 업로드:', requestId);
-        if (this.system?.modules?.modals) {
-            this.system.modules.modals.showUploadTicketModal(requestId);
-        } else {
-            alert('모달 시스템이 초기화되지 않았습니다.');
+
+    // ==========================================
+    // 🔧 1. uploadTicket() 메서드 교체 (라인 약 730번)
+    // ==========================================
+
+    /**
+     * 📤 직접 항공권 업로드 (모달 없이)
+     */
+    async handleDirectTicketUpload(requestId) {
+        console.log('📤 직접 항공권 업로드 시작:', requestId);
+
+        try {
+            // 파일 입력 요소 생성
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*,.pdf';
+            fileInput.style.display = 'none';
+
+            // 파일 선택 이벤트 리스너
+            fileInput.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    await this.processTicketUpload(requestId, file);
+                }
+                // 파일 입력 요소 제거
+                document.body.removeChild(fileInput);
+            });
+
+            // 파일 선택 다이얼로그 열기
+            document.body.appendChild(fileInput);
+            fileInput.click();
+
+        } catch (error) {
+            console.error('❌ 직접 업로드 준비 실패:', error);
+            this.showToast('파일 선택 중 오류가 발생했습니다.', 'error');
+        }
+    }
+
+    /**
+     * 📁 파일 업로드 처리
+     */
+    async processTicketUpload(requestId, file) {
+        try {
+            // 파일 검증
+            const validation = this.validateTicketFile(file);
+            if (!validation.isValid) {
+                this.showToast(validation.message, 'error');
+                return;
+            }
+
+            // 업로드 진행 상태 표시
+            this.showToast('항공권을 업로드하는 중...', 'info');
+
+            // Supabase에 파일 업로드
+            const uploadResult = await this.uploadTicketToSupabase(file, requestId);
+
+            if (uploadResult.success) {
+                // 데이터베이스 업데이트
+                await this.updateTicketRecord(requestId, uploadResult.fileUrl);
+
+                // 성공 알림
+                this.showToast('항공권이 등록되었습니다.', 'success');
+
+                // 카드 데이터 새로고침
+                if (this.system) {
+                    this.system.refreshData(false);
+                }
+            } else {
+                this.showToast('업로드에 실패했습니다: ' + uploadResult.message, 'error');
+            }
+
+        } catch (error) {
+            console.error('❌ 파일 업로드 처리 실패:', error);
+            this.showToast('업로드 중 오류가 발생했습니다.', 'error');
+        }
+    }
+
+    /**
+     * 🔍 파일 검증
+     */
+    validateTicketFile(file) {
+        // 파일 크기 검증 (10MB 제한)
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+            return {
+                isValid: false,
+                message: '파일 크기는 10MB 이하여야 합니다.'
+            };
+        }
+
+        // 파일 형식 검증
+        const allowedTypes = [
+            'image/jpeg', 
+            'image/jpg', 
+            'image/png', 
+            'image/gif',
+            'image/webp',
+            'application/pdf'
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+            return {
+                isValid: false,
+                message: 'JPG, PNG, GIF, WEBP, PDF 파일만 업로드할 수 있습니다.'
+            };
+        }
+
+        // 파일명 검증
+        if (!file.name || file.name.length > 255) {
+            return {
+                isValid: false,
+                message: '올바른 파일명이 필요합니다.'
+            };
+        }
+
+        return {
+            isValid: true,
+            message: '검증 통과'
+        };
+    }
+
+    /**
+     * ☁️ Supabase 파일 업로드
+     */
+    async uploadTicketToSupabase(file, requestId) {
+        try {
+            if (!this.system?.modules?.api) {
+                throw new Error('API 모듈이 초기화되지 않았습니다.');
+            }
+            const supabase = this.system.modules.api.checkSupabaseInstance();
+
+            // 파일명 생성 (덮어쓰기 지원)
+            const fileExtension = file.name.split('.').pop();
+            const fileName = `admin_ticket_${requestId}.${fileExtension}`;
+
+            // Supabase Storage에 업로드 (upsert: true로 덮어쓰기)
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('flight-tickets')  // ✅ 올바른 버킷명
+                .upload(fileName, file, { 
+                    upsert: true,
+                    contentType: file.type
+                });
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            // 공개 URL 생성
+            const { data: urlData } = supabase.storage
+                .from('flight-tickets')  // ✅ 올바른 버킷명
+                .getPublicUrl(fileName);
+
+            return {
+                success: true,
+                fileUrl: urlData.publicUrl,
+                fileName: fileName
+            };
+        } catch (error) {
+            console.error('❌ Supabase 업로드 실패:', error);
+            return {
+                success: false,
+                message: error.message
+            };
+        }
+    }
+
+    /**
+     * 💾 데이터베이스 항공권 레코드 업데이트
+     */
+    async updateTicketRecord(requestId, fileUrl) {
+        try {
+            if (!this.system?.modules?.api) {
+                throw new Error('API 모듈이 초기화되지 않았습니다.');
+            }
+
+            const supabase = this.system.modules.api.checkSupabaseInstance();
+
+            // flight_requests 테이블 업데이트
+            const updateData = {
+                admin_ticket_url: fileUrl,
+                updated_at: new Date().toISOString()
+            };
+
+            const { data, error } = await supabase
+                .from('flight_requests')
+                .update(updateData)
+                .eq('id', requestId)
+                .select()
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            console.log('✅ 항공권 레코드 업데이트 완료:', requestId);
+            return data;
+
+        } catch (error) {
+            console.error('❌ 데이터베이스 업데이트 실패:', error);
+            throw error;
         }
     }
 

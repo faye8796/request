@@ -1867,7 +1867,7 @@ class FlightManagementModals {
      * 🎒 오프라인 섹션 동적 생성
      */
     generateOfflineSection(request) {
-        const isOfflineAllowed = request.baggage_type === 'offline_allowed';
+        const isOfflineAllowed = request.baggage_type === 'user_allowed;';
         
         if (!isOfflineAllowed) {
             // 허용되지 않은 상태 - 허용 버튼 표시
@@ -2066,8 +2066,8 @@ class FlightManagementModals {
             this.showProcessing(allow ? '오프라인 구매를 허용하는 중...' : '오프라인 구매 허용을 취소하는 중...');
 
             const supabase = this.system.modules.api.checkSupabaseInstance();
-            const baggageType = allow ? 'offline_allowed' : 'none';
-
+            const baggageType = allow ? 'user_allowed' : 'none';
+            
             const { data, error } = await supabase
                 .from('flight_requests')
                 .update({ baggage_type: baggageType })
