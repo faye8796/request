@@ -822,13 +822,143 @@ class FlightManagementModals {
             `;
 
             this.showModal(modalHtml, 'uploadTicketModal');
-            this.setupFileUpload('ticketFileInput', 'ticketUploadArea', 'uploadTicketBtn');
+            // 파일 입력 이벤트 리스너 직접 설정
+            setTimeout(() => {
+                const fileInput = document.getElementById('ticketFileInput');
+                const uploadBtn = document.getElementById('uploadTicketBtn');
+
+                if (fileInput) {
+                    fileInput.addEventListener('change', (event) => {
+                        const file = event.target.files[0];
+                        if (file) {
+                            uploadBtn.disabled = false;
+                            // 파일 미리보기 처리 (선택사항)
+                            this.showFilePreview(file, 'ticketUploadPreview');
+                        } else {
+                            uploadBtn.disabled = true;
+                        }
+                    });
+                }
+            }, 100);
 
         } catch (error) {
             console.error('❌ 항공권 업로드 모달 표시 실패:', error);
             this.showError('항공권 업로드 모달을 표시하는 중 오류가 발생했습니다.');
         }
     }
+    
+    /**
+     * 📤 항공권 업로드 확정 처리
+     */
+    async confirmTicketUpload(requestId) {
+        try {
+            const fileInput = document.getElementById('ticketFileInput');
+            const purchaseNotes = document.getElementById('purchaseNotes')?.value || '';
+
+            if (!fileInput || !fileInput.files[0]) {
+                this.showError('업로드할 항공권 파일을 선택해주세요.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+
+            // 파일 크기 및 형식 검증
+            if (file.size > 10 * 1024 * 1024) {
+                this.showError('파일 크기는 10MB 이하여야 합니다.');
+                return;
+            }
+
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+            if (!allowedTypes.includes(file.type)) {
+                this.showError('JPG, PNG, PDF 파일만 업로드할 수 있습니다.');
+                return;
+            }
+
+            this.showProcessing('항공권을 업로드하는 중...');
+
+            // Supabase Storage에 파일 업로드
+            const supabase = this.system.modules.api.checkSupabaseInstance();
+            const fileName = `admin_ticket_${requestId}.${file.name.split('.').pop()}`;
+
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('ticket-files')
+                .upload(fileName, file, { upsert: true });
+
+            if (uploadError) throw uploadError;
+
+            // 파일 URL 생성
+            const { data: urlData } = supabase.storage
+                .from('ticket-files')
+                .getPublicUrl(fileName);
+
+            // 데이터베이스 업데이트
+            const updateData = {
+                admin_ticket_url: urlData.publicUrl,
+                status: 'completed',
+                purchase_completed_at: new Date().toISOString()
+            };
+
+            if (purchaseNotes.trim()) {
+                updateData.admin_notes = purchaseNotes.trim();
+            }
+
+            const { data: updateData2, error: updateError } = await supabase
+                .from('flight_requests')
+                .update(updateData)
+                .eq('id', requestId)
+                .select()
+                .single();
+
+            if (updateError) throw updateError;
+
+            this.hideProcessing();
+            this.showSuccess('항공권이 등록되었습니다.');
+
+            // 모달 닫기
+            this.closeModal('uploadTicketModal');
+
+            // 시스템 데이터 새로고침
+            this.refreshSystemData();
+
+        } catch (error) {
+            this.hideProcessing();
+            console.error('❌ 항공권 업로드 실패:', error);
+            this.showError('항공권 업로드에 실패했습니다: ' + error.message);
+        }
+    }
+    
+    /**
+     * 📁 파일 미리보기 표시
+     */
+    showFilePreview(file, previewElementId) {
+        const previewElement = document.getElementById(previewElementId);
+        if (!previewElement) return;
+
+        const isImage = file.type.startsWith('image/');
+
+        previewElement.innerHTML = `
+            <div class="file-preview-item">
+                <div class="file-icon">
+                    <i data-lucide="${isImage ? 'image' : 'file'}"></i>
+                </div>
+                <div class="file-info">
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                </div>
+                <div class="file-status">
+                    <i data-lucide="check-circle" style="color: #38a169;"></i>
+                </div>
+            </div>
+        `;
+
+        previewElement.style.display = 'block';
+
+        // 아이콘 새로고침
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }    
+    
     
     /*
      * 💰 최종금액 입력 모달
