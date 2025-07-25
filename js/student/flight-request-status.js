@@ -1822,14 +1822,15 @@ class FlightRequestStatus {
     }
 
 
-    // 🆕 추가 수하물 섹션 렌더링
+    // 🆕 수정된 renderBaggageSection - 2열 통합 그리드
     renderBaggageSection(request) {
         // 🚨 테스트 중: 승인된 신청에서만 추가 수하물 섹션 표시
         if (request.status !== 'approved') {
             return ''; // 승인되지 않은 신청에서는 섹션 숨김
         }
 
-        const hasBaggage = !!(request.baggage_type && request.baggage_type !== 'none');
+        const baggageType = request.baggage_type || 'none';
+        const specialStatus = request.special_baggage_request_status || 'none';
 
         return `
             <div class="baggage-section">
@@ -1838,8 +1839,38 @@ class FlightRequestStatus {
                     추가 수하물
                 </h4>
 
-                ${hasBaggage ? this.renderBaggageInfo(request) : ''}
-                ${this.renderSpecialBaggageInfo(request)}
+                <!-- 🆕 하나의 통합 그리드에 두 카드 모두 포함 -->
+                <div class="baggage-cards-grid">
+                    <!-- 일반 추가 수하물 카드 -->
+                    <div class="baggage-card main-baggage-card">
+                        <div class="baggage-card-header">
+                            <i data-lucide="luggage"></i>
+                            <span>추가 수하물</span>
+                            <div class="baggage-status ${this.getBaggageStatus(baggageType).class}">
+                                ${this.getBaggageStatus(baggageType).text}
+                            </div>
+                        </div>
+                        ${this.renderBaggageCardContent(request, baggageType)}
+                        <div class="baggage-card-actions">
+                            ${this.renderBaggageActions(request, baggageType)}
+                        </div>
+                    </div>
+
+                    <!-- 특별 추가 수하물 카드 -->
+                    <div class="special-baggage-card">
+                        <div class="baggage-card-header">
+                            <i data-lucide="plus-circle"></i>
+                            <span>특별 추가 수하물</span>
+                            <div class="baggage-status ${this.getSpecialBaggageStatus(specialStatus).class}">
+                                ${this.getSpecialBaggageStatus(specialStatus).text}
+                            </div>
+                        </div>
+                        ${this.renderSpecialBaggageCardContent(request, specialStatus)}
+                        <div class="baggage-card-actions">
+                            ${this.renderSpecialBaggageActions(request, specialStatus)}
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
     }    
@@ -2219,31 +2250,102 @@ class FlightRequestStatus {
         this.showSpecialBaggageModal();
     }
 
-    // 🆕 특별 추가 수하물 모달 표시
+    // 🆕 특별 추가 수하물 모달 표시 (개선된 버전)
     showSpecialBaggageModal() {
         const modalHtml = `
-            <div id="specialBaggageModal" class="modal" style="display: flex;">
+            <div id="specialBaggageModal" class="modal special-baggage-modal" style="display: flex;">
                 <div class="modal-backdrop" onclick="window.flightRequestStatus?.closeSpecialBaggageModal()"></div>
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>특별 추가 수하물 신청</h3>
-                        <button type="button" class="modal-close" onclick="window.flightRequestStatus?.closeSpecialBaggageModal()">&times;</button>
-                    </div>
-                    <form id="specialBaggageForm">
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label for="specialBaggageAmount">예상 비용 (원)</label>
-                                <input type="number" id="specialBaggageAmount" min="1000" step="1000" required>
+                <div class="modal-content special-modal-content">
+                    <div class="modal-header special-modal-header">
+                        <div class="modal-title-wrapper">
+                            <div class="modal-icon">
+                                <i data-lucide="package-plus"></i>
                             </div>
-                            <div class="form-group">
-                                <label for="specialBaggageReason">신청 사유</label>
-                                <textarea id="specialBaggageReason" rows="4" required maxlength="500" 
-                                          placeholder="전통악기, 스포츠 장비 등 특수 물품의 구체적인 내용과 필요성을 설명해주세요"></textarea>
+                            <div class="modal-title-text">
+                                <h3>특별 추가 수하물 신청</h3>
+                                <p class="modal-subtitle">전통악기, 스포츠 장비 등 특수 물품 운송을 위한 추가 비용을 신청합니다</p>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" onclick="window.flightRequestStatus?.closeSpecialBaggageModal()">취소</button>
-                            <button type="submit" class="btn btn-primary">신청하기</button>
+                        <button type="button" class="modal-close special-modal-close" onclick="window.flightRequestStatus?.closeSpecialBaggageModal()">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+
+                    <form id="specialBaggageForm" class="special-baggage-form">
+                        <div class="modal-body special-modal-body">
+                            <div class="form-group special-form-group">
+                                <label for="specialBaggageAmount" class="special-form-label">
+                                    <i data-lucide="dollar-sign"></i>
+                                    예상 비용 (원)
+                                    <span class="required-asterisk">*</span>
+                                </label>
+                                <div class="input-wrapper">
+                                    <input type="number" 
+                                           id="specialBaggageAmount" 
+                                           class="special-form-input"
+                                           min="1000" 
+                                           step="1000" 
+                                           required 
+                                           placeholder="예: 50000">
+                                    <span class="input-suffix">원</span>
+                                </div>
+                                <div class="form-hint">
+                                    <i data-lucide="info"></i>
+                                    정확한 금액을 알 수 없을 경우 대략적인 금액을 작성해 주세요.
+                                </div>
+                            </div>
+
+                            <div class="form-group special-form-group">
+                                <label for="specialBaggageReason" class="special-form-label">
+                                    <i data-lucide="edit-3"></i>
+                                    신청 사유
+                                    <span class="required-asterisk">*</span>
+                                </label>
+                                <textarea id="specialBaggageReason" 
+                                         class="special-form-textarea"
+                                         rows="4" 
+                                         required 
+                                         maxlength="500" 
+                                         placeholder="전통악기, 스포츠 장비 등 특수 물품의 구체적인 내용과 필요성을 설명해주세요
+
+    예시:
+    - 가야금 1대 (전통음악 수업용)
+    - 태권도 도복 및 보호장비 (태권도 시범용)"></textarea>
+                                <div class="form-hint">
+                                    <i data-lucide="info"></i>
+                                    <span class="char-count">
+                                        <span id="charCount">0</span>/500자
+                                    </span>
+                                    구체적인 물품명과 용도를 명시해주세요
+                                </div>
+                            </div>
+
+                            <div class="notice-box">
+                                <div class="notice-icon">
+                                    <i data-lucide="alert-circle"></i>
+                                </div>
+                                <div class="notice-content">
+                                    <h4>신청 전 확인사항</h4>
+                                    <ul>
+                                        <li>특별 추가 수하물은 관리자 승인이 필요합니다</li>
+                                        <li>승인이 될 경우, 해당 비용을 직접 지출 후 영수증을 제출하셔야 합니다</li>
+                                        <li>제출한 영수증을 기반으로 추후 실비 지원을 받을 수 있습니다</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer special-modal-footer">
+                            <button type="button" 
+                                    class="btn btn-secondary special-btn-cancel" 
+                                    onclick="window.flightRequestStatus?.closeSpecialBaggageModal()">
+                                <i data-lucide="x-circle"></i>
+                                취소
+                            </button>
+                            <button type="submit" class="btn btn-primary special-btn-submit">
+                                <i data-lucide="send"></i>
+                                신청하기
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -2258,6 +2360,43 @@ class FlightRequestStatus {
 
         // 새 모달 추가
         document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // 🆕 글자 수 카운터 기능 추가
+        const textarea = document.getElementById('specialBaggageReason');
+        const charCount = document.getElementById('charCount');
+
+        if (textarea && charCount) {
+            textarea.addEventListener('input', function() {
+                const count = this.value.length;
+                charCount.textContent = count;
+
+                if (count > 450) {
+                    charCount.style.color = '#dc2626';
+                } else if (count > 400) {
+                    charCount.style.color = '#f59e0b';
+                } else {
+                    charCount.style.color = '#6b7280';
+                }
+            });
+        }
+
+        // 🆕 숫자 입력 포맷팅
+        const amountInput = document.getElementById('specialBaggageAmount');
+        if (amountInput) {
+            amountInput.addEventListener('input', function() {
+                let value = this.value.replace(/[^\d]/g, '');
+                if (value) {
+                    this.value = parseInt(value).toLocaleString();
+                }
+            });
+
+            amountInput.addEventListener('blur', function() {
+                let value = this.value.replace(/[^\d]/g, '');
+                if (value) {
+                    this.value = parseInt(value);
+                }
+            });
+        }
 
         // 폼 이벤트 리스너
         const form = document.getElementById('specialBaggageForm');

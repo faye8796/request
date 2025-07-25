@@ -2667,6 +2667,834 @@
     font-weight: 500;
 }
 
+/* ===================================================================== */
+/* 🎒 추가 수하물 섹션 - 2열 그리드 레이아웃으로 개선 */
+/* ===================================================================== */
+
+/* 추가 수하물 메인 섹션 */
+.baggage-section {
+    margin-bottom: 24px !important;
+    padding: 20px !important;
+    background-color: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* 🆕 2열 그리드로 변경 - 공간 효율성 대폭 개선 */
+.baggage-cards-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+    margin-bottom: 20px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* 개별 수하물 카드 - 컴팩트한 디자인 */
+.baggage-card,
+.main-baggage-card {
+    padding: 14px !important;
+    background-color: #f8fafc !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    min-height: 140px !important; /* 최소 높이 설정 */
+}
+
+/* 특별 추가 수하물 카드 */
+.special-baggage-card {
+    padding: 14px !important;
+    background-color: #fefce8 !important;
+    border: 2px solid #eab308 !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    min-height: 140px !important; /* 최소 높이 설정 */
+}
+
+/* 카드 호버 효과 */
+.baggage-card:hover,
+.main-baggage-card:hover,
+.special-baggage-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 수하물 카드 헤더 - 컴팩트하게 */
+.baggage-card-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 10px !important;
+    padding-bottom: 6px !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    flex-shrink: 0 !important;
+}
+
+.baggage-card-header > span {
+    font-weight: 600 !important;
+    color: #374151 !important;
+    font-size: 13px !important;
+    flex: 1 !important;
+    margin-left: 6px !important;
+}
+
+.baggage-card-header i {
+    color: #6b7280 !important;
+    width: 16px !important;
+    height: 16px !important;
+    flex-shrink: 0 !important;
+}
+
+/* 수하물 상태 배지 - 더 작게 */
+.baggage-status {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    padding: 3px 6px !important;
+    border-radius: 10px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    white-space: nowrap !important;
+}
+
+.baggage-status.uploaded {
+    background-color: #dcfce7 !important;
+    color: #166534 !important;
+    border: 1px solid #bbf7d0 !important;
+}
+
+.baggage-status.pending {
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+    border: 1px solid #fcd34d !important;
+}
+
+.baggage-status.user-allowed {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+    border: 1px solid #93c5fd !important;
+}
+
+.baggage-status.approved {
+    background-color: #dcfce7 !important;
+    color: #166534 !important;
+    border: 1px solid #bbf7d0 !important;
+}
+
+.baggage-status.rejected {
+    background-color: #fee2e2 !important;
+    color: #dc2626 !important;
+    border: 1px solid #fecaca !important;
+}
+
+.baggage-status.available {
+    background-color: #f3f4f6 !important;
+    color: #6b7280 !important;
+    border: 1px solid #d1d5db !important;
+}
+
+/* 수하물 콘텐츠 영역 - 더 컴팩트하게 */
+.baggage-content {
+    flex: 1 !important;
+    margin: 6px 0 !important;
+    padding: 10px !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+}
+
+.baggage-content.default-content,
+.baggage-content.pending-content {
+    background-color: #f9fafb !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+.baggage-content.completed-content,
+.baggage-content.user-uploaded-content {
+    background-color: #f0fdf4 !important;
+    border: 1px solid #bbf7d0 !important;
+}
+
+.baggage-content.upload-ready-content {
+    background-color: #eff6ff !important;
+    border: 1px solid #dbeafe !important;
+}
+
+.baggage-content.special-default-content {
+    background-color: #fefce8 !important;
+    border: 1px solid #eab308 !important;
+}
+
+.baggage-content.special-status-content {
+    background-color: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+/* 수하물 정보 표시 - 컴팩트하게 */
+.baggage-info {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+}
+
+.baggage-info i {
+    color: #6b7280 !important;
+    width: 16px !important;
+    height: 16px !important;
+    margin-top: 1px !important;
+    flex-shrink: 0 !important;
+}
+
+.baggage-message {
+    font-weight: 600 !important;
+    color: #374151 !important;
+    margin: 0 0 3px 0 !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+}
+
+.baggage-submessage {
+    font-size: 11px !important;
+    color: #6b7280 !important;
+    margin: 0 !important;
+    line-height: 1.3 !important;
+}
+
+/* 특별 수하물 신청 세부사항 - 더 컴팩트하게 */
+.special-request-details {
+    margin-bottom: 8px !important;
+}
+
+.request-item {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    padding: 4px 0 !important;
+    border-bottom: 1px solid #f3f4f6 !important;
+    gap: 8px !important;
+}
+
+.request-item:last-child {
+    border-bottom: none !important;
+}
+
+.request-item.rejection {
+    background-color: #fef2f2 !important;
+    padding: 6px 8px !important;
+    border-radius: 4px !important;
+    border: 1px solid #fecaca !important;
+    margin-top: 6px !important;
+}
+
+.request-item label {
+    font-weight: 600 !important;
+    color: #374151 !important;
+    font-size: 11px !important;
+    flex-shrink: 0 !important;
+    min-width: 60px !important;
+}
+
+.request-item span {
+    color: #1f2937 !important;
+    font-size: 11px !important;
+    text-align: right !important;
+    word-break: break-word !important;
+}
+
+.request-item.rejection label {
+    color: #dc2626 !important;
+}
+
+.request-item.rejection span {
+    color: #dc2626 !important;
+}
+
+/* 수하물 카드 액션 버튼 - 더 작게 */
+.baggage-card-actions {
+    margin-top: 8px !important;
+    flex-shrink: 0 !important;
+}
+
+.baggage-card-actions .btn {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    border-radius: 5px !important;
+    border: 1px solid !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+
+.baggage-card-actions .btn-primary {
+    background-color: #6366f1 !important;
+    color: white !important;
+    border-color: #6366f1 !important;
+}
+
+.baggage-card-actions .btn-primary:hover:not(:disabled) {
+    background-color: #4f46e5 !important;
+    border-color: #4f46e5 !important;
+    transform: translateY(-1px) !important;
+}
+
+.baggage-card-actions .btn-outline {
+    background-color: white !important;
+    color: #6b7280 !important;
+    border-color: #d1d5db !important;
+}
+
+.baggage-card-actions .btn-outline:hover:not(:disabled) {
+    background-color: #f9fafb !important;
+    border-color: #9ca3af !important;
+}
+
+.baggage-card-actions .btn:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+}
+
+/* 파일 액션 버튼들 (수하물용) - 더 작게 */
+.baggage-content .file-actions {
+    display: flex !important;
+    gap: 4px !important;
+    margin-top: 6px !important;
+    justify-content: center !important;
+}
+
+.baggage-content .file-actions .btn {
+    flex: 1 !important;
+    padding: 4px 6px !important;
+    font-size: 10px !important;
+    border-radius: 3px !important;
+    text-decoration: none !important;
+    border: 1px solid !important;
+    transition: all 0.2s ease !important;
+    text-align: center !important;
+}
+
+.baggage-content .file-actions .btn-outline {
+    background-color: white !important;
+    color: #6366f1 !important;
+    border-color: #6366f1 !important;
+}
+
+.baggage-content .file-actions .btn-outline:hover {
+    background-color: #6366f1 !important;
+    color: white !important;
+}
+
+/* 반응형 디자인 - 모바일에서는 1열로 */
+@media (max-width: 768px) {
+    .baggage-cards-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+    }
+    
+    .baggage-section {
+        padding: 16px !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .baggage-card,
+    .main-baggage-card,
+    .special-baggage-card {
+        padding: 12px !important;
+        min-height: 120px !important;
+    }
+    
+    .baggage-card-header > span {
+        font-size: 13px !important;
+    }
+    
+    .baggage-message {
+        font-size: 13px !important;
+    }
+    
+    .baggage-submessage {
+        font-size: 12px !important;
+    }
+    
+    .request-item {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 4px !important;
+    }
+    
+    .request-item label {
+        min-width: auto !important;
+    }
+    
+    .request-item span {
+        text-align: left !important;
+    }
+    
+    .baggage-content .file-actions {
+        flex-direction: column !important;
+        gap: 6px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .baggage-section {
+        padding: 12px !important;
+    }
+    
+    .baggage-card,
+    .main-baggage-card,
+    .special-baggage-card {
+        padding: 10px !important;
+        min-height: 100px !important;
+    }
+    
+    .baggage-card-actions .btn {
+        padding: 6px 8px !important;
+        font-size: 11px !important;
+    }
+}
+
+/* ===================================================================== */
+/* 🎁 특별 추가 수하물 신청 모달 - 완전 개선된 UI */
+/* ===================================================================== */
+
+/* 특별 모달 오버레이 */
+.special-baggage-modal {
+    z-index: 1100 !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.special-baggage-modal .modal-backdrop {
+    background: rgba(0, 0, 0, 0.6) !important;
+}
+
+/* 특별 모달 컨테이너 */
+.special-modal-content {
+    max-width: 600px !important;
+    width: 95% !important;
+    max-height: 90vh !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25) !important;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+}
+
+/* 특별 모달 헤더 */
+.special-modal-header {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    color: white !important;
+    padding: 24px !important;
+    border-bottom: none !important;
+    position: relative !important;
+}
+
+.modal-title-wrapper {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+    padding-right: 40px !important;
+}
+
+.modal-icon {
+    width: 48px !important;
+    height: 48px !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+.modal-icon i {
+    width: 24px !important;
+    height: 24px !important;
+    color: white !important;
+}
+
+.modal-title-text h3 {
+    margin: 0 0 8px 0 !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: white !important;
+}
+
+.modal-subtitle {
+    margin: 0 !important;
+    font-size: 14px !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    line-height: 1.5 !important;
+}
+
+.special-modal-close {
+    position: absolute !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 32px !important;
+    height: 32px !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 8px !important;
+    color: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+}
+
+.special-modal-close:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    transform: scale(1.05) !important;
+}
+
+.special-modal-close i {
+    width: 18px !important;
+    height: 18px !important;
+}
+
+/* 특별 모달 바디 */
+.special-modal-body {
+    padding: 32px !important;
+    background: white !important;
+}
+
+.special-baggage-form {
+    margin: 0 !important;
+}
+
+.special-form-group {
+    margin-bottom: 28px !important;
+}
+
+.special-form-group:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* 개선된 라벨 스타일 */
+.special-form-label {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    margin-bottom: 8px !important;
+}
+
+.special-form-label i {
+    width: 18px !important;
+    height: 18px !important;
+    color: #6366f1 !important;
+}
+
+.required-asterisk {
+    color: #ef4444 !important;
+    font-weight: 700 !important;
+    margin-left: 4px !important;
+}
+
+/* 입력 필드 래퍼 */
+.input-wrapper {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* 개선된 입력 필드 */
+.special-form-input {
+    width: 100% !important;
+    padding: 14px 16px !important;
+    padding-right: 50px !important;
+    border: 2px solid #e5e7eb !important;
+    border-radius: 10px !important;
+    font-size: 16px !important;
+    transition: all 0.3s ease !important;
+    background: #f9fafb !important;
+    box-sizing: border-box !important;
+}
+
+.special-form-input:focus {
+    outline: none !important;
+    border-color: #6366f1 !important;
+    background: white !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
+    transform: translateY(-1px) !important;
+}
+
+.input-suffix {
+    position: absolute !important;
+    right: 16px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #6b7280 !important;
+    pointer-events: none !important;
+}
+
+/* 개선된 텍스트에어리어 */
+.special-form-textarea {
+    width: 100% !important;
+    padding: 14px 16px !important;
+    border: 2px solid #e5e7eb !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    transition: all 0.3s ease !important;
+    background: #f9fafb !important;
+    resize: vertical !important;
+    min-height: 120px !important;
+    font-family: inherit !important;
+    box-sizing: border-box !important;
+}
+
+.special-form-textarea:focus {
+    outline: none !important;
+    border-color: #6366f1 !important;
+    background: white !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
+}
+
+.special-form-textarea::placeholder {
+    color: #9ca3af !important;
+    line-height: 1.6 !important;
+}
+
+/* 개선된 힌트 텍스트 */
+.form-hint {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-top: 8px !important;
+    font-size: 13px !important;
+    color: #6b7280 !important;
+    line-height: 1.4 !important;
+}
+
+.form-hint i {
+    width: 14px !important;
+    height: 14px !important;
+    color: #3b82f6 !important;
+    flex-shrink: 0 !important;
+}
+
+.char-count {
+    margin-left: auto !important;
+    font-weight: 600 !important;
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace !important;
+}
+
+/* 공지사항 박스 */
+.notice-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%) !important;
+    border: 1px solid #bfdbfe !important;
+    border-radius: 12px !important;
+    padding: 20px !important;
+    margin-top: 24px !important;
+    display: flex !important;
+    gap: 16px !important;
+}
+
+.notice-icon {
+    width: 40px !important;
+    height: 40px !important;
+    background: #dbeafe !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+.notice-icon i {
+    width: 20px !important;
+    height: 20px !important;
+    color: #2563eb !important;
+}
+
+.notice-content h4 {
+    margin: 0 0 12px 0 !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: #1e40af !important;
+}
+
+.notice-content ul {
+    margin: 0 !important;
+    padding-left: 16px !important;
+    list-style: none !important;
+}
+
+.notice-content li {
+    position: relative !important;
+    padding-left: 20px !important;
+    margin-bottom: 8px !important;
+    font-size: 13px !important;
+    color: #1e40af !important;
+    line-height: 1.5 !important;
+}
+
+.notice-content li:before {
+    content: "•" !important;
+    position: absolute !important;
+    left: 0 !important;
+    color: #2563eb !important;
+    font-weight: bold !important;
+}
+
+.notice-content li:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* 특별 모달 푸터 */
+.special-modal-footer {
+    padding: 24px 32px !important;
+    background: #f8fafc !important;
+    border-top: 1px solid #e5e7eb !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 16px !important;
+}
+
+.special-btn-cancel,
+.special-btn-submit {
+    padding: 12px 24px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    transition: all 0.2s ease !important;
+    border: 1px solid !important;
+}
+
+.special-btn-cancel {
+    background: white !important;
+    color: #6b7280 !important;
+    border-color: #d1d5db !important;
+}
+
+.special-btn-cancel:hover {
+    background: #f9fafb !important;
+    border-color: #9ca3af !important;
+    color: #374151 !important;
+    transform: translateY(-1px) !important;
+}
+
+.special-btn-submit {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    color: white !important;
+    border-color: #6366f1 !important;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+}
+
+.special-btn-submit:hover {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+    border-color: #4f46e5 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4) !important;
+}
+
+.special-btn-cancel i,
+.special-btn-submit i {
+    width: 16px !important;
+    height: 16px !important;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .special-modal-content {
+        width: 95% !important;
+        margin: 20px !important;
+        max-height: calc(100vh - 40px) !important;
+    }
+    
+    .special-modal-header {
+        padding: 20px !important;
+    }
+    
+    .modal-title-wrapper {
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+        padding-right: 0 !important;
+    }
+    
+    .modal-title-text h3 {
+        font-size: 18px !important;
+    }
+    
+    .modal-subtitle {
+        font-size: 13px !important;
+    }
+    
+    .special-modal-body {
+        padding: 24px !important;
+    }
+    
+    .special-modal-footer {
+        padding: 20px 24px !important;
+        flex-direction: column !important;
+    }
+    
+    .special-btn-cancel,
+    .special-btn-submit {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+    
+    .notice-box {
+        flex-direction: column !important;
+        gap: 12px !important;
+        padding: 16px !important;
+    }
+    
+    .notice-icon {
+        align-self: flex-start !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .special-form-input,
+    .special-form-textarea {
+        font-size: 16px !important; /* iOS 줌 방지 */
+    }
+    
+    .special-modal-header {
+        padding: 16px !important;
+    }
+    
+    .special-modal-body {
+        padding: 20px !important;
+    }
+}
+
+/* 애니메이션 개선 */
+@keyframes specialModalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.special-modal-content {
+    animation: specialModalFadeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+
 /* ===================================================== */
 /* 📊 v8.5.2 통합 완료 */
 /* 🎯 포함된 컴포넌트: */
