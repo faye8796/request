@@ -469,6 +469,8 @@ class FlightRequestCoordinator {
             // 🆕 Status 모듈 초기화
             if (window.FlightRequestStatus) {
                 this.status = new window.FlightRequestStatus();
+                window.flightRequestStatus = this.status; // 🆕 전역 인스턴스 노출
+
                 this.initializeStatusModule();
                 console.log('✅ [조정자] v1.7.0: Status 모듈 초기화 완료');
             }

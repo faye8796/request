@@ -155,20 +155,21 @@ const AuthManager = {
     // 이벤트 리스너 설정
     setupEventListeners() {
         try {
-            // 탭 전환 이벤트
-            this.safeAddEventListener('#studentTab', 'click', () => this.switchToStudentLogin());
-            this.safeAddEventListener('#adminTab', 'click', () => this.switchToAdminLogin());
+            // 🔧 학생 로그인 이벤트는 index.html에서 처리하므로 제거
+            // this.safeAddEventListener('#studentLoginBtn', 'click', () => this.handleStudentLogin());
 
-            // 로그인 버튼 이벤트
-            this.safeAddEventListener('#studentLoginBtn', 'click', () => this.handleStudentLogin());
+            // 관리자 로그인만 유지
             this.safeAddEventListener('#adminLoginBtn', 'click', () => this.handleAdminLogin());
 
-            // 로그아웃 버튼 이벤트
-            this.safeAddEventListener('#studentLogout', 'click', () => this.handleLogout());
-            this.safeAddEventListener('#adminLogout', 'click', () => this.handleLogout());
+            // 🔧 학생 Enter 키 이벤트도 제거 (index.html에서 처리)
+            // this.safeAddEventListener('#studentBirth', 'keypress', (e) => {
+            //     if (e.key === 'Enter') this.handleStudentLogin();
+            // });
 
-            // Enter 키 이벤트
-            this.setupEnterKeyEvents();
+            // 관리자 Enter 키만 유지
+            this.safeAddEventListener('#adminCode', 'keypress', (e) => {
+                if (e.key === 'Enter') this.handleAdminLogin();
+            });
         } catch (error) {
             console.error('이벤트 리스너 설정 오류:', error);
         }

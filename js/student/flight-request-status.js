@@ -291,6 +291,22 @@ class FlightRequestStatus {
                     event.preventDefault();
                     this.handleUploadTicket();
                 }
+
+                // 🆕 추가 수하물 이벤트
+                if (event.target.matches('.baggage-download-btn, [data-action="baggage-download"]')) {
+                    event.preventDefault();
+                    this.handleBaggageDownload();
+                }
+
+                if (event.target.matches('.baggage-upload-btn, [data-action="baggage-upload"]')) {
+                    event.preventDefault();
+                    this.handleBaggageUpload();
+                }
+
+                if (event.target.matches('.special-baggage-request-btn, [data-action="special-baggage-request"]')) {
+                    event.preventDefault();
+                    this.handleSpecialBaggageRequest();
+                }
             });
             
             // API 이벤트 리스너 (상태 변경 감지)
@@ -637,7 +653,10 @@ class FlightRequestStatus {
             
             // 가격 정보
             const priceInfo = this.renderPriceInfo(request);
-            
+
+            // 🆕 추가 수하물 섹션
+            const baggageSection = this.renderBaggageSection(request);
+
             // 🆕 v1.1.0: 직접구매 파일 업로드 섹션
             const directPurchaseFileUpload = request.purchase_type === 'direct' ? 
                 this.renderDirectPurchaseFileUpload(request) : '';
@@ -750,6 +769,7 @@ class FlightRequestStatus {
                         
                         ${priceInfo}
                         ${activityPeriodInfo}
+                        ${baggageSection}
                         
                         ${request.purchase_link ? `
                             <div class="detail-item full-width">
@@ -1791,6 +1811,388 @@ class FlightRequestStatus {
         return this.lastUpdated;
     }
 
+
+    // 🆕 추가 수하물 섹션 렌더링
+    renderBaggageSection(request) {
+        const hasBaggage = !!(request.baggage_type && request.baggage_type !== 'none');
+        const hasSpecialRequest = !!(request.special_baggage_request_status && request.special_baggage_request_status !== 'none');
+
+        if (!hasBaggage && !hasSpecialRequest) {
+            return ''; // 추가 수하물 정보가 없으면 섹션 숨김
+        }
+
+        return `
+            <div class="baggage-section">
+                <h4 class="details-title">
+                    <i data-lucide="luggage"></i>
+                    추가 수하물
+                </h4>
+
+                ${hasBaggage ? this.renderBaggageInfo(request) : ''}
+                ${this.renderSpecialBaggageInfo(request)}
+            </div>
+        `;
+    }
+
+    // 일반 추가 수하물 정보 렌더링
+    renderBaggageInfo(request) {
+        const baggageType = request.baggage_type;
+
+        if (baggageType === 'admin_purchased') {
+            return `
+                <div class="baggage-info admin-purchased">
+                    <div class="baggage-header">
+                        <i data-lucide="shield-check"></i>
+                        <span>관리자 사전 구매</span>
+                    </div>
+                    ${request.admin_baggage_receipt_url ? `
+                        <div class="baggage-actions">
+                            <a href="${request.admin_baggage_receipt_url}" target="_blank" class="btn btn-sm btn-outline baggage-download-btn" data-action="baggage-download">
+                                <i data-lucide="download"></i>
+                                영수증 다운로드
+                            </a>
+                        </div>
+                    ` : `
+                        <p class="baggage-pending">관리자가 영수증을 업로드하면 다운로드할 수 있습니다.</p>
+                    `}
+                </div>
+            `;
+        } else if (baggageType === 'user_allowed') {
+            return `
+                <div class="baggage-info user-allowed">
+                    <div class="baggage-header">
+                        <i data-lucide="user-check"></i>
+                        <span>직접 구매 허용</span>
+                    </div>
+                    ${request.user_baggage_receipt_url ? `
+                        <div class="baggage-preview">
+                            <div class="file-info">
+                                <i data-lucide="file-check"></i>
+                                <div>
+                                    <p class="file-name">영수증 업로드 완료</p>
+                                    <div class="file-actions">
+                                        <a href="${request.user_baggage_receipt_url}" target="_blank" class="btn btn-sm btn-outline">
+                                            <i data-lucide="external-link"></i>
+                                            보기
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    <div class="baggage-actions">
+                        <button type="button" class="btn btn-sm btn-primary baggage-upload-btn" data-action="baggage-upload">
+                            <i data-lucide="upload"></i>
+                            ${request.user_baggage_receipt_url ? '재업로드' : '영수증 업로드'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        return '';
+    }
+
+    // 특별 추가 수하물 정보 렌더링
+    renderSpecialBaggageInfo(request) {
+        const specialStatus = request.special_baggage_request_status;
+
+        if (!specialStatus || specialStatus === 'none') {
+            return `
+                <div class="special-baggage-section">
+                    <div class="special-baggage-header">
+                        <i data-lucide="plus-circle"></i>
+                        <span>특별 추가 수하물</span>
+                    </div>
+                    <p class="special-baggage-description">전통악기 등 특수 물품 운송시 신청하세요.</p>
+                    <button type="button" class="btn btn-sm btn-outline-primary special-baggage-request-btn" data-action="special-baggage-request">
+                        <i data-lucide="plus-circle"></i>
+                        특별 추가 수하물 신청
+                    </button>
+                </div>
+            `;
+        }
+
+        const statusInfo = {
+            pending: { text: '검토 중', color: '#f59e0b', icon: 'clock' },
+            approved: { text: '승인됨', color: '#059669', icon: 'check-circle' },
+            rejected: { text: '반려됨', color: '#dc2626', icon: 'x-circle' }
+        };
+
+        const status = statusInfo[specialStatus] || statusInfo.pending;
+
+        return `
+            <div class="special-baggage-section">
+                <div class="special-baggage-header">
+                    <i data-lucide="luggage"></i>
+                    <span>특별 추가 수하물 신청</span>
+                </div>
+
+                <div class="special-baggage-status" style="border-left: 4px solid ${status.color};">
+                    <div class="status-info">
+                        <div class="status-header">
+                            <i data-lucide="${status.icon}" style="color: ${status.color};"></i>
+                            <span style="color: ${status.color};">${status.text}</span>
+                        </div>
+                        <div class="status-details">
+                            <p><strong>신청 금액:</strong> ${request.special_baggage_request_amount?.toLocaleString() || 'N/A'}원</p>
+                            <p><strong>신청 사유:</strong> ${request.special_baggage_request_reason || 'N/A'}</p>
+                            ${request.special_baggage_rejection_reason ? `
+                                <p><strong>반려 사유:</strong> ${request.special_baggage_rejection_reason}</p>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    ${specialStatus === 'approved' && request.special_baggage_receipt_url ? `
+                        <div class="special-baggage-receipt">
+                            <a href="${request.special_baggage_receipt_url}" target="_blank" class="btn btn-sm btn-outline">
+                                <i data-lucide="download"></i>
+                                영수증 다운로드
+                            </a>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    // 🆕 추가 수하물 다운로드 핸들러
+    async handleBaggageDownload() {
+        console.log('🔄 [추가수하물] 다운로드 시작...');
+        // 실제로는 링크 클릭으로 처리되므로 별도 로직 불필요
+        this.showSuccess('다운로드가 시작됩니다.');
+    }
+
+    // 🆕 추가 수하물 업로드 핸들러
+    async handleBaggageUpload() {
+        console.log('🔄 [추가수하물] 업로드 시작...');
+
+        try {
+            // 파일 선택 dialog
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.gif';
+            input.style.display = 'none';
+
+            const fileSelected = new Promise((resolve, reject) => {
+                input.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        resolve(file);
+                    } else {
+                        reject(new Error('파일이 선택되지 않았습니다.'));
+                    }
+                });
+
+                setTimeout(() => {
+                    reject(new Error('파일 선택 시간이 초과되었습니다.'));
+                }, 60000);
+            });
+
+            document.body.appendChild(input);
+            input.click();
+
+            const file = await fileSelected;
+            document.body.removeChild(input);
+
+            console.log('📄 [추가수하물] 선택된 파일:', {
+                name: file.name,
+                size: file.size,
+                type: file.type
+            });
+
+            if (file.size > 10 * 1024 * 1024) {
+                throw new Error('파일 크기는 10MB를 초과할 수 없습니다.');
+            }
+
+            this.showLoading(true);
+
+            // 파일 업로드
+            const uploadResult = await this.uploadBaggageFile(file);
+
+            // DB 업데이트
+            await this.updateRequestWithBaggageUrl(uploadResult.url);
+
+            // 데이터 새로고침
+            await this.loadCurrentRequest();
+            this.renderStatus();
+
+            this.showSuccess('추가 수하물 영수증이 성공적으로 업로드되었습니다.');
+
+        } catch (error) {
+            console.error('❌ [추가수하물] 업로드 실패:', error);
+            this.showError('추가 수하물 영수증 업로드에 실패했습니다.', error);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    // 🆕 특별 추가 수하물 신청 핸들러
+    async handleSpecialBaggageRequest() {
+        console.log('🔄 [특별수하물] 신청 시작...');
+        this.showSpecialBaggageModal();
+    }
+
+    // 🆕 특별 추가 수하물 모달 표시
+    showSpecialBaggageModal() {
+        const modalHtml = `
+            <div id="specialBaggageModal" class="modal" style="display: flex;">
+                <div class="modal-backdrop" onclick="window.flightRequestStatus?.closeSpecialBaggageModal()"></div>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>특별 추가 수하물 신청</h3>
+                        <button type="button" class="modal-close" onclick="window.flightRequestStatus?.closeSpecialBaggageModal()">&times;</button>
+                    </div>
+                    <form id="specialBaggageForm">
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="specialBaggageAmount">예상 비용 (원)</label>
+                                <input type="number" id="specialBaggageAmount" min="1000" step="1000" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="specialBaggageReason">신청 사유</label>
+                                <textarea id="specialBaggageReason" rows="4" required maxlength="500" 
+                                          placeholder="전통악기, 스포츠 장비 등 특수 물품의 구체적인 내용과 필요성을 설명해주세요"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="window.flightRequestStatus?.closeSpecialBaggageModal()">취소</button>
+                            <button type="submit" class="btn btn-primary">신청하기</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        // 기존 모달 제거
+        const existingModal = document.getElementById('specialBaggageModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 새 모달 추가
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // 폼 이벤트 리스너
+        const form = document.getElementById('specialBaggageForm');
+        if (form) {
+            form.addEventListener('submit', (e) => this.handleSpecialBaggageSubmit(e));
+        }
+
+        // 아이콘 초기화
+        this.initializeIcons();
+    }
+
+    // 🆕 특별 추가 수하물 모달 닫기
+    closeSpecialBaggageModal() {
+        const modal = document.getElementById('specialBaggageModal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    // 🆕 특별 추가 수하물 신청 제출
+    async handleSpecialBaggageSubmit(event) {
+        event.preventDefault();
+
+        try {
+            const amount = document.getElementById('specialBaggageAmount').value;
+            const reason = document.getElementById('specialBaggageReason').value;
+
+            if (!amount || !reason) {
+                throw new Error('모든 필드를 입력해주세요.');
+            }
+
+            this.showLoading(true);
+
+            // DB 업데이트
+            const result = await this.api.updateData('flight_requests', {
+                special_baggage_request_amount: parseFloat(amount),
+                special_baggage_request_reason: reason,
+                special_baggage_request_status: 'pending',
+                updated_at: new Date().toISOString()
+            }, {
+                id: this.currentRequest.id
+            });
+
+            if (!result) {
+                throw new Error('신청 저장에 실패했습니다.');
+            }
+
+            // 모달 닫기
+            this.closeSpecialBaggageModal();
+
+            // 데이터 새로고침
+            await this.loadCurrentRequest();
+            this.renderStatus();
+
+            this.showSuccess('특별 추가 수하물 신청이 완료되었습니다.');
+
+        } catch (error) {
+            console.error('❌ [특별수하물] 신청 실패:', error);
+            this.showError('특별 추가 수하물 신청에 실패했습니다.', error);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    // 🆕 추가 수하물 파일 업로드 유틸리티
+    async uploadBaggageFile(file) {
+        try {
+            if (!this.api || typeof this.api.uploadFile !== 'function') {
+                throw new Error('파일 업로드 API를 찾을 수 없습니다.');
+            }
+
+            const timestamp = Date.now();
+            const fileExtension = file.name.split('.').pop();
+            const fileName = `${this.currentUser.id}_${timestamp}_baggage.${fileExtension}`;
+
+            const uploadedUrl = await this.api.uploadFile('baggage-receipts', fileName, file);
+
+            if (!uploadedUrl || typeof uploadedUrl !== 'string') {
+                throw new Error('파일 업로드에 실패했습니다.');
+            }
+
+            return {
+                success: true,
+                url: uploadedUrl
+            };
+
+        } catch (error) {
+            console.error('❌ [추가수하물] 파일 업로드 실패:', error);
+            throw error;
+        }
+    }
+
+    // 🆕 추가 수하물 URL로 DB 업데이트
+    async updateRequestWithBaggageUrl(baggageUrl) {
+        try {
+            if (!this.api || typeof this.api.updateData !== 'function') {
+                throw new Error('데이터 업데이트 API를 찾을 수 없습니다.');
+            }
+
+            const updatedData = await this.api.updateData('flight_requests', {
+                user_baggage_receipt_url: baggageUrl,
+                updated_at: new Date().toISOString()
+            }, {
+                id: this.currentRequest.id
+            });
+
+            if (!updatedData) {
+                throw new Error('DB 업데이트에 실패했습니다.');
+            }
+
+            return {
+                success: true,
+                data: updatedData
+            };
+
+        } catch (error) {
+            console.error('❌ [추가수하물] DB 업데이트 실패:', error);
+            throw error;
+        }
+    }    
+    
     // 정리 메서드
     destroy() {
         try {
@@ -1819,36 +2221,5 @@ class FlightRequestStatus {
 // 전역 스코프에 노출
 window.FlightRequestStatus = FlightRequestStatus;
 
-console.log('✅ FlightRequestStatus v1.1.0 모듈 로드 완료 - DB값 직접 사용 + 완전삭제 로직 + 직접구매 파일 업로드');
-console.log('🚨 v1.1.0 주요 업데이트:', {
-    dbDirectUsage: 'calculateActivityDays/calculateStayDuration 제거, DB값 직접 사용',
-    completeDeleteLogic: 'cancelFlightRequest → deleteFlightRequest + 페이지 새로고침',
-    directPurchaseFileUpload: '직접구매 시 영수증/항공권 파일 업로드 기능 추가',
-    improvedDataAccuracy: 'DB값과 UI표시값 100% 일치',
-    enhancedUserExperience: '완전삭제 후 자동 새로고침으로 자연스러운 UX'
-});
-console.log('🎯 FlightRequestStatus v1.1.0 핵심 기능:', {
-    신청내역조회: '사용자의 현재 항공권 신청 상태 실시간 조회',
-    상태별UI: 'pending/approved/rejected/cancelled/completed 상태별 맞춤 UI',
-    진행상황표시: '신청 → 검토 → 결정 → 완료 단계별 시각적 타임라인',
-    완전삭제액션: 'deleteFlightRequest + 페이지 새로고침으로 깔끔한 삭제 경험',
-    파일업로드: '직접구매 시 영수증/항공권 파일 업로드 및 관리',
-    실시간업데이트: 'API 이벤트 및 전역 이벤트를 통한 자동 상태 동기화',
-    반응형디자인: '모바일/데스크톱 최적화된 카드 레이아웃',
-    에러처리: '네트워크 오류, 데이터 없음 등 모든 예외 상황 처리',
-    DB값정확성: 'actual_work_days, dispatch_duration DB값 직접 사용으로 정확성 보장'
-});
-console.log('📂 v1.1.0 새로운 파일 업로드 기능:', {
-    지원파일형식: 'image/*, PDF 파일 (10MB 제한)',
-    Storage버켓: 'receipt-files, flight-tickets',
-    파일명규칙: '사용자ID_timestamp_타입.확장자',
-    업로드API: 'uploadFile() 메서드 활용',
-    DB업데이트: 'receipt_url, ticket_url 컬럼 자동 업데이트',
-    실시간표시: '업로드 상태 및 다운로드 링크 즉시 반영'
-});
-console.log('🗑️ v1.1.0 개선된 삭제 로직:', {
-    기존방식: 'cancelFlightRequest → status만 cancelled로 변경',
-    새로운방식: 'deleteFlightRequest → DB에서 완전삭제 + 페이지 새로고침',
-    사용자경험: '삭제 후 자동 새로고침으로 자연스러운 폼 표시',
-    데이터정리: '불필요한 cancelled 상태 데이터 제거'
-});
+// 🆕 전역 인스턴스 참조 (모달에서 사용)
+window.flightRequestStatus = null;

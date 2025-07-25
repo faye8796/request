@@ -252,7 +252,7 @@
                         ...result.user,
                         hasPassword: result.hasPassword
                     };
-                    localStorage.setItem('userData', JSON.stringify(userData));
+                    localStorage.setItem('currentStudent', JSON.stringify(userData)); // 추가
                     
                     // 대시보드로 이동
                     setTimeout(() => {
@@ -285,7 +285,7 @@
                         ...result.user,
                         hasPassword: result.hasPassword
                     };
-                    localStorage.setItem('userData', JSON.stringify(userData));
+                    localStorage.setItem('currentStudent', JSON.stringify(userData)); // 🔧 수정
                     
                     // 대시보드로 이동
                     setTimeout(() => {

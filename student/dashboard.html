@@ -17,6 +17,8 @@
 
     <!-- Dashboard 전용 스타일 -->
     <style>
+
+        
         .dashboard-container {
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -485,13 +487,16 @@
                         try {
                             this.passwordManager = new window.DashboardPasswordManager();
                             await this.passwordManager.initialize(studentData.id, window.SupabaseCore?.client);
+
+                            // 🔧 전역 변수에 할당 (모달 동작을 위해 필수)
+                            window.dashboardPasswordManager = this.passwordManager;
+
                             console.log('✅ 비밀번호 관리자 초기화 완료');
                         } catch (error) {
                             console.error('❌ 비밀번호 관리자 초기화 실패:', error);
                         }
-                    } else {
-                        console.warn('⚠️ DashboardPasswordManager를 찾을 수 없습니다');
-                    }                    
+                    }
+
                     
                     // 다음 단계로 진행 - 기능 설정 로드
                     console.log('✅ 학생 정보 로딩 완료 - 기능 설정 로딩 시작');

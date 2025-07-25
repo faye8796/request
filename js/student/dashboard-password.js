@@ -244,6 +244,7 @@ class DashboardPasswordManager {
         const modal = document.getElementById('passwordModal');
         const title = document.getElementById('passwordModalTitle');
         const currentPasswordGroup = document.getElementById('currentPasswordGroup');
+        const currentPasswordInput = document.getElementById('currentPassword');
         const form = document.getElementById('passwordForm');
 
         if (!modal || !title || !currentPasswordGroup || !form) return;
@@ -251,17 +252,25 @@ class DashboardPasswordManager {
         // 설정 모드로 설정
         title.textContent = '🔐 비밀번호 설정';
         currentPasswordGroup.style.display = 'none';
+
+        // 🔧 핵심 수정: required 속성 제거
+        if (currentPasswordInput) {
+            currentPasswordInput.removeAttribute('required');
+            currentPasswordInput.disabled = true; // 추가 안전장치
+        }
+
         form.reset();
 
         // 모달 표시
         this.showModal();
     }
-
+    
     // 🪟 비밀번호 변경 모달 표시
     showChangePasswordModal() {
         const modal = document.getElementById('passwordModal');
         const title = document.getElementById('passwordModalTitle');
         const currentPasswordGroup = document.getElementById('currentPasswordGroup');
+        const currentPasswordInput = document.getElementById('currentPassword');
         const form = document.getElementById('passwordForm');
 
         if (!modal || !title || !currentPasswordGroup || !form) return;
@@ -269,6 +278,13 @@ class DashboardPasswordManager {
         // 변경 모드로 설정
         title.textContent = '🔐 비밀번호 변경';
         currentPasswordGroup.style.display = 'block';
+
+        // 🔧 required 속성 복원
+        if (currentPasswordInput) {
+            currentPasswordInput.setAttribute('required', '');
+            currentPasswordInput.disabled = false;
+        }
+
         form.reset();
 
         // 모달 표시
@@ -280,8 +296,18 @@ class DashboardPasswordManager {
         const modal = document.getElementById('passwordModal');
         if (modal) {
             modal.style.display = 'flex';
+            // 🔧 visibility/opacity 강제 설정 추가
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+
+            // 모든 하위 요소들도 visibility/opacity 설정
+            modal.querySelectorAll('*').forEach(el => {
+                el.style.visibility = 'visible';
+                el.style.opacity = '1';
+            });
+
             document.body.style.overflow = 'hidden';
-            
+
             // 첫 번째 입력 필드에 포커스
             setTimeout(() => {
                 const firstInput = modal.querySelector('input[type="password"]:not([style*="display: none"])');
