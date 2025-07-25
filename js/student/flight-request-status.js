@@ -297,6 +297,16 @@ class FlightRequestStatus {
                     event.preventDefault();
                     this.handleBaggageDownload();
                 }
+                
+                if (event.target.matches('.baggage-check-btn, [data-action="baggage-check"]')) {
+                    event.preventDefault();
+                    this.handleBaggageCheck();
+                }
+
+                if (event.target.matches('.baggage-refresh-btn, [data-action="baggage-refresh"]')) {
+                    event.preventDefault();
+                    this.handleBaggageRefresh();
+                }
 
                 if (event.target.matches('.baggage-upload-btn, [data-action="baggage-upload"]')) {
                     event.preventDefault();
@@ -1814,12 +1824,12 @@ class FlightRequestStatus {
 
     // 🆕 추가 수하물 섹션 렌더링
     renderBaggageSection(request) {
-        const hasBaggage = !!(request.baggage_type && request.baggage_type !== 'none');
-        const hasSpecialRequest = !!(request.special_baggage_request_status && request.special_baggage_request_status !== 'none');
-
-        if (!hasBaggage && !hasSpecialRequest) {
-            return ''; // 추가 수하물 정보가 없으면 섹션 숨김
+        // 🚨 테스트 중: 승인된 신청에서만 추가 수하물 섹션 표시
+        if (request.status !== 'approved') {
+            return ''; // 승인되지 않은 신청에서는 섹션 숨김
         }
+
+        const hasBaggage = !!(request.baggage_type && request.baggage_type !== 'none');
 
         return `
             <div class="baggage-section">
@@ -1832,128 +1842,304 @@ class FlightRequestStatus {
                 ${this.renderSpecialBaggageInfo(request)}
             </div>
         `;
+    }    
+    
+    // 일반 추가 수하물 정보 렌더링 (완전히 새로운 그리드 UI)
+    renderBaggageInfo(request) {
+        const baggageType = request.baggage_type || 'none';
+
+        return `
+            <div class="baggage-cards-grid">
+                <div class="baggage-card main-baggage-card">
+                    <div class="baggage-card-header">
+                        <i data-lucide="luggage"></i>
+                        <span>추가 수하물</span>
+                        <div class="baggage-status ${this.getBaggageStatus(baggageType).class}">
+                            ${this.getBaggageStatus(baggageType).text}
+                        </div>
+                    </div>
+
+                    ${this.renderBaggageCardContent(request, baggageType)}
+
+                    <div class="baggage-card-actions">
+                        ${this.renderBaggageActions(request, baggageType)}
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
-    // 일반 추가 수하물 정보 렌더링
-    renderBaggageInfo(request) {
-        const baggageType = request.baggage_type;
+    // 추가 수하물 상태 정보
+    getBaggageStatus(baggageType) {
+        switch (baggageType) {
+            case 'admin_purchased':
+                return { class: 'uploaded', text: '관리자 구매 완료' };
+            case 'user_allowed':
+                return { class: 'user-allowed', text: '직접 구매 허용' };
+            default:
+                return { class: 'pending', text: '관리자 구매 대기' };
+        }
+    }
 
-        if (baggageType === 'admin_purchased') {
-            return `
-                <div class="baggage-info admin-purchased">
-                    <div class="baggage-header">
-                        <i data-lucide="shield-check"></i>
-                        <span>관리자 사전 구매</span>
+    // 추가 수하물 카드 콘텐츠
+    renderBaggageCardContent(request, baggageType) {
+        switch (baggageType) {
+            case 'admin_purchased':
+                return this.renderAdminPurchasedContent(request);
+            case 'user_allowed':
+                return this.renderUserAllowedContent(request);
+            default:
+                return this.renderDefaultBaggageContent();
+        }
+    }
+
+    // 기본 상태 (관리자 구매 대기)
+    renderDefaultBaggageContent() {
+        return `
+            <div class="baggage-content default-content">
+                <div class="baggage-info">
+                    <i data-lucide="clock"></i>
+                    <div>
+                        <p class="baggage-message">관리자가 추가 수하물을 확인하고 있습니다</p>
+                        <p class="baggage-submessage">구매가 완료되면 영수증을 다운로드할 수 있습니다</p>
                     </div>
-                    ${request.admin_baggage_receipt_url ? `
-                        <div class="baggage-actions">
-                            <a href="${request.admin_baggage_receipt_url}" target="_blank" class="btn btn-sm btn-outline baggage-download-btn" data-action="baggage-download">
-                                <i data-lucide="download"></i>
-                                영수증 다운로드
-                            </a>
+                </div>
+            </div>
+        `;
+    }
+
+    // 관리자 구매 완료 상태
+    renderAdminPurchasedContent(request) {
+        const hasReceipt = !!(request.admin_baggage_receipt_url);
+
+        if (hasReceipt) {
+            return `
+                <div class="baggage-content completed-content">
+                    <div class="file-info">
+                        <i data-lucide="file-check"></i>
+                        <div>
+                            <p class="file-name">추가 수하물 영수증</p>
+                            <p class="file-size">관리자 업로드 완료</p>
                         </div>
-                    ` : `
-                        <p class="baggage-pending">관리자가 영수증을 업로드하면 다운로드할 수 있습니다.</p>
-                    `}
+                    </div>
+                    <div class="file-actions">
+                        <a href="${request.admin_baggage_receipt_url}" target="_blank" class="btn btn-sm btn-outline">
+                            <i data-lucide="external-link"></i>
+                            보기
+                        </a>
+                        <a href="${request.admin_baggage_receipt_url}" download class="btn btn-sm btn-outline">
+                            <i data-lucide="download"></i>
+                            다운로드
+                        </a>
+                    </div>
                 </div>
             `;
-        } else if (baggageType === 'user_allowed') {
+        } else {
             return `
-                <div class="baggage-info user-allowed">
-                    <div class="baggage-header">
-                        <i data-lucide="user-check"></i>
-                        <span>직접 구매 허용</span>
-                    </div>
-                    ${request.user_baggage_receipt_url ? `
-                        <div class="baggage-preview">
-                            <div class="file-info">
-                                <i data-lucide="file-check"></i>
-                                <div>
-                                    <p class="file-name">영수증 업로드 완료</p>
-                                    <div class="file-actions">
-                                        <a href="${request.user_baggage_receipt_url}" target="_blank" class="btn btn-sm btn-outline">
-                                            <i data-lucide="external-link"></i>
-                                            보기
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                <div class="baggage-content pending-content">
+                    <div class="baggage-info">
+                        <i data-lucide="clock"></i>
+                        <div>
+                            <p class="baggage-message">관리자가 영수증을 업로드하는 중입니다</p>
+                            <p class="baggage-submessage">업로드 완료 시 알림을 받게 됩니다</p>
                         </div>
-                    ` : ''}
-                    <div class="baggage-actions">
-                        <button type="button" class="btn btn-sm btn-primary baggage-upload-btn" data-action="baggage-upload">
-                            <i data-lucide="upload"></i>
-                            ${request.user_baggage_receipt_url ? '재업로드' : '영수증 업로드'}
-                        </button>
                     </div>
                 </div>
             `;
         }
-
-        return '';
     }
 
-    // 특별 추가 수하물 정보 렌더링
-    renderSpecialBaggageInfo(request) {
-        const specialStatus = request.special_baggage_request_status;
+    // 사용자 직접 구매 허용 상태
+    renderUserAllowedContent(request) {
+        const hasReceipt = !!(request.user_baggage_receipt_url);
 
-        if (!specialStatus || specialStatus === 'none') {
+        if (hasReceipt) {
             return `
-                <div class="special-baggage-section">
-                    <div class="special-baggage-header">
-                        <i data-lucide="plus-circle"></i>
-                        <span>특별 추가 수하물</span>
+                <div class="baggage-content user-uploaded-content">
+                    <div class="file-info">
+                        <i data-lucide="file-check"></i>
+                        <div>
+                            <p class="file-name">추가 수하물 영수증</p>
+                            <p class="file-size">업로드 완료</p>
+                        </div>
                     </div>
-                    <p class="special-baggage-description">전통악기 등 특수 물품 운송시 신청하세요.</p>
-                    <button type="button" class="btn btn-sm btn-outline-primary special-baggage-request-btn" data-action="special-baggage-request">
-                        <i data-lucide="plus-circle"></i>
-                        특별 추가 수하물 신청
-                    </button>
+                    <div class="file-actions">
+                        <a href="${request.user_baggage_receipt_url}" target="_blank" class="btn btn-sm btn-outline">
+                            <i data-lucide="external-link"></i>
+                            보기
+                        </a>
+                        <a href="${request.user_baggage_receipt_url}" download class="btn btn-sm btn-outline">
+                            <i data-lucide="download"></i>
+                            다운로드
+                        </a>
+                    </div>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="baggage-content upload-ready-content">
+                    <div class="baggage-info">
+                        <i data-lucide="upload-cloud"></i>
+                        <div>
+                            <p class="baggage-message">직접 구매 후 영수증을 업로드해주세요</p>
+                            <p class="baggage-submessage">JPG, PNG, PDF 파일을 지원합니다 (최대 10MB)</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // 추가 수하물 액션 버튼
+    renderBaggageActions(request, baggageType) {
+        switch (baggageType) {
+            case 'admin_purchased':
+                return request.admin_baggage_receipt_url ? 
+                    `<button type="button" class="btn btn-sm btn-outline" disabled>
+                        <i data-lucide="check"></i>
+                        관리자 구매 완료
+                    </button>` :
+                    `<button type="button" class="btn btn-sm btn-outline baggage-refresh-btn" data-action="baggage-refresh">
+                        <i data-lucide="refresh-cw"></i>
+                        상태 확인
+                    </button>`;
+
+            case 'user_allowed':
+                return `<button type="button" class="btn btn-sm btn-primary baggage-upload-btn" data-action="baggage-upload">
+                    <i data-lucide="upload"></i>
+                    ${request.user_baggage_receipt_url ? '재업로드' : '영수증 업로드'}
+                </button>`;
+
+            default:
+                return `<button type="button" class="btn btn-sm btn-outline baggage-check-btn" data-action="baggage-check">
+                    <i data-lucide="search"></i>
+                    추가 수하물 확인
+                </button>`;
+        }
+    }
+
+    // 특별 추가 수하물 정보 렌더링 (그리드 UI 적용)
+    renderSpecialBaggageInfo(request) {
+        const specialStatus = request.special_baggage_request_status || 'none';
+
+        return `
+            <div class="special-baggage-card">
+                <div class="baggage-card-header">
+                    <i data-lucide="plus-circle"></i>
+                    <span>특별 추가 수하물</span>
+                    <div class="baggage-status ${this.getSpecialBaggageStatus(specialStatus).class}">
+                        ${this.getSpecialBaggageStatus(specialStatus).text}
+                    </div>
+                </div>
+
+                ${this.renderSpecialBaggageCardContent(request, specialStatus)}
+
+                <div class="baggage-card-actions">
+                    ${this.renderSpecialBaggageActions(request, specialStatus)}
+                </div>
+            </div>
+        `;
+    }
+
+    // 특별 추가 수하물 상태 정보
+    getSpecialBaggageStatus(specialStatus) {
+        switch (specialStatus) {
+            case 'pending':
+                return { class: 'pending', text: '검토 중' };
+            case 'approved':
+                return { class: 'approved', text: '승인됨' };
+            case 'rejected':
+                return { class: 'rejected', text: '반려됨' };
+            default:
+                return { class: 'available', text: '신청 가능' };
+        }
+    }
+
+    // 특별 추가 수하물 카드 콘텐츠
+    renderSpecialBaggageCardContent(request, specialStatus) {
+        if (specialStatus === 'none') {
+            return `
+                <div class="baggage-content special-default-content">
+                    <div class="baggage-info">
+                        <i data-lucide="package"></i>
+                        <div>
+                            <p class="baggage-message">전통악기 등 특수 물품 운송</p>
+                            <p class="baggage-submessage">필요시 별도 신청하여 승인받을 수 있습니다</p>
+                        </div>
+                    </div>
                 </div>
             `;
         }
 
         const statusInfo = {
-            pending: { text: '검토 중', color: '#f59e0b', icon: 'clock' },
-            approved: { text: '승인됨', color: '#059669', icon: 'check-circle' },
-            rejected: { text: '반려됨', color: '#dc2626', icon: 'x-circle' }
+            pending: { icon: 'clock', color: '#f59e0b' },
+            approved: { icon: 'check-circle', color: '#059669' },
+            rejected: { icon: 'x-circle', color: '#dc2626' }
         };
 
         const status = statusInfo[specialStatus] || statusInfo.pending;
 
         return `
-            <div class="special-baggage-section">
-                <div class="special-baggage-header">
-                    <i data-lucide="luggage"></i>
-                    <span>특별 추가 수하물 신청</span>
-                </div>
-
-                <div class="special-baggage-status" style="border-left: 4px solid ${status.color};">
-                    <div class="status-info">
-                        <div class="status-header">
-                            <i data-lucide="${status.icon}" style="color: ${status.color};"></i>
-                            <span style="color: ${status.color};">${status.text}</span>
-                        </div>
-                        <div class="status-details">
-                            <p><strong>신청 금액:</strong> ${request.special_baggage_request_amount?.toLocaleString() || 'N/A'}원</p>
-                            <p><strong>신청 사유:</strong> ${request.special_baggage_request_reason || 'N/A'}</p>
-                            ${request.special_baggage_rejection_reason ? `
-                                <p><strong>반려 사유:</strong> ${request.special_baggage_rejection_reason}</p>
-                            ` : ''}
-                        </div>
+            <div class="baggage-content special-status-content">
+                <div class="special-request-details">
+                    <div class="request-item">
+                        <label>신청 금액</label>
+                        <span>${request.special_baggage_request_amount?.toLocaleString() || 'N/A'}원</span>
                     </div>
-
-                    ${specialStatus === 'approved' && request.special_baggage_receipt_url ? `
-                        <div class="special-baggage-receipt">
-                            <a href="${request.special_baggage_receipt_url}" target="_blank" class="btn btn-sm btn-outline">
-                                <i data-lucide="download"></i>
-                                영수증 다운로드
-                            </a>
+                    <div class="request-item">
+                        <label>신청 사유</label>
+                        <span>${request.special_baggage_request_reason || 'N/A'}</span>
+                    </div>
+                    ${request.special_baggage_rejection_reason ? `
+                        <div class="request-item rejection">
+                            <label>반려 사유</label>
+                            <span>${request.special_baggage_rejection_reason}</span>
                         </div>
                     ` : ''}
                 </div>
+
+                ${specialStatus === 'approved' && request.special_baggage_receipt_url ? `
+                    <div class="file-actions">
+                        <a href="${request.special_baggage_receipt_url}" target="_blank" class="btn btn-sm btn-outline">
+                            <i data-lucide="download"></i>
+                            영수증 다운로드
+                        </a>
+                    </div>
+                ` : ''}
             </div>
         `;
+    }
+
+    // 특별 추가 수하물 액션 버튼
+    renderSpecialBaggageActions(request, specialStatus) {
+        switch (specialStatus) {
+            case 'none':
+                return `<button type="button" class="btn btn-sm btn-primary special-baggage-request-btn" data-action="special-baggage-request">
+                    <i data-lucide="plus-circle"></i>
+                    특별 추가 수하물 신청
+                </button>`;
+
+            case 'pending':
+                return `<button type="button" class="btn btn-sm btn-outline" disabled>
+                    <i data-lucide="clock"></i>
+                    관리자 검토 중
+                </button>`;
+
+            case 'approved':
+                return `<button type="button" class="btn btn-sm btn-outline" disabled>
+                    <i data-lucide="check"></i>
+                    승인 완료
+                </button>`;
+
+            case 'rejected':
+                return `<button type="button" class="btn btn-sm btn-primary special-baggage-request-btn" data-action="special-baggage-request">
+                    <i data-lucide="rotate-ccw"></i>
+                    다시 신청하기
+                </button>`;
+
+            default:
+                return '';
+        }
     }
 
     // 🆕 추가 수하물 다운로드 핸들러
@@ -2135,7 +2321,40 @@ class FlightRequestStatus {
             this.showLoading(false);
         }
     }
+    
+    // 🆕 추가 수하물 확인 핸들러
+    async handleBaggageCheck() {
+        console.log('🔄 [추가수하물] 확인 요청...');
 
+        try {
+            this.showLoading(true);
+
+            // 최신 데이터 새로고침
+            await this.loadCurrentRequest();
+            this.renderStatus();
+
+            const baggageType = this.currentRequest?.baggage_type || 'none';
+
+            if (baggageType === 'none') {
+                this.showSuccess('관리자가 추가 수하물을 확인하고 있습니다. 구매 완료 시 알림을 받게 됩니다.');
+            } else {
+                this.showSuccess('추가 수하물 상태가 업데이트되었습니다.');
+            }
+
+        } catch (error) {
+            console.error('❌ [추가수하물] 확인 실패:', error);
+            this.showError('추가 수하물 상태를 확인할 수 없습니다.', error);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    // 🆕 추가 수하물 새로고침 핸들러
+    async handleBaggageRefresh() {
+        console.log('🔄 [추가수하물] 새로고침 요청...');
+        await this.handleBaggageCheck();
+    }
+    
     // 🆕 추가 수하물 파일 업로드 유틸리티
     async uploadBaggageFile(file) {
         try {
