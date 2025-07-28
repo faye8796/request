@@ -161,23 +161,24 @@ const AdminManager = {
         });
     },
 
-    // 통계 로드 (구매 요청 신청자수/전체 학생 수 형태로 표시)
+    // 수정된 loadStatistics 함수
     async loadStatistics() {
         try {
             console.log('📊 통계 데이터 로드 중...');
             const stats = await SupabaseAPI.getStats();
-            
+
             const applicantCountEl = Utils.$('#applicantCount');
             const pendingCountEl = Utils.$('#pendingCount');
             const approvedCountEl = Utils.$('#approvedCount');
-            
-            // 구매 요청 신청자수를 [신청자수] / [전체 학생 수] 형태로 표시
+            const purchasedCountEl = Utils.$('#purchasedCount'); // ← 추가!
+
             if (applicantCountEl) {
                 applicantCountEl.textContent = `${stats.applicantCount} / ${stats.totalStudents}`;
             }
             if (pendingCountEl) pendingCountEl.textContent = stats.pendingCount;
             if (approvedCountEl) approvedCountEl.textContent = stats.approvedCount;
-            
+            if (purchasedCountEl) purchasedCountEl.textContent = stats.purchasedCount || 0; // ← 추가!
+
             console.log('✅ 통계 데이터 로드 완료');
         } catch (error) {
             console.error('❌ 통계 로드 실패:', error);
@@ -432,30 +433,36 @@ window.AdminManager = AdminManager;
 
 console.log('🚀 AdminManager Core v3.1 loaded (with compatibility functions)');
 
-// DOM이 준비되면 자동 초기화
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        // Supabase 클라이언트가 준비되기를 기다린 후 초기화
-        const checkAndInit = () => {
+// 🔧 수정: 특정 페이지에서만 자동 초기화하지 않도록 조건 추가
+const shouldAutoInit = !window.location.pathname.includes('equipment-management.html') && 
+                       !window.location.pathname.includes('flight-management.html') &&
+                       !window.AdminManagerManualInit; // 수동 초기화 플래그
+
+// DOM이 준비되면 자동 초기화 (조건부)
+if (shouldAutoInit) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkAndInit = () => {
+                if (window.SupabaseAPI && typeof window.SupabaseAPI.ensureClient === 'function') {
+                    AdminManager.init().catch(error => {
+                        console.error('❌ AdminManager 자동 초기화 실패:', error);
+                    });
+                } else {
+                    setTimeout(checkAndInit, 100);
+                }
+            };
+            
+            setTimeout(checkAndInit, 500);
+        });
+    } else {
+        setTimeout(() => {
             if (window.SupabaseAPI && typeof window.SupabaseAPI.ensureClient === 'function') {
                 AdminManager.init().catch(error => {
                     console.error('❌ AdminManager 자동 초기화 실패:', error);
                 });
-            } else {
-                console.log('⏳ SupabaseAPI 대기 중...');
-                setTimeout(checkAndInit, 100);
             }
-        };
-        
-        setTimeout(checkAndInit, 500); // DOM 안정화를 위한 약간의 지연
-    });
+        }, 100);
+    }
 } else {
-    // 이미 DOM이 준비된 경우
-    setTimeout(() => {
-        if (window.SupabaseAPI && typeof window.SupabaseAPI.ensureClient === 'function') {
-            AdminManager.init().catch(error => {
-                console.error('❌ AdminManager 자동 초기화 실패:', error);
-            });
-        }
-    }, 100);
+    console.log('🔧 AdminManager 자동 초기화 비활성화 (수동 초기화 페이지)');
 }

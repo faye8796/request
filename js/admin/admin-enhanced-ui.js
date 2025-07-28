@@ -146,6 +146,15 @@ const AdminEnhancedUI = {
                 console.warn('⚠️ 배송지 정보 로드 실패, 계속 진행:', shippingError);
             }
             
+            // 🆕 여기에 추가
+            // 예산 정보 로드 (에러 발생시 계속 진행)
+            try {
+                await this.loadBudgetInfoForStudents(groupedApplications);
+            } catch (budgetError) {
+                console.warn('⚠️ 예산 정보 로드 실패, 계속 진행:', budgetError);
+            }
+
+            
             // 그룹화된 데이터 캐시
             this.groupedApplicationsCache = groupedApplications;
             
@@ -321,7 +330,39 @@ const AdminEnhancedUI = {
             // 실패해도 계속 진행 (배송지 없이)
         }
     },
+    
+    // 🆕 여기에 추가
+    async loadBudgetInfoForStudents(groupedApplications) {
+        console.log('💰 학생 예산 정보 로드 시작');
 
+        try {
+            const studentIds = groupedApplications
+                .map(group => group.studentId)
+                .filter(id => id && id !== 'unknown');
+
+            if (studentIds.length === 0) {
+                console.log('⚠️ 유효한 학생 ID가 없음');
+                return;
+            }
+
+            // student_budgets 테이블에서 예산 정보 조회
+            const budgetInfos = await this.fetchBudgetInfoBatch(studentIds);
+
+            // 그룹화된 데이터에 예산 정보 연결
+            groupedApplications.forEach(group => {
+                if (group.studentId && budgetInfos.has(group.studentId)) {
+                    group.budgetInfo = budgetInfos.get(group.studentId);
+                }
+            });
+
+            console.log('✅ 예산 정보 로드 완료:', budgetInfos.size, '명');
+
+        } catch (error) {
+            console.error('❌ 예산 정보 로드 실패:', error);
+        }
+    },
+
+    
     // 배송지 정보 일괄 조회 (연결 안정성 강화)
     async fetchShippingInfoBatch(studentIds) {
         try {
@@ -380,6 +421,75 @@ const AdminEnhancedUI = {
             return new Map();
         }
     },
+    
+    // 🆕 예산 정보 일괄 조회 (완전한 버전)
+    async fetchBudgetInfoBatch(studentIds) {
+        try {
+            const client = await SupabaseAPI.ensureClient();
+
+            const { data: budgetData, error } = await client
+                .from('student_budgets')
+                .select(`
+                    user_id,
+                    allocated_budget,
+                    used_budget,
+                    remaining_budget,
+                    updated_at,
+                    created_at
+                `)
+                .in('user_id', studentIds);
+
+            if (error) {
+                throw new Error(`예산 정보 조회 실패: ${error.message}`);
+            }
+
+            const budgetMap = new Map();
+
+            if (budgetData && budgetData.length > 0) {
+                budgetData.forEach(budget => {
+                    const budgetInfo = {
+                        allocatedBudget: budget.allocated_budget || 0,
+                        usedBudget: budget.used_budget || 0,
+                        remainingBudget: budget.remaining_budget || 0,
+                        // 🆕 계산된 정보 추가
+                        usagePercentage: budget.allocated_budget > 0 ? 
+                            Math.round((budget.used_budget / budget.allocated_budget) * 100) : 0,
+                        remainingPercentage: budget.allocated_budget > 0 ? 
+                            Math.round((budget.remaining_budget / budget.allocated_budget) * 100) : 0,
+                        // 🆕 예산 상태 분석
+                        budgetStatus: this.analyzeBudgetStatus(budget),
+                        lastUpdated: budget.updated_at
+                    };
+
+                    budgetMap.set(budget.user_id, budgetInfo);
+                });
+            }
+
+            return budgetMap;
+
+        } catch (error) {
+            console.error('❌ 예산 정보 일괄 조회 실패:', error);
+            return new Map();
+        }
+    },
+
+    // 🆕 예산 상태 분석 함수
+    analyzeBudgetStatus(budget) {
+        const allocated = budget.allocated_budget || 0;
+        const used = budget.used_budget || 0;
+        const remaining = budget.remaining_budget || 0;
+
+        if (allocated === 0) return 'no-budget';
+
+        const usageRate = (used / allocated) * 100;
+
+        if (usageRate === 0) return 'unused';
+        if (usageRate <= 50) return 'low-usage';
+        if (usageRate <= 80) return 'moderate-usage';
+        if (usageRate <= 100) return 'high-usage';
+        return 'over-budget';
+    },
+    
 
     // 학생별 그룹화된 신청 내역 렌더링 (v4.3 개선)
     renderGroupedApplications(groupedApplications) {
@@ -856,14 +966,14 @@ const AdminEnhancedUI = {
         card.className = 'student-group-card';
         card.dataset.studentId = studentGroup.studentId;
         
-        const { studentInfo, shippingInfo, applications, statistics } = studentGroup;
+        const { studentInfo, shippingInfo, budgetInfo, applications, statistics } = studentGroup;
         
         // 최신 신청일 계산
         const latestDate = Math.max(...applications.map(app => new Date(app.created_at).getTime()));
         const submittedDate = new Date(latestDate).toLocaleDateString('ko-KR');
         
         card.innerHTML = `
-            ${this.createStudentHeaderHTML(studentInfo, shippingInfo, statistics, submittedDate)}
+            ${this.createStudentHeaderHTML(studentInfo, shippingInfo, budgetInfo, statistics, submittedDate)}
             ${this.createShippingInfoHTML(shippingInfo)}
             ${this.createApplicationsListHTML(applications)}
             ${this.createStudentActionsHTML(studentGroup)}
@@ -873,7 +983,7 @@ const AdminEnhancedUI = {
     },
 
     // 학생 헤더 HTML 생성 (v4.3 통계 개선)
-    createStudentHeaderHTML(studentInfo, shippingInfo, statistics, submittedDate) {
+    createStudentHeaderHTML(studentInfo, shippingInfo, budgetInfo, statistics, submittedDate) {
         // v4.3 신청 타입별 요약 배지 생성
         const typeBadges = [];
         if (statistics.onlineSingleCount > 0) {
@@ -889,7 +999,7 @@ const AdminEnhancedUI = {
             typeBadges.push(`<span class="type-summary-badge offline-bundle">오프라인 묶음 ${statistics.offlineBundleCount}개</span>`);
         }
 
-        return `
+            return `
             <div class="student-group-header">
                 <div class="student-main-info">
                     <div class="student-basic-info">
@@ -905,7 +1015,7 @@ const AdminEnhancedUI = {
                             최근 신청일: ${submittedDate}
                         </p>
                     </div>
-                    
+
                     <div class="student-contact-info">
                         ${studentInfo.email ? `
                             <span class="contact-item">
@@ -926,17 +1036,8 @@ const AdminEnhancedUI = {
                             ${typeBadges.join('')}
                         </div>
                     ` : ''}
-                </div>
-                
-                <div class="student-statistics">
-                    <div class="stat-item total">
-                        <span class="stat-label">총 신청</span>
-                        <span class="stat-value">${statistics.totalItems}개</span>
-                    </div>
-                    <div class="stat-item amount">
-                        <span class="stat-label">총 금액</span>
-                        <span class="stat-value">${this.formatPrice(statistics.totalAmount)}</span>
-                    </div>
+
+                    <!-- 🆕 상태 배지를 타입 배지 바로 아래로 이동 -->
                     <div class="stat-badges">
                         ${statistics.pendingCount > 0 ? `<span class="stat-badge pending">${statistics.pendingCount} 대기</span>` : ''}
                         ${statistics.approvedCount > 0 ? `<span class="stat-badge approved">${statistics.approvedCount} 승인</span>` : ''}
@@ -944,9 +1045,133 @@ const AdminEnhancedUI = {
                         ${statistics.purchasedCount > 0 ? `<span class="stat-badge purchased">${statistics.purchasedCount} 완료</span>` : ''}
                     </div>
                 </div>
+
+                <!-- 🆕 예산 정보 섹션을 독립적으로 배치 -->
+                ${budgetInfo ? this.createBudgetInfoSection(budgetInfo, statistics) : ''}
             </div>
         `;
     },
+
+
+    // 🆕 여기에 추가
+    createBudgetInfoSection(budgetInfo, statistics) {
+        const statusClass = this.getBudgetStatusClass(budgetInfo.budgetStatus);
+        const statusText = this.getBudgetStatusText(budgetInfo.budgetStatus);
+
+        // 🎯 현재 신청 금액(대기+승인) vs 사용 예산(승인된 것만) 비교
+        const currentAppliedAmount = statistics.totalAmount; // 모든 신청 금액
+        const approvedOnlyAmount = statistics.approvedCount > 0 ? 
+            (budgetInfo.usedBudget || 0) : 0; // DB의 used_budget (승인된 것만)
+
+        return `
+            <div class="student-budget-section ${statusClass}">
+                <div class="budget-header">
+                    <h4 class="budget-title">
+                        <i data-lucide="wallet"></i>
+                        예산 현황
+                    </h4>
+                    <span class="budget-status-badge ${statusClass}">
+                        <i data-lucide="${this.getBudgetStatusIcon(budgetInfo.budgetStatus)}"></i>
+                        ${statusText}
+                    </span>
+                </div>
+
+                <div class="budget-details">
+                    <!-- 🏦 배정 예산 -->
+                    <div class="budget-item allocated">
+                        <div class="budget-label">
+                            <i data-lucide="piggy-bank"></i>
+                            배정 예산
+                        </div>
+                        <div class="budget-amount allocated-amount">
+                            ${this.formatPrice(budgetInfo.allocatedBudget)}
+                        </div>
+                    </div>
+
+                    <!-- ✅ 사용 예산 (승인된 금액) -->
+                    <div class="budget-item used">
+                        <div class="budget-label">
+                            <i data-lucide="check-circle"></i>
+                            사용 예산 (승인됨)
+                        </div>
+                        <div class="budget-amount used-amount">
+                            ${this.formatPrice(budgetInfo.usedBudget)}
+                            <span class="budget-percentage">
+                                (${budgetInfo.usagePercentage}%)
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 💰 잔여 예산 -->
+                    <div class="budget-item remaining">
+                        <div class="budget-label">
+                            <i data-lucide="coins"></i>
+                            잔여 예산
+                        </div>
+                        <div class="budget-amount remaining-amount">
+                            ${this.formatPrice(budgetInfo.remainingBudget)}
+                            <span class="budget-percentage">
+                                (${budgetInfo.remainingPercentage}%)
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 📊 현재 신청 금액 (참고용) -->
+                    <div class="budget-item applied">
+                        <div class="budget-label">
+                            <i data-lucide="shopping-cart"></i>
+                            현재 신청 금액
+                            <small>(대기+승인)</small>
+                        </div>
+                        <div class="budget-amount applied-amount">
+                            ${this.formatPrice(currentAppliedAmount)}
+                            ${budgetInfo.allocatedBudget > 0 ? `
+                                <span class="budget-percentage">
+                                    (${Math.round((currentAppliedAmount / budgetInfo.allocatedBudget) * 100)}%)
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🎯 예산 진행률 바 -->
+                <div class="budget-progress-section">
+                    <div class="progress-label">예산 사용 진행률</div>
+                    <div class="budget-progress-bar">
+                        <div class="progress-track">
+                            <div class="progress-fill used-progress" 
+                                 style="width: ${Math.min(budgetInfo.usagePercentage, 100)}%"></div>
+                            ${currentAppliedAmount > budgetInfo.usedBudget ? `
+                                <div class="progress-fill pending-progress" 
+                                     style="left: ${Math.min(budgetInfo.usagePercentage, 100)}%; 
+                                            width: ${Math.min(
+                                                Math.round(((currentAppliedAmount - budgetInfo.usedBudget) / budgetInfo.allocatedBudget) * 100), 
+                                                100 - budgetInfo.usagePercentage
+                                            )}%"></div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="progress-legend">
+                        <span class="legend-item used">
+                            <span class="legend-color used"></span>
+                            승인된 사용
+                        </span>
+                        ${currentAppliedAmount > budgetInfo.usedBudget ? `
+                            <span class="legend-item pending">
+                                <span class="legend-color pending"></span>
+                                대기 중
+                            </span>
+                        ` : ''}
+                        <span class="legend-item remaining">
+                            <span class="legend-color remaining"></span>
+                            잔여
+                        </span>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
 
     // 배송지 정보 HTML 생성
     createShippingInfoHTML(shippingInfo) {
@@ -1370,6 +1595,7 @@ const AdminEnhancedUI = {
                         </button>
                     `;
                 }
+                
                 default:
                 return '';
         }
@@ -1419,7 +1645,45 @@ const AdminEnhancedUI = {
         
         return card;
     },
+    
 
+    // 🆕 예산 상태 관련 유틸리티 함수들
+    getBudgetStatusClass(status) {
+        const statusClasses = {
+            'no-budget': 'no-budget',
+            'unused': 'unused',
+            'low-usage': 'low-usage',
+            'moderate-usage': 'moderate-usage', 
+            'high-usage': 'high-usage',
+            'over-budget': 'over-budget'
+        };
+        return statusClasses[status] || 'unknown';
+    },
+
+    getBudgetStatusText(status) {
+        const statusTexts = {
+            'no-budget': '예산 미배정',
+            'unused': '사용 안함',
+            'low-usage': '적정 사용',
+            'moderate-usage': '보통 사용',
+            'high-usage': '높은 사용',
+            'over-budget': '예산 초과'
+        };
+        return statusTexts[status] || '알 수 없음';
+    },
+
+    getBudgetStatusIcon(status) {
+        const statusIcons = {
+            'no-budget': 'alert-circle',
+            'unused': 'circle',
+            'low-usage': 'check-circle',
+            'moderate-usage': 'clock',
+            'high-usage': 'alert-triangle',
+            'over-budget': 'x-circle'
+        };
+        return statusIcons[status] || 'help-circle';
+    },    
+    
     // 결과 없음 HTML 생성
     createNoResultsHTML() {
         const message = this.currentSearchTerm ? 

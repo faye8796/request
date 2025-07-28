@@ -1867,7 +1867,7 @@ class FlightManagementModals {
      * 🎒 오프라인 섹션 동적 생성
      */
     generateOfflineSection(request) {
-        const isOfflineAllowed = request.baggage_type === 'user_allowed;';
+        const isOfflineAllowed = request.baggage_type === 'user_allowed';
         
         if (!isOfflineAllowed) {
             // 허용되지 않은 상태 - 허용 버튼 표시
