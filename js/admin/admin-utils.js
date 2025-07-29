@@ -146,29 +146,30 @@ AdminManager.Utils = {
             const receiptImage = Utils.$('#viewReceiptImage');
             receiptImage.src = receiptData.image_path || '';
 
-            // 현재 보고 있는 영수증 정보 저장 (다운로드용)
-            this.currentViewingReceipt = {
-                image: receiptData.image_path,
-                fileName: `receipt_${requestId}_${isAdminReceipt ? 'admin' : 'student'}.jpg`
-            };
             
-            // 🔧 인라인으로 파일명 생성
+            // ✅ 올바른 파일명 생성 및 PDF 여부 판단
             const getFileExtension = (url) => {
                 try {
                     return url.split('.').pop().toLowerCase();
                 } catch {
-                    return 'jpg'; // 기본값
+                    return 'jpg';
                 }
             };
 
-            const extension = getFileExtension(receiptData.image_path);
+            const imageUrl = receiptData.image_path;
+            const extension = getFileExtension(imageUrl);
             const prefix = isAdminReceipt ? 'admin' : 'student';
+            const isPDF = extension === 'pdf' || imageUrl.toLowerCase().includes('.pdf');
 
+            // 🆕 완전한 정보로 한 번만 설정
             this.currentViewingReceipt = {
-                image: receiptData.image_path,
-                fileName: `receipt_${requestId}_${prefix}.${extension}`
+                image: imageUrl,
+                fileName: `receipt_${requestId}_${prefix}.${extension}`,
+                isPDF: isPDF  // 🆕 PDF 여부 추가
             };
-            
+
+            console.log('🔍 영수증 정보 설정됨:', this.currentViewingReceipt);
+
             modal.classList.add('active');
 
         } catch (error) {
@@ -176,6 +177,7 @@ AdminManager.Utils = {
             Utils.showToast('영수증을 불러오는 중 오류가 발생했습니다.', 'error');
         }
     },
+
 
     // 영수증 보기 모달 숨김
     hideViewReceiptModal() {
@@ -185,68 +187,153 @@ AdminManager.Utils = {
             this.currentViewingReceipt = null;
         }
     },
-
-    // admin-utils.js - downloadReceiptImage() 함수 수정
+    
+    // admin-utils.js - downloadReceiptImage() 함수 개선
     downloadReceiptImage() {
-        if (!this.currentViewingReceipt) return;
+        console.log('🔍 다운로드 함수 시작');
+
+        if (!this.currentViewingReceipt) {
+            console.log('❌ currentViewingReceipt가 없음');
+            Utils.showToast('다운로드할 영수증 정보가 없습니다.', 'error');
+            return;
+        }
 
         try {
             const imageUrl = this.currentViewingReceipt.image;
             const fileName = this.currentViewingReceipt.fileName;
 
-            // PDF 파일인지 확인
-            const isPDF = imageUrl.toLowerCase().includes('.pdf') || 
-                         fileName.toLowerCase().includes('.pdf');
+            // 🔍 디버깅: 파일 정보 출력
+            console.log('=== 다운로드 디버깅 ===');
+            console.log('원본 URL:', imageUrl);
+            console.log('파일명:', fileName);
+            console.log('currentViewingReceipt 전체:', this.currentViewingReceipt);
+
+            // 🔍 각 조건별 체크
+            const urlHasPDF = imageUrl.toLowerCase().includes('.pdf');
+            const fileNameHasPDF = fileName.toLowerCase().includes('.pdf');
+            const urlHasPDFWord = imageUrl.toLowerCase().includes('pdf');
+
+            console.log('URL에 .pdf 포함:', urlHasPDF);
+            console.log('파일명에 .pdf 포함:', fileNameHasPDF);
+            console.log('URL에 pdf 단어 포함:', urlHasPDFWord);
+
+            // 현재 조건
+            const isPDF = urlHasPDF || fileNameHasPDF || urlHasPDFWord;
+
+            console.log('최종 PDF 판정:', isPDF);
+            console.log('========================');
 
             if (isPDF) {
-                // PDF의 경우: fetch로 다운로드하여 강제 다운로드
-                this.forceDownloadFile(imageUrl, fileName);
+                console.log('✅ PDF로 인식됨 - 새탭에서 열기 시도');
+
+                // 새탭 열기 시도
+                const newWindow = window.open(imageUrl, '_blank');
+
+                if (newWindow) {
+                    console.log('✅ 새탭 열기 성공');
+                    Utils.showToast('새 탭에서 PDF를 열었습니다.', 'info');
+                } else {
+                    console.log('❌ 새탭 열기 실패 (팝업 차단?)');
+
+                    // 팝업 차단시 대안 방법
+                    try {
+                        // 방법 1: 현재 탭에서 새 창으로 리디렉션 방지
+                        const link = document.createElement('a');
+                        link.href = imageUrl;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+
+                        // 사용자 이벤트로 인식되도록 클릭 이벤트 트리거
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+
+                        Utils.showToast('PDF를 새 탭에서 열려고 시도했습니다.', 'info');
+                    } catch (linkError) {
+                        console.error('링크 방식도 실패:', linkError);
+                        Utils.showToast('팝업이 차단되었습니다. 브라우저 설정을 확인하세요.', 'warning');
+                    }
+                }
             } else {
-                // 이미지의 경우: 기존 방식 사용
-                const link = document.createElement('a');
-                link.href = imageUrl;
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                console.log('🖼️ 이미지로 인식됨 - 다운로드 시도');
+
+                try {
+                    // 이미지 다운로드 - 여러 방법 시도
+                    this.tryImageDownload(imageUrl, fileName);
+                } catch (downloadError) {
+                    console.error('이미지 다운로드 실패:', downloadError);
+                    Utils.showToast('다운로드에 실패했습니다.', 'error');
+                }
             }
 
-            Utils.showToast('영수증이 다운로드되었습니다.', 'success');
         } catch (error) {
             Utils.showToast('다운로드 중 오류가 발생했습니다.', 'error');
             console.error('Download error:', error);
         }
     },
 
-    // 🆕 강제 다운로드 함수 추가
-    async forceDownloadFile(url, fileName) {
+    // 🆕 이미지 다운로드 전용 함수
+    tryImageDownload(imageUrl, fileName) {
+        console.log('🖼️ 이미지 다운로드 시작:', fileName);
+
+        // 방법 1: 기본 다운로드 시도
         try {
-            // fetch로 파일을 blob으로 가져오기
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('파일을 가져올 수 없습니다.');
-
-            const blob = await response.blob();
-
-            // blob URL 생성하여 다운로드
-            const blobUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = blobUrl;
+            link.href = imageUrl;
             link.download = fileName;
 
-            // 임시로 DOM에 추가하고 클릭
+            // 현재창에서 열리는 것을 방지
+            link.target = '_self'; // 또는 '_blank'
+
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
 
-            // blob URL 해제 (메모리 정리)
-            window.URL.revokeObjectURL(blobUrl);
+            console.log('✅ 기본 다운로드 시도 완료');
+            Utils.showToast('이미지 다운로드를 시작했습니다.', 'success');
 
-        } catch (error) {
-            console.error('강제 다운로드 실패:', error);
-            // 폴백: 새탭에서 열기
-            window.open(url, '_blank');
+        } catch (basicError) {
+            console.error('기본 다운로드 실패:', basicError);
+
+            // 방법 2: fetch + blob 방식
+            this.fetchAndDownload(imageUrl, fileName);
         }
     },
+
+    // 🆕 fetch + blob 다운로드
+    async fetchAndDownload(imageUrl, fileName) {
+        try {
+            console.log('🔄 fetch 다운로드 시도');
+
+            const response = await fetch(imageUrl);
+            if (!response.ok) throw new Error('네트워크 오류');
+
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = fileName;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // 메모리 정리
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+
+            console.log('✅ fetch 다운로드 성공');
+            Utils.showToast('이미지가 다운로드되었습니다.', 'success');
+
+        } catch (fetchError) {
+            console.error('fetch 다운로드도 실패:', fetchError);
+
+            // 최후 수단: 새탭에서 열기
+            window.open(imageUrl, '_blank');
+            Utils.showToast('새 탭에서 열었습니다. 우클릭하여 저장하세요.', 'info');
+        }
+    },
+
 
     // 영수증 보기 모달 생성
     createViewReceiptModal() {
