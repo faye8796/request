@@ -10,13 +10,40 @@ const AdminEnhancedUI = {
     currentSearchTerm: '',
     isInitialized: false,
 
+    /**
+     * 관리자 영수증 보기 이벤트 설정 (v11.1.0)
+     */
+    setupAdminReceiptEvents: function() {
+        // 관리자 영수증 보기 버튼 이벤트
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('.view-admin-receipt-btn') || 
+                e.target.closest('.view-admin-receipt-btn')) {
+                
+                const button = e.target.closest('.view-admin-receipt-btn');
+                const receiptUrl = button.getAttribute('data-receipt-url');
+                
+                if (receiptUrl) {
+                    // 기존 영수증 보기 모달 재사용 또는 새 창에서 열기
+                    if (window.AdminManager && 
+                        window.AdminManager.Modals && 
+                        typeof window.AdminManager.Modals.showImageModal === 'function') {
+                        window.AdminManager.Modals.showImageModal(receiptUrl, '관리자 구매 영수증');
+                    } else {
+                        // 폴백: 새 창에서 열기
+                        window.open(receiptUrl, '_blank');
+                    }
+                }
+            }
+        });
+    },
+    
+    
     // 모듈 초기화
     init() {
         if (this.isInitialized) {
             console.log('⚠️ AdminEnhancedUI가 이미 초기화됨');
             return;
         }
-
         console.log('🎨 AdminEnhancedUI v4.3.3 초기화 시작 (구매 완료 버튼 버그 수정)');
         
         try {
@@ -24,8 +51,11 @@ const AdminEnhancedUI = {
             this.enhanceExistingFunctions();
             this.setupEnhancedEventListeners();
             
+            // 🆕 관리자 영수증 이벤트 설정 (v11.1.0)
+            this.setupAdminReceiptEvents();
+            
             this.isInitialized = true;
-            console.log('✅ AdminEnhancedUI v4.3.3 초기화 완료');
+            console.log('✅ AdminEnhancedUI v4.3.3 초기화 완료 (관리자 영수증 지원 추가)');
         } catch (error) {
             console.error('❌ AdminEnhancedUI 초기화 실패:', error);
         }
@@ -1290,7 +1320,7 @@ const AdminEnhancedUI = {
         `;
     },
 
-    // 개별 신청 아이템 HTML 생성 (v4.3 완전 개선)
+    // 개별 신청 아이템 HTML 생성 (v11.1.0 - 관리자 영수증 지원 추가)
     createApplicationItemHTML(application) {
         const statusClass = this.getStatusClass(application.status);
         const statusText = this.getStatusText(application.status);
@@ -1299,32 +1329,81 @@ const AdminEnhancedUI = {
         // v4.3 구매 관련 정보 표시
         const purchaseInfoHTML = this.createPurchaseInfoHTML(application);
         
-        // 영수증 관련 표시
+        // 영수증 관련 표시 (개선된 버전)
         let receiptInfo = '';
-        if (application.purchase_type === 'offline') {
-            if (application.status === 'purchased') {
-                receiptInfo = `
-                    <div class="receipt-info submitted">
-                        <span class="receipt-status">
-                            <i data-lucide="check-circle"></i>
-                            영수증 제출완료
-                        </span>
-                        <button class="btn small secondary view-receipt-btn" 
-                                data-request-id="${application.id}">
-                            <i data-lucide="eye"></i> 영수증 보기
-                        </button>
+        const hasReceipt = application.receipt_url || application.admin_receipt_url;
+
+        if (hasReceipt) {
+            receiptInfo = `
+                <div class="receipt-info submitted">
+                    <span class="receipt-status">
+                        <i data-lucide="check-circle"></i>
+                        영수증 ${application.admin_receipt_url ? '등록' : '제출'}완료
+                    </span>
+                    <button class="btn small secondary view-receipt-btn" 
+                            data-request-id="${application.id}">
+                        <i data-lucide="eye"></i> 영수증 보기
+                    </button>
+                </div>
+            `;
+        } else if (application.purchase_type === 'offline' && application.status === 'approved') {
+            receiptInfo = `
+                <div class="receipt-info pending">
+                    <span class="receipt-pending">
+                        <i data-lucide="clock"></i>
+                        영수증 제출 대기 중
+                    </span>
+                </div>
+            `;
+        }
+
+        // 🆕 관리자 영수증 정보 표시 (v11.1.0)
+        let adminReceiptInfo = '';
+        if (application.status === 'purchased' && 
+            application.purchase_type === 'online' && 
+            application.admin_receipt_url) {
+            
+            // 금액 차이 계산
+            const originalAmount = application.price || 0; // total_amount → price
+            const finalAmount = application.final_purchase_amount || originalAmount;
+            const difference = finalAmount - originalAmount;
+            
+            adminReceiptInfo = `
+                <div class="admin-receipt-section">
+                    <h5><i data-lucide="shield-check"></i> 관리자 구매 정보</h5>
+                    <div class="admin-purchase-info">
+                        <div class="purchase-summary-grid">
+                            <div class="summary-item">
+                                <label>신청 금액:</label>
+                                <span class="original-amount">${this.formatPrice(originalAmount)}</span>
+                            </div>
+                            <div class="summary-item">
+                                <label>최종 구매 금액:</label>
+                                <span class="final-amount">${this.formatPrice(finalAmount)}</span>
+                            </div>
+                            <div class="summary-item">
+                                <label>구매 날짜:</label>
+                                <span class="purchase-date">${this.formatDate(application.admin_purchase_date)}</span>
+                            </div>
+                            ${difference !== 0 ? `
+                                <div class="summary-item amount-difference">
+                                    <label>금액 차이:</label>
+                                    <span class="difference-amount ${difference > 0 ? 'over' : 'under'}">
+                                        ${difference > 0 ? '+' : ''}${new Intl.NumberFormat('ko-KR').format(Math.abs(difference))}원
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="admin-receipt-actions">
+                            <button class="btn small secondary view-admin-receipt-btn" 
+                                    data-receipt-url="${application.admin_receipt_url}"
+                                    title="관리자 구매 영수증 보기">
+                                <i data-lucide="file-text"></i> 관리자 영수증 보기
+                            </button>
+                        </div>
                     </div>
-                `;
-            } else if (application.status === 'approved') {
-                receiptInfo = `
-                    <div class="receipt-info pending">
-                        <span class="receipt-pending">
-                            <i data-lucide="clock"></i>
-                            영수증 제출 대기 중
-                        </span>
-                    </div>
-                `;
-            }
+                </div>
+            `;
         }
         
         return `
@@ -1355,6 +1434,7 @@ const AdminEnhancedUI = {
                         
                         ${purchaseInfoHTML}
                         ${receiptInfo}
+                        ${adminReceiptInfo}
                     </div>
                     
                     <div class="item-actions">
@@ -1698,6 +1778,7 @@ const AdminEnhancedUI = {
         `;
     },
 
+    
     // 유틸리티 함수들
     escapeHtml(text) {
         if (!text) return '';
@@ -1755,12 +1836,13 @@ const AdminEnhancedUI = {
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
-    }
+    },
+    
+
 };
 
 // 전역 객체로 노출
 window.AdminEnhancedUI = AdminEnhancedUI;
-
 // 모듈 자동 초기화 (다른 admin 모듈들과 함께 로드되는 경우)
 if (typeof window !== 'undefined' && document.readyState !== 'loading') {
     // DOM이 이미 로드된 경우 즉시 초기화

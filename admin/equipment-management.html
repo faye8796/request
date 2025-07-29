@@ -555,7 +555,322 @@
                 padding: 2px 6px;
             }
         }        
+
+    /* 🎨 구매 완료 모달 스타일 */
+    .purchase-complete-modal {
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .student-request-info {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .info-item label {
+        font-weight: 600;
+        color: #666;
+        font-size: 0.9em;
+    }
+
+    .amount-display {
+        font-weight: 700;
+        color: #2563eb;
+        font-size: 1.1em;
+    }
+
+    .form-divider {
+        height: 1px;
+        background: #e5e7eb;
+        margin: 20px 0;
+    }
+
+    .final-purchase-info h4 {
+        margin-bottom: 20px;
+        color: #374151;
+    }
+
+    .amount-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .final-amount-input {
+        width: 100%;
+        padding: 12px 50px 12px 12px;
+        border: 2px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .currency {
+        position: absolute;
+        right: 12px;
+        color: #666;
+        font-weight: 600;
+    }
+
+    .amount-difference {
+        margin-top: 8px;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 0.9em;
+        font-weight: 600;
+    }
+
+    .diff-text.over {
+        color: #dc2626;
+        background: #fef2f2;
+    }
+
+    .diff-text.under {
+        color: #059669;
+        background: #f0fdf4;
+    }
+
+    .file-upload-area {
+        border: 2px dashed #d1d5db;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .file-upload-area.drag-over {
+        border-color: #2563eb;
+        background: #eff6ff;
+    }
+
+    .upload-placeholder {
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .upload-icon {
+        width: 48px;
+        height: 48px;
+        color: #9ca3af;
+    }
+
+    .upload-text p {
+        margin: 0;
+        color: #374151;
+        font-weight: 600;
+    }
+
+    .upload-text small {
+        color: #6b7280;
+    }
+
+    .file-info {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        background: #f3f4f6;
+        padding: 10px;
+        border-radius: 6px;
+    }
+
+    .file-name {
+        flex: 1;
+        text-align: left;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .remove-file-btn {
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+    }
+
+    .upload-progress {
+        margin-top: 10px;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: #2563eb;
+        transition: width 0.3s ease;
+        width: 0%;
+    }
+
+    .progress-text {
+        margin-top: 5px;
+        font-size: 0.9em;
+        color: #666;
+    }
+
+    .required {
+        color: #ef4444;
+    }
+
+    @media (max-width: 768px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .purchase-complete-modal {
+            margin: 20px;
+            max-height: calc(100vh - 40px);
+        }
+    }
         
+    /* 🎨 관리자 구매 정보 스타일 (v11.1.0) */
+    .admin-receipt-section {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        border-left: 4px solid #1e40af;
+    }
+
+    .admin-receipt-section h5 {
+        margin: 0 0 15px 0;
+        color: #1e40af;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1em;
+    }
+
+    .admin-purchase-info {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .purchase-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+    }
+
+    .summary-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .summary-item label {
+        font-size: 0.85em;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .original-amount {
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .final-amount {
+        font-weight: 700;
+        color: #059669;
+        font-size: 1.05em;
+    }
+
+    .purchase-date {
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .difference-amount {
+        font-weight: 700;
+        font-size: 1em;
+    }
+
+    .difference-amount.over {
+        color: #dc2626;
+    }
+
+    .difference-amount.under {
+        color: #059669;
+    }
+
+    .admin-receipt-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .view-admin-receipt-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: #374151;
+        font-size: 0.9em;
+    }
+
+    .view-admin-receipt-btn:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+        color: #1f2937;
+    }
+
+    .view-admin-receipt-btn:active {
+        transform: translateY(1px);
+    }
+
+    @media (max-width: 768px) {
+        .purchase-summary-grid {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .admin-receipt-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .view-admin-receipt-btn {
+            justify-content: center;
+            width: 100%;
+        }
+    }        
         
     </style>
 </head>

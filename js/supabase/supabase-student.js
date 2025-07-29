@@ -52,7 +52,7 @@ const SupabaseStudent = {
             // 1. 기본 사용자 조회 (비밀번호 해시 포함)
             const { data, error } = await client
                 .from('user_profiles')
-                .select('id, name, birth_date, password_hash, password_set_at, password_updated_at, user_type, field, sejong_institute, individual_flight_request_enabled, individual_equipment_request_enabled')
+                .select('id, name, birth_date, password_hash, password_set_at, password_updated_at, user_type, field, sejong_institute, individual_flight_request_enabled, individual_equipment_request_enabled, minimum_required_days, maximum_allowed_days')
                 .eq('user_type', 'student')
                 .eq('name', name)
                 .eq('birth_date', birthDate);

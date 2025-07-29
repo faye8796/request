@@ -1835,8 +1835,8 @@ class FlightRequestStatus {
 
     // 🆕 수정된 renderBaggageSection - 2열 통합 그리드
     renderBaggageSection(request) {
-        // 🚨 테스트 중: 승인된 신청에서만 추가 수하물 섹션 표시
-        if (request.status !== 'approved') {
+        // 🆕 수정: 승인된 신청과 완료된 신청에서 추가 수하물 섹션 표시
+        if (!['approved', 'completed'].includes(request.status)) {
             return ''; // 승인되지 않은 신청에서는 섹션 숨김
         }
 

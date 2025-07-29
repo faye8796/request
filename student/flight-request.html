@@ -800,10 +800,12 @@
                 let maximumDays = 365;
 
                 // 사용자 데이터에서 직접 가져오기
-                if (userData) {
-                    requiredDays = userData.minimum_required_days || 90;
-                    maximumDays = userData.maximum_allowed_days || 365;
+                if (userData && userData.minimum_required_days) {
+                    requiredDays = userData.minimum_required_days;
+                    maximumDays = userData.maximum_allowed_days || userData.minimum_required_days;
                     console.log('✅ 사용자 데이터에서 활동일 정보 확인:', requiredDays, '일');
+                } else {
+                    console.warn('⚠️ 사용자 데이터 없음, 기본값 사용:', requiredDays, '일');
                 }
 
                 // API 어댑터를 통한 추가 확인 (선택적)

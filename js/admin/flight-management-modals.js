@@ -1202,17 +1202,26 @@ class FlightManagementModals {
                 throw new Error('API가 초기화되지 않았습니다');
             }
 
-            // 최종금액 정보 업데이트 (API에 메서드 추가 필요)
+            // Supabase 직접 호출
+            const supabase = this.system.modules.api.checkSupabaseInstance();
+
+            // 🆕 기존 admin_comment와 admin_notes 모두 조회하여 보존
+            const { data: existingData } = await supabase
+                .from('flight_requests')
+                .select('admin_comment, admin_notes')  // 둘 다 조회
+                .eq('id', requestId)
+                .single();
+
+            // 최종금액 정보 업데이트 (기존 값들 모두 보존)
             const updateData = {
                 admin_final_amount: parseFloat(finalAmount),
                 admin_final_currency: finalCurrency,
-                admin_notes: finalAmountNotes,
+                admin_notes: existingData?.admin_notes || null, // 🆕 기존 admin_notes 보존 (승인시 입력된 값)
+                admin_comment: existingData?.admin_comment || null, // 🆕 기존 admin_comment 보존
                 status: 'completed',
                 purchase_completed_at: new Date().toISOString()
             };
-
-            // Supabase 직접 호출 (임시)
-            const supabase = this.system.modules.api.checkSupabaseInstance();
+            
             const { data, error } = await supabase
                 .from('flight_requests')
                 .update(updateData)
@@ -1221,6 +1230,7 @@ class FlightManagementModals {
                 .single();
 
             if (error) throw error;
+
 
             this.hideProcessing();
             this.closeModal('finalAmountModal');

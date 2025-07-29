@@ -172,34 +172,86 @@ AdminManager.Applications = {
         }
     },
 
-    // 구매 완료 처리
+    /**
+     * 구매 완료 처리 (v11.1.0 - 모달 기반으로 업그레이드)
+     * @param {string} requestId - 신청 ID
+     * @param {HTMLElement} buttonElement - 클릭된 버튼 요소
+     */
     async markAsPurchased(requestId, buttonElement) {
-        if (Utils.showConfirm('이 교구의 구매가 완료되었습니까?')) {
-            Utils.showLoading(buttonElement);
-            
-            try {
-                console.log('🛒 구매 완료 처리 시작:', requestId);
-                const result = await SupabaseAPI.updateItemStatus(requestId, 'purchased');
-                
-                if (result.success) {
-                    await this.refreshData();
-                    Utils.showToast('구매완료로 처리되었습니다.', 'success');
-                    
-                    // 다른 모듈에 알림
-                    AdminManager.emit('application-status-changed', { 
-                        requestId, 
-                        status: 'purchased', 
-                        action: 'purchase' 
-                    });
-                } else {
-                    Utils.hideLoading(buttonElement);
-                    Utils.showToast(result.message || '구매완료 처리 중 오류가 발생했습니다.', 'error');
-                }
-            } catch (error) {
-                Utils.hideLoading(buttonElement);
-                Utils.showToast('구매완료 처리 중 오류가 발생했습니다.', 'error');
-                console.error('❌ 구매 완료 처리 오류:', error);
+        try {
+            // AdminManager.Modals가 사용 가능한지 확인
+            if (window.AdminManager && 
+                window.AdminManager.Modals && 
+                typeof window.AdminManager.Modals.showPurchaseCompleteModal === 'function') {
+
+                // 새로운 모달 기반 구매 완료 처리
+                window.AdminManager.Modals.showPurchaseCompleteModal(requestId, buttonElement);
+                return;
             }
+
+            // 폴백: 기존 방식으로 처리
+            console.warn('AdminManager.Modals가 사용 불가능합니다. 기존 방식으로 처리합니다.');
+            await this.markAsPurchasedLegacy(requestId, buttonElement);
+
+        } catch (error) {
+            console.error('구매 완료 처리 오류:', error);
+
+            // 에러 발생시 기존 방식으로 폴백
+            await this.markAsPurchasedLegacy(requestId, buttonElement);
+        }
+    },
+
+    /**
+     * 기존 방식의 구매 완료 처리 (폴백용)
+     * @param {string} requestId - 신청 ID  
+     * @param {HTMLElement} buttonElement - 클릭된 버튼 요소
+     */
+    async markAsPurchasedLegacy(requestId, buttonElement) {
+        if (!confirm('이 신청을 구매 완료로 처리하시겠습니까?')) {
+            return;
+        }
+
+        try {
+            // 로딩 상태 설정
+            const originalHTML = buttonElement.innerHTML;
+            buttonElement.disabled = true;
+            buttonElement.innerHTML = '<i data-lucide="loader-2"></i> 처리 중...';
+
+            // 상태 업데이트
+            const { error } = await supabase
+                .from('requests')
+                .update({ 
+                    status: 'purchased',
+                    admin_purchase_date: new Date().toISOString().split('T')[0]
+                })
+                .eq('id', requestId);
+
+            if (error) throw error;
+
+            // 성공 메시지
+            if (window.Utils && window.Utils.showToast) {
+                Utils.showToast('구매 완료 처리되었습니다.', 'success');
+            }
+
+            // UI 업데이트
+            setTimeout(() => {
+                if (typeof this.loadApplications === 'function') {
+                    this.loadApplications();
+                } else {
+                    window.location.reload();
+                }
+            }, 1000);
+
+        } catch (error) {
+            console.error('구매 완료 처리 오류:', error);
+
+            if (window.Utils && window.Utils.showToast) {
+                Utils.showToast('구매 완료 처리에 실패했습니다.', 'error');
+            }
+
+            // 버튼 상태 복원
+            buttonElement.disabled = false;
+            buttonElement.innerHTML = originalHTML;
         }
     },
 

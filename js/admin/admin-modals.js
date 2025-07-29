@@ -704,6 +704,519 @@ AdminManager.Modals = {
         return dialog;
     },
 
+    
+    // 🆕 구매 완료 모달 관련 함수들 (v11.1.0)
+        
+    /**
+     * 구매 완료 모달 생성 및 표시
+     * @param {string} requestId - 신청 ID
+     * @param {HTMLElement} buttonElement - 클릭된 버튼 요소
+     */
+    showPurchaseCompleteModal: function(requestId, buttonElement) {
+        // 기존 모달이 있다면 제거
+        const existingModal = document.getElementById('purchaseCompleteModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 신청 정보 조회하여 모달 생성
+        this.loadRequestDataAndShowModal(requestId, buttonElement);
+    },
+
+
+    /**
+     * 신청 데이터 로드 및 모달 표시
+     */
+    loadRequestDataAndShowModal: async function(requestId, buttonElement) {
+        try {
+            // 로딩 상태 표시
+            if (buttonElement) {
+                buttonElement.disabled = true;
+                buttonElement.innerHTML = '<i data-lucide="loader-2"></i> 로딩...';
+            }
+
+            // Supabase 클라이언트 확인 및 가져오기
+            let supabaseClient = null;
+
+            // 여러 가능한 Supabase 클라이언트 확인
+            if (window.supabase && typeof window.supabase.from === 'function') {
+                supabaseClient = window.supabase;
+            } else if (window.SupabaseAPI && window.SupabaseAPI.client) {
+                supabaseClient = window.SupabaseAPI.client;
+            } else if (window.AdminManager && window.AdminManager.supabase) {
+                supabaseClient = window.AdminManager.supabase;
+            } else {
+                throw new Error('Supabase 클라이언트를 찾을 수 없습니다.');
+            }
+
+            // 신청 정보 조회
+            const { data: requestData, error } = await supabaseClient
+                .from('requests')
+                .select('*')
+                .eq('id', requestId)
+                .single();
+
+            if (error) throw error;
+
+            // 모달 HTML 생성 및 표시
+            this.createPurchaseCompleteModal(requestData, requestId);
+            this.setupPurchaseCompleteEventListeners(requestId);
+
+        } catch (error) {
+            console.error('신청 정보 로드 오류:', error);
+            if (window.Utils && window.Utils.showToast) {
+                Utils.showToast('신청 정보를 불러오는데 실패했습니다.', 'error');
+            }
+        } finally {
+            // 버튼 상태 복원
+            if (buttonElement) {
+                buttonElement.disabled = false;
+                buttonElement.innerHTML = '<i data-lucide="check"></i> 구매 완료';
+            }
+        }
+    },
+
+    /**
+     * 구매 완료 모달 HTML 생성 (간소화 버전)
+     */
+    createPurchaseCompleteModal: function(requestData, requestId) {
+        // 💰 가격 정보 (price 컬럼 사용)
+        const priceAmount = requestData.price || 0;
+
+        // 💸 가격 포맷팅
+        const formatPrice = (amount) => {
+            if (!amount) return '0';
+            return parseInt(amount).toLocaleString('ko-KR');
+        };
+
+        const modalHTML = `
+            <div id="purchaseCompleteModal" class="modal active">
+                <div class="modal-content purchase-complete-modal">
+                    <div class="modal-header">
+                        <h3><i data-lucide="shopping-cart"></i> 구매 완료 처리</h3>
+                        <button class="close-btn" data-action="close-purchase-modal">&times;</button>
+                    </div>
+
+                    <div class="modal-body">
+                        <!-- 학생 신청 정보 표시 (간소화) -->
+                        <div class="student-request-info">
+                            <h4><i data-lucide="user"></i> 학생 신청 정보</h4>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <label>신청 금액:</label>
+                                    <span id="originalAmount" class="amount-display">${formatPrice(priceAmount)}원</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>교구명:</label>
+                                    <span id="itemName">${requestData.item_name || '-'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-divider"></div>
+
+                        <!-- 최종 구매 정보 입력 -->
+                        <div class="final-purchase-info">
+                            <h4><i data-lucide="credit-card"></i> 구매 완료 정보</h4>
+
+                            <!-- 최종 구매 금액 입력 -->
+                            <div class="form-group final-amount-section">
+                                <label for="finalAmount">최종 구매 금액 <span class="required">*</span></label>
+                                <div class="amount-input-wrapper">
+                                    <input type="number" id="finalAmount" class="final-amount-input" 
+                                           value="${priceAmount || ''}" 
+                                           min="0" step="1000" required>
+                                    <span class="currency">원</span>
+                                </div>
+                                <div class="amount-difference" id="amountDifference" style="display: none;">
+                                    <span class="diff-text"></span>
+                                </div>
+                            </div>
+
+                            <!-- 구매 날짜 입력 -->
+                            <div class="form-group purchase-date-section">
+                                <label for="purchaseDate">구매 날짜 <span class="required">*</span></label>
+                                <input type="date" id="purchaseDate" class="purchase-date-input" 
+                                       value="${new Date().toISOString().split('T')[0]}" required>
+                            </div>
+
+                            <!-- 관리자 영수증 업로드 -->
+                            <div class="form-group admin-receipt-section">
+                                <label for="adminReceiptFile">관리자 구매 영수증 <span class="required">*</span></label>
+                                <div class="file-upload-area" id="adminReceiptUpload">
+                                    <input type="file" id="adminReceiptFile" 
+                                           accept="image/*,.pdf" style="display: none;" required>
+                                    <div class="upload-placeholder">
+                                        <i data-lucide="upload" class="upload-icon"></i>
+                                        <div class="upload-text">
+                                            <p>파일을 선택하거나 여기에 드래그해주세요</p>
+                                            <small>이미지 파일 또는 PDF (최대 10MB)</small>
+                                        </div>
+                                    </div>
+                                    <div class="file-info" style="display: none;">
+                                        <i data-lucide="file-text"></i>
+                                        <span class="file-name"></span>
+                                        <button type="button" class="remove-file-btn" title="파일 제거">
+                                            <i data-lucide="x"></i>
+                                        </button>
+                                    </div>
+                                    <div class="upload-progress" style="display: none;">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill"></div>
+                                        </div>
+                                        <span class="progress-text">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn secondary" data-action="close-purchase-modal">
+                            <i data-lucide="x"></i> 취소
+                        </button>
+                        <button type="button" class="btn primary" id="submitPurchaseComplete">
+                            <i data-lucide="check"></i> 구매 완료 처리
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 모달을 body에 추가
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        // 아이콘 렌더링
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    },
+
+    /**
+     * 구매 완료 모달 이벤트 리스너 설정
+     */
+    setupPurchaseCompleteEventListeners: function(requestId) {
+        const modal = document.getElementById('purchaseCompleteModal');
+        if (!modal) return;
+
+        const finalAmountInput = modal.querySelector('#finalAmount');
+        const originalAmountSpan = modal.querySelector('#originalAmount');
+        const amountDifferenceDiv = modal.querySelector('#amountDifference');
+        const fileInput = modal.querySelector('#adminReceiptFile');
+        const uploadArea = modal.querySelector('#adminReceiptUpload');
+        const submitButton = modal.querySelector('#submitPurchaseComplete');
+
+        // 닫기 버튼 이벤트
+        modal.addEventListener('click', (e) => {
+            if (e.target.matches('[data-action="close-purchase-modal"]') || 
+                e.target.closest('[data-action="close-purchase-modal"]')) {
+                this.closePurchaseCompleteModal();
+            }
+        });
+
+        // 모달 외부 클릭시 닫기
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closePurchaseCompleteModal();
+            }
+        });
+
+        // ESC 키로 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                this.closePurchaseCompleteModal();
+            }
+        });
+
+        // 최종 금액 변경시 차이 표시
+        if (finalAmountInput && originalAmountSpan) {
+            finalAmountInput.addEventListener('input', () => {
+                this.updateAmountDifference(finalAmountInput, originalAmountSpan, amountDifferenceDiv);
+            });
+
+            // 초기 차이 계산
+            this.updateAmountDifference(finalAmountInput, originalAmountSpan, amountDifferenceDiv);
+        }
+
+        // 파일 업로드 이벤트 설정
+        this.setupFileUploadEvents(uploadArea, fileInput);
+
+        // 제출 버튼 이벤트
+        if (submitButton) {
+            submitButton.addEventListener('click', () => {
+                this.handlePurchaseCompleteSubmit(requestId);
+            });
+        }
+    },
+
+    /**
+     * 금액 차이 표시 업데이트
+     */
+    updateAmountDifference: function(finalAmountInput, originalAmountSpan, amountDifferenceDiv) {
+        const finalAmount = parseInt(finalAmountInput.value) || 0;
+        const originalText = originalAmountSpan.textContent.replace(/[^0-9]/g, '');
+        const originalAmount = parseInt(originalText) || 0;
+
+        const difference = finalAmount - originalAmount;
+
+        if (difference !== 0 && amountDifferenceDiv) {
+            const diffText = amountDifferenceDiv.querySelector('.diff-text');
+            if (difference > 0) {
+                diffText.textContent = `신청 금액보다 ${this.formatPrice(difference)}원 많음`;
+                diffText.className = 'diff-text over';
+            } else {
+                diffText.textContent = `신청 금액보다 ${this.formatPrice(Math.abs(difference))}원 적음`;
+                diffText.className = 'diff-text under';
+            }
+            amountDifferenceDiv.style.display = 'block';
+        } else {
+            amountDifferenceDiv.style.display = 'none';
+        }
+    },
+
+    /**
+     * 파일 업로드 이벤트 설정
+     */
+    setupFileUploadEvents: function(uploadArea, fileInput) {
+        const placeholder = uploadArea.querySelector('.upload-placeholder');
+        const fileInfo = uploadArea.querySelector('.file-info');
+        const removeBtn = uploadArea.querySelector('.remove-file-btn');
+
+        // 클릭으로 파일 선택
+        placeholder.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // 드래그 앤 드롭 이벤트
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                this.handleFileSelection(files[0], uploadArea, fileInput);
+            }
+        });
+
+        // 파일 선택 이벤트
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                this.handleFileSelection(e.target.files[0], uploadArea, fileInput);
+            }
+        });
+
+        // 파일 제거 버튼
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                this.clearSelectedFile(uploadArea, fileInput);
+            });
+        }
+    },
+
+    /**
+     * 파일 선택 처리
+     */
+    handleFileSelection: function(file, uploadArea, fileInput) {
+        // 파일 크기 검증 (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            if (window.Utils && window.Utils.showToast) {
+                Utils.showToast('파일 크기는 10MB 이하여야 합니다.', 'error');
+            }
+            return;
+        }
+
+        // 파일 형식 검증
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+        if (!allowedTypes.includes(file.type)) {
+            if (window.Utils && window.Utils.showToast) {
+                Utils.showToast('이미지 파일 또는 PDF 파일만 업로드 가능합니다.', 'error');
+            }
+            return;
+        }
+
+        // 파일 정보 표시
+        const placeholder = uploadArea.querySelector('.upload-placeholder');
+        const fileInfo = uploadArea.querySelector('.file-info');
+        const fileName = fileInfo.querySelector('.file-name');
+
+        placeholder.style.display = 'none';
+        fileInfo.style.display = 'flex';
+        fileName.textContent = file.name;
+
+        // 선택된 파일을 input에 설정
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+    },
+
+    /**
+     * 선택된 파일 제거
+     */
+    clearSelectedFile: function(uploadArea, fileInput) {
+        const placeholder = uploadArea.querySelector('.upload-placeholder');
+        const fileInfo = uploadArea.querySelector('.file-info');
+
+        placeholder.style.display = 'block';
+        fileInfo.style.display = 'none';
+        fileInput.value = '';
+    },
+
+    /**
+     * 구매 완료 제출 처리
+     */
+    handlePurchaseCompleteSubmit: async function(requestId) {
+        const modal = document.getElementById('purchaseCompleteModal');
+        if (!modal) return;
+
+        const finalAmount = modal.querySelector('#finalAmount').value;
+        const purchaseDate = modal.querySelector('#purchaseDate').value;
+        const fileInput = modal.querySelector('#adminReceiptFile');
+        const submitButton = modal.querySelector('#submitPurchaseComplete');
+
+        // 폼 검증
+        if (!finalAmount || !purchaseDate || !fileInput.files[0]) {
+            if (window.Utils && window.Utils.showToast) {
+                Utils.showToast('모든 필수 정보를 입력해주세요.', 'error');
+            }
+            return;
+        }
+
+        try {
+            // 로딩 상태 설정
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i data-lucide="loader-2"></i> 처리 중...';
+
+            // Supabase 클라이언트 확인
+            let supabaseClient = null;
+
+            if (window.supabase && typeof window.supabase.from === 'function') {
+                supabaseClient = window.supabase;
+            } else if (window.SupabaseAPI && window.SupabaseAPI.client) {
+                supabaseClient = window.SupabaseAPI.client;
+            } else if (window.AdminManager && window.AdminManager.supabase) {
+                supabaseClient = window.AdminManager.supabase;
+            } else {
+                throw new Error('Supabase 클라이언트를 찾을 수 없습니다.');
+            }
+
+            // 파일 업로드
+            const receiptUrl = await this.uploadAdminReceipt(fileInput.files[0], requestId, supabaseClient);
+
+            // DB 업데이트
+            const { error: updateError } = await supabaseClient
+                .from('requests')
+                .update({
+                    status: 'purchased',
+                    final_purchase_amount: parseInt(finalAmount),
+                    admin_receipt_url: receiptUrl,
+                    admin_purchase_date: purchaseDate
+                })
+                .eq('id', requestId);
+
+            if (updateError) throw updateError;
+
+            // 성공 처리
+            if (window.Utils && window.Utils.showToast) {
+                Utils.showToast('구매 완료 처리되었습니다.', 'success');
+            }
+
+            // 모달 닫기
+            this.closePurchaseCompleteModal();
+
+            // 페이지 새로고침 (또는 특정 영역만 업데이트)
+            if (window.location.reload) {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+
+        } catch (error) {
+            console.error('구매 완료 처리 오류:', error);
+            if (window.Utils && window.Utils.showToast) {
+                Utils.showToast('구매 완료 처리에 실패했습니다.', 'error');
+            }
+        } finally {
+            // 버튼 상태 복원
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i data-lucide="check"></i> 구매 완료 처리';
+        }
+    },
+
+    /**
+     * 관리자 영수증 파일 업로드 (올바른 버켓명 사용)
+     */
+    uploadAdminReceipt: async function(file, requestId, supabaseClient) {
+        const timestamp = Date.now();
+        const fileName = `admin_receipt_${requestId}_${timestamp}`;
+        const filePath = `admin-receipts/${fileName}`;
+
+        // 업로드 진행률 표시
+        const uploadProgress = document.querySelector('#purchaseCompleteModal .upload-progress');
+
+        if (uploadProgress) {
+            uploadProgress.style.display = 'block';
+        }
+
+        try {
+            // ✅ 올바른 버켓명 사용: receipt-files
+            const { data, error } = await supabaseClient.storage
+                .from('receipt-files')
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (error) throw error;
+
+            // 공개 URL 생성
+            const { data: urlData } = supabaseClient.storage
+                .from('receipt-files')
+                .getPublicUrl(data.path);
+
+            return urlData.publicUrl;
+
+        } catch (error) {
+            console.error('파일 업로드 오류:', error);
+            throw new Error('파일 업로드에 실패했습니다.');
+        } finally {
+            // 진행률 숨기기
+            if (uploadProgress) {
+                uploadProgress.style.display = 'none';
+            }
+        }
+    },
+
+    /**
+     * 구매 완료 모달 닫기
+     */
+    closePurchaseCompleteModal: function() {
+        const modal = document.getElementById('purchaseCompleteModal');
+        if (modal) {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.remove();
+            }, 300);
+        }
+    },
+
+    /**
+     * 가격 포맷팅 헬퍼 함수
+     */
+    formatPrice: function(amount) {
+        if (!amount) return '0';
+        return parseInt(amount).toLocaleString('ko-KR');
+    },    
+    
     // 토스트 메시지 생성
     createToast(message, type = 'info', duration = 3000) {
         // 토스트 컨테이너가 없으면 생성
