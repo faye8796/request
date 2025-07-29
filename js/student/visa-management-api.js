@@ -1,12 +1,12 @@
 /**
- * 비자 관리 시스템 API 모듈 v1.0.0
- * Supabase와의 통신을 담당하는 API 계층
+ * 비자 관리 시스템 API 모듈 v1.1.0 (RLS 비활성화 버전)
+ * localStorage 기반 인증 시스템에 맞춘 API 계층
  */
 
 (function() {
     'use strict';
 
-    console.log('🔧 VisaManagementAPI v1.0.0 로딩...');
+    console.log('🔧 VisaManagementAPI v1.1.0 로딩... (RLS 비활성화 버전)');
 
     class VisaManagementAPI {
         constructor() {
@@ -23,6 +23,8 @@
                     this.supabase = window.supabase;
                 } else if (window.supabaseClient) {
                     this.supabase = window.supabaseClient;
+                } else if (window.SupabaseCore?.client) {
+                    this.supabase = window.SupabaseCore.client;
                 } else {
                     throw new Error('Supabase 클라이언트를 찾을 수 없습니다.');
                 }
@@ -30,13 +32,13 @@
                 // 현재 사용자 정보 로드
                 await this.loadCurrentUser();
 
-                console.log('✅ VisaManagementAPI 초기화 완료');
+                console.log('✅ VisaManagementAPI v1.1.0 초기화 완료 (RLS 비활성화)');
             } catch (error) {
                 console.error('❌ VisaManagementAPI 초기화 실패:', error);
             }
         }
 
-        // 현재 사용자 정보 로드
+        // 현재 사용자 정보 로드 (localStorage 기반)
         async loadCurrentUser() {
             try {
                 const userDataStr = localStorage.getItem('currentStudent');
@@ -49,7 +51,7 @@
                     throw new Error('사용자 ID 없음');
                 }
 
-                console.log('✅ 현재 사용자 로드:', this.currentUser.name || this.currentUser.email);
+                console.log('✅ localStorage에서 사용자 로드:', this.currentUser.name || this.currentUser.email);
             } catch (error) {
                 console.error('❌ 사용자 정보 로드 실패:', error);
                 throw error;
@@ -148,7 +150,7 @@
                 const extension = file.name.split('.').pop();
                 const fileName = `visa_${this.currentUser.id}_${timestamp}.${extension}`;
 
-                // 스토리지에 업로드
+                // 스토리지에 업로드 (RLS 비활성화로 단순화)
                 const { data, error } = await this.supabase.storage
                     .from('visa-documents')
                     .upload(fileName, file, {
@@ -403,12 +405,12 @@
                     }
                 }
 
-                // 데이터베이스에서 삭제
+                // 데이터베이스에서 삭제 (RLS 비활성화로 단순화)
                 const { data, error } = await this.supabase
                     .from('visa_receipts')
                     .delete()
                     .eq('id', receiptId)
-                    .eq('user_id', this.currentUser.id)
+                    .eq('user_id', this.currentUser.id) // 추가 보안을 위해 유지
                     .select()
                     .single();
 
@@ -497,11 +499,36 @@
                 return dateString;
             }
         }
+
+        // 현재 사용자 정보 새로고침
+        async refreshCurrentUser() {
+            try {
+                await this.loadCurrentUser();
+                return {
+                    success: true,
+                    data: this.currentUser
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        // 디버깅용 현재 상태 반환
+        getDebugInfo() {
+            return {
+                currentUser: this.currentUser,
+                supabaseConnected: !!this.supabase,
+                version: 'v1.1.0 (RLS 비활성화)'
+            };
+        }
     }
 
     // 전역에 API 인스턴스 생성
     window.visaManagementAPI = new VisaManagementAPI();
 
-    console.log('✅ VisaManagementAPI v1.0.0 로드 완료');
+    console.log('✅ VisaManagementAPI v1.1.0 로드 완료 (RLS 비활성화 버전)');
 
 })();
