@@ -4,7 +4,167 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>비자 발급 관리 - 세종학당 문화인턴</title>
+    <!-- 기존 CSS 파일들 로드 -->
+    <link rel="stylesheet" href="../css/common.css">
     <link rel="stylesheet" href="../css/flight-request.css">
+    <!-- 비자 관리 전용 스타일 -->
+    <style>
+        /* 비자 관리 페이지 전용 스타일 */
+        .visa-management-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .visa-status-section .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .admin-comment-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #e9ecef;
+        }
+        
+        .admin-comment-content {
+            background: white;
+            padding: 1rem;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .no-content-message {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .document-preview {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f8f9fa;
+            margin-top: 1rem;
+        }
+        
+        .document-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .receipts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .receipt-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+        }
+        
+        .receipt-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .receipt-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .save-indicator {
+            font-size: 0.875rem;
+            color: #28a745;
+        }
+        
+        .save-indicator.saving {
+            color: #ffc107;
+        }
+        
+        .last-updated {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+        
+        .upload-container {
+            position: relative;
+        }
+        
+        .upload-label {
+            display: block;
+            width: 100%;
+            padding: 2rem 1rem;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+        
+        .upload-label:hover {
+            border-color: #007bff;
+            background: #e3f2fd;
+        }
+        
+        .upload-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .upload-icon {
+            width: 2rem;
+            height: 2rem;
+            color: #6c757d;
+        }
+        
+        .upload-text {
+            font-weight: 500;
+            color: #495057;
+            margin: 0;
+        }
+        
+        .upload-hint {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin: 0;
+        }
+        
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        @media (max-width: 768px) {
+            .receipt-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .receipt-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
@@ -23,7 +183,7 @@
         <!-- 비자 발급 관리 페이지 -->
         <div id="visaManagementPage" class="page active">
             <!-- 헤더 -->
-            <header class="header">
+            <header class="header visa-management-header">
                 <div class="header-content">
                     <div class="user-info">
                         <h1 id="userWelcome">비자 발급 관리</h1>
@@ -43,9 +203,9 @@
                 <div id="mainContent">
                     
                     <!-- 1. 비자 발급 현황 섹션 -->
-                    <div class="form-section">
+                    <div class="form-section visa-status-section">
                         <h2 class="section-title">
-                            <i data-lucide="passport" class="section-icon"></i>
+                            <i data-lucide="book-open" class="section-icon"></i>
                             비자 발급 현황
                         </h2>
                         <p class="section-description">현재 비자 발급 진행 상황을 자유롭게 입력해주세요. 입력 후 자동으로 저장됩니다.</p>
@@ -295,9 +455,9 @@
     </script>
 
     <!-- 3단계: 비자 관리 모듈들 -->
-    <script src="../js/student/visa-management-api.js" async></script>
-    <script src="../js/student/visa-management-ui.js" async></script>
-    <script src="../js/student/visa-management.js" async></script>
+    <script src="../js/student/visa-management-api.js" defer></script>
+    <script src="../js/student/visa-management-ui.js" defer></script>
+    <script src="../js/student/visa-management.js" defer></script>
 
     <!-- 4단계: 초기화 시스템 -->
     <script>
