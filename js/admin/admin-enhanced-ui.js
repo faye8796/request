@@ -256,7 +256,8 @@ const AdminEnhancedUI = {
                 
                 // 통계 업데이트
                 studentGroup.statistics.totalItems++;
-                studentGroup.statistics.totalAmount += (application.price || 0);
+                const amount = application.final_purchase_amount ?? application.price ?? 0;
+                studentGroup.statistics.totalAmount += amount;
                 
                 // 상태별 통계
                 switch (application.status) {
@@ -1332,27 +1333,17 @@ const AdminEnhancedUI = {
         // admin-enhanced-ui.js - createApplicationItemHTML() 함수에서
         let receiptInfo = '';
 
-        // 🔧 학생 영수증과 관리자 영수증을 모두 확인
+        // 🔧 학생 영수증만 확인 (관리자 영수증은 별도 섹션에서 처리)
         const hasStudentReceipt = application.receipts && 
                                  application.receipts.length > 0 && 
                                  application.receipts[0].file_url;
-        const hasAdminReceipt = application.admin_receipt_url;
-        const hasReceipt = hasStudentReceipt || hasAdminReceipt;
 
-        if (hasReceipt) {
-            // 영수증 타입 구분
-            let receiptType = '';
-            if (hasAdminReceipt) {
-                receiptType = '관리자 등록';
-            } else if (hasStudentReceipt) {
-                receiptType = '학생 제출';
-            }
-
+        if (hasStudentReceipt) {
             receiptInfo = `
                 <div class="receipt-info submitted">
                     <span class="receipt-status">
                         <i data-lucide="check-circle"></i>
-                        영수증 ${receiptType}완료
+                        영수증 학생 제출완료
                     </span>
                     <button class="btn small secondary view-receipt-btn" 
                             data-request-id="${application.id}">

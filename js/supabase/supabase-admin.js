@@ -219,7 +219,7 @@ const SupabaseAdmin = {
             // 4. 구매완료된 신청들의 총액 (purchased 상태)
             const purchasedRequestsResult = await client
                 .from('requests')
-                .select('price')
+                .select('price', 'final_purchase_amount')
                 .eq('status', 'purchased');
 
             let totalApprovedBudget = 0;
@@ -272,7 +272,10 @@ const SupabaseAdmin = {
 
             // 구매완료된 신청들의 총액  
             const purchasedTotal = purchasedRequestsResult.data ?
-                purchasedRequestsResult.data.reduce((sum, request) => sum + (request.price || 0), 0) : 0;
+                purchasedRequestsResult.data.reduce((sum, request) => {
+                    const amount = request.final_purchase_amount ?? request.price ?? 0;
+                    return sum + amount;
+                }, 0) : 0;
 
             // 1인당 평균 예산
             const averagePerPerson = studentCount > 0 ? Math.round(totalApprovedBudget / studentCount) : 0;
