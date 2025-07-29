@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>비자 발급 관리 - 세종학당 문화인턴</title>
+    <link rel="stylesheet" href="../css/flight-request.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+    <!-- 로딩 상태 -->
+    <div id="globalLoadingState" class="global-loading-state">
+        <div class="spinner"></div>
+        <div class="loading-message">
+            <h3>비자 발급 관리 시스템을 준비하고 있습니다<span class="loading-dots"></span></h3>
+            <p>잠시만 기다려주세요.</p>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" style="display: none;">
+        <!-- 비자 발급 관리 페이지 -->
+        <div id="visaManagementPage" class="page active">
+            <!-- 헤더 -->
+            <header class="header">
+                <div class="header-content">
+                    <div class="user-info">
+                        <h1 id="userWelcome">비자 발급 관리</h1>
+                        <p id="userDetails">비자 발급 진행 상황을 관리하고 완료 문서를 업로드해주세요.</p>
+                    </div>
+                    <div class="header-actions">
+                        <button id="backToDashboard" class="btn secondary">
+                            <i data-lucide="arrow-left"></i>
+                            대시보드로 돌아가기
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="container">
+                <!-- 메인 컨텐츠 -->
+                <div id="mainContent">
+                    
+                    <!-- 1. 비자 발급 현황 섹션 -->
+                    <div class="form-section">
+                        <h2 class="section-title">
+                            <i data-lucide="passport" class="section-icon"></i>
+                            비자 발급 현황
+                        </h2>
+                        <p class="section-description">현재 비자 발급 진행 상황을 자유롭게 입력해주세요. 입력 후 자동으로 저장됩니다.</p>
+                        
+                        <div class="form-group">
+                            <label for="visaStatus" class="form-label">진행 현황</label>
+                            <textarea 
+                                id="visaStatus" 
+                                name="visaStatus" 
+                                class="form-textarea" 
+                                rows="4"
+                                placeholder="현재 비자 발급 진행 상황을 입력해주세요...&#10;예: 온라인 신청 완료, 서류 준비 중, 대사관 방문 예정 등"
+                            ></textarea>
+                            <div class="form-meta">
+                                <span id="statusLastUpdated" class="last-updated"></span>
+                                <span id="statusSaveIndicator" class="save-indicator"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. 관리자 코멘트 섹션 -->
+                    <div class="form-section">
+                        <h2 class="section-title">
+                            <i data-lucide="message-circle" class="section-icon"></i>
+                            관리자 코멘트
+                        </h2>
+                        <p class="section-description">관리자가 남긴 코멘트를 확인할 수 있습니다.</p>
+                        
+                        <div id="adminCommentContainer" class="admin-comment-container">
+                            <div id="noAdminComment" class="no-content-message">
+                                <i data-lucide="info"></i>
+                                <span>아직 관리자 코멘트가 없습니다.</span>
+                            </div>
+                            <div id="adminCommentContent" class="admin-comment-content" style="display: none;">
+                                <div class="comment-text" id="adminCommentText"></div>
+                                <div class="comment-meta">
+                                    <span id="adminCommentUpdated" class="comment-date"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. 비자 완료 문서 등록 섹션 -->
+                    <div class="form-section">
+                        <h2 class="section-title">
+                            <i data-lucide="file-check" class="section-icon"></i>
+                            비자 발급 완료 및 이미지 등록
+                        </h2>
+                        <p class="section-description">비자 발급이 완료되면 e-visa 문서 또는 여권 스캔본을 등록해주세요.</p>
+                        
+                        <div class="visa-document-section">
+                            <div class="upload-container">
+                                <input type="file" id="visaDocument" name="visaDocument" 
+                                       accept="image/*,.pdf" class="file-input">
+                                <label for="visaDocument" class="upload-label" id="visaDocumentLabel">
+                                    <div class="upload-content">
+                                        <i data-lucide="upload" class="upload-icon"></i>
+                                        <p class="upload-text">e-visa 문서 또는 여권 스캔본 등록</p>
+                                        <p class="upload-hint">이미지 또는 PDF 형식 (최대 10MB)</p>
+                                    </div>
+                                </label>
+                                
+                                <!-- 문서 미리보기 -->
+                                <div id="visaDocumentPreview" class="document-preview" style="display: none;">
+                                    <div class="preview-content">
+                                        <div id="imagePreviewContainer" class="image-preview-container" style="display: none;">
+                                            <img id="visaDocumentImage" src="" alt="비자 문서 미리보기" class="document-image">
+                                        </div>
+                                        <div id="pdfPreviewContainer" class="pdf-preview-container" style="display: none;">
+                                            <div class="pdf-info">
+                                                <i data-lucide="file-text"></i>
+                                                <div class="pdf-details">
+                                                    <p id="pdfFileName" class="file-name"></p>
+                                                    <p id="pdfFileSize" class="file-size"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="preview-actions">
+                                            <button type="button" id="removeVisaDocument" class="btn btn-danger btn-sm">
+                                                <i data-lucide="trash-2"></i>
+                                                삭제
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="upload-meta">
+                                        <span id="documentUploadDate" class="upload-date"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. 영수증 제출 섹션 -->
+                    <div class="form-section">
+                        <h2 class="section-title">
+                            <i data-lucide="receipt" class="section-icon"></i>
+                            영수증 제출
+                        </h2>
+                        <p class="section-description">비자 발급 과정에서 발생한 각종 수수료 영수증을 제출해주세요.</p>
+                        
+                        <div class="receipts-section">
+                            <!-- 영수증 목록 -->
+                            <div id="receiptsList" class="receipts-list">
+                                <!-- 동적으로 생성됨 -->
+                            </div>
+                            
+                            <!-- 영수증 추가 버튼 -->
+                            <div class="add-receipt-section">
+                                <button type="button" id="addReceiptBtn" class="btn btn-secondary">
+                                    <i data-lucide="plus"></i>
+                                    영수증 항목 추가
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 에러 메시지 -->
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+                <!-- 성공 메시지 -->
+                <div id="successMessage" class="success-message" style="display: none;"></div>
+
+                <!-- 로딩 인디케이터 -->
+                <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                    <div class="spinner"></div>
+                    <span>처리 중...</span>
+                </div>
+            </main>
+        </div>
+
+        <!-- 영수증 추가/편집 모달 -->
+        <div id="receiptModal" class="modal" style="display: none;">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="receiptModalTitle">영수증 추가</h2>
+                    <button type="button" class="modal-close" id="closeReceiptModal">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <form id="receiptForm">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="receiptTitle" class="form-label required">영수증 제목</label>
+                            <input type="text" id="receiptTitle" name="receiptTitle" class="form-input" 
+                                   placeholder="예: Sevis Fee 영수증, 대사관 인터뷰 수수료 등" required>
+                            <span class="form-hint">영수증의 내용을 간단히 설명해주세요</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="receiptFile" class="form-label required">영수증 파일</label>
+                            <div class="upload-container">
+                                <input type="file" id="receiptFile" name="receiptFile" 
+                                       accept="image/*,.pdf" class="file-input" required>
+                                <label for="receiptFile" class="upload-label">
+                                    <div class="upload-content">
+                                        <i data-lucide="upload" class="upload-icon"></i>
+                                        <p class="upload-text">클릭하여 영수증 업로드</p>
+                                        <p class="upload-hint">이미지 또는 PDF 형식 (최대 5MB)</p>
+                                    </div>
+                                </label>
+                                
+                                <!-- 파일 미리보기 -->
+                                <div id="receiptFilePreview" class="file-preview" style="display: none;">
+                                    <div class="file-info">
+                                        <i data-lucide="file-check"></i>
+                                        <div class="file-details">
+                                            <p id="receiptFileName" class="file-name"></p>
+                                            <p id="receiptFileSize" class="file-size"></p>
+                                        </div>
+                                    </div>
+                                    <button type="button" id="removeReceiptFile" class="remove-file">
+                                        <i data-lucide="x"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancelReceiptModal">취소</button>
+                        <button type="submit" class="btn btn-primary" id="saveReceiptBtn">
+                            <span id="saveReceiptBtnText">저장하기</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 파일 미리보기 모달 -->
+        <div id="filePreviewModal" class="modal" style="display: none;">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="previewModalTitle">파일 미리보기</h2>
+                    <button type="button" class="modal-close" id="closePreviewModal">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="previewContent" class="preview-content">
+                        <!-- 동적으로 생성됨 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="closePreviewBtn">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 모듈들 -->
+    <!-- 1단계: 기본 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/common/supabase-core.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/common/storage-utils.js"></script>
+
+    <!-- 2단계: 이벤트 버스 생성 -->
+    <script>
+        console.log('⚡ 비자 관리 시스템 이벤트 시스템 초기화...');
+        
+        // 전역 이벤트 버스 생성
+        window.moduleEventBus = {
+            events: new Map(),
+            emit(event, data) {
+                const listeners = this.events.get(event) || [];
+                listeners.forEach(listener => {
+                    try {
+                        listener(data);
+                    } catch (error) {
+                        console.warn(`Event listener error: ${event}`, error);
+                    }
+                });
+            },
+            on(event, listener) {
+                if (!this.events.has(event)) {
+                    this.events.set(event, []);
+                }
+                this.events.get(event).push(listener);
+            }
+        };
+        
+        console.log('✅ 이벤트 버스 준비 완료');
+    </script>
+
+    <!-- 3단계: 비자 관리 모듈들 -->
+    <script src="../js/student/visa-management-api.js" async></script>
+    <script src="../js/student/visa-management-ui.js" async></script>
+    <script src="../js/student/visa-management.js" async></script>
+
+    <!-- 4단계: 초기화 시스템 -->
+    <script>
+        console.log('🚀 비자 관리 시스템 초기화 시작');
+        
+        // 즉시 앱 표시
+        async function initializeVisaApp() {
+            const globalLoading = document.getElementById('globalLoadingState');
+            const app = document.getElementById('app');
+
+            if (globalLoading) globalLoading.style.display = 'none';
+            if (app) app.style.display = 'block';
+
+            // Lucide 아이콘 초기화
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            // 기본 네비게이션 설정
+            setupBasicNavigation();
+
+            try {
+                console.log('🔧 사용자 데이터 로드 및 초기화...');
+
+                // 사용자 데이터 로드
+                const userData = await loadUserData();
+                if (!userData) {
+                    throw new Error('사용자 데이터를 로드할 수 없습니다.');
+                }
+
+                // 사용자 정보 표시
+                displayUserInfo(userData);
+
+                console.log('✅ 비자 관리 시스템 초기화 완료');
+
+            } catch (error) {
+                console.error('❌ 비자 관리 시스템 초기화 실패:', error);
+                showErrorMessage('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+            }
+        }
+
+        // 사용자 데이터 로드
+        async function loadUserData() {
+            try {
+                const userDataStr = localStorage.getItem('currentStudent');
+                if (!userDataStr) {
+                    console.warn('⚠️ 사용자 데이터 없음');
+                    setTimeout(() => {
+                        window.location.href = '../index.html';
+                    }, 2000);
+                    return null;
+                }
+
+                const userData = JSON.parse(userDataStr);
+                if (!userData.id) {
+                    throw new Error('사용자 ID 없음');
+                }
+
+                console.log('✅ 사용자 데이터 로드 완료:', userData.name || userData.email);
+                return userData;
+
+            } catch (error) {
+                console.error('❌ 사용자 데이터 로드 실패:', error);
+                return null;
+            }
+        }
+
+        // 사용자 정보 표시
+        function displayUserInfo(userData) {
+            const welcomeEl = document.getElementById('userWelcome');
+            const detailsEl = document.getElementById('userDetails');
+
+            if (welcomeEl && userData.name) {
+                welcomeEl.textContent = `비자 발급 관리 - ${userData.name}님`;
+            }
+
+            if (detailsEl) {
+                detailsEl.textContent = `${userData.institute_name || ''}에서의 비자 발급 진행 상황을 관리하고 완료 문서를 업로드해주세요.`;
+            }
+        }
+
+        // 기본 네비게이션 설정
+        function setupBasicNavigation() {
+            const backBtn = document.getElementById('backToDashboard');
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
+                    window.location.href = 'dashboard.html';
+                });
+            }
+        }
+
+        // 에러 메시지 표시
+        function showErrorMessage(message) {
+            const errorEl = document.getElementById('errorMessage');
+            if (errorEl) {
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+                
+                setTimeout(() => {
+                    errorEl.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // 성공 메시지 표시
+        function showSuccessMessage(message) {
+            const successEl = document.getElementById('successMessage');
+            if (successEl) {
+                successEl.textContent = message;
+                successEl.style.display = 'block';
+                
+                setTimeout(() => {
+                    successEl.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // DOM 로드 완료 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM 로드 완료 - 비자 관리 시스템 초기화');
+            
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+            initializeVisaApp();
+        });
+
+        // DOM이 이미 로드된 경우를 위한 추가 처리
+        if (document.readyState !== 'loading') {
+            console.log('🚀 DOM 이미 로드됨 - 즉시 초기화 실행');
+            
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+            initializeVisaApp();
+        }
+
+        // 전역 에러 처리
+        window.addEventListener('error', function(event) {
+            console.error('전역 에러:', event.error);
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('미처리 Promise 거부:', event.reason);
+        });
+    </script>
+
+</body>
+</html>
