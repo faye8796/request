@@ -1,12 +1,12 @@
 /**
- * 비자 관리 시스템 UI 모듈 v1.0.0
- * UI 컴포넌트와 사용자 인터랙션을 담당
+ * 비자 관리 시스템 UI 모듈 v1.1.0
+ * UI 컴포넌트와 사용자 인터랙션을 담당 (아이콘 수정)
  */
 
 (function() {
     'use strict';
 
-    console.log('🎨 VisaManagementUI v1.0.0 로딩...');
+    console.log('🎨 VisaManagementUI v1.1.0 로딩...');
 
     class VisaManagementUI {
         constructor() {
@@ -164,7 +164,7 @@
             }
 
             // 저장 인디케이터 표시
-            this.showSaveIndicator('저장 중...');
+            this.showSaveIndicator('저장 중...', 'saving');
 
             // 1초 후 저장
             this.statusSaveTimeout = setTimeout(async () => {
@@ -616,8 +616,8 @@
                     this.showSuccessMessage('영수증이 성공적으로 추가되었습니다.');
                     
                     // 영수증 목록 새로고침
-                    if (window.visaManagement?.loadReceiptsList) {
-                        window.visaManagement.loadReceiptsList();
+                    if (window.visaManagement?.refreshReceiptsList) {
+                        await window.visaManagement.refreshReceiptsList();
                     }
                 } else {
                     throw new Error(result.error);
@@ -654,8 +654,8 @@
                     this.showSuccessMessage('영수증이 삭제되었습니다.');
                     
                     // 영수증 목록 새로고침
-                    if (window.visaManagement?.loadReceiptsList) {
-                        window.visaManagement.loadReceiptsList();
+                    if (window.visaManagement?.refreshReceiptsList) {
+                        await window.visaManagement.refreshReceiptsList();
                     }
                 } else {
                     throw new Error(result.error);
@@ -871,6 +871,6 @@
     // 전역에 UI 인스턴스 생성
     window.visaManagementUI = new VisaManagementUI();
 
-    console.log('✅ VisaManagementUI v1.0.0 로드 완료');
+    console.log('✅ VisaManagementUI v1.1.0 로드 완료');
 
 })();
