@@ -4,38 +4,325 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>비자 발급 관리 - 세종학당 문화인턴</title>
-    <!-- 기존 CSS 파일들 로드 -->
-    <link rel="stylesheet" href="../css/common.css">
-    <link rel="stylesheet" href="../css/flight-request.css">
-    <!-- 비자 관리 전용 스타일 -->
+    
+    <!-- 📱 완전한 자체 CSS 스타일 (flight-request.html 참고) -->
     <style>
-        /* 비자 관리 페이지 전용 스타일 */
-        .visa-management-header {
+        /* ===== 기본 리셋 및 공통 스타일 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+            overflow-x: hidden;
+        }
+
+        /* ===== 로딩 상태 ===== */
+        .global-loading-state {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+        }
+
+        .global-loading-state .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 2rem;
+        }
+
+        .loading-message h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .loading-message p {
+            font-size: 1rem;
+            opacity: 0.9;
+            text-align: center;
+        }
+
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        /* ===== 앱 컨테이너 ===== */
+        #app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page {
+            display: none;
+            flex: 1;
+        }
+
+        .page.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===== 헤더 ===== */
+        .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 2rem 0;
-            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
         }
-        
-        .visa-status-section .form-textarea {
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" patternUnits="userSpaceOnUse" width="100" height="100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .user-info h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-info p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            max-width: 600px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* ===== 버튼 스타일 ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            line-height: 1.4;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* ===== 컨테이너 ===== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            flex: 1;
+        }
+
+        /* ===== 폼 섹션 ===== */
+        .form-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .section-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            color: #667eea;
+        }
+
+        .section-description {
+            color: #6c757d;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        /* ===== 폼 컨트롤 ===== */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #dc3545;
+        }
+
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-textarea {
             min-height: 120px;
             resize: vertical;
+            font-family: inherit;
         }
-        
+
+        .form-hint {
+            display: block;
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+
+        .form-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+
+        .last-updated {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .save-indicator {
+            font-size: 0.85rem;
+            color: #28a745;
+            font-weight: 500;
+        }
+
+        .save-indicator.saving {
+            color: #ffc107;
+        }
+
+        /* ===== 관리자 코멘트 ===== */
         .admin-comment-container {
             background: #f8f9fa;
             border-radius: 8px;
             padding: 1.5rem;
             border: 1px solid #e9ecef;
         }
-        
+
         .admin-comment-content {
             background: white;
-            padding: 1rem;
+            padding: 1.5rem;
             border-radius: 6px;
             border-left: 4px solid #007bff;
         }
-        
+
         .no-content-message {
             display: flex;
             align-items: center;
@@ -43,67 +330,22 @@
             color: #6c757d;
             font-style: italic;
         }
-        
-        .document-preview {
-            border: 2px dashed #dee2e6;
-            border-radius: 8px;
-            padding: 1rem;
-            background: #f8f9fa;
-            margin-top: 1rem;
+
+        .comment-text {
+            line-height: 1.6;
+            margin-bottom: 1rem;
         }
-        
-        .document-image {
-            max-width: 100%;
-            max-height: 300px;
-            border-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        
-        .receipts-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        .receipt-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            background: white;
-        }
-        
-        .receipt-info {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        
-        .receipt-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
-        .save-indicator {
-            font-size: 0.875rem;
-            color: #28a745;
-        }
-        
-        .save-indicator.saving {
-            color: #ffc107;
-        }
-        
-        .last-updated {
-            font-size: 0.875rem;
+
+        .comment-meta {
+            font-size: 0.85rem;
             color: #6c757d;
         }
-        
+
+        /* ===== 파일 업로드 ===== */
         .upload-container {
             position: relative;
         }
-        
+
         .upload-label {
             display: block;
             width: 100%;
@@ -115,56 +357,379 @@
             transition: all 0.3s ease;
             background: #f8f9fa;
         }
-        
+
         .upload-label:hover {
-            border-color: #007bff;
+            border-color: #667eea;
             background: #e3f2fd;
         }
-        
+
         .upload-content {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .upload-icon {
             width: 2rem;
             height: 2rem;
             color: #6c757d;
         }
-        
+
         .upload-text {
             font-weight: 500;
             color: #495057;
             margin: 0;
         }
-        
+
         .upload-hint {
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             color: #6c757d;
             margin: 0;
         }
-        
+
         .file-input {
             position: absolute;
             opacity: 0;
             pointer-events: none;
         }
-        
+
+        /* ===== 문서 미리보기 ===== */
+        .document-preview {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f8f9fa;
+            margin-top: 1rem;
+        }
+
+        .document-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-content {
+            margin-bottom: 1rem;
+        }
+
+        .image-preview-container, .pdf-preview-container {
+            text-align: center;
+        }
+
+        .pdf-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 2rem;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .pdf-details .file-name {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .pdf-details .file-size {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .preview-actions {
+            text-align: center;
+        }
+
+        .upload-meta {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .upload-date {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        /* ===== 영수증 목록 ===== */
+        .receipts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .receipt-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .receipt-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .receipt-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .add-receipt-section {
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        /* ===== 모달 ===== */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1050;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            position: relative;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-large {
+            max-width: 900px;
+        }
+
+        .modal-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-body {
+            padding: 2rem;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 1rem 2rem;
+            border-top: 1px solid #dee2e6;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            background: #f8f9fa;
+        }
+
+        /* ===== 파일 미리보기 ===== */
+        .file-preview {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .file-details .file-name {
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 0.25rem;
+        }
+
+        .file-details .file-size {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .remove-file {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .remove-file:hover {
+            background: #c82333;
+        }
+
+        /* ===== 메시지 ===== */
+        .error-message, .success-message {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .success-message {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        /* ===== 로딩 인디케이터 ===== */
+        .loading-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .loading-indicator .spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* ===== 반응형 디자인 ===== */
         @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .user-info h1 {
+                font-size: 2rem;
+            }
+
+            .header-actions {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .form-section {
+                padding: 1.5rem;
+            }
+
             .receipt-item {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 1rem;
             }
-            
+
             .receipt-actions {
                 width: 100%;
                 justify-content: flex-end;
             }
+
+            .modal-content {
+                width: 95%;
+            }
+
+            .modal-header, .modal-body, .modal-footer {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .section-title {
+                font-size: 1.25rem;
+            }
+
+            .upload-label {
+                padding: 1.5rem 0.5rem;
+            }
+        }
+
+        /* ===== 비자 관리 전용 추가 스타일 ===== */
+        .visa-management-header {
+            background: linear-gradient(135deg, #6a5acd 0%, #9370db 100%);
+        }
+
+        .required-mark {
+            color: #dc3545;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
         }
     </style>
+
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
