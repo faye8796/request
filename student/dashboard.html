@@ -406,17 +406,19 @@
             // 🆕 v9.3.1 개별 기능 활성화 확인 함수
             checkIndividualFeatureAccess(featureName) {
                 if (!this.studentData) return false;
-                
+
                 switch(featureName) {
                     case 'flight_request':
                         return this.studentData.individual_flight_request_enabled === true;
                     case 'equipment_request':
                         return this.studentData.individual_equipment_request_enabled === true;
+                    case 'visa_management':
+                        return this.studentData.individual_visa_management_enabled === true;
                     default:
                         return false;
                 }
             },
-
+            
             // 상태 업데이트 (무한루프 해결)
             updateStatus(moduleKey, isLoaded) {
                 const module = this.modules[moduleKey];
@@ -558,7 +560,8 @@
                     { feature_name: 'exam', feature_title: '수료평가', is_active: false, display_order: 3 },
                     { feature_name: 'passport_info', feature_title: '여권정보 등록', is_active: true, display_order: 4 },
                     { feature_name: 'flight_request', feature_title: '항공권 구매 신청', is_active: true, display_order: 5 },
-                    { feature_name: 'equipment_request', feature_title: '문화교구 신청', is_active: false, display_order: 6 }
+                    { feature_name: 'equipment_request', feature_title: '문화교구 신청', is_active: false, display_order: 6 },
+                    { feature_name: 'visa_management', feature_title: '비자 발급 관리', is_active: false, display_order: 7 }
                 ];
             },
 
@@ -580,11 +583,15 @@
                         
                         // 🆕 v9.3.2 개별 활성화 정보 표시 (테스트 사용자 메시지 제거)
                         const individualFeatures = [];
+
                         if (this.checkIndividualFeatureAccess('flight_request')) {
                             individualFeatures.push('항공권 신청');
                         }
                         if (this.checkIndividualFeatureAccess('equipment_request')) {
                             individualFeatures.push('교구 신청');
+                        }
+                        if (this.checkIndividualFeatureAccess('visa_management')) {
+                            individualFeatures.push('비자 관리');
                         }
                         if (individualFeatures.length > 0) {
                             detailsDisplay += ` (개별 활성화: ${individualFeatures.join(', ')})`;
@@ -683,14 +690,6 @@
                         buttonText: '응시하기',
                         buttonIcon: 'play'
                     },
-                    'passport_info': {
-                        icon: 'credit-card',
-                        title: '여권정보 등록',
-                        description: '항공권 신청을 위한 여권 정보를 등록하고 관리할 수 있습니다.',
-                        url: './passport-info.html',
-                        buttonText: '등록하기',
-                        buttonIcon: 'arrow-right'
-                    },
                     'flight_request': {
                         icon: 'plane',
                         title: '항공권 구매 신청',
@@ -705,6 +704,14 @@
                         description: '문화 수업에 필요한 교구를 신청하고 관리할 수 있습니다.',
                         url: './equipment-request.html',
                         buttonText: '신청하기',
+                        buttonIcon: 'arrow-right'
+                    },
+                    'visa_management': {
+                        icon: 'passport',
+                        title: '비자 발급 관리',
+                        description: '비자 발급 현황 관리 및 관리자 코멘트를 확인할 수 있습니다.',
+                        url: './visa-management.html',
+                        buttonText: '관리하기',
                         buttonIcon: 'arrow-right'
                     }
                 };
@@ -783,6 +790,9 @@
                     if (this.checkIndividualFeatureAccess('equipment_request')) {
                         individualFeatures.push('교구 신청');
                     }
+                    if (this.checkIndividualFeatureAccess('visa_management')) {
+                        individualFeatures.push('비자 관리');
+                    }                    
                     if (individualFeatures.length > 0) {
                         statusMessage += `<br>✅ 활성화된 개별 기능: ${individualFeatures.join(', ')}`;
                     } else {
@@ -839,7 +849,8 @@
                     isTestUser: this.isTestUser(), // 항상 false
                     individualAccess: {
                         flight_request: this.checkIndividualFeatureAccess('flight_request'),
-                        equipment_request: this.checkIndividualFeatureAccess('equipment_request')
+                        equipment_request: this.checkIndividualFeatureAccess('equipment_request'),
+                        visa_management: this.checkIndividualFeatureAccess('visa_management')
                     },
                     version: 'v9.3.2 - 테스트 사용자 특권 제거'
                 };
