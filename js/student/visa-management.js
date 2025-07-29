@@ -1,12 +1,12 @@
 /**
- * 비자 관리 시스템 메인 모듈 v1.0.0
- * 전체 시스템을 조정하고 데이터 로딩을 담당
+ * 비자 관리 시스템 메인 모듈 v1.1.0
+ * 전체 시스템을 조정하고 데이터 로딩을 담당 (API 초기화 대기 개선)
  */
 
 (function() {
     'use strict';
 
-    console.log('🚀 VisaManagement v1.0.0 로딩...');
+    console.log('🚀 VisaManagement v1.1.0 로딩...');
 
     class VisaManagement {
         constructor() {
@@ -25,6 +25,9 @@
                 // 의존성 체크
                 await this.checkDependencies();
 
+                // API 초기화 대기
+                await this.waitForAPIInitialization();
+
                 // 사용자 데이터 로드
                 await this.loadUserData();
 
@@ -42,7 +45,7 @@
 
         // 의존성 체크
         async checkDependencies() {
-            const maxAttempts = 10;
+            const maxAttempts = 15;
             let attempts = 0;
 
             return new Promise((resolve, reject) => {
@@ -56,8 +59,57 @@
                     } else if (attempts >= maxAttempts) {
                         clearInterval(checkInterval);
                         reject(new Error('의존성 모듈 로드 실패'));
+                    } else {
+                        console.log(`⏳ 의존성 모듈 대기 중... (${attempts}/${maxAttempts})`);
                     }
-                }, 100);
+                }, 200);
+            });
+        }
+
+        // API 초기화 대기
+        async waitForAPIInitialization() {
+            const maxAttempts = 20;
+            let attempts = 0;
+
+            return new Promise((resolve, reject) => {
+                const checkInterval = setInterval(async () => {
+                    attempts++;
+
+                    try {
+                        if (window.visaManagementAPI?.initPromise) {
+                            console.log('🔄 API 초기화 대기 중...');
+                            const initialized = await window.visaManagementAPI.initPromise;
+                            
+                            if (initialized) {
+                                clearInterval(checkInterval);
+                                console.log('✅ API 초기화 완료');
+                                resolve();
+                                return;
+                            }
+                        }
+
+                        // 직접 초기화 상태 확인
+                        if (window.visaManagementAPI?.supabase && window.visaManagementAPI?.currentUser) {
+                            clearInterval(checkInterval);
+                            console.log('✅ API 이미 초기화됨');
+                            resolve();
+                            return;
+                        }
+
+                        if (attempts >= maxAttempts) {
+                            clearInterval(checkInterval);
+                            reject(new Error('API 초기화 시간 초과'));
+                        }
+
+                    } catch (error) {
+                        console.warn(`⚠️ API 초기화 확인 중 오류 (${attempts}):`, error);
+                        
+                        if (attempts >= maxAttempts) {
+                            clearInterval(checkInterval);
+                            reject(new Error('API 초기화 실패'));
+                        }
+                    }
+                }, 300);
             });
         }
 
@@ -441,6 +493,6 @@
         setTimeout(initializeVisaManagement, 100);
     }
 
-    console.log('✅ VisaManagement v1.0.0 로드 완료');
+    console.log('✅ VisaManagement v1.1.0 로드 완료');
 
 })();
