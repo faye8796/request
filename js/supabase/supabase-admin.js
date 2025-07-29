@@ -331,6 +331,9 @@ const SupabaseAdmin = {
                     updated_at,
                     reviewed_at,
                     reviewed_by,
+                    admin_receipt_url,         
+                    final_purchase_amount,    
+                    admin_purchase_date,   
                     user_profiles:user_id (
                         name,
                         field,

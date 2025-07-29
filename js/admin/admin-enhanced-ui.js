@@ -1329,7 +1329,9 @@ const AdminEnhancedUI = {
         // v4.3 구매 관련 정보 표시
         const purchaseInfoHTML = this.createPurchaseInfoHTML(application);
         
-        // 영수증 관련 표시 (개선된 버전)
+        // admin-enhanced-ui.js - createApplicationItemHTML() 함수에서
+        // 기존 receiptInfo 변수는 그대로 두고, 조건만 수정
+
         let receiptInfo = '';
         const hasReceipt = application.receipt_url || application.admin_receipt_url;
 
@@ -1356,6 +1358,7 @@ const AdminEnhancedUI = {
                 </div>
             `;
         }
+
 
         // 🆕 관리자 영수증 정보 표시 (v11.1.0)
         let adminReceiptInfo = '';
