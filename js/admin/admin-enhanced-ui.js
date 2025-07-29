@@ -1330,17 +1330,29 @@ const AdminEnhancedUI = {
         const purchaseInfoHTML = this.createPurchaseInfoHTML(application);
         
         // admin-enhanced-ui.js - createApplicationItemHTML() 함수에서
-        // 기존 receiptInfo 변수는 그대로 두고, 조건만 수정
-
         let receiptInfo = '';
-        const hasReceipt = application.receipt_url || application.admin_receipt_url;
+
+        // 🔧 학생 영수증과 관리자 영수증을 모두 확인
+        const hasStudentReceipt = application.receipts && 
+                                 application.receipts.length > 0 && 
+                                 application.receipts[0].file_url;
+        const hasAdminReceipt = application.admin_receipt_url;
+        const hasReceipt = hasStudentReceipt || hasAdminReceipt;
 
         if (hasReceipt) {
+            // 영수증 타입 구분
+            let receiptType = '';
+            if (hasAdminReceipt) {
+                receiptType = '관리자 등록';
+            } else if (hasStudentReceipt) {
+                receiptType = '학생 제출';
+            }
+
             receiptInfo = `
                 <div class="receipt-info submitted">
                     <span class="receipt-status">
                         <i data-lucide="check-circle"></i>
-                        영수증 ${application.admin_receipt_url ? '등록' : '제출'}완료
+                        영수증 ${receiptType}완료
                     </span>
                     <button class="btn small secondary view-receipt-btn" 
                             data-request-id="${application.id}">

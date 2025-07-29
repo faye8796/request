@@ -338,6 +338,11 @@ const SupabaseAdmin = {
                         name,
                         field,
                         sejong_institute
+                    ),
+                    receipts!receipts_request_id_fkey (
+                        file_url,
+                        uploaded_at,
+                        verified
                     )
                 `)
                 .order('created_at', { ascending: false });
