@@ -558,10 +558,9 @@
                     { feature_name: 'institute_info', feature_title: '파견학당 정보', is_active: true, display_order: 1 },
                     { feature_name: 'domestic_program', feature_title: '국내교육 프로그램 안내', is_active: false, display_order: 2 },
                     { feature_name: 'exam', feature_title: '수료평가', is_active: false, display_order: 3 },
-                    { feature_name: 'passport_info', feature_title: '여권정보 등록', is_active: true, display_order: 4 },
-                    { feature_name: 'flight_request', feature_title: '항공권 구매 신청', is_active: true, display_order: 5 },
-                    { feature_name: 'equipment_request', feature_title: '문화교구 신청', is_active: false, display_order: 6 },
-                    { feature_name: 'visa_management', feature_title: '비자 발급 관리', is_active: false, display_order: 7 }
+                    { feature_name: 'flight_request', feature_title: '항공권 구매 신청', is_active: true, display_order: 4 },
+                    { feature_name: 'equipment_request', feature_title: '문화교구 신청', is_active: false, display_order: 5 },
+                    { feature_name: 'visa_management', feature_title: '비자 발급 관리', is_active: false, display_order: 6 }
                 ];
             },
 
@@ -583,7 +582,6 @@
                         
                         // 🆕 v9.3.2 개별 활성화 정보 표시 (테스트 사용자 메시지 제거)
                         const individualFeatures = [];
-
                         if (this.checkIndividualFeatureAccess('flight_request')) {
                             individualFeatures.push('항공권 신청');
                         }
@@ -792,7 +790,8 @@
                     }
                     if (this.checkIndividualFeatureAccess('visa_management')) {
                         individualFeatures.push('비자 관리');
-                    }                    
+                    }
+
                     if (individualFeatures.length > 0) {
                         statusMessage += `<br>✅ 활성화된 개별 기능: ${individualFeatures.join(', ')}`;
                     } else {
@@ -851,6 +850,7 @@
                         flight_request: this.checkIndividualFeatureAccess('flight_request'),
                         equipment_request: this.checkIndividualFeatureAccess('equipment_request'),
                         visa_management: this.checkIndividualFeatureAccess('visa_management')
+
                     },
                     version: 'v9.3.2 - 테스트 사용자 특권 제거'
                 };

@@ -1,1877 +1,1288 @@
-// 관리자 향상된 UI 모듈 v4.3.3 - 구매 완료 버튼 버그 수정
-// admin-addon.js 기능을 새로운 모듈 구조로 통합
-// v4.3 requests 테이블 구조 변경 완전 호환
-// v4.3.3 수정: 구매 완료 버튼이 올바른 모듈 경로로 함수 호출하도록 수정
+// 🔐 SupabaseAdmin - 관리자 전용 기능 모듈
+// 세종학당 문화인턴 지원 시스템 - 관리자 시스템용 API
+// v5.2.0 - 기능 설정 관리 추가 (getFeatureSettings, updateFeatureSetting)
 
-const AdminEnhancedUI = {
-    // 캐시 및 상태 관리
-    groupedApplicationsCache: null,
-    shippingInfoCache: new Map(),
-    currentSearchTerm: '',
-    isInitialized: false,
+/**
+ * 관리자 전용 Supabase API 모듈
+ * SupabaseCore에 의존하여 관리자 전용 기능들을 제공합니다.
+ * 
+ * 주요 기능:
+ * - 🔐 관리자 인증 관리
+ * - 📊 통계 및 대시보드 데이터
+ * - 📚 수업계획 승인/반려 시스템
+ * - 💰 예산 관리 시스템 (v4.3.1 하드코딩 제거)
+ * - 📦 교구신청 관리 시스템
+ * - 📄 영수증 관리 시스템
+ * - ⚙️ 시스템 설정 관리
+ * - 🆕 기능 설정 관리 (v5.2.0)
+ * 
+ * 🔧 v4.3.1 - 하드코딩된 예산 설정 기본값 완전 제거, 100% DB 기반
+ * 🔧 v4.3.2 - 영수증 보기 기능 추가 (getReceiptByRequestId)
+ * 🆕 v5.2.0 - 기능 설정 관리 추가 (getFeatureSettings, updateFeatureSetting)
+ */
+
+const SupabaseAdmin = {
+    // SupabaseCore 참조
+    get core() {
+        if (!window.SupabaseCore) {
+            throw new Error('SupabaseCore가 로드되지 않았습니다. supabase-core.js를 먼저 로드해주세요.');
+        }
+        return window.SupabaseCore;
+    },
+
+    // ===================
+    // 🔐 관리자 인증
+    // ===================
+    
+    /**
+     * 관리자 인증
+     * @param {string} code - 관리자 코드
+     * @returns {Promise<Object>} 인증 결과
+     */
+    async authenticateAdmin(code) {
+        try {
+            console.log('🔐 관리자 인증 시작...');
+            
+            if (!window.CONFIG?.APP?.ADMIN_CODE) {
+                return { success: false, message: '관리자 코드 설정이 없습니다.' };
+            }
+
+            if (code !== window.CONFIG.APP.ADMIN_CODE) {
+                return { success: false, message: '관리자 코드가 올바르지 않습니다.' };
+            }
+
+            const result = await this.core.safeApiCall('관리자 인증', async () => {
+                const client = await this.core.ensureClient();
+                
+                const { data, error } = await client
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('user_type', 'admin');
+
+                if (error) {
+                    return { data: null, error };
+                }
+
+                const admin = data && data.length > 0 ? data[0] : null;
+                return { data: admin, error: null };
+            });
+
+            if (result.success) {
+                let adminUser = result.data;
+                if (!adminUser) {
+                    // 관리자 계정이 없으면 생성
+                    const createResult = await this.core.safeApiCall('관리자 계정 생성', async () => {
+                        const client = await this.core.ensureClient();
+                        
+                        return await client
+                            .from('user_profiles')
+                            .insert([{
+                                email: 'admin@sejong.or.kr',
+                                name: '관리자',
+                                user_type: 'admin'
+                            }])
+                            .select();
+                    });
+
+                    if (createResult.success && createResult.data && createResult.data.length > 0) {
+                        adminUser = createResult.data[0];
+                    } else {
+                        return { success: false, message: '관리자 계정 생성 실패' };
+                    }
+                }
+
+                // SupabaseCore에 현재 사용자 설정
+                this.core.setCurrentUser(adminUser, 'admin');
+                
+                console.log('✅ 관리자 인증 성공');
+                return { success: true, data: adminUser };
+            }
+
+            return result;
+            
+        } catch (error) {
+            console.error('❌ 관리자 인증 오류:', error);
+            return { success: false, message: this.core.getErrorMessage(error) };
+        }
+    },
+
+    // ===================
+    // 📊 통계 및 대시보드
+    // ===================
+    
+    /**
+     * 전체 통계 데이터 조회
+     * @returns {Promise<Object>} 통계 데이터
+     */
+    async getStats() {
+        console.log('📊 전체 통계 데이터 조회...');
+        
+        const result = await this.core.safeApiCall('통계 데이터 조회', async () => {
+            const client = await this.core.ensureClient();
+            
+            // 전체 학생 수
+            const totalStudentsResult = await client
+                .from('user_profiles')
+                .select('id', { count: 'exact' })
+                .eq('user_type', 'student');
+
+            // 신청자 수 (최소 1개 이상 신청한 학생)
+            const applicantsResult = await client
+                .from('requests')
+                .select('user_id', { count: 'exact' })
+                .not('user_id', 'is', null);
+
+            // 대기 중인 신청 건수
+            const pendingResult = await client
+                .from('requests')
+                .select('id', { count: 'exact' })
+                .eq('status', 'pending');
+
+            // 승인된 신청 건수
+            const approvedResult = await client
+                .from('requests')
+                .select('id', { count: 'exact' })
+                .eq('status', 'approved');
+
+            // 구매완료 신청 건수
+            const purchasedResult = await client
+                .from('requests')
+                .select('id', { count: 'exact' })
+                .eq('status', 'purchased');
+
+            if (totalStudentsResult.error) throw totalStudentsResult.error;
+            if (applicantsResult.error) throw applicantsResult.error;
+            if (pendingResult.error) throw pendingResult.error;
+            if (approvedResult.error) throw approvedResult.error;
+            if (purchasedResult.error) throw purchasedResult.error;
+
+            // 신청자 수 계산 (중복 제거)
+            const uniqueApplicants = new Set();
+            if (applicantsResult.data) {
+                applicantsResult.data.forEach(item => {
+                    if (item.user_id) uniqueApplicants.add(item.user_id);
+                });
+            }
+
+            return {
+                data: {
+                    totalStudents: totalStudentsResult.count || 0,
+                    applicantCount: uniqueApplicants.size,
+                    pendingCount: pendingResult.count || 0,
+                    approvedCount: approvedResult.count || 0,
+                    purchasedCount: purchasedResult.count || 0
+                },
+                error: null
+            };
+        });
+
+        return result.success ? result.data : {
+            totalStudents: 0,
+            applicantCount: 0,
+            pendingCount: 0,
+            approvedCount: 0,
+            purchasedCount: 0
+        };
+    },
 
     /**
-     * 관리자 영수증 보기 이벤트 설정 (v11.1.0)
+     * 예산 현황 통계 조회
+     * @returns {Promise<Object>} 예산 현황 데이터
      */
-    setupAdminReceiptEvents: function() {
-        // 관리자 영수증 보기 버튼 이벤트
-        document.addEventListener('click', (e) => {
-            if (e.target.matches('.view-admin-receipt-btn') || 
-                e.target.closest('.view-admin-receipt-btn')) {
-                
-                const button = e.target.closest('.view-admin-receipt-btn');
-                const receiptUrl = button.getAttribute('data-receipt-url');
-                
-                if (receiptUrl) {
-                    // 기존 영수증 보기 모달 재사용 또는 새 창에서 열기
-                    if (window.AdminManager && 
-                        window.AdminManager.Modals && 
-                        typeof window.AdminManager.Modals.showImageModal === 'function') {
-                        window.AdminManager.Modals.showImageModal(receiptUrl, '관리자 구매 영수증');
-                    } else {
-                        // 폴백: 새 창에서 열기
-                        window.open(receiptUrl, '_blank');
-                    }
-                }
-            }
-        });
-    },
-    
-    
-    // 모듈 초기화
-    init() {
-        if (this.isInitialized) {
-            console.log('⚠️ AdminEnhancedUI가 이미 초기화됨');
-            return;
-        }
-        console.log('🎨 AdminEnhancedUI v4.3.3 초기화 시작 (구매 완료 버튼 버그 수정)');
+    async getBudgetOverviewStats() {
+        console.log('💰 예산 현황 통계 계산 시작...');
         
         try {
-            // 기존 AdminManager와 협업하는 방식으로 초기화
-            this.enhanceExistingFunctions();
-            this.setupEnhancedEventListeners();
+            const client = await this.core.ensureClient();
             
-            // 🆕 관리자 영수증 이벤트 설정 (v11.1.0)
-            this.setupAdminReceiptEvents();
-            
-            this.isInitialized = true;
-            console.log('✅ AdminEnhancedUI v4.3.3 초기화 완료 (관리자 영수증 지원 추가)');
-        } catch (error) {
-            console.error('❌ AdminEnhancedUI 초기화 실패:', error);
-        }
-    },
-
-    // 기존 함수들을 확장하는 방식 (오버라이드 대신)
-    enhanceExistingFunctions() {
-        console.log('🔧 기존 AdminManager 함수들 확장 중...');
-        
-        try {
-            if (window.AdminManager) {
-                // loadApplications 함수를 감싸서 확장
-                if (AdminManager.loadApplications) {
-                    const originalLoadApplications = AdminManager.loadApplications.bind(AdminManager);
-                    AdminManager.loadApplications = async (...args) => {
-                        try {
-                            // 원본 함수 실행
-                            await originalLoadApplications(...args);
-                            // 향상된 기능 추가
-                            await this.loadApplicationsWithShipping();
-                        } catch (error) {
-                            console.error('❌ loadApplications 확장 실패:', error);
-                        }
-                    };
-                }
-
-                // renderApplications 함수를 감싸서 확장
-                if (AdminManager.renderApplications) {
-                    const originalRenderApplications = AdminManager.renderApplications.bind(AdminManager);
-                    AdminManager.renderApplications = (applications) => {
-                        try {
-                            // 향상된 UI로 렌더링
-                            this.renderGroupedApplications(applications);
-                        } catch (error) {
-                            console.error('❌ renderApplications 확장 실패:', error);
-                            // 폴백으로 원본 함수 실행
-                            originalRenderApplications(applications);
-                        }
-                    };
-                }
-
-                console.log('✅ AdminManager 함수 확장 완료');
-            }
-        } catch (error) {
-            console.error('❌ AdminManager 함수 확장 실패:', error);
-        }
-    },
-
-    // 향상된 이벤트 리스너 설정
-    setupEnhancedEventListeners() {
-        console.log('🔧 향상된 이벤트 리스너 설정 시작');
-
-        try {
-            // 검색 기능 향상 (debounce 적용)
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                // 기존 이벤트 리스너 제거 후 새로 설정
-                const newSearchInput = searchInput.cloneNode(true);
-                searchInput.parentNode.replaceChild(newSearchInput, searchInput);
-                
-                newSearchInput.addEventListener('input', this.debounce((e) => {
-                    this.handleEnhancedSearch(e.target.value);
-                }, 300));
-            }
-
-            console.log('✅ 향상된 이벤트 리스너 설정 완료');
-        } catch (error) {
-            console.error('❌ 이벤트 리스너 설정 실패:', error);
-        }
-    },
-
-    // 향상된 검색 처리
-    handleEnhancedSearch(searchTerm) {
-        console.log('🔍 향상된 검색:', searchTerm);
-        
-        try {
-            this.currentSearchTerm = searchTerm.trim();
-            
-            // AdminManager의 currentSearchTerm 동기화
-            if (window.AdminManager) {
-                AdminManager.currentSearchTerm = this.currentSearchTerm;
-            }
-            
-            // 향상된 검색으로 데이터 다시 로드 (비동기 에러 처리 강화)
-            this.loadApplicationsWithShipping().catch(error => {
-                console.error('❌ 검색 중 오류:', error);
-            });
-        } catch (error) {
-            console.error('❌ 검색 처리 실패:', error);
-        }
-    },
-
-    // 배송지 정보 포함하여 신청 내역 로드 (에러 처리 강화)
-    async loadApplicationsWithShipping() {
-        try {
-            console.log('📦 배송지 정보 포함하여 신청 내역 로드 시작 (v4.3.3)');
-            
-            if (!window.SupabaseAPI || typeof window.SupabaseAPI.searchApplications !== 'function') {
-                console.warn('⚠️ SupabaseAPI.searchApplications를 찾을 수 없음');
-                return;
-            }
-            
-            // 기존 방식으로 신청 내역 가져오기 (타임아웃 설정)
-            const applications = await Promise.race([
-                SupabaseAPI.searchApplications(this.currentSearchTerm),
-                new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('검색 타임아웃')), 10000)
-                )
-            ]);
-            
-            // 학생별로 그룹화
-            const groupedApplications = this.groupApplicationsByStudent(applications);
-            
-            // 배송지 정보 로드 (에러 발생시 계속 진행)
-            try {
-                await this.loadShippingInfoForStudents(groupedApplications);
-            } catch (shippingError) {
-                console.warn('⚠️ 배송지 정보 로드 실패, 계속 진행:', shippingError);
-            }
-            
-            // 🆕 여기에 추가
-            // 예산 정보 로드 (에러 발생시 계속 진행)
-            try {
-                await this.loadBudgetInfoForStudents(groupedApplications);
-            } catch (budgetError) {
-                console.warn('⚠️ 예산 정보 로드 실패, 계속 진행:', budgetError);
-            }
-
-            
-            // 그룹화된 데이터 캐시
-            this.groupedApplicationsCache = groupedApplications;
-            
-            // 학생별 그룹화 렌더링
-            this.renderGroupedApplications(groupedApplications);
-            
-            console.log('✅ 배송지 정보 포함 신청 내역 로드 완료 (v4.3.3)');
-            
-        } catch (error) {
-            console.error('❌ 배송지 정보 포함 신청 내역 로드 실패:', error);
-
-            // 실패시 기본 렌더링으로 폴백
-            try {
-                if (window.AdminManager && typeof AdminManager.renderApplications === 'function') {
-                    console.log('🔄 기본 렌더링으로 폴백');
-                    const applications = await SupabaseAPI.searchApplications(this.currentSearchTerm);
-                    this.renderBasicApplications(applications);
-                }
-            } catch (fallbackError) {
-                console.error('❌ 폴백 렌더링도 실패:', fallbackError);
-            }
-        }
-    },
-
-    // 학생별로 신청 내역 그룹화 (v4.3 최적화)
-    groupApplicationsByStudent(applications) {
-        console.log('👥 학생별 신청 내역 그룹화 시작 (v4.3):', applications.length, '건');
-        
-        try {
-            const groupedData = new Map();
-            
-            applications.forEach(application => {
-                const userId = application.user_profiles?.id || application.user_id;
-                const userKey = userId || 'unknown';
-                
-                if (!groupedData.has(userKey)) {
-                    // 학생 정보 설정
-                    const userProfile = application.user_profiles || {};
-                    
-                    groupedData.set(userKey, {
-                        studentId: userId,
-                        studentInfo: {
-                            name: userProfile.name || '알 수 없음',
-                            sejong_institute: userProfile.sejong_institute || '미설정',
-                            field: userProfile.field || '미설정',
-                            email: userProfile.email || '',
-                            phone: userProfile.phone || ''
-                        },
-                        shippingInfo: null, // 별도로 로드됨
-                        applications: [],
-                        statistics: {
-                            totalItems: 0,
-                            totalAmount: 0,
-                            pendingCount: 0,
-                            approvedCount: 0,
-                            rejectedCount: 0,
-                            purchasedCount: 0,
-                            // v4.3 신청 타입별 통계 추가
-                            onlineSingleCount: 0,
-                            onlineBundleCount: 0,
-                            offlineSingleCount: 0,
-                            offlineBundleCount: 0
-                        }
-                    });
-                }
-                
-                const studentGroup = groupedData.get(userKey);
-                studentGroup.applications.push(application);
-                
-                // 통계 업데이트
-                studentGroup.statistics.totalItems++;
-                const amount = application.final_purchase_amount ?? application.price ?? 0;
-                studentGroup.statistics.totalAmount += amount;
-                
-                // 상태별 통계
-                switch (application.status) {
-                    case 'pending':
-                        studentGroup.statistics.pendingCount++;
-                        break;
-                    case 'approved':
-                        studentGroup.statistics.approvedCount++;
-                        break;
-                    case 'rejected':
-                        studentGroup.statistics.rejectedCount++;
-                        break;
-                    case 'purchased':
-                        studentGroup.statistics.purchasedCount++;
-                        break;
-                }
-                
-                // v4.3 신청 타입별 통계
-                const isBundle = application.is_bundle;
-                const purchaseType = application.purchase_type;
-                
-                if (purchaseType === 'online') {
-                    if (isBundle) {
-                        studentGroup.statistics.onlineBundleCount++;
-                    } else {
-                        studentGroup.statistics.onlineSingleCount++;
-                    }
-                } else if (purchaseType === 'offline') {
-                    if (isBundle) {
-                        studentGroup.statistics.offlineBundleCount++;
-                    } else {
-                        studentGroup.statistics.offlineSingleCount++;
-                    }
-                }
-            });
-            
-            const groupedArray = Array.from(groupedData.values());
-            
-            // 신청 순서대로 정렬 (최신순), v4.3에서는 온라인 우선 정렬 추가
-            groupedArray.sort((a, b) => {
-                try {
-                    // 먼저 온라인 신청을 우선으로 정렬 (대리구매 효율성)
-                    const aOnlineCount = a.statistics.onlineSingleCount + a.statistics.onlineBundleCount;
-                    const bOnlineCount = b.statistics.onlineSingleCount + b.statistics.onlineBundleCount;
-                    
-                    if (aOnlineCount > 0 && bOnlineCount === 0) return -1;
-                    if (aOnlineCount === 0 && bOnlineCount > 0) return 1;
-                    
-                    // 온라인 신청이 같으면 최신순으로 정렬
-                    const aLatest = Math.max(...a.applications.map(app => new Date(app.created_at).getTime()));
-                    const bLatest = Math.max(...b.applications.map(app => new Date(app.created_at).getTime()));
-                    return bLatest - aLatest;
-                } catch (sortError) {
-                    console.warn('⚠️ 정렬 중 오류:', sortError);
-                    return 0;
-                }
-            });
-            
-            console.log('✅ v4.3 그룹화 완료:', groupedArray.length, '명의 학생');
-            return groupedArray;
-        } catch (error) {
-            console.error('❌ 그룹화 실패:', error);
-            return [];
-        }
-    },
-
-    // 학생들의 배송지 정보 로드 (에러 처리 강화)
-    async loadShippingInfoForStudents(groupedApplications) {
-        console.log('🏠 학생 배송지 정보 로드 시작');
-        
-        try {
-            // 모든 학생 ID 수집
-            const studentIds = groupedApplications
-                .map(group => group.studentId)
-                .filter(id => id && id !== 'unknown');
-            
-            if (studentIds.length === 0) {
-                console.log('⚠️ 유효한 학생 ID가 없음');
-                return;
-            }
-            
-            // 배송지 정보 일괄 조회 (타임아웃 적용)
-            const shippingInfos = await Promise.race([
-                this.fetchShippingInfoBatch(studentIds),
-                new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('배송지 정보 로드 타임아웃')), 5000)
-                )
-            ]);
-            
-            // 그룹화된 데이터에 배송지 정보 연결
-            groupedApplications.forEach(group => {
-                if (group.studentId && shippingInfos.has(group.studentId)) {
-                    group.shippingInfo = shippingInfos.get(group.studentId);
-                }
-            });
-            
-            console.log('✅ 배송지 정보 로드 완료:', shippingInfos.size, '명');
-            
-        } catch (error) {
-            console.error('❌ 배송지 정보 로드 실패:', error);
-            // 실패해도 계속 진행 (배송지 없이)
-        }
-    },
-    
-    // 🆕 여기에 추가
-    async loadBudgetInfoForStudents(groupedApplications) {
-        console.log('💰 학생 예산 정보 로드 시작');
-
-        try {
-            const studentIds = groupedApplications
-                .map(group => group.studentId)
-                .filter(id => id && id !== 'unknown');
-
-            if (studentIds.length === 0) {
-                console.log('⚠️ 유효한 학생 ID가 없음');
-                return;
-            }
-
-            // student_budgets 테이블에서 예산 정보 조회
-            const budgetInfos = await this.fetchBudgetInfoBatch(studentIds);
-
-            // 그룹화된 데이터에 예산 정보 연결
-            groupedApplications.forEach(group => {
-                if (group.studentId && budgetInfos.has(group.studentId)) {
-                    group.budgetInfo = budgetInfos.get(group.studentId);
-                }
-            });
-
-            console.log('✅ 예산 정보 로드 완료:', budgetInfos.size, '명');
-
-        } catch (error) {
-            console.error('❌ 예산 정보 로드 실패:', error);
-        }
-    },
-
-    
-    // 배송지 정보 일괄 조회 (연결 안정성 강화)
-    async fetchShippingInfoBatch(studentIds) {
-        try {
-            if (!window.SupabaseAPI || typeof window.SupabaseAPI.ensureClient !== 'function') {
-                throw new Error('SupabaseAPI를 사용할 수 없습니다');
-            }
-            
-            const client = await SupabaseAPI.ensureClient();
-            
-            // shipping_addresses 테이블에서 올바른 컬럼들을 조회
-            const { data: shippingData, error } = await client
-                .from('shipping_addresses')
+            // 1. 승인된 수업계획을 가진 학생들 조회
+            const approvedLessonPlansResult = await client
+                .from('lesson_plans')
                 .select(`
                     user_id,
-                    recipient_name,        
-                    phone,                 
-                    address,               
-                    postal_code,           
-                    delivery_note,
+                    lessons,
+                    user_profiles:user_id (
+                        field
+                    )
+                `)
+                .eq('status', 'approved');
+
+            // 2. 분야별 예산 설정 조회
+            const fieldBudgetSettings = await this.getAllFieldBudgetSettings();
+
+            // 3. 승인된 신청들의 총액 (approved 상태)
+            const approvedRequestsResult = await client
+                .from('requests')
+                .select('price')
+                .eq('status', 'approved');
+
+            // 4. 구매완료된 신청들의 총액 (purchased 상태)
+            const purchasedRequestsResult = await client
+                .from('requests')
+                .select('price', 'final_purchase_amount')
+                .eq('status', 'purchased');
+
+            let totalApprovedBudget = 0;
+            let studentCount = 0;
+
+            // 승인된 수업계획 기반으로 예산 계산
+            if (approvedLessonPlansResult.data) {
+                approvedLessonPlansResult.data.forEach(plan => {
+                    const userField = plan.user_profiles?.field;
+                    if (userField && fieldBudgetSettings[userField]) {
+                        const fieldSetting = fieldBudgetSettings[userField];
+                        
+                        // 수업 횟수 계산
+                        let totalLessons = 0;
+                        try {
+                            if (plan.lessons) {
+                                let lessons = plan.lessons;
+                                if (typeof lessons === 'string') {
+                                    lessons = JSON.parse(lessons);
+                                }
+                                
+                                if (lessons.totalLessons) {
+                                    totalLessons = lessons.totalLessons;
+                                } else if (lessons.schedule && Array.isArray(lessons.schedule)) {
+                                    totalLessons = lessons.schedule.length;
+                                } else if (lessons.lessons && Array.isArray(lessons.lessons)) {
+                                    totalLessons = lessons.lessons.length;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('수업계획 파싱 오류:', e);
+                            totalLessons = 0;
+                        }
+
+                        // 예산 계산
+                        const calculatedBudget = fieldSetting.perLessonAmount * totalLessons;
+                        const finalBudget = fieldSetting.maxBudget > 0 ? 
+                            Math.min(calculatedBudget, fieldSetting.maxBudget) : 
+                            calculatedBudget;
+                        
+                        totalApprovedBudget += finalBudget;
+                        studentCount++;
+                    }
+                });
+            }
+
+            // 승인된 신청들의 총액
+            const approvedItemsTotal = approvedRequestsResult.data ? 
+                approvedRequestsResult.data.reduce((sum, request) => sum + (request.price || 0), 0) : 0;
+
+            // 구매완료된 신청들의 총액  
+            const purchasedTotal = purchasedRequestsResult.data ?
+                purchasedRequestsResult.data.reduce((sum, request) => {
+                    const amount = request.final_purchase_amount ?? request.price ?? 0;
+                    return sum + amount;
+                }, 0) : 0;
+
+            // 1인당 평균 예산
+            const averagePerPerson = studentCount > 0 ? Math.round(totalApprovedBudget / studentCount) : 0;
+
+            const result = {
+                totalApprovedBudget,
+                approvedItemsTotal,
+                purchasedTotal,
+                averagePerPerson
+            };
+
+            console.log('✅ 예산 현황 통계 계산 완료:', result);
+            return result;
+
+        } catch (error) {
+            console.error('❌ 예산 현황 통계 계산 실패:', error);
+            
+            // 오류 발생시 기본값 반환
+            return {
+                totalApprovedBudget: 0,
+                approvedItemsTotal: 0,
+                purchasedTotal: 0,
+                averagePerPerson: 0
+            };
+        }
+    },
+
+    /**
+     * 신청 내역 검색
+     * @param {string} searchTerm - 검색어
+     * @returns {Promise<Array>} 검색된 신청 목록
+     */
+    async searchApplications(searchTerm = '') {
+        console.log('🔍 신청 내역 검색:', searchTerm);
+        
+        const result = await this.core.safeApiCall('신청 내역 검색', async () => {
+            const client = await this.core.ensureClient();
+            
+            let query = client
+                .from('requests')
+                .select(`
+                    id,
+                    user_id,
+                    item_name,
+                    purpose,
+                    price,
+                    status,
+                    purchase_type,
+                    is_bundle,
+                    link,
+                    store_info,
+                    account_id,
+                    account_pw,
+                    rejection_reason,
                     created_at,
-                    updated_at
-                `)
-                .in('user_id', studentIds);
-            
-            if (error) {
-                throw new Error(`배송지 정보 조회 실패: ${error.message}`);
-            }
-            
-            // Map으로 변환하여 캐시
-            const shippingMap = new Map();
-            
-            if (shippingData && shippingData.length > 0) {
-                shippingData.forEach(shipping => {
-                    try {
-                        const shippingInfo = {
-                            address: shipping.address || '',
-                            zipcode: shipping.postal_code || '',
-                            recipient: shipping.recipient_name || '',
-                            phone: shipping.phone || '',
-                            deliveryNote: shipping.delivery_note || '',
-                            lastUpdated: shipping.updated_at || shipping.created_at
-                        };
-                        
-                        shippingMap.set(shipping.user_id, shippingInfo);
-                        this.shippingInfoCache.set(shipping.user_id, shippingInfo);
-                    } catch (itemError) {
-                        console.warn('⚠️ 개별 배송지 정보 처리 실패:', itemError);
-                    }
-                });
-            }
-            
-            return shippingMap;
-            
-        } catch (error) {
-            console.error('❌ 배송지 정보 일괄 조회 실패:', error);
-            return new Map();
-        }
-    },
-    
-    // 🆕 예산 정보 일괄 조회 (완전한 버전)
-    async fetchBudgetInfoBatch(studentIds) {
-        try {
-            const client = await SupabaseAPI.ensureClient();
-
-            const { data: budgetData, error } = await client
-                .from('student_budgets')
-                .select(`
-                    user_id,
-                    allocated_budget,
-                    used_budget,
-                    remaining_budget,
                     updated_at,
-                    created_at
+                    reviewed_at,
+                    reviewed_by,
+                    admin_receipt_url,         
+                    final_purchase_amount,    
+                    admin_purchase_date,   
+                    user_profiles:user_id (
+                        name,
+                        field,
+                        sejong_institute
+                    ),
+                    receipts!receipts_request_id_fkey (
+                        file_url,
+                        uploaded_at,
+                        verified
+                    )
                 `)
-                .in('user_id', studentIds);
+                .order('created_at', { ascending: false });
 
-            if (error) {
-                throw new Error(`예산 정보 조회 실패: ${error.message}`);
-            }
+            // 검색어가 있으면 필터링
+            if (searchTerm && searchTerm.trim()) {
+                // 먼저 사용자 프로필에서 이름으로 검색
+                const userResult = await client
+                    .from('user_profiles')
+                    .select('id')
+                    .ilike('name', `%${searchTerm}%`);
 
-            const budgetMap = new Map();
-
-            if (budgetData && budgetData.length > 0) {
-                budgetData.forEach(budget => {
-                    const budgetInfo = {
-                        allocatedBudget: budget.allocated_budget || 0,
-                        usedBudget: budget.used_budget || 0,
-                        remainingBudget: budget.remaining_budget || 0,
-                        // 🆕 계산된 정보 추가
-                        usagePercentage: budget.allocated_budget > 0 ? 
-                            Math.round((budget.used_budget / budget.allocated_budget) * 100) : 0,
-                        remainingPercentage: budget.allocated_budget > 0 ? 
-                            Math.round((budget.remaining_budget / budget.allocated_budget) * 100) : 0,
-                        // 🆕 예산 상태 분석
-                        budgetStatus: this.analyzeBudgetStatus(budget),
-                        lastUpdated: budget.updated_at
-                    };
-
-                    budgetMap.set(budget.user_id, budgetInfo);
-                });
-            }
-
-            return budgetMap;
-
-        } catch (error) {
-            console.error('❌ 예산 정보 일괄 조회 실패:', error);
-            return new Map();
-        }
-    },
-
-    // 🆕 예산 상태 분석 함수
-    analyzeBudgetStatus(budget) {
-        const allocated = budget.allocated_budget || 0;
-        const used = budget.used_budget || 0;
-        const remaining = budget.remaining_budget || 0;
-
-        if (allocated === 0) return 'no-budget';
-
-        const usageRate = (used / allocated) * 100;
-
-        if (usageRate === 0) return 'unused';
-        if (usageRate <= 50) return 'low-usage';
-        if (usageRate <= 80) return 'moderate-usage';
-        if (usageRate <= 100) return 'high-usage';
-        return 'over-budget';
-    },
-    
-
-    // 학생별 그룹화된 신청 내역 렌더링 (v4.3 개선)
-    renderGroupedApplications(groupedApplications) {
-        console.log('🎨 학생별 그룹화 렌더링 시작 (v4.3):', groupedApplications?.length || 0, '개 그룹');
-        
-        try {
-            const container = document.getElementById('adminApplications');
-            if (!container) {
-                console.error('❌ adminApplications 컨테이너를 찾을 수 없음');
-                return;
-            }
-            
-            if (!groupedApplications || groupedApplications.length === 0) {
-                container.innerHTML = this.createNoResultsHTML();
-                return;
-            }
-            
-            container.innerHTML = '';
-            
-            groupedApplications.forEach(studentGroup => {
-                try {
-                    const studentCard = this.createStudentGroupCard(studentGroup);
-                    container.appendChild(studentCard);
-                } catch (error) {
-                    console.error('❌ 학생 그룹 카드 생성 실패:', error);
-                    // 개별 오류는 전체를 중단시키지 않음
-                }
-            });
-            
-            // 아이콘 재생성
-            if (typeof lucide !== 'undefined') {
-                try {
-                    lucide.createIcons();
-                } catch (iconError) {
-                    console.warn('⚠️ 아이콘 생성 실패:', iconError);
+                if (userResult.data && userResult.data.length > 0) {
+                    const userIds = userResult.data.map(user => user.id);
+                    query = query.in('user_id', userIds);
+                } else {
+                    // 일치하는 사용자가 없으면 빈 결과 반환
+                    return { data: [], error: null };
                 }
             }
-            
-            // 이벤트 리스너 재설정
-            this.setupGroupedActionListeners();
-            
-            console.log('✅ 학생별 그룹화 렌더링 완료 (v4.3)');
-        } catch (error) {
-            console.error('❌ 그룹화 렌더링 실패:', error);
-        }
-    },
 
-    // v4.3 새로운 기능: 클립보드 복사 (에러 처리 강화)
-    async copyToClipboard(text, buttonElement) {
-        try {
-            // navigator.clipboard이 지원되는지 확인
-            if (!navigator.clipboard) {
-                throw new Error('클립보드 API가 지원되지 않습니다');
-            }
-            
-            // 타임아웃과 함께 복사 시도
-            await Promise.race([
-                navigator.clipboard.writeText(text),
-                new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('복사 타임아웃')), 3000)
-                )
-            ]);
-            
-            // 버튼 피드백
-            const originalHTML = buttonElement.innerHTML;
-            buttonElement.innerHTML = '<i data-lucide="check"></i>';
-            buttonElement.style.color = '#10b981';
-            
-            setTimeout(() => {
-                try {
-                    buttonElement.innerHTML = originalHTML;
-                    buttonElement.style.color = '';
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
-                } catch (restoreError) {
-                    console.warn('⚠️ 버튼 상태 복구 실패:', restoreError);
-                }
-            }, 1500);
-            
-        } catch (error) {
-            console.error('❌ 복사 실패:', error);
-            
-            // 폴백: 텍스트 선택 방식 시도
-            try {
-                const textArea = document.createElement('textarea');
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                
-                // 성공 피드백
-                const originalHTML = buttonElement.innerHTML;
-                buttonElement.innerHTML = '<i data-lucide="check"></i>';
-                buttonElement.style.color = '#10b981';
-                
-                setTimeout(() => {
-                    buttonElement.innerHTML = originalHTML;
-                    buttonElement.style.color = '';
-                }, 1500);
-            } catch (fallbackError) {
-                console.error('❌ 폴백 복사도 실패:', fallbackError);
-                alert('복사에 실패했습니다. 수동으로 복사해주세요.');
-            }
-        }
-    },
-
-    // 일괄 승인 처리 (에러 처리 강화)
-    async handleBulkApprove(studentId, buttonElement) {
-        if (!studentId || studentId === 'unknown') {
-            alert('학생 정보를 찾을 수 없습니다.');
-            return;
-        }
-        
-        try {
-            // 해당 학생의 대기중인 교구들 찾기
-            const studentGroup = this.groupedApplicationsCache?.find(group => group.studentId === studentId);
-            if (!studentGroup) {
-                alert('학생 정보를 찾을 수 없습니다.');
-                return;
-            }
-            
-            const pendingApplications = studentGroup.applications.filter(app => app.status === 'pending');
-            if (pendingApplications.length === 0) {
-                alert('승인 대기중인 교구가 없습니다.');
-                return;
-            }
-            
-            const studentName = studentGroup.studentInfo.name;
-            const confirmMessage = `${studentName} 학생의 대기중인 교구 ${pendingApplications.length}개를 모두 승인하시겠습니까?`;
-            
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-            
-            // 로딩 상태 표시
-            const originalText = buttonElement.innerHTML;
-            buttonElement.innerHTML = '<i data-lucide="loader" class="animate-spin"></i> 처리 중...';
-            buttonElement.disabled = true;
-            
-            let successCount = 0;
-            let errorCount = 0;
-            
-            // 각 교구를 개별적으로 승인 (연속 실행 방지)
-            for (const application of pendingApplications) {
-                try {
-                    const result = await Promise.race([
-                        SupabaseAPI.updateItemStatus(application.id, 'approved'),
-                        new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error('개별 승인 타임아웃')), 5000)
-                        )
-                    ]);
-                    
-                    if (result.success) {
-                        successCount++;
-                    } else {
-                        errorCount++;
-                        console.error('개별 승인 실패:', application.item_name, result.message);
-                    }
-                    
-                    // 각 요청 사이에 짧은 대기 시간 (서버 부하 방지)
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    
-                } catch (error) {
-                    errorCount++;
-                    console.error('개별 승인 오류:', application.item_name, error);
-                }
-            }
-            
-            // 결과 표시
-            if (successCount > 0) {
-                const message = errorCount > 0 ? 
-                    `${successCount}개 승인 완료, ${errorCount}개 실패` :
-                    `${successCount}개 교구가 모두 승인되었습니다.`;
-                
-                alert(message);
-                
-                // 데이터 새로고침 (에러 처리)
-                try {
-                    await this.refreshData();
-                } catch (refreshError) {
-                    console.warn('⚠️ 데이터 새로고침 실패:', refreshError);
-                }
-                
-            } else {
-                alert('승인 처리 중 오류가 발생했습니다.');
-            }
-            
-        } catch (error) {
-            console.error('❌ 일괄 승인 처리 오류:', error);
-            alert('일괄 승인 처리 중 오류가 발생했습니다.');
-        } finally {
-            // 버튼 상태 복구
-            try {
-                buttonElement.innerHTML = originalText;
-                buttonElement.disabled = false;
-                
-                // 아이콘 재생성
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            } catch (restoreError) {
-                console.warn('⚠️ 버튼 상태 복구 실패:', restoreError);
-            }
-        }
-    },
-
-    // 데이터 새로고침 (에러 처리 강화)
-    async refreshData() {
-        console.log('🔄 데이터 새로고침 시작 (v4.3.3)');
-        
-        try {
-            const refreshPromises = [];
-            
-            // AdminManager의 기본 데이터들 새로고침
-            if (window.AdminManager) {
-                if (typeof AdminManager.loadStatistics === 'function') {
-                    refreshPromises.push(AdminManager.loadStatistics().catch(e => console.warn('통계 로드 실패:', e)));
-                }
-                if (typeof AdminManager.loadBudgetOverview === 'function') {
-                    refreshPromises.push(AdminManager.loadBudgetOverview().catch(e => console.warn('예산 로드 실패:', e)));
-                }
-                if (typeof AdminManager.loadLessonPlanManagement === 'function') {
-                    refreshPromises.push(AdminManager.loadLessonPlanManagement().catch(e => console.warn('수업계획 로드 실패:', e)));
-                }
-            }
-            
-            // 모든 새로고침 작업을 병렬로 실행
-            await Promise.allSettled(refreshPromises);
-            
-            // 향상된 신청 내역 다시 로드
-            await this.loadApplicationsWithShipping();
-            
-            console.log('✅ 데이터 새로고침 완료 (v4.3.3)');
-            
-        } catch (error) {
-            console.error('❌ 데이터 새로고침 실패:', error);
-        }
-    },
-
-    // v4.3 새로운 기능: 비밀번호 표시/숨기기
-    togglePasswordVisibility(button) {
-        try {
-            const password = button.dataset.password;
-            const passwordField = button.parentElement.querySelector('.password-field');
-            const icon = button.querySelector('i');
-            
-            if (passwordField.textContent === '••••••••') {
-                // 비밀번호 표시
-                passwordField.textContent = password;
-                icon.setAttribute('data-lucide', 'eye-off');
-            } else {
-                // 비밀번호 숨기기
-                passwordField.textContent = '••••••••';
-                icon.setAttribute('data-lucide', 'eye');
-            }
-            
-            // 아이콘 재생성
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-        } catch (error) {
-            console.error('❌ 비밀번호 토글 실패:', error);
-        }
-    },
-
-    // 신청 목록 토글
-    toggleApplicationsList(toggleBtn) {
-        try {
-            const applicationsSection = toggleBtn.closest('.student-applications-section');
-            const applicationsList = applicationsSection.querySelector('.applications-list');
-            const toggleText = toggleBtn.querySelector('.toggle-text');
-            const toggleIcon = toggleBtn.querySelector('.toggle-icon');
-            
-            if (applicationsList.classList.contains('expanded')) {
-                applicationsList.classList.remove('expanded');
-                applicationsList.classList.add('collapsed');
-                toggleText.textContent = '펼치기';
-                toggleIcon.setAttribute('data-lucide', 'chevron-down');
-            } else {
-                applicationsList.classList.remove('collapsed');
-                applicationsList.classList.add('expanded');
-                toggleText.textContent = '접기';
-                toggleIcon.setAttribute('data-lucide', 'chevron-up');
-            }
-            
-            // 아이콘 재생성
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-        } catch (error) {
-            console.error('❌ 목록 토글 실패:', error);
-        }
-    },
-
-    // 🔧 v4.3.3 수정: 개별 아이템 액션 처리 - 올바른 모듈 경로로 함수 호출
-    async handleItemAction(action, requestId, buttonElement) {
-        try {
-            console.log('🔧 아이템 액션 처리 (v4.3.3):', action, requestId);
-            
-            // AdminManager의 올바른 모듈 경로 사용
-            if (window.AdminManager && AdminManager.Applications) {
-                switch(action) {
-                    case 'approve':
-                        if (typeof AdminManager.Applications.approveItem === 'function') {
-                            console.log('✅ 승인 처리 시작');
-                            await AdminManager.Applications.approveItem(requestId, buttonElement);
-                        } else {
-                            console.error('❌ AdminManager.Applications.approveItem 함수를 찾을 수 없음');
-                        }
-                        break;
-                    case 'reject':
-                        if (typeof AdminManager.Applications.rejectItem === 'function') {
-                            console.log('❌ 반려 처리 시작');
-                            await AdminManager.Applications.rejectItem(requestId, buttonElement);
-                        } else {
-                            console.error('❌ AdminManager.Applications.rejectItem 함수를 찾을 수 없음');
-                        }
-                        break;
-                    case 'purchase':
-                        if (typeof AdminManager.Applications.markAsPurchased === 'function') {
-                            console.log('🛒 구매 완료 처리 시작 (v4.3.3 수정)');
-                            await AdminManager.Applications.markAsPurchased(requestId, buttonElement);
-                        } else {
-                            console.error('❌ AdminManager.Applications.markAsPurchased 함수를 찾을 수 없음');
-                        }
-                        break;
-                    default:
-                        console.warn('⚠️ 알 수 없는 액션:', action);
-                }
-                
-                // 액션 완료 후 데이터 새로고침 (에러 처리)
-                setTimeout(() => {
-                    this.refreshData().catch(error => {
-                        console.warn('⚠️ 액션 후 새로고침 실패:', error);
-                    });
-                }, 1000);
-            } else {
-                console.error('❌ AdminManager.Applications 모듈을 찾을 수 없음');
-            }
-        } catch (error) {
-            console.error('❌ 아이템 액션 처리 실패:', error);
-        }
-    },
-
-    // 그룹화된 UI의 이벤트 리스너 설정 (v4.3.3 - 구매 완료 버튼 버그 수정)
-    setupGroupedActionListeners() {
-        console.log('🔧 그룹화 UI 이벤트 리스너 설정 (v4.3.3 - 구매 완료 버튼 버그 수정)');
-        
-        try {
-            // 토글 버튼들
-            const toggleBtns = document.querySelectorAll('.toggle-applications-btn');
-            toggleBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    this.toggleApplicationsList(e.target.closest('button'));
-                });
-            });
-            
-            // 일괄 승인 버튼들
-            const bulkApproveBtns = document.querySelectorAll('.bulk-approve-btn');
-            bulkApproveBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const studentId = e.target.closest('button').dataset.studentId;
-                    this.handleBulkApprove(studentId, e.target);
-                });
-            });
-            
-            // 🔧 v4.3.3 수정: 개별 아이템 액션 버튼들 - 올바른 함수 경로 사용
-            const actionButtons = document.querySelectorAll('.application-item .item-actions button[data-action]');
-            actionButtons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const action = e.target.closest('button').dataset.action;
-                    const itemElement = e.target.closest('.application-item');
-                    const requestId = itemElement.dataset.requestId;
-                    
-                    console.log('🔧 액션 버튼 클릭 (v4.3.3):', action, requestId);
-                    this.handleItemAction(action, requestId, e.target);
-                });
-            });
-            
-            // 영수증 보기 버튼들
-            const receiptButtons = document.querySelectorAll('.view-receipt-btn');
-            receiptButtons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const requestId = e.target.closest('button').dataset.requestId;
-                    console.log('🔍 영수증 보기 버튼 클릭됨 (v4.3.3):', requestId);
-                    
-                    // AdminManager.Utils.showViewReceiptModal로 올바른 경로 호출
-                    if (window.AdminManager && 
-                        window.AdminManager.Utils && 
-                        typeof window.AdminManager.Utils.showViewReceiptModal === 'function') {
-                        console.log('✅ AdminManager.Utils.showViewReceiptModal 호출');
-                        AdminManager.Utils.showViewReceiptModal(requestId);
-                    } else {
-                        console.error('❌ AdminManager.Utils.showViewReceiptModal 함수를 찾을 수 없음');
-                        alert('영수증 보기 기능을 사용할 수 없습니다. 페이지를 새로고침해주세요.');
-                    }
-                });
-            });
-
-            // v4.3 새로운 기능: 복사 버튼들
-            const copyButtons = document.querySelectorAll('.copy-btn');
-            copyButtons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const textToCopy = e.target.closest('button').dataset.copy;
-                    this.copyToClipboard(textToCopy, e.target);
-                });
-            });
-
-            // v4.3 새로운 기능: 비밀번호 토글 버튼들
-            const passwordToggleBtns = document.querySelectorAll('.toggle-password-btn');
-            passwordToggleBtns.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    this.togglePasswordVisibility(e.target.closest('button'));
-                });
-            });
-            
-            // 장바구니 메모 복사 버튼들
-            const copyMemoBtns = document.querySelectorAll('.copy-memo-btn');
-            copyMemoBtns.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const textToCopy = e.target.closest('button').dataset.copy;
-                    this.copyToClipboard(textToCopy, e.target);
-                });
-            });
-            
-            console.log('✅ 그룹화 UI 이벤트 리스너 설정 완료 (v4.3.3 - 구매 완료 버튼 버그 수정)');
-        } catch (error) {
-            console.error('❌ 이벤트 리스너 설정 실패:', error);
-        }
-    },
-
-    // 기본 신청 내역 렌더링 (폴백용)
-    renderBasicApplications(applications) {
-        console.log('📋 기본 신청 내역 렌더링 (폴백)');
-        
-        try {
-            const container = document.getElementById('adminApplications');
-            if (!container) return;
-
-            if (!applications || applications.length === 0) {
-                container.innerHTML = this.createNoResultsHTML();
-                return;
-            }
-
-            container.innerHTML = '';
-            
-            applications.forEach(application => {
-                try {
-                    const applicationCard = this.createSimpleApplicationCard(application);
-                    container.appendChild(applicationCard);
-                } catch (cardError) {
-                    console.warn('⚠️ 개별 카드 생성 실패:', cardError);
-                }
-            });
-
-            // 아이콘 재생성
-            if (typeof lucide !== 'undefined') {
-                try {
-                    lucide.createIcons();
-                } catch (iconError) {
-                    console.warn('⚠️ 아이콘 재생성 실패:', iconError);
-                }
-            }
-        } catch (error) {
-            console.error('❌ 기본 렌더링 실패:', error);
-        }
-    },
-
-    // 학생 그룹 카드 생성 (v4.3 개선)
-    createStudentGroupCard(studentGroup) {
-        const card = document.createElement('div');
-        card.className = 'student-group-card';
-        card.dataset.studentId = studentGroup.studentId;
-        
-        const { studentInfo, shippingInfo, budgetInfo, applications, statistics } = studentGroup;
-        
-        // 최신 신청일 계산
-        const latestDate = Math.max(...applications.map(app => new Date(app.created_at).getTime()));
-        const submittedDate = new Date(latestDate).toLocaleDateString('ko-KR');
-        
-        card.innerHTML = `
-            ${this.createStudentHeaderHTML(studentInfo, shippingInfo, budgetInfo, statistics, submittedDate)}
-            ${this.createShippingInfoHTML(shippingInfo)}
-            ${this.createApplicationsListHTML(applications)}
-            ${this.createStudentActionsHTML(studentGroup)}
-        `;
-        
-        return card;
-    },
-
-    // 학생 헤더 HTML 생성 (v4.3 통계 개선)
-    createStudentHeaderHTML(studentInfo, shippingInfo, budgetInfo, statistics, submittedDate) {
-        // v4.3 신청 타입별 요약 배지 생성
-        const typeBadges = [];
-        if (statistics.onlineSingleCount > 0) {
-            typeBadges.push(`<span class="type-summary-badge online-single">온라인 단일 ${statistics.onlineSingleCount}개</span>`);
-        }
-        if (statistics.onlineBundleCount > 0) {
-            typeBadges.push(`<span class="type-summary-badge online-bundle">온라인 묶음 ${statistics.onlineBundleCount}개</span>`);
-        }
-        if (statistics.offlineSingleCount > 0) {
-            typeBadges.push(`<span class="type-summary-badge offline-single">오프라인 단일 ${statistics.offlineSingleCount}개</span>`);
-        }
-        if (statistics.offlineBundleCount > 0) {
-            typeBadges.push(`<span class="type-summary-badge offline-bundle">오프라인 묶음 ${statistics.offlineBundleCount}개</span>`);
-        }
-
-            return `
-            <div class="student-group-header">
-                <div class="student-main-info">
-                    <div class="student-basic-info">
-                        <h3 class="student-name">
-                            <i data-lucide="user"></i>
-                            ${this.escapeHtml(studentInfo.name)}
-                        </h3>
-                        <p class="student-institute">
-                            ${this.escapeHtml(studentInfo.sejong_institute)} • ${this.escapeHtml(studentInfo.field)}
-                        </p>
-                        <p class="student-submission-date">
-                            <i data-lucide="calendar"></i>
-                            최근 신청일: ${submittedDate}
-                        </p>
-                    </div>
-
-                    <div class="student-contact-info">
-                        ${studentInfo.email ? `
-                            <span class="contact-item">
-                                <i data-lucide="mail"></i>
-                                ${this.escapeHtml(studentInfo.email)}
-                            </span>
-                        ` : ''}
-                        ${studentInfo.phone ? `
-                            <span class="contact-item">
-                                <i data-lucide="phone"></i>
-                                ${this.escapeHtml(studentInfo.phone)}
-                            </span>
-                        ` : ''}
-                    </div>
-
-                    ${typeBadges.length > 0 ? `
-                        <div class="student-type-summary">
-                            ${typeBadges.join('')}
-                        </div>
-                    ` : ''}
-
-                    <!-- 🆕 상태 배지를 타입 배지 바로 아래로 이동 -->
-                    <div class="stat-badges">
-                        ${statistics.pendingCount > 0 ? `<span class="stat-badge pending">${statistics.pendingCount} 대기</span>` : ''}
-                        ${statistics.approvedCount > 0 ? `<span class="stat-badge approved">${statistics.approvedCount} 승인</span>` : ''}
-                        ${statistics.rejectedCount > 0 ? `<span class="stat-badge rejected">${statistics.rejectedCount} 반려</span>` : ''}
-                        ${statistics.purchasedCount > 0 ? `<span class="stat-badge purchased">${statistics.purchasedCount} 완료</span>` : ''}
-                    </div>
-                </div>
-
-                <!-- 🆕 예산 정보 섹션을 독립적으로 배치 -->
-                ${budgetInfo ? this.createBudgetInfoSection(budgetInfo, statistics) : ''}
-            </div>
-        `;
-    },
-
-
-    // 🆕 여기에 추가
-    createBudgetInfoSection(budgetInfo, statistics) {
-        const statusClass = this.getBudgetStatusClass(budgetInfo.budgetStatus);
-        const statusText = this.getBudgetStatusText(budgetInfo.budgetStatus);
-
-        // 🎯 현재 신청 금액(대기+승인) vs 사용 예산(승인된 것만) 비교
-        const currentAppliedAmount = statistics.totalAmount; // 모든 신청 금액
-        const approvedOnlyAmount = statistics.approvedCount > 0 ? 
-            (budgetInfo.usedBudget || 0) : 0; // DB의 used_budget (승인된 것만)
-
-        return `
-            <div class="student-budget-section ${statusClass}">
-                <div class="budget-header">
-                    <h4 class="budget-title">
-                        <i data-lucide="wallet"></i>
-                        예산 현황
-                    </h4>
-                    <span class="budget-status-badge ${statusClass}">
-                        <i data-lucide="${this.getBudgetStatusIcon(budgetInfo.budgetStatus)}"></i>
-                        ${statusText}
-                    </span>
-                </div>
-
-                <div class="budget-details">
-                    <!-- 🏦 배정 예산 -->
-                    <div class="budget-item allocated">
-                        <div class="budget-label">
-                            <i data-lucide="piggy-bank"></i>
-                            배정 예산
-                        </div>
-                        <div class="budget-amount allocated-amount">
-                            ${this.formatPrice(budgetInfo.allocatedBudget)}
-                        </div>
-                    </div>
-
-                    <!-- ✅ 사용 예산 (승인된 금액) -->
-                    <div class="budget-item used">
-                        <div class="budget-label">
-                            <i data-lucide="check-circle"></i>
-                            사용 예산 (승인됨)
-                        </div>
-                        <div class="budget-amount used-amount">
-                            ${this.formatPrice(budgetInfo.usedBudget)}
-                            <span class="budget-percentage">
-                                (${budgetInfo.usagePercentage}%)
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- 💰 잔여 예산 -->
-                    <div class="budget-item remaining">
-                        <div class="budget-label">
-                            <i data-lucide="coins"></i>
-                            잔여 예산
-                        </div>
-                        <div class="budget-amount remaining-amount">
-                            ${this.formatPrice(budgetInfo.remainingBudget)}
-                            <span class="budget-percentage">
-                                (${budgetInfo.remainingPercentage}%)
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- 📊 현재 신청 금액 (참고용) -->
-                    <div class="budget-item applied">
-                        <div class="budget-label">
-                            <i data-lucide="shopping-cart"></i>
-                            현재 신청 금액
-                            <small>(대기+승인)</small>
-                        </div>
-                        <div class="budget-amount applied-amount">
-                            ${this.formatPrice(currentAppliedAmount)}
-                            ${budgetInfo.allocatedBudget > 0 ? `
-                                <span class="budget-percentage">
-                                    (${Math.round((currentAppliedAmount / budgetInfo.allocatedBudget) * 100)}%)
-                                </span>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 🎯 예산 진행률 바 -->
-                <div class="budget-progress-section">
-                    <div class="progress-label">예산 사용 진행률</div>
-                    <div class="budget-progress-bar">
-                        <div class="progress-track">
-                            <div class="progress-fill used-progress" 
-                                 style="width: ${Math.min(budgetInfo.usagePercentage, 100)}%"></div>
-                            ${currentAppliedAmount > budgetInfo.usedBudget ? `
-                                <div class="progress-fill pending-progress" 
-                                     style="left: ${Math.min(budgetInfo.usagePercentage, 100)}%; 
-                                            width: ${Math.min(
-                                                Math.round(((currentAppliedAmount - budgetInfo.usedBudget) / budgetInfo.allocatedBudget) * 100), 
-                                                100 - budgetInfo.usagePercentage
-                                            )}%"></div>
-                            ` : ''}
-                        </div>
-                    </div>
-                    <div class="progress-legend">
-                        <span class="legend-item used">
-                            <span class="legend-color used"></span>
-                            승인된 사용
-                        </span>
-                        ${currentAppliedAmount > budgetInfo.usedBudget ? `
-                            <span class="legend-item pending">
-                                <span class="legend-color pending"></span>
-                                대기 중
-                            </span>
-                        ` : ''}
-                        <span class="legend-item remaining">
-                            <span class="legend-color remaining"></span>
-                            잔여
-                        </span>
-                    </div>
-                </div>
-            </div>
-        `;
-    },
-
-
-    // 배송지 정보 HTML 생성
-    createShippingInfoHTML(shippingInfo) {
-        if (!shippingInfo || !shippingInfo.address) {
-            return `
-                <div class="shipping-info-section missing">
-                    <div class="shipping-info-header">
-                        <h4>
-                            <i data-lucide="map-pin"></i>
-                            배송지 정보
-                        </h4>
-                        <span class="shipping-status missing">
-                            <i data-lucide="alert-triangle"></i>
-                            배송지 미등록
-                        </span>
-                    </div>
-                    <div class="shipping-missing-notice">
-                        <p>학생이 아직 배송지 정보를 등록하지 않았습니다.</p>
-                        <small>교구 승인 전에 학생에게 배송지 등록을 요청해주세요.</small>
-                    </div>
-                </div>
-            `;
-        }
-        
-        const lastUpdated = shippingInfo.lastUpdated ? 
-            new Date(shippingInfo.lastUpdated).toLocaleDateString('ko-KR') : '';
-        
-        return `
-            <div class="shipping-info-section">
-                <div class="shipping-info-header">
-                    <h4>
-                        <i data-lucide="map-pin"></i>
-                        배송지 정보
-                    </h4>
-                    <span class="shipping-status registered">
-                        <i data-lucide="check-circle"></i>
-                        등록완료
-                    </span>
-                </div>
-                
-                <div class="shipping-details">
-                    <div class="shipping-address">
-                        <div class="address-row">
-                            <span class="address-zipcode">[${this.escapeHtml(shippingInfo.zipcode)}]</span>
-                            <span class="address-main">${this.escapeHtml(shippingInfo.address)}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="shipping-recipient">
-                        <div class="recipient-info">
-                            <span class="recipient-name">
-                                <i data-lucide="user"></i>
-                                ${this.escapeHtml(shippingInfo.recipient)}
-                            </span>
-                            ${shippingInfo.phone ? `
-                                <span class="recipient-phone">
-                                    <i data-lucide="phone"></i>
-                                    ${this.escapeHtml(shippingInfo.phone)}
-                                </span>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    ${lastUpdated ? `
-                        <div class="shipping-updated">
-                            <small>
-                                <i data-lucide="clock"></i>
-                                ${lastUpdated} 업데이트
-                            </small>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    },
-
-    // 신청 목록 HTML 생성 (v4.3 정렬 개선)
-    createApplicationsListHTML(applications) {
-        // v4.3: 온라인 구매를 먼저, 그 다음 오프라인 구매로 정렬
-        const sortedApplications = [...applications].sort((a, b) => {
-            // 온라인 우선 정렬
-            if (a.purchase_type === 'online' && b.purchase_type === 'offline') return -1;
-            if (a.purchase_type === 'offline' && b.purchase_type === 'online') return 1;
-            
-            // 같은 타입이면 묶음 구매 우선
-            if (a.purchase_type === b.purchase_type) {
-                if (a.is_bundle && !b.is_bundle) return -1;
-                if (!a.is_bundle && b.is_bundle) return 1;
-            }
-            
-            // 모든 조건이 같으면 신청일 순
-            return new Date(b.created_at) - new Date(a.created_at);
+            return await query;
         });
 
-        const applicationsHTML = sortedApplications.map(application => {
-            return this.createApplicationItemHTML(application);
-        }).join('');
+        return result.success ? (result.data || []) : [];
+    },
+
+    // ===================
+    // 📚 수업계획 관리
+    // ===================
+    
+    /**
+     * 대기중인 수업계획 조회
+     * @returns {Promise<Array>} 대기중인 수업계획 목록
+     */
+    async getPendingLessonPlans() {
+        console.log('📚 대기중인 수업계획 조회...');
         
-        return `
-            <div class="student-applications-section">
-                <div class="applications-header">
-                    <h4>
-                        <i data-lucide="package"></i>
-                        신청 교구 목록 (${applications.length}개)
-                    </h4>
-                    <button class="toggle-applications-btn" data-action="toggle">
-                        <span class="toggle-text">접기</span>
-                        <i data-lucide="chevron-up" class="toggle-icon"></i>
-                    </button>
-                </div>
+        const result = await this.core.safeApiCall('대기중인 수업계획 조회', async () => {
+            const client = await this.core.ensureClient();
+            
+            return await client
+                .from('lesson_plans')
+                .select('*')
+                .eq('status', 'submitted');
+        });
+
+        return result.success ? (result.data || []) : [];
+    },
+
+    /**
+     * 수업계획 승인
+     * @param {string} studentId - 학생 ID
+     * @returns {Promise<Object>} 승인 결과
+     */
+    async approveLessonPlan(studentId) {
+        console.log('📚 수업계획 승인 시작:', studentId);
+        
+        return await this.core.safeApiCall('수업계획 승인', async () => {
+            const client = await this.core.ensureClient();
+            
+            try {
+                const updateData = {
+                    status: 'approved',
+                    rejection_reason: null,
+                    updated_at: new Date().toISOString()
+                };
+
+                console.log('📚 수업계획 승인 데이터:', updateData);
+
+                const approveResult = await client
+                    .from('lesson_plans')
+                    .update(updateData)
+                    .eq('user_id', studentId)
+                    .eq('status', 'submitted')
+                    .select();
+
+                if (approveResult.error) {
+                    console.error('❌ 수업계획 승인 DB 오류:', approveResult.error);
+                    throw approveResult.error;
+                }
+
+                console.log('✅ 수업계획 승인 완료:', approveResult.data);
                 
-                <div class="applications-list expanded">
-                    ${applicationsHTML}
-                </div>
-            </div>
-        `;
-    },
+                if (!approveResult.data || approveResult.data.length === 0) {
+                    console.warn('⚠️ 승인할 수업계획을 찾을 수 없습니다');
+                    return {
+                        data: null,
+                        error: { message: '승인할 수업계획이 없습니다. 이미 처리되었거나 상태가 변경되었을 수 있습니다.' }
+                    };
+                }
 
-    // 개별 신청 아이템 HTML 생성 (v11.1.0 - 관리자 영수증 지원 추가)
-    createApplicationItemHTML(application) {
-        const statusClass = this.getStatusClass(application.status);
-        const statusText = this.getStatusText(application.status);
-        const purchaseMethodInfo = this.getPurchaseMethodInfo(application);
-        
-        // v4.3 구매 관련 정보 표시
-        const purchaseInfoHTML = this.createPurchaseInfoHTML(application);
-        
-        // admin-enhanced-ui.js - createApplicationItemHTML() 함수에서
-        let receiptInfo = '';
+                return approveResult;
 
-        // 🔧 학생 영수증만 확인 (관리자 영수증은 별도 섹션에서 처리)
-        const hasStudentReceipt = application.receipts && 
-                                 application.receipts.length > 0 && 
-                                 application.receipts[0].file_url;
-
-        if (hasStudentReceipt) {
-            receiptInfo = `
-                <div class="receipt-info submitted">
-                    <span class="receipt-status">
-                        <i data-lucide="check-circle"></i>
-                        영수증 학생 제출완료
-                    </span>
-                    <button class="btn small secondary view-receipt-btn" 
-                            data-request-id="${application.id}">
-                        <i data-lucide="eye"></i> 영수증 보기
-                    </button>
-                </div>
-            `;
-        } else if (application.purchase_type === 'offline' && application.status === 'approved') {
-            receiptInfo = `
-                <div class="receipt-info pending">
-                    <span class="receipt-pending">
-                        <i data-lucide="clock"></i>
-                        영수증 제출 대기 중
-                    </span>
-                </div>
-            `;
-        }
-
-
-        // 🆕 관리자 영수증 정보 표시 (v11.1.0)
-        let adminReceiptInfo = '';
-        if (application.status === 'purchased' && 
-            application.purchase_type === 'online' && 
-            application.admin_receipt_url) {
-            
-            // 금액 차이 계산
-            const originalAmount = application.price || 0; // total_amount → price
-            const finalAmount = application.final_purchase_amount || originalAmount;
-            const difference = finalAmount - originalAmount;
-            
-            adminReceiptInfo = `
-                <div class="admin-receipt-section">
-                    <h5><i data-lucide="shield-check"></i> 관리자 구매 정보</h5>
-                    <div class="admin-purchase-info">
-                        <div class="purchase-summary-grid">
-                            <div class="summary-item">
-                                <label>신청 금액:</label>
-                                <span class="original-amount">${this.formatPrice(originalAmount)}</span>
-                            </div>
-                            <div class="summary-item">
-                                <label>최종 구매 금액:</label>
-                                <span class="final-amount">${this.formatPrice(finalAmount)}</span>
-                            </div>
-                            <div class="summary-item">
-                                <label>구매 날짜:</label>
-                                <span class="purchase-date">${this.formatDate(application.admin_purchase_date)}</span>
-                            </div>
-                            ${difference !== 0 ? `
-                                <div class="summary-item amount-difference">
-                                    <label>금액 차이:</label>
-                                    <span class="difference-amount ${difference > 0 ? 'over' : 'under'}">
-                                        ${difference > 0 ? '+' : ''}${new Intl.NumberFormat('ko-KR').format(Math.abs(difference))}원
-                                    </span>
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="admin-receipt-actions">
-                            <button class="btn small secondary view-admin-receipt-btn" 
-                                    data-receipt-url="${application.admin_receipt_url}"
-                                    title="관리자 구매 영수증 보기">
-                                <i data-lucide="file-text"></i> 관리자 영수증 보기
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        return `
-            <div class="application-item" data-request-id="${application.id}">
-                <div class="item-header">
-                    <div class="item-main-info">
-                        <div class="item-title-row">
-                            <h5 class="item-name">${this.escapeHtml(application.item_name)}</h5>
-                            <div class="item-badges">
-                                <span class="purchase-method-badge ${purchaseMethodInfo.class}">
-                                    <i data-lucide="${purchaseMethodInfo.icon}"></i>
-                                    ${purchaseMethodInfo.text}
-                                </span>
-                                <span class="type-badge ${application.is_bundle ? 'bundle' : 'single'}">
-                                    ${application.is_bundle ? '묶음' : '단일'}
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <p class="item-purpose">${this.escapeHtml(application.purpose)}</p>
-                        
-                        <div class="item-details">
-                            <span class="item-price">
-                                <i data-lucide="tag"></i>
-                                <strong>${this.formatPrice(application.price)}</strong>
-                            </span>
-                        </div>
-                        
-                        ${purchaseInfoHTML}
-                        ${receiptInfo}
-                        ${adminReceiptInfo}
-                    </div>
-                    
-                    <div class="item-actions">
-                        ${this.createItemActionButtons(application.status, application.purchase_type)}
-                        <span class="status-badge ${statusClass}">${statusText}</span>
-                    </div>
-                </div>
+            } catch (error) {
+                console.error('❌ 수업계획 승인 처리 중 예외:', error);
                 
-                ${application.rejection_reason ? `
-                    <div class="item-rejection-reason">
-                        <div class="reason-label">
-                            <i data-lucide="alert-circle"></i>
-                            반려 사유
-                        </div>
-                        <div class="reason-text">${this.escapeHtml(application.rejection_reason)}</div>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    },
-
-    // v4.3 구매 정보 HTML 생성 (새로운 컬럼들 활용)
-    createPurchaseInfoHTML(application) {
-        const purchaseType = application.purchase_type;
-        const isBundle = application.is_bundle;
-        
-        let purchaseInfoHTML = '';
-        
-        if (purchaseType === 'online') {
-            // 온라인 구매 - link 컬럼 활용
-            if (application.link) {
-                purchaseInfoHTML += `
-                    <div class="purchase-link-info">
-                        <a href="${this.escapeHtml(application.link)}" 
-                           target="_blank" rel="noopener noreferrer" 
-                           class="item-link online-link">
-                            <i data-lucide="external-link"></i>
-                            구매 링크 바로가기
-                        </a>
-                    </div>
-                `;
-            }
-            
-            // 온라인 묶음 구매 - 새로운 account_id, account_pw 컬럼 활용
-            if (isBundle && (application.account_id || application.account_pw)) {
-                purchaseInfoHTML += `
-                    <div class="bundle-account-info">
-                        <div class="account-info-header">
-                            <i data-lucide="key"></i>
-                            <strong>대리구매 계정 정보</strong>
-                        </div>
-                        <div class="account-details">
-                            ${application.account_id ? `
-                                <div class="account-item">
-                                    <span class="account-label">아이디:</span>
-                                    <span class="account-value">${this.escapeHtml(application.account_id)}</span>
-                                    <button class="copy-btn" data-copy="${this.escapeHtml(application.account_id)}" title="복사">
-                                        <i data-lucide="copy"></i>
-                                    </button>
-                                </div>
-                            ` : ''}
-                            ${application.account_pw ? `
-                                <div class="account-item">
-                                    <span class="account-label">비밀번호:</span>
-                                    <span class="account-value password-field">••••••••</span>
-                                    <button class="toggle-password-btn" data-password="${this.escapeHtml(application.account_pw)}" title="비밀번호 보기/숨기기">
-                                        <i data-lucide="eye"></i>
-                                    </button>
-                                    <button class="copy-btn" data-copy="${this.escapeHtml(application.account_pw)}" title="복사">
-                                        <i data-lucide="copy"></i>
-                                    </button>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            }
-            
-            // 🆕 온라인 묶음 구매 - store_info (장바구니 메모) 표시 개선
-            if (isBundle && application.store_info) {
-                purchaseInfoHTML += `
-                    <div class="bundle-cart-memo-section">
-                        <div class="cart-memo-header">
-                            <div class="cart-memo-title">
-                                <i data-lucide="shopping-cart"></i>
-                                <strong>장바구니 메모</strong>
-                            </div>
-                            <div class="cart-memo-badge">
-                                <i data-lucide="sticky-note"></i>
-                                구매 참고사항
-                            </div>
-                        </div>
-                        <div class="cart-memo-content">
-                            <div class="memo-text">
-                                ${this.escapeHtml(application.store_info)}
-                            </div>
-                            <button class="copy-memo-btn" data-copy="${this.escapeHtml(application.store_info)}" title="메모 복사">
-                                <i data-lucide="copy"></i>
-                                메모 복사
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
-
-        } else if (purchaseType === 'offline') {
-            // 오프라인 구매 - 새로운 store_info 컬럼 활용
-            if (application.store_info) {
-                purchaseInfoHTML += `
-                    <div class="store-info">
-                        <div class="store-info-header">
-                            <i data-lucide="store"></i>
-                            <strong>구매처 정보</strong>
-                        </div>
-                        <div class="store-details">
-                            ${this.escapeHtml(application.store_info)}
-                        </div>
-                    </div>
-                `;
-            }
-            
-            // 오프라인이어도 참고 링크가 있는 경우 표시
-            if (application.link) {
-                purchaseInfoHTML += `
-                    <div class="reference-link-info">
-                        <a href="${this.escapeHtml(application.link)}" 
-                           target="_blank" rel="noopener noreferrer" 
-                           class="item-link reference-link">
-                            <i data-lucide="external-link"></i>
-                            참고 링크
-                        </a>
-                    </div>
-                `;
-            }
-        }
-        
-        return purchaseInfoHTML ? `<div class="purchase-info-section">${purchaseInfoHTML}</div>` : '';
-    },
-
-    // v4.3 구매 방식 정보 생성
-    getPurchaseMethodInfo(application) {
-        const purchaseType = application.purchase_type;
-        const isBundle = application.is_bundle;
-        
-        if (purchaseType === 'online') {
-            if (isBundle) {
-                return {
-                    text: '온라인 묶음구매',
-                    class: 'online-bundle',
-                    icon: 'shopping-basket'
-                };
-            } else {
-                return {
-                    text: '온라인 단일구매',
-                    class: 'online-single', 
-                    icon: 'shopping-cart'
-                };
-            }
-        } else {
-            if (isBundle) {
-                return {
-                    text: '오프라인 묶음구매',
-                    class: 'offline-bundle',
-                    icon: 'store'
-                };
-            } else {
-                return {
-                    text: '오프라인 단일구매',
-                    class: 'offline-single',
-                    icon: 'store'
-                };
-            }
-        }
-    },
-
-    // 학생 액션 HTML 생성 (일괄 처리 버튼들)
-    createStudentActionsHTML(studentGroup) {
-        const { statistics } = studentGroup;
-        
-        // 일괄 처리 가능한 상황 체크
-        const hasPendingItems = statistics.pendingCount > 0;
-        const hasApprovedItems = statistics.approvedCount > 0;
-        
-        return `
-            <div class="student-actions-section">
-                <div class="bulk-actions">
-                    ${hasPendingItems ? `
-                        <button class="btn small approve bulk-approve-btn" 
-                                data-action="bulk-approve" 
-                                data-student-id="${studentGroup.studentId}">
-                            <i data-lucide="check-circle"></i>
-                            모든 대기중 교구 일괄 승인 (${statistics.pendingCount}개)
-                        </button>
-                    ` : ''}
-                    
-                    ${hasApprovedItems && statistics.pendingCount === 0 ? `
-                        <span class="action-note">
-                            <i data-lucide="info"></i>
-                            승인된 교구가 있습니다. 개별적으로 구매완료 처리해주세요.
-                        </span>
-                    ` : ''}
-                    
-                    ${statistics.totalItems > 1 && statistics.pendingCount === 0 && statistics.approvedCount === 0 ? `
-                        <span class="action-note completed">
-                            <i data-lucide="check-circle"></i>
-                            모든 교구 처리가 완료되었습니다.
-                        </span>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    },
-
-    // 개별 아이템 액션 버튼 생성
-    createItemActionButtons(status, purchaseMethod) {
-        switch(status) {
-            case 'pending':
-                return `
-                    <button class="btn small approve" data-action="approve">
-                        <i data-lucide="check"></i> 승인
-                    </button>
-                    <button class="btn small reject" data-action="reject">
-                        <i data-lucide="x"></i> 반려
-                    </button>
-                `;
-            case 'approved':
-                if (purchaseMethod === 'offline') {
-                    return `
-                        <span class="offline-notice">
-                            <i data-lucide="info"></i>
-                            영수증 제출 후 자동 완료
-                        </span>
-                    `;
-                } else {
-                    return `
-                        <button class="btn small purchase" data-action="purchase">
-                            <i data-lucide="shopping-cart"></i> 구매완료
-                        </button>
-                    `;
+                if (error.message && (error.message.includes('has no field') || error.code === '42703')) {
+                    console.error('❌ 데이터베이스 컬럼 참조 오류 감지');
+                    throw new Error('데이터베이스 구조 오류: 수업계획 테이블의 컬럼 구조를 확인해주세요.');
                 }
                 
-                default:
-                return '';
+                throw error;
+            }
+        });
+    },
+
+    /**
+     * 수업계획 반려
+     * @param {string} studentId - 학생 ID
+     * @param {string} reason - 반려 사유
+     * @returns {Promise<Object>} 반려 결과
+     */
+    async rejectLessonPlan(studentId, reason) {
+        console.log('📚 수업계획 반려 시작:', studentId, reason);
+        
+        return await this.core.safeApiCall('수업계획 반려', async () => {
+            const client = await this.core.ensureClient();
+            
+            try {
+                const updateData = {
+                    status: 'rejected',
+                    rejection_reason: reason,
+                    updated_at: new Date().toISOString()
+                };
+
+                console.log('📚 수업계획 반려 데이터:', updateData);
+
+                const rejectResult = await client
+                    .from('lesson_plans')
+                    .update(updateData)
+                    .eq('user_id', studentId)
+                    .eq('status', 'submitted')
+                    .select();
+
+                if (rejectResult.error) {
+                    console.error('❌ 수업계획 반려 DB 오류:', rejectResult.error);
+                    throw rejectResult.error;
+                }
+
+                console.log('✅ 수업계획 반려 완료:', rejectResult.data);
+                
+                if (!rejectResult.data || rejectResult.data.length === 0) {
+                    console.warn('⚠️ 반려할 수업계획을 찾을 수 없습니다');
+                    return {
+                        data: null,
+                        error: { message: '반려할 수업계획이 없습니다. 이미 처리되었거나 상태가 변경되었을 수 있습니다.' }
+                    };
+                }
+
+                return rejectResult;
+
+            } catch (error) {
+                console.error('❌ 수업계획 반려 처리 중 예외:', error);
+                throw error;
+            }
+        });
+    },
+
+    /**
+     * 모든 수업계획 조회
+     * @returns {Promise<Array>} 수업계획 목록
+     */
+    async getAllLessonPlans() {
+        console.log('📚 모든 수업계획 조회...');
+        
+        const result = await this.core.safeApiCall('모든 수업계획 조회', async () => {
+            const client = await this.core.ensureClient();
+            
+            // 수업계획 데이터 조회
+            const lessonPlansResult = await client
+                .from('lesson_plans')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (lessonPlansResult.error) {
+                return { data: null, error: lessonPlansResult.error };
+            }
+
+            const lessonPlans = lessonPlansResult.data || [];
+            
+            if (lessonPlans.length === 0) {
+                return { data: [], error: null };
+            }
+
+            // 사용자 ID 목록 추출
+            const userIds = [...new Set(lessonPlans.map(plan => plan.user_id).filter(id => id))];
+            
+            // 사용자 프로필 데이터 별도 조회
+            let userProfiles = {};
+            if (userIds.length > 0) {
+                const profilesResult = await client
+                    .from('user_profiles')
+                    .select('id, name, field, sejong_institute')
+                    .in('id', userIds);
+
+                if (profilesResult.data) {
+                    profilesResult.data.forEach(profile => {
+                        userProfiles[profile.id] = profile;
+                    });
+                }
+            }
+
+            // 데이터 병합
+            const enrichedPlans = lessonPlans.map(plan => {
+                let approval_status = 'pending';
+                
+                if (plan.status === 'draft') {
+                    approval_status = 'draft';
+                } else if (plan.status === 'submitted') {
+                    approval_status = 'pending';
+                } else if (plan.status === 'approved') {
+                    approval_status = 'approved';
+                } else if (plan.status === 'rejected') {
+                    approval_status = 'rejected';
+                }
+                
+                const userProfile = userProfiles[plan.user_id] || {
+                    id: plan.user_id,
+                    name: '사용자 정보 없음',
+                    field: '미설정',
+                    sejong_institute: '미설정'
+                };
+                
+                return {
+                    ...plan,
+                    approval_status,
+                    user_profiles: userProfile
+                };
+            });
+            
+            return { data: enrichedPlans, error: null };
+        });
+
+        return result.success ? result.data : [];
+    },
+
+    /**
+     * 수업계획 상태 업데이트
+     * @param {number} planId - 수업계획 ID
+     * @param {string} status - 새로운 상태
+     * @param {string} rejectionReason - 반려 사유 (선택)
+     * @returns {Promise<Object>} 업데이트 결과
+     */
+    async updateLessonPlanStatus(planId, status, rejectionReason = null) {
+        console.log('📚 수업계획 상태 업데이트:', { planId, status, rejectionReason });
+        
+        return await this.core.safeApiCall('수업계획 상태 업데이트', async () => {
+            const client = await this.core.ensureClient();
+            
+            const updateData = {
+                status: status,
+                updated_at: new Date().toISOString()
+            };
+
+            if (status === 'rejected' && rejectionReason) {
+                updateData.rejection_reason = rejectionReason;
+            } else if (status === 'approved') {
+                updateData.rejection_reason = null;
+            }
+
+            return await client
+                .from('lesson_plans')
+                .update(updateData)
+                .eq('id', planId)
+                .select();
+        });
+    },
+
+    // ===================
+    // 💰 예산 관리 - v4.3.1 하드코딩 제거
+    // ===================
+    
+    /**
+     * 모든 분야별 예산 설정 조회 - v4.3.1 하드코딩 제거
+     * @returns {Promise<Object>} 분야별 예산 설정 (DB 전용)
+     */
+    async getAllFieldBudgetSettings() {
+        console.log('💰 분야별 예산 설정 조회... (v4.3.1 DB 전용)');
+        
+        const result = await this.core.safeApiCall('분야별 예산 설정 조회', async () => {
+            const client = await this.core.ensureClient();
+            
+            return await client
+                .from('budget_settings')
+                .select('*')
+                .order('field', { ascending: true });
+        });
+
+        if (result.success && result.data) {
+            const settings = {};
+            result.data.forEach(setting => {
+                settings[setting.field] = {
+                    perLessonAmount: setting.per_lesson_amount || 0,
+                    maxBudget: setting.max_budget_limit || 0
+                };
+            });
+            
+            console.log('✅ v4.3.1 예산 설정 조회 완료 - DB 전용 (', Object.keys(settings).length, '개 분야)');
+            return settings;
+        }
+
+        // ❌ 하드코딩된 기본 설정 완전 제거
+        // ✅ DB 조회 실패시 빈 객체 반환
+        console.log('📋 예산 설정 조회 결과: 빈 설정 (DB에 설정 없음)');
+        return {};
+    },
+
+    /**
+     * 분야별 예산 설정 업데이트
+     * @param {string} field - 분야명
+     * @param {Object} settings - 예산 설정
+     * @returns {Promise<Object>} 업데이트 결과
+     */
+    async updateFieldBudgetSettings(field, settings) {
+        console.log('💰 분야별 예산 설정 업데이트:', { field, settings });
+        
+        return await this.core.safeApiCall('분야별 예산 설정 업데이트', async () => {
+            const client = await this.core.ensureClient();
+            
+            const updateData = {
+                field: field,
+                per_lesson_amount: settings.perLessonAmount || 0,
+                max_budget_limit: settings.maxBudget || 0,
+                updated_at: new Date().toISOString()
+            };
+
+            return await client
+                .from('budget_settings')
+                .upsert(updateData, {
+                    onConflict: 'field'
+                })
+                .select();
+        });
+    },
+
+    /**
+     * 분야별 예산 현황 조회
+     * @param {string} field - 분야명
+     * @returns {Promise<Object>} 분야별 예산 현황
+     */
+    async getFieldBudgetStatus(field) {
+        console.log(`📊 ${field} 분야 예산 현황 조회...`);
+        
+        try {
+            const client = await this.core.ensureClient();
+            
+            // 해당 분야의 승인받은 수업계획을 가진 학생들 조회
+            const approvedPlansResult = await client
+                .from('lesson_plans')
+                .select(`
+                    user_id,
+                    lessons,
+                    user_profiles:user_id (
+                        name,
+                        field,
+                        sejong_institute
+                    )
+                `)
+                .eq('status', 'approved')
+                .eq('user_profiles.field', field);
+
+            if (!approvedPlansResult.data) {
+                return {
+                    success: true,
+                    data: {
+                        students: [],
+                        statistics: {
+                            totalStudents: 0,
+                            totalAllocated: 0,
+                            totalUsed: 0,
+                            utilizationRate: 0
+                        }
+                    }
+                };
+            }
+
+            const fieldBudgetSettings = await this.getAllFieldBudgetSettings();
+            const fieldSetting = fieldBudgetSettings[field] || { perLessonAmount: 0, maxBudget: 0 };
+            
+            // 각 학생의 예산 정보 계산
+            const studentsWithBudget = await Promise.all(
+                approvedPlansResult.data.map(async (plan) => {
+                    // 수업 횟수 계산
+                    let totalLessons = 0;
+                    try {
+                        if (plan.lessons) {
+                            let lessons = plan.lessons;
+                            if (typeof lessons === 'string') {
+                                lessons = JSON.parse(lessons);
+                            }
+                            
+                            if (lessons.totalLessons) {
+                                totalLessons = lessons.totalLessons;
+                            } else if (lessons.schedule && Array.isArray(lessons.schedule)) {
+                                totalLessons = lessons.schedule.length;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('수업계획 파싱 오류:', e);
+                    }
+
+                    // 배정 예산 계산
+                    const calculatedBudget = fieldSetting.perLessonAmount * totalLessons;
+                    const allocatedBudget = fieldSetting.maxBudget > 0 ? 
+                        Math.min(calculatedBudget, fieldSetting.maxBudget) : 
+                        calculatedBudget;
+
+                    // 사용 예산 계산
+                    const usedBudgetResult = await client
+                        .from('requests')
+                        .select('price')
+                        .eq('user_id', plan.user_id)
+                        .in('status', ['approved', 'purchased']);
+
+                    const usedBudget = usedBudgetResult.data ? 
+                        usedBudgetResult.data.reduce((sum, req) => sum + (req.price || 0), 0) : 0;
+
+                    return {
+                        user_id: plan.user_id,
+                        allocated_budget: allocatedBudget,
+                        used_budget: usedBudget,
+                        user_profiles: plan.user_profiles || {
+                            name: '사용자 정보 없음',
+                            sejong_institute: '미설정'
+                        }
+                    };
+                })
+            );
+
+            // 통계 계산
+            const statistics = {
+                totalStudents: studentsWithBudget.length,
+                totalAllocated: studentsWithBudget.reduce((sum, s) => sum + s.allocated_budget, 0),
+                totalUsed: studentsWithBudget.reduce((sum, s) => sum + s.used_budget, 0),
+                utilizationRate: 0
+            };
+
+            if (statistics.totalAllocated > 0) {
+                statistics.utilizationRate = Math.round((statistics.totalUsed / statistics.totalAllocated) * 100);
+            }
+
+            return {
+                success: true,
+                data: {
+                    students: studentsWithBudget,
+                    statistics
+                }
+            };
+
+        } catch (error) {
+            console.error(`❌ ${field} 분야 예산 현황 조회 실패:`, error);
+            return {
+                success: false,
+                message: '예산 현황을 조회할 수 없습니다.'
+            };
         }
     },
 
-    // 간단한 신청 카드 생성 (폴백용)
-    createSimpleApplicationCard(application) {
-        const card = document.createElement('div');
-        card.className = 'admin-application-card';
+    // ===================
+    // 📦 교구신청 관리 - v4.3.0 호환성 (컬럼명 변경 대응)
+    // ===================
+    
+    /**
+     * 모든 교구신청 내역 조회
+     * @returns {Promise<Array>} 신청 목록
+     */
+    async getAllApplications() {
+        console.log('📦 모든 교구신청 내역 조회...');
         
-        const userName = application.user_profiles?.name || '알 수 없음';
-        const institute = application.user_profiles?.sejong_institute || '미설정';
-        const field = application.user_profiles?.field || '미설정';
-        const submittedDate = this.formatDate(application.created_at);
-        const statusText = this.getStatusText(application.status);
-        const statusClass = this.getStatusClass(application.status);
-        
-        card.innerHTML = `
-            <div class="admin-application-header">
-                <div class="student-info">
-                    <div>
-                        <h3>${this.escapeHtml(userName)}</h3>
-                        <p class="submission-date">신청일: ${submittedDate}</p>
-                        <p class="institute-info">${this.escapeHtml(institute)} • ${this.escapeHtml(field)}</p>
-                    </div>
-                    <span class="item-count">1개 항목</span>
-                </div>
-            </div>
+        const result = await this.core.safeApiCall('모든 신청 내역 조회', async () => {
+            const client = await this.core.ensureClient();
             
-            <div class="admin-application-body">
-                <div class="admin-item-card">
-                    <div class="admin-item-header">
-                        <div class="admin-item-info">
-                            <h4>${this.escapeHtml(application.item_name)}</h4>
-                            <p>${this.escapeHtml(application.purpose)}</p>
-                            <div class="admin-item-details">
-                                <span><strong>가격:</strong> ${this.formatPrice(application.price)}</span>
-                            </div>
-                        </div>
-                        <div class="admin-item-actions">
-                            <span class="admin-status-badge status-badge ${statusClass}">${statusText}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+            return await client
+                .from('requests')
+                .select(`
+                    *,
+                    admin_receipt_url,
+                    final_purchase_amount,
+                    admin_purchase_date,
+                    user_profiles:user_id (
+                        name,
+                        field,
+                        sejong_institute
+                    )
+                `)
+                .order('created_at', { ascending: false });
+        });
+
+        return result.success ? (result.data || []) : [];
+    },
+
+    /**
+     * 교구신청 상태 업데이트
+     * @param {number} applicationId - 신청 ID
+     * @param {string} status - 새로운 상태
+     * @param {string} rejectionReason - 반려 사유 (선택)
+     * @returns {Promise<Object>} 업데이트 결과
+     */
+    async updateApplicationStatus(applicationId, status, rejectionReason = null) {
+        console.log('📦 교구신청 상태 업데이트:', { applicationId, status, rejectionReason });
         
-        return card;
-    },
-    
-
-    // 🆕 예산 상태 관련 유틸리티 함수들
-    getBudgetStatusClass(status) {
-        const statusClasses = {
-            'no-budget': 'no-budget',
-            'unused': 'unused',
-            'low-usage': 'low-usage',
-            'moderate-usage': 'moderate-usage', 
-            'high-usage': 'high-usage',
-            'over-budget': 'over-budget'
-        };
-        return statusClasses[status] || 'unknown';
-    },
-
-    getBudgetStatusText(status) {
-        const statusTexts = {
-            'no-budget': '예산 미배정',
-            'unused': '사용 안함',
-            'low-usage': '적정 사용',
-            'moderate-usage': '보통 사용',
-            'high-usage': '높은 사용',
-            'over-budget': '예산 초과'
-        };
-        return statusTexts[status] || '알 수 없음';
-    },
-
-    getBudgetStatusIcon(status) {
-        const statusIcons = {
-            'no-budget': 'alert-circle',
-            'unused': 'circle',
-            'low-usage': 'check-circle',
-            'moderate-usage': 'clock',
-            'high-usage': 'alert-triangle',
-            'over-budget': 'x-circle'
-        };
-        return statusIcons[status] || 'help-circle';
-    },    
-    
-    // 결과 없음 HTML 생성
-    createNoResultsHTML() {
-        const message = this.currentSearchTerm ? 
-            `'${this.currentSearchTerm}'에 대한 검색 결과가 없습니다.` : 
-            '신청 내역이 없습니다.';
+        return await this.core.safeApiCall('신청 상태 업데이트', async () => {
+            const client = await this.core.ensureClient();
             
-        return `
-            <div class="no-results">
-                <i data-lucide="search" class="no-results-icon"></i>
-                <p>${message}</p>
-            </div>
-        `;
+            const updateData = {
+                status: status,
+                updated_at: new Date().toISOString()
+            };
+
+            if (status === 'rejected' && rejectionReason) {
+                updateData.rejection_reason = rejectionReason;
+            } else if (status === 'approved') {
+                updateData.reviewed_at = new Date().toISOString();
+                updateData.reviewed_by = this.core.getCurrentUser()?.id || null;
+            }
+
+            return await client
+                .from('requests')
+                .update(updateData)
+                .eq('id', applicationId)
+                .select();
+        });
     },
 
+    /**
+     * 교구신청 아이템 상태 업데이트 (레거시 호환)
+     * @param {number} requestId - 신청 ID
+     * @param {string} status - 새로운 상태
+     * @param {string} rejectionReason - 반려 사유 (선택)
+     * @returns {Promise<Object>} 업데이트 결과
+     */
+    async updateItemStatus(requestId, status, rejectionReason = null) {
+        return this.updateApplicationStatus(requestId, status, rejectionReason);
+    },
+
+    // ===================
+    // 📄 영수증 관리 - v4.3.2 영수증 보기 기능 추가
+    // ===================
     
-    // 유틸리티 함수들
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    /**
+     * 모든 영수증 조회 (관리자용)
+     * @returns {Promise<Array>} 영수증 목록
+     */
+    async getAllReceipts() {
+        console.log('📄 모든 영수증 조회 (관리자용)...');
+
+        const result = await this.core.safeApiCall('모든 영수증 조회', async () => {
+            const client = await this.core.ensureClient();
+            
+            return await client
+                .from('receipts')
+                .select(`
+                    id,
+                    receipt_number,
+                    purchase_date,
+                    total_amount,
+                    request_id,
+                    user_id,
+                    file_url,
+                    file_name,
+                    original_name,
+                    file_size,
+                    file_type,
+                    purchase_store,
+                    note,
+                    uploaded_at,
+                    verified,
+                    verified_at,
+                    verified_by,
+                    updated_at,
+                    requests:request_id (
+                        item_name,
+                        price,
+                        purchase_type,
+                        status,
+                        user_profiles:user_id (
+                            name,
+                            field,
+                            sejong_institute
+                        )
+                    )
+                `)
+                .order('uploaded_at', { ascending: false });
+        });
+
+        if (result.success && result.data) {
+            return result.data.map(receipt => ({
+                ...receipt,
+                item_name: receipt.requests?.item_name,
+                item_price: receipt.requests?.price,
+                purchase_type: receipt.requests?.purchase_type,
+                request_status: receipt.requests?.status,
+                student_name: receipt.requests?.user_profiles?.name,
+                student_field: receipt.requests?.user_profiles?.field,
+                student_institute: receipt.requests?.user_profiles?.sejong_institute
+            }));
+        }
+
+        return result.success ? (result.data || []) : [];
     },
 
-    formatPrice(price) {
-        if (typeof price !== 'number') return '0원';
-        return new Intl.NumberFormat('ko-KR').format(price) + '원';
+    /**
+     * 특정 교구 신청 ID로 영수증 조회 (영수증 보기 모달용) - v4.3.2 추가
+     * @param {number} requestId - 교구 신청 ID
+     * @returns {Promise<Object|null>} 영수증 데이터
+     */
+    async getReceiptByRequestId(requestId) {
+        console.log('📄 특정 교구신청 영수증 조회:', requestId);
+        
+        const result = await this.core.safeApiCall('특정 영수증 조회', async () => {
+            const client = await this.core.ensureClient();
+            
+            return await client
+                .from('receipts')
+                .select(`
+                    id,
+                    receipt_number,
+                    purchase_date,
+                    total_amount,
+                    request_id,
+                    user_id,
+                    file_url,
+                    file_name,
+                    original_name,
+                    file_size,
+                    file_type,
+                    purchase_store,
+                    note,
+                    uploaded_at,
+                    verified,
+                    verified_at,
+                    verified_by,
+                    updated_at,
+                    requests:request_id (
+                        item_name,
+                        price,
+                        purchase_type,
+                        status,
+                        user_profiles:user_id (
+                            name,
+                            field,
+                            sejong_institute
+                        )
+                    )
+                `)
+                .eq('request_id', requestId)
+                .single(); // 단일 결과만 가져오기
+        });
+
+        if (result.success && result.data) {
+            // admin-utils.js에서 기대하는 데이터 구조로 변환
+            const receipt = result.data;
+            return {
+                ...receipt,
+                item_name: receipt.requests?.item_name,
+                student_name: receipt.requests?.user_profiles?.name,
+                student_field: receipt.requests?.user_profiles?.field,
+                student_institute: receipt.requests?.user_profiles?.sejong_institute,
+                image_path: receipt.file_url, // admin-utils.js에서 기대하는 필드명
+                store_name: receipt.purchase_store,
+                notes: receipt.note,
+                created_at: receipt.uploaded_at
+            };
+        }
+
+        console.log('⚠️ 해당 교구 신청에 대한 영수증을 찾을 수 없음:', requestId);
+        return null;
     },
 
-    formatDate(dateString) {
-        if (!dateString) return '-';
-        return new Date(dateString).toLocaleDateString('ko-KR');
+    // ===================
+    // ⚙️ 시스템 관리
+    // ===================
+    
+    /**
+     * 시스템 설정 조회
+     * @returns {Promise<Object>} 시스템 설정
+     */
+    async getSystemSettings() {
+        console.log('⚙️ 시스템 설정 조회...');
+        
+        const result = await this.core.safeApiCall('시스템 설정 조회', async () => {
+            const client = await this.core.ensureClient();
+            
+            return await client
+                .from('system_settings')
+                .select('setting_key, setting_value, setting_type');
+        });
+
+        if (result.success) {
+            const settings = {};
+            (result.data || []).forEach(item => {
+                let value = item.setting_value;
+                
+                if (item.setting_type === 'boolean') {
+                    value = value === 'true';
+                } else if (item.setting_type === 'number') {
+                    value = parseInt(value);
+                } else if (item.setting_type === 'json') {
+                    try {
+                        value = JSON.parse(value);
+                    } catch (e) {
+                        console.warn(`JSON 설정 파싱 오류 (${item.setting_key}):`, e);
+                    }
+                }
+
+                settings[item.setting_key] = value;
+            });
+
+            return settings;
+        }
+
+        // 기본 설정 반환
+        return window.CONFIG?.APP?.DEFAULT_SYSTEM_SETTINGS || {
+            test_mode: false,
+            lesson_plan_deadline: '2024-12-31',
+            ignore_deadline: false
+        };
     },
 
+    /**
+     * 시스템 설정 업데이트
+     * @param {string} key - 설정 키
+     * @param {*} value - 설정 값
+     * @returns {Promise<Object>} 업데이트 결과
+     */
+    async updateSystemSetting(key, value) {
+        console.log('⚙️ 시스템 설정 업데이트:', { key, value });
+        
+        return await this.core.safeApiCall('시스템 설정 업데이트', async () => {
+            const client = await this.core.ensureClient();
+            
+            let settingValue = value;
+            let settingType = 'string';
+            
+            if (typeof value === 'boolean') {
+                settingValue = value.toString();
+                settingType = 'boolean';
+            } else if (typeof value === 'number') {
+                settingValue = value.toString();
+                settingType = 'number';
+            } else if (typeof value === 'object') {
+                settingValue = JSON.stringify(value);
+                settingType = 'json';
+            }
+
+            return await client
+                .from('system_settings')
+                .upsert({
+                    setting_key: key,
+                    setting_value: settingValue,
+                    setting_type: settingType,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'setting_key'
+                })
+                .select();
+        });
+    },
+
+    /**
+     * 테스트 모드 토글
+     * @returns {Promise<boolean>} 새로운 테스트 모드 상태
+     */
+    async toggleTestMode() {
+        console.log('⚙️ 테스트 모드 토글...');
+        
+        const settings = await this.getSystemSettings();
+        const newMode = !settings.test_mode;
+        
+        const result = await this.updateSystemSetting('test_mode', newMode);
+        return result.success ? newMode : false;
+    },
+
+    // ===================
+    // 🆕 v5.2.0 기능 설정 관리
+    // ===================
+    
+    /**
+     * 🆕 모든 기능 설정 조회 (v5.2.0)
+     * @returns {Promise<Object>} 기능 설정 조회 결과
+     */
+    async getFeatureSettings() {
+        console.log('⚙️ 기능 설정 조회 시작... (v5.2.0)');
+        
+        const result = await this.core.safeApiCall('기능 설정 조회', async () => {
+            const client = await this.core.ensureClient();
+            
+            return await client
+                .from('feature_settings')
+                .select('*')
+                .order('display_order', { ascending: true });
+        });
+
+        if (result.success) {
+            console.log('✅ 기능 설정 조회 완료:', result.data?.length || 0, '개 기능');
+            return { success: true, data: result.data || [] };
+        } else {
+            console.error('❌ 기능 설정 조회 실패:', result.error || result.message);
+            return { 
+                success: false, 
+                message: result.message || '기능 설정을 조회할 수 없습니다.',
+                data: []
+            };
+        }
+    },
+
+    /**
+     * 🆕 개별 기능 설정 업데이트 (v5.2.0)
+     * @param {string} featureName - 기능명
+     * @param {boolean} isActive - 활성화 상태
+     * @returns {Promise<Object>} 업데이트 결과
+     */
+    async updateFeatureSetting(featureName, isActive) {
+        console.log('⚙️ 기능 설정 업데이트:', { featureName, isActive });
+        
+        return await this.core.safeApiCall('기능 설정 업데이트', async () => {
+            const client = await this.core.ensureClient();
+            
+            const updateData = {
+                is_active: isActive,
+                updated_at: new Date().toISOString(),
+                updated_by: 'admin' // 관리자가 업데이트
+            };
+
+            return await client
+                .from('feature_settings')
+                .update(updateData)
+                .eq('feature_name', featureName)
+                .select();
+        });
+    },
+
+    /**
+     * Excel 내보내기용 데이터 준비 - v4.3.0 호환성
+     * @returns {Promise<Array>} CSV 형태 데이터
+     */
+    async prepareExportData() {
+        console.log('📊 Excel 내보내기용 데이터 준비...');
+        
+        const result = await this.core.safeApiCall('Excel 내보내기용 데이터 준비', async () => {
+            const client = await this.core.ensureClient();
+            
+            return await client
+                .from('requests')
+                .select(`
+                    *,
+                    user_profiles:user_id (
+                        name,
+                        field,
+                        sejong_institute,
+                        birth_date
+                    )
+                `)
+                .order('created_at', { ascending: false });
+        });
+
+        if (result.success && result.data) {
+            // CSV 형태로 변환 - v4.3.0 호환성 (link 컬럼 사용)
+            return result.data.map(item => ({
+                '신청일': new Date(item.created_at).toLocaleDateString('ko-KR'),
+                '학생명': item.user_profiles?.name || '알 수 없음',
+                '세종학당': item.user_profiles?.sejong_institute || '미설정',
+                '분야': item.user_profiles?.field || '미설정',
+                '교구명': item.item_name || '',
+                '사용목적': item.purpose || '',
+                '가격': item.price || 0,
+                '구매방식': item.purchase_type === 'offline' ? '오프라인' : '온라인',
+                '구매링크': item.link || item.purchase_link || '', // 🔧 v4.3.0 호환성
+                '묶음여부': item.is_bundle ? '묶음' : '단일',
+                '상태': this.getStatusText(item.status),
+                '승인일': item.reviewed_at ? new Date(item.reviewed_at).toLocaleDateString('ko-KR') : '',
+                '반려사유': item.rejection_reason || ''
+            }));
+        }
+
+        return [];
+    },
+
+    // ===================
+    // 🛠️ 유틸리티 함수들
+    // ===================
+    
+    /**
+     * 상태 텍스트 반환
+     * @param {string} status - 상태 코드
+     * @returns {string} 상태 텍스트
+     */
     getStatusText(status) {
         const statusMap = {
-            'pending': '승인대기',
+            'pending': '검토 중',
             'approved': '승인됨',
             'rejected': '반려됨',
-            'purchased': '구매완료'
+            'purchased': '구매완료',
+            'completed': '구매완료'
         };
-        return statusMap[status] || '알 수 없음';
+        return statusMap[status] || status;
     },
 
+    /**
+     * 상태 CSS 클래스 반환
+     * @param {string} status - 상태 코드
+     * @returns {string} CSS 클래스
+     */
     getStatusClass(status) {
-        const classMap = {
-            'pending': 'pending',
-            'approved': 'approved',
-            'rejected': 'rejected',
-            'purchased': 'purchased'
+        const statusMap = {
+            'pending': 'warning',
+            'approved': 'success', 
+            'rejected': 'danger',
+            'purchased': 'info',
+            'completed': 'info'
         };
-        return classMap[status] || '';
+        return statusMap[status] || 'secondary';
     },
 
-    getPurchaseMethodText(purchaseType) {
-        return purchaseType === 'offline' ? '오프라인 구매' : '온라인 구매';
+    /**
+     * 구매 방법 텍스트 반환
+     * @param {string} method - 구매 방법
+     * @returns {string} 구매 방법 텍스트
+     */
+    getPurchaseMethodText(method) {
+        return method === 'offline' ? '오프라인' : '온라인';
     },
 
-    getPurchaseMethodClass(purchaseType) {
-        return purchaseType === 'offline' ? 'offline' : 'online';
-    },
-
-    // 디바운스 함수
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    },
-    
-
+    /**
+     * 구매 방법 CSS 클래스 반환
+     * @param {string} method - 구매 방법
+     * @returns {string} CSS 클래스
+     */
+    getPurchaseMethodClass(method) {
+        return method === 'offline' ? 'offline' : 'online';
+    }
 };
 
-// 전역 객체로 노출
-window.AdminEnhancedUI = AdminEnhancedUI;
-// 모듈 자동 초기화 (다른 admin 모듈들과 함께 로드되는 경우)
-if (typeof window !== 'undefined' && document.readyState !== 'loading') {
-    // DOM이 이미 로드된 경우 즉시 초기화
-    setTimeout(() => {
-        try {
-            if (window.AdminManager) {
-                AdminEnhancedUI.init();
-            }
-        } catch (initError) {
-            console.error('❌ AdminEnhancedUI 자동 초기화 실패:', initError);
-        }
-    }, 100);
-} else {
-    // DOM 로드 대기
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => {
-            try {
-                if (window.AdminManager) {
-                    AdminEnhancedUI.init();
-                }
-            } catch (initError) {
-                console.error('❌ AdminEnhancedUI 자동 초기화 실패:', initError);
-            }
-        }, 100);
-    });
-}
+// 전역 접근을 위해 window 객체에 추가
+window.SupabaseAdmin = SupabaseAdmin;
+
+console.log('🔐 SupabaseAdmin v5.2.0 모듈 로드 완료');
+console.log('🆕 v5.2.0 새로운 기능: getFeatureSettings, updateFeatureSetting 추가');
+console.log('✅ 관리자 대시보드 기능 토글 완전 지원');

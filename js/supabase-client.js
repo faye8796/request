@@ -131,7 +131,7 @@ const SupabaseAPI = {
             const studentReady = !!(window.SupabaseStudent);
             const adminReady = !!(window.SupabaseAdmin);
 
-            if (coreReady && studentReady && adminReady) {
+            if (coreReady && (studentReady || adminReady)) {
                 console.log('✅ 모든 모듈 로딩 완료');
                 return true;
             }
