@@ -1,15 +1,15 @@
-// 🚀 Supabase Client 통합 매니저 v5.2.0
+// 🚀 Supabase Client 통합 매니저 v5.2.1
 // 세종학당 문화인턴 지원 시스템 - 모듈화된 Supabase API 통합 관리자
 // 3개 모듈(Core, Student, Admin)을 하나로 통합하여 기존 코드와 100% 호환성 보장
-// 🆕 v5.2.0: 기능 설정 관리 지원 추가 (getFeatureSettings, updateFeatureSetting)
+// 🆕 v5.2.1: 모듈 로딩 유연성 개선 - Admin 모듈 선택적 로딩 지원
 
 /**
  * 모듈화된 Supabase API 통합 매니저
  * 
  * 📦 아키텍처:
- * - SupabaseCore: 핵심 공통 기능 (5.6KB)
- * - SupabaseStudent: 학생 전용 기능 (32.9KB) 
- * - SupabaseAdmin: 관리자 전용 기능 (46.8KB)
+ * - SupabaseCore: 핵심 공통 기능 (5.6KB) - 필수
+ * - SupabaseStudent: 학생 전용 기능 (32.9KB) - 선택적
+ * - SupabaseAdmin: 관리자 전용 기능 (46.8KB) - 선택적
  * - SupabaseClient: 통합 매니저 (얇은 래퍼)
  * 
  * 🔧 호환성:
@@ -22,11 +22,11 @@
  * - 메모리 효율성: 모듈별 독립적 관리
  * - 개발 편의성: 기능별 모듈 분리로 유지보수 향상
  * 
- * 🆕 v5.2.0 개선사항:
- * - getFeatureSettings 관리자 지원 추가
- * - updateFeatureSetting 기능 토글 지원
- * - 관리자 대시보드 기능 설정 완전 지원
- * - 모듈 간 기능 설정 관리 통합
+ * 🆕 v5.2.1 개선사항:
+ * - 모듈 로딩 유연성 강화: Core는 필수, Student/Admin은 선택적
+ * - 학생 페이지에서 Admin 모듈 없어도 정상 동작
+ * - 관리자 페이지에서 Student 모듈 없어도 정상 동작
+ * - 부분적 모듈 로딩에서도 안정적 초기화
  */
 
 const SupabaseAPI = {
@@ -69,7 +69,7 @@ const SupabaseAPI = {
         }
 
         this._isInitializing = true;
-        console.log('🚀 SupabaseAPI 통합 매니저 초기화 시작 v5.2.0...');
+        console.log('🚀 SupabaseAPI 통합 매니저 초기화 시작 v5.2.1...');
 
         try {
             // 1. 모듈 의존성 확인 및 준비
@@ -116,28 +116,36 @@ const SupabaseAPI = {
     },
 
     /**
-     * 모듈 로딩 대기 (최대 15초)
+     * 🔧 v5.2.1 유연한 모듈 로딩 대기 (최대 10초)
+     * Core는 필수, Student/Admin은 선택적
      */
     async _waitForModules() {
-        console.log('⏳ 모듈 로딩 대기 중...');
+        console.log('⏳ 유연한 모듈 로딩 대기 중... (v5.2.1)');
         
-        const maxWaitTime = 15000; // 15초
+        const maxWaitTime = 10000; // 10초로 단축
         const checkInterval = 100; // 100ms
         let waitTime = 0;
 
         while (waitTime < maxWaitTime) {
-            // 필수 모듈 체크
+            // 모듈 상태 체크
             const coreReady = !!(window.SupabaseCore);
             const studentReady = !!(window.SupabaseStudent);
             const adminReady = !!(window.SupabaseAdmin);
 
-            if (coreReady && studentReady && adminReady) {
-                console.log('✅ 모든 모듈 로딩 완료');
+            // 🆕 v5.2.1 유연한 로딩 조건
+            // Core는 필수, Student 또는 Admin 중 하나라도 있으면 진행
+            if (coreReady && (studentReady || adminReady)) {
+                const loadedModules = [];
+                if (coreReady) loadedModules.push('Core');
+                if (studentReady) loadedModules.push('Student');
+                if (adminReady) loadedModules.push('Admin');
+                
+                console.log(`✅ 모듈 로딩 완료: [${loadedModules.join(', ')}]`);
                 return true;
             }
 
-            // 부분적 로딩 상태 로그
-            if (waitTime % 2000 === 0) { // 2초마다
+            // 부분적 로딩 상태 로그 (2초마다)
+            if (waitTime % 2000 === 0) {
                 console.log('📦 모듈 로딩 상태:', {
                     core: coreReady ? '✅' : '⏳',
                     student: studentReady ? '✅' : '⏳', 
@@ -149,7 +157,7 @@ const SupabaseAPI = {
             waitTime += checkInterval;
         }
 
-        // 타임아웃 시 부분적 로딩도 허용 (Core는 필수)
+        // 타임아웃 시에도 Core 모듈만 있으면 진행 (더 관대한 조건)
         if (window.SupabaseCore) {
             console.warn('⚠️ 일부 모듈 로딩 타임아웃 - Core 모듈만으로 진행');
             return true;
@@ -174,7 +182,7 @@ const SupabaseAPI = {
     },
 
     /**
-     * 🔧 v5.2.0 안전한 모듈 호출 래퍼 - 강화된 버전
+     * 🔧 v5.2.1 안전한 모듈 호출 래퍼 - 강화된 버전
      * @param {string} moduleName - 모듈명 (core, student, admin)
      * @param {string} methodName - 메소드명
      * @param {Array} args - 인수 배열
@@ -202,7 +210,7 @@ const SupabaseAPI = {
     },
 
     /**
-     * 🆕 v5.2.0 안전한 모듈 대기 함수
+     * 🆕 v5.2.1 안전한 모듈 대기 함수
      * 특정 모듈이 로드될 때까지 대기
      */
     async _waitForSpecificModules(moduleNames, maxWaitSeconds = 5) {
@@ -356,7 +364,7 @@ const SupabaseAPI = {
     },
 
     /**
-     * 🔧 v5.2.0 영수증 조회 - 관리자/학생 모듈 통합 지원
+     * 🔧 v5.2.1 영수증 조회 - 관리자/학생 모듈 통합 지원
      * 관리자 페이지에서 호출시 Admin 모듈 사용, 학생 페이지에서 호출시 Student 모듈 사용
      */
     async getReceiptByRequestId(requestId) {
@@ -470,7 +478,7 @@ const SupabaseAPI = {
     },
 
     /**
-     * 🔧 v5.2.0 강화된 시스템 설정 조회
+     * 🔧 v5.2.1 강화된 시스템 설정 조회
      * 모듈 로딩 대기 및 안전한 에러 처리 추가
      */
     async getSystemSettings() {
@@ -632,20 +640,20 @@ const SupabaseAPI = {
     },
 
     // ===================
-    // 🆕 v5.2.0 기능 설정 관리 (SupabaseAdmin)
+    // 🆕 v5.2.1 기능 설정 관리 (SupabaseAdmin)
     // ===================
 
     /**
-     * 🆕 모든 기능 설정 조회 (v5.2.0)
+     * 🆕 모든 기능 설정 조회 (v5.2.1)
      * @returns {Promise<Object>} 기능 설정 조회 결과
      */
     async getFeatureSettings() {
-        console.log('⚙️ 기능 설정 조회 요청... (v5.2.0)');
+        console.log('⚙️ 기능 설정 조회 요청... (v5.2.1)');
         return await this._callModule('admin', 'getFeatureSettings');
     },
 
     /**
-     * 🆕 개별 기능 설정 업데이트 (v5.2.0) 
+     * 🆕 개별 기능 설정 업데이트 (v5.2.1) 
      * @param {string} featureName - 기능명
      * @param {boolean} isActive - 활성화 상태
      * @returns {Promise<Object>} 업데이트 결과
@@ -711,21 +719,21 @@ const SupabaseAPI = {
         
         return {
             status: this._moduleStatus.initialized ? 'healthy' : 'initializing',
-            version: 'v5.2.0',
+            version: 'v5.2.1',
             architecture: 'modular',
             compatibility: '100% legacy compatible',
             modules: stats.moduleStatus,
             performance: {
                 totalSize: 'optimized',
-                loadingStrategy: 'lazy',
+                loadingStrategy: 'lazy + flexible',
                 memoryEfficiency: 'high'
             },
             fixes: [
-                'getFeatureSettings Admin module support added',
-                'updateFeatureSetting feature toggle support',
-                'Feature settings management complete',
-                'Admin dashboard toggle functionality',
-                'Module loading timing issues resolved'
+                '🚀 모듈 로딩 유연성 강화 (Core 필수, Student/Admin 선택적)',
+                '🔧 학생 페이지에서 Admin 모듈 없어도 정상 동작',
+                '🔧 관리자 페이지에서 Student 모듈 없어도 정상 동작',
+                '⏱️ 모듈 로딩 타임아웃 시간 단축 (15초 → 10초)',
+                '🎯 부분적 모듈 로딩에서도 안정적 초기화'
             ]
         };
     }
@@ -737,7 +745,7 @@ const SupabaseAPI = {
 
 // 자동 초기화 (기존 코드와 호환성 유지)
 (async () => {
-    console.log('🚀 SupabaseAPI 통합 매니저 v5.2.0 시작...');
+    console.log('🚀 SupabaseAPI 통합 매니저 v5.2.1 시작...');
     
     // CONFIG 로드 대기 (기존 코드와 동일한 패턴)
     let waitCount = 0;
@@ -777,8 +785,8 @@ if (typeof window !== 'undefined') {
     };
 }
 
-console.log('🎯 SupabaseAPI 통합 매니저 v5.2.0 로드 완료');
-console.log('📦 모듈화 아키텍처: Core(5.6KB) + Student(32.9KB) + Admin(46.8KB)');
+console.log('🎯 SupabaseAPI 통합 매니저 v5.2.1 로드 완료');
+console.log('📦 모듈화 아키텍처: Core(필수) + Student(선택적) + Admin(선택적)');
 console.log('🔧 기존 코드 100% 호환성 보장 - 수정 불필요');
-console.log('🚀 성능 최적화: 지연 로딩 + 메모리 효율성 + 모듈별 관리');
-console.log('🆕 v5.2.0 신기능: 기능 설정 관리 완전 지원 (getFeatureSettings, updateFeatureSetting)');
+console.log('🚀 성능 최적화: 유연한 로딩 + 메모리 효율성 + 모듈별 관리');
+console.log('🆕 v5.2.1 개선사항: 모듈 로딩 유연성 강화로 무한 대기 문제 완전 해결');
