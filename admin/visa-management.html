@@ -541,6 +541,34 @@
             background: #545b62;
         }
         
+        /* 초기화 상태 표시 */
+        .init-status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #1a202c;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 10000;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-family: monospace;
+        }
+
+        .init-status.success {
+            background: #22543d;
+        }
+
+        .init-status.error {
+            background: #c53030;
+        }
+
+        .init-status.warning {
+            background: #d69e2e;
+        }
+        
         /* Responsive Design */
         @media (max-width: 768px) {
             .container {
@@ -587,6 +615,12 @@
             
             .toast.show {
                 transform: translateY(0);
+            }
+            
+            .init-status {
+                left: 10px;
+                right: 10px;
+                top: 10px;
             }
         }
         
@@ -685,19 +719,127 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script type="module" src="../js/config.js"></script>
+    <!-- 초기화 상태 표시 -->
+    <div id="initStatus" class="init-status" style="display: none;">
+        시스템 초기화 중...
+    </div>
+
+    <!-- 🚀 Scripts - admin.html과 동일한 로딩 순서 적용 -->
+    
+    <!-- 1단계: 핵심 라이브러리 -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <!-- 2단계: 핵심 설정 (필수) -->
+    <script src="../js/config.js?v=5.2.1"></script>
+    <script src="../js/utils.js?v=5.2.1"></script>
+    <script src="../js/auth.js?v=5.2.1"></script>
+
+    <!-- 3단계: Supabase 모듈들 (순서 중요!) -->
+    <script src="../js/supabase/supabase-core.js?v=5.2.1"></script>
+    <script src="../js/supabase/supabase-student.js?v=5.2.1"></script>
+    <script src="../js/supabase/supabase-admin.js?v=5.2.1"></script>
+    <script src="../js/supabase-client.js?v=5.2.1"></script>
+    
+    <!-- 4단계: 관리자 모듈들 -->
+    <script src="../js/admin/admin-core.js?v=5.2.1"></script>
+    <script src="../js/admin/admin-utils.js?v=5.2.1"></script>
+    <script src="../js/admin/admin-modals.js?v=5.2.1"></script>
+
+    <!-- 5단계: 비자 관리 시스템 (모듈 방식) -->
     <script type="module" src="../js/admin/visa-management.js"></script>
+    
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
         
+        // 초기화 상태 관리자
+        const InitStatusManager = {
+            status: document.getElementById('initStatus'),
+            
+            show(message, type = 'info') {
+                if (this.status) {
+                    this.status.textContent = message;
+                    this.status.className = `init-status ${type}`;
+                    this.status.style.display = 'block';
+                }
+                console.log(`🔄 ${message}`);
+            },
+            
+            success(message) {
+                this.show(message, 'success');
+                setTimeout(() => this.hide(), 3000);
+            },
+            
+            error(message) {
+                this.show(message, 'error');
+                setTimeout(() => this.hide(), 5000);
+            },
+
+            warning(message) {
+                this.show(message, 'warning');
+                setTimeout(() => this.hide(), 4000);
+            },
+            
+            hide() {
+                if (this.status) {
+                    this.status.style.display = 'none';
+                }
+            }
+        };
+
+        // 모듈 로딩 상태 확인
+        function checkModuleLoading() {
+            InitStatusManager.show('Supabase 모듈 로딩 확인 중...');
+            
+            let checkCount = 0;
+            const maxChecks = 100; // 10초
+            
+            const checkInterval = setInterval(() => {
+                checkCount++;
+                
+                const hasSupabase = window.supabase && typeof window.supabase.createClient === 'function';
+                const hasConfig = window.CONFIG;
+                const hasSupabaseAPI = window.SupabaseAPI;
+                
+                if (hasSupabase && hasConfig) {
+                    clearInterval(checkInterval);
+                    InitStatusManager.success('✅ 비자 관리 시스템 준비 완료');
+                    return;
+                }
+                
+                if (checkCount >= maxChecks) {
+                    clearInterval(checkInterval);
+                    InitStatusManager.error('❌ 모듈 로딩 타임아웃 - 페이지를 새로고침해주세요');
+                    return;
+                }
+                
+                // 진행 상황 표시
+                if (checkCount % 10 === 0) {
+                    const missing = [];
+                    if (!hasSupabase) missing.push('Supabase');
+                    if (!hasConfig) missing.push('CONFIG');
+                    if (!hasSupabaseAPI) missing.push('SupabaseAPI');
+                    
+                    InitStatusManager.show(`모듈 로딩 중... (${missing.join(', ')} 대기중)`);
+                }
+            }, 100);
+        }
+
+        // 페이지 로드 후 모듈 상태 확인
+        document.addEventListener('DOMContentLoaded', () => {
+            checkModuleLoading();
+        });
+        
         // Debug console commands
-        console.log('🛂 관리자용 비자 발급 관리 시스템');
+        console.log('🛂 관리자용 비자 발급 관리 시스템 v1.2.0');
         console.log('디버그 명령어:');
         console.log('- window.visaManagementSystem.getDebugInfo()');
         console.log('- window.visaManagementSystem.refreshData()');
         console.log('- window.visaManagementSystem.checkSystemStatus()');
+        console.log('🔧 Supabase 모듈 수동 확인:');
+        console.log('- window.CONFIG (설정)', !!window.CONFIG);
+        console.log('- window.supabase (클라이언트)', !!window.supabase);
+        console.log('- window.SupabaseAPI (통합 API)', !!window.SupabaseAPI);
     </script>
 </body>
 </html>
