@@ -1,10 +1,13 @@
 /**
- * 관리자용 비자 발급 관리 시스템 - 메인 모듈
- * Version: 1.0.0
- * Description: 학생 비자 발급 현황 모니터링, 관리자 코멘트 관리, 서류 및 영수증 확인
+ * 관리자용 비자 발급 관리 시스템 - 메인 모듈 (업데이트)
+ * Version: 1.1.0
+ * Description: UI 모듈과 모달 시스템 통합 버전
  */
 
 import { CONFIG } from '../config.js';
+import { VisaManagementAPI } from './visa-management-api.js';
+import { VisaManagementUI } from './visa-management-ui.js';
+import { VisaManagementModals } from './visa-management-modals.js';
 
 class VisaManagementSystem {
     constructor() {
@@ -14,6 +17,11 @@ class VisaManagementSystem {
         this.receiptsCount = new Map();
         this.filteredStudents = [];
         this.commentSaveTimeouts = new Map();
+        
+        // 모듈 초기화
+        this.api = new VisaManagementAPI();
+        this.ui = new VisaManagementUI();
+        this.modals = new VisaManagementModals();
         
         this.initialize();
     }
@@ -34,7 +42,7 @@ class VisaManagementSystem {
             console.log('✅ 비자 관리 시스템 초기화 완료');
         } catch (error) {
             console.error('❌ 비자 관리 시스템 초기화 실패:', error);
-            this.showError('시스템 초기화에 실패했습니다.');
+            this.ui.showError('students-list', '시스템 초기화에 실패했습니다.');
         }
     }
 
@@ -64,9 +72,9 @@ class VisaManagementSystem {
         // 검색 입력
         const searchInput = document.getElementById('search-input');
         if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
+            searchInput.addEventListener('input', this.ui.debounce((e) => {
                 this.handleSearch(e.target.value);
-            });
+            }, 300));
         }
 
         // 상태 필터
@@ -84,14 +92,33 @@ class VisaManagementSystem {
                 this.handleSort(e.target.value);
             });
         }
+
+        // 키보드 단축키
+        document.addEventListener('keydown', (e) => {
+            // Ctrl + F: 검색 포커스
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                searchInput?.focus();
+            }
+            // ESC: 모든 모달 닫기
+            if (e.key === 'Escape') {
+                this.modals.closeAllModals();
+            }
+        });
     }
 
     async loadData() {
         try {
-            this.showLoading();
+            this.ui.showLoading('students-list');
             
             // 전체 학생 목록 조회
-            await this.loadStudents();
+            this.students = await this.api.getStudents();
+            
+            if (this.students.length === 0) {
+                this.ui.showEmpty('students-list', '등록된 학생이 없습니다.');
+                this.updateStatistics();
+                return;
+            }
             
             // 각 학생의 비자 정보 조회
             await this.loadVisaData();
@@ -100,80 +127,44 @@ class VisaManagementSystem {
             await this.loadReceiptsCount();
             
             // 통계 계산 및 UI 렌더링
-            this.calculateStatistics();
+            this.updateStatistics();
             this.renderStudentsList();
             
         } catch (error) {
             console.error('데이터 로드 오류:', error);
-            this.showError('데이터를 불러오는데 실패했습니다.');
+            this.ui.showError('students-list', '데이터를 불러오는데 실패했습니다.');
         }
-    }
-
-    async loadStudents() {
-        const { data, error } = await CONFIG.supabase
-            .from('user_profiles')
-            .select('id, name, email, institute_name, created_at')
-            .eq('role', 'student')
-            .order('name');
-
-        if (error) {
-            throw new Error(`학생 목록 조회 실패: ${error.message}`);
-        }
-
-        this.students = data || [];
-        console.log(`📊 학생 ${this.students.length}명 로드 완료`);
     }
 
     async loadVisaData() {
         if (this.students.length === 0) return;
 
-        const studentIds = this.students.map(s => s.id);
+        const visaApplications = await this.api.getVisaApplications(this.students.map(s => s.id));
         
-        const { data, error } = await CONFIG.supabase
-            .from('visa_applications')
-            .select('*')
-            .in('user_id', studentIds);
-
-        if (error) {
-            console.error('비자 데이터 조회 오류:', error);
-            return;
-        }
-
         // Map으로 변환하여 빠른 조회 가능하도록
         this.visaData.clear();
-        (data || []).forEach(visa => {
+        visaApplications.forEach(visa => {
             this.visaData.set(visa.user_id, visa);
         });
 
-        console.log(`📋 비자 데이터 ${data?.length || 0}개 로드 완료`);
+        console.log(`📋 비자 데이터 ${visaApplications.length}개 로드 완료`);
     }
 
     async loadReceiptsCount() {
         if (this.students.length === 0) return;
 
-        const studentIds = this.students.map(s => s.id);
+        const receiptsCountMap = await this.api.getReceiptsCount(this.students.map(s => s.id));
         
-        const { data, error } = await CONFIG.supabase
-            .from('visa_receipts')
-            .select('user_id')
-            .in('user_id', studentIds);
-
-        if (error) {
-            console.error('영수증 개수 조회 오류:', error);
-            return;
-        }
-
-        // 사용자별 영수증 개수 계산
+        // Map으로 변환
         this.receiptsCount.clear();
-        (data || []).forEach(receipt => {
-            const currentCount = this.receiptsCount.get(receipt.user_id) || 0;
-            this.receiptsCount.set(receipt.user_id, currentCount + 1);
+        Object.entries(receiptsCountMap).forEach(([userId, count]) => {
+            this.receiptsCount.set(userId, count);
         });
 
-        console.log(`🧾 영수증 데이터 ${data?.length || 0}개 로드 완료`);
+        console.log(`🧾 영수증 데이터 로드 완료`);
     }
 
-    calculateStatistics() {
+    updateStatistics() {
         const stats = {
             total: this.students.length,
             inProgress: 0,
@@ -183,22 +174,19 @@ class VisaManagementSystem {
 
         this.students.forEach(student => {
             const visa = this.visaData.get(student.id);
+            const status = this.ui.determineStudentStatus(visa || {});
             
-            if (!visa || !visa.visa_status || visa.visa_status.trim() === '') {
+            if (status === 'no-status') {
                 stats.noStatus++;
-            } else if (visa.visa_document_url) {
+            } else if (status === 'completed') {
                 stats.completed++;
-            } else {
+            } else if (status === 'in-progress') {
                 stats.inProgress++;
             }
         });
 
         // UI 업데이트
-        document.getElementById('total-count').textContent = stats.total;
-        document.getElementById('in-progress-count').textContent = stats.inProgress;
-        document.getElementById('completed-count').textContent = stats.completed;
-        document.getElementById('no-status-count').textContent = stats.noStatus;
-
+        this.ui.updateStatistics(stats);
         console.log('📊 통계 계산 완료:', stats);
     }
 
@@ -210,114 +198,27 @@ class VisaManagementSystem {
         const studentsToRender = this.filteredStudents.length > 0 ? this.filteredStudents : this.students;
 
         if (studentsToRender.length === 0) {
-            container.innerHTML = `
-                <div class="no-students">
-                    <i data-lucide="user-x"></i>
-                    <p>표시할 학생이 없습니다.</p>
-                </div>
-            `;
-            lucide.createIcons();
+            this.ui.showEmpty(container, '표시할 학생이 없습니다.');
             return;
         }
 
-        container.innerHTML = studentsToRender.map(student => this.createStudentCard(student)).join('');
+        // 학생 카드들 생성
+        const cardsHtml = studentsToRender.map(student => {
+            const visaData = this.visaData.get(student.id);
+            const receiptsCount = this.receiptsCount.get(student.id) || 0;
+            return this.ui.createStudentCard(student, visaData, receiptsCount);
+        }).join('');
+
+        container.innerHTML = cardsHtml;
         
         // 이벤트 리스너 바인딩
         this.bindStudentCardEvents();
         
         // 아이콘 초기화
         lucide.createIcons();
-    }
 
-    createStudentCard(student) {
-        const visa = this.visaData.get(student.id);
-        const receiptsCount = this.receiptsCount.get(student.id) || 0;
-        
-        // 상태 결정
-        let status = 'no-status';
-        let statusText = '상태 없음';
-        let statusIcon = 'alert-circle';
-        
-        if (visa && visa.visa_status && visa.visa_status.trim() !== '') {
-            if (visa.visa_document_url) {
-                status = 'completed';
-                statusText = '완료';
-                statusIcon = 'check-circle';
-            } else {
-                status = 'in-progress';
-                statusText = '진행 중';
-                statusIcon = 'clock';
-            }
-        }
-
-        const hasVisaDocument = visa?.visa_document_url;
-        const visaStatus = visa?.visa_status || '';
-        const adminComment = visa?.admin_comment || '';
-        const statusUpdated = visa?.visa_status_updated_at;
-        const commentUpdated = visa?.admin_comment_updated_at;
-
-        return `
-            <div class="student-visa-card" data-student-id="${student.id}">
-                <div class="student-header">
-                    <div class="student-info">
-                        <div class="student-name">
-                            <i data-lucide="user"></i>
-                            ${student.name}
-                        </div>
-                        <div class="student-email">${student.email}</div>
-                        <div class="student-institute">${student.institute_name || '학당 미지정'}</div>
-                    </div>
-                    <div class="student-meta">
-                        <div class="status-badge ${status}">
-                            <i data-lucide="${statusIcon}"></i>
-                            ${statusText}
-                        </div>
-                        <div class="receipts-count">영수증 ${receiptsCount}개</div>
-                    </div>
-                </div>
-
-                <div class="visa-status-section">
-                    <h4>
-                        <i data-lucide="file-text"></i>
-                        비자 발급 현황 (학생 입력)
-                    </h4>
-                    <div class="status-content ${visaStatus ? '' : 'empty'}">
-                        ${visaStatus || '아직 비자 발급 현황이 입력되지 않았습니다.'}
-                    </div>
-                    ${statusUpdated ? `<div class="status-updated">마지막 업데이트: ${this.formatDateTime(statusUpdated)}</div>` : ''}
-                </div>
-
-                <div class="admin-comment-section">
-                    <h4>
-                        <i data-lucide="message-square"></i>
-                        관리자 코멘트
-                    </h4>
-                    <textarea class="admin-comment-input" 
-                              placeholder="관리자 코멘트를 입력하세요..."
-                              data-student-id="${student.id}">${adminComment}</textarea>
-                    <button class="save-comment-btn" data-student-id="${student.id}">
-                        <i data-lucide="save"></i>
-                        저장
-                    </button>
-                    <span class="save-indicator" data-student-id="${student.id}">저장됨</span>
-                    ${commentUpdated ? `<div class="status-updated">마지막 업데이트: ${this.formatDateTime(commentUpdated)}</div>` : ''}
-                </div>
-
-                <div class="action-buttons">
-                    <button class="action-btn view-visa-btn" 
-                            data-student-id="${student.id}"
-                            ${hasVisaDocument ? '' : 'disabled'}>
-                        <i data-lucide="eye"></i>
-                        비자보기
-                    </button>
-                    <button class="action-btn view-receipts-btn" 
-                            data-student-id="${student.id}">
-                        <i data-lucide="receipt"></i>
-                        영수증보기 (${receiptsCount})
-                    </button>
-                </div>
-            </div>
-        `;
+        // 페이드 인 애니메이션
+        this.ui.fadeIn(container);
     }
 
     bindStudentCardEvents() {
@@ -341,7 +242,10 @@ class VisaManagementSystem {
         document.querySelectorAll('.view-visa-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const studentId = e.target.dataset.studentId;
-                this.viewVisaDocument(studentId);
+                const student = this.students.find(s => s.id === studentId);
+                if (student && !button.disabled) {
+                    this.modals.showVisaDocumentViewer(studentId, student.name);
+                }
             });
         });
 
@@ -349,7 +253,10 @@ class VisaManagementSystem {
         document.querySelectorAll('.view-receipts-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const studentId = e.target.dataset.studentId;
-                this.viewReceipts(studentId);
+                const student = this.students.find(s => s.id === studentId);
+                if (student) {
+                    this.modals.showReceiptsModal(studentId, student.name);
+                }
             });
         });
     }
@@ -370,37 +277,18 @@ class VisaManagementSystem {
 
     async saveComment(studentId, comment) {
         try {
-            const { error } = await CONFIG.supabase
-                .from('visa_applications')
-                .upsert({
-                    user_id: studentId,
-                    admin_comment: comment,
-                    admin_comment_updated_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                }, {
-                    onConflict: 'user_id'
-                });
-
-            if (error) {
-                throw error;
-            }
-
+            const result = await this.api.saveAdminComment(studentId, comment);
+            
             // 저장 완료 표시
-            this.showSaveIndicator(studentId);
+            this.ui.showSaveIndicator(studentId);
             
             // 데이터 업데이트
-            const existingVisa = this.visaData.get(studentId) || {};
-            this.visaData.set(studentId, {
-                ...existingVisa,
-                user_id: studentId,
-                admin_comment: comment,
-                admin_comment_updated_at: new Date().toISOString()
-            });
+            this.visaData.set(studentId, result);
 
             console.log(`💬 관리자 코멘트 저장 완료: ${studentId}`);
         } catch (error) {
             console.error('코멘트 저장 오류:', error);
-            this.showError('코멘트 저장에 실패했습니다.');
+            this.modals.showError('코멘트 저장에 실패했습니다.');
         }
     }
 
@@ -419,33 +307,6 @@ class VisaManagementSystem {
         await this.saveComment(studentId, comment);
     }
 
-    showSaveIndicator(studentId) {
-        const indicator = document.querySelector(`.save-indicator[data-student-id="${studentId}"]`);
-        if (indicator) {
-            indicator.classList.add('show');
-            setTimeout(() => {
-                indicator.classList.remove('show');
-            }, 2000);
-        }
-    }
-
-    viewVisaDocument(studentId) {
-        const visa = this.visaData.get(studentId);
-        if (!visa || !visa.visa_document_url) {
-            alert('업로드된 비자 문서가 없습니다.');
-            return;
-        }
-
-        // 새 창에서 문서 열기
-        window.open(visa.visa_document_url, '_blank');
-    }
-
-    viewReceipts(studentId) {
-        // 영수증 모달 열기 (Phase 4에서 구현)
-        console.log(`🧾 영수증 보기 요청: ${studentId}`);
-        alert('영수증 보기 기능은 곧 구현될 예정입니다.');
-    }
-
     handleSearch(query) {
         if (!query.trim()) {
             this.filteredStudents = [];
@@ -456,10 +317,12 @@ class VisaManagementSystem {
         const searchTerm = query.toLowerCase();
         this.filteredStudents = this.students.filter(student => {
             return student.name.toLowerCase().includes(searchTerm) ||
-                   student.email.toLowerCase().includes(searchTerm);
+                   student.email.toLowerCase().includes(searchTerm) ||
+                   (student.institute_name && student.institute_name.toLowerCase().includes(searchTerm));
         });
 
         this.renderStudentsList();
+        console.log(`🔍 검색 결과: ${this.filteredStudents.length}명`);
     }
 
     handleFilter(filterValue) {
@@ -468,98 +331,173 @@ class VisaManagementSystem {
         } else {
             this.filteredStudents = this.students.filter(student => {
                 const visa = this.visaData.get(student.id);
-                
-                switch (filterValue) {
-                    case 'completed':
-                        return visa?.visa_document_url;
-                    case 'in-progress':
-                        return visa?.visa_status && visa.visa_status.trim() !== '' && !visa.visa_document_url;
-                    case 'no-status':
-                        return !visa?.visa_status || visa.visa_status.trim() === '';
-                    default:
-                        return true;
-                }
+                const status = this.ui.determineStudentStatus(visa || {});
+                return status === filterValue;
             });
         }
 
         this.renderStudentsList();
+        console.log(`🔽 필터 적용 (${filterValue}): ${this.filteredStudents.length}명`);
     }
 
     handleSort(sortType) {
-        const studentsToSort = this.filteredStudents.length > 0 ? this.filteredStudents : this.students;
+        const studentsToSort = this.filteredStudents.length > 0 ? this.filteredStudents : [...this.students];
         
         studentsToSort.sort((a, b) => {
             switch (sortType) {
                 case 'name':
                     return a.name.localeCompare(b.name);
+                    
                 case 'updated':
                     const visaA = this.visaData.get(a.id);
                     const visaB = this.visaData.get(b.id);
-                    const timeA = visaA?.visa_status_updated_at || visaA?.created_at || '1970-01-01';
-                    const timeB = visaB?.visa_status_updated_at || visaB?.created_at || '1970-01-01';
+                    const timeA = visaA?.visa_status_updated_at || visaA?.admin_comment_updated_at || visaA?.created_at || '1970-01-01';
+                    const timeB = visaB?.visa_status_updated_at || visaB?.admin_comment_updated_at || visaB?.created_at || '1970-01-01';
                     return new Date(timeB) - new Date(timeA);
+                    
                 case 'status':
                     const getStatusPriority = (student) => {
                         const visa = this.visaData.get(student.id);
-                        if (!visa?.visa_status || visa.visa_status.trim() === '') return 3; // no-status
-                        if (visa.visa_document_url) return 1; // completed
-                        return 2; // in-progress
+                        const status = this.ui.determineStudentStatus(visa || {});
+                        
+                        // 완료 -> 진행중 -> 상태없음 순으로 정렬
+                        switch (status) {
+                            case 'completed': return 1;
+                            case 'in-progress': return 2;
+                            case 'no-status': return 3;
+                            default: return 4;
+                        }
                     };
                     return getStatusPriority(a) - getStatusPriority(b);
+                    
                 default:
                     return 0;
             }
         });
 
+        // 정렬된 결과를 현재 표시 목록에 반영
+        if (this.filteredStudents.length > 0) {
+            this.filteredStudents = studentsToSort;
+        } else {
+            this.students = studentsToSort;
+        }
+
         this.renderStudentsList();
+        console.log(`📊 정렬 적용: ${sortType}`);
     }
 
-    formatDateTime(dateTimeString) {
-        if (!dateTimeString) return '';
-        
+    /**
+     * 데이터 새로고침
+     */
+    async refreshData() {
+        console.log('🔄 데이터 새로고침 시작');
+        await this.loadData();
+    }
+
+    /**
+     * 특정 학생 데이터 새로고침
+     */
+    async refreshStudentData(studentId) {
         try {
-            const date = new Date(dateTimeString);
-            return date.toLocaleString('ko-KR', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            // 비자 정보 새로고침
+            const visa = await this.api.getVisaApplication(studentId);
+            if (visa) {
+                this.visaData.set(studentId, visa);
+            }
+            
+            // 영수증 개수 새로고침
+            const receiptsCount = await this.api.getReceiptsCount([studentId]);
+            this.receiptsCount.set(studentId, receiptsCount[studentId] || 0);
+            
+            // UI 업데이트
+            this.updateStatistics();
+            this.renderStudentsList();
+            
+            console.log(`🔄 학생 데이터 새로고침 완료: ${studentId}`);
         } catch (error) {
-            return dateTimeString;
+            console.error('학생 데이터 새로고침 오류:', error);
+            this.modals.showError('데이터 새로고침에 실패했습니다.');
         }
     }
 
-    showLoading() {
-        const container = document.getElementById('students-list');
-        if (container) {
-            container.innerHTML = `
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    데이터를 불러오는 중...
-                </div>
-            `;
+    /**
+     * 실시간 데이터 동기화 설정
+     */
+    setupRealTimeSync() {
+        // 비자 신청 변경 감지
+        this.api.subscribeToVisaChanges((payload) => {
+            console.log('🔄 비자 데이터 실시간 업데이트:', payload);
+            
+            if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+                this.visaData.set(payload.new.user_id, payload.new);
+                this.updateStatistics();
+                this.renderStudentsList();
+            }
+        });
+        
+        // 영수증 변경 감지
+        this.api.subscribeToReceiptChanges((payload) => {
+            console.log('🔄 영수증 데이터 실시간 업데이트:', payload);
+            this.refreshStudentData(payload.new?.user_id || payload.old?.user_id);
+        });
+    }
+
+    /**
+     * 시스템 상태 확인
+     */
+    async checkSystemStatus() {
+        try {
+            const isConnected = await this.api.checkConnection();
+            if (!isConnected) {
+                this.modals.showError('서버와의 연결이 끊어졌습니다. 페이지를 새로고침해주세요.');
+                return false;
+            }
+            return true;
+        } catch (error) {
+            console.error('시스템 상태 확인 오류:', error);
+            return false;
         }
     }
 
-    showError(message) {
-        const container = document.getElementById('students-list');
-        if (container) {
-            container.innerHTML = `
-                <div class="no-students">
-                    <i data-lucide="alert-triangle"></i>
-                    <p>${message}</p>
-                </div>
-            `;
-            lucide.createIcons();
-        }
+    /**
+     * 정리 작업
+     */
+    cleanup() {
+        // 타이머 정리
+        this.commentSaveTimeouts.forEach(timeout => clearTimeout(timeout));
+        this.commentSaveTimeouts.clear();
+        
+        // 모달 정리
+        this.modals.closeAllModals();
+        
+        console.log('🧹 시스템 정리 완료');
+    }
+
+    /**
+     * 디버그 정보 출력
+     */
+    getDebugInfo() {
+        return {
+            students: this.students.length,
+            visaData: this.visaData.size,
+            receiptsCount: this.receiptsCount.size,
+            filteredStudents: this.filteredStudents.length,
+            activeTimeouts: this.commentSaveTimeouts.size,
+            currentUser: this.currentUser?.email || 'Unknown'
+        };
     }
 }
 
 // 페이지 로드 시 시스템 초기화
 document.addEventListener('DOMContentLoaded', () => {
-    new VisaManagementSystem();
+    window.visaManagementSystem = new VisaManagementSystem();
+});
+
+// 페이지 언로드 시 정리
+window.addEventListener('beforeunload', () => {
+    if (window.visaManagementSystem) {
+        window.visaManagementSystem.cleanup();
+    }
 });
 
 // 모듈 내보내기
