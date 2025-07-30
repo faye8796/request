@@ -739,6 +739,22 @@
                             관리하기
                         </button>
                     </div>
+                    
+                    <!-- 🆕 비자 발급 관리 (국가별 안전정보 관리 다음에 추가) -->
+                    <div class="menu-card" onclick="navigateToVisaManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="passport"></i>
+                        </div>
+                        <h2 class="menu-title">비자 발급 관리</h2>
+                        <p class="menu-description">
+                            학생들의 비자 발급 현황을 모니터링하고<br>
+                            관리자 코멘트와 서류를 관리할 수 있습니다.
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
 
                     <!-- 🆕 수료평가 관리 -->
                     <div class="menu-card" onclick="navigateToExamManagement()">
@@ -1340,7 +1356,11 @@
             function navigateToCountrySafetyManagement() {
                 window.location.href = 'admin/country-safety-management.html';
             }
-
+            
+            function navigateToVisaManagement() {
+                window.location.href = 'admin/visa-management.html';
+            }
+            
             // 전역 함수로 노출
             window.handleAdminLogin = handleAdminLogin;
             window.handleLogout = handleLogout;
