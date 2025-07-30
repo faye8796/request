@@ -1,7 +1,7 @@
 /**
  * 관리자용 비자 발급 관리 시스템 - UI 컴포넌트 모듈
- * Version: 1.0.0
- * Description: UI 렌더링 및 상호작용 관리
+ * Version: 1.0.1
+ * Description: UI 렌더링 및 상호작용 관리 - 안정성 개선
  */
 
 class VisaManagementUI {
@@ -284,7 +284,9 @@ class VisaManagementUI {
                     <p>${this.escapeHtml(message)}</p>
                 </div>
             `;
-            lucide.createIcons();
+            if (window.lucide) {
+                lucide.createIcons();
+            }
         }
     }
 
@@ -303,7 +305,9 @@ class VisaManagementUI {
                     <p>${this.escapeHtml(message)}</p>
                 </div>
             `;
-            lucide.createIcons();
+            if (window.lucide) {
+                lucide.createIcons();
+            }
         }
     }
 
@@ -344,7 +348,9 @@ class VisaManagementUI {
         }
 
         container.appendChild(toast);
-        lucide.createIcons();
+        if (window.lucide) {
+            lucide.createIcons();
+        }
 
         // 애니메이션
         setTimeout(() => toast.classList.add('show'), 100);
@@ -412,7 +418,9 @@ class VisaManagementUI {
         });
 
         document.body.appendChild(modal);
-        lucide.createIcons();
+        if (window.lucide) {
+            lucide.createIcons();
+        }
 
         // 애니메이션
         setTimeout(() => modal.classList.add('show'), 100);
