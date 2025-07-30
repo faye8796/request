@@ -1,12 +1,12 @@
 /**
- * 비자 관리 시스템 API 모듈 v1.2.0 (Supabase 클라이언트 초기화 수정)
+ * 비자 관리 시스템 API 모듈 v1.3.0 (Supabase 클라이언트 초기화 완전 수정)
  * localStorage 기반 인증 시스템에 맞춘 API 계층
  */
 
 (function() {
     'use strict';
 
-    console.log('🔧 VisaManagementAPI v1.2.0 로딩... (클라이언트 초기화 수정)');
+    console.log('🔧 VisaManagementAPI v1.3.0 로딩... (클라이언트 초기화 완전 수정)');
 
     class VisaManagementAPI {
         constructor() {
@@ -24,7 +24,7 @@
                 // 현재 사용자 정보 로드
                 await this.loadCurrentUser();
 
-                console.log('✅ VisaManagementAPI v1.2.0 초기화 완료');
+                console.log('✅ VisaManagementAPI v1.3.0 초기화 완료');
                 return true;
             } catch (error) {
                 console.error('❌ VisaManagementAPI 초기화 실패:', error);
@@ -32,61 +32,86 @@
             }
         }
 
-        // Supabase 클라이언트 초기화
+        // 🔧 v1.3.0: 완전히 개선된 Supabase 클라이언트 초기화
         async initializeSupabaseClient() {
             let attempts = 0;
-            const maxAttempts = 10;
+            const maxAttempts = 15;
 
             while (attempts < maxAttempts) {
                 try {
-                    // 다양한 전역 변수에서 Supabase 클라이언트 찾기
-                    if (window.supabaseClient) {
-                        this.supabase = window.supabaseClient;
-                        console.log('✅ window.supabaseClient 사용');
+                    // 1. window.supabase 직접 사용 (가장 일반적)
+                    if (window.supabase && typeof window.supabase.from === 'function') {
+                        this.supabase = window.supabase;
+                        console.log('✅ window.supabase 직접 사용');
                         return;
                     }
 
-                    if (window.SupabaseCore?.client) {
+                    // 2. SupabaseCore.client 사용
+                    if (window.SupabaseCore?.client && typeof window.SupabaseCore.client.from === 'function') {
                         this.supabase = window.SupabaseCore.client;
                         console.log('✅ window.SupabaseCore.client 사용');
                         return;
                     }
 
-                    if (window.supabase) {
-                        this.supabase = window.supabase;
-                        console.log('✅ window.supabase 사용');
+                    // 3. supabaseClient 전역 변수 사용
+                    if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+                        this.supabase = window.supabaseClient;
+                        console.log('✅ window.supabaseClient 사용');
                         return;
                     }
 
-                    // SupabaseCore가 있지만 초기화되지 않은 경우
+                    // 4. SupabaseCore 수동 초기화 시도
                     if (window.SupabaseCore && typeof window.SupabaseCore.initialize === 'function') {
                         console.log('🔄 SupabaseCore 수동 초기화 시도...');
                         await window.SupabaseCore.initialize();
-                        if (window.SupabaseCore.client) {
+                        
+                        if (window.SupabaseCore.client && typeof window.SupabaseCore.client.from === 'function') {
                             this.supabase = window.SupabaseCore.client;
                             console.log('✅ SupabaseCore 수동 초기화 후 클라이언트 획득');
                             return;
                         }
                     }
 
-                    // 직접 Supabase 클라이언트 생성 (최후의 수단)
-                    if (window.supabase && window.CONFIG) {
+                    // 5. 직접 Supabase 클라이언트 생성 (최후의 수단)
+                    if (window.supabase?.createClient && window.CONFIG?.SUPABASE_URL && window.CONFIG?.SUPABASE_ANON_KEY) {
                         this.supabase = window.supabase.createClient(
                             window.CONFIG.SUPABASE_URL,
                             window.CONFIG.SUPABASE_ANON_KEY
                         );
                         console.log('✅ 직접 Supabase 클라이언트 생성');
-                        return;
+                        
+                        // 생성된 클라이언트가 정상 작동하는지 확인
+                        if (typeof this.supabase.from === 'function') {
+                            return;
+                        } else {
+                            console.warn('⚠️ 생성된 클라이언트가 비정상');
+                            this.supabase = null;
+                        }
+                    }
+
+                    // 6. 전역 스코프에서 createClient 함수 찾기
+                    if (typeof createClient === 'function' && window.CONFIG?.SUPABASE_URL && window.CONFIG?.SUPABASE_ANON_KEY) {
+                        this.supabase = createClient(
+                            window.CONFIG.SUPABASE_URL,
+                            window.CONFIG.SUPABASE_ANON_KEY
+                        );
+                        console.log('✅ 전역 createClient 함수로 클라이언트 생성');
+                        
+                        if (typeof this.supabase.from === 'function') {
+                            return;
+                        } else {
+                            this.supabase = null;
+                        }
                     }
 
                     attempts++;
                     console.log(`⏳ Supabase 클라이언트 대기 중... (${attempts}/${maxAttempts})`);
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    await new Promise(resolve => setTimeout(resolve, 300));
 
                 } catch (error) {
                     console.warn(`⚠️ Supabase 클라이언트 초기화 시도 ${attempts + 1} 실패:`, error);
                     attempts++;
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    await new Promise(resolve => setTimeout(resolve, 300));
                 }
             }
 
@@ -575,7 +600,8 @@
             return {
                 currentUser: this.currentUser,
                 supabaseConnected: !!this.supabase,
-                version: 'v1.2.0 (클라이언트 초기화 수정)'
+                supabaseType: this.supabase ? this.supabase.constructor.name : 'null',
+                version: 'v1.3.0 (클라이언트 초기화 완전 수정)'
             };
         }
     }
@@ -583,6 +609,6 @@
     // 전역에 API 인스턴스 생성
     window.visaManagementAPI = new VisaManagementAPI();
 
-    console.log('✅ VisaManagementAPI v1.2.0 로드 완료 (클라이언트 초기화 수정)');
+    console.log('✅ VisaManagementAPI v1.3.0 로드 완료 (클라이언트 초기화 완전 수정)');
 
 })();
