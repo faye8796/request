@@ -1,7 +1,7 @@
 /**
- * 관리자용 비자 발급 관리 시스템 - 메인 모듈 (업데이트)
- * Version: 1.1.1
- * Description: UI 모듈과 모달 시스템 통합 버전 - CONFIG import 수정
+ * 관리자용 비자 발급 관리 시스템 - 메인 모듈 (인증 수정)
+ * Version: 1.2.0
+ * Description: admin.html 인증 방식과 일치하도록 수정 (adminSession + adminInfo 사용)
  */
 
 import { VisaManagementAPI } from './visa-management-api.js';
@@ -30,7 +30,7 @@ class VisaManagementSystem {
                 throw new Error('CONFIG가 로드되지 않았습니다.');
             }
             
-            // 관리자 인증 확인
+            // 관리자 인증 확인 (admin.html과 일치하도록 수정)
             await this.checkAdminAuth();
             
             // 모듈 초기화 (더 안전한 방식)
@@ -62,24 +62,39 @@ class VisaManagementSystem {
     }
 
     async checkAdminAuth() {
-        const currentUser = localStorage.getItem('currentUser');
-        if (!currentUser) {
-            alert('로그인이 필요합니다.');
-            window.location.href = '../index.html';
+        // 🔐 admin.html과 일치하는 인증 방식 사용
+        const adminSession = localStorage.getItem('adminSession');
+        const adminInfo = localStorage.getItem('adminInfo');
+        
+        if (!adminSession || adminSession !== 'true') {
+            alert('관리자 로그인이 필요합니다.');
+            window.location.href = '../admin.html';
             return;
         }
 
         try {
-            this.currentUser = JSON.parse(currentUser);
-            if (this.currentUser.role !== 'admin') {
-                alert('관리자 권한이 필요합니다.');
-                window.location.href = '../index.html';
-                return;
+            if (adminInfo) {
+                this.currentUser = JSON.parse(adminInfo);
+                this.currentUser.role = 'admin'; // 관리자 역할 명시적 설정
+                console.log('✅ 관리자 인증 확인 완료:', this.currentUser);
+            } else {
+                // adminInfo가 없어도 adminSession이 있으면 기본 관리자로 설정
+                this.currentUser = {
+                    role: 'admin',
+                    name: '관리자',
+                    email: 'admin@sejong.ac.kr'
+                };
+                console.log('✅ 기본 관리자 권한으로 설정');
             }
         } catch (error) {
-            console.error('사용자 정보 파싱 오류:', error);
-            localStorage.removeItem('currentUser');
-            window.location.href = '../index.html';
+            console.error('관리자 정보 파싱 오류:', error);
+            // 파싱 오류가 있어도 adminSession이 있으면 기본 관리자로 설정
+            this.currentUser = {
+                role: 'admin',
+                name: '관리자',
+                email: 'admin@sejong.ac.kr'
+            };
+            console.log('⚠️ 관리자 정보를 기본값으로 설정');
         }
     }
 
@@ -719,7 +734,8 @@ class VisaManagementSystem {
             receiptsCount: this.receiptsCount.size,
             filteredStudents: this.filteredStudents.length,
             activeTimeouts: this.commentSaveTimeouts.size,
-            currentUser: this.currentUser?.email || 'Unknown'
+            currentUser: this.currentUser?.name || this.currentUser?.email || 'Unknown',
+            authMethod: 'adminSession + adminInfo' // 인증 방식 명시
         };
     }
 }
