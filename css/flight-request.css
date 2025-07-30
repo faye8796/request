@@ -3009,6 +3009,38 @@
     color: white !important;
 }
 
+/* 추가 수하물 2개 버튼 스타일 */
+.baggage-upload-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.baggage-upload-buttons .btn {
+    flex: 1;
+    min-width: 140px;
+}
+
+.file-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+@media (max-width: 768px) {
+    .baggage-upload-buttons {
+        flex-direction: column;
+    }
+    
+    .baggage-upload-buttons .btn {
+        width: 100%;
+    }
+    
+    .file-actions .btn {
+        margin-bottom: 4px;
+    }
+}
+
+
 /* 반응형 디자인 - 모바일에서는 1열로 */
 @media (max-width: 768px) {
     .baggage-cards-grid {

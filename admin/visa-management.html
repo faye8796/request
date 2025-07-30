@@ -862,7 +862,7 @@
                             actual_arrival_date,
                             actual_work_end_date
                         `)
-                        .eq('role', 'student')
+                        .eq('user_type', 'student')
                         .order('name');
 
                     if (studentsError) {

@@ -308,11 +308,16 @@ class FlightRequestStatus {
                     this.handleBaggageRefresh();
                 }
 
-                if (event.target.matches('.baggage-upload-btn, [data-action="baggage-upload"]')) {
+                if (event.target.matches('.departure-baggage-upload-btn, [data-action="departure-baggage-upload"]')) {
                     event.preventDefault();
-                    this.handleBaggageUpload();
+                    this.handleDepartureBaggageUpload();
                 }
 
+                if (event.target.matches('.return-baggage-upload-btn, [data-action="return-baggage-upload"]')) {
+                    event.preventDefault();
+                    this.handleReturnBaggageUpload();
+                }
+                
                 if (event.target.matches('.special-baggage-request-btn, [data-action="special-baggage-request"]')) {
                     event.preventDefault();
                     this.handleSpecialBaggageRequest();
@@ -1993,27 +1998,45 @@ class FlightRequestStatus {
 
     // 사용자 직접 구매 허용 상태
     renderUserAllowedContent(request) {
-        const hasReceipt = !!(request.user_baggage_receipt_url);
+        const hasDepartureReceipt = !!(request.user_baggage_departure_receipt_url);
+        const hasReturnReceipt = !!(request.user_baggage_return_receipt_url);
+        const hasAnyReceipt = hasDepartureReceipt || hasReturnReceipt;
 
-        if (hasReceipt) {
+        if (hasAnyReceipt) {
             return `
                 <div class="baggage-content user-uploaded-content">
                     <div class="file-info">
                         <i data-lucide="file-check"></i>
                         <div>
                             <p class="file-name">추가 수하물 영수증</p>
-                            <p class="file-size">업로드 완료</p>
+                            <p class="file-size">
+                                ${hasDepartureReceipt && hasReturnReceipt ? '출국편, 귀국편 모두 업로드 완료' :
+                                  hasDepartureReceipt ? '출국편 업로드 완료' :
+                                  '귀국편 업로드 완료'}
+                            </p>
                         </div>
                     </div>
                     <div class="file-actions">
-                        <a href="${request.user_baggage_receipt_url}" target="_blank" class="btn btn-sm btn-outline">
-                            <i data-lucide="external-link"></i>
-                            보기
-                        </a>
-                        <a href="${request.user_baggage_receipt_url}" download class="btn btn-sm btn-outline">
-                            <i data-lucide="download"></i>
-                            다운로드
-                        </a>
+                        ${hasDepartureReceipt ? `
+                            <a href="${request.user_baggage_departure_receipt_url}" target="_blank" class="btn btn-sm btn-outline">
+                                <i data-lucide="plane-takeoff"></i>
+                                출국편 보기
+                            </a>
+                            <a href="${request.user_baggage_departure_receipt_url}" download class="btn btn-sm btn-outline">
+                                <i data-lucide="download"></i>
+                                출국편 다운로드
+                            </a>
+                        ` : ''}
+                        ${hasReturnReceipt ? `
+                            <a href="${request.user_baggage_return_receipt_url}" target="_blank" class="btn btn-sm btn-outline">
+                                <i data-lucide="plane-landing"></i>
+                                귀국편 보기
+                            </a>
+                            <a href="${request.user_baggage_return_receipt_url}" download class="btn btn-sm btn-outline">
+                                <i data-lucide="download"></i>
+                                귀국편 다운로드
+                            </a>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -2024,7 +2047,7 @@ class FlightRequestStatus {
                         <i data-lucide="upload-cloud"></i>
                         <div>
                             <p class="baggage-message">직접 구매 후 영수증을 업로드해주세요</p>
-                            <p class="baggage-submessage">JPG, PNG, PDF 파일을 지원합니다 (최대 10MB)</p>
+                            <p class="baggage-submessage">출국편과 귀국편 각각의 영수증을 업로드하세요 (JPG, PNG, PDF, 최대 10MB)</p>
                         </div>
                     </div>
                 </div>
@@ -2047,10 +2070,21 @@ class FlightRequestStatus {
                     </button>`;
 
             case 'user_allowed':
-                return `<button type="button" class="btn btn-sm btn-primary baggage-upload-btn" data-action="baggage-upload">
-                    <i data-lucide="upload"></i>
-                    ${request.user_baggage_receipt_url ? '재업로드' : '영수증 업로드'}
-                </button>`;
+                const hasDeparture = !!(request.user_baggage_departure_receipt_url);
+                const hasReturn = !!(request.user_baggage_return_receipt_url);
+
+                return `
+                    <div class="baggage-upload-buttons">
+                        <button type="button" class="btn btn-sm btn-primary departure-baggage-upload-btn" data-action="departure-baggage-upload">
+                            <i data-lucide="plane-takeoff"></i>
+                            ${hasDeparture ? '출국편 재업로드' : '출국편 업로드'}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-primary return-baggage-upload-btn" data-action="return-baggage-upload">
+                            <i data-lucide="plane-landing"></i>
+                            ${hasReturn ? '귀국편 재업로드' : '귀국편 업로드'}
+                        </button>
+                    </div>
+                `;
 
             default:
                 return `<button type="button" class="btn btn-sm btn-outline baggage-check-btn" data-action="baggage-check">
@@ -2191,11 +2225,23 @@ class FlightRequestStatus {
         this.showSuccess('다운로드가 시작됩니다.');
     }
 
-    // 🆕 추가 수하물 업로드 핸들러
-    async handleBaggageUpload() {
-        console.log('🔄 [추가수하물] 업로드 시작...');
+    // 🆕 출국편 추가 수하물 업로드 핸들러
+    async handleDepartureBaggageUpload() {
+        console.log('🔄 [출국편수하물] 업로드 시작...');
+        await this.handleBaggageUploadCommon('departure');
+    }
 
+    // 🆕 귀국편 추가 수하물 업로드 핸들러
+    async handleReturnBaggageUpload() {
+        console.log('🔄 [귀국편수하물] 업로드 시작...');
+        await this.handleBaggageUploadCommon('return');
+    }
+
+    // 🆕 공통 수하물 업로드 로직
+    async handleBaggageUploadCommon(type) {
         try {
+            const typeLabel = type === 'departure' ? '출국편' : '귀국편';
+
             // 파일 선택 dialog
             const input = document.createElement('input');
             input.type = 'file';
@@ -2223,7 +2269,7 @@ class FlightRequestStatus {
             const file = await fileSelected;
             document.body.removeChild(input);
 
-            console.log('📄 [추가수하물] 선택된 파일:', {
+            console.log(`📄 [${typeLabel}수하물] 선택된 파일:`, {
                 name: file.name,
                 size: file.size,
                 type: file.type
@@ -2236,20 +2282,21 @@ class FlightRequestStatus {
             this.showLoading(true);
 
             // 파일 업로드
-            const uploadResult = await this.uploadBaggageFile(file);
+            const uploadResult = await this.uploadBaggageFile(file, type);
 
             // DB 업데이트
-            await this.updateRequestWithBaggageUrl(uploadResult.url);
+            await this.updateRequestWithBaggageUrl(uploadResult.url, type);
 
             // 데이터 새로고침
             await this.loadCurrentRequest();
             this.renderStatus();
 
-            this.showSuccess('추가 수하물 영수증이 성공적으로 업로드되었습니다.');
+            this.showSuccess(`${typeLabel} 추가 수하물 영수증이 성공적으로 업로드되었습니다.`);
 
         } catch (error) {
-            console.error('❌ [추가수하물] 업로드 실패:', error);
-            this.showError('추가 수하물 영수증 업로드에 실패했습니다.', error);
+            const typeLabel = type === 'departure' ? '출국편' : '귀국편';
+            console.error(`❌ [${typeLabel}수하물] 업로드 실패:`, error);
+            this.showError(`${typeLabel} 추가 수하물 영수증 업로드에 실패했습니다.`, error);
         } finally {
             this.showLoading(false);
         }
@@ -2504,7 +2551,7 @@ class FlightRequestStatus {
     }
     
     // 🆕 추가 수하물 파일 업로드 유틸리티
-    async uploadBaggageFile(file) {
+    async uploadBaggageFile(file, type) {
         try {
             if (!this.api || typeof this.api.uploadFile !== 'function') {
                 throw new Error('파일 업로드 API를 찾을 수 없습니다.');
@@ -2512,7 +2559,7 @@ class FlightRequestStatus {
 
             const timestamp = Date.now();
             const fileExtension = file.name.split('.').pop();
-            const fileName = `${this.currentUser.id}_${timestamp}_baggage.${fileExtension}`;
+            const fileName = `${this.currentUser.id}_${timestamp}_baggage_${type}.${fileExtension}`;
 
             const uploadedUrl = await this.api.uploadFile('baggage-receipts', fileName, file);
 
@@ -2526,20 +2573,25 @@ class FlightRequestStatus {
             };
 
         } catch (error) {
-            console.error('❌ [추가수하물] 파일 업로드 실패:', error);
+            const typeLabel = type === 'departure' ? '출국편' : '귀국편';
+            console.error(`❌ [${typeLabel}수하물] 파일 업로드 실패:`, error);
             throw error;
         }
     }
 
     // 🆕 추가 수하물 URL로 DB 업데이트
-    async updateRequestWithBaggageUrl(baggageUrl) {
+    async updateRequestWithBaggageUrl(baggageUrl, type) {
         try {
             if (!this.api || typeof this.api.updateData !== 'function') {
                 throw new Error('데이터 업데이트 API를 찾을 수 없습니다.');
             }
 
+            const columnName = type === 'departure' ? 
+                'user_baggage_departure_receipt_url' : 
+                'user_baggage_return_receipt_url';
+
             const updatedData = await this.api.updateData('flight_requests', {
-                user_baggage_receipt_url: baggageUrl,
+                [columnName]: baggageUrl,
                 updated_at: new Date().toISOString()
             }, {
                 id: this.currentRequest.id
@@ -2555,7 +2607,8 @@ class FlightRequestStatus {
             };
 
         } catch (error) {
-            console.error('❌ [추가수하물] DB 업데이트 실패:', error);
+            const typeLabel = type === 'departure' ? '출국편' : '귀국편';
+            console.error(`❌ [${typeLabel}수하물] DB 업데이트 실패:`, error);
             throw error;
         }
     }    
