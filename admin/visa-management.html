@@ -857,7 +857,7 @@
                             id,
                             name,
                             email,
-                            institute_name,
+                            sejong_institute,
                             created_at,
                             actual_arrival_date,
                             actual_work_end_date
@@ -1029,7 +1029,7 @@
                                     ${student.name}
                                 </div>
                                 <div class="student-email">${student.email}</div>
-                                <div class="student-institute">${student.institute_name || '학당 정보 없음'}</div>
+                                <div class="student-institute">${student.sejong_institute || '학당 정보 없음'}</div>
                             </div>
                             <div class="student-meta">
                                 <div class="status-badge ${statusClass}">
@@ -1230,7 +1230,7 @@
                 this.filteredStudents = this.students.filter(student => {
                     return student.name.toLowerCase().includes(searchTerm) ||
                            student.email.toLowerCase().includes(searchTerm) ||
-                           (student.institute_name && student.institute_name.toLowerCase().includes(searchTerm));
+                           (student.sejong_institute && student.sejong_institute.toLowerCase().includes(searchTerm));
                 });
 
                 this.renderStudentsList();
