@@ -156,15 +156,7 @@
             border-color: #3498db;
         }
         
-        .filter-select {
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            min-width: 150px;
-        }
-        
-        .sort-select {
+        .filter-select, .sort-select {
             padding: 12px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
@@ -278,6 +270,19 @@
             color: #6c757d;
         }
         
+        .date-info {
+            font-size: 12px;
+            color: #6c757d;
+            text-align: right;
+        }
+        
+        .date-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 2px;
+        }
+        
         .visa-status-section {
             margin-bottom: 15px;
         }
@@ -342,6 +347,13 @@
             border-color: #3498db;
         }
         
+        .comment-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        
         .save-comment-btn {
             background: #28a745;
             color: white;
@@ -353,7 +365,6 @@
             display: flex;
             align-items: center;
             gap: 5px;
-            margin-top: 8px;
             transition: background-color 0.3s;
         }
         
@@ -369,7 +380,6 @@
         .save-indicator {
             font-size: 12px;
             color: #28a745;
-            margin-left: 10px;
             opacity: 0;
             transition: opacity 0.3s;
         }
@@ -445,10 +455,90 @@
             100% { transform: rotate(360deg); }
         }
         
-        .no-students {
+        .no-students, .error-state {
             text-align: center;
             padding: 40px;
             color: #6c757d;
+        }
+        
+        .no-students i, .error-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .error-state {
+            color: #dc3545;
+        }
+        
+        /* Toast System */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        
+        .toast {
+            background: #17a2b8;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            pointer-events: auto;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .toast.toast-success {
+            background: #28a745;
+        }
+        
+        .toast.toast-error {
+            background: #dc3545;
+        }
+        
+        .toast.toast-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Refresh Button */
+        .refresh-controls {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .refresh-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        .refresh-btn:hover {
+            background: #545b62;
         }
         
         /* Responsive Design */
@@ -483,6 +573,20 @@
             
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .toast-container {
+                left: 10px;
+                right: 10px;
+                top: 10px;
+            }
+            
+            .toast {
+                transform: translateY(-100%);
+            }
+            
+            .toast.show {
+                transform: translateY(0);
             }
         }
         
@@ -544,7 +648,7 @@
                 검색 및 필터
             </h2>
             <div class="controls-grid">
-                <input type="text" id="search-input" class="search-input" placeholder="학생 이름 또는 이메일로 검색...">
+                <input type="text" id="search-input" class="search-input" placeholder="학생 이름, 이메일 또는 학당명으로 검색... (Ctrl+F)">
                 <select id="status-filter" class="filter-select">
                     <option value="all">전체 상태</option>
                     <option value="completed">완료</option>
@@ -561,6 +665,12 @@
 
         <!-- Students List Section -->
         <div class="students-section">
+            <div class="refresh-controls">
+                <button class="refresh-btn" onclick="window.visaManagementSystem?.refreshData()">
+                    <i data-lucide="refresh-cw"></i>
+                    새로고침
+                </button>
+            </div>
             <h2>
                 <i data-lucide="users"></i>
                 학생 비자 관리 목록
@@ -581,6 +691,13 @@
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
+        
+        // Debug console commands
+        console.log('🛂 관리자용 비자 발급 관리 시스템');
+        console.log('디버그 명령어:');
+        console.log('- window.visaManagementSystem.getDebugInfo()');
+        console.log('- window.visaManagementSystem.refreshData()');
+        console.log('- window.visaManagementSystem.checkSystemStatus()');
     </script>
 </body>
 </html>
