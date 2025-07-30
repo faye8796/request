@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>비자 발급 관리 - 세종학당 문화인턴 지원 시스템</title>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header Section */
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #2c3e50;
+            font-size: 24px;
+        }
+        
+        .back-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        
+        .back-button:hover {
+            background: #2980b9;
+        }
+        
+        /* Statistics Section */
+        .statistics {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .statistics h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #3498db;
+        }
+        
+        .stat-card.in-progress {
+            border-left-color: #f39c12;
+        }
+        
+        .stat-card.completed {
+            border-left-color: #27ae60;
+        }
+        
+        .stat-card.no-status {
+            border-left-color: #95a5a6;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        /* Search and Filter Section */
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .controls h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .filter-select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 150px;
+        }
+        
+        .sort-select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 150px;
+        }
+        
+        /* Students List Section */
+        .students-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .students-section h2 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .students-list {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .student-visa-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .student-visa-card:hover {
+            border-color: #3498db;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.1);
+        }
+        
+        .student-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .student-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .student-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .student-email {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .student-institute {
+            color: #3498db;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .student-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .status-badge.in-progress {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-badge.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.no-status {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .receipts-count {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .visa-status-section {
+            margin-bottom: 15px;
+        }
+        
+        .visa-status-section h4 {
+            margin-bottom: 8px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+        }
+        
+        .status-content {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .status-content.empty {
+            color: #6c757d;
+            font-style: italic;
+            border-left-color: #dee2e6;
+        }
+        
+        .status-updated {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        .admin-comment-section {
+            margin-bottom: 15px;
+        }
+        
+        .admin-comment-section h4 {
+            margin-bottom: 8px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+        }
+        
+        .admin-comment-input {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        .admin-comment-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .save-comment-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 8px;
+            transition: background-color 0.3s;
+        }
+        
+        .save-comment-btn:hover {
+            background: #218838;
+        }
+        
+        .save-comment-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .save-indicator {
+            font-size: 12px;
+            color: #28a745;
+            margin-left: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .save-indicator.show {
+            opacity: 1;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        
+        .view-visa-btn {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .view-visa-btn:hover:not(:disabled) {
+            background: #138496;
+        }
+        
+        .view-visa-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .view-receipts-btn {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .view-receipts-btn:hover {
+            background: #e0a800;
+        }
+        
+        /* Loading States */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #dee2e6;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .no-students {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .student-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .student-meta {
+                align-items: flex-start;
+            }
+            
+            .action-buttons {
+                justify-content: flex-start;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>
+                <i data-lucide="passport"></i>
+                비자 발급 관리
+            </h1>
+            <a href="../admin.html" class="back-button">
+                <i data-lucide="arrow-left"></i>
+                대시보드로 돌아가기
+            </a>
+        </div>
+
+        <!-- Statistics Section -->
+        <div class="statistics">
+            <h2>
+                <i data-lucide="bar-chart-3"></i>
+                전체 현황 통계
+            </h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-count">-</div>
+                    <div class="stat-label">총 학생 수</div>
+                </div>
+                <div class="stat-card in-progress">
+                    <div class="stat-number" id="in-progress-count">-</div>
+                    <div class="stat-label">진행 중</div>
+                </div>
+                <div class="stat-card completed">
+                    <div class="stat-number" id="completed-count">-</div>
+                    <div class="stat-label">완료</div>
+                </div>
+                <div class="stat-card no-status">
+                    <div class="stat-number" id="no-status-count">-</div>
+                    <div class="stat-label">상태 없음</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="controls">
+            <h2>
+                <i data-lucide="search"></i>
+                검색 및 필터
+            </h2>
+            <div class="controls-grid">
+                <input type="text" id="search-input" class="search-input" placeholder="학생 이름 또는 이메일로 검색...">
+                <select id="status-filter" class="filter-select">
+                    <option value="all">전체 상태</option>
+                    <option value="completed">완료</option>
+                    <option value="in-progress">진행 중</option>
+                    <option value="no-status">상태 없음</option>
+                </select>
+                <select id="sort-select" class="sort-select">
+                    <option value="name">이름순</option>
+                    <option value="updated">최근 업데이트순</option>
+                    <option value="status">상태순</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Students List Section -->
+        <div class="students-section">
+            <h2>
+                <i data-lucide="users"></i>
+                학생 비자 관리 목록
+            </h2>
+            <div id="students-list" class="students-list">
+                <!-- 학생 카드들이 동적으로 생성됩니다 -->
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    데이터를 불러오는 중...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="../js/config.js"></script>
+    <script type="module" src="../js/admin/visa-management.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
