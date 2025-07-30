@@ -1,7 +1,7 @@
 /**
  * 관리자용 비자 발급 관리 시스템 - 모달 시스템 모듈
- * Version: 1.0.0
- * Description: 비자 문서 뷰어, 영수증 관리 모달 등 모든 모달 시스템 관리
+ * Version: 1.0.1
+ * Description: 비자 문서 뷰어, 영수증 관리 모달 등 모든 모달 시스템 관리 - 안정성 개선
  */
 
 import { VisaManagementAPI } from './visa-management-api.js';
@@ -372,7 +372,9 @@ class VisaManagementModals {
         this.activeModals.push(modal);
         
         // 아이콘 초기화
-        lucide.createIcons();
+        if (window.lucide) {
+            lucide.createIcons();
+        }
 
         // 애니메이션
         setTimeout(() => modal.classList.add('show'), 100);
@@ -443,7 +445,7 @@ class VisaManagementModals {
             ];
 
             const modal = this.createModal(
-                `<i data-lucide="passport"></i> ${studentName}님의 비자 문서`,
+                `<i data-lucide="file-text"></i> ${studentName}님의 비자 문서`,
                 content,
                 actions
             );
@@ -829,7 +831,9 @@ class VisaManagementModals {
         `;
 
         document.body.appendChild(toast);
-        lucide.createIcons();
+        if (window.lucide) {
+            lucide.createIcons();
+        }
 
         // 애니메이션
         setTimeout(() => {

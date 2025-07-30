@@ -1,14 +1,22 @@
 /**
  * 관리자용 비자 발급 관리 시스템 - API 통신 모듈
- * Version: 1.0.0
+ * Version: 1.0.1
  * Description: Supabase API 통신 및 데이터 관리
  */
 
-import { CONFIG } from '../config.js';
-
 class VisaManagementAPI {
     constructor() {
-        this.supabase = CONFIG.supabase;
+        // window.CONFIG 사용으로 변경 (config.js의 정상적인 접근 방식)
+        if (!window.CONFIG) {
+            console.error('CONFIG가 로드되지 않았습니다. config.js를 먼저 로드해주세요.');
+            throw new Error('CONFIG not loaded');
+        }
+        this.supabase = window.supabase || window.CONFIG.supabase;
+        
+        if (!this.supabase) {
+            console.error('Supabase 클라이언트가 초기화되지 않았습니다.');
+            throw new Error('Supabase client not initialized');
+        }
     }
 
     /**
