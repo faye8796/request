@@ -115,9 +115,9 @@
         }
 
         .header-content {
-            max-width: 90%;
+            max-width: 95%;
             margin: 0 auto;
-            padding: 0 2rem;
+            padding: 0 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -201,11 +201,11 @@
             transform: none !important;
         }
 
-        /* ===== 컨테이너 ===== */
+        /* ===== 컨테이너 (95%로 더 확대) ===== */
         .container {
-            max-width: 90%;
+            max-width: 95%;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 2rem 1rem;
             flex: 1;
         }
 
@@ -492,19 +492,20 @@
         }
 
         .add-receipt-section .btn-secondary {
-            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: white;
-            border: 1px solid #17a2b8;
+            border: 1px solid #28a745;
             font-weight: 600;
-            padding: 1rem 2rem;
-            font-size: 1rem;
-            box-shadow: 0 3px 10px rgba(23, 162, 184, 0.3);
+            padding: 1.25rem 2.5rem;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            border-radius: 10px;
         }
 
         .add-receipt-section .btn-secondary:hover {
-            background: linear-gradient(135deg, #138496 0%, #0f6674 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(23, 162, 184, 0.4);
+            background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
         }
 
         /* ===== 모달 ===== */
@@ -683,7 +684,8 @@
                 flex-direction: column;
                 gap: 1rem;
                 text-align: center;
-                max-width: 95%;
+                max-width: 98%;
+                padding: 0 0.5rem;
             }
 
             .user-info h1 {
@@ -696,8 +698,8 @@
             }
 
             .container {
-                padding: 1rem;
-                max-width: 95%;
+                padding: 1rem 0.5rem;
+                max-width: 98%;
             }
 
             .form-section {
@@ -752,6 +754,29 @@
             padding: 0.5rem 1rem;
             font-size: 0.85rem;
         }
+
+        /* ===== Storage 오류 알림 스타일 ===== */
+        .storage-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: #212529;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border: 1px solid #ffc107;
+            font-weight: 500;
+        }
+
+        .storage-warning strong {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .storage-warning-icon {
+            width: 1.2rem;
+            height: 1.2rem;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
     </style>
 
     <!-- Lucide Icons -->
@@ -788,6 +813,15 @@
             </header>
 
             <main class="container">
+                <!-- Storage 경고 메시지 -->
+                <div id="storageWarning" class="storage-warning" style="display: none;">
+                    <strong>
+                        <i data-lucide="alert-triangle" class="storage-warning-icon"></i>
+                        파일 업로드 기능 일시 제한
+                    </strong>
+                    현재 Storage 정책 설정으로 인해 파일 업로드가 제한되어 있습니다. 관리자에게 문의해주세요.
+                </div>
+
                 <!-- 메인 컨텐츠 -->
                 <div id="mainContent">
                     
@@ -1052,6 +1086,22 @@
     <script>
         console.log('🚀 비자 관리 시스템 초기화 시작');
         
+        // Storage 오류 감지 및 경고 표시
+        function showStorageWarning() {
+            const warning = document.getElementById('storageWarning');
+            if (warning) {
+                warning.style.display = 'block';
+            }
+        }
+
+        // 글로벌 오류 핸들러로 Storage 오류 감지
+        window.addEventListener('unhandledrejection', function(event) {
+            if (event.reason && event.reason.message && 
+                event.reason.message.includes('row-level security policy')) {
+                showStorageWarning();
+            }
+        });
+
         // 즉시 앱 표시
         async function initializeVisaApp() {
             const globalLoading = document.getElementById('globalLoadingState');
