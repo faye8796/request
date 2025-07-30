@@ -641,6 +641,14 @@ class FlightManagementModals {
                                                 <span class="value">${passportData.name_english || '미입력'}</span>
                                             </div>
                                             <div class="detail-row">
+                                                <span class="label">이메일</span>
+                                                <span class="value">${passportData.user_email || '미입력'}</span>
+                                            </div>
+                                            <div class="detail-row">
+                                                <span class="label">전화번호</span>
+                                                <span class="value">${passportData.user_phone || '미입력'}</span>
+                                            </div>
+                                            <div class="detail-row">
                                                 <span class="label">여권 번호</span>
                                                 <span class="value passport-number">${passportData.passport_number || '미입력'}</span>
                                             </div>
