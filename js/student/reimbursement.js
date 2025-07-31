@@ -310,19 +310,53 @@ class ReimbursementSystem {
                 payment_round: 1
             };
 
-            // 계좌 정보 저장/업데이트
-            const { data, error } = await supabase
+            // 🔧 수정: 기존 데이터 확인 후 update/insert 결정
+            console.log('계좌 정보 저장 시작:', accountData);
+            
+            // 기존 계좌 정보 확인
+            const { data: existingAccount } = await supabase
                 .from('user_reimbursements')
-                .upsert(accountData, { 
-                    onConflict: 'user_id,payment_round',
-                    ignoreDuplicates: false 
-                })
-                .select()
+                .select('*')
+                .eq('user_id', this.currentUser.id)
+                .eq('payment_round', 1)
                 .single();
 
-            if (error) throw error;
+            let result;
+            if (existingAccount) {
+                // 기존 데이터 업데이트
+                console.log('기존 계좌 정보 업데이트...');
+                const { data, error } = await supabase
+                    .from('user_reimbursements')
+                    .update({
+                        bank_name: accountData.bank_name,
+                        account_number: accountData.account_number,
+                        account_holder_name: accountData.account_holder_name,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('user_id', this.currentUser.id)
+                    .eq('payment_round', 1)
+                    .select()
+                    .single();
 
-            this.accountInfo = data;
+                if (error) throw error;
+                result = data;
+            } else {
+                // 새 데이터 삽입
+                console.log('새 계좌 정보 삽입...');
+                accountData.created_at = new Date().toISOString();
+                accountData.updated_at = new Date().toISOString();
+                
+                const { data, error } = await supabase
+                    .from('user_reimbursements')
+                    .insert([accountData])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                result = data;
+            }
+
+            this.accountInfo = result;
             this.showSuccess('계좌 정보가 저장되었습니다.');
             this.renderAccountInfo();
             
