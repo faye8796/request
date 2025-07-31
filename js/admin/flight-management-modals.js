@@ -2052,7 +2052,10 @@ class FlightManagementModals {
             // 데이터베이스 업데이트
             const { data: updateData, error: updateError } = await supabase
                 .from('flight_requests')
-                .update({ admin_baggage_receipt_url: urlData.publicUrl })
+                .update({ 
+                    admin_baggage_receipt_url: urlData.publicUrl,
+                    baggage_type: 'admin_purchased' 
+                })
                 .eq('id', requestId)
                 .select()
                 .single();

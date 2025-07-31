@@ -414,6 +414,8 @@
                         return this.studentData.individual_equipment_request_enabled === true;
                     case 'visa_management':
                         return this.studentData.individual_visa_management_enabled === true;
+                    case 'reimbursement_request':
+                        return this.studentData.individual_reimbursement_request_enabled === true;
                     default:
                         return false;
                 }
@@ -473,11 +475,14 @@
                     // 🆕 v9.3.2 개별 활성화 로그 (테스트 사용자 로그 제거)
                     const flightIndividual = this.checkIndividualFeatureAccess('flight_request');
                     const equipmentIndividual = this.checkIndividualFeatureAccess('equipment_request');
+                    const reimbursementIndividual = this.checkIndividualFeatureAccess('reimbursement_request'); // 🆕 추가
+                    
                     if (flightIndividual || equipmentIndividual) {
                         console.log('🔓 개별 기능 활성화 감지:', {
                             user: studentData.name,
                             flight_request: flightIndividual,
-                            equipment_request: equipmentIndividual
+                            equipment_request: equipmentIndividual,
+                            reimbursement_request: reimbursementIndividual
                         });
                     }
                     
@@ -560,7 +565,9 @@
                     { feature_name: 'exam', feature_title: '수료평가', is_active: false, display_order: 3 },
                     { feature_name: 'flight_request', feature_title: '항공권 구매 신청', is_active: true, display_order: 4 },
                     { feature_name: 'equipment_request', feature_title: '문화교구 신청', is_active: false, display_order: 5 },
-                    { feature_name: 'visa_management', feature_title: '비자 발급 관리', is_active: false, display_order: 6 }
+                    { feature_name: 'visa_management', feature_title: '비자 발급 관리', is_active: false, display_order: 6 },
+                    { feature_name: 'reimbursement_request', feature_title: '실비 지원 신청', is_active: false, display_order: 7 }
+                    
                 ];
             },
 
@@ -590,6 +597,9 @@
                         }
                         if (this.checkIndividualFeatureAccess('visa_management')) {
                             individualFeatures.push('비자 관리');
+                        }
+                        if (this.checkIndividualFeatureAccess('reimbursement_request')) {
+                            individualFeatures.push('실비 지원');
                         }
                         if (individualFeatures.length > 0) {
                             detailsDisplay += ` (개별 활성화: ${individualFeatures.join(', ')})`;
@@ -711,7 +721,16 @@
                         url: './visa-management.html',
                         buttonText: '관리하기',
                         buttonIcon: 'arrow-right'
+                    },
+                    'reimbursement_request': {
+                        icon: 'wallet',
+                        title: '실비 지원 신청',
+                        description: '직접 구매한 항목의 실비 지원을 신청하고 진행 상황을 확인할 수 있습니다.',
+                        url: './reimbursement.html',
+                        buttonText: '신청하기',
+                        buttonIcon: 'arrow-right'
                     }
+
                 };
 
                 const config = configs[feature.feature_name];
@@ -791,7 +810,9 @@
                     if (this.checkIndividualFeatureAccess('visa_management')) {
                         individualFeatures.push('비자 관리');
                     }
-
+                    if (this.checkIndividualFeatureAccess('reimbursement_request')) {
+                        individualFeatures.push('실비 지원');
+                    }
                     if (individualFeatures.length > 0) {
                         statusMessage += `<br>✅ 활성화된 개별 기능: ${individualFeatures.join(', ')}`;
                     } else {
@@ -849,8 +870,8 @@
                     individualAccess: {
                         flight_request: this.checkIndividualFeatureAccess('flight_request'),
                         equipment_request: this.checkIndividualFeatureAccess('equipment_request'),
-                        visa_management: this.checkIndividualFeatureAccess('visa_management')
-
+                        visa_management: this.checkIndividualFeatureAccess('visa_management'),
+                        reimbursement_request: this.checkIndividualFeatureAccess('reimbursement_request')
                     },
                     version: 'v9.3.2 - 테스트 사용자 특권 제거'
                 };
