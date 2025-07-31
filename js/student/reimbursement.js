@@ -43,17 +43,31 @@ class ReimbursementSystem {
     }
 
     async checkAuthentication() {
-        // localStorage에서 사용자 정보 확인
-        const userData = localStorage.getItem('currentUser');
+        // localStorage에서 사용자 정보 확인 (올바른 키 사용)
+        const userData = localStorage.getItem('currentStudent'); // ✅ 올바른 키
         if (!userData) {
+            console.error('로그인 정보를 찾을 수 없습니다.');
+            alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
             window.location.href = '../index.html';
             return;
         }
 
-        this.currentUser = JSON.parse(userData);
-        console.log('현재 사용자:', this.currentUser);
-    }
+        try {
+            this.currentUser = JSON.parse(userData);
+            console.log('현재 사용자:', this.currentUser);
 
+            // 필수 필드 검증
+            if (!this.currentUser.id || !this.currentUser.name) {
+                throw new Error('사용자 데이터가 불완전합니다.');
+            }
+        } catch (error) {
+            console.error('사용자 데이터 파싱 오류:', error);
+            alert('사용자 정보에 오류가 있습니다. 다시 로그인해주세요.');
+            window.location.href = '../index.html';
+            return;
+        }
+    }
+    
     async loadAllData() {
         this.showLoading(true);
         
