@@ -190,11 +190,11 @@ const SupabaseAdmin = {
      * @returns {Promise<Object>} 예산 현황 데이터
      */
     async getBudgetOverviewStats() {
-        console.log('💰 예산 현황 통계 계산 시작...');
-        
+        console.log('💰 예산 현황 통계 계산 시작... (수정된 버전)');
+
         try {
             const client = await this.core.ensureClient();
-            
+
             // 1. 승인된 수업계획을 가진 학생들 조회
             const approvedLessonPlansResult = await client
                 .from('lesson_plans')
@@ -219,7 +219,7 @@ const SupabaseAdmin = {
             // 4. 구매완료된 신청들의 총액 (purchased 상태)
             const purchasedRequestsResult = await client
                 .from('requests')
-                .select('price', 'final_purchase_amount')
+                .select('price, final_purchase_amount')
                 .eq('status', 'purchased');
 
             let totalApprovedBudget = 0;
@@ -231,7 +231,7 @@ const SupabaseAdmin = {
                     const userField = plan.user_profiles?.field;
                     if (userField && fieldBudgetSettings[userField]) {
                         const fieldSetting = fieldBudgetSettings[userField];
-                        
+
                         // 수업 횟수 계산
                         let totalLessons = 0;
                         try {
@@ -240,7 +240,7 @@ const SupabaseAdmin = {
                                 if (typeof lessons === 'string') {
                                     lessons = JSON.parse(lessons);
                                 }
-                                
+
                                 if (lessons.totalLessons) {
                                     totalLessons = lessons.totalLessons;
                                 } else if (lessons.schedule && Array.isArray(lessons.schedule)) {
@@ -259,7 +259,7 @@ const SupabaseAdmin = {
                         const finalBudget = fieldSetting.maxBudget > 0 ? 
                             Math.min(calculatedBudget, fieldSetting.maxBudget) : 
                             calculatedBudget;
-                        
+
                         totalApprovedBudget += finalBudget;
                         studentCount++;
                     }
@@ -270,7 +270,7 @@ const SupabaseAdmin = {
             const approvedItemsTotal = approvedRequestsResult.data ? 
                 approvedRequestsResult.data.reduce((sum, request) => sum + (request.price || 0), 0) : 0;
 
-            // 구매완료된 신청들의 총액  
+            // 구매완료된 신청들의 총액 - 정확한 계산
             const purchasedTotal = purchasedRequestsResult.data ?
                 purchasedRequestsResult.data.reduce((sum, request) => {
                     const amount = request.final_purchase_amount ?? request.price ?? 0;
@@ -292,7 +292,7 @@ const SupabaseAdmin = {
 
         } catch (error) {
             console.error('❌ 예산 현황 통계 계산 실패:', error);
-            
+
             // 오류 발생시 기본값 반환
             return {
                 totalApprovedBudget: 0,
