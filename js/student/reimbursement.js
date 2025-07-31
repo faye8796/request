@@ -310,7 +310,7 @@ class ReimbursementSystem {
                 payment_round: 1
             };
 
-            // 🔧 수정: 기존 데이터 확인 후 update/insert 결정
+            // 🔧 수정: 기존 데이터 확인 후 update/insert 결정 (다른 시스템과 동일한 패턴)
             console.log('계좌 정보 저장 시작:', accountData);
             
             // 기존 계좌 정보 확인
@@ -323,7 +323,7 @@ class ReimbursementSystem {
 
             let result;
             if (existingAccount) {
-                // 기존 데이터 업데이트
+                // 기존 데이터 업데이트 (다른 시스템과 동일한 패턴)
                 console.log('기존 계좌 정보 업데이트...');
                 const { data, error } = await supabase
                     .from('user_reimbursements')
@@ -335,25 +335,32 @@ class ReimbursementSystem {
                     })
                     .eq('user_id', this.currentUser.id)
                     .eq('payment_round', 1)
-                    .select()
-                    .single();
+                    .select();
 
                 if (error) throw error;
-                result = data;
+                result = data && data.length > 0 ? data[0] : null;
             } else {
-                // 새 데이터 삽입
+                // 🔧 새 데이터 삽입 (체이닝 없이 바로 결과 받기)
                 console.log('새 계좌 정보 삽입...');
                 accountData.created_at = new Date().toISOString();
                 accountData.updated_at = new Date().toISOString();
                 
-                const { data, error } = await supabase
+                const insertResult = await supabase
                     .from('user_reimbursements')
-                    .insert([accountData])
-                    .select()
+                    .insert([accountData]);
+
+                if (insertResult.error) throw insertResult.error;
+
+                // 삽입 후 다시 조회하여 정확한 데이터 가져오기
+                const { data: insertedData, error: selectError } = await supabase
+                    .from('user_reimbursements')
+                    .select('*')
+                    .eq('user_id', this.currentUser.id)
+                    .eq('payment_round', 1)
                     .single();
 
-                if (error) throw error;
-                result = data;
+                if (selectError) throw selectError;
+                result = insertedData;
             }
 
             this.accountInfo = result;
