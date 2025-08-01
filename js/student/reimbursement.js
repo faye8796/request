@@ -1,6 +1,11 @@
 /**
- * 실비 지원 신청 시스템 v1.0.0
+ * 실비 지원 신청 시스템 v1.1.0
  * 항공권-교구-비자 영수증 통합 관리
+ * 
+ * 🔧 v1.1.0 수정사항:
+ * - Supabase import 경로 수정
+ * - Insert API 체이닝 문제 해결
+ * - 인증 시스템 통합
  * 
  * 기능:
  * - 계좌 정보 관리
@@ -9,20 +14,22 @@
  * - 입금 정보 표시
  */
 
-import { supabase } from '../supabase/supabase-client.js';
-
 class ReimbursementSystem {
     constructor() {
         this.currentUser = null;
         this.reimbursementItems = [];
         this.accountInfo = null;
         this.paymentInfo = null;
+        this.supabase = null;
         
         this.init();
     }
 
     async init() {
         try {
+            // SupabaseAPI 초기화 대기
+            await this.initializeSupabase();
+            
             // 사용자 인증 확인
             await this.checkAuthentication();
             
@@ -40,6 +47,34 @@ class ReimbursementSystem {
             console.error('실비 지원 시스템 초기화 실패:', error);
             this.showError('시스템 초기화에 실패했습니다.');
         }
+    }
+
+    async initializeSupabase() {
+        // SupabaseAPI가 로드될 때까지 대기
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while (!window.SupabaseAPI && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.SupabaseAPI) {
+            throw new Error('SupabaseAPI 로딩 실패');
+        }
+        
+        // SupabaseAPI 초기화 완료 대기
+        const initSuccess = await window.SupabaseAPI.init();
+        if (!initSuccess) {
+            throw new Error('SupabaseAPI 초기화 실패');
+        }
+        
+        this.supabase = window.SupabaseAPI.supabase;
+        if (!this.supabase) {
+            throw new Error('Supabase 클라이언트 접근 실패');
+        }
+        
+        console.log('✅ Supabase 연결 성공');
     }
 
     async checkAuthentication() {
@@ -98,7 +133,7 @@ class ReimbursementSystem {
 
         try {
             // 1. 항공권 (직접구매) - receipt_url
-            const { data: flightRequests } = await supabase
+            const { data: flightRequests } = await this.supabase
                 .from('flight_requests')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
@@ -123,7 +158,7 @@ class ReimbursementSystem {
             }
 
             // 2. 출국 수하물 - user_baggage_departure_receipt_url
-            const { data: departureBaggage } = await supabase
+            const { data: departureBaggage } = await this.supabase
                 .from('flight_requests')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
@@ -146,7 +181,7 @@ class ReimbursementSystem {
             }
 
             // 3. 귀국 수하물 - user_baggage_return_receipt_url
-            const { data: returnBaggage } = await supabase
+            const { data: returnBaggage } = await this.supabase
                 .from('flight_requests')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
@@ -169,7 +204,7 @@ class ReimbursementSystem {
             }
 
             // 4. 교구 (직접구매) - admin_receipt_url을 통해 확인
-            const { data: equipmentRequests } = await supabase
+            const { data: equipmentRequests } = await this.supabase
                 .from('requests')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
@@ -179,7 +214,7 @@ class ReimbursementSystem {
             if (equipmentRequests) {
                 for (const request of equipmentRequests) {
                     // 해당 request의 영수증 확인
-                    const { data: receipts } = await supabase
+                    const { data: receipts } = await this.supabase
                         .from('receipts')
                         .select('*')
                         .eq('request_id', request.id)
@@ -204,7 +239,7 @@ class ReimbursementSystem {
             }
 
             // 5. 비자 영수증들 - receipt_url
-            const { data: visaReceipts } = await supabase
+            const { data: visaReceipts } = await this.supabase
                 .from('visa_receipts')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
@@ -237,7 +272,7 @@ class ReimbursementSystem {
 
     async loadAccountInfo() {
         try {
-            const { data: accountData } = await supabase
+            const { data: accountData } = await this.supabase
                 .from('user_reimbursements')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
@@ -257,7 +292,7 @@ class ReimbursementSystem {
 
     async loadPaymentInfo() {
         try {
-            const { data: paymentData } = await supabase
+            const { data: paymentData } = await this.supabase
                 .from('user_reimbursements')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
@@ -314,7 +349,7 @@ class ReimbursementSystem {
             console.log('계좌 정보 저장 시작:', accountData);
             
             // 기존 계좌 정보 확인
-            const { data: existingAccount } = await supabase
+            const { data: existingAccount } = await this.supabase
                 .from('user_reimbursements')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
@@ -325,7 +360,7 @@ class ReimbursementSystem {
             if (existingAccount) {
                 // 기존 데이터 업데이트 (다른 시스템과 동일한 패턴)
                 console.log('기존 계좌 정보 업데이트...');
-                const { data, error } = await supabase
+                const { data, error } = await this.supabase
                     .from('user_reimbursements')
                     .update({
                         bank_name: accountData.bank_name,
@@ -340,27 +375,18 @@ class ReimbursementSystem {
                 if (error) throw error;
                 result = data && data.length > 0 ? data[0] : null;
             } else {
-                // 🔧 새 데이터 삽입 (체이닝 없이 바로 결과 받기)
+                // 🔧 새 데이터 삽입 (안전한 방법으로 수정)
                 console.log('새 계좌 정보 삽입...');
                 accountData.created_at = new Date().toISOString();
                 accountData.updated_at = new Date().toISOString();
                 
-                const insertResult = await supabase
+                const { data, error } = await this.supabase
                     .from('user_reimbursements')
-                    .insert([accountData]);
+                    .insert([accountData])
+                    .select();
 
-                if (insertResult.error) throw insertResult.error;
-
-                // 삽입 후 다시 조회하여 정확한 데이터 가져오기
-                const { data: insertedData, error: selectError } = await supabase
-                    .from('user_reimbursements')
-                    .select('*')
-                    .eq('user_id', this.currentUser.id)
-                    .eq('payment_round', 1)
-                    .single();
-
-                if (selectError) throw selectError;
-                result = insertedData;
+                if (error) throw error;
+                result = data && data.length > 0 ? data[0] : null;
             }
 
             this.accountInfo = result;
@@ -373,7 +399,9 @@ class ReimbursementSystem {
         } finally {
             saveBtn.disabled = false;
             saveBtn.innerHTML = originalText;
-            lucide.createIcons();
+            if (window.lucide) {
+                lucide.createIcons();
+            }
         }
     }
 
@@ -408,7 +436,9 @@ class ReimbursementSystem {
             }
         }
 
-        lucide.createIcons();
+        if (window.lucide) {
+            lucide.createIcons();
+        }
     }
 
     renderReimbursementList() {
@@ -449,7 +479,9 @@ class ReimbursementSystem {
             reimbursementList.appendChild(itemElement);
         });
 
-        lucide.createIcons();
+        if (window.lucide) {
+            lucide.createIcons();
+        }
     }
 
     createReimbursementItemElement(item) {
@@ -571,7 +603,9 @@ class ReimbursementSystem {
         `;
 
         document.body.appendChild(alert);
-        lucide.createIcons();
+        if (window.lucide) {
+            lucide.createIcons();
+        }
 
         // 3초 후 자동 제거
         setTimeout(() => {
@@ -586,6 +620,66 @@ class ReimbursementSystem {
         console.log('화면 크기 변경됨');
     }
 }
+
+// 영수증 모달 전역 함수
+window.showReceiptModal = function(receiptUrl, title) {
+    if (!receiptUrl) {
+        alert('영수증을 찾을 수 없습니다.');
+        return;
+    }
+
+    // 모달 HTML 생성
+    const modalHTML = `
+        <div id="receiptModal" class="modal" style="display: flex;">
+            <div class="modal-content" style="max-width: 800px; max-height: 90vh;">
+                <div class="modal-header">
+                    <h3>${title} - 영수증</h3>
+                    <button type="button" class="btn-close" onclick="closeReceiptModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="modal-body" style="text-align: center; padding: 20px;">
+                    <div id="receiptContent">
+                        <div style="margin-bottom: 15px;">
+                            <button class="btn btn-secondary" onclick="window.open('${receiptUrl}', '_blank')">
+                                <i data-lucide="external-link"></i>
+                                새 탭에서 열기
+                            </button>
+                        </div>
+                        <img src="${receiptUrl}" 
+                             style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"
+                             onerror="this.style.display='none'; document.getElementById('receiptError').style.display='block';"
+                             alt="영수증 이미지">
+                        <div id="receiptError" style="display: none; padding: 40px; color: #666;">
+                            <i data-lucide="file-text" style="width: 48px; height: 48px; margin-bottom: 16px;"></i>
+                            <p>이미지를 불러올 수 없습니다. '새 탭에서 열기' 버튼을 클릭해주세요.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 기존 모달 제거
+    const existingModal = document.getElementById('receiptModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // 새 모달 추가
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+};
+
+window.closeReceiptModal = function() {
+    const modal = document.getElementById('receiptModal');
+    if (modal) {
+        modal.remove();
+    }
+};
 
 // 시스템 초기화
 document.addEventListener('DOMContentLoaded', () => {
