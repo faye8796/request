@@ -662,8 +662,17 @@
         </div>
     </div>
 
-    <!-- JavaScript -->
+    <!-- 기존 시스템과 동일한 스크립트 로딩 구조 -->
+    <!-- 1단계: 기본 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/supabase-client.js"></script>
+    <script src="../js/utils.js"></script>
+
+    <!-- 2단계: 실비 지원 시스템 -->
     <script type="module" src="../js/student/reimbursement.js"></script>
+
+    <!-- 3단계: 기본 설정 -->
     <script>
         // Lucide 아이콘 초기화
         document.addEventListener('DOMContentLoaded', function() {
