@@ -1,11 +1,11 @@
 /**
- * 실비 지원 신청 시스템 v1.2.0
+ * 실비 지원 신청 시스템 v1.3.0
  * 항공권-교구-비자 영수증 통합 관리
  * 
- * 🔧 v1.2.0 수정사항:
- * - 간소화된 supabase-client.js 사용 (원래 설계대로)
- * - upsert 체이닝 지원 활용
- * - 단순하고 직접적인 API 호출
+ * 🔧 v1.3.0 수정사항:
+ * - 기존 시스템과 동일한 SupabaseAPI 통합 매니저 사용
+ * - 401 Unauthorized 오류 해결
+ * - 기존 인증 시스템 통합
  * 
  * 기능:
  * - 계좌 정보 관리
@@ -14,20 +14,22 @@
  * - 입금 정보 표시
  */
 
-import { supabase } from '../supabase/supabase-client.js';
-
 class ReimbursementSystem {
     constructor() {
         this.currentUser = null;
         this.reimbursementItems = [];
         this.accountInfo = null;
         this.paymentInfo = null;
+        this.supabase = null;
         
         this.init();
     }
 
     async init() {
         try {
+            // SupabaseAPI 초기화 대기 (기존 시스템과 동일한 방식)
+            await this.initializeSupabase();
+            
             // 사용자 인증 확인
             await this.checkAuthentication();
             
@@ -47,8 +49,36 @@ class ReimbursementSystem {
         }
     }
 
+    async initializeSupabase() {
+        // SupabaseAPI가 로드될 때까지 대기 (기존 시스템과 동일한 패턴)
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while (!window.SupabaseAPI && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.SupabaseAPI) {
+            throw new Error('SupabaseAPI 로딩 실패');
+        }
+        
+        // SupabaseAPI 초기화 완료 대기
+        const initSuccess = await window.SupabaseAPI.init();
+        if (!initSuccess) {
+            throw new Error('SupabaseAPI 초기화 실패');
+        }
+        
+        this.supabase = window.SupabaseAPI.supabase;
+        if (!this.supabase) {
+            throw new Error('Supabase 클라이언트 접근 실패');
+        }
+        
+        console.log('✅ SupabaseAPI 통합 매니저 연결 성공');
+    }
+
     async checkAuthentication() {
-        // localStorage에서 사용자 정보 확인 (올바른 키 사용)
+        // localStorage에서 사용자 정보 확인 (기존 시스템과 동일한 키)
         const userData = localStorage.getItem('currentStudent');
         if (!userData) {
             console.error('로그인 정보를 찾을 수 없습니다.');
@@ -102,17 +132,16 @@ class ReimbursementSystem {
         this.reimbursementItems = [];
 
         try {
-            // 1. 항공권 (직접구매) - receipt_url
-            const flightResult = await supabase
+            // 1. 항공권 (직접구매) - receipt_url (기존 SupabaseAPI 방식 사용)
+            const { data: flightRequests } = await this.supabase
                 .from('flight_requests')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
                 .eq('purchase_type', 'direct')
-                .eq('flight_reimbursement_completed', false)
-                .execute();
+                .eq('flight_reimbursement_completed', false);
 
-            if (flightResult.data) {
-                flightResult.data.forEach(flight => {
+            if (flightRequests) {
+                flightRequests.forEach(flight => {
                     if (flight.receipt_url) {
                         this.reimbursementItems.push({
                             id: `flight_${flight.id}`,
@@ -129,16 +158,15 @@ class ReimbursementSystem {
             }
 
             // 2. 출국 수하물 - user_baggage_departure_receipt_url
-            const departureBaggageResult = await supabase
+            const { data: departureBaggage } = await this.supabase
                 .from('flight_requests')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
                 .not('user_baggage_departure_receipt_url', 'is', null)
-                .eq('baggage_reimbursement_completed', false)
-                .execute();
+                .eq('baggage_reimbursement_completed', false);
 
-            if (departureBaggageResult.data) {
-                departureBaggageResult.data.forEach(baggage => {
+            if (departureBaggage) {
+                departureBaggage.forEach(baggage => {
                     this.reimbursementItems.push({
                         id: `baggage_departure_${baggage.id}`,
                         type: 'baggage_departure',
@@ -153,16 +181,15 @@ class ReimbursementSystem {
             }
 
             // 3. 귀국 수하물 - user_baggage_return_receipt_url
-            const returnBaggageResult = await supabase
+            const { data: returnBaggage } = await this.supabase
                 .from('flight_requests')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
                 .not('user_baggage_return_receipt_url', 'is', null)
-                .eq('baggage_reimbursement_completed', false)
-                .execute();
+                .eq('baggage_reimbursement_completed', false);
 
-            if (returnBaggageResult.data) {
-                returnBaggageResult.data.forEach(baggage => {
+            if (returnBaggage) {
+                returnBaggage.forEach(baggage => {
                     this.reimbursementItems.push({
                         id: `baggage_return_${baggage.id}`,
                         type: 'baggage_return',
@@ -177,27 +204,25 @@ class ReimbursementSystem {
             }
 
             // 4. 교구 (직접구매) - admin_receipt_url을 통해 확인
-            const equipmentResult = await supabase
+            const { data: equipmentRequests } = await this.supabase
                 .from('requests')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
                 .eq('purchase_type', 'offline')
-                .eq('reimbursement_completed', false)
-                .execute();
+                .eq('reimbursement_completed', false);
 
-            if (equipmentResult.data) {
-                for (const request of equipmentResult.data) {
+            if (equipmentRequests) {
+                for (const request of equipmentRequests) {
                     // 해당 request의 영수증 확인
-                    const receiptsResult = await supabase
+                    const { data: receipts } = await this.supabase
                         .from('receipts')
                         .select('*')
                         .eq('request_id', request.id)
                         .eq('user_id', this.currentUser.id)
-                        .eq('reimbursement_completed', false)
-                        .execute();
+                        .eq('reimbursement_completed', false);
 
-                    if (receiptsResult.data && receiptsResult.data.length > 0) {
-                        receiptsResult.data.forEach(receipt => {
+                    if (receipts && receipts.length > 0) {
+                        receipts.forEach(receipt => {
                             this.reimbursementItems.push({
                                 id: `equipment_${receipt.id}`,
                                 type: 'equipment',
@@ -214,15 +239,14 @@ class ReimbursementSystem {
             }
 
             // 5. 비자 영수증들 - receipt_url
-            const visaResult = await supabase
+            const { data: visaReceipts } = await this.supabase
                 .from('visa_receipts')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
-                .eq('reimbursement_completed', false)
-                .execute();
+                .eq('reimbursement_completed', false);
 
-            if (visaResult.data) {
-                visaResult.data.forEach(receipt => {
+            if (visaReceipts) {
+                visaReceipts.forEach(receipt => {
                     if (receipt.receipt_url) {
                         this.reimbursementItems.push({
                             id: `visa_${receipt.id}`,
@@ -248,17 +272,16 @@ class ReimbursementSystem {
 
     async loadAccountInfo() {
         try {
-            const result = await supabase
+            const { data: accountData } = await this.supabase
                 .from('user_reimbursements')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
                 .eq('payment_round', 1)
-                .single()
-                .execute();
+                .single();
 
-            if (result.data) {
-                this.accountInfo = result.data;
-                console.log('계좌 정보 로딩 완료:', result.data);
+            if (accountData) {
+                this.accountInfo = accountData;
+                console.log('계좌 정보 로딩 완료:', accountData);
             } else {
                 console.log('등록된 계좌 정보 없음');
             }
@@ -269,17 +292,16 @@ class ReimbursementSystem {
 
     async loadPaymentInfo() {
         try {
-            const result = await supabase
+            const { data: paymentData } = await this.supabase
                 .from('user_reimbursements')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
                 .not('scheduled_amount', 'is', null)
-                .order('payment_round', { ascending: true })
-                .execute();
+                .order('payment_round', { ascending: true });
 
-            if (result.data && result.data.length > 0) {
-                this.paymentInfo = result.data;
-                console.log('입금 정보 로딩 완료:', result.data);
+            if (paymentData && paymentData.length > 0) {
+                this.paymentInfo = paymentData;
+                console.log('입금 정보 로딩 완료:', paymentData);
             } else {
                 console.log('입금 예정 정보 없음');
             }
@@ -325,19 +347,48 @@ class ReimbursementSystem {
 
             console.log('계좌 정보 저장 시작:', accountData);
             
-            // 🔧 upsert 사용 (간소화된 클라이언트의 체이닝 지원 활용)
-            const result = await supabase
+            // 기존 계좌 정보 확인
+            const { data: existingAccount } = await this.supabase
                 .from('user_reimbursements')
-                .upsert(accountData, { onConflict: 'user_id,payment_round' })
-                .select()
-                .single()
-                .execute();
+                .select('*')
+                .eq('user_id', this.currentUser.id)
+                .eq('payment_round', 1)
+                .single();
 
-            if (result.error) {
-                throw result.error;
+            let result;
+            if (existingAccount) {
+                // 기존 데이터 업데이트
+                console.log('기존 계좌 정보 업데이트...');
+                const { data, error } = await this.supabase
+                    .from('user_reimbursements')
+                    .update({
+                        bank_name: accountData.bank_name,
+                        account_number: accountData.account_number,
+                        account_holder_name: accountData.account_holder_name,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('user_id', this.currentUser.id)
+                    .eq('payment_round', 1)
+                    .select();
+
+                if (error) throw error;
+                result = data && data.length > 0 ? data[0] : null;
+            } else {
+                // 새 데이터 삽입
+                console.log('새 계좌 정보 삽입...');
+                accountData.created_at = new Date().toISOString();
+                accountData.updated_at = new Date().toISOString();
+                
+                const { data, error } = await this.supabase
+                    .from('user_reimbursements')
+                    .insert([accountData])
+                    .select();
+
+                if (error) throw error;
+                result = data && data.length > 0 ? data[0] : null;
             }
 
-            this.accountInfo = result.data;
+            this.accountInfo = result;
             this.showSuccess('계좌 정보가 저장되었습니다.');
             this.renderAccountInfo();
             
