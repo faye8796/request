@@ -2130,6 +2130,172 @@
             100% { transform: translateX(100%); }
         }
         
+        /* 🆕 추가수하물 금액 입력 폼 스타일 */
+        .amount-input-section {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .amount-input-section label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .inline-amount-input {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .inline-amount-input input[type="number"] {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            background: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .inline-amount-input input[type="number"]:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .inline-amount-input .currency {
+            font-size: 0.875rem;
+            color: #6b7280;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        /* 수하물 총액 표시 섹션 */
+        .baggage-total-section {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+        }
+
+        .baggage-total-section h6 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #0c4a6e;
+        }
+
+        .baggage-total-section .total-amount {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #0c4a6e;
+        }
+
+        .baggage-total-section small {
+            display: block;
+            margin-top: 0.25rem;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        /* 영수증 그룹 구분 */
+        .receipt-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .receipt-group h6 {
+            margin: 0 0 0.75rem 0;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        /* 기존 receipt-item과 조화 */
+        .receipt-item + .amount-input-section {
+            margin-top: 0.75rem;
+            margin-left: 0;
+        }
+
+        /* 다크모드 대응 (필요시) */
+        @media (prefers-color-scheme: dark) {
+            .amount-input-section {
+                background: #1f2937;
+                border-color: #374151;
+            }
+
+            .amount-input-section label {
+                color: #d1d5db;
+            }
+
+            .inline-amount-input input[type="number"] {
+                background: #111827;
+                border-color: #4b5563;
+                color: #f9fafb;
+            }
+
+            .inline-amount-input input[type="number"]:focus {
+                border-color: #60a5fa;
+                box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+            }
+
+            .baggage-total-section {
+                background: #1e3a8a;
+                border-color: #3b82f6;
+            }
+
+            .baggage-total-section h6,
+            .baggage-total-section .total-amount {
+                color: #dbeafe;
+            }
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 640px) {
+            .amount-input-section {
+                padding: 0.75rem;
+            }
+
+            .inline-amount-input {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.25rem;
+            }
+
+            .inline-amount-input .currency {
+                text-align: center;
+                padding: 0.25rem;
+            }
+        }
+
+        /* 영수증 아이템과 금액 입력 통합 스타일 */
+        .receipt-item-with-amount {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .receipt-item-with-amount .receipt-item {
+            margin: 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .receipt-item-with-amount .amount-input-section {
+            margin: 0;
+            border: none;
+            border-radius: 0;
+            background: #fafafa;
+        }
+        
+        
     </style>
 </head>
 <body>

@@ -1918,33 +1918,107 @@ class FlightManagementModals {
                 
                 <div class="student-receipts">
                     <h5>학생이 제출한 영수증</h5>
-                    ${request.user_baggage_receipt_url ? `
-                        <div class="receipt-item">
-                            <div class="receipt-info">
-                                <i data-lucide="receipt"></i>
-                                <div class="receipt-details">
-                                    <span class="receipt-title">수하물 구매 영수증</span>
-                                    <span class="receipt-date">제출일: ${this.formatDate(request.updated_at)}</span>
+
+                    <!-- 출국 수하물 영수증 -->
+                    <div class="receipt-group">
+                        <h6>🛫 출국 수하물 영수증</h6>
+                        ${request.user_baggage_departure_receipt_url ? `
+                            <!-- 🆕 통합 컨테이너로 감싸기 -->
+                            <div class="receipt-item-with-amount">
+                                <div class="receipt-item">
+                                    <div class="receipt-info">
+                                        <i data-lucide="receipt"></i>
+                                        <div class="receipt-details">
+                                            <span class="receipt-title">출국 수하물 구매 영수증</span>
+                                            <span class="receipt-date">제출일: ${this.formatDate(request.updated_at)}</span>
+                                        </div>
+                                    </div>
+                                    <div class="receipt-actions">
+                                        <button class="btn secondary" onclick="window.flightModals.viewFile('${request.user_baggage_departure_receipt_url}', '출국 수하물 영수증')">
+                                            <i data-lucide="eye"></i>
+                                            보기
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 🆕 금액 입력 폼을 같은 컨테이너 안에 -->
+                                <div class="amount-input-section">
+                                    <label for="departureBaggageAmount-${request.id}">출국 수하물 금액:</label>
+                                    <div class="inline-amount-input">
+                                        <input type="number" 
+                                               id="departureBaggageAmount-${request.id}" 
+                                               placeholder="금액 입력"
+                                               min="0"
+                                               step="1000"
+                                               value="${request.admin_baggage_departure_amount || ''}"
+                                               onchange="window.flightModals.saveBaggageAmountInstant('${request.id}', 'departure', this.value)">
+                                        <span class="currency">원</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="receipt-actions">
-                                <button class="btn secondary" onclick="window.flightModals.viewFile('${request.user_baggage_receipt_url}', '학생 수하물 영수증')">
-                                    <i data-lucide="eye"></i>
-                                    보기
-                                </button>
-                                <button class="btn success" onclick="window.flightModals.approveStudentBaggageReceipt('${request.id}')">
-                                    <i data-lucide="check"></i>
-                                    승인
-                                </button>
+                        ` : `
+                            <div class="no-receipts">
+                                <i data-lucide="clock"></i>
+                                <span>출국 수하물 영수증이 제출되지 않았습니다</span>
                             </div>
+                        `}
+                    </div>
+
+                    <!-- 귀국 수하물도 동일하게 -->
+                    <div class="receipt-group">
+                        <h6>🛬 귀국 수하물 영수증</h6>
+                        ${request.user_baggage_return_receipt_url ? `
+                            <!-- 🆕 통합 컨테이너로 감싸기 -->
+                            <div class="receipt-item-with-amount">
+                                <div class="receipt-item">
+                                    <div class="receipt-info">
+                                        <i data-lucide="receipt"></i>
+                                        <div class="receipt-details">
+                                            <span class="receipt-title">귀국 수하물 구매 영수증</span>
+                                            <span class="receipt-date">제출일: ${this.formatDate(request.updated_at)}</span>
+                                        </div>
+                                    </div>
+                                    <div class="receipt-actions">
+                                        <button class="btn secondary" onclick="window.flightModals.viewFile('${request.user_baggage_return_receipt_url}', '귀국 수하물 영수증')">
+                                            <i data-lucide="eye"></i>
+                                            보기
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 🆕 금액 입력 폼을 같은 컨테이너 안에 -->
+                                <div class="amount-input-section">
+                                    <label for="returnBaggageAmount-${request.id}">귀국 수하물 금액:</label>
+                                    <div class="inline-amount-input">
+                                        <input type="number" 
+                                               id="returnBaggageAmount-${request.id}" 
+                                               placeholder="금액 입력"
+                                               min="0"
+                                               step="1000"
+                                               value="${request.admin_baggage_return_amount || ''}"
+                                               onchange="window.flightModals.saveBaggageAmountInstant('${request.id}', 'return', this.value)">
+                                        <span class="currency">원</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="no-receipts">
+                                <i data-lucide="clock"></i>
+                                <span>귀국 수하물 영수증이 제출되지 않았습니다</span>
+                            </div>
+                        `}
+                    </div>
+
+                    <!-- 총 추가 수하물 금액 표시 -->
+                    ${(request.admin_baggage_departure_amount > 0 || request.admin_baggage_return_amount > 0) ? `
+                        <div class="baggage-total-section">
+                            <h6>💰 총 추가 수하물 금액</h6>
+                            <div class="total-amount" id="baggageTotal-${request.id}">
+                                ${this.formatPrice((request.admin_baggage_departure_amount || 0) + (request.admin_baggage_return_amount || 0))}
+                            </div>
+                            <small>이 금액이 최종 항공료에 자동으로 포함됩니다</small>
                         </div>
-                    ` : `
-                        <div class="no-receipts">
-                            <i data-lucide="clock"></i>
-                            <span>학생이 아직 영수증을 제출하지 않았습니다</span>
-                        </div>
-                    `}
-                </div>
+                    ` : ''}
             `;
         }
     }
@@ -2118,7 +2192,7 @@ class FlightManagementModals {
     /**
      * ✅ 학생 수하물 영수증 승인
      */
-    async approveStudentBaggageReceipt(requestId) {
+    async approveStudentBaggageReceipt(requestId, type = 'both') {
         try {
             if (!confirm('학생이 제출한 수하물 영수증을 승인하시겠습니까?')) {
                 return;
@@ -2244,6 +2318,73 @@ class FlightManagementModals {
         }
     }
 
+    /**
+     * 💾 수하물 금액 즉시 저장 (모달 없이)
+     */
+    async saveBaggageAmountInstant(requestId, type, amount) {
+        try {
+            if (amount === '' || amount === null) {
+                amount = 0;
+            }
+
+            const numAmount = parseFloat(amount) || 0;
+            if (numAmount < 0) {
+                this.showError('금액은 0 이상이어야 합니다.');
+                return;
+            }
+
+            const supabase = this.system.modules.api.checkSupabaseInstance();
+
+            // 수하물 금액 업데이트
+            const columnName = type === 'departure' ? 'admin_baggage_departure_amount' : 'admin_baggage_return_amount';
+            const updateData = {
+                [columnName]: numAmount
+            };
+
+            const { data, error } = await supabase
+                .from('flight_requests')
+                .update(updateData)
+                .eq('id', requestId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // 🆕 총 금액 실시간 업데이트
+            this.updateBaggageTotalDisplay(requestId, data);
+
+            this.showToast(`${type === 'departure' ? '출국' : '귀국'} 수하물 금액이 저장되었습니다.`, 'success');
+
+            // 시스템 데이터 새로고침 (debounced)
+            clearTimeout(this.baggageUpdateTimeout);
+            this.baggageUpdateTimeout = setTimeout(() => {
+                this.refreshSystemData();
+            }, 1000);
+
+        } catch (error) {
+            console.error('❌ 수하물 금액 저장 실패:', error);
+            this.showError('수하물 금액 저장 중 오류가 발생했습니다.');
+        }
+    }
+
+    /**
+     * 💰 수하물 총 금액 표시 업데이트
+     */
+    updateBaggageTotalDisplay(requestId, requestData) {
+        const totalElement = document.getElementById(`baggageTotal-${requestId}`);
+        if (totalElement) {
+            const total = (requestData.admin_baggage_departure_amount || 0) + (requestData.admin_baggage_return_amount || 0);
+            totalElement.textContent = this.formatPrice(total);
+
+            // 총액 섹션 표시/숨김
+            const totalSection = totalElement.closest('.baggage-total-section');
+            if (totalSection) {
+                totalSection.style.display = total > 0 ? 'block' : 'none';
+            }
+        }
+    }
+    
+    
     /**
      * 📄 파일 보기 (이미지/PDF)
      */

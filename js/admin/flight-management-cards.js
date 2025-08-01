@@ -598,15 +598,11 @@ class FlightManagementCards {
                 </button>
             `);
             break;
-
         case 'completed':
             // 🆕 완료 상태에서도 추가수하물 데이터가 있으면 버튼 표시
-            const hasBaggageData = request.departure_baggage_count > 0 || 
-                                  request.return_baggage_count > 0 || 
-                                  request.user_baggage_departure_receipt_url || 
+            const hasBaggageData = request.user_baggage_departure_receipt_url || 
                                   request.user_baggage_return_receipt_url ||
-                                  request.admin_baggage_departure_receipt_url ||
-                                  request.admin_baggage_return_receipt_url;
+                                  request.admin_baggage_receipt_url;
             if (hasBaggageData) {
                 buttons.push(`
                     <button class="action-btn secondary" data-action="extra-baggage" data-request-id="${request.id}">
