@@ -1,14 +1,12 @@
 /**
- * 실비 지원 신청 시스템 v3.0.0 - 비자 관리 시스템 구조 적용
- * 안정적인 의존성 관리 및 초기화 시스템 도입
+ * 실비 지원 신청 시스템 v3.1.0 - 긴급 안정성 수정
+ * CONFIG 로딩 타이밍 문제 해결 및 에러 처리 강화
  * 
- * 🚀 v3.0.0 주요 변경사항:
- * - 비자 관리 시스템의 안정적인 구조 적용
- * - 의존성 대기 시스템 추가
- * - CONFIG 기반 안전한 Supabase 초기화
- * - 단계별 초기화 및 강화된 에러 처리
- * - VIEW 기반 실비 항목 통합 조회 유지
- * - UI/UX 완전 보존
+ * 🔧 v3.1.0 긴급 수정사항:
+ * - HTML 단계에서 이미 CONFIG 대기가 완료됨을 전제
+ * - 더 안전한 초기화 검증 로직 추가
+ * - 사용자 친화적인 에러 메시지 개선
+ * - 기존 모든 기능 완전 보존
  * 
  * 기능:
  * - 계좌 정보 관리
@@ -21,7 +19,7 @@
 (function() {
     'use strict';
 
-    console.log('🚀 ReimbursementSystem v3.0.0 로딩...');
+    console.log('🚀 ReimbursementSystem v3.1.0 로딩 (긴급 수정)...');
 
     class ReimbursementSystem {
         constructor() {
@@ -35,16 +33,16 @@
             this.init();
         }
 
-        // 🔧 초기화 시스템 (비자 관리 방식 적용)
+        // 🔧 초기화 시스템 (v3.1.0 안정성 강화)
         async init() {
             try {
-                console.log('🔧 ReimbursementSystem 초기화 시작...');
+                console.log('🔧 ReimbursementSystem v3.1.0 초기화 시작...');
 
-                // 1. 의존성 체크 및 대기
-                await this.checkDependencies();
+                // 1. HTML 단계 의존성 확인 (이미 준비되어 있어야 함)
+                this.verifyPrerequisites();
 
-                // 2. Supabase 초기화
-                await this.initializeSupabase();
+                // 2. Supabase 초기화 (HTML에서 이미 완료된 것을 확인만)
+                this.verifySupabaseClient();
 
                 // 3. 사용자 인증 확인
                 await this.checkAuthentication();
@@ -59,89 +57,50 @@
                 this.setupEventListeners();
 
                 this.isInitialized = true;
-                console.log('✅ ReimbursementSystem v3.0.0 초기화 완료');
+                console.log('✅ ReimbursementSystem v3.1.0 초기화 완료');
 
             } catch (error) {
                 console.error('❌ ReimbursementSystem 초기화 실패:', error);
-                this.showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+                this.showUserFriendlyError(error);
             }
         }
 
-        // 🕐 의존성 체크 (CONFIG, Supabase 등)
-        async checkDependencies() {
-            const maxAttempts = 20;
-            let attempts = 0;
+        // 🔍 HTML 단계 의존성 확인 (v3.1.0 추가)
+        verifyPrerequisites() {
+            console.log('🔍 필수 의존성 확인...');
+            
+            const checks = {
+                supabaseLib: !!(window.supabase && typeof window.supabase.createClient === 'function'),
+                config: !!(window.CONFIG && window.CONFIG.SUPABASE),
+                configUrl: !!(window.CONFIG && window.CONFIG.SUPABASE && window.CONFIG.SUPABASE.URL),
+                configKey: !!(window.CONFIG && window.CONFIG.SUPABASE && window.CONFIG.SUPABASE.ANON_KEY)
+            };
 
-            return new Promise((resolve, reject) => {
-                console.log('⏳ 시스템 의존성 체크 시작...');
-                
-                const checkInterval = setInterval(() => {
-                    attempts++;
+            console.log('📋 의존성 체크 결과:', checks);
 
-                    // 필수 의존성 확인
-                    const hasConfig = !!(window.CONFIG && window.CONFIG.SUPABASE);
-                    const hasSupabase = !!(window.supabase && typeof window.supabase.createClient === 'function');
-                    
-                    if (hasConfig && hasSupabase) {
-                        clearInterval(checkInterval);
-                        console.log('✅ 모든 의존성 준비 완료');
-                        resolve();
-                    } else if (attempts >= maxAttempts) {
-                        clearInterval(checkInterval);
-                        console.error('❌ 의존성 로드 타임아웃');
-                        console.log(`현재 상태 - CONFIG: ${hasConfig}, Supabase: ${hasSupabase}`);
-                        reject(new Error('필수 의존성 로드 실패'));
-                    } else {
-                        // 진행 상황 로그 (5회마다)
-                        if (attempts % 5 === 0) {
-                            console.log(`⏳ 의존성 체크 중... (${attempts}/${maxAttempts}) - CONFIG: ${hasConfig}, Supabase: ${hasSupabase}`);
-                        }
-                    }
-                }, 150);
-            });
-        }
-
-        // 🔌 Supabase 초기화 (CONFIG 기반)
-        async initializeSupabase() {
-            try {
-                console.log('🔌 Supabase 클라이언트 초기화...');
-
-                // window.supabase가 이미 초기화되었는지 확인
-                if (window.supabase && typeof window.supabase.from === 'function') {
-                    this.supabase = window.supabase;
-                    console.log('✅ 기존 Supabase 클라이언트 사용');
-                    return;
-                }
-
-                // CONFIG를 사용해서 새로 생성
-                if (!window.CONFIG || !window.CONFIG.SUPABASE) {
-                    throw new Error('CONFIG.SUPABASE 설정을 찾을 수 없습니다.');
-                }
-
-                // 새 Supabase 클라이언트 생성
-                const newClient = supabase.createClient(
-                    window.CONFIG.SUPABASE.URL,
-                    window.CONFIG.SUPABASE.ANON_KEY
-                );
-
-                // 클라이언트 유효성 검증
-                if (!newClient || typeof newClient.from !== 'function') {
-                    throw new Error('Supabase 클라이언트가 올바르게 생성되지 않았습니다.');
-                }
-
-                // 전역 및 인스턴스에 할당
-                window.supabase = newClient;
-                this.supabase = newClient;
-
-                console.log('✅ CONFIG 기반 Supabase 클라이언트 생성 완료');
-
-            } catch (error) {
-                console.error('❌ Supabase 초기화 실패:', error);
-                throw new Error(`Supabase 초기화 실패: ${error.message}`);
+            const failed = Object.entries(checks).filter(([key, value]) => !value).map(([key]) => key);
+            
+            if (failed.length > 0) {
+                throw new Error(`필수 의존성 누락: ${failed.join(', ')}\n\nHTML 단계 초기화가 실패했을 수 있습니다.`);
             }
+
+            console.log('✅ 모든 필수 의존성 확인 완료');
         }
 
-        // 👤 사용자 인증 확인 (강화된 검증)
+        // 🔌 Supabase 클라이언트 확인 (v3.1.0 간소화)
+        verifySupabaseClient() {
+            console.log('🔌 Supabase 클라이언트 확인...');
+
+            // HTML 단계에서 이미 초기화된 클라이언트 확인
+            if (!window.supabase || typeof window.supabase.from !== 'function') {
+                throw new Error('Supabase 클라이언트가 HTML 단계에서 올바르게 초기화되지 않았습니다.');
+            }
+
+            this.supabase = window.supabase;
+            console.log('✅ Supabase 클라이언트 확인 완료');
+        }
+
+        // 👤 사용자 인증 확인 (기존 로직 유지)
         async checkAuthentication() {
             try {
                 console.log('👤 사용자 인증 확인...');
@@ -186,7 +145,7 @@
             }
         }
 
-        // 📊 모든 데이터 로드 (병렬 처리)
+        // 📊 모든 데이터 로드 (기존 로직 유지)
         async loadAllData() {
             console.log('📊 실비 관련 데이터 로딩 시작...');
             
@@ -738,6 +697,57 @@
             this.showAlert(message, 'error');
         }
 
+        // 🚨 v3.1.0: 사용자 친화적인 에러 처리 강화
+        showUserFriendlyError(error) {
+            console.error('❌ 시스템 오류:', error);
+            
+            // 로딩 상태 숨기기
+            this.showLoading(false);
+            
+            // 사용자 친화적인 에러 메시지 표시
+            const loadingState = document.getElementById('loadingState');
+            if (loadingState) {
+                let errorMessage = '알 수 없는 오류가 발생했습니다.';
+                let solution = '페이지를 새로고침해주세요.';
+                
+                // 에러 유형에 따른 맞춤 메시지
+                if (error.message.includes('필수 의존성 누락')) {
+                    errorMessage = '시스템 초기화 오류가 발생했습니다.';
+                    solution = '잠시 후 다시 시도하거나 페이지를 새로고침해주세요.';
+                } else if (error.message.includes('로그인 정보')) {
+                    errorMessage = '로그인 정보가 유효하지 않습니다.';
+                    solution = '다시 로그인해주세요.';
+                } else if (error.message.includes('Supabase')) {
+                    errorMessage = '데이터베이스 연결에 문제가 있습니다.';
+                    solution = '네트워크 연결을 확인하고 다시 시도해주세요.';
+                }
+                
+                loadingState.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                        <i data-lucide="alert-circle" style="width: 48px; height: 48px; margin-bottom: 1rem;"></i>
+                        <h3>오류가 발생했습니다</h3>
+                        <p style="margin: 1rem 0; color: var(--text-primary);">${errorMessage}</p>
+                        <p style="margin: 1rem 0; color: var(--text-secondary); font-size: 0.875rem;">${solution}</p>
+                        <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+                            <button onclick="window.location.reload()" class="btn btn-primary">
+                                <i data-lucide="refresh-cw"></i>
+                                새로고침
+                            </button>
+                            <button onclick="window.location.href='dashboard.html'" class="btn btn-secondary">
+                                <i data-lucide="arrow-left"></i>
+                                대시보드로
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // 아이콘 다시 초기화
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            }
+        }
+
         showAlert(message, type) {
             // 기존 알림 제거
             const existingAlert = document.querySelector('.temp-alert');
@@ -792,7 +802,7 @@
         }
 
         debugSystemInfo() {
-            console.group('🔍 실비 지원 시스템 상태 v3.0.0');
+            console.group('🔍 실비 지원 시스템 상태 v3.1.0');
             console.log('시스템 상태:', this.getSystemStatus());
             console.log('현재 사용자:', this.currentUser?.name || this.currentUser?.email);
             console.log('실비 항목 수:', this.reimbursementItems.length);
@@ -863,7 +873,7 @@
 
     // 📱 시스템 초기화 함수
     function initializeReimbursementSystem() {
-        console.log('🚀 ReimbursementSystem 인스턴스 생성...');
+        console.log('🚀 ReimbursementSystem v3.1.0 인스턴스 생성...');
         
         // 전역에 인스턴스 생성
         window.reimbursementSystem = new ReimbursementSystem();
@@ -906,6 +916,6 @@
         setTimeout(initializeReimbursementSystem, 100);
     }
 
-    console.log('✅ ReimbursementSystem v3.0.0 모듈 로드 완료');
+    console.log('✅ ReimbursementSystem v3.1.0 모듈 로드 완료');
 
 })();
