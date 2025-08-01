@@ -1,12 +1,11 @@
 /**
- * 실비 지원 신청 시스템 v3.3.0 - fetch 함수 오류 해결 및 안전한 초기화
+ * 실비 지원 신청 시스템 v3.4.0 - GoTrueClient 중복 인스턴스 경고 해결
  * 
- * 🔧 v3.3.0 핵심 개선사항:
- * - fetch 함수 관련 JavaScript 문법 오류 해결
- * - Supabase 클라이언트 초기화 방식을 더 안전하게 개선
- * - 클라이언트 검증 로직 강화 (from, auth 메서드 존재 확인)
- * - try-catch 블록 강화로 예외 상황 완전 처리
- * - 초기화 시도 횟수 최적화 (15회 → 10회)
+ * 🔧 v3.4.0 핵심 개선사항:
+ * - GoTrueClient 중복 인스턴스 경고 해결
+ * - 기존 클라이언트 우선 사용으로 중복 생성 방지
+ * - 클라이언트 생성을 최후의 수단으로만 사용
+ * - SupabaseCore와의 충돌 방지
  * - 모든 기존 기능 완전 보존
  * 
  * 기능:
@@ -20,7 +19,7 @@
 (function() {
     'use strict';
 
-    console.log('🚀 ReimbursementSystem v3.3.0 로딩 (fetch 오류 해결)...');
+    console.log('🚀 ReimbursementSystem v3.4.0 로딩 (GoTrueClient 중복 해결)...');
 
     class ReimbursementSystem {
         constructor() {
@@ -34,15 +33,15 @@
             this.init();
         }
 
-        // 🔧 초기화 시스템 (v3.3.0 fetch 오류 해결)
+        // 🔧 초기화 시스템 (v3.4.0 GoTrueClient 중복 해결)
         async init() {
             try {
-                console.log('🔧 ReimbursementSystem v3.3.0 초기화 시작...');
+                console.log('🔧 ReimbursementSystem v3.4.0 초기화 시작...');
 
                 // 1. HTML 단계 의존성 확인
                 this.verifyPrerequisites();
 
-                // 2. 🆕 v3.3.0: 안전한 Supabase 클라이언트 초기화
+                // 2. 🆕 v3.4.0: 기존 클라이언트 우선 사용 (중복 생성 방지)
                 await this.initializeSupabaseClient();
 
                 // 3. 사용자 인증 확인
@@ -58,7 +57,7 @@
                 this.setupEventListeners();
 
                 this.isInitialized = true;
-                console.log('✅ ReimbursementSystem v3.3.0 초기화 완료');
+                console.log('✅ ReimbursementSystem v3.4.0 초기화 완료');
 
             } catch (error) {
                 console.error('❌ ReimbursementSystem 초기화 실패:', error);
@@ -66,7 +65,7 @@
             }
         }
 
-        // 🔍 HTML 단계 의존성 확인 (강화된 검증)
+        // 🔍 HTML 단계 의존성 확인 (기존 유지)
         verifyPrerequisites() {
             console.log('🔍 필수 의존성 확인...');
             
@@ -75,7 +74,6 @@
                 config: !!(window.CONFIG && window.CONFIG.SUPABASE),
                 configUrl: !!(window.CONFIG && window.CONFIG.SUPABASE && window.CONFIG.SUPABASE.URL),
                 configKey: !!(window.CONFIG && window.CONFIG.SUPABASE && window.CONFIG.SUPABASE.ANON_KEY),
-                // 🆕 추가 검증
                 fetchFunction: !!(typeof fetch === 'function'),
                 headersConstructor: !!(typeof Headers === 'function' || typeof window.Headers === 'function')
             };
@@ -91,86 +89,98 @@
             console.log('✅ 모든 필수 의존성 확인 완료');
         }
 
-        // 🆕 v3.3.0: 안전한 Supabase 클라이언트 초기화 (fetch 오류 해결)
+        // 🆕 v3.4.0: 기존 클라이언트 우선 사용 (GoTrueClient 중복 방지)
         async initializeSupabaseClient() {
-            console.log('🔌 안전한 Supabase 클라이언트 초기화 시작...');
+            console.log('🔌 기존 클라이언트 우선 사용 초기화 시작...');
             
             let attempts = 0;
-            const maxAttempts = 10; // 15회에서 10회로 최적화
+            const maxAttempts = 8; // 10회에서 8회로 더 줄임
 
             while (attempts < maxAttempts) {
                 try {
-                    // 🔍 1. 가장 안전한 방법: 기존 클라이언트 직접 사용
-                    if (this.validateSupabaseClient(window.supabase)) {
-                        this.supabase = window.supabase;
-                        console.log('✅ window.supabase 직접 사용 (가장 안전)');
-                        return;
-                    }
+                    // 🥇 1. 최우선: 기존 활성 클라이언트들 사용 (중복 생성 방지)
+                    const existingClients = [
+                        window.supabase,
+                        window.SupabaseCore?.client,
+                        window.supabaseClient
+                    ];
 
-                    // 🔍 2. SupabaseCore.client 사용
-                    if (this.validateSupabaseClient(window.SupabaseCore?.client)) {
-                        this.supabase = window.SupabaseCore.client;
-                        console.log('✅ window.SupabaseCore.client 사용');
-                        return;
-                    }
-
-                    // 🔍 3. supabaseClient 전역 변수 사용
-                    if (this.validateSupabaseClient(window.supabaseClient)) {
-                        this.supabase = window.supabaseClient;
-                        console.log('✅ window.supabaseClient 사용');
-                        return;
-                    }
-
-                    // 🔍 4. SupabaseCore 수동 초기화 시도
-                    if (window.SupabaseCore && typeof window.SupabaseCore.initialize === 'function') {
-                        console.log('🔄 SupabaseCore 수동 초기화 시도...');
-                        try {
-                            await window.SupabaseCore.initialize();
-                            
-                            if (this.validateSupabaseClient(window.SupabaseCore.client)) {
-                                this.supabase = window.SupabaseCore.client;
-                                console.log('✅ SupabaseCore 수동 초기화 후 클라이언트 획득');
-                                return;
-                            }
-                        } catch (initError) {
-                            console.warn('⚠️ SupabaseCore 수동 초기화 실패:', initError);
+                    for (const client of existingClients) {
+                        if (this.validateSupabaseClient(client)) {
+                            this.supabase = client;
+                            console.log('✅ 기존 활성 클라이언트 사용 (중복 생성 방지)');
+                            return;
                         }
                     }
 
-                    // 🔍 5. 안전한 클라이언트 생성 (개선된 방식)
-                    if (this.canCreateClient()) {
-                        console.log('🔄 안전한 클라이언트 생성 시도...');
+                    // 🥈 2. SupabaseCore 대기 및 초기화 (기존 시스템 활용)
+                    if (window.SupabaseCore) {
+                        console.log('🔄 SupabaseCore 초기화 대기 중...');
+                        
+                        // SupabaseCore가 초기화 중인지 확인
+                        if (typeof window.SupabaseCore.initialize === 'function') {
+                            try {
+                                await window.SupabaseCore.initialize();
+                                
+                                if (this.validateSupabaseClient(window.SupabaseCore.client)) {
+                                    this.supabase = window.SupabaseCore.client;
+                                    console.log('✅ SupabaseCore 초기화 완료 후 클라이언트 사용');
+                                    return;
+                                }
+                            } catch (initError) {
+                                console.warn('⚠️ SupabaseCore 초기화 실패:', initError);
+                            }
+                        }
+
+                        // SupabaseCore가 이미 초기화된 클라이언트가 있는지 재확인
+                        if (this.validateSupabaseClient(window.SupabaseCore.client)) {
+                            this.supabase = window.SupabaseCore.client;
+                            console.log('✅ 기존 SupabaseCore 클라이언트 사용');
+                            return;
+                        }
+                    }
+
+                    // 🥉 3. 잠시 대기 (다른 시스템의 초기화 완료 대기)
+                    attempts++;
+                    if (attempts < maxAttempts - 2) { // 마지막 2번의 시도는 대기 없이
+                        console.log(`⏳ 기존 클라이언트 대기 중... (${attempts}/${maxAttempts})`);
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                        continue;
+                    }
+
+                    // 🚨 4. 최후의 수단: 새 클라이언트 생성 (경고 발생 가능)
+                    if (attempts >= maxAttempts - 2 && this.canCreateClient()) {
+                        console.warn('⚠️ 기존 클라이언트를 찾을 수 없어 새로 생성합니다 (GoTrueClient 경고 발생 가능)');
                         
                         try {
                             const newClient = await this.createSafeClient();
                             
                             if (this.validateSupabaseClient(newClient)) {
                                 this.supabase = newClient;
-                                console.log('✅ 안전한 클라이언트 생성 완료');
+                                console.log('✅ 새 클라이언트 생성 완료 (최후의 수단)');
                                 return;
                             } else {
                                 console.warn('⚠️ 생성된 클라이언트 검증 실패');
                             }
                         } catch (createError) {
-                            console.warn('⚠️ 클라이언트 생성 중 오류:', createError);
+                            console.warn('⚠️ 클라이언트 생성 실패:', createError);
                         }
                     }
                     
                     attempts++;
-                    console.log(`⏳ Supabase 클라이언트 대기 중... (${attempts}/${maxAttempts})`);
-                    await new Promise(resolve => setTimeout(resolve, 200)); // 300ms → 200ms 최적화
+                    await new Promise(resolve => setTimeout(resolve, 200));
 
                 } catch (error) {
-                    console.warn(`⚠️ Supabase 클라이언트 초기화 시도 ${attempts + 1} 실패:`, error);
+                    console.warn(`⚠️ 클라이언트 초기화 시도 ${attempts + 1} 실패:`, error);
                     attempts++;
                     await new Promise(resolve => setTimeout(resolve, 200));
                 }
             }
 
-            throw new Error('안전한 Supabase 클라이언트를 초기화할 수 없습니다.');
+            throw new Error('Supabase 클라이언트를 초기화할 수 없습니다. 기존 클라이언트와 새 클라이언트 생성 모두 실패했습니다.');
         }
 
-        // 🛡️ Supabase 클라이언트 검증 (강화된 검증)
+        // 🛡️ Supabase 클라이언트 검증 (기존 유지)
         validateSupabaseClient(client) {
             if (!client) return false;
             
@@ -195,23 +205,22 @@
             }
         }
 
-        // 🔧 클라이언트 생성 가능 여부 확인
+        // 🔧 클라이언트 생성 가능 여부 확인 (기존 유지)
         canCreateClient() {
             return !!(
                 window.supabase && 
                 typeof window.supabase.createClient === 'function' && 
                 window.CONFIG?.SUPABASE?.URL && 
                 window.CONFIG?.SUPABASE?.ANON_KEY &&
-                typeof fetch === 'function' // fetch 함수 존재 확인
+                typeof fetch === 'function'
             );
         }
 
-        // 🛠️ 안전한 클라이언트 생성 (개선된 에러 처리)
+        // 🛠️ 안전한 클라이언트 생성 (GoTrueClient 경고 최소화)
         async createSafeClient() {
             try {
-                console.log('🔨 안전한 Supabase 클라이언트 생성 중...');
+                console.log('🔨 안전한 Supabase 클라이언트 생성 중 (최후의 수단)...');
                 
-                // 환경 변수 재확인
                 const url = window.CONFIG.SUPABASE.URL;
                 const key = window.CONFIG.SUPABASE.ANON_KEY;
                 
@@ -219,23 +228,24 @@
                     throw new Error('Supabase URL 또는 API Key 누락');
                 }
 
-                // 클라이언트 생성 (안전한 방식)
+                // 🆕 GoTrueClient 중복을 최소화하는 설정
                 const client = window.supabase.createClient(url, key, {
                     auth: {
                         autoRefreshToken: false,
-                        persistSession: false
+                        persistSession: false,
+                        storage: null, // 스토리지 비활성화로 중복 방지
+                        storageKey: `sb-${url.split('//')[1].split('.')[0]}-auth-token-reimbursement` // 고유 키 사용
                     },
                     global: {
-                        fetch: fetch // 명시적으로 fetch 함수 지정
+                        fetch: fetch
                     }
                 });
 
-                // 생성 직후 기본 테스트
                 if (!client) {
                     throw new Error('클라이언트 생성 결과가 null');
                 }
 
-                console.log('✅ 클라이언트 생성 성공');
+                console.log('✅ 클라이언트 생성 성공 (GoTrueClient 중복 최소화 설정 적용)');
                 return client;
 
             } catch (error) {
@@ -249,13 +259,11 @@
             try {
                 console.log('👤 사용자 인증 확인...');
 
-                // localStorage에서 사용자 정보 확인
                 const userData = localStorage.getItem('currentStudent');
                 if (!userData) {
                     throw new Error('로그인 정보를 찾을 수 없습니다.');
                 }
 
-                // JSON 파싱 및 검증
                 let parsedUser;
                 try {
                     parsedUser = JSON.parse(userData);
@@ -263,7 +271,6 @@
                     throw new Error('사용자 데이터 형식이 올바르지 않습니다.');
                 }
 
-                // 필수 필드 검증
                 if (!parsedUser.id) {
                     throw new Error('사용자 ID가 없습니다.');
                 }
@@ -278,7 +285,6 @@
             } catch (error) {
                 console.error('❌ 사용자 인증 실패:', error);
                 
-                // 사용자에게 알림 후 로그인 페이지로 리다이렉트
                 alert(`인증 오류: ${error.message}\n\n로그인 페이지로 이동합니다.`);
                 
                 setTimeout(() => {
@@ -296,14 +302,12 @@
             this.showLoading(true);
             
             try {
-                // 병렬로 모든 데이터 로딩
                 const [itemsResult, accountResult, paymentResult] = await Promise.allSettled([
                     this.loadReimbursementItems(),
                     this.loadAccountInfo(),
                     this.loadPaymentInfo()
                 ]);
 
-                // 결과 검증 및 로깅
                 const results = {
                     items: itemsResult.status === 'fulfilled',
                     account: accountResult.status === 'fulfilled',
@@ -312,7 +316,6 @@
 
                 console.log('📋 데이터 로딩 결과:', results);
 
-                // 실패한 작업 로깅
                 if (itemsResult.status === 'rejected') {
                     console.error('❌ 실비 항목 로딩 실패:', itemsResult.reason);
                 }
@@ -323,7 +326,6 @@
                     console.warn('⚠️ 입금 정보 로딩 실패:', paymentResult.reason);
                 }
 
-                // UI 업데이트
                 this.updateStatistics();
                 this.renderReimbursementList();
                 this.renderAccountInfo();
@@ -346,12 +348,10 @@
             console.log('📊 VIEW 기반 실비 항목 로딩 시작...');
             
             try {
-                // 🛡️ 클라이언트 및 사용자 재확인
                 if (!this.supabase || !this.currentUser?.id) {
                     throw new Error('클라이언트 또는 사용자 정보 누락');
                 }
 
-                // 🎯 핵심: 안전한 VIEW 조회
                 console.log('📡 VIEW 쿼리 실행 중...');
                 const { data: viewData, error } = await this.supabase
                     .from('v_user_reimbursement_items')
@@ -366,7 +366,6 @@
 
                 console.log('📡 VIEW 쿼리 성공, 데이터 변환 중...');
 
-                // VIEW 데이터를 기존 UI 형식으로 변환
                 this.reimbursementItems = (viewData || []).map(item => ({
                     id: item.item_id,
                     type: item.item_type,
@@ -377,10 +376,8 @@
                     completed: item.reimbursement_completed,
                     originalId: item.item_id,
                     category: item.category,
-                    // 교구 전용 정보
                     amount: item.total_amount,
                     store: item.purchase_store,
-                    // 추가 정보
                     date: item.item_date,
                     additionalInfo: item.additional_info
                 }));
@@ -392,15 +389,11 @@
                 
             } catch (error) {
                 console.error('❌ VIEW 기반 실비 항목 로딩 실패:', error);
-                // 빈 배열로 초기화하여 UI 오류 방지
                 this.reimbursementItems = [];
                 throw error;
             }
         }
 
-        /**
-         * 📝 VIEW 데이터를 기반으로 부제목 생성 (기능 유지)
-         */
         generateSubtitle(item) {
             switch (item.item_type) {
                 case 'flight':
@@ -421,9 +414,6 @@
             }
         }
 
-        /**
-         * 📈 카테고리별 통계 생성 (기능 유지)
-         */
         getCategoryStats() {
             const stats = {};
             this.reimbursementItems.forEach(item => {
@@ -449,7 +439,7 @@
                     .eq('payment_round', 1)
                     .single();
 
-                if (error && error.code !== 'PGRST116') { // PGRST116은 "not found" 에러
+                if (error && error.code !== 'PGRST116') {
                     throw error;
                 }
 
@@ -518,7 +508,6 @@
                 mainContent.style.display = 'block';
             }
 
-            // Lucide 아이콘 초기화
             if (window.lucide) {
                 lucide.createIcons();
             }
@@ -530,13 +519,11 @@
         setupEventListeners() {
             console.log('🎧 이벤트 리스너 설정...');
 
-            // 계좌 정보 폼 제출
             const accountForm = document.getElementById('accountForm');
             if (accountForm) {
                 accountForm.addEventListener('submit', this.handleAccountSave.bind(this));
             }
 
-            // 창 크기 변경시 반응형 업데이트
             window.addEventListener('resize', this.handleResize.bind(this));
 
             console.log('✅ 이벤트 리스너 설정 완료');
@@ -552,16 +539,13 @@
             try {
                 console.log('💾 계좌 정보 저장 시작...');
                 
-                // 버튼 상태 변경
                 saveBtn.disabled = true;
                 saveBtn.innerHTML = '<i data-lucide="loader-2"></i> 저장 중...';
                 
-                // 클라이언트 재확인
                 if (!this.supabase || !this.currentUser?.id) {
                     throw new Error('시스템 연결에 문제가 있습니다.');
                 }
                 
-                // 폼 데이터 수집 및 검증
                 const formData = new FormData(event.target);
                 const accountData = {
                     user_id: this.currentUser.id,
@@ -571,14 +555,12 @@
                     payment_round: 1
                 };
 
-                // 필수 필드 검증
                 if (!accountData.bank_name || !accountData.account_number || !accountData.account_holder_name) {
                     throw new Error('모든 필드를 입력해주세요.');
                 }
 
                 console.log('💾 저장할 계좌 정보:', accountData);
                 
-                // 기존 계좌 정보 확인
                 const { data: existingAccount } = await this.supabase
                     .from('user_reimbursements')
                     .select('*')
@@ -588,7 +570,6 @@
 
                 let result;
                 if (existingAccount) {
-                    // 기존 데이터 업데이트
                     console.log('📝 기존 계좌 정보 업데이트...');
                     const { data, error } = await this.supabase
                         .from('user_reimbursements')
@@ -605,7 +586,6 @@
                     if (error) throw error;
                     result = data && data.length > 0 ? data[0] : null;
                 } else {
-                    // 새 데이터 삽입
                     console.log('➕ 새 계좌 정보 삽입...');
                     accountData.created_at = new Date().toISOString();
                     accountData.updated_at = new Date().toISOString();
@@ -619,7 +599,6 @@
                     result = data && data.length > 0 ? data[0] : null;
                 }
 
-                // 성공 처리
                 this.accountInfo = result;
                 this.renderAccountInfo();
                 this.showSuccess('계좌 정보가 저장되었습니다.');
@@ -630,11 +609,9 @@
                 console.error('❌ 계좌 정보 저장 실패:', error);
                 this.showError(`계좌 정보 저장 실패: ${error.message}`);
             } finally {
-                // 버튼 상태 복구
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = originalText;
                 
-                // Lucide 아이콘 재초기화
                 if (window.lucide) {
                     lucide.createIcons();
                 }
@@ -649,12 +626,10 @@
             const accountAlert = document.getElementById('accountAlert');
 
             if (this.accountInfo) {
-                // 기존 정보 채우기
                 if (bankNameInput) bankNameInput.value = this.accountInfo.bank_name || '';
                 if (accountNumberInput) accountNumberInput.value = this.accountInfo.account_number || '';
                 if (accountHolderInput) accountHolderInput.value = this.accountInfo.account_holder_name || '';
 
-                // 알림 메시지 변경
                 if (accountAlert) {
                     accountAlert.className = 'alert alert-success';
                     accountAlert.innerHTML = `
@@ -663,7 +638,6 @@
                     `;
                 }
             } else {
-                // 기본 알림 메시지 유지
                 if (accountAlert) {
                     accountAlert.className = 'alert alert-info';
                     accountAlert.innerHTML = `
@@ -692,7 +666,6 @@
                 return;
             }
 
-            // 영수증 없는 항목 체크
             const itemsWithoutReceipt = this.reimbursementItems.filter(item => !item.hasReceipt);
             if (reimbursementAlert) {
                 if (itemsWithoutReceipt.length > 0) {
@@ -706,16 +679,13 @@
                 }
             }
 
-            // 카테고리별 그룹핑 및 리스트 렌더링
             reimbursementList.innerHTML = '';
             reimbursementList.style.display = 'flex';
             if (emptyReimbursement) emptyReimbursement.style.display = 'none';
 
-            // 카테고리별 정렬
             const categories = ['transport', 'equipment', 'visa'];
             const categorizedItems = {};
             
-            // 카테고리별로 항목 분류
             this.reimbursementItems.forEach(item => {
                 const category = item.category || 'other';
                 if (!categorizedItems[category]) {
@@ -724,10 +694,8 @@
                 categorizedItems[category].push(item);
             });
 
-            // 카테고리 순서대로 렌더링
             categories.forEach(category => {
                 if (categorizedItems[category] && categorizedItems[category].length > 0) {
-                    // 카테고리 헤더 추가
                     const categoryHeader = document.createElement('div');
                     categoryHeader.className = 'category-divider';
                     
@@ -740,7 +708,6 @@
                     categoryHeader.textContent = categoryNames[category] || category;
                     reimbursementList.appendChild(categoryHeader);
 
-                    // 해당 카테고리 항목들 렌더링
                     categorizedItems[category].forEach(item => {
                         const itemElement = this.createReimbursementItemElement(item);
                         reimbursementList.appendChild(itemElement);
@@ -748,7 +715,6 @@
                 }
             });
 
-            // 기타 카테고리 처리
             if (categorizedItems.other && categorizedItems.other.length > 0) {
                 const otherHeader = document.createElement('div');
                 otherHeader.className = 'category-divider';
@@ -862,7 +828,7 @@
             this.showAlert(message, 'error');
         }
 
-        // 🚨 v3.3.0: 개선된 사용자 친화적 에러 처리
+        // 🚨 v3.4.0: 개선된 사용자 친화적 에러 처리
         showUserFriendlyError(error) {
             console.error('❌ 시스템 오류:', error);
             
@@ -873,7 +839,6 @@
                 let errorMessage = '시스템 연결에 문제가 있습니다.';
                 let solution = '페이지를 새로고침해주세요.';
                 
-                // 🆕 fetch 관련 오류 감지
                 if (error.message && (error.message.includes('fetch') || error.message.includes('network'))) {
                     errorMessage = '네트워크 연결에 문제가 있습니다.';
                     solution = '인터넷 연결을 확인하고 다시 시도해주세요.';
@@ -918,13 +883,11 @@
         }
 
         showAlert(message, type) {
-            // 기존 알림 제거
             const existingAlert = document.querySelector('.temp-alert');
             if (existingAlert) {
                 existingAlert.remove();
             }
 
-            // 새 알림 생성
             const alert = document.createElement('div');
             alert.className = `alert alert-${type === 'error' ? 'warning' : 'success'} temp-alert`;
             alert.style.position = 'fixed';
@@ -945,7 +908,6 @@
                 lucide.createIcons();
             }
 
-            // 3초 후 자동 제거
             setTimeout(() => {
                 if (alert.parentNode) {
                     alert.remove();
@@ -954,7 +916,6 @@
         }
 
         handleResize() {
-            // 반응형 처리 로직 (필요시 구현)
             console.log('📱 화면 크기 변경됨');
         }
 
@@ -967,12 +928,12 @@
                 itemsCount: this.reimbursementItems.length,
                 hasAccount: !!this.accountInfo,
                 hasPayment: !!this.paymentInfo,
-                version: 'v3.3.0'
+                version: 'v3.4.0'
             };
         }
 
         debugSystemInfo() {
-            console.group('🔍 실비 지원 시스템 상태 v3.3.0');
+            console.group('🔍 실비 지원 시스템 상태 v3.4.0');
             console.log('시스템 상태:', this.getSystemStatus());
             console.log('현재 사용자:', this.currentUser?.name || this.currentUser?.email);
             console.log('실비 항목 수:', this.reimbursementItems.length);
@@ -983,13 +944,9 @@
             console.groupEnd();
         }
 
-        // 🧹 정리 메서드
         cleanup() {
             console.log('🧹 ReimbursementSystem 정리 시작...');
-            
-            // 이벤트 리스너 제거 등 정리 작업
             this.isInitialized = false;
-            
             console.log('✅ 정리 완료');
         }
     }
@@ -1007,7 +964,6 @@
         if (existingModal) {
             existingModal.classList.add('active');
             
-            // 모달 내용 업데이트
             const modalTitle = existingModal.querySelector('.modal-title');
             const receiptImage = existingModal.querySelector('#receiptImage');
             const receiptLoading = existingModal.querySelector('#receiptLoading');
@@ -1018,7 +974,6 @@
             if (receiptLoading) receiptLoading.style.display = 'flex';
             if (receiptError) receiptError.style.display = 'none';
 
-            // 이미지 로딩
             const img = new Image();
             img.onload = function() {
                 if (receiptImage) {
@@ -1044,12 +999,10 @@
 
     // 📱 시스템 초기화 함수
     function initializeReimbursementSystem() {
-        console.log('🚀 ReimbursementSystem v3.3.0 인스턴스 생성...');
+        console.log('🚀 ReimbursementSystem v3.4.0 인스턴스 생성...');
         
-        // 전역에 인스턴스 생성
         window.reimbursementSystem = new ReimbursementSystem();
 
-        // 디버깅을 위한 전역 함수 등록
         window.debugReimbursementSystem = () => {
             if (window.reimbursementSystem) {
                 window.reimbursementSystem.debugSystemInfo();
@@ -1083,10 +1036,9 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initializeReimbursementSystem);
     } else {
-        // DOM이 이미 로드된 경우 약간의 지연 후 실행
         setTimeout(initializeReimbursementSystem, 100);
     }
 
-    console.log('✅ ReimbursementSystem v3.3.0 모듈 로드 완료 (fetch 오류 해결)');
+    console.log('✅ ReimbursementSystem v3.4.0 모듈 로드 완료 (GoTrueClient 중복 해결)');
 
 })();
