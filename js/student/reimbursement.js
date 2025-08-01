@@ -1,12 +1,12 @@
 /**
- * 실비 지원 신청 시스템 v3.1.0 - 긴급 안정성 수정
- * CONFIG 로딩 타이밍 문제 해결 및 에러 처리 강화
+ * 실비 지원 신청 시스템 v3.2.0 - Supabase 초기화 방식 완전 개선
+ * 비자 관리 시스템의 안정적인 초기화 패턴 적용
  * 
- * 🔧 v3.1.0 긴급 수정사항:
- * - HTML 단계에서 이미 CONFIG 대기가 완료됨을 전제
- * - 더 안전한 초기화 검증 로직 추가
- * - 사용자 친화적인 에러 메시지 개선
- * - 기존 모든 기능 완전 보존
+ * 🔧 v3.2.0 핵심 개선사항:
+ * - 비자 시스템과 동일한 관대한 Supabase 클라이언트 초기화 방식 적용
+ * - 6가지 방법으로 클라이언트 획득 시도 (15회 재시도)
+ * - 엄격한 단일 검증 → 유연한 다중 대안 방식으로 변경
+ * - 모든 기존 기능 완전 보존
  * 
  * 기능:
  * - 계좌 정보 관리
@@ -19,7 +19,7 @@
 (function() {
     'use strict';
 
-    console.log('🚀 ReimbursementSystem v3.1.0 로딩 (긴급 수정)...');
+    console.log('🚀 ReimbursementSystem v3.2.0 로딩 (Supabase 초기화 완전 개선)...');
 
     class ReimbursementSystem {
         constructor() {
@@ -33,16 +33,16 @@
             this.init();
         }
 
-        // 🔧 초기화 시스템 (v3.1.0 안정성 강화)
+        // 🔧 초기화 시스템 (v3.2.0 Supabase 초기화 개선)
         async init() {
             try {
-                console.log('🔧 ReimbursementSystem v3.1.0 초기화 시작...');
+                console.log('🔧 ReimbursementSystem v3.2.0 초기화 시작...');
 
                 // 1. HTML 단계 의존성 확인 (이미 준비되어 있어야 함)
                 this.verifyPrerequisites();
 
-                // 2. Supabase 초기화 (HTML에서 이미 완료된 것을 확인만)
-                this.verifySupabaseClient();
+                // 2. 🆕 v3.2.0: 관대한 Supabase 클라이언트 초기화
+                await this.initializeSupabaseClient();
 
                 // 3. 사용자 인증 확인
                 await this.checkAuthentication();
@@ -57,7 +57,7 @@
                 this.setupEventListeners();
 
                 this.isInitialized = true;
-                console.log('✅ ReimbursementSystem v3.1.0 초기화 완료');
+                console.log('✅ ReimbursementSystem v3.2.0 초기화 완료');
 
             } catch (error) {
                 console.error('❌ ReimbursementSystem 초기화 실패:', error);
@@ -65,7 +65,7 @@
             }
         }
 
-        // 🔍 HTML 단계 의존성 확인 (v3.1.0 추가)
+        // 🔍 HTML 단계 의존성 확인 (기존 유지)
         verifyPrerequisites() {
             console.log('🔍 필수 의존성 확인...');
             
@@ -87,17 +87,92 @@
             console.log('✅ 모든 필수 의존성 확인 완료');
         }
 
-        // 🔌 Supabase 클라이언트 확인 (v3.1.0 간소화)
-        verifySupabaseClient() {
-            console.log('🔌 Supabase 클라이언트 확인...');
+        // 🆕 v3.2.0: 비자 시스템과 동일한 관대한 Supabase 클라이언트 초기화
+        async initializeSupabaseClient() {
+            console.log('🔌 관대한 Supabase 클라이언트 초기화 시작...');
+            
+            let attempts = 0;
+            const maxAttempts = 15;
 
-            // HTML 단계에서 이미 초기화된 클라이언트 확인
-            if (!window.supabase || typeof window.supabase.from !== 'function') {
-                throw new Error('Supabase 클라이언트가 HTML 단계에서 올바르게 초기화되지 않았습니다.');
+            while (attempts < maxAttempts) {
+                try {
+                    // 1. window.supabase 직접 사용 (가장 일반적)
+                    if (window.supabase && typeof window.supabase.from === 'function') {
+                        this.supabase = window.supabase;
+                        console.log('✅ window.supabase 직접 사용');
+                        return;
+                    }
+
+                    // 2. SupabaseCore.client 사용
+                    if (window.SupabaseCore?.client && typeof window.SupabaseCore.client.from === 'function') {
+                        this.supabase = window.SupabaseCore.client;
+                        console.log('✅ window.SupabaseCore.client 사용');
+                        return;
+                    }
+
+                    // 3. supabaseClient 전역 변수 사용
+                    if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+                        this.supabase = window.supabaseClient;
+                        console.log('✅ window.supabaseClient 사용');
+                        return;
+                    }
+
+                    // 4. SupabaseCore 수동 초기화 시도
+                    if (window.SupabaseCore && typeof window.SupabaseCore.initialize === 'function') {
+                        console.log('🔄 SupabaseCore 수동 초기화 시도...');
+                        await window.SupabaseCore.initialize();
+                        
+                        if (window.SupabaseCore.client && typeof window.SupabaseCore.client.from === 'function') {
+                            this.supabase = window.SupabaseCore.client;
+                            console.log('✅ SupabaseCore 수동 초기화 후 클라이언트 획득');
+                            return;
+                        }
+                    }
+
+                    // 5. 직접 Supabase 클라이언트 생성 (최후의 수단)
+                    if (window.supabase?.createClient && window.CONFIG?.SUPABASE?.URL && window.CONFIG?.SUPABASE?.ANON_KEY) {
+                        this.supabase = window.supabase.createClient(
+                            window.CONFIG.SUPABASE.URL,
+                            window.CONFIG.SUPABASE.ANON_KEY
+                        );
+                        console.log('✅ 직접 Supabase 클라이언트 생성');
+                        
+                        // 생성된 클라이언트가 정상 작동하는지 확인
+                        if (typeof this.supabase.from === 'function') {
+                            return;
+                        } else {
+                            console.warn('⚠️ 생성된 클라이언트가 비정상');
+                            this.supabase = null;
+                        }
+                    }
+
+                    // 6. 전역 스코프에서 createClient 함수 찾기
+                    if (typeof createClient === 'function' && window.CONFIG?.SUPABASE?.URL && window.CONFIG?.SUPABASE?.ANON_KEY) {
+                        this.supabase = createClient(
+                            window.CONFIG.SUPABASE.URL,
+                            window.CONFIG.SUPABASE.ANON_KEY
+                        );
+                        console.log('✅ 전역 createClient 함수로 클라이언트 생성');
+                        
+                        if (typeof this.supabase.from === 'function') {
+                            return;
+                        } else {
+                            this.supabase = null;
+                        }
+                    }
+
+                    attempts++;
+                    console.log(`⏳ Supabase 클라이언트 대기 중... (${attempts}/${maxAttempts})`);
+                    await new Promise(resolve => setTimeout(resolve, 300));
+
+                } catch (error) {
+                    console.warn(`⚠️ Supabase 클라이언트 초기화 시도 ${attempts + 1} 실패:`, error);
+                    attempts++;
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
             }
 
-            this.supabase = window.supabase;
-            console.log('✅ Supabase 클라이언트 확인 완료');
+            throw new Error('Supabase 클라이언트를 초기화할 수 없습니다.');
         }
 
         // 👤 사용자 인증 확인 (기존 로직 유지)
@@ -697,7 +772,7 @@
             this.showAlert(message, 'error');
         }
 
-        // 🚨 v3.1.0: 사용자 친화적인 에러 처리 강화
+        // 🚨 v3.2.0: 사용자 친화적인 에러 처리 (개선된 메시지)
         showUserFriendlyError(error) {
             console.error('❌ 시스템 오류:', error);
             
@@ -717,7 +792,7 @@
                 } else if (error.message.includes('로그인 정보')) {
                     errorMessage = '로그인 정보가 유효하지 않습니다.';
                     solution = '다시 로그인해주세요.';
-                } else if (error.message.includes('Supabase')) {
+                } else if (error.message.includes('Supabase 클라이언트를 초기화할 수 없습니다')) {
                     errorMessage = '데이터베이스 연결에 문제가 있습니다.';
                     solution = '네트워크 연결을 확인하고 다시 시도해주세요.';
                 }
@@ -797,17 +872,19 @@
                 hasSupabase: !!this.supabase,
                 itemsCount: this.reimbursementItems.length,
                 hasAccount: !!this.accountInfo,
-                hasPayment: !!this.paymentInfo
+                hasPayment: !!this.paymentInfo,
+                version: 'v3.2.0'
             };
         }
 
         debugSystemInfo() {
-            console.group('🔍 실비 지원 시스템 상태 v3.1.0');
+            console.group('🔍 실비 지원 시스템 상태 v3.2.0');
             console.log('시스템 상태:', this.getSystemStatus());
             console.log('현재 사용자:', this.currentUser?.name || this.currentUser?.email);
             console.log('실비 항목 수:', this.reimbursementItems.length);
             console.log('계좌 정보:', !!this.accountInfo);
             console.log('입금 정보:', this.paymentInfo?.length || 0);
+            console.log('Supabase 클라이언트 타입:', this.supabase?.constructor?.name || 'null');
             console.groupEnd();
         }
 
@@ -873,7 +950,7 @@
 
     // 📱 시스템 초기화 함수
     function initializeReimbursementSystem() {
-        console.log('🚀 ReimbursementSystem v3.1.0 인스턴스 생성...');
+        console.log('🚀 ReimbursementSystem v3.2.0 인스턴스 생성...');
         
         // 전역에 인스턴스 생성
         window.reimbursementSystem = new ReimbursementSystem();
@@ -916,6 +993,6 @@
         setTimeout(initializeReimbursementSystem, 100);
     }
 
-    console.log('✅ ReimbursementSystem v3.1.0 모듈 로드 완료');
+    console.log('✅ ReimbursementSystem v3.2.0 모듈 로드 완료 (Supabase 초기화 완전 개선)');
 
 })();
