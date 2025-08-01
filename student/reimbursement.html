@@ -672,14 +672,14 @@
         </div>
     </div>
 
-    <!-- 🚀 v3.0.0: 비자 관리 시스템 구조 적용 - 안정적인 초기화 -->
+    <!-- 🚀 v3.1.0: 강화된 CONFIG 대기 로직 (긴급 수정) -->
     <!-- 1단계: 필수 라이브러리 로드 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
     <script src="../js/config.js"></script>
 
-    <!-- 2단계: 이벤트 버스 및 기본 시스템 초기화 -->
+    <!-- 2단계: 강화된 의존성 대기 및 초기화 시스템 -->
     <script>
-        console.log('🚀 실비 지원 신청 시스템 v3.0.0 초기화 시작...');
+        console.log('🚀 실비 지원 신청 시스템 v3.1.0 초기화 시작...');
         
         // 전역 이벤트 버스 생성 (비자 관리 시스템과 동일한 구조)
         window.moduleEventBus = {
@@ -704,64 +704,109 @@
         
         console.log('✅ 이벤트 버스 준비 완료');
         
-        // 안전한 Supabase 클라이언트 초기화 (CONFIG 기반)
-        function initializeSupabaseClient() {
+        // 🔧 v3.1.0: 강화된 의존성 체크 (최대 50회, 10초)
+        function waitForDependencies() {
             return new Promise((resolve, reject) => {
-                const maxAttempts = 20;
+                const maxAttempts = 50; // 10초 (200ms * 50)
                 let attempts = 0;
+                
+                console.log('⏳ 의존성 체크 시작 (최대 10초 대기)...');
                 
                 const checkInterval = setInterval(() => {
                     attempts++;
                     
-                    // CONFIG가 로드되었는지 확인
-                    if (window.CONFIG && window.CONFIG.SUPABASE) {
-                        try {
-                            // CONFIG를 사용해서 안전하게 Supabase 클라이언트 생성
-                            window.supabase = supabase.createClient(
-                                window.CONFIG.SUPABASE.URL,
-                                window.CONFIG.SUPABASE.ANON_KEY
-                            );
-                            
-                            clearInterval(checkInterval);
-                            console.log('✅ CONFIG 기반 Supabase 클라이언트 초기화 완료');
-                            resolve();
-                            
-                        } catch (error) {
-                            clearInterval(checkInterval);
-                            console.error('❌ Supabase 클라이언트 생성 실패:', error);
-                            reject(error);
-                        }
+                    // 필수 의존성 확인
+                    const hasSupabaseLib = !!(window.supabase && window.supabase.createClient);
+                    const hasConfig = !!(window.CONFIG && window.CONFIG.SUPABASE);
+                    const hasUrl = !!(window.CONFIG && window.CONFIG.SUPABASE && window.CONFIG.SUPABASE.URL);
+                    const hasKey = !!(window.CONFIG && window.CONFIG.SUPABASE && window.CONFIG.SUPABASE.ANON_KEY);
+                    
+                    // 1초마다 진행 상황 로그
+                    if (attempts % 5 === 0) {
+                        console.log(`⏳ 의존성 체크 진행 중... (${attempts}/${maxAttempts})`);
+                        console.log(`   - Supabase 라이브러리: ${hasSupabaseLib ? '✅' : '❌'}`);
+                        console.log(`   - CONFIG 객체: ${hasConfig ? '✅' : '❌'}`);
+                        console.log(`   - SUPABASE_URL: ${hasUrl ? '✅' : '❌'}`);
+                        console.log(`   - SUPABASE_ANON_KEY: ${hasKey ? '✅' : '❌'}`);
+                    }
+                    
+                    // 모든 의존성이 준비되었는지 확인
+                    if (hasSupabaseLib && hasConfig && hasUrl && hasKey) {
+                        clearInterval(checkInterval);
+                        console.log('✅ 모든 의존성 준비 완료!');
+                        resolve();
                     } else if (attempts >= maxAttempts) {
                         clearInterval(checkInterval);
-                        console.error('❌ CONFIG 로딩 타임아웃');
-                        reject(new Error('CONFIG 로딩 실패'));
-                    } else {
-                        console.log(`⏳ CONFIG 로딩 대기 중... (${attempts}/${maxAttempts})`);
+                        const missingDeps = [];
+                        if (!hasSupabaseLib) missingDeps.push('Supabase 라이브러리');
+                        if (!hasConfig) missingDeps.push('CONFIG 객체');
+                        if (!hasUrl) missingDeps.push('SUPABASE_URL');
+                        if (!hasKey) missingDeps.push('SUPABASE_ANON_KEY');
+                        
+                        console.error('❌ 의존성 로드 타임아웃');
+                        console.error('❌ 누락된 의존성:', missingDeps.join(', '));
+                        reject(new Error(`의존성 로드 실패: ${missingDeps.join(', ')}`));
                     }
-                }, 150);
+                }, 200); // 200ms 간격
             });
+        }
+        
+        // 안전한 Supabase 클라이언트 초기화 (CONFIG 기반)
+        function initializeSupabaseClient() {
+            try {
+                console.log('🔌 CONFIG 기반 Supabase 클라이언트 초기화...');
+                
+                // CONFIG 값 재확인
+                if (!window.CONFIG?.SUPABASE?.URL || !window.CONFIG?.SUPABASE?.ANON_KEY) {
+                    throw new Error('CONFIG.SUPABASE 정보가 불완전합니다.');
+                }
+                
+                // 클라이언트 생성
+                const client = window.supabase.createClient(
+                    window.CONFIG.SUPABASE.URL,
+                    window.CONFIG.SUPABASE.ANON_KEY
+                );
+                
+                // 전역 변수에 할당
+                window.supabase = client;
+                
+                console.log('✅ CONFIG 기반 Supabase 클라이언트 초기화 완료');
+                console.log('   URL:', window.CONFIG.SUPABASE.URL);
+                console.log('   Key:', window.CONFIG.SUPABASE.ANON_KEY.substring(0, 20) + '...');
+                
+                return client;
+                
+            } catch (error) {
+                console.error('❌ Supabase 클라이언트 생성 실패:', error);
+                throw error;
+            }
         }
         
         // 기본 시스템 초기화
         async function initializeReimbursementApp() {
             try {
-                // 1. Supabase 클라이언트 초기화 대기
-                await initializeSupabaseClient();
+                console.log('🔧 실비 지원 앱 초기화 시작...');
                 
-                // 2. Lucide 아이콘 초기화
+                // 1. 의존성 대기 (최대 10초)
+                await waitForDependencies();
+                
+                // 2. Supabase 클라이언트 초기화
+                initializeSupabaseClient();
+                
+                // 3. Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                     console.log('✅ Lucide 아이콘 초기화 완료');
                 }
                 
-                // 3. 기본 네비게이션 설정
+                // 4. 기본 네비게이션 설정
                 setupBasicNavigation();
                 
                 console.log('✅ 기본 시스템 초기화 완료');
                 
             } catch (error) {
                 console.error('❌ 기본 시스템 초기화 실패:', error);
-                showErrorMessage('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+                showErrorMessage(`시스템 초기화 실패: ${error.message}\n\n페이지를 새로고침해주세요.`);
             }
         }
         
@@ -780,7 +825,27 @@
         // 에러 메시지 표시
         function showErrorMessage(message) {
             console.error('❌', message);
-            alert(message); // 임시 알림, 나중에 더 나은 UI로 교체 가능
+            
+            // 사용자 친화적인 오류 메시지 표시
+            const loadingState = document.getElementById('loadingState');
+            if (loadingState) {
+                loadingState.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                        <i data-lucide="alert-circle" style="width: 48px; height: 48px; margin-bottom: 1rem;"></i>
+                        <h3>시스템 초기화 오류</h3>
+                        <p style="margin: 1rem 0; color: var(--text-secondary);">${message}</p>
+                        <button onclick="window.location.reload()" class="btn btn-primary">
+                            <i data-lucide="refresh-cw"></i>
+                            페이지 새로고침
+                        </button>
+                    </div>
+                `;
+                
+                // 아이콘 다시 초기화
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            }
         }
     </script>
 
