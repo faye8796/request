@@ -269,6 +269,16 @@
             color: var(--success-color);
         }
 
+        /* 카테고리 구분선 추가 */
+        .category-divider {
+            margin: 1rem 0 0.5rem 0;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
         /* 입금 정보 섹션 */
         .payment-info {
             background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
@@ -662,17 +672,22 @@
         </div>
     </div>
 
-    <!-- 기존 시스템과 동일한 스크립트 로딩 구조 -->
-    <!-- 1단계: 기본 라이브러리 -->
+    <!-- 🚀 v2.0.0: 단순화된 스크립트 로딩 구조 -->
+    <!-- 1단계: 기본 라이브러리만 로드 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
     <script src="../js/config.js"></script>
-    <script src="../js/supabase-client.js"></script>
-    <script src="../js/utils.js"></script>
 
-    <!-- 2단계: 실비 지원 시스템 -->
+    <!-- 2단계: 기본 Supabase 클라이언트 초기화 -->
+    <script>
+        // 기본 Supabase 클라이언트 초기화 (복잡한 매니저 불필요)
+        window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('✅ 기본 Supabase 클라이언트 초기화 완료');
+    </script>
+
+    <!-- 3단계: 실비 지원 시스템 (VIEW 기반) -->
     <script type="module" src="../js/student/reimbursement.js"></script>
 
-    <!-- 3단계: 기본 설정 -->
+    <!-- 4단계: 기본 설정 -->
     <script>
         // Lucide 아이콘 초기화
         document.addEventListener('DOMContentLoaded', function() {
