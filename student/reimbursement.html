@@ -672,16 +672,19 @@
         </div>
     </div>
 
-    <!-- 🚀 v3.1.0: 강화된 CONFIG 대기 로직 (긴급 수정) -->
-    <!-- 1단계: 필수 라이브러리 로드 -->
+    <!-- JavaScript 모듈들 (비자 관리 페이지와 동일한 구조) -->
+    <!-- 1단계: 기본 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
     <script src="../js/config.js"></script>
+    <script src="../js/common/supabase-core.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/common/storage-utils.js"></script>
 
-    <!-- 2단계: 강화된 의존성 대기 및 초기화 시스템 -->
+    <!-- 2단계: 이벤트 버스 생성 -->
     <script>
-        console.log('🚀 실비 지원 신청 시스템 v3.1.0 초기화 시작...');
+        console.log('⚡ 실비 지원 신청 시스템 이벤트 시스템 초기화...');
         
-        // 전역 이벤트 버스 생성 (비자 관리 시스템과 동일한 구조)
+        // 전역 이벤트 버스 생성
         window.moduleEventBus = {
             events: new Map(),
             emit(event, data) {
@@ -703,133 +706,88 @@
         };
         
         console.log('✅ 이벤트 버스 준비 완료');
+    </script>
+
+    <!-- 3단계: 실비 지원 시스템 메인 모듈 -->
+    <script src="../js/student/reimbursement.js" defer></script>
+
+    <!-- 4단계: 초기화 시스템 -->
+    <script>
+        console.log('🚀 실비 지원 신청 시스템 초기화 시작');
         
-        // 🔧 v3.1.0: 강화된 의존성 체크 (최대 50회, 10초)
-        function waitForDependencies() {
-            return new Promise((resolve, reject) => {
-                const maxAttempts = 50; // 10초 (200ms * 50)
-                let attempts = 0;
-                
-                console.log('⏳ 의존성 체크 시작 (최대 10초 대기)...');
-                
-                const checkInterval = setInterval(() => {
-                    attempts++;
-                    
-                    // 필수 의존성 확인
-                    const hasSupabaseLib = !!(window.supabase && window.supabase.createClient);
-                    const hasConfig = !!(window.CONFIG && window.CONFIG.SUPABASE);
-                    const hasUrl = !!(window.CONFIG && window.CONFIG.SUPABASE && window.CONFIG.SUPABASE.URL);
-                    const hasKey = !!(window.CONFIG && window.CONFIG.SUPABASE && window.CONFIG.SUPABASE.ANON_KEY);
-                    
-                    // 1초마다 진행 상황 로그
-                    if (attempts % 5 === 0) {
-                        console.log(`⏳ 의존성 체크 진행 중... (${attempts}/${maxAttempts})`);
-                        console.log(`   - Supabase 라이브러리: ${hasSupabaseLib ? '✅' : '❌'}`);
-                        console.log(`   - CONFIG 객체: ${hasConfig ? '✅' : '❌'}`);
-                        console.log(`   - SUPABASE_URL: ${hasUrl ? '✅' : '❌'}`);
-                        console.log(`   - SUPABASE_ANON_KEY: ${hasKey ? '✅' : '❌'}`);
-                    }
-                    
-                    // 모든 의존성이 준비되었는지 확인
-                    if (hasSupabaseLib && hasConfig && hasUrl && hasKey) {
-                        clearInterval(checkInterval);
-                        console.log('✅ 모든 의존성 준비 완료!');
-                        resolve();
-                    } else if (attempts >= maxAttempts) {
-                        clearInterval(checkInterval);
-                        const missingDeps = [];
-                        if (!hasSupabaseLib) missingDeps.push('Supabase 라이브러리');
-                        if (!hasConfig) missingDeps.push('CONFIG 객체');
-                        if (!hasUrl) missingDeps.push('SUPABASE_URL');
-                        if (!hasKey) missingDeps.push('SUPABASE_ANON_KEY');
-                        
-                        console.error('❌ 의존성 로드 타임아웃');
-                        console.error('❌ 누락된 의존성:', missingDeps.join(', '));
-                        reject(new Error(`의존성 로드 실패: ${missingDeps.join(', ')}`));
-                    }
-                }, 200); // 200ms 간격
-            });
-        }
-        
-        // 안전한 Supabase 클라이언트 초기화 (CONFIG 기반)
-        function initializeSupabaseClient() {
-            try {
-                console.log('🔌 CONFIG 기반 Supabase 클라이언트 초기화...');
-                
-                // CONFIG 값 재확인
-                if (!window.CONFIG?.SUPABASE?.URL || !window.CONFIG?.SUPABASE?.ANON_KEY) {
-                    throw new Error('CONFIG.SUPABASE 정보가 불완전합니다.');
-                }
-                
-                // 클라이언트 생성
-                const client = window.supabase.createClient(
-                    window.CONFIG.SUPABASE.URL,
-                    window.CONFIG.SUPABASE.ANON_KEY
-                );
-                
-                // 전역 변수에 할당
-                window.supabase = client;
-                
-                console.log('✅ CONFIG 기반 Supabase 클라이언트 초기화 완료');
-                console.log('   URL:', window.CONFIG.SUPABASE.URL);
-                console.log('   Key:', window.CONFIG.SUPABASE.ANON_KEY.substring(0, 20) + '...');
-                
-                return client;
-                
-            } catch (error) {
-                console.error('❌ Supabase 클라이언트 생성 실패:', error);
-                throw error;
-            }
-        }
-        
-        // 기본 시스템 초기화
+        // 즉시 앱 표시
         async function initializeReimbursementApp() {
+            const globalLoading = document.getElementById('loadingState');
+            const app = document.getElementById('mainContent');
+
             try {
-                console.log('🔧 실비 지원 앱 초기화 시작...');
-                
-                // 1. 의존성 대기 (최대 10초)
-                await waitForDependencies();
-                
-                // 2. Supabase 클라이언트 초기화
-                initializeSupabaseClient();
-                
-                // 3. Lucide 아이콘 초기화
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                    console.log('✅ Lucide 아이콘 초기화 완료');
+                console.log('🔧 사용자 데이터 로드 및 초기화...');
+
+                // 사용자 데이터 로드
+                const userData = await loadUserData();
+                if (!userData) {
+                    throw new Error('사용자 데이터를 로드할 수 없습니다.');
                 }
-                
-                // 4. 기본 네비게이션 설정
-                setupBasicNavigation();
-                
-                console.log('✅ 기본 시스템 초기화 완료');
-                
+
+                // 사용자 정보 표시
+                displayUserInfo(userData);
+
+                console.log('✅ 실비 지원 신청 시스템 초기화 완료');
+
             } catch (error) {
-                console.error('❌ 기본 시스템 초기화 실패:', error);
-                showErrorMessage(`시스템 초기화 실패: ${error.message}\n\n페이지를 새로고침해주세요.`);
+                console.error('❌ 실비 지원 신청 시스템 초기화 실패:', error);
+                showErrorMessage('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
             }
         }
-        
+
+        // 사용자 데이터 로드
+        async function loadUserData() {
+            try {
+                const userDataStr = localStorage.getItem('currentStudent');
+                if (!userDataStr) {
+                    console.warn('⚠️ 사용자 데이터 없음');
+                    setTimeout(() => {
+                        window.location.href = '../index.html';
+                    }, 2000);
+                    return null;
+                }
+
+                const userData = JSON.parse(userDataStr);
+                if (!userData.id) {
+                    throw new Error('사용자 ID 없음');
+                }
+
+                console.log('✅ 사용자 데이터 로드 완료:', userData.name || userData.email);
+                return userData;
+
+            } catch (error) {
+                console.error('❌ 사용자 데이터 로드 실패:', error);
+                return null;
+            }
+        }
+
+        // 사용자 정보 표시
+        function displayUserInfo(userData) {
+            // 실비 지원 시스템에서는 헤더가 고정이므로 별도 표시 불필요
+            console.log('📋 사용자 정보:', userData.name || userData.email);
+        }
+
         // 기본 네비게이션 설정
         function setupBasicNavigation() {
-            // 뒤로가기 버튼 설정
-            const backButtons = document.querySelectorAll('.back-button');
-            backButtons.forEach(btn => {
-                btn.addEventListener('click', (e) => {
+            const backBtn = document.querySelector('.back-button');
+            if (backBtn) {
+                backBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     window.location.href = 'dashboard.html';
                 });
-            });
+            }
         }
-        
+
         // 에러 메시지 표시
         function showErrorMessage(message) {
-            console.error('❌', message);
-            
-            // 사용자 친화적인 오류 메시지 표시
-            const loadingState = document.getElementById('loadingState');
-            if (loadingState) {
-                loadingState.innerHTML = `
+            const errorEl = document.getElementById('loadingState');
+            if (errorEl) {
+                errorEl.innerHTML = `
                     <div style="text-align: center; padding: 2rem; color: var(--danger-color);">
                         <i data-lucide="alert-circle" style="width: 48px; height: 48px; margin-bottom: 1rem;"></i>
                         <h3>시스템 초기화 오류</h3>
@@ -841,18 +799,52 @@
                     </div>
                 `;
                 
-                // 아이콘 다시 초기화
                 if (window.lucide) {
                     lucide.createIcons();
                 }
             }
         }
+
+        // 성공 메시지 표시
+        function showSuccessMessage(message) {
+            console.log('✅', message);
+        }
+
+        // DOM 로드 완료 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM 로드 완료 - 실비 지원 신청 시스템 초기화');
+            
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+            setupBasicNavigation();
+            initializeReimbursementApp();
+        });
+
+        // DOM이 이미 로드된 경우를 위한 추가 처리
+        if (document.readyState !== 'loading') {
+            console.log('🚀 DOM 이미 로드됨 - 즉시 초기화 실행');
+            
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            
+            setupBasicNavigation();
+            initializeReimbursementApp();
+        }
+
+        // 전역 에러 처리
+        window.addEventListener('error', function(event) {
+            console.error('전역 에러:', event.error);
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('미처리 Promise 거부:', event.reason);
+        });
     </script>
 
-    <!-- 3단계: 실비 지원 시스템 메인 모듈 (VIEW 기반) -->
-    <script type="module" src="../js/student/reimbursement.js"></script>
-
-    <!-- 4단계: 모달 및 유틸리티 함수 -->
+    <!-- 5단계: 모달 및 유틸리티 함수 -->
     <script>
         // 영수증 모달 관리 함수들
         function showReceiptModal(receiptUrl, title) {
@@ -912,23 +904,7 @@
                 lucide.createIcons();
             }
         });
-
-        // DOM 로드 완료 후 앱 초기화
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeReimbursementApp);
-        } else {
-            // DOM이 이미 로드된 경우 약간의 지연 후 실행
-            setTimeout(initializeReimbursementApp, 100);
-        }
-        
-        // 전역 에러 처리
-        window.addEventListener('error', function(event) {
-            console.error('전역 에러:', event.error);
-        });
-
-        window.addEventListener('unhandledrejection', function(event) {
-            console.error('미처리 Promise 거부:', event.reason);
-        });
     </script>
+
 </body>
 </html>
