@@ -672,29 +672,124 @@
         </div>
     </div>
 
-    <!-- 🚀 v2.0.0: 단순화된 스크립트 로딩 구조 -->
-    <!-- 1단계: 기본 라이브러리만 로드 -->
+    <!-- 🚀 v3.0.0: 비자 관리 시스템 구조 적용 - 안정적인 초기화 -->
+    <!-- 1단계: 필수 라이브러리 로드 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
     <script src="../js/config.js"></script>
 
-    <!-- 2단계: 기본 Supabase 클라이언트 초기화 -->
+    <!-- 2단계: 이벤트 버스 및 기본 시스템 초기화 -->
     <script>
-        // 기본 Supabase 클라이언트 초기화 (복잡한 매니저 불필요)
-        window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('✅ 기본 Supabase 클라이언트 초기화 완료');
+        console.log('🚀 실비 지원 신청 시스템 v3.0.0 초기화 시작...');
+        
+        // 전역 이벤트 버스 생성 (비자 관리 시스템과 동일한 구조)
+        window.moduleEventBus = {
+            events: new Map(),
+            emit(event, data) {
+                const listeners = this.events.get(event) || [];
+                listeners.forEach(listener => {
+                    try {
+                        listener(data);
+                    } catch (error) {
+                        console.warn(`Event listener error: ${event}`, error);
+                    }
+                });
+            },
+            on(event, listener) {
+                if (!this.events.has(event)) {
+                    this.events.set(event, []);
+                }
+                this.events.get(event).push(listener);
+            }
+        };
+        
+        console.log('✅ 이벤트 버스 준비 완료');
+        
+        // 안전한 Supabase 클라이언트 초기화 (CONFIG 기반)
+        function initializeSupabaseClient() {
+            return new Promise((resolve, reject) => {
+                const maxAttempts = 20;
+                let attempts = 0;
+                
+                const checkInterval = setInterval(() => {
+                    attempts++;
+                    
+                    // CONFIG가 로드되었는지 확인
+                    if (window.CONFIG && window.CONFIG.SUPABASE) {
+                        try {
+                            // CONFIG를 사용해서 안전하게 Supabase 클라이언트 생성
+                            window.supabase = supabase.createClient(
+                                window.CONFIG.SUPABASE.URL,
+                                window.CONFIG.SUPABASE.ANON_KEY
+                            );
+                            
+                            clearInterval(checkInterval);
+                            console.log('✅ CONFIG 기반 Supabase 클라이언트 초기화 완료');
+                            resolve();
+                            
+                        } catch (error) {
+                            clearInterval(checkInterval);
+                            console.error('❌ Supabase 클라이언트 생성 실패:', error);
+                            reject(error);
+                        }
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(checkInterval);
+                        console.error('❌ CONFIG 로딩 타임아웃');
+                        reject(new Error('CONFIG 로딩 실패'));
+                    } else {
+                        console.log(`⏳ CONFIG 로딩 대기 중... (${attempts}/${maxAttempts})`);
+                    }
+                }, 150);
+            });
+        }
+        
+        // 기본 시스템 초기화
+        async function initializeReimbursementApp() {
+            try {
+                // 1. Supabase 클라이언트 초기화 대기
+                await initializeSupabaseClient();
+                
+                // 2. Lucide 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                    console.log('✅ Lucide 아이콘 초기화 완료');
+                }
+                
+                // 3. 기본 네비게이션 설정
+                setupBasicNavigation();
+                
+                console.log('✅ 기본 시스템 초기화 완료');
+                
+            } catch (error) {
+                console.error('❌ 기본 시스템 초기화 실패:', error);
+                showErrorMessage('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
+            }
+        }
+        
+        // 기본 네비게이션 설정
+        function setupBasicNavigation() {
+            // 뒤로가기 버튼 설정
+            const backButtons = document.querySelectorAll('.back-button');
+            backButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.href = 'dashboard.html';
+                });
+            });
+        }
+        
+        // 에러 메시지 표시
+        function showErrorMessage(message) {
+            console.error('❌', message);
+            alert(message); // 임시 알림, 나중에 더 나은 UI로 교체 가능
+        }
     </script>
 
-    <!-- 3단계: 실비 지원 시스템 (VIEW 기반) -->
+    <!-- 3단계: 실비 지원 시스템 메인 모듈 (VIEW 기반) -->
     <script type="module" src="../js/student/reimbursement.js"></script>
 
-    <!-- 4단계: 기본 설정 -->
+    <!-- 4단계: 모달 및 유틸리티 함수 -->
     <script>
-        // Lucide 아이콘 초기화
-        document.addEventListener('DOMContentLoaded', function() {
-            lucide.createIcons();
-        });
-
-        // 영수증 모달 관리
+        // 영수증 모달 관리 함수들
         function showReceiptModal(receiptUrl, title) {
             const modal = document.getElementById('receiptModal');
             const modalTitle = document.querySelector('.modal-title');
@@ -728,18 +823,46 @@
             modal.classList.remove('active');
         }
 
-        // 모달 외부 클릭시 닫기
-        document.getElementById('receiptModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeReceiptModal();
+        // 모달 이벤트 리스너 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            // 모달 외부 클릭시 닫기
+            const receiptModal = document.getElementById('receiptModal');
+            if (receiptModal) {
+                receiptModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeReceiptModal();
+                    }
+                });
+            }
+
+            // ESC 키로 모달 닫기
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeReceiptModal();
+                }
+            });
+            
+            // Lucide 아이콘 초기화 (추가 보장)
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
             }
         });
 
-        // ESC 키로 모달 닫기
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeReceiptModal();
-            }
+        // DOM 로드 완료 후 앱 초기화
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeReimbursementApp);
+        } else {
+            // DOM이 이미 로드된 경우 약간의 지연 후 실행
+            setTimeout(initializeReimbursementApp, 100);
+        }
+        
+        // 전역 에러 처리
+        window.addEventListener('error', function(event) {
+            console.error('전역 에러:', event.error);
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('미처리 Promise 거부:', event.reason);
         });
     </script>
 </body>
