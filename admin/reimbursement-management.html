@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실비 지원 관리 - 세종학당 문화인턴 지원 시스템</title>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header Section */
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #2c3e50;
+            font-size: 24px;
+        }
+        
+        .back-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        
+        .back-button:hover {
+            background: #2980b9;
+        }
+        
+        /* Statistics Section */
+        .statistics {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .statistics h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #3498db;
+        }
+        
+        .stat-card.pending {
+            border-left-color: #f39c12;
+        }
+        
+        .stat-card.completed {
+            border-left-color: #27ae60;
+        }
+        
+        .stat-card.not-set {
+            border-left-color: #e74c3c;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        /* Filter Section */
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .filter-section h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filters-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .filter-select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .refresh-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .refresh-btn:hover {
+            background: #545b62;
+        }
+        
+        /* Students Table Section */
+        .students-table-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .students-table-section h2 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .reimbursement-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .reimbursement-table th,
+        .reimbursement-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .reimbursement-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .reimbursement-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .student-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .account-info {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .account-details {
+            background: #e8f4fd;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid #3498db;
+        }
+        
+        .no-account {
+            color: #e74c3c;
+            font-style: italic;
+            background: #fdf2f2;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid #e74c3c;
+        }
+        
+        .items-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        
+        .category-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .category-badge.transport {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .category-badge.equipment {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .category-badge.visa {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .admin-amount {
+            text-align: center;
+        }
+        
+        .amount-set {
+            color: #27ae60;
+            font-weight: 600;
+        }
+        
+        .need-input {
+            color: #e74c3c;
+            font-style: italic;
+        }
+        
+        .payment-status {
+            text-align: center;
+        }
+        
+        .status-pending {
+            color: #f39c12;
+            background: #fff3cd;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .status-completed {
+            color: #27ae60;
+            background: #d4edda;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .status-not-set {
+            color: #e74c3c;
+            background: #f8d7da;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-view-details,
+        .btn-set-amount,
+        .btn-complete-payment {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.3s;
+        }
+        
+        .btn-view-details {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-view-details:hover {
+            background: #138496;
+        }
+        
+        .btn-set-amount {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-set-amount:hover {
+            background: #e0a800;
+        }
+        
+        .btn-complete-payment {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-complete-payment:hover {
+            background: #218838;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal.show {
+            display: block;
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s;
+        }
+        
+        .modal-content.large {
+            max-width: 1000px;
+        }
+        
+        .modal-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #dee2e6;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            color: #2c3e50;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #adb5bd;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .close-modal:hover {
+            color: #495057;
+        }
+        
+        .modal-body {
+            padding: 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .modal-footer {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-top: 1px solid #dee2e6;
+            border-radius: 0 0 12px 12px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .btn-cancel,
+        .btn-save-amount,
+        .btn-complete-payment {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-cancel:hover {
+            background: #545b62;
+        }
+        
+        .btn-save-amount {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-save-amount:hover {
+            background: #218838;
+        }
+        
+        /* Receipts Grid */
+        .receipts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .receipt-item {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+        
+        .receipt-item:hover {
+            border-color: #3498db;
+        }
+        
+        .receipt-info {
+            padding: 15px;
+            background: #f8f9fa;
+        }
+        
+        .receipt-info h4 {
+            margin: 0 0 8px 0;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
+        .receipt-date {
+            color: #6c757d;
+            font-size: 12px;
+            margin: 0;
+        }
+        
+        .receipt-amount {
+            color: #27ae60;
+            font-weight: 600;
+            font-size: 14px;
+            margin: 4px 0 0 0;
+        }
+        
+        .receipt-preview {
+            height: 200px;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .receipt-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .no-receipt {
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .receipt-actions {
+            padding: 10px;
+            background: #f8f9fa;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-view-full,
+        .btn-download {
+            flex: 1;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-view-full {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-view-full:hover {
+            background: #138496;
+        }
+        
+        .btn-download {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-download:hover {
+            background: #218838;
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .currency {
+            margin-left: 8px;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        /* Student Summary in Modal */
+        .student-summary {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .student-summary h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+        }
+        
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .btn-view-receipt {
+            padding: 4px 8px;
+            background: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        
+        .btn-view-receipt:hover {
+            background: #138496;
+        }
+        
+        /* Payment Summary */
+        .payment-summary {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .payment-summary h3 {
+            margin: 0 0 8px 0;
+            color: #2c3e50;
+        }
+        
+        .scheduled-info {
+            color: #495057;
+            margin: 0;
+        }
+        
+        .affected-items {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .affected-items h4 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        
+        .items-checklist {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .item-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .item-check input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+        
+        /* Loading States */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #dee2e6;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .no-students, .error-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        .no-students i, .error-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .error-state {
+            color: #dc3545;
+        }
+        
+        /* Toast System */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        
+        .toast {
+            background: #17a2b8;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            pointer-events: auto;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .toast.toast-success {
+            background: #28a745;
+        }
+        
+        .toast.toast-error {
+            background: #dc3545;
+        }
+        
+        .toast.toast-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .filters-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .reimbursement-table {
+                font-size: 12px;
+            }
+            
+            .reimbursement-table th,
+            .reimbursement-table td {
+                padding: 8px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 2% auto;
+            }
+            
+            .receipts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Full Screen Receipt Viewer */
+        .receipt-viewer {
+            display: none;
+            position: fixed;
+            z-index: 10001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+        }
+        
+        .receipt-viewer.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .receipt-viewer img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+        
+        .receipt-viewer .close-viewer {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>
+                <i data-lucide="receipt"></i>
+                실비 지원 관리
+            </h1>
+            <a href="../admin.html" class="back-button">
+                <i data-lucide="arrow-left"></i>
+                대시보드로 돌아가기
+            </a>
+        </div>
+
+        <!-- Statistics Section -->
+        <div class="statistics">
+            <h2>
+                <i data-lucide="bar-chart-3"></i>
+                실비 지원 현황 통계
+            </h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-students">-</div>
+                    <div class="stat-label">실비 대상 학생</div>
+                </div>
+                <div class="stat-card pending">
+                    <div class="stat-number" id="total-items">-</div>
+                    <div class="stat-label">총 실비 항목</div>
+                </div>
+                <div class="stat-card not-set">
+                    <div class="stat-number" id="pending-amount">-</div>
+                    <div class="stat-label">미처리 금액</div>
+                </div>
+                <div class="stat-card completed">
+                    <div class="stat-number" id="completed-payments">-</div>
+                    <div class="stat-label">입금 완료</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <h2>
+                <i data-lucide="filter"></i>
+                검색 및 필터
+            </h2>
+            <div class="filters-grid">
+                <input type="text" id="nameSearch" class="search-input" placeholder="학생 이름 검색...">
+                <select id="statusFilter" class="filter-select">
+                    <option value="all">전체 상태</option>
+                    <option value="pending">미처리</option>
+                    <option value="completed">지급완료</option>
+                    <option value="not_set">미설정</option>
+                </select>
+                <select id="roundFilter" class="filter-select">
+                    <option value="all">전체 차수</option>
+                    <option value="1">1차</option>
+                    <option value="2">2차</option>
+                    <option value="3">3차</option>
+                </select>
+                <button class="refresh-btn" onclick="window.reimbursementManagementSystem?.refreshData()">
+                    <i data-lucide="refresh-cw"></i>
+                    새로고침
+                </button>
+            </div>
+        </div>
+
+        <!-- Students Table Section -->
+        <div class="students-table-section">
+            <h2>
+                <i data-lucide="users"></i>
+                실비 지원 대상 학생 목록
+            </h2>
+            <table class="reimbursement-table">
+                <thead>
+                    <tr>
+                        <th>학생 성명</th>
+                        <th>계좌 정보</th>
+                        <th>실비 항목 요약</th>
+                        <th>관리자 입력 금액</th>
+                        <th>지급 상태</th>
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody id="studentsTableBody">
+                    <!-- 동적 생성 -->
+                    <tr>
+                        <td colspan="6">
+                            <div class="loading">
+                                <div class="loading-spinner"></div>
+                                데이터를 불러오는 중...
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 영수증 상세보기 모달 -->
+    <div id="receiptsDetailModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2><span id="studentNameInModal">-</span>님의 실비 대상 항목</h2>
+                <button class="close-modal" onclick="closeModal('receiptsDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="receiptsGrid" class="receipts-grid">
+                    <!-- 동적 생성 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 실비 금액 설정 모달 -->
+    <div id="amountSettingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>실비 지원 금액 설정</h2>
+                <button class="close-modal" onclick="closeModal('amountSettingModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="student-summary">
+                    <h3 id="amountStudentName">-</h3>
+                    <div id="amountItemsList" class="items-list">
+                        <!-- 동적 생성 -->
+                    </div>
+                </div>
+                
+                <div class="amount-input-section">
+                    <div class="form-group">
+                        <label>입금 예정 금액</label>
+                        <input type="number" id="scheduledAmount" placeholder="실비 지원 금액 입력">
+                        <span class="currency">원</span>
+                    </div>
+                    <div class="form-group">
+                        <label>입금 예정일</label>
+                        <input type="date" id="scheduledDate">
+                    </div>
+                    <div class="form-group">
+                        <label>지원 차수</label>
+                        <select id="paymentRound">
+                            <option value="1">1차 지원</option>
+                            <option value="2">2차 지원</option>
+                            <option value="3">3차 지원</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>관리자 메모</label>
+                        <textarea id="adminNotes" placeholder="내부 관리용 메모"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('amountSettingModal')">취소</button>
+                <button class="btn-save-amount" onclick="window.reimbursementManagementSystem?.saveReimbursementAmount()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 지급 완료 처리 모달 -->
+    <div id="paymentCompleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>실비 지급 완료 처리</h2>
+                <button class="close-modal" onclick="closeModal('paymentCompleteModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="payment-summary">
+                    <h3 id="paymentStudentName">-</h3>
+                    <p class="scheduled-info" id="scheduledInfo">-</p>
+                </div>
+                
+                <div class="actual-payment-section">
+                    <div class="form-group">
+                        <label>실제 입금 금액</label>
+                        <input type="number" id="actualAmount" placeholder="실제 입금된 금액">
+                        <span class="currency">원</span>
+                    </div>
+                    <div class="form-group">
+                        <label>실제 입금일</label>
+                        <input type="date" id="actualDate">
+                    </div>
+                </div>
+                
+                <div class="affected-items">
+                    <h4>지급 완료 처리될 항목들</h4>
+                    <div id="affectedItemsList" class="items-checklist">
+                        <!-- 동적 생성 -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('paymentCompleteModal')">취소</button>
+                <button class="btn-complete-payment" onclick="window.reimbursementManagementSystem?.completePayment()">지급 완료 처리</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 전체화면 영수증 뷰어 -->
+    <div id="receiptViewer" class="receipt-viewer">
+        <button class="close-viewer" onclick="closeReceiptViewer()">&times;</button>
+        <img id="receiptViewerImage" src="" alt="영수증">
+    </div>
+
+    <!-- 🎯 스크립트 구성 (비자 관리 페이지와 동일한 구조) -->
+    
+    <!-- 1단계: 핵심 라이브러리 -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+    <!-- 2단계: 설정 및 유틸리티 -->
+    <script src="../js/config.js"></script>
+    <script src="../js/utils.js"></script>
+
+    <!-- 3단계: 최소 Supabase 모듈 -->
+    <script src="../js/supabase/supabase-core.js"></script>
+    <script src="../js/supabase/supabase-admin.js"></script>
+    <script src="../js/supabase-client.js"></script>
+
+    <!-- 4단계: 실비 관리 시스템 모듈들 -->
+    <script src="../js/admin/reimbursement-management-core.js"></script>
+    <script src="../js/admin/reimbursement-management-api.js"></script>
+    <script src="../js/admin/reimbursement-management-ui.js"></script>
+    <script src="../js/admin/reimbursement-management-modals.js"></script>
+    <script src="../js/admin/reimbursement-management-statistics.js"></script>
+
+    <!-- 5단계: 시스템 초기화 -->
+    <script>
+        // 💰 실비 지원 관리 시스템 초기화 (v1.0.0)
+        
+        // 전역 함수들
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            }
+        }
+        
+        function openFullReceiptView(receiptUrl, title) {
+            const viewer = document.getElementById('receiptViewer');
+            const image = document.getElementById('receiptViewerImage');
+            
+            if (viewer && image && receiptUrl) {
+                image.src = receiptUrl;
+                image.alt = title;
+                viewer.classList.add('show');
+            }
+        }
+        
+        function closeReceiptViewer() {
+            const viewer = document.getElementById('receiptViewer');
+            if (viewer) {
+                viewer.classList.remove('show');
+            }
+        }
+        
+        function downloadReceipt(receiptUrl, title) {
+            if (receiptUrl) {
+                const link = document.createElement('a');
+                link.href = receiptUrl;
+                link.download = `${title}_영수증.jpg`;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            // 시스템 초기화는 각 모듈에서 담당
+            console.log('💰 실비 지원 관리 시스템 페이지 로드 완료 (v1.0.0)');
+            
+            // 모달 외부 클릭시 닫기
+            window.addEventListener('click', (event) => {
+                const modals = ['receiptsDetailModal', 'amountSettingModal', 'paymentCompleteModal'];
+                modals.forEach(modalId => {
+                    const modal = document.getElementById(modalId);
+                    if (event.target === modal) {
+                        closeModal(modalId);
+                    }
+                });
+            });
+            
+            // ESC 키로 모달 닫기
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    const openModals = document.querySelectorAll('.modal.show');
+                    openModals.forEach(modal => {
+                        closeModal(modal.id);
+                    });
+                    
+                    const receiptViewer = document.getElementById('receiptViewer');
+                    if (receiptViewer && receiptViewer.classList.contains('show')) {
+                        closeReceiptViewer();
+                    }
+                }
+            });
+        });
+
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        // Debug console commands
+        console.log('💰 관리자용 실비 지원 관리 시스템 v1.0.0');
+        console.log('디버그 명령어:');
+        console.log('- window.reimbursementManagementSystem.getDebugInfo()');
+        console.log('- window.reimbursementManagementSystem.refreshData()');
+    </script>
+</body>
+</html>
