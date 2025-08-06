@@ -633,6 +633,23 @@
                 flex-direction: column;
             }
         }
+        
+        /* 무비자 완료 버튼 스타일 */
+        .complete-visa-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        .complete-visa-btn:hover:not(:disabled) {
+            background: #218838;
+        }
+
+        .complete-visa-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
     </style>
 </head>
 <body>
@@ -933,6 +950,59 @@
 
                 console.log(`🧾 영수증 데이터 로드 완료`);
             }
+            
+            /**
+             * 무비자 완료 처리
+             */
+            async handleCompleteVisa(studentId) {
+                const student = this.students.find(s => s.id === studentId);
+                if (!student) return;
+
+                const confirmed = confirm(`${student.name}님을 무비자 완료 상태로 변경하시겠습니까?`);
+                if (!confirmed) return;
+
+                try {
+                    const now = new Date().toISOString();
+
+                    // visa_applications 테이블에 완료 상태 저장
+                    const { data, error } = await this.supabaseClient
+                        .from('visa_applications')
+                        .upsert({
+                            user_id: studentId,
+                            visa_status: '무비자 출국 완료',
+                            visa_status_updated_at: now,
+                            admin_comment: (this.visaData.get(studentId)?.admin_comment || '') + 
+                                          '\n\n[관리자] 무비자 출국으로 완료 처리됨 - ' + new Date().toLocaleString(),
+                            admin_comment_updated_at: now,
+                            // 가상의 비자 문서 URL (완료 상태 표시용)
+                            visa_document_url: 'no-visa-required',
+                            updated_at: now
+                        }, {
+                            onConflict: 'user_id'
+                        })
+                        .select()
+                        .single();
+
+                    if (error) {
+                        throw new Error(`무비자 완료 처리 실패: ${error.message}`);
+                    }
+
+                    // 로컬 데이터 업데이트
+                    this.visaData.set(studentId, data);
+
+                    // UI 새로고침
+                    this.updateStatistics();
+                    this.renderStudentsList();
+
+                    this.showToast(`${student.name}님이 무비자 완료 상태로 변경되었습니다.`, 'success');
+
+                    console.log(`✅ 무비자 완료 처리: ${student.name} (${studentId})`);
+
+                } catch (error) {
+                    console.error('무비자 완료 처리 오류:', error);
+                    this.showToast('무비자 완료 처리에 실패했습니다.', 'error');
+                }
+            }
 
             updateStatistics() {
                 const stats = {
@@ -974,13 +1044,13 @@
             determineStudentStatus(visa) {
                 if (!visa || (!visa.visa_status || visa.visa_status.trim() === '')) {
                     return 'no-status';
-                } else if (visa.visa_document_url) {
+                } else if (visa.visa_document_url || visa.visa_status.includes('무비자')) {
                     return 'completed';
                 } else {
                     return 'in-progress';
                 }
-            }
-
+            }            
+            
             renderStudentsList() {
                 const container = document.getElementById('students-list');
                 if (!container) return;
@@ -1079,6 +1149,12 @@
                                 <i data-lucide="receipt"></i>
                                 영수증보기
                             </button>
+                            <button class="action-btn complete-visa-btn" 
+                                    data-student-id="${student.id}"
+                                    ${status === 'completed' ? 'disabled' : ''}>
+                                <i data-lucide="check-circle"></i>
+                                무비자완료
+                            </button>                            
                         </div>
                     </div>
                 `;
@@ -1118,6 +1194,31 @@
                         this.saveCommentNow(studentId);
                     });
                 });
+                
+                // 🆕 [비자보기] 버튼 이벤트
+                document.querySelectorAll('.view-visa-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const studentId = e.target.dataset.studentId;
+                        this.viewVisaDocument(studentId);
+                    });
+                });
+
+                // 🆕 [영수증 보기] 버튼 이벤트
+                document.querySelectorAll('.view-receipts-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const studentId = e.target.dataset.studentId;
+                        this.viewReceipts(studentId);
+                    });
+                });
+                
+                // 무비자 완료 버튼 이벤트 추가
+                document.querySelectorAll('.complete-visa-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const studentId = e.target.dataset.studentId;
+                        this.handleCompleteVisa(studentId);
+                    });
+                });
+                
             }
 
             handleCommentInput(studentId, comment) {
@@ -1401,6 +1502,148 @@
                     clientType: this.supabaseClient ? 'connected' : 'not connected'
                 };
             }
+            
+            /**
+             * 비자 문서 보기
+             */
+            async viewVisaDocument(studentId) {
+                try {
+                    const visaData = this.visaData.get(studentId);
+
+                    if (!visaData || !visaData.visa_document_url) {
+                        this.showToast('등록된 비자 문서가 없습니다.', 'warning');
+                        return;
+                    }
+
+                    // 새 창에서 비자 문서 열기
+                    window.open(visaData.visa_document_url, '_blank');
+
+                } catch (error) {
+                    console.error('비자 문서 보기 오류:', error);
+                    this.showToast('비자 문서를 불러오는데 실패했습니다.', 'error');
+                }
+            }
+
+            /**
+             * 영수증 보기 (모달로 표시)
+             */
+            async viewReceipts(studentId) {
+                try {
+                    // 해당 학생의 영수증 목록 조회
+                    const { data: receipts, error } = await this.supabaseClient
+                        .from('visa_receipts')
+                        .select('*')
+                        .eq('user_id', studentId)
+                        .order('created_at', { ascending: false });
+
+                    if (error) {
+                        throw new Error(`영수증 조회 실패: ${error.message}`);
+                    }
+
+                    if (!receipts || receipts.length === 0) {
+                        this.showToast('등록된 영수증이 없습니다.', 'warning');
+                        return;
+                    }
+
+                    // 영수증 목록 모달 표시
+                    this.showReceiptsModal(studentId, receipts);
+
+                } catch (error) {
+                    console.error('영수증 보기 오류:', error);
+                    this.showToast('영수증을 불러오는데 실패했습니다.', 'error');
+                }
+            }
+
+            /**
+             * 영수증 모달 표시
+             */
+            showReceiptsModal(studentId, receipts) {
+                const student = this.students.find(s => s.id === studentId);
+                const studentName = student ? student.name : '알 수 없음';
+
+                // 기존 모달 제거
+                const existingModal = document.getElementById('receipts-modal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+
+                // 영수증 리스트 HTML 생성
+                const receiptsHtml = receipts.map(receipt => `
+                    <div class="receipt-item" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h4 style="margin: 0; color: #2c3e50;">${receipt.receipt_title || '제목 없음'}</h4>
+                            <span style="font-size: 12px; color: #6c757d;">
+                                ${receipt.created_at ? new Date(receipt.created_at).toLocaleDateString() : '날짜 없음'}
+                            </span>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <p style="margin: 5px 0; font-size: 14px; color: #495057;">
+                                <strong>설명:</strong> ${receipt.receipt_description || '설명 없음'}
+                            </p>
+                        </div>
+                        <div style="text-align: center;">
+                            ${receipt.receipt_url ? `
+                                <button onclick="window.open('${receipt.receipt_url}', '_blank')" 
+                                        style="background: #17a2b8; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+                                    영수증 보기
+                                </button>
+                                <a href="${receipt.receipt_url}" download 
+                                   style="background: #28a745; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 12px;">
+                                    다운로드
+                                </a>
+                            ` : '<span style="color: #6c757d;">파일 없음</span>'}
+                        </div>
+                    </div>
+                `).join('');
+
+                // 모달 HTML
+                const modalHtml = `
+                    <div id="receipts-modal" style="
+                        position: fixed; 
+                        top: 0; left: 0; right: 0; bottom: 0; 
+                        background: rgba(0,0,0,0.7); 
+                        z-index: 10000; 
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: center;
+                        padding: 20px;"
+                    onclick="if(event.target.id==='receipts-modal') this.remove()">
+                        <div style="
+                            background: white; 
+                            border-radius: 12px; 
+                            padding: 20px; 
+                            max-width: 600px; 
+                            width: 100%; 
+                            max-height: 80vh; 
+                            overflow-y: auto;
+                            box-shadow: 0 10px 30px rgba(0,0,0,0.3);"
+                        onclick="event.stopPropagation()">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h2 style="margin: 0; color: #2c3e50; display: flex; align-items: center; gap: 8px;">
+                                    <i data-lucide="receipt"></i>
+                                    ${studentName}님의 영수증 목록
+                                </h2>
+                                <button onclick="document.getElementById('receipts-modal').remove()" 
+                                        style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px;">
+                                    ×
+                                </button>
+                            </div>
+                            <div>
+                                ${receiptsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                // 아이콘 초기화
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            }
+            
+            
         }
 
         // 전역 인스턴스 생성

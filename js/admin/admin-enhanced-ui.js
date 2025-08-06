@@ -9,6 +9,7 @@ const AdminEnhancedUI = {
     shippingInfoCache: new Map(),
     currentSearchTerm: '',
     isInitialized: false,
+    currentFilter: 'all',
 
     /**
      * 관리자 영수증 보기 이벤트 설정 (v11.1.0)
@@ -120,13 +121,381 @@ const AdminEnhancedUI = {
                     this.handleEnhancedSearch(e.target.value);
                 }, 300));
             }
-
+            
+            // 🆕 여기에 추가
+            this.setupStatusFilterTabs();
+            
             console.log('✅ 향상된 이벤트 리스너 설정 완료');
         } catch (error) {
             console.error('❌ 이벤트 리스너 설정 실패:', error);
         }
     },
 
+    // 🆕 여기서부터 새로운 메서드들 추가
+    // 상태별 필터 탭 설정
+    setupStatusFilterTabs() {
+        console.log('🎯 상태별 필터 탭 설정 시작');
+
+        try {
+            const filterTabs = document.querySelectorAll('.filter-tab');
+            if (filterTabs.length === 0) {
+                console.warn('⚠️ 필터 탭을 찾을 수 없음');
+                return;
+            }
+
+            filterTabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const filter = e.target.closest('button').dataset.filter;
+                    console.log('🎯 필터 탭 클릭:', filter);
+                    this.handleStatusFilter(filter);
+                });
+            });
+
+            console.log('✅ 상태별 필터 탭 설정 완료:', filterTabs.length, '개');
+        } catch (error) {
+            console.error('❌ 필터 탭 설정 실패:', error);
+        }
+    },
+
+    // 상태별 필터 처리
+    handleStatusFilter(filter) {
+        console.log('🎯 상태별 필터 처리 시작:', filter);
+
+        try {
+            // 탭 활성화 상태 변경
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            const activeTab = document.querySelector(`[data-filter="${filter}"]`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+            }
+
+            // 현재 필터 상태 저장
+            this.currentFilter = filter;
+
+            if (filter === 'all') {
+                // 기존 학생별 그룹화 표시
+                console.log('📋 학생별 그룹화 표시');
+                if (this.groupedApplicationsCache) {
+                    this.renderGroupedApplications(this.groupedApplicationsCache);
+                }
+            } else {
+                // 상태별 아이템 목록 표시
+                console.log('📋 상태별 아이템 표시:', filter);
+                this.renderStatusFilteredItems(filter);
+            }
+
+            console.log('✅ 상태별 필터 처리 완료');
+        } catch (error) {
+            console.error('❌ 상태별 필터 처리 실패:', error);
+        }
+    },
+
+    // 상태별 아이템 렌더링
+    renderStatusFilteredItems(status) {
+        console.log('📋 상태별 아이템 렌더링 시작:', status);
+
+        try {
+            if (!this.groupedApplicationsCache) {
+                console.warn('⚠️ 캐시된 데이터가 없음');
+                const container = document.getElementById('adminApplications');
+                if (container) {
+                    container.innerHTML = '<div class="no-results"><p>데이터를 먼저 로드해주세요.</p></div>';
+                }
+                return;
+            }
+
+            // 모든 학생의 해당 상태 아이템들 수집
+            const filteredItems = [];
+            this.groupedApplicationsCache.forEach(studentGroup => {
+                studentGroup.applications.forEach(application => {
+                    if (application.status === status) {
+                        filteredItems.push({
+                            ...application,
+                            studentInfo: studentGroup.studentInfo,
+                            shippingInfo: studentGroup.shippingInfo,
+                            budgetInfo: studentGroup.budgetInfo
+                        });
+                    }
+                });
+            });
+
+            console.log('📊 필터된 아이템 수:', filteredItems.length);
+
+            // 최신순 정렬 (온라인 구매 우선)
+            filteredItems.sort((a, b) => {
+                // 온라인 구매 우선
+                if (a.purchase_type === 'online' && b.purchase_type === 'offline') return -1;
+                if (a.purchase_type === 'offline' && b.purchase_type === 'online') return 1;
+
+                // 같은 타입이면 최신순
+                return new Date(b.created_at) - new Date(a.created_at);
+            });
+
+            const container = document.getElementById('adminApplications');
+            if (!container) {
+                console.error('❌ adminApplications 컨테이너를 찾을 수 없음');
+                return;
+            }
+
+            if (filteredItems.length === 0) {
+                container.innerHTML = `
+                    <div class="no-results">
+                        <i data-lucide="search" class="no-results-icon"></i>
+                        <p>${this.getStatusText(status)} 상태의 아이템이 없습니다.</p>
+                        <button class="btn secondary" onclick="window.AdminEnhancedUI.handleStatusFilter('all')">
+                            <i data-lucide="list"></i>
+                            전체 보기로 돌아가기
+                        </button>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="status-filtered-header">
+                        <h3>
+                            <i data-lucide="${this.getStatusIcon(status)}"></i>
+                            ${this.getStatusText(status)} 아이템 목록 (${filteredItems.length}개)
+                        </h3>
+                        <p class="filter-description">
+                            ${this.getFilterDescription(status)}
+                        </p>
+                    </div>
+                    <div class="filtered-items-list">
+                        ${filteredItems.map(item => this.createFilteredItemCard(item)).join('')}
+                    </div>
+                `;
+            }
+
+            // 아이콘 재생성 및 이벤트 설정
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            this.setupFilteredItemListeners();
+
+            console.log('✅ 상태별 아이템 렌더링 완료');
+
+        } catch (error) {
+            console.error('❌ 상태별 아이템 렌더링 실패:', error);
+
+            // 에러 발생시 전체 보기로 복원
+            const container = document.getElementById('adminApplications');
+            if (container) {
+                container.innerHTML = `
+                    <div class="error-state">
+                        <p>필터링 중 오류가 발생했습니다.</p>
+                        <button class="btn primary" onclick="window.AdminEnhancedUI.handleStatusFilter('all')">
+                            전체 보기로 돌아가기
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    },
+
+    // 필터된 아이템 카드 생성
+    createFilteredItemCard(item) {
+        try {
+            const statusClass = this.getStatusClass(item.status);
+            const purchaseMethodInfo = this.getPurchaseMethodInfo(item);
+
+            // 영수증 정보 확인
+            const hasStudentReceipt = item.receipts && 
+                                     item.receipts.length > 0 && 
+                                     item.receipts[0].file_url;
+
+            let receiptButton = '';
+            if (hasStudentReceipt) {
+                receiptButton = `
+                    <button class="btn small secondary view-receipt-btn" 
+                            data-request-id="${item.id}" title="영수증 보기">
+                        <i data-lucide="eye"></i>
+                    </button>
+                `;
+            }
+
+            return `
+                <div class="filtered-item-card" data-request-id="${item.id}">
+                    <div class="filtered-item-header">
+                        <div class="student-badge">
+                            <i data-lucide="user"></i>
+                            <strong>${this.escapeHtml(item.studentInfo.name)}</strong>
+                            <span class="institute-info">
+                                ${this.escapeHtml(item.studentInfo.sejong_institute)}
+                            </span>
+                        </div>
+                        <div class="item-date">
+                            <i data-lucide="calendar"></i>
+                            ${this.formatDate(item.created_at)}
+                        </div>
+                    </div>
+
+                    <div class="filtered-item-content">
+                        <div class="item-main-info">
+                            <h4 class="item-name">${this.escapeHtml(item.item_name)}</h4>
+                            <p class="item-purpose">${this.escapeHtml(item.purpose || '')}</p>
+
+                            <div class="item-details-row">
+                                <span class="item-price">
+                                    <i data-lucide="tag"></i>
+                                    <strong>${this.formatPrice(item.price)}</strong>
+                                </span>
+                                <span class="purchase-method-badge ${purchaseMethodInfo.class}">
+                                    <i data-lucide="${purchaseMethodInfo.icon}"></i>
+                                    ${purchaseMethodInfo.text}
+                                </span>
+                                <span class="type-badge ${item.is_bundle ? 'bundle' : 'single'}">
+                                    ${item.is_bundle ? '묶음' : '단일'}
+                                </span>
+                                ${receiptButton}
+                            </div>
+                        </div>
+
+                        <div class="filtered-item-actions">
+                            ${this.createItemActionButtons(item.status, item.purchase_type)}
+                            <span class="status-badge ${statusClass}">${this.getStatusText(item.status)}</span>
+                        </div>
+                    </div>
+
+                    ${item.rejection_reason ? `
+                        <div class="item-rejection-reason">
+                            <div class="reason-label">
+                                <i data-lucide="alert-circle"></i>
+                                반려 사유
+                            </div>
+                            <div class="reason-text">${this.escapeHtml(item.rejection_reason)}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        } catch (error) {
+            console.error('❌ 필터된 아이템 카드 생성 실패:', error);
+            return `
+                <div class="filtered-item-card error">
+                    <p>아이템 정보를 불러올 수 없습니다.</p>
+                </div>
+            `;
+        }
+    },
+
+    // 필터된 아이템 이벤트 설정
+    setupFilteredItemListeners() {
+        console.log('🔧 필터된 아이템 이벤트 설정');
+
+        try {
+            // 개별 아이템 액션 버튼들
+            const actionButtons = document.querySelectorAll('.filtered-item-card .filtered-item-actions button[data-action]');
+            actionButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const action = e.target.closest('button').dataset.action;
+                    const itemElement = e.target.closest('.filtered-item-card');
+                    const requestId = itemElement.dataset.requestId;
+
+                    console.log('🔧 필터된 아이템 액션:', action, requestId);
+                    this.handleItemAction(action, requestId, e.target);
+                });
+            });
+
+            // 영수증 보기 버튼들
+            const receiptButtons = document.querySelectorAll('.filtered-item-card .view-receipt-btn');
+            receiptButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const requestId = e.target.closest('button').dataset.requestId;
+                    console.log('🔍 필터된 아이템 영수증 보기:', requestId);
+
+                    if (window.AdminManager && 
+                        window.AdminManager.Utils && 
+                        typeof window.AdminManager.Utils.showViewReceiptModal === 'function') {
+                        AdminManager.Utils.showViewReceiptModal(requestId);
+                    } else {
+                        alert('영수증 보기 기능을 사용할 수 없습니다.');
+                    }
+                });
+            });
+
+            console.log('✅ 필터된 아이템 이벤트 설정 완료');
+        } catch (error) {
+            console.error('❌ 필터된 아이템 이벤트 설정 실패:', error);
+        }
+    },
+
+    // 탭 카운트 업데이트
+    updateFilterTabCounts() {
+        try {
+            if (!this.groupedApplicationsCache) {
+                console.warn('⚠️ 캐시 데이터 없음 - 탭 카운트 업데이트 건너뜀');
+                return;
+            }
+
+            let counts = { pending: 0, approved: 0, rejected: 0, purchased: 0 };
+
+            this.groupedApplicationsCache.forEach(studentGroup => {
+                studentGroup.applications.forEach(app => {
+                    if (counts.hasOwnProperty(app.status)) {
+                        counts[app.status]++;
+                    }
+                });
+            });
+
+            console.log('📊 탭 카운트:', counts);
+
+            // HTML 업데이트
+            Object.keys(counts).forEach(status => {
+                const element = document.getElementById(`${status}TabCount`);
+                if (element) {
+                    element.textContent = counts[status];
+                }
+            });
+
+            // 상단 통계도 동시 업데이트
+            this.updateTopStatistics(counts);
+
+        } catch (error) {
+            console.error('❌ 탭 카운트 업데이트 실패:', error);
+        }
+    },
+
+    // 상단 통계 업데이트 (기존 통계와 연동)
+    updateTopStatistics(counts) {
+        try {
+            const pendingElement = document.getElementById('pendingCount');
+            const approvedElement = document.getElementById('approvedCount');
+            const purchasedElement = document.getElementById('purchasedCount');
+
+            if (pendingElement) pendingElement.textContent = counts.pending;
+            if (approvedElement) approvedElement.textContent = counts.approved;
+            if (purchasedElement) purchasedElement.textContent = counts.purchased;
+
+        } catch (error) {
+            console.warn('⚠️ 상단 통계 업데이트 실패:', error);
+        }
+    },
+
+    // 유틸리티 메서드들
+    getStatusIcon(status) {
+        const iconMap = {
+            'pending': 'clock',
+            'approved': 'check-circle', 
+            'rejected': 'x-circle',
+            'purchased': 'package'
+        };
+        return iconMap[status] || 'help-circle';
+    },
+
+    getFilterDescription(status) {
+        const descriptions = {
+            'pending': '관리자 승인이 필요한 교구 신청들입니다. 우선적으로 검토해주세요.',
+            'approved': '승인되었지만 아직 구매가 완료되지 않은 교구들입니다. 구매 처리를 진행해주세요.',
+            'rejected': '반려된 교구 신청들입니다. 참고용으로 확인하실 수 있습니다.',
+            'purchased': '구매가 완료된 교구들입니다. 처리가 완료된 항목들입니다.'
+        };
+        return descriptions[status] || '';
+    },    
+    
+    
+    
     // 향상된 검색 처리
     handleEnhancedSearch(searchTerm) {
         console.log('🔍 향상된 검색:', searchTerm);
@@ -188,8 +557,18 @@ const AdminEnhancedUI = {
             // 그룹화된 데이터 캐시
             this.groupedApplicationsCache = groupedApplications;
             
-            // 학생별 그룹화 렌더링
-            this.renderGroupedApplications(groupedApplications);
+            // 🆕 탭 카운트 업데이트 추가
+            this.updateFilterTabCounts();
+
+            // 🆕 현재 필터에 따라 렌더링 결정
+            if (this.currentFilter === 'all') {
+                // 학생별 그룹화 렌더링
+                this.renderGroupedApplications(groupedApplications);
+            } else {
+                // 상태별 필터 렌더링
+                this.renderStatusFilteredItems(this.currentFilter);
+            }
+            
             
             console.log('✅ 배송지 정보 포함 신청 내역 로드 완료 (v4.3.3)');
             

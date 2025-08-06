@@ -345,6 +345,24 @@ const LessonPlanHelper = {
                         `;
                         noticeType = 'info';
                     }
+                } else if (lessonPlan.status === 'rejected') {
+                    // 반려 사유 표시
+                    const rejectionReason = lessonPlan.rejection_reason || '구체적인 사유가 제공되지 않았습니다.';
+
+                    noticeContent = `
+                        <div class="notice-content danger">
+                            <i data-lucide="calendar-x"></i>
+                            <div>
+                                <h4>❌ 수업계획이 반려되었습니다</h4>
+                                <p><strong>반려 사유:</strong> ${rejectionReason}</p>
+                                <button class="btn danger small" onclick="LessonPlanHelper.handleLessonPlanClick()">
+                                    ✏️ 수업계획 수정하기
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    noticeType = 'danger';    
+                    
                 } else if (lessonPlan.status === 'approved') {
                     noticeContent = `
                         <div class="notice-content success">

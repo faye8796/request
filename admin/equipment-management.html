@@ -871,6 +871,179 @@
             width: 100%;
         }
     }        
+
+    /* 상태별 필터 탭 스타일 */
+    .status-filter-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 24px;
+        background: white;
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        overflow-x: auto;
+    }
+
+    .filter-tab {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #64748b;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        min-width: fit-content;
+    }
+
+    .filter-tab:hover {
+        border-color: #cbd5e1;
+        background: #f1f5f9;
+    }
+
+    .filter-tab.active {
+        border-color: #3b82f6;
+        background: #3b82f6;
+        color: white;
+    }
+
+    .filter-tab i {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* 모바일 반응형 */
+    @media (max-width: 768px) {
+        .status-filter-tabs {
+            gap: 4px;
+            padding: 12px;
+        }
+
+        .filter-tab {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+    }
+        
+    /* 상태별 필터 결과 스타일 */
+    .status-filtered-header {
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .status-filtered-header h3 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 8px 0;
+        color: #1e293b;
+        font-size: 1.25rem;
+    }
+
+    .filter-description {
+        color: #64748b;
+        margin: 0;
+        font-size: 0.95rem;
+    }
+
+    .filtered-items-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .filtered-item-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
+    }
+
+    .filtered-item-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-color: #cbd5e1;
+    }
+
+    .filtered-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .student-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #475569;
+        font-weight: 600;
+    }
+
+    .institute-info {
+        color: #64748b;
+        font-weight: 400;
+        font-size: 0.9rem;
+    }
+
+    .item-date {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+
+    .filtered-item-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .item-details-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+    }
+
+    .filtered-item-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    /* 모바일 반응형 */
+    @media (max-width: 768px) {
+        .filtered-item-content {
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .filtered-item-actions {
+            width: 100%;
+            justify-content: flex-end;
+        }
+
+        .filtered-item-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+    }        
         
     </style>
 </head>
@@ -990,6 +1163,26 @@
                 </div>
             </div>
 
+            <!-- 🆕 상태별 필터 탭 추가 -->
+            <div class="status-filter-tabs">
+                <button class="filter-tab active" data-filter="all">
+                    <i data-lucide="list"></i>
+                    전체 (학생별)
+                </button>
+                <button class="filter-tab" data-filter="pending">
+                    <i data-lucide="clock"></i>
+                    미승인 아이템 (<span id="pendingTabCount">0</span>)
+                </button>
+                <button class="filter-tab" data-filter="approved">
+                    <i data-lucide="check-circle"></i>
+                    승인됨 (구매대기) (<span id="approvedTabCount">0</span>)
+                </button>
+                <button class="filter-tab" data-filter="purchased">
+                    <i data-lucide="package"></i>
+                    구매완료 (<span id="purchasedTabCount">0</span>)
+                </button>
+            </div>
+            
             <!-- 교구 신청 목록 (학생별 그룹화) -->
             <div id="adminApplications" class="admin-applications">
                 <!-- AdminEnhancedUI v4.3.2에서 동적으로 생성될 학생별 그룹화된 교구 신청 목록 -->
