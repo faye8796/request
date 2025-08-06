@@ -1088,7 +1088,7 @@
                     new Date(visaData.visa_status_updated_at).toLocaleString() : '';
                 
                 const adminComment = visaData?.admin_comment || '';
-                const hasVisaDocument = !!visaData?.visa_document_url;
+                const hasVisaDocument = !!(visaData?.visa_document_url && visaData?.visa_document_url !== 'no-visa-required');
                 
                 return `
                     <div class="student-visa-card">

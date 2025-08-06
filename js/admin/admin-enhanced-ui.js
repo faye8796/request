@@ -350,6 +350,15 @@ const AdminEnhancedUI = {
                                     ${item.is_bundle ? '묶음' : '단일'}
                                 </span>
                                 ${receiptButton}
+                                ${item.purchase_type === 'online' && item.link ? `
+                                    <a href="${this.escapeHtml(item.link)}" 
+                                       target="_blank" rel="noopener noreferrer"
+                                       class="btn small primary purchase-link-btn"
+                                       title="구매 링크 바로가기">
+                                        <i data-lucide="external-link"></i>
+                                        구매하기
+                                    </a>
+                                ` : ''}
                             </div>
                         </div>
 

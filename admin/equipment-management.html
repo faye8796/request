@@ -1044,6 +1044,46 @@
             gap: 8px;
         }
     }        
+    /* 필터된 아이템 카드의 구매 링크 버튼 스타일 */
+    .filtered-item-card .purchase-link-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        font-size: 12px;
+        background: #3b82f6;
+        color: white;
+        border: 1px solid #2563eb;
+        border-radius: 4px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .filtered-item-card .purchase-link-btn:hover {
+        background: #2563eb;
+        border-color: #1d4ed8;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    }
+
+    .filtered-item-card .purchase-link-btn i {
+        width: 12px;
+        height: 12px;
+    }
+
+    /* 모바일 반응형 */
+    @media (max-width: 768px) {
+        .filtered-item-card .item-details-row {
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .filtered-item-card .purchase-link-btn {
+            order: 1; /* 구매 링크를 맨 앞으로 */
+            margin-right: 8px;
+        }
+    }        
         
     </style>
 </head>
