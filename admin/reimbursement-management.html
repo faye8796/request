@@ -973,6 +973,182 @@
             font-size: 14px;
             min-height: 120px;
         }
+        /* 체크박스 기반 항목 선택 스타일 */
+        .pending-items-section h4 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+        }
+
+        .pending-items-list {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .review-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .review-item:hover {
+            border-color: #3b82f6;
+            background-color: #f0f9ff;
+        }
+
+        .review-item.selected {
+            border-color: #3b82f6;
+            background-color: #dbeafe;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .item-checkbox {
+            margin-right: 12px;
+        }
+
+        .item-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .item-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .item-title {
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+        }
+
+        .item-details {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .item-date, .item-amount {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .item-actions {
+            margin-left: 12px;
+        }
+
+        .btn-view-receipt {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-view-receipt:hover {
+            background: #138496;
+        }
+
+        .review-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            flex-wrap: wrap;
+        }
+
+        .review-actions button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.3s;
+        }
+
+        #selectAllBtn {
+            background: #10b981;
+            color: white;
+        }
+
+        #selectAllBtn:hover {
+            background: #059669;
+        }
+
+        #clearAllBtn {
+            background: #6b7280;
+            color: white;
+        }
+
+        #clearAllBtn:hover {
+            background: #4b5563;
+        }
+
+        .selected-count {
+            margin: 0;
+            color: #374151;
+            font-weight: 500;
+            margin-left: auto;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .review-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .item-checkbox {
+                margin-right: 0;
+                align-self: flex-start;
+            }
+
+            .item-actions {
+                margin-left: 0;
+                align-self: stretch;
+            }
+
+            .review-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .selected-count {
+                margin-left: 0;
+                text-align: center;
+            }
+        }
+        
         
     </style>
 </head>
@@ -1100,8 +1276,28 @@
             <div class="modal-body">
                 <div class="student-summary">
                     <h3 id="amountStudentName">-</h3>
-                    <div id="amountItemsList" class="items-list">
-                        <!-- 동적 생성 -->
+                    <div class="pending-items-section">
+                        <h4>
+                            <i data-lucide="check-square"></i>
+                            실비 검토 대상 항목
+                        </h4>
+                        <div id="pendingItemsList" class="pending-items-list">
+                            <!-- 동적 생성: pending 상태 항목들만 표시 -->
+                        </div>
+
+                        <div class="review-actions">
+                            <button id="selectAllBtn" onclick="window.reimbursementManagementSystem?.selectAllPendingItems()">
+                                <i data-lucide="check-square"></i>
+                                전체선택
+                            </button>
+                            <button id="clearAllBtn" onclick="window.reimbursementManagementSystem?.clearAllSelections()">
+                                <i data-lucide="square"></i>
+                                선택해제
+                            </button>
+                            <p class="selected-count">
+                                선택된 항목: <span id="selectedCount">0</span>개
+                            </p>
+                        </div>
                     </div>
                 </div>
                 

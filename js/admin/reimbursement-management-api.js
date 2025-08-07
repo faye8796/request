@@ -90,6 +90,9 @@ if (window.reimbursementManagementSystem) {
                 throw new Error(`실비 금액 저장 실패: ${error.message}`);
             }
 
+            // 🆕 선택된 항목들을 confirmed 상태로 변경
+            await this.updateSelectedItemsToConfirmed();
+            
             // 메모리 데이터 업데이트
             this.reimbursementData.set(this.currentUser.id, data);
 
@@ -201,43 +204,43 @@ if (window.reimbursementManagementSystem) {
     };
 
     /**
-     * 모든 영수증을 지급 완료 상태로 변경
+     * 체크된 영수증을 지급 완료 상태로 변경
      */
     system.markAllReceiptsAsCompleted = async function(userId) {
         const promises = [];
 
-        // 항공권 실비 완료
+        // 항공권 실비 완료 (VARCHAR 방식)
         promises.push(
             this.supabaseClient
                 .from('flight_requests')
                 .update({ 
-                    flight_reimbursement_completed: true,
-                    baggage_reimbursement_completed: true 
+                    flight_reimbursement_completed: 'paid',      
+                    baggage_reimbursement_completed: 'paid'      
                 })
                 .eq('user_id', userId)
-                .eq('flight_reimbursement_completed', false)
+                .eq('flight_reimbursement_completed', 'confirmed')
         );
 
-        // 교구 실비 완료 (receipts 테이블)
+        // 교구 실비 완료 (VARCHAR 방식)
         promises.push(
             this.supabaseClient
                 .from('receipts')
-                .update({ reimbursement_completed: true })
+                .update({ reimbursement_completed: 'paid' })     
                 .eq('user_id', userId)
-                .eq('reimbursement_completed', false)
+                .eq('reimbursement_completed', 'confirmed')
         );
 
-        // 비자 실비 완료
+        // 비자 실비 완료 (VARCHAR 방식)
         promises.push(
             this.supabaseClient
                 .from('visa_receipts')
-                .update({ reimbursement_completed: true })
+                .update({ reimbursement_completed: 'paid' })     
                 .eq('user_id', userId)
-                .eq('reimbursement_completed', false)
+                .eq('reimbursement_completed', 'confirmed')
         );
 
         const results = await Promise.allSettled(promises);
-        
+
         // 오류 체크
         results.forEach((result, index) => {
             if (result.status === 'rejected') {
@@ -427,6 +430,100 @@ if (window.reimbursementManagementSystem) {
         };
     };
 
+    /**
+     * 선택된 항목들을 confirmed 상태로 변경
+     */
+    system.updateSelectedItemsToConfirmed = async function() {
+        try {
+            const selectedCheckboxes = document.querySelectorAll('#pendingItemsList input[type="checkbox"]:checked');
+
+            if (selectedCheckboxes.length === 0) {
+                console.log('⚠️ 선택된 항목이 없습니다.');
+                return;
+            }
+
+            const updatePromises = [];
+
+            selectedCheckboxes.forEach(checkbox => {
+                const itemId = checkbox.value;
+                const sourceTable = checkbox.dataset.sourceTable;
+                const itemType = checkbox.dataset.itemType;
+
+                updatePromises.push(this.updateItemStatusToConfirmed(itemId, sourceTable, itemType));
+            });
+
+            const results = await Promise.allSettled(updatePromises);
+
+            // 결과 확인
+            let successCount = 0;
+            let errorCount = 0;
+
+            results.forEach((result, index) => {
+                if (result.status === 'fulfilled') {
+                    successCount++;
+                } else {
+                    errorCount++;
+                    console.error(`항목 ${index + 1} 상태 변경 실패:`, result.reason);
+                }
+            });
+
+            console.log(`✅ 선택된 항목 상태 변경 완료: 성공 ${successCount}개, 실패 ${errorCount}개`);
+
+            if (errorCount > 0) {
+                this.showToast(`일부 항목 처리에 실패했습니다. (성공: ${successCount}, 실패: ${errorCount})`, 'warning');
+            }
+
+        } catch (error) {
+            console.error('❌ 선택된 항목 상태 변경 오류:', error);
+            throw error;
+        }
+    };
+
+    /**
+     * 개별 항목 상태를 confirmed로 변경
+     */
+    system.updateItemStatusToConfirmed = async function(itemId, sourceTable, itemType) {
+        let updateData = {};
+        let whereCondition = {};
+
+        // 테이블별 업데이트 로직
+        switch(sourceTable) {
+            case 'flight_requests':
+                if (itemType === 'flight') {
+                    updateData.flight_reimbursement_completed = 'confirmed';
+                } else if (itemType.includes('baggage')) {
+                    updateData.baggage_reimbursement_completed = 'confirmed';
+                }
+                whereCondition.id = itemId.split('_')[0]; // compound ID 처리
+                break;
+
+            case 'receipts':
+                updateData.reimbursement_completed = 'confirmed';
+                whereCondition.id = itemId;
+                break;
+
+            case 'visa_receipts':
+                updateData.reimbursement_completed = 'confirmed';
+                whereCondition.id = itemId;
+                break;
+
+            default:
+                throw new Error(`알 수 없는 소스 테이블: ${sourceTable}`);
+        }
+
+        const { error } = await this.supabaseClient
+            .from(sourceTable)
+            .update(updateData)
+            .match(whereCondition);
+
+        if (error) {
+            throw new Error(`${sourceTable} 상태 업데이트 실패: ${error.message}`);
+        }
+
+        console.log(`✅ ${sourceTable} 항목 ${itemId} confirmed 처리 완료`);
+    };    
+    
+    
     /**
      * 실비 처리 내역 로그 기록
      */
