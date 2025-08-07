@@ -29,7 +29,6 @@ if (window.reimbursementManagementSystem) {
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 this.closeAllModals();
-                this.closeReceiptViewer();
             }
         });
 
@@ -510,55 +509,19 @@ if (window.reimbursementManagementSystem) {
     };
 
     /**
-     * 전체화면 영수증 뷰어 열기
+     * 영수증 새창에서 열기 (기존 전체화면 뷰어 대신)
      */
     system.openReceiptViewer = function(receiptUrl, title) {
-        const viewer = document.getElementById('receiptViewer');
-        const image = document.getElementById('receiptViewerImage');
-        
-        if (viewer && image && receiptUrl) {
-            image.src = receiptUrl;
-            image.alt = title;
-            viewer.classList.add('show');
-            
-            // 이미지 로드 오류 처리
-            image.onerror = () => {
-                image.alt = '이미지를 불러올 수 없습니다.';
-                image.style.backgroundColor = '#f8f9fa';
-                image.style.color = '#6c757d';
-                image.style.display = 'flex';
-                image.style.alignItems = 'center';
-                image.style.justifyContent = 'center';
-                image.style.fontSize = '18px';
-                image.style.border = '2px dashed #dee2e6';
-            };
+        if (receiptUrl) {
+            // 새창에서 영수증 열기
+            window.open(receiptUrl, '_blank', 'noopener,noreferrer');
+            console.log('✅ 새창에서 영수증 열기:', title);
+        } else {
+            console.warn('⚠️ 영수증 URL이 없습니다:', title);
 
-            console.log('🔍 전체화면 영수증 뷰어 열기:', title);
-        }
-    };
-
-    /**
-     * 전체화면 영수증 뷰어 닫기
-     */
-    system.closeReceiptViewer = function() {
-        const viewer = document.getElementById('receiptViewer');
-        if (viewer) {
-            viewer.classList.remove('show');
-            
-            // 이미지 초기화
-            const image = document.getElementById('receiptViewerImage');
-            if (image) {
-                setTimeout(() => {
-                    image.src = '';
-                    image.alt = '';
-                    image.style.removeProperty('backgroundColor');
-                    image.style.removeProperty('color');
-                    image.style.removeProperty('display');
-                    image.style.removeProperty('alignItems');
-                    image.style.removeProperty('justifyContent');
-                    image.style.removeProperty('fontSize');
-                    image.style.removeProperty('border');
-                }, 300);
+            // 토스트 메시지 표시 (옵션)
+            if (window.reimbursementManagementSystem && window.reimbursementManagementSystem.showToast) {
+                window.reimbursementManagementSystem.showToast('영수증 URL이 없습니다.', 'warning');
             }
         }
     };
@@ -637,11 +600,6 @@ window.openFullReceiptView = function(receiptUrl, title) {
     }
 };
 
-window.closeReceiptViewer = function() {
-    if (window.reimbursementManagementSystem) {
-        window.reimbursementManagementSystem.closeReceiptViewer();
-    }
-};
 
 window.downloadReceipt = function(receiptUrl, title) {
     if (window.reimbursementManagementSystem) {
