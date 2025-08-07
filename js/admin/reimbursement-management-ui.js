@@ -377,7 +377,7 @@ if (window.reimbursementManagementSystem) {
                 <div class="item-row">
                     <span>${formatted.title}</span>
                     ${formatted.receiptUrl ? `
-                        <button class="btn-view-receipt" onclick="openFullReceiptView('${formatted.receiptUrl}', '${formatted.title}')">
+                        <button class="btn-view-receipt" onclick="window.open('${formatted.receiptUrl}', '_blank', 'noopener,noreferrer')">
                             영수증
                         </button>
                     ` : '<span style="color: #6c757d; font-size: 11px;">영수증 없음</span>'}
