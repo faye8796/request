@@ -186,83 +186,133 @@ const SupabaseAdmin = {
     },
 
     /**
-     * 예산 현황 통계 조회
+     * 예산 현황 통계 조회 - student_budgets 기반 개선된 버전
      * @returns {Promise<Object>} 예산 현황 데이터
      */
     async getBudgetOverviewStats() {
-        console.log('💰 예산 현황 통계 계산 시작... (수정된 버전)');
+        console.log('💰 예산 현황 통계 계산 시작... (student_budgets 기반 개선된 버전)');
 
         try {
             const client = await this.core.ensureClient();
 
-            // 1. 승인된 수업계획을 가진 학생들 조회
-            const approvedLessonPlansResult = await client
-                .from('lesson_plans')
+            // 🎯 핵심 개선: student_budgets 테이블에서 실제 배정된 예산 조회
+            const studentBudgetsResult = await client
+                .from('student_budgets')
                 .select(`
                     user_id,
-                    lessons,
+                    allocated_budget,
+                    used_budget,
+                    special_request_amount,
+                    special_request_status,
                     user_profiles:user_id (
+                        name,
                         field
                     )
                 `)
-                .eq('status', 'approved');
+                .not('allocated_budget', 'is', null)
+                .gt('allocated_budget', 0);
 
-            // 2. 분야별 예산 설정 조회
-            const fieldBudgetSettings = await this.getAllFieldBudgetSettings();
-
-            // 3. 승인된 신청들의 총액 (approved 상태)
+            // 승인된 신청들의 총액 (approved 상태)
             const approvedRequestsResult = await client
                 .from('requests')
                 .select('price')
                 .eq('status', 'approved');
 
-            // 4. 구매완료된 신청들의 총액 (purchased 상태)
+            // 구매완료된 신청들의 총액 (purchased 상태)
             const purchasedRequestsResult = await client
                 .from('requests')
                 .select('price, final_purchase_amount')
                 .eq('status', 'purchased');
 
-            let totalApprovedBudget = 0;
-            let studentCount = 0;
+            // 🎯 핵심 개선: student_budgets 기반 실제 예산 계산
+            let totalAllocatedBudget = 0;  // 실제 배정 예산 총액
+            let totalSpecialBudget = 0;    // 특별 예산 신청 총액 (승인된 것만)
+            let studentsWithBudget = 0;    // 예산이 배정된 학생 수
 
-            // 승인된 수업계획 기반으로 예산 계산
-            if (approvedLessonPlansResult.data) {
-                approvedLessonPlansResult.data.forEach(plan => {
-                    const userField = plan.user_profiles?.field;
-                    if (userField && fieldBudgetSettings[userField]) {
-                        const fieldSetting = fieldBudgetSettings[userField];
+            if (studentBudgetsResult.data && studentBudgetsResult.data.length > 0) {
+                console.log('✅ student_budgets 데이터 발견:', studentBudgetsResult.data.length, '명');
 
-                        // 수업 횟수 계산
-                        let totalLessons = 0;
-                        try {
-                            if (plan.lessons) {
-                                let lessons = plan.lessons;
-                                if (typeof lessons === 'string') {
-                                    lessons = JSON.parse(lessons);
-                                }
+                studentBudgetsResult.data.forEach(budget => {
+                    if (budget.allocated_budget && budget.allocated_budget > 0) {
+                        // 실제 배정된 예산 합계 (모든 조정 사항 반영)
+                        totalAllocatedBudget += budget.allocated_budget;
+                        studentsWithBudget++;
 
-                                if (lessons.totalLessons) {
-                                    totalLessons = lessons.totalLessons;
-                                } else if (lessons.schedule && Array.isArray(lessons.schedule)) {
-                                    totalLessons = lessons.schedule.length;
-                                } else if (lessons.lessons && Array.isArray(lessons.lessons)) {
-                                    totalLessons = lessons.lessons.length;
-                                }
-                            }
-                        } catch (e) {
-                            console.warn('수업계획 파싱 오류:', e);
-                            totalLessons = 0;
+                        // 특별 예산 신청 중 승인된 것만 별도 집계
+                        if (budget.special_request_amount && 
+                            budget.special_request_status === 'approved') {
+                            totalSpecialBudget += budget.special_request_amount;
                         }
-
-                        // 예산 계산
-                        const calculatedBudget = fieldSetting.perLessonAmount * totalLessons;
-                        const finalBudget = fieldSetting.maxBudget > 0 ? 
-                            Math.min(calculatedBudget, fieldSetting.maxBudget) : 
-                            calculatedBudget;
-
-                        totalApprovedBudget += finalBudget;
-                        studentCount++;
                     }
+                });
+
+                console.log('📊 student_budgets 기반 실제 예산 계산:', {
+                    totalAllocatedBudget,
+                    totalSpecialBudget,
+                    studentsWithBudget,
+                    averageAllocated: Math.round(totalAllocatedBudget / studentsWithBudget)
+                });
+
+            } else {
+                console.warn('⚠️ student_budgets 데이터 없음 - 기존 방식으로 폴백');
+
+                // 🔄 폴백: 기존 방식 (승인된 수업계획 기반)
+                const approvedLessonPlansResult = await client
+                    .from('lesson_plans')
+                    .select(`
+                        user_id,
+                        lessons,
+                        user_profiles:user_id (
+                            field
+                        )
+                    `)
+                    .eq('status', 'approved');
+
+                const fieldBudgetSettings = await this.getAllFieldBudgetSettings();
+
+                if (approvedLessonPlansResult.data) {
+                    approvedLessonPlansResult.data.forEach(plan => {
+                        const userField = plan.user_profiles?.field;
+                        if (userField && fieldBudgetSettings[userField]) {
+                            const fieldSetting = fieldBudgetSettings[userField];
+
+                            // 수업 횟수 계산
+                            let totalLessons = 0;
+                            try {
+                                if (plan.lessons) {
+                                    let lessons = plan.lessons;
+                                    if (typeof lessons === 'string') {
+                                        lessons = JSON.parse(lessons);
+                                    }
+
+                                    if (lessons.totalLessons) {
+                                        totalLessons = lessons.totalLessons;
+                                    } else if (lessons.schedule && Array.isArray(lessons.schedule)) {
+                                        totalLessons = lessons.schedule.length;
+                                    } else if (lessons.lessons && Array.isArray(lessons.lessons)) {
+                                        totalLessons = lessons.lessons.length;
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn('수업계획 파싱 오류:', e);
+                                totalLessons = 0;
+                            }
+
+                            // 예산 계산
+                            const calculatedBudget = fieldSetting.perLessonAmount * totalLessons;
+                            const finalBudget = fieldSetting.maxBudget > 0 ? 
+                                Math.min(calculatedBudget, fieldSetting.maxBudget) : 
+                                calculatedBudget;
+
+                            totalAllocatedBudget += finalBudget;
+                            studentsWithBudget++;
+                        }
+                    });
+                }
+
+                console.log('📊 폴백 계산 (수업계획 기반):', {
+                    totalAllocatedBudget,
+                    studentsWithBudget
                 });
             }
 
@@ -277,17 +327,21 @@ const SupabaseAdmin = {
                     return sum + amount;
                 }, 0) : 0;
 
-            // 1인당 평균 예산
-            const averagePerPerson = studentCount > 0 ? Math.round(totalApprovedBudget / studentCount) : 0;
+            // 🎯 핵심 개선: 실제 배정 예산 기반 1인당 평균 계산
+            const averagePerPerson = studentsWithBudget > 0 ? 
+                Math.round(totalAllocatedBudget / studentsWithBudget) : 0;
 
             const result = {
-                totalApprovedBudget,
+                totalApprovedBudget: totalAllocatedBudget, // 🆕 실제 배정 예산 (student_budgets 기반)
                 approvedItemsTotal,
                 purchasedTotal,
-                averagePerPerson
+                averagePerPerson // 🆕 실제 배정 예산 기반 평균
             };
 
-            console.log('✅ 예산 현황 통계 계산 완료:', result);
+            console.log('✅ 예산 현황 통계 계산 완료 (student_budgets 기반):', result);
+            console.log('📈 계산 방식:', studentsWithBudget > 0 ? 'student_budgets 기반' : '폴백 방식');
+            console.log('🆕 특별 예산 포함:', totalSpecialBudget, '원');
+
             return result;
 
         } catch (error) {

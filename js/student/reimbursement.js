@@ -734,10 +734,37 @@
 
         createReimbursementItemElement(item) {
             const div = document.createElement('div');
-            div.className = `reimbursement-item ${item.completed ? 'completed' : ''}`;
 
-            const statusClass = item.completed ? 'completed' : (item.hasReceipt ? 'has-receipt' : 'need-receipt');
-            const statusText = item.completed ? '처리 완료' : (item.hasReceipt ? '영수증 등록됨' : '영수증 필요');
+            // 🆕 새로운 상태 처리 로직
+            let statusClass, statusText, itemClass;
+
+            // 상태별 분기 처리
+            if (item.completed === 'paid' || item.completed === true) {
+                statusClass = 'completed';
+                statusText = '지급 완료';
+                itemClass = 'completed';
+            } else if (item.completed === 'confirmed') {
+                statusClass = 'confirmed';
+                statusText = '승인 완료';
+                itemClass = 'confirmed';
+            } else if (item.completed === 'pending' || item.completed === false || !item.completed) {
+                if (item.hasReceipt) {
+                    statusClass = 'has-receipt';
+                    statusText = '검토 대기';
+                    itemClass = 'pending';
+                } else {
+                    statusClass = 'need-receipt';
+                    statusText = '영수증 필요';
+                    itemClass = 'pending';
+                }
+            } else {
+                // 기본값 (예상치 못한 상태)
+                statusClass = 'need-receipt';
+                statusText = '상태 확인 필요';
+                itemClass = '';
+            }
+
+            div.className = `reimbursement-item ${itemClass}`;
 
             div.innerHTML = `
                 <div class="item-info">
@@ -799,7 +826,9 @@
 
         updateStatistics() {
             const totalCount = this.reimbursementItems.length;
-            const completedCount = this.reimbursementItems.filter(item => item.completed).length;
+            const completedCount = this.reimbursementItems.filter(item => 
+                item.completed === 'paid' || item.completed === true
+            ).length;
             const pendingCount = totalCount - completedCount;
 
             const totalElement = document.getElementById('totalItemsCount');
