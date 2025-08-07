@@ -93,9 +93,18 @@ if (window.reimbursementManagementSystem) {
             // 🆕 선택된 항목들을 confirmed 상태로 변경
             await this.updateSelectedItemsToConfirmed();
             
-            // 메모리 데이터 업데이트
-            this.reimbursementData.set(this.currentUser.id, data);
-
+            // 메모리 데이터 업데이트 (배열 형태로 관리)
+            if (!this.reimbursementData.has(this.currentUser.id)) {
+                this.reimbursementData.set(this.currentUser.id, []);
+            }
+            const reimbursements = this.reimbursementData.get(this.currentUser.id);
+            const existingIndex = reimbursements.findIndex(r => r.payment_round === data.payment_round);
+            if (existingIndex >= 0) {
+                reimbursements[existingIndex] = data;
+            } else {
+                reimbursements.push(data);
+            }
+            
             // UI 업데이트
             this.updateStatistics();
             this.renderStudentsTable();
@@ -131,9 +140,9 @@ if (window.reimbursementManagementSystem) {
             const actualAmount = parseFloat(document.getElementById('actualAmount')?.value);
             const actualDate = document.getElementById('actualDate')?.value;
             
-            const reimbursement = this.reimbursementData.get(this.currentUser.id);
-            if (!reimbursement) {
-                throw new Error('실비 설정 정보를 찾을 수 없습니다.');
+            const pendingReimbursement = this.getPendingReimbursement(this.currentUser.id);
+            if (!pendingReimbursement) {
+                throw new Error('처리할 pending 차수가 없습니다.');
             }
 
             // 데이터 검증
@@ -162,24 +171,23 @@ if (window.reimbursementManagementSystem) {
                     updated_at: new Date().toISOString()
                 })
                 .eq('user_id', this.currentUser.id)
-                .eq('payment_round', reimbursement.payment_round);
+                .eq('payment_round', pendingReimbursement.payment_round);
 
-            if (reimbursementError) {
-                throw new Error(`실비 정보 업데이트 실패: ${reimbursementError.message}`);
-            }
-
-            // 2. 해당 시점의 모든 영수증을 지급 완료 처리
+            // 2. 해당 시점의 체크된 영수증을 지급 완료 처리
             await this.markAllReceiptsAsCompleted(this.currentUser.id);
 
-            // 3. 메모리 데이터 업데이트
-            const updatedReimbursement = {
-                ...reimbursement,
-                actual_amount: actualAmount,
-                actual_date: actualDate,
-                payment_status: 'completed',
-                updated_at: new Date().toISOString()
-            };
-            this.reimbursementData.set(this.currentUser.id, updatedReimbursement);
+            // 3. 메모리 데이터 업데이트 (배열에서 해당 차수만 업데이트)
+            const reimbursements = this.reimbursementData.get(this.currentUser.id) || [];
+            const index = reimbursements.findIndex(r => r.payment_round === pendingReimbursement.payment_round);
+            if (index >= 0) {
+                reimbursements[index] = {
+                    ...pendingReimbursement,
+                    actual_amount: actualAmount,
+                    actual_date: actualDate,
+                    payment_status: 'completed',
+                    updated_at: new Date().toISOString()
+                };
+            }
 
             // 4. UI 업데이트
             this.updateStatistics();

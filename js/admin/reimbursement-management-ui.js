@@ -118,7 +118,7 @@ if (window.reimbursementManagementSystem) {
             '<span class="need-input">입력 필요</span>';
 
         // 액션 버튼들
-        const actionButtons = this.createActionButtons(student.id, paymentStatus, reimbursement);
+        const actionButtons = this.createActionButtons(student.id, paymentStatus, pendingReimbursement);
 
         return `
             <tr>
@@ -137,7 +137,7 @@ if (window.reimbursementManagementSystem) {
     /**
      * 액션 버튼들 생성
      */
-    system.createActionButtons = function(userId, paymentStatus, reimbursement) {
+    system.createActionButtons = function(userId, paymentStatus, pendingReimbursement) {  // 파라미터 이름 변경
         const student = this.students.find(s => s.id === userId);
         const buttons = [];
 
@@ -157,8 +157,6 @@ if (window.reimbursementManagementSystem) {
             </button>
         `);
 
-        const pendingReimbursement = this.getPendingReimbursement(userId);
-
         // 지급완료 버튼 (pending 상태이고 금액이 설정된 경우만)
         if (paymentStatus === 'pending' && pendingReimbursement && pendingReimbursement.scheduled_amount) {
             buttons.push(`
@@ -169,17 +167,19 @@ if (window.reimbursementManagementSystem) {
             `);
         }
 
-        // 지급정보 버튼 추가
-        buttons.push(`
-            <button class="btn-payment-history" onclick="window.reimbursementManagementSystem.openPaymentHistoryModal('${userId}', '${student?.name}')">
-                <i data-lucide="history"></i>
-                지급정보
-            </button>
-        `);
+        // 지급정보 버튼 (완료된 지급 내역이 있을 때만 표시)
+        const completedPayments = this.getCompletedReimbursements(userId);
+        if (completedPayments && completedPayments.length > 0) {
+            buttons.push(`
+                <button class="btn-payment-history" onclick="window.reimbursementManagementSystem.openPaymentHistoryModal('${userId}', '${student?.name}')">
+                    <i data-lucide="history"></i>
+                    지급정보
+                </button>
+            `);
+        }
 
         return buttons.join('');
     };
-
     /**
      * 통계 대시보드 업데이트
      */
@@ -506,7 +506,7 @@ if (window.reimbursementManagementSystem) {
      * 모든 모달 닫기
      */
     system.closeAllModals = function() {
-        const modals = ['receiptsDetailModal', 'amountSettingModal', 'paymentCompleteModal'];
+        const modals = ['receiptsDetailModal', 'amountSettingModal', 'paymentCompleteModal', 'paymentHistoryModal'];
         modals.forEach(modalId => {
             const modal = document.getElementById(modalId);
             if (modal && modal.classList.contains('show')) {
@@ -516,10 +516,9 @@ if (window.reimbursementManagementSystem) {
                 }, 300);
             }
         });
-        
+
         this.currentUser = null;
     };
-
     /**
      * 지급정보 모달 열기
      */

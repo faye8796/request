@@ -324,15 +324,25 @@ class ReimbursementManagementSystem {
      * 학생의 지급 상태 확인
      */
     getStudentPaymentStatus(userId) {
-        const reimbursement = this.reimbursementData.get(userId);
-        
-        if (!reimbursement) {
+        const reimbursements = this.reimbursementData.get(userId) || [];
+
+        if (reimbursements.length === 0) {
             return 'not_set'; // 미설정
         }
-        
-        return reimbursement.payment_status || 'pending';
-    }
 
+        // pending 상태가 있으면 pending 반환 (우선순위)
+        const pendingReimbursement = reimbursements.find(r => r.payment_status === 'pending');
+        if (pendingReimbursement) {
+            return 'pending';
+        }
+
+        // pending이 없으면 가장 최근 차수의 상태 반환
+        const latestReimbursement = reimbursements.reduce((latest, current) => {
+            return current.payment_round > latest.payment_round ? current : latest;
+        });
+
+        return latestReimbursement.payment_status || 'completed';
+    }
     /**
      * 학생별 실비 항목 개수 및 카테고리 정보
      */
