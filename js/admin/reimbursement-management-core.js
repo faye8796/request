@@ -258,12 +258,14 @@ class ReimbursementManagementSystem {
             this.reimbursementItems.get(item.user_id).push(item);
         });
 
-        // 학생별 실비 지원 정보 매핑
+        // 학생별 실비 지원 정보 매핑 (차수별로 배열 관리)
         this.reimbursementData.clear();
         (reimbursementData || []).forEach(reimbursement => {
-            this.reimbursementData.set(reimbursement.user_id, reimbursement);
+            if (!this.reimbursementData.has(reimbursement.user_id)) {
+                this.reimbursementData.set(reimbursement.user_id, []);
+            }
+            this.reimbursementData.get(reimbursement.user_id).push(reimbursement);
         });
-
         console.log(`📊 데이터 로드 완료: 학생 ${this.students.length}명, 실비 항목 ${reimbursementItemsData?.length || 0}개`);
     }
 
@@ -456,6 +458,9 @@ class ReimbursementManagementSystem {
         }
     }
 
+    
+    
+    
     /**
      * 시스템 상태 정보 반환 (디버깅용)
      */
@@ -470,7 +475,54 @@ class ReimbursementManagementSystem {
             clientType: this.supabaseClient ? 'connected' : 'not connected'
         };
     }
+
+    /**
+     * 사용자의 활성(pending) 차수 조회
+     */
+    getPendingReimbursement(userId) {
+        const reimbursements = this.reimbursementData.get(userId) || [];
+        return reimbursements.find(r => r.payment_status === 'pending') || null;
+    }
+
+    /**
+     * 사용자의 완료된 차수들 조회
+     */
+    getCompletedReimbursements(userId) {
+        const reimbursements = this.reimbursementData.get(userId) || [];
+        return reimbursements.filter(r => r.payment_status === 'completed');
+    }
+
+    /**
+     * 사용자의 최신 차수 조회 (계좌 정보용)
+     */
+    getLatestReimbursement(userId) {
+        const reimbursements = this.reimbursementData.get(userId) || [];
+        if (reimbursements.length === 0) return null;
+
+        return reimbursements.reduce((latest, current) => {
+            if (!latest) return current;
+            if (current.payment_round > latest.payment_round) return current;
+            if (current.payment_round === latest.payment_round && 
+                new Date(current.created_at) > new Date(latest.created_at)) return current;
+            return latest;
+        }, null);
+    }
+
+    /**
+     * 다음 차수 번호 계산
+     */
+    getNextPaymentRound(userId) {
+        const reimbursements = this.reimbursementData.get(userId) || [];
+        if (reimbursements.length === 0) return 1;
+
+        const maxRound = Math.max(...reimbursements.map(r => r.payment_round));
+        return maxRound + 1;
+    }
+
+    
 }
+
+
 
 // 전역 인스턴스 생성 및 초기화
 const reimbursementManagementSystem = new ReimbursementManagementSystem();

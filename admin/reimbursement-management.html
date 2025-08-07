@@ -1148,6 +1148,170 @@
                 text-align: center;
             }
         }
+
+        /* 🆕 지급정보 모달 스타일 */
+        .payment-history-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .payment-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: box-shadow 0.2s ease;
+        }
+
+        .payment-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .payment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .payment-round {
+            background: #3b82f6;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .payment-amount {
+            font-size: 18px;
+            font-weight: 700;
+            color: #059669;
+        }
+
+        .payment-details {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .payment-date {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .payment-date i {
+            width: 14px;
+            height: 14px;
+            margin-right: 6px;
+        }
+
+        .payment-notes {
+            margin-top: 8px;
+            padding: 8px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            font-size: 12px;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .payment-summary {
+            border-top: 2px solid #e5e7eb;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        .total-amount {
+            text-align: center;
+            font-size: 16px;
+            color: #1f2937;
+        }
+
+        .total-amount span {
+            color: #059669;
+            font-size: 20px;
+        }
+
+        .no-payments {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .no-payments i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .no-payments p {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        /* 🆕 지급정보 버튼 스타일 */
+        .btn-payment-history {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-payment-history:hover {
+            background: #7c3aed;
+        }
+
+        .btn-payment-history i {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* 🆕 액션 버튼들 간격 조정 */
+        .actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .actions button {
+            white-space: nowrap;
+        }
+
+        /* 🆕 반응형 - 작은 화면에서 버튼들 세로 정렬 */
+        @media (max-width: 768px) {
+            .actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .actions button {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .payment-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .payment-amount {
+                align-self: flex-end;
+            }
+        }
+        
         
         
     </style>
@@ -1370,6 +1534,26 @@
             </div>
         </div>
     </div>
+    
+    <!-- 지급정보 모달 -->
+    <div id="paymentHistoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><span id="historyStudentName">-</span>님의 지급 내역</h2>
+                <button class="close-modal" onclick="window.reimbursementManagementSystem.closeAllModals()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="paymentHistoryList" class="payment-history-list">
+                    <!-- 동적 생성 -->
+                </div>
+                <div class="payment-summary">
+                    <div class="total-amount">
+                        <strong>총 지급 금액: <span id="totalPaidAmount">0원</span></strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>    
 
     <!-- 전체화면 영수증 뷰어 -->
     <div id="receiptViewer" class="receipt-viewer">

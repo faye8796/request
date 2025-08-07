@@ -86,16 +86,17 @@ if (window.reimbursementManagementSystem) {
      * 개별 학생 행 생성
      */
     system.createStudentRow = function(student) {
-        const reimbursement = this.reimbursementData.get(student.id);
+        const pendingReimbursement = this.getPendingReimbursement(student.id);
+        const latestReimbursement = this.getLatestReimbursement(student.id);
         const itemsSummary = this.getStudentItemsSummary(student.id);
         const paymentStatus = this.getStudentPaymentStatus(student.id);
         const statusText = this.getPaymentStatusText(paymentStatus);
 
-        // 계좌 정보 표시
-        const accountInfoHtml = reimbursement && reimbursement.bank_name ? `
+        // 계좌 정보 표시 (최신 차수 기준)
+        const accountInfoHtml = latestReimbursement && latestReimbursement.bank_name ? `
             <div class="account-details">
-                <div><strong>${reimbursement.bank_name}</strong>${reimbursement.account_holder_name}</div>
-                <div>${reimbursement.account_number}</div>
+                <div><strong>${latestReimbursement.bank_name}</strong> ${latestReimbursement.account_holder_name}</div>
+                <div>${latestReimbursement.account_number}</div>
             </div>
         ` : '<div class="no-account">계좌 정보 없음</div>';
 
@@ -111,9 +112,9 @@ if (window.reimbursementManagementSystem) {
             categoryBadges.push(`<span class="category-badge visa">${this.getCategoryDisplayText('visa')} ${itemsSummary.visa}개</span>`);
         }
 
-        // 관리자 입력 금액 표시
-        const amountDisplay = reimbursement && reimbursement.scheduled_amount ? 
-            `<span class="amount-set">${reimbursement.scheduled_amount.toLocaleString()}원</span>` : 
+        // 관리자 입력 금액 표시 (활성 차수만)
+        const amountDisplay = pendingReimbursement && pendingReimbursement.scheduled_amount ? 
+            `<span class="amount-set">${pendingReimbursement.scheduled_amount.toLocaleString()}원</span>` : 
             '<span class="need-input">입력 필요</span>';
 
         // 액션 버튼들
@@ -156,8 +157,10 @@ if (window.reimbursementManagementSystem) {
             </button>
         `);
 
+        const pendingReimbursement = this.getPendingReimbursement(userId);
+
         // 지급완료 버튼 (pending 상태이고 금액이 설정된 경우만)
-        if (paymentStatus === 'pending' && reimbursement && reimbursement.scheduled_amount) {
+        if (paymentStatus === 'pending' && pendingReimbursement && pendingReimbursement.scheduled_amount) {
             buttons.push(`
                 <button class="btn-complete-payment" onclick="window.reimbursementManagementSystem.openPaymentCompleteModal('${userId}', '${student?.name}')">
                     <i data-lucide="check-circle"></i>
@@ -165,6 +168,14 @@ if (window.reimbursementManagementSystem) {
                 </button>
             `);
         }
+
+        // 지급정보 버튼 추가
+        buttons.push(`
+            <button class="btn-payment-history" onclick="window.reimbursementManagementSystem.openPaymentHistoryModal('${userId}', '${student?.name}')">
+                <i data-lucide="history"></i>
+                지급정보
+            </button>
+        `);
 
         return buttons.join('');
     };
@@ -377,37 +388,35 @@ if (window.reimbursementManagementSystem) {
         try {
             this.currentUser = { id: userId, name: userName };
 
-            const reimbursement = this.reimbursementData.get(userId);
-            if (!reimbursement) {
-                throw new Error('실비 설정 정보를 찾을 수 없습니다.');
+            const pendingReimbursement = this.getPendingReimbursement(userId);
+            if (!pendingReimbursement) {
+                throw new Error('처리할 pending 차수가 없습니다.');
             }
-
-            const items = await this.loadUserReimbursementItems(userId);
 
             // 모달 제목 설정
             const titleElement = document.getElementById('paymentStudentName');
             if (titleElement) {
-                titleElement.textContent = `${userName}님 - ${reimbursement.payment_round}차 지원`;
+                titleElement.textContent = `${userName}님 - ${pendingReimbursement.payment_round}차 지원`;
             }
 
             // 예정 정보 표시
             const scheduledInfoElement = document.getElementById('scheduledInfo');
             if (scheduledInfoElement) {
-                const scheduledDate = reimbursement.scheduled_date ? 
-                    new Date(reimbursement.scheduled_date).toLocaleDateString() : '-';
+                const scheduledDate = pendingReimbursement.scheduled_date ? 
+                    new Date(pendingReimbursement.scheduled_date).toLocaleDateString() : '-';
                 scheduledInfoElement.textContent = 
-                    `예정 금액: ${reimbursement.scheduled_amount?.toLocaleString()}원 (${scheduledDate})`;
+                    `예정 금액: ${pendingReimbursement.scheduled_amount?.toLocaleString()}원 (${scheduledDate})`;
             }
 
             // 실제 입금 정보 초기값 설정
             const actualAmountInput = document.getElementById('actualAmount');
             const actualDateInput = document.getElementById('actualDate');
 
-            if (actualAmountInput) actualAmountInput.value = reimbursement.scheduled_amount || '';
+            if (actualAmountInput) actualAmountInput.value = pendingReimbursement.scheduled_amount || '';
             if (actualDateInput) actualDateInput.value = new Date().toISOString().split('T')[0];
 
-            // 영향받는 항목들 표시
-            this.renderAffectedItems(items);
+            // confirmed 상태 항목들만 표시
+            await this.renderAffectedItems(userId);
 
             // 모달 표시
             const modal = document.getElementById('paymentCompleteModal');
@@ -418,7 +427,7 @@ if (window.reimbursementManagementSystem) {
                 }, 10);
             }
 
-            console.log(`✅ 지급 완료 모달 열기: ${userName} (${items.length}개 항목)`);
+            console.log(`✅ 지급 완료 모달 열기: ${userName} (confirmed 항목만)`);
 
         } catch (error) {
             console.error('❌ 지급 완료 모달 오류:', error);
@@ -427,25 +436,72 @@ if (window.reimbursementManagementSystem) {
     };
 
     /**
-     * 영향받는 항목들 렌더링
+     * 영향받는 항목들 렌더링 (confirmed 상태만)
      */
-    system.renderAffectedItems = function(items) {
+    system.renderAffectedItems = async function(userId) {
         const list = document.getElementById('affectedItemsList');
         if (!list) return;
 
-        const itemsHtml = items.map(item => {
-            const formatted = this.formatReimbursementItem(item);
-            return `
-                <div class="item-check">
-                    <input type="checkbox" checked disabled>
-                    <span>${formatted.title}</span>
+        try {
+            // confirmed 상태인 항목들만 조회
+            const { data: confirmedItems, error } = await this.supabaseClient
+                .from('v_user_reimbursement_items')
+                .select('*')
+                .eq('user_id', userId)
+                .eq('reimbursement_completed', 'confirmed')  // 🔑 핵심: confirmed만
+                .order('display_order', { ascending: true });
+
+            if (error) {
+                throw new Error(`confirmed 항목 조회 실패: ${error.message}`);
+            }
+
+            if (!confirmedItems || confirmedItems.length === 0) {
+                list.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #6b7280;">
+                        <i data-lucide="info" style="font-size: 24px; margin-bottom: 8px;"></i>
+                        <p>지급 완료 처리할 항목이 없습니다.</p>
+                        <p style="font-size: 12px; margin-top: 5px;">
+                            먼저 [금액설정]에서 항목을 선택해주세요.
+                        </p>
+                    </div>
+                `;
+            } else {
+                const itemsHtml = confirmedItems.map(item => {
+                    return `
+                        <div class="item-check">
+                            <input type="checkbox" checked disabled>
+                            <span>${item.item_title}</span>
+                            ${item.total_amount ? `<span style="margin-left: auto; color: #27ae60;">${item.total_amount.toLocaleString()}원</span>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                list.innerHTML = itemsHtml;
+            }
+
+            // 아이콘 초기화
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            console.log(`✅ confirmed 항목 ${confirmedItems?.length || 0}개 표시`);
+
+        } catch (error) {
+            console.error('❌ confirmed 항목 조회 오류:', error);
+
+            list.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #dc3545;">
+                    <i data-lucide="alert-circle" style="font-size: 24px; margin-bottom: 8px;"></i>
+                    <p>항목을 불러오는데 실패했습니다.</p>
                 </div>
             `;
-        }).join('');
 
-        list.innerHTML = itemsHtml;
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
     };
-
+    
     /**
      * 모든 모달 닫기
      */
@@ -464,6 +520,103 @@ if (window.reimbursementManagementSystem) {
         this.currentUser = null;
     };
 
+    /**
+     * 지급정보 모달 열기
+     */
+    system.openPaymentHistoryModal = async function(userId, userName) {
+        try {
+            this.currentUser = { id: userId, name: userName };
+
+            const completedPayments = this.getCompletedReimbursements(userId);
+
+            // 모달 제목 설정
+            const titleElement = document.getElementById('historyStudentName');
+            if (titleElement) {
+                titleElement.textContent = userName;
+            }
+
+            // 지급 내역 렌더링
+            this.renderPaymentHistory(completedPayments);
+
+            // 모달 표시
+            const modal = document.getElementById('paymentHistoryModal');
+            if (modal) {
+                modal.style.display = 'block';
+                setTimeout(() => {
+                    modal.classList.add('show');
+                }, 10);
+            }
+
+            console.log(`📊 지급정보 모달 열기: ${userName} (${completedPayments.length}개 차수)`);
+
+        } catch (error) {
+            console.error('❌ 지급정보 모달 오류:', error);
+            this.showToast('지급 내역을 불러오는데 실패했습니다.', 'error');
+        }
+    };
+
+    /**
+     * 지급 내역 렌더링
+     */
+    system.renderPaymentHistory = function(payments) {
+        const list = document.getElementById('paymentHistoryList');
+        const totalElement = document.getElementById('totalPaidAmount');
+
+        if (!list || !totalElement) return;
+
+        if (payments.length === 0) {
+            list.innerHTML = `
+                <div class="no-payments">
+                    <i data-lucide="file-x"></i>
+                    <p>아직 지급된 내역이 없습니다.</p>
+                </div>
+            `;
+            totalElement.textContent = '0원';
+
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            return;
+        }
+
+        let totalAmount = 0;
+        const historyHtml = payments.map(payment => {
+            const paidAmount = payment.actual_amount || payment.scheduled_amount;
+            totalAmount += paidAmount;
+
+            const paidDate = payment.actual_date ? 
+                new Date(payment.actual_date).toLocaleDateString() : 
+                new Date(payment.scheduled_date).toLocaleDateString();
+
+            return `
+                <div class="payment-item">
+                    <div class="payment-header">
+                        <div class="payment-round">${payment.payment_round}차 지원</div>
+                        <div class="payment-amount">${paidAmount.toLocaleString()}원</div>
+                    </div>
+                    <div class="payment-details">
+                        <div class="payment-date">
+                            <i data-lucide="calendar"></i>
+                            지급일: ${paidDate}
+                        </div>
+                        ${payment.admin_notes ? `
+                            <div class="payment-notes">💬 ${payment.admin_notes}</div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        list.innerHTML = historyHtml;
+        totalElement.textContent = `${totalAmount.toLocaleString()}원`;
+
+        // 아이콘 초기화
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    };       
+    
+    
     /**
      * 폼 데이터 초기화
      */
