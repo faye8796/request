@@ -6,6 +6,38 @@
  * 학생 목록 테이블, 통계 대시보드 렌더링
  */
 
+
+// PDF 파일 여부 확인 함수
+function isPDFFile(fileUrl) {
+    if (!fileUrl) return false;
+    return fileUrl.toLowerCase().includes('.pdf');
+}
+
+// 영수증 미리보기 HTML 생성 함수
+function createReceiptPreviewHTML(fileUrl, title) {
+    if (!fileUrl) {
+        return '<div class="no-receipt">영수증 없음</div>';
+    }
+    
+    if (isPDFFile(fileUrl)) {
+        return `
+            <div class="pdf-preview" onclick="openFullReceiptView('${fileUrl}', '${title}')">
+                <i data-lucide="file-text"></i>
+                <span>PDF 파일</span>
+            </div>
+        `;
+    }
+    
+    return `
+        <img src="${fileUrl}" 
+             alt="영수증" 
+             loading="lazy"
+             onclick="openFullReceiptView('${fileUrl}', '${title}')"
+             onerror="this.parentNode.innerHTML='<div class=&quot;file-fallback&quot; onclick=&quot;openFullReceiptView(\\'${fileUrl}\\', \\'${title}\\')&quot;><i data-lucide=&quot;file-text&quot;></i><span>미리보기 불가</span></div>'; if(typeof lucide !== \\'undefined\\') lucide.createIcons();">
+    `;
+}
+
+
 // ReimbursementManagementSystem 클래스에 UI 메서드들 추가
 if (window.reimbursementManagementSystem) {
     const system = window.reimbursementManagementSystem;
@@ -62,9 +94,8 @@ if (window.reimbursementManagementSystem) {
         // 계좌 정보 표시
         const accountInfoHtml = reimbursement && reimbursement.bank_name ? `
             <div class="account-details">
-                <div>${reimbursement.bank_name}</div>
+                <div><strong>${reimbursement.bank_name}</strong>${reimbursement.account_holder_name}</div>
                 <div>${reimbursement.account_number}</div>
-                <div>${reimbursement.account_holder_name}</div>
             </div>
         ` : '<div class="no-account">계좌 정보 없음</div>';
 
@@ -245,13 +276,10 @@ if (window.reimbursementManagementSystem) {
     system.createReceiptCard = function(item) {
         const formatted = this.formatReimbursementItem(item);
 
-        const previewSection = formatted.receiptUrl ? `
-            <div class="receipt-preview" onclick="openFullReceiptView('${formatted.receiptUrl}', '${formatted.title}')">
-                <img src="${formatted.receiptUrl}" alt="영수증" loading="lazy">
-            </div>
-        ` : `
+        // 기존 코드를 이것으로 교체
+        const previewSection = `
             <div class="receipt-preview">
-                <div class="no-receipt">영수증 없음</div>
+                ${createReceiptPreviewHTML(formatted.receiptUrl, formatted.title)}
             </div>
         `;
 

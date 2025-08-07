@@ -755,6 +755,22 @@
                             관리하기
                         </button>
                     </div>
+                    
+                    <!-- 💰 실비 지원 관리 -->
+                    <div class="menu-card" onclick="navigateToReimbursementManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="receipt"></i>
+                        </div>
+                        <h2 class="menu-title">실비 지원 관리</h2>
+                        <p class="menu-description">
+                            학생들의 직접구매 항목 실비 지원을 관리합니다.<br>
+                            계좌 정보 확인, 금액 설정, 지급 완료 처리가 가능합니다.
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
 
                     <!-- 🆕 수료평가 관리 -->
                     <div class="menu-card" onclick="navigateToExamManagement()">
@@ -1361,6 +1377,11 @@
                 window.location.href = 'admin/visa-management.html';
             }
             
+            function navigateToReimbursementManagement() {
+                window.location.href = 'admin/reimbursement-management.html';
+            }
+
+            
             // 전역 함수로 노출
             window.handleAdminLogin = handleAdminLogin;
             window.handleLogout = handleLogout;
@@ -1371,6 +1392,8 @@
             window.navigateToExamManagement = navigateToExamManagement;
             window.navigateToCountrySafetyManagement = navigateToCountrySafetyManagement;
             window.navigateToVisaManagement = navigateToVisaManagement;
+            window.navigateToReimbursementManagement = navigateToReimbursementManagement;
+
             
             // DOMContentLoaded 이벤트 리스너
             document.addEventListener('DOMContentLoaded', safeInitialize);
@@ -1385,7 +1408,8 @@
                 navigateToBudgetManagement,
                 navigateToExamManagement,
                 navigateToCountrySafetyManagement,
-                navigateToVisaManagement
+                navigateToVisaManagement,
+                navigateToReimbursementManagement
             };
         })();
 
