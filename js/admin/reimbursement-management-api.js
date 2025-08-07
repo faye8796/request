@@ -158,7 +158,7 @@ if (window.reimbursementManagementSystem) {
                 userId: this.currentUser.id,
                 actualAmount,
                 actualDate,
-                paymentRound: reimbursement.payment_round
+                paymentRound: pendingReimbursement.payment_round
             });
 
             // 1. user_reimbursements 테이블 업데이트 (실제 입금 정보)
