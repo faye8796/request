@@ -598,20 +598,38 @@ class FlightManagementCards {
                 </button>
             `);
             break;
-        case 'completed':
-            // 🆕 완료 상태에서도 추가수하물 데이터가 있으면 버튼 표시
-            const hasBaggageData = request.user_baggage_departure_receipt_url || 
-                                  request.user_baggage_return_receipt_url ||
-                                  request.admin_baggage_receipt_url;
-            if (hasBaggageData) {
-                buttons.push(`
-                    <button class="action-btn secondary" data-action="extra-baggage" data-request-id="${request.id}">
-                        <i data-lucide="package-plus"></i>
-                        추가수하물 확인
-                    </button>
-                `);
-            }           
-            break;
+                
+            case 'completed':
+                // 🌟 특별 추가수하물 신청이 pending 상태일 때 우선 표시
+                if (request.special_baggage_request_status === 'pending') {
+                    buttons.push(`
+                        <button class="action-btn warning" data-action="extra-baggage" data-request-id="${request.id}">
+                            <i data-lucide="star"></i>
+                            특별 수하물 신청
+                        </button>
+                    `);
+                }
+                // 🔵 일반 추가수하물 데이터가 있으면 일반 버튼 표시
+                else {
+                    const hasBaggageData = request.user_baggage_departure_receipt_url || 
+                                          request.user_baggage_return_receipt_url ||
+                                          request.admin_baggage_receipt_url ||
+                                          request.baggage_type === 'user_allowed' ||
+                                          request.baggage_type === 'admin_purchased' ||
+                                          // 이미 처리된 특별 신청도 확인 가능하도록
+                                          (request.special_baggage_request_status && 
+                                           request.special_baggage_request_status !== 'none');
+
+                    if (hasBaggageData) {
+                        buttons.push(`
+                            <button class="action-btn secondary" data-action="extra-baggage" data-request-id="${request.id}">
+                                <i data-lucide="package-plus"></i>
+                                추가수하물 확인
+                            </button>
+                        `);
+                    }
+                }           
+                break;
         }
 
         // 여권 정보 버튼 (모든 상태에서)

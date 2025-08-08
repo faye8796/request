@@ -1236,7 +1236,7 @@ const EquipmentRequestModule = {
                 
                 ${receiptStatus}
                 
-                ${application.status === 'pending' ? `
+                ${(application.status === 'pending' || application.status === 'rejected') ? `
                     <div class="card-actions">
                         <button class="btn small secondary edit-btn" data-item-id="${application.id}">
                             <i data-lucide="edit-2"></i> 수정
@@ -1452,11 +1452,10 @@ const EquipmentRequestModule = {
         }
 
         // 수정 가능한 상태인지 확인
-        if (application.status !== 'pending') {
-            alert('검토 중인 신청만 수정할 수 있습니다.');
+        if (application.status !== 'pending' && application.status !== 'rejected') {
+            alert('검토 중이거나 반려된 신청만 수정할 수 있습니다.');
             return false;
         }
-
         return true;
     },
 
@@ -1468,7 +1467,7 @@ const EquipmentRequestModule = {
         }
 
         // 삭제 가능한 상태인지 확인
-        if (application.status !== 'pending') {
+        if (application.status !== 'pending' && application.status !== 'rejected') {
             alert('검토 중인 신청만 삭제할 수 있습니다.');
             return false;
         }
