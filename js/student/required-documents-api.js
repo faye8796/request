@@ -1,5 +1,5 @@
 /**
- * 필수 서류 제출 API 관리 모듈 v1.0.0
+ * 필수 서류 제출 API 관리 모듈 v1.0.1
  * 세종학당 문화인턴 지원 시스템
  * 
  * 기능:
@@ -12,16 +12,29 @@
 class RequiredDocumentsAPI {
     constructor() {
         this.supabase = window.supabase;
-        this.currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        this.currentUser = null;
         this.storageBucket = 'required-documents';
         
-        if (!this.currentUser) {
-            console.error('사용자 정보를 찾을 수 없습니다.');
-            window.location.href = '/index.html';
-            return;
+        // 사용자 정보 확인 (비자 관리 페이지와 동일한 로직)
+        try {
+            const userDataStr = localStorage.getItem('currentStudent');
+            if (!userDataStr) {
+                console.error('❌ 사용자 정보를 찾을 수 없습니다.');
+                throw new Error('사용자 정보를 찾을 수 없습니다.');
+            }
+
+            this.currentUser = JSON.parse(userDataStr);
+            if (!this.currentUser.id) {
+                console.error('❌ 사용자 ID가 없습니다.');
+                throw new Error('올바르지 않은 사용자 정보입니다.');
+            }
+
+            console.log('✅ RequiredDocumentsAPI 초기화됨:', this.currentUser.id);
+            
+        } catch (error) {
+            console.error('❌ RequiredDocumentsAPI 초기화 실패:', error);
+            throw error;
         }
-        
-        console.log('RequiredDocumentsAPI 초기화됨:', this.currentUser.id);
     }
 
     // ==================== 필수 서류 데이터 관리 ====================
@@ -424,7 +437,12 @@ class RequiredDocumentsAPI {
 
         } catch (error) {
             console.error('진행 상황 조회 실패:', error);
-            throw error;
+            // 오류가 발생해도 기본값 반환
+            return {
+                documents: { completed: false, hasRequiredDocument: false, hasAccountInfo: false },
+                emergency: { completed: false, requiredFieldsCount: 14, completedFieldsCount: 0 },
+                overall: { completedSteps: 0, totalSteps: 2, percentage: 0, canSubmit: false }
+            };
         }
     }
 
@@ -599,4 +617,4 @@ class RequiredDocumentsAPI {
 // 전역 스코프에 클래스 등록
 window.RequiredDocumentsAPI = RequiredDocumentsAPI;
 
-console.log('RequiredDocumentsAPI 모듈 로드 완료 v1.0.0');
+console.log('RequiredDocumentsAPI 모듈 로드 완료 v1.0.1');
