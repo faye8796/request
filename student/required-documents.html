@@ -21,7 +21,7 @@
                 </div>
                 <div class="flex items-center space-x-3">
                     <span id="user-name" class="text-sm text-gray-600"></span>
-                    <button onclick="logout()" class="text-sm text-red-600 hover:text-red-700">로그아웃</button>
+                    <button id="logoutBtn" class="text-sm text-red-600 hover:text-red-700">로그아웃</button>
                 </div>
             </div>
         </div>
@@ -454,5 +454,24 @@
     <script src="../js/student/required-documents-forms.js"></script>
     <script src="../js/student/emergency-contacts.js"></script>
     <script src="../js/student/required-documents.js"></script>
+
+    <!-- 전역 함수 정의 -->
+    <script>
+        // 로그아웃 함수 정의 (필수)
+        function logout() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                localStorage.removeItem('currentStudent');
+                localStorage.removeItem('currentUser');
+                window.location.href = '../index.html';
+            }
+        }
+
+        // Lucide 아이콘 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+        });
+    </script>
 </body>
 </html>
