@@ -1218,93 +1218,96 @@
         
         // ===== 3. 활동기간 검증 로직 =====
         function validateActivityPeriod(arrivalDate, workEndDate) {
-            // 입력값 체크
+            // ✅ 입력값 체크 - 하나라도 없으면 대기 상태로 처리
             if (!arrivalDate || !workEndDate) {
                 return {
                     valid: false,
                     message: '현지 도착일과 학당 근무 종료일을 모두 입력해주세요.',
-                    code: 'MISSING_DATES'
+                    code: 'MISSING_DATES',
+                    severity: 'info' // ✅ 오류가 아닌 정보로 처리
                 };
             }
-        
+
             try {
                 const start = new Date(arrivalDate);
                 const end = new Date(workEndDate);
-            
-                // 유효한 날짜인지 확인
+
+                // ✅ 유효한 날짜인지 확인 - 관대하게 처리
                 if (isNaN(start.getTime()) || isNaN(end.getTime())) {
                     return {
                         valid: false,
                         message: '올바른 날짜 형식이 아닙니다.',
-                        code: 'INVALID_DATE_FORMAT'
+                        code: 'INVALID_DATE_FORMAT',
+                        severity: 'warning' // ✅ 경고 수준으로 처리
                     };
                 }
-            
+
                 // 날짜 순서 체크
                 if (start >= end) {
                     return {
                         valid: false,
                         message: '학당 근무 종료일은 현지 도착일보다 이후여야 합니다.',
-                        code: 'INVALID_DATE_ORDER'
+                        code: 'INVALID_DATE_ORDER',
+                        severity: 'error'
                     };
                 }
-            
+
                 // 활동일수 계산
                 const calculatedDays = calculateActivityDays(arrivalDate, workEndDate);
                 const requiredDays = getRequiredDays();
                 const maximumDays = getMaximumDays();
-            
+
                 // 최소 활동일 체크
                 if (calculatedDays < requiredDays) {
                     return {
                         valid: false,
                         message: `최소 ${requiredDays}일 이상 활동해야 합니다. (현재: ${calculatedDays}일)`,
                         code: 'INSUFFICIENT_DAYS',
-                        days: calculatedDays
+                        days: calculatedDays,
+                        severity: 'error'
                     };
                 }
-            
+
                 // 최대 활동일 체크
                 if (calculatedDays > maximumDays) {
                     return {
                         valid: false,
                         message: `최대 ${maximumDays}일까지 활동 가능합니다. (현재: ${calculatedDays}일)`,
                         code: 'EXCEEDED_DAYS',
-                        days: calculatedDays
+                        days: calculatedDays,
+                        severity: 'error'
                     };
                 }
-            
+
                 // 모든 검증 통과
                 return {
                     valid: true,
                     message: `활동기간이 올바르게 설정되었습니다. (${calculatedDays}일)`,
                     code: 'VALID',
-                    days: calculatedDays
+                    days: calculatedDays,
+                    severity: 'success'
                 };
-            
+
             } catch (error) {
                 console.error('❌ 활동기간 검증 오류:', error);
                 return {
                     valid: false,
                     message: '활동기간 검증 중 오류가 발생했습니다.',
-                    code: 'VALIDATION_ERROR'
+                    code: 'VALIDATION_ERROR',
+                    severity: 'error'
                 };
             }
         }
+
     
         // ===== 4. UI 업데이트 함수 =====
-        function updateCalculatedDaysUI(days) {
-            const calculatedEl = document.getElementById('calculatedDays');
-            if (calculatedEl) {
-                calculatedEl.textContent = days > 0 ? days : '-';
-                calculatedEl.className = days > 0 ? 'value calculated-days-value' : 'value';
-            }
-        }
-    
         function updateValidationStatusUI(validationResult) {
             const validationStatusEl = document.getElementById('validationStatus');
             if (!validationStatusEl) return;
-        
+
+            // ✅ 심각도에 따른 처리
+            const severityClass = validationResult.severity || 'error';
+
             if (validationResult.valid) {
                 validationStatusEl.className = 'validation-status success';
                 validationStatusEl.innerHTML = `
@@ -1312,18 +1315,27 @@
                     <span>${validationResult.message}</span>
                 `;
             } else {
-                validationStatusEl.className = 'validation-status error';
+                // ✅ 심각도별 클래스 적용
+                validationStatusEl.className = `validation-status ${severityClass}`;
+
+                const iconMap = {
+                    'info': 'info',
+                    'warning': 'alert-triangle', 
+                    'error': 'alert-circle'
+                };
+
                 validationStatusEl.innerHTML = `
-                    <i data-lucide="alert-circle"></i>
+                    <i data-lucide="${iconMap[severityClass] || 'alert-circle'}"></i>
                     <span>${validationResult.message}</span>
                 `;
             }
-        
+
             // Lucide 아이콘 새로고침
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
         }
+
     
         // ===== 5. 항공권 섹션 제어 (핵심 로직) =====
         function controlFlightSection(validationResult) {
@@ -1430,25 +1442,42 @@
         }
     
         // ===== 6. 실시간 검증 함수 (디바운싱 포함) =====
+        let isDatePickerActive = false;
+
         function performValidation() {
+            // ✅ 날짜 picker 활성 상태에서는 검증 우회
+            if (isDatePickerActive) {
+                console.log('📅 날짜 picker 활성 중 - 검증 우회');
+                return;
+            }
+
             const arrivalDate = document.getElementById('actualArrivalDate')?.value;
             const workEndDate = document.getElementById('actualWorkEndDate')?.value;
-        
+
+            // ✅ 빈 값 허용 - 입력 중에는 검증하지 않음
+            if (!arrivalDate && !workEndDate) {
+                console.log('📅 입력 중 - 검증 대기');
+                return;
+            }
+
             // 활동일수 계산 및 UI 업데이트 (즉시)
             const calculatedDays = calculateActivityDays(arrivalDate, workEndDate);
             updateCalculatedDaysUI(calculatedDays);
-        
-            // 검증 수행
-            const validationResult = validateActivityPeriod(arrivalDate, workEndDate);
-        
-            // UI 업데이트
-            updateValidationStatusUI(validationResult);
-        
-            // 항공권 섹션 제어
-            controlFlightSection(validationResult);
-        
-            console.log('🔍 검증 완료:', validationResult);
+
+            // ✅ 두 날짜가 모두 입력된 경우에만 검증 실행
+            if (arrivalDate && workEndDate) {
+                const validationResult = validateActivityPeriod(arrivalDate, workEndDate);
+
+                // UI 업데이트
+                updateValidationStatusUI(validationResult);
+
+                // 항공권 섹션 제어
+                controlFlightSection(validationResult);
+
+                console.log('🔍 검증 완료:', validationResult);
+            }
         }
+
     
         function scheduleValidation() {
             // 기존 타이머 취소
@@ -1456,35 +1485,37 @@
                 clearTimeout(ValidationState.validationTimer);
             }
         
-            // 새로운 타이머 설정 (300ms 디바운스)
+            // 새로운 타이머 설정 (1000ms 디바운스)
             ValidationState.validationTimer = setTimeout(() => {
                 performValidation();
-            }, 300);
+            }, 1000);
         }
     
         // ===== 7. 이벤트 리스너 설정 =====
         function setupEventListeners() {
             const arrivalEl = document.getElementById('actualArrivalDate');
             const workEndEl = document.getElementById('actualWorkEndDate');
-        
+
             if (!arrivalEl || !workEndEl) {
                 console.warn('⚠️ 활동기간 입력 필드를 찾을 수 없습니다.');
                 return;
             }
-        
-            // input 이벤트로 실시간 감지
-            arrivalEl.addEventListener('input', scheduleValidation);
-            workEndEl.addEventListener('input', scheduleValidation);
-        
-            // change 이벤트로 확실한 변경 감지
-            arrivalEl.addEventListener('change', performValidation);
-            workEndEl.addEventListener('change', performValidation);
-        
-            // blur 이벤트로 포커스 이탈 시 즉시 검증
+
+            // ✅ blur 이벤트만 사용 - 입력 완료 후에만 검증
             arrivalEl.addEventListener('blur', performValidation);
             workEndEl.addEventListener('blur', performValidation);
-        
-            console.log('✅ 활동기간 이벤트 리스너 설정 완료');
+
+            // ✅ 날짜 picker 닫힐 때도 검증 (선택사항)
+            arrivalEl.addEventListener('change', function() {
+                // 약간의 지연 후 검증 (날짜 picker 완전 닫힘 대기)
+                setTimeout(performValidation, 200);
+            });
+
+            workEndEl.addEventListener('change', function() {
+                setTimeout(performValidation, 200);
+            });
+
+            console.log('✅ 활동기간 이벤트 리스너 설정 완료 (blur 중심)');
         }
     
         // ===== 8. 초기화 함수 =====

@@ -738,7 +738,6 @@ AdminManager.Modals = {
             // Supabase 클라이언트 확인 및 가져오기
             let supabaseClient = null;
 
-            // 여러 가능한 Supabase 클라이언트 확인
             if (window.supabase && typeof window.supabase.from === 'function') {
                 supabaseClient = window.supabase;
             } else if (window.SupabaseAPI && window.SupabaseAPI.client) {
@@ -749,10 +748,17 @@ AdminManager.Modals = {
                 throw new Error('Supabase 클라이언트를 찾을 수 없습니다.');
             }
 
-            // 신청 정보 조회
+            // 🔧 신청 정보 + 영수증 정보 함께 조회
             const { data: requestData, error } = await supabaseClient
                 .from('requests')
-                .select('*')
+                .select(`
+                    *,
+                    receipts (
+                        id,
+                        file_url,
+                        uploaded_at
+                    )
+                `)
                 .eq('id', requestId)
                 .single();
 
@@ -777,10 +783,22 @@ AdminManager.Modals = {
     },
 
     /**
-     * 구매 완료 모달 HTML 생성 (간소화 버전)
+     * 구매 완료 모달 HTML 생성 (온라인/오프라인 통합 버전)
      */
     createPurchaseCompleteModal: function(requestData, requestId) {
-        // 💰 가격 정보 (price 컬럼 사용)
+        // 🔧 온라인/오프라인 구분
+        const isOnline = requestData.purchase_type === 'online';
+        const studentReceipt = requestData.receipts && requestData.receipts[0];
+
+        // 🔧 오프라인인데 영수증이 없으면 에러
+        if (!isOnline && (!studentReceipt || !studentReceipt.file_url)) {
+            if (window.Utils && window.Utils.showToast) {
+                Utils.showToast('학생이 아직 영수증을 제출하지 않았습니다.', 'error');
+            }
+            return;
+        }
+
+        // 💰 가격 정보
         const priceAmount = requestData.price || 0;
 
         // 💸 가격 포맷팅
@@ -793,12 +811,15 @@ AdminManager.Modals = {
             <div id="purchaseCompleteModal" class="modal active">
                 <div class="modal-content purchase-complete-modal">
                     <div class="modal-header">
-                        <h3><i data-lucide="shopping-cart"></i> 구매 완료 처리</h3>
+                        <h3>
+                            <i data-lucide="${isOnline ? 'shopping-cart' : 'store'}"></i> 
+                            ${isOnline ? '온라인' : '오프라인'} 구매 완료 처리
+                        </h3>
                         <button class="close-btn" data-action="close-purchase-modal">&times;</button>
                     </div>
 
                     <div class="modal-body">
-                        <!-- 학생 신청 정보 표시 (간소화) -->
+                        <!-- 학생 신청 정보 표시 -->
                         <div class="student-request-info">
                             <h4><i data-lucide="user"></i> 학생 신청 정보</h4>
                             <div class="info-grid">
@@ -809,6 +830,10 @@ AdminManager.Modals = {
                                 <div class="info-item">
                                     <label>교구명:</label>
                                     <span id="itemName">${requestData.item_name || '-'}</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>구매 방식:</label>
+                                    <span>${isOnline ? '온라인 구매' : '오프라인 구매'}</span>
                                 </div>
                             </div>
                         </div>
@@ -840,33 +865,57 @@ AdminManager.Modals = {
                                        value="${new Date().toISOString().split('T')[0]}" required>
                             </div>
 
-                            <!-- 관리자 영수증 업로드 -->
-                            <div class="form-group admin-receipt-section">
-                                <label for="adminReceiptFile">관리자 구매 영수증 <span class="required">*</span></label>
-                                <div class="file-upload-area" id="adminReceiptUpload">
-                                    <input type="file" id="adminReceiptFile" 
-                                           accept="image/*,.pdf" style="display: none;" required>
-                                    <div class="upload-placeholder">
-                                        <i data-lucide="upload" class="upload-icon"></i>
-                                        <div class="upload-text">
-                                            <p>파일을 선택하거나 여기에 드래그해주세요</p>
-                                            <small>이미지 파일 또는 PDF (최대 10MB)</small>
+                            <!-- 🔧 조건부: 영수증 섹션 -->
+                            ${isOnline ? `
+                                <!-- 온라인: 관리자 영수증 업로드 -->
+                                <div class="form-group admin-receipt-section">
+                                    <label for="adminReceiptFile">관리자 구매 영수증 <span class="required">*</span></label>
+                                    <div class="file-upload-area" id="adminReceiptUpload">
+                                        <input type="file" id="adminReceiptFile" 
+                                               accept="image/*,.pdf" style="display: none;" required>
+                                        <div class="upload-placeholder">
+                                            <i data-lucide="upload" class="upload-icon"></i>
+                                            <div class="upload-text">
+                                                <p>파일을 선택하거나 여기에 드래그해주세요</p>
+                                                <small>이미지 파일 또는 PDF (최대 10MB)</small>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="file-info" style="display: none;">
-                                        <i data-lucide="file-text"></i>
-                                        <span class="file-name"></span>
-                                        <button type="button" class="remove-file-btn" title="파일 제거">
-                                            <i data-lucide="x"></i>
-                                        </button>
-                                    </div>
-                                    <div class="upload-progress" style="display: none;">
-                                        <div class="progress-bar">
-                                            <div class="progress-fill"></div>
+                                        <div class="file-info" style="display: none;">
+                                            <i data-lucide="file-text"></i>
+                                            <span class="file-name"></span>
+                                            <button type="button" class="remove-file-btn" title="파일 제거">
+                                                <i data-lucide="x"></i>
+                                            </button>
                                         </div>
-                                        <span class="progress-text">0%</span>
+                                        <div class="upload-progress" style="display: none;">
+                                            <div class="progress-bar">
+                                                <div class="progress-fill"></div>
+                                            </div>
+                                            <span class="progress-text">0%</span>
+                                        </div>
                                     </div>
                                 </div>
+                            ` : `
+                                <!-- 오프라인: 학생 영수증 확인 -->
+                                <div class="form-group student-receipt-section">
+                                    <label>학생 제출 영수증 확인</label>
+                                    <div class="student-receipt-preview">
+                                        <img src="${studentReceipt.file_url}" 
+                                             alt="학생 영수증"
+                                             onclick="window.open('${studentReceipt.file_url}', '_blank')"
+                                             style="max-width: 100%; max-height: 300px; cursor: pointer; border: 1px solid #ddd; border-radius: 8px;">
+                                        <p class="receipt-info">
+                                            <i data-lucide="calendar"></i>
+                                            제출일: ${new Date(studentReceipt.uploaded_at).toLocaleDateString('ko-KR')}
+                                        </p>
+                                    </div>
+                                </div>
+                            `}
+
+                            <!-- 관리자 메모 -->
+                            <div class="form-group admin-memo-section">
+                                <label for="adminMemo">관리자 메모 (선택사항)</label>
+                                <textarea id="adminMemo" placeholder="금액 차이 사유, 할인 내용, 특이사항 등"></textarea>
                             </div>
                         </div>
                     </div>
@@ -978,9 +1027,26 @@ AdminManager.Modals = {
      * 파일 업로드 이벤트 설정
      */
     setupFileUploadEvents: function(uploadArea, fileInput) {
+        // 🔧 null 체크 추가
+        if (!uploadArea) {
+            console.log('⚠️ uploadArea가 없습니다. 파일 업로드 이벤트 설정 건너뛰기');
+            return;
+        }
+
+        if (!fileInput) {
+            console.log('⚠️ fileInput이 없습니다. 파일 업로드 이벤트 설정 건너뛰기');
+            return;
+        }
+
         const placeholder = uploadArea.querySelector('.upload-placeholder');
         const fileInfo = uploadArea.querySelector('.file-info');
         const removeBtn = uploadArea.querySelector('.remove-file-btn');
+
+        // 🔧 각 요소도 null 체크
+        if (!placeholder || !fileInfo) {
+            console.log('⚠️ 파일 업로드 UI 요소를 찾을 수 없습니다.');
+            return;
+        }
 
         // 클릭으로 파일 선택
         placeholder.addEventListener('click', () => {
@@ -1080,13 +1146,27 @@ AdminManager.Modals = {
 
         const finalAmount = modal.querySelector('#finalAmount').value;
         const purchaseDate = modal.querySelector('#purchaseDate').value;
-        const fileInput = modal.querySelector('#adminReceiptFile');
+        const adminMemo = modal.querySelector('#adminMemo').value.trim();
         const submitButton = modal.querySelector('#submitPurchaseComplete');
 
-        // 폼 검증
-        if (!finalAmount || !purchaseDate || !fileInput.files[0]) {
+        // 🔧 온라인/오프라인 구분
+        const fileInput = modal.querySelector('#adminReceiptFile');
+        const isOnline = fileInput !== null; // 파일 입력이 있으면 온라인
+
+        console.log('🔍 구매 타입:', isOnline ? '온라인' : '오프라인');
+
+        // 🔧 기본 필드 검증
+        if (!finalAmount || !purchaseDate) {
             if (window.Utils && window.Utils.showToast) {
                 Utils.showToast('모든 필수 정보를 입력해주세요.', 'error');
+            }
+            return;
+        }
+
+        // 🔧 온라인인 경우에만 파일 검증
+        if (isOnline && (!fileInput.files || !fileInput.files[0])) {
+            if (window.Utils && window.Utils.showToast) {
+                Utils.showToast('관리자 구매 영수증을 업로드해주세요.', 'error');
             }
             return;
         }
@@ -1099,28 +1179,45 @@ AdminManager.Modals = {
             // Supabase 클라이언트 확인
             let supabaseClient = null;
 
-            if (window.supabase && typeof window.supabase.from === 'function') {
-                supabaseClient = window.supabase;
+            if (window.SupabaseAPI && window.SupabaseAPI.supabase) {
+                supabaseClient = window.SupabaseAPI.supabase;
             } else if (window.SupabaseAPI && window.SupabaseAPI.client) {
                 supabaseClient = window.SupabaseAPI.client;
-            } else if (window.AdminManager && window.AdminManager.supabase) {
-                supabaseClient = window.AdminManager.supabase;
+            } else if (window.supabase && typeof window.supabase.from === 'function') {
+                supabaseClient = window.supabase;
             } else {
                 throw new Error('Supabase 클라이언트를 찾을 수 없습니다.');
             }
 
-            // 파일 업로드
-            const receiptUrl = await this.uploadAdminReceipt(fileInput.files[0], requestId, supabaseClient);
+            let receiptUrl = null;
 
-            // DB 업데이트
+            // 🔧 온라인인 경우에만 파일 업로드
+            if (isOnline && fileInput && fileInput.files[0]) {
+                receiptUrl = await this.uploadAdminReceipt(fileInput.files[0], requestId, supabaseClient);
+            }
+
+            // DB 업데이트 데이터 준비
+            const updateData = {
+                status: 'purchased',
+                final_purchase_amount: parseInt(finalAmount),
+                admin_purchase_date: purchaseDate,
+                admin_verified_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            // 온라인인 경우에만 영수증 URL 추가
+            if (isOnline && receiptUrl) {
+                updateData.admin_receipt_url = receiptUrl;
+            }
+
+            // 관리자 메모가 있으면 추가
+            if (adminMemo) {
+                updateData.admin_purchase_memo = adminMemo;
+            }
+
             const { error: updateError } = await supabaseClient
                 .from('requests')
-                .update({
-                    status: 'purchased',
-                    final_purchase_amount: parseInt(finalAmount),
-                    admin_receipt_url: receiptUrl,
-                    admin_purchase_date: purchaseDate
-                })
+                .update(updateData)
                 .eq('id', requestId);
 
             if (updateError) throw updateError;
@@ -1133,8 +1230,10 @@ AdminManager.Modals = {
             // 모달 닫기
             this.closePurchaseCompleteModal();
 
-            // 페이지 새로고침 (또는 특정 영역만 업데이트)
-            if (window.location.reload) {
+            // 페이지 새로고침
+            if (window.AdminEnhancedUI && typeof AdminEnhancedUI.refreshData === 'function') {
+                await AdminEnhancedUI.refreshData();
+            } else if (window.location.reload) {
                 setTimeout(() => {
                     window.location.reload();
                 }, 1000);

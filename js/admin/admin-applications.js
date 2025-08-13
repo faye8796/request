@@ -172,10 +172,9 @@ AdminManager.Applications = {
         }
     },
 
+    
     /**
      * 구매 완료 처리 (v11.1.0 - 모달 기반으로 업그레이드)
-     * @param {string} requestId - 신청 ID
-     * @param {HTMLElement} buttonElement - 클릭된 버튼 요소
      */
     async markAsPurchased(requestId, buttonElement) {
         try {
@@ -195,7 +194,6 @@ AdminManager.Applications = {
 
         } catch (error) {
             console.error('구매 완료 처리 오류:', error);
-
             // 에러 발생시 기존 방식으로 폴백
             await this.markAsPurchasedLegacy(requestId, buttonElement);
         }

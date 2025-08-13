@@ -627,9 +627,14 @@ const AdminEnhancedUI = {
                             totalItems: 0,
                             totalAmount: 0,
                             pendingCount: 0,
+                            pendingAmount: 0,        
                             approvedCount: 0,
+                            approvedAmount: 0,       
                             rejectedCount: 0,
+                            rejectedAmount: 0,       
                             purchasedCount: 0,
+                            purchasedAmount: 0,      
+
                             // v4.3 신청 타입별 통계 추가
                             onlineSingleCount: 0,
                             onlineBundleCount: 0,
@@ -641,27 +646,37 @@ const AdminEnhancedUI = {
                 
                 const studentGroup = groupedData.get(userKey);
                 studentGroup.applications.push(application);
-                
+
                 // 통계 업데이트
                 studentGroup.statistics.totalItems++;
-                const amount = application.final_purchase_amount ?? application.price ?? 0;
-                studentGroup.statistics.totalAmount += amount;
-                
-                // 상태별 통계
+
+                // 🎯 상태별 금액 계산 수정
+                const currentAmount = application.price ?? 0;
+                const finalAmount = application.final_purchase_amount ?? currentAmount;
+
+                studentGroup.statistics.totalAmount += currentAmount; // 기존 유지
+
+                // 상태별 통계 - 금액 정보 추가
                 switch (application.status) {
                     case 'pending':
                         studentGroup.statistics.pendingCount++;
+                        studentGroup.statistics.pendingAmount = (studentGroup.statistics.pendingAmount || 0) + currentAmount;
                         break;
                     case 'approved':
                         studentGroup.statistics.approvedCount++;
+                        studentGroup.statistics.approvedAmount = (studentGroup.statistics.approvedAmount || 0) + currentAmount;
                         break;
                     case 'rejected':
                         studentGroup.statistics.rejectedCount++;
+                        studentGroup.statistics.rejectedAmount = (studentGroup.statistics.rejectedAmount || 0) + currentAmount;
                         break;
                     case 'purchased':
                         studentGroup.statistics.purchasedCount++;
+                        // 🎯 구매완료는 실제 구매 금액(final_purchase_amount) 사용
+                        studentGroup.statistics.purchasedAmount = (studentGroup.statistics.purchasedAmount || 0) + finalAmount;
                         break;
                 }
+
                 
                 // v4.3 신청 타입별 통계
                 const isBundle = application.is_bundle;
@@ -852,7 +867,6 @@ const AdminEnhancedUI = {
                     user_id,
                     allocated_budget,
                     used_budget,
-                    remaining_budget,
                     updated_at,
                     created_at
                 `)
@@ -868,15 +882,9 @@ const AdminEnhancedUI = {
                 budgetData.forEach(budget => {
                     const budgetInfo = {
                         allocatedBudget: budget.allocated_budget || 0,
-                        usedBudget: budget.used_budget || 0,
-                        remainingBudget: budget.remaining_budget || 0,
-                        // 🆕 계산된 정보 추가
-                        usagePercentage: budget.allocated_budget > 0 ? 
-                            Math.round((budget.used_budget / budget.allocated_budget) * 100) : 0,
-                        remainingPercentage: budget.allocated_budget > 0 ? 
-                            Math.round((budget.remaining_budget / budget.allocated_budget) * 100) : 0,
-                        // 🆕 예산 상태 분석
-                        budgetStatus: this.analyzeBudgetStatus(budget),
+                        dbUsedBudget: budget.used_budget || 0,  
+                        // 🔧 analyzeBudgetStatus 함수 호출 제거하고 기본값 설정
+                        budgetStatus: 'unknown',
                         lastUpdated: budget.updated_at
                     };
 
@@ -892,15 +900,11 @@ const AdminEnhancedUI = {
         }
     },
 
-    // 🆕 예산 상태 분석 함수
-    analyzeBudgetStatus(budget) {
-        const allocated = budget.allocated_budget || 0;
-        const used = budget.used_budget || 0;
-        const remaining = budget.remaining_budget || 0;
+    // 🆕 실제 사용량을 매개변수로 받는 함수 추가
+    analyzeBudgetStatusWithActual(allocatedBudget, actualUsedBudget) {
+        if (allocatedBudget === 0) return 'no-budget';
 
-        if (allocated === 0) return 'no-budget';
-
-        const usageRate = (used / allocated) * 100;
+        const usageRate = (actualUsedBudget / allocatedBudget) * 100;
 
         if (usageRate === 0) return 'unused';
         if (usageRate <= 50) return 'low-usage';
@@ -1418,7 +1422,13 @@ const AdminEnhancedUI = {
             typeBadges.push(`<span class="type-summary-badge offline-bundle">오프라인 묶음 ${statistics.offlineBundleCount}개</span>`);
         }
 
-            return `
+        // 🎯 실제 사용량 기준으로 budgetStatus 재계산 (추가)
+        if (budgetInfo) {
+            const actualUsedBudget = statistics.purchasedAmount || 0;
+            budgetInfo.actualBudgetStatus = this.analyzeBudgetStatusWithActual(budgetInfo.allocatedBudget, actualUsedBudget);
+        }
+
+        return `
             <div class="student-group-header">
                 <div class="student-main-info">
                     <div class="student-basic-info">
@@ -1472,15 +1482,27 @@ const AdminEnhancedUI = {
     },
 
 
-    // 🆕 여기에 추가
+    // 🆕 예산 섹션 렌더링
     createBudgetInfoSection(budgetInfo, statistics) {
         const statusClass = this.getBudgetStatusClass(budgetInfo.budgetStatus);
         const statusText = this.getBudgetStatusText(budgetInfo.budgetStatus);
 
-        // 🎯 현재 신청 금액(대기+승인) vs 사용 예산(승인된 것만) 비교
-        const currentAppliedAmount = statistics.totalAmount; // 모든 신청 금액
-        const approvedOnlyAmount = statistics.approvedCount > 0 ? 
-            (budgetInfo.usedBudget || 0) : 0; // DB의 used_budget (승인된 것만)
+        // 🎯 수정 1: 현재 신청 금액 계산 (대기+승인만, 반려 제외)
+        const pendingAmount = statistics.pendingAmount || 0;
+        const approvedAmount = statistics.approvedAmount || 0;
+        const currentAppliedAmount = pendingAmount + approvedAmount; // 대기+승인만
+
+        // 🎯 수정 2: 실제 사용 예산 (구매완료된 final_purchase_amount 기준)
+        const actualUsedBudget = statistics.purchasedAmount || 0;
+
+        // 🎯 수정 3: 잔여 예산 계산
+        const actualRemainingBudget = budgetInfo.allocatedBudget - actualUsedBudget;
+
+        // 🎯 수정 4: 사용률 계산
+        const actualUsagePercentage = budgetInfo.allocatedBudget > 0 ? 
+            Math.round((actualUsedBudget / budgetInfo.allocatedBudget) * 100) : 0;
+        const actualRemainingPercentage = budgetInfo.allocatedBudget > 0 ? 
+            Math.round((actualRemainingBudget / budgetInfo.allocatedBudget) * 100) : 0;
 
         return `
             <div class="student-budget-section ${statusClass}">
@@ -1507,35 +1529,35 @@ const AdminEnhancedUI = {
                         </div>
                     </div>
 
-                    <!-- ✅ 사용 예산 (승인된 금액) -->
+                    <!-- ✅ 사용 예산 (구매완료 기준) - 수정됨 -->
                     <div class="budget-item used">
                         <div class="budget-label">
                             <i data-lucide="check-circle"></i>
-                            사용 예산 (승인됨)
+                            사용 예산 
                         </div>
                         <div class="budget-amount used-amount">
-                            ${this.formatPrice(budgetInfo.usedBudget)}
+                            ${this.formatPrice(actualUsedBudget)}
                             <span class="budget-percentage">
-                                (${budgetInfo.usagePercentage}%)
+                                (${actualUsagePercentage}%)
                             </span>
                         </div>
                     </div>
 
-                    <!-- 💰 잔여 예산 -->
+                    <!-- 💰 잔여 예산 - 수정됨 -->
                     <div class="budget-item remaining">
                         <div class="budget-label">
                             <i data-lucide="coins"></i>
                             잔여 예산
                         </div>
                         <div class="budget-amount remaining-amount">
-                            ${this.formatPrice(budgetInfo.remainingBudget)}
+                            ${this.formatPrice(actualRemainingBudget)}
                             <span class="budget-percentage">
-                                (${budgetInfo.remainingPercentage}%)
+                                (${actualRemainingPercentage}%)
                             </span>
                         </div>
                     </div>
 
-                    <!-- 📊 현재 신청 금액 (참고용) -->
+                    <!-- 📊 현재 신청 금액 (대기+승인만) - 수정됨 -->
                     <div class="budget-item applied">
                         <div class="budget-label">
                             <i data-lucide="shopping-cart"></i>
@@ -1553,19 +1575,19 @@ const AdminEnhancedUI = {
                     </div>
                 </div>
 
-                <!-- 🎯 예산 진행률 바 -->
+                <!-- 🎯 예산 진행률 바 - 수정됨 -->
                 <div class="budget-progress-section">
                     <div class="progress-label">예산 사용 진행률</div>
                     <div class="budget-progress-bar">
                         <div class="progress-track">
                             <div class="progress-fill used-progress" 
-                                 style="width: ${Math.min(budgetInfo.usagePercentage, 100)}%"></div>
-                            ${currentAppliedAmount > budgetInfo.usedBudget ? `
+                                 style="width: ${Math.min(actualUsagePercentage, 100)}%"></div>
+                            ${currentAppliedAmount > actualUsedBudget ? `
                                 <div class="progress-fill pending-progress" 
-                                     style="left: ${Math.min(budgetInfo.usagePercentage, 100)}%; 
+                                     style="left: ${Math.min(actualUsagePercentage, 100)}%; 
                                             width: ${Math.min(
-                                                Math.round(((currentAppliedAmount - budgetInfo.usedBudget) / budgetInfo.allocatedBudget) * 100), 
-                                                100 - budgetInfo.usagePercentage
+                                                Math.round(((currentAppliedAmount - actualUsedBudget) / budgetInfo.allocatedBudget) * 100), 
+                                                100 - actualUsagePercentage
                                             )}%"></div>
                             ` : ''}
                         </div>
@@ -1573,12 +1595,12 @@ const AdminEnhancedUI = {
                     <div class="progress-legend">
                         <span class="legend-item used">
                             <span class="legend-color used"></span>
-                            승인된 사용
+                            구매완료 사용
                         </span>
-                        ${currentAppliedAmount > budgetInfo.usedBudget ? `
+                        ${currentAppliedAmount > actualUsedBudget ? `
                             <span class="legend-item pending">
                                 <span class="legend-color pending"></span>
-                                대기 중
+                                승인 대기
                             </span>
                         ` : ''}
                         <span class="legend-item remaining">
@@ -1718,27 +1740,43 @@ const AdminEnhancedUI = {
         // v4.3 구매 관련 정보 표시
         const purchaseInfoHTML = this.createPurchaseInfoHTML(application);
         
-        // admin-enhanced-ui.js - createApplicationItemHTML() 함수에서
+        // 영수증 정보 명확하게 표시
         let receiptInfo = '';
 
-        // 🔧 학생 영수증만 확인 (관리자 영수증은 별도 섹션에서 처리)
         const hasStudentReceipt = application.receipts && 
                                  application.receipts.length > 0 && 
                                  application.receipts[0].file_url;
 
         if (hasStudentReceipt) {
-            receiptInfo = `
-                <div class="receipt-info submitted">
-                    <span class="receipt-status">
-                        <i data-lucide="check-circle"></i>
-                        영수증 학생 제출완료
-                    </span>
-                    <button class="btn small secondary view-receipt-btn" 
-                            data-request-id="${application.id}">
-                        <i data-lucide="eye"></i> 영수증 보기
-                    </button>
-                </div>
-            `;
+            // 오프라인이고 approved 상태면 관리자 검토 대기 표시
+            if (application.purchase_type === 'offline' && application.status === 'approved') {
+                receiptInfo = `
+                    <div class="receipt-info submitted pending-review">
+                        <span class="receipt-status">
+                            <i data-lucide="clock"></i>
+                            영수증 제출완료 - 관리자 검토 대기
+                        </span>
+                        <button class="btn small secondary view-receipt-btn" 
+                                data-request-id="${application.id}">
+                            <i data-lucide="eye"></i> 영수증 검토
+                        </button>
+                    </div>
+                `;
+            } else {
+                // 기존 로직 (온라인 등)
+                receiptInfo = `
+                    <div class="receipt-info submitted">
+                        <span class="receipt-status">
+                            <i data-lucide="check-circle"></i>
+                            영수증 학생 제출완료
+                        </span>
+                        <button class="btn small secondary view-receipt-btn" 
+                                data-request-id="${application.id}">
+                            <i data-lucide="eye"></i> 영수증 보기
+                        </button>
+                    </div>
+                `;
+            }
         } else if (application.purchase_type === 'offline' && application.status === 'approved') {
             receiptInfo = `
                 <div class="receipt-info pending">
@@ -2055,22 +2093,14 @@ const AdminEnhancedUI = {
                     </button>
                 `;
             case 'approved':
-                if (purchaseMethod === 'offline') {
-                    return `
-                        <span class="offline-notice">
-                            <i data-lucide="info"></i>
-                            영수증 제출 후 자동 완료
-                        </span>
-                    `;
-                } else {
-                    return `
-                        <button class="btn small purchase" data-action="purchase">
-                            <i data-lucide="shopping-cart"></i> 구매완료
-                        </button>
-                    `;
-                }
-                
-                default:
+                // 🔧 오프라인도 구매완료 버튼 표시하도록 수정
+                return `
+                    <button class="btn small purchase" data-action="purchase">
+                        <i data-lucide="shopping-cart"></i> 구매완료
+                    </button>
+                `;
+
+            default:
                 return '';
         }
     },
