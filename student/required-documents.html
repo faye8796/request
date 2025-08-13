@@ -14,10 +14,10 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-4">
-                    <button onclick="goBack()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <button id="backBtn" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                         <i data-lucide="arrow-left" class="w-5 h-5 text-gray-600"></i>
                     </button>
-                    <h1 class="text-xl font-semibold text-gray-900">필수 서류 제출</h1>
+                    <h1 id="pageTitle" class="text-xl font-semibold text-gray-900">필수 서류 제출</h1>
                 </div>
                 <div class="flex items-center space-x-3">
                     <span id="user-name" class="text-sm text-gray-600"></span>
@@ -32,27 +32,30 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-8">
-                    <div id="step-1" class="flex items-center space-x-3">
-                        <div class="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">1</div>
-                        <span class="text-sm font-medium text-blue-600">필수 서류</span>
+                    <div id="step1" class="flex items-center space-x-3">
+                        <div class="step-icon flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                            <i data-lucide="circle" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <span class="text-sm font-medium text-blue-600">필수 서류</span>
+                            <div class="step-status text-xs text-gray-500">진행 중</div>
+                        </div>
                     </div>
                     <div class="flex-1 h-1 bg-gray-200 rounded-full">
-                        <div id="progress-bar-1" class="h-1 bg-blue-600 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        <div id="overallProgressBar" class="h-1 bg-blue-600 rounded-full transition-all duration-300" style="width: 0%"></div>
                     </div>
-                    <div id="step-2" class="flex items-center space-x-3">
-                        <div class="flex-shrink-0 w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-medium">2</div>
-                        <span class="text-sm text-gray-500">급여 계좌</span>
-                    </div>
-                    <div class="flex-1 h-1 bg-gray-200 rounded-full">
-                        <div id="progress-bar-2" class="h-1 bg-blue-600 rounded-full transition-all duration-300" style="width: 0%"></div>
-                    </div>
-                    <div id="step-3" class="flex items-center space-x-3">
-                        <div class="flex-shrink-0 w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-medium">3</div>
-                        <span class="text-sm text-gray-500">비상연락망</span>
+                    <div id="step2" class="flex items-center space-x-3">
+                        <div class="step-icon flex-shrink-0 w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-medium">
+                            <i data-lucide="circle-dot" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <span class="text-sm text-gray-500">비상연락망</span>
+                            <div class="step-status text-xs text-gray-500">대기</div>
+                        </div>
                     </div>
                 </div>
                 <div class="text-sm text-gray-500">
-                    <span id="overall-progress">전체 진행률: 0%</span>
+                    <span id="overallProgressText">전체 진행률: 0%</span>
                 </div>
             </div>
         </div>
@@ -64,7 +67,7 @@
         <div id="alert-container" class="mb-6"></div>
 
         <!-- Section 1: 필수 서류 제출 -->
-        <div id="section-documents" class="bg-white rounded-lg shadow-sm border mb-8">
+        <div id="documentsSection" class="bg-white rounded-lg shadow-sm border mb-8">
             <div class="p-6 border-b">
                 <div class="flex items-center space-x-3">
                     <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -86,56 +89,37 @@
                         사전 배포된 3페이지 양식에 서명 후 PDF로 업로드해주세요
                     </p>
                     
-                    <div id="document-dropzone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
-                        <div id="document-upload-placeholder">
-                            <i data-lucide="upload" class="w-12 h-12 text-gray-400 mx-auto mb-4"></i>
-                            <p class="text-lg font-medium text-gray-700 mb-2">클릭하거나 파일을 드래그하여 업로드</p>
-                            <p class="text-sm text-gray-500">PDF 파일만 업로드 가능 (최대 10MB)</p>
-                        </div>
-                        <div id="document-upload-progress" class="hidden">
-                            <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                            <p class="text-lg font-medium text-blue-600">업로드 중...</p>
-                            <div class="w-full bg-gray-200 rounded-full h-2 mt-4">
-                                <div id="document-progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                        </div>
-                        <div id="document-upload-success" class="hidden">
-                            <i data-lucide="check-circle" class="w-12 h-12 text-green-600 mx-auto mb-4"></i>
-                            <p class="text-lg font-medium text-green-600 mb-2">업로드 완료</p>
-                            <p id="document-filename" class="text-sm text-gray-600 mb-4"></p>
-                            <div class="flex justify-center space-x-3">
-                                <button id="document-preview-btn" class="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
-                                    <i data-lucide="eye" class="w-4 h-4 inline mr-2"></i>미리보기
-                                </button>
-                                <button id="document-reupload-btn" class="px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
-                                    <i data-lucide="upload" class="w-4 h-4 inline mr-2"></i>다시 업로드
-                                </button>
-                            </div>
-                        </div>
+                    <div id="documentUploadArea" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                        <i data-lucide="upload" class="w-12 h-12 text-gray-400 mx-auto mb-4"></i>
+                        <p class="text-lg font-medium text-gray-700 mb-2">클릭하거나 파일을 드래그하여 업로드</p>
+                        <p class="text-sm text-gray-500">PDF 파일만 업로드 가능 (최대 10MB)</p>
                     </div>
-                    <input type="file" id="document-file-input" accept=".pdf" class="hidden">
+                    <input type="file" id="documentInput" accept=".pdf" class="hidden">
                 </div>
 
+                <!-- Document Preview -->
+                <div id="documentPreview" class="mb-6"></div>
+
                 <!-- Document Status -->
-                <div id="document-status" class="bg-gray-50 rounded-lg p-4">
+                <div id="documentStatus" class="bg-gray-50 rounded-lg p-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-3">
-                            <div id="document-status-icon" class="flex-shrink-0 w-6 h-6">
-                                <i data-lucide="clock" class="w-6 h-6 text-gray-400"></i>
+                            <div class="flex-shrink-0 w-6 h-6">
+                                <i data-lucide="upload" class="w-6 h-6 text-gray-400"></i>
                             </div>
                             <div>
-                                <p id="document-status-text" class="text-sm font-medium text-gray-700">서류 미제출</p>
-                                <p id="document-status-date" class="text-xs text-gray-500"></p>
+                                <p class="text-sm font-medium text-gray-700">업로드 대기</p>
+                                <p class="text-xs text-gray-500"></p>
                             </div>
                         </div>
-                        <span id="document-status-badge" class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">미완료</span>
+                        <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">미완료</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Section 2: 급여 계좌 설정 -->
-        <div id="section-account" class="bg-white rounded-lg shadow-sm border mb-8">
+        <div id="accountSection" class="bg-white rounded-lg shadow-sm border mb-8">
             <div class="p-6 border-b">
                 <div class="flex items-center space-x-3">
                     <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
@@ -151,30 +135,30 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Bank Name -->
                     <div>
-                        <label for="salary-bank-name" class="block text-sm font-medium text-gray-700 mb-2">
+                        <label for="bankName" class="block text-sm font-medium text-gray-700 mb-2">
                             은행명 <span class="text-red-500">*</span>
                         </label>
-                        <input type="text" id="salary-bank-name" name="salary-bank-name" 
+                        <input type="text" id="bankName" name="bankName" 
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                placeholder="예: 국민은행">
                     </div>
 
                     <!-- Account Number -->
                     <div>
-                        <label for="salary-account-number" class="block text-sm font-medium text-gray-700 mb-2">
+                        <label for="accountNumber" class="block text-sm font-medium text-gray-700 mb-2">
                             계좌번호 <span class="text-red-500">*</span>
                         </label>
-                        <input type="text" id="salary-account-number" name="salary-account-number" 
+                        <input type="text" id="accountNumber" name="accountNumber" 
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                placeholder="예: 123456-78-901234">
                     </div>
 
                     <!-- Account Holder -->
                     <div class="md:col-span-2">
-                        <label for="salary-account-holder" class="block text-sm font-medium text-gray-700 mb-2">
+                        <label for="accountHolder" class="block text-sm font-medium text-gray-700 mb-2">
                             예금주명 <span class="text-red-500">*</span>
                         </label>
-                        <input type="text" id="salary-account-holder" name="salary-account-holder" 
+                        <input type="text" id="accountHolder" name="accountHolder" 
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                placeholder="계좌 소유자의 실명을 입력해주세요">
                     </div>
@@ -189,32 +173,20 @@
                         계좌번호와 예금주명이 확인 가능한 통장 사본을 업로드해주세요
                     </p>
                     
-                    <div id="bankbook-dropzone" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors cursor-pointer">
-                        <div id="bankbook-upload-placeholder">
-                            <i data-lucide="image" class="w-8 h-8 text-gray-400 mx-auto mb-3"></i>
-                            <p class="text-sm font-medium text-gray-700 mb-1">클릭하거나 파일을 드래그하여 업로드</p>
-                            <p class="text-xs text-gray-500">이미지 또는 PDF 파일 (최대 10MB)</p>
-                        </div>
-                        <div id="bankbook-upload-success" class="hidden">
-                            <i data-lucide="check-circle" class="w-8 h-8 text-green-600 mx-auto mb-3"></i>
-                            <p class="text-sm font-medium text-green-600 mb-1">업로드 완료</p>
-                            <p id="bankbook-filename" class="text-xs text-gray-600 mb-3"></p>
-                            <div class="flex justify-center space-x-2">
-                                <button id="bankbook-preview-btn" class="px-3 py-1 bg-green-50 text-green-600 rounded text-xs hover:bg-green-100 transition-colors">
-                                    <i data-lucide="eye" class="w-3 h-3 inline mr-1"></i>미리보기
-                                </button>
-                                <button id="bankbook-reupload-btn" class="px-3 py-1 bg-gray-50 text-gray-600 rounded text-xs hover:bg-gray-100 transition-colors">
-                                    <i data-lucide="upload" class="w-3 h-3 inline mr-1"></i>다시 업로드
-                                </button>
-                            </div>
-                        </div>
+                    <div id="bankbookUploadArea" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors cursor-pointer">
+                        <i data-lucide="image" class="w-8 h-8 text-gray-400 mx-auto mb-3"></i>
+                        <p class="text-sm font-medium text-gray-700 mb-1">클릭하거나 파일을 드래그하여 업로드</p>
+                        <p class="text-xs text-gray-500">이미지 또는 PDF 파일 (최대 10MB)</p>
                     </div>
-                    <input type="file" id="bankbook-file-input" accept=".jpg,.jpeg,.png,.pdf" class="hidden">
+                    <input type="file" id="bankbookInput" accept=".jpg,.jpeg,.png,.pdf" class="hidden">
                 </div>
+
+                <!-- Bankbook Preview -->
+                <div id="bankbookPreview" class="mt-4"></div>
 
                 <!-- Account Save Button -->
                 <div class="mt-6">
-                    <button id="save-account-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
+                    <button id="saveAccountBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
                         <i data-lucide="save" class="w-4 h-4 inline mr-2"></i>계좌 정보 저장
                     </button>
                 </div>
@@ -222,7 +194,7 @@
         </div>
 
         <!-- Section 3: 비상연락망 작성 -->
-        <div id="section-emergency" class="bg-white rounded-lg shadow-sm border mb-8">
+        <div id="emergencySection" class="bg-white rounded-lg shadow-sm border mb-8">
             <div class="p-6 border-b">
                 <div class="flex items-center space-x-3">
                     <div class="flex-shrink-0 w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
@@ -240,10 +212,10 @@
                     <h3 class="text-md font-semibold text-gray-900 mb-4">개인 기본 정보</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label for="blood-type" class="block text-sm font-medium text-gray-700 mb-2">
+                            <label for="bloodType" class="block text-sm font-medium text-gray-700 mb-2">
                                 혈액형 <span class="text-red-500">*</span>
                             </label>
-                            <select id="blood-type" name="blood-type" 
+                            <select id="bloodType" name="bloodType" 
                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <option value="">선택해주세요</option>
                                 <option value="A">A형</option>
@@ -253,36 +225,36 @@
                             </select>
                         </div>
                         <div>
-                            <label for="local-phone" class="block text-sm font-medium text-gray-700 mb-2">
+                            <label for="localPhone" class="block text-sm font-medium text-gray-700 mb-2">
                                 현지 휴대폰 번호 <span class="text-red-500">*</span>
                             </label>
-                            <input type="tel" id="local-phone" name="local-phone" 
+                            <input type="tel" id="localPhone" name="localPhone" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                    placeholder="현지에서 사용할 번호">
                         </div>
                         <div>
-                            <label for="domestic-phone" class="block text-sm font-medium text-gray-700 mb-2">
+                            <label for="domesticPhone" class="block text-sm font-medium text-gray-700 mb-2">
                                 국내 휴대폰 번호 <span class="text-red-500">*</span>
                             </label>
-                            <input type="tel" id="domestic-phone" name="domestic-phone" 
+                            <input type="tel" id="domesticPhone" name="domesticPhone" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                    placeholder="국내 휴대폰 번호">
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         <div>
-                            <label for="local-address" class="block text-sm font-medium text-gray-700 mb-2">
+                            <label for="localAddress" class="block text-sm font-medium text-gray-700 mb-2">
                                 현지 거주지 주소 <span class="text-red-500">*</span>
                             </label>
-                            <textarea id="local-address" name="local-address" rows="3"
+                            <textarea id="localAddress" name="localAddress" rows="3"
                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                       placeholder="현지에서 거주할 주소를 입력해주세요"></textarea>
                         </div>
                         <div>
-                            <label for="domestic-address" class="block text-sm font-medium text-gray-700 mb-2">
+                            <label for="domesticAddress" class="block text-sm font-medium text-gray-700 mb-2">
                                 국내 거주지 주소 <span class="text-red-500">*</span>
                             </label>
-                            <textarea id="domestic-address" name="domestic-address" rows="3"
+                            <textarea id="domesticAddress" name="domesticAddress" rows="3"
                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                       placeholder="국내 거주지 주소를 입력해주세요"></textarea>
                         </div>
@@ -294,26 +266,26 @@
                     <h3 class="text-md font-semibold text-gray-900 mb-4">파견 학당 관련</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label for="institute-director-name" class="block text-sm font-medium text-gray-700 mb-2">
-                                학당장 성명
+                            <label for="instituteDirectorName" class="block text-sm font-medium text-gray-700 mb-2">
+                                학당장 성명 <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" id="institute-director-name" name="institute-director-name" 
+                            <input type="text" id="instituteDirectorName" name="instituteDirectorName" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                    placeholder="학당장 성명">
                         </div>
                         <div>
-                            <label for="institute-manager-name" class="block text-sm font-medium text-gray-700 mb-2">
-                                담당자 성명
+                            <label for="instituteManagerName" class="block text-sm font-medium text-gray-700 mb-2">
+                                담당자 성명 <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" id="institute-manager-name" name="institute-manager-name" 
+                            <input type="text" id="instituteManagerName" name="instituteManagerName" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                    placeholder="담당자 성명">
                         </div>
                         <div>
-                            <label for="institute-helper-name" class="block text-sm font-medium text-gray-700 mb-2">
+                            <label for="instituteHelperName" class="block text-sm font-medium text-gray-700 mb-2">
                                 도우미 성명
                             </label>
-                            <input type="text" id="institute-helper-name" name="institute-helper-name" 
+                            <input type="text" id="instituteHelperName" name="instituteHelperName" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                    placeholder="도우미 성명">
                         </div>
@@ -329,18 +301,18 @@
                             <h4 class="text-sm font-semibold text-yellow-800 mb-3">현지 비상연락처</h4>
                             <div class="space-y-3">
                                 <div>
-                                    <label for="local-emergency-name" class="block text-sm font-medium text-gray-700 mb-1">
+                                    <label for="localEmergencyName" class="block text-sm font-medium text-gray-700 mb-1">
                                         현지 지인 성명 <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" id="local-emergency-name" name="local-emergency-name" 
+                                    <input type="text" id="localEmergencyName" name="localEmergencyName" 
                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                            placeholder="현지에서 연락 가능한 지인">
                                 </div>
                                 <div>
-                                    <label for="local-emergency-phone" class="block text-sm font-medium text-gray-700 mb-1">
+                                    <label for="localEmergencyPhone" class="block text-sm font-medium text-gray-700 mb-1">
                                         연락처 <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="tel" id="local-emergency-phone" name="local-emergency-phone" 
+                                    <input type="tel" id="localEmergencyPhone" name="localEmergencyPhone" 
                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                            placeholder="현지 지인 연락처">
                                 </div>
@@ -352,18 +324,18 @@
                             <h4 class="text-sm font-semibold text-blue-800 mb-3">국내 비상연락처</h4>
                             <div class="space-y-3">
                                 <div>
-                                    <label for="domestic-emergency-name" class="block text-sm font-medium text-gray-700 mb-1">
+                                    <label for="domesticEmergencyName" class="block text-sm font-medium text-gray-700 mb-1">
                                         가족 성명 <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" id="domestic-emergency-name" name="domestic-emergency-name" 
+                                    <input type="text" id="domesticEmergencyName" name="domesticEmergencyName" 
                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                            placeholder="국내 가족 또는 보호자">
                                 </div>
                                 <div>
-                                    <label for="domestic-emergency-phone" class="block text-sm font-medium text-gray-700 mb-1">
+                                    <label for="domesticEmergencyPhone" class="block text-sm font-medium text-gray-700 mb-1">
                                         연락처 <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="tel" id="domestic-emergency-phone" name="domestic-emergency-phone" 
+                                    <input type="tel" id="domesticEmergencyPhone" name="domesticEmergencyPhone" 
                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                            placeholder="국내 가족 연락처">
                                 </div>
@@ -377,35 +349,50 @@
                     <h3 class="text-md font-semibold text-gray-900 mb-4">대학 정보</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label for="university-name" class="block text-sm font-medium text-gray-700 mb-2">
+                            <label for="universityName" class="block text-sm font-medium text-gray-700 mb-2">
                                 소속 대학 <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" id="university-name" name="university-name" 
+                            <input type="text" id="universityName" name="universityName" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                    placeholder="대학명을 입력해주세요">
                         </div>
                         <div>
-                            <label for="university-contact-name" class="block text-sm font-medium text-gray-700 mb-2">
-                                대학 담당자 성명
+                            <label for="universityContactName" class="block text-sm font-medium text-gray-700 mb-2">
+                                대학 담당자 성명 <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" id="university-contact-name" name="university-contact-name" 
+                            <input type="text" id="universityContactName" name="universityContactName" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                    placeholder="대학 담당자 성명">
                         </div>
                         <div>
-                            <label for="university-contact-phone" class="block text-sm font-medium text-gray-700 mb-2">
-                                대학 담당자 연락처
+                            <label for="universityContactPhone" class="block text-sm font-medium text-gray-700 mb-2">
+                                대학 담당자 연락처 <span class="text-red-500">*</span>
                             </label>
-                            <input type="tel" id="university-contact-phone" name="university-contact-phone" 
+                            <input type="tel" id="universityContactPhone" name="universityContactPhone" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                    placeholder="대학 담당자 연락처">
                         </div>
                     </div>
                 </div>
 
+                <!-- Emergency Progress -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex-shrink-0 w-6 h-6">
+                                <i data-lucide="clock" class="w-6 h-6 text-gray-400"></i>
+                            </div>
+                            <div>
+                                <p id="emergencyProgressText" class="text-sm font-medium text-gray-700">0/14 항목 완료 (0%)</p>
+                            </div>
+                        </div>
+                        <span id="emergencyCompletionStatus" class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">미완료</span>
+                    </div>
+                </div>
+
                 <!-- Emergency Save Button -->
                 <div>
-                    <button id="save-emergency-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
+                    <button id="saveEmergencyBtn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
                         <i data-lucide="save" class="w-4 h-4 inline mr-2"></i>비상연락망 저장
                     </button>
                 </div>
@@ -413,7 +400,7 @@
         </div>
 
         <!-- Final Submission -->
-        <div id="section-submit" class="bg-white rounded-lg shadow-sm border">
+        <div id="submissionSection" class="bg-white rounded-lg shadow-sm border">
             <div class="p-6 border-b">
                 <div class="flex items-center space-x-3">
                     <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -426,30 +413,14 @@
                 </div>
             </div>
             <div class="p-6">
-                <!-- Submission Summary -->
-                <div id="submission-summary" class="bg-gray-50 rounded-lg p-4 mb-6">
-                    <h3 class="text-sm font-semibold text-gray-900 mb-3">제출 현황 요약</h3>
-                    <div class="space-y-2">
-                        <div id="summary-documents" class="flex items-center justify-between">
-                            <span class="text-sm text-gray-600">필수 서류</span>
-                            <span class="text-sm font-medium text-red-600">미완료</span>
-                        </div>
-                        <div id="summary-account" class="flex items-center justify-between">
-                            <span class="text-sm text-gray-600">급여 계좌</span>
-                            <span class="text-sm font-medium text-red-600">미완료</span>
-                        </div>
-                        <div id="summary-emergency" class="flex items-center justify-between">
-                            <span class="text-sm text-gray-600">비상연락망</span>
-                            <span class="text-sm font-medium text-red-600">미완료</span>
-                        </div>
-                    </div>
-                </div>
+                <!-- Submission Status -->
+                <div id="submissionStatus" class="mb-6"></div>
 
                 <!-- Final Submit Button -->
                 <div class="flex items-center space-x-4">
-                    <button id="final-submit-btn" disabled 
+                    <button id="finalSubmitBtn" disabled 
                             class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
-                        <i data-lucide="send" class="w-5 h-5 inline mr-2"></i>최종 제출하기
+                        <i data-lucide="lock" class="w-5 h-5 inline mr-2"></i>모든 항목 완료 후 제출 가능
                     </button>
                     <p class="text-sm text-gray-500">
                         모든 정보를 완료한 후 제출 버튼이 활성화됩니다
@@ -474,37 +445,14 @@
         </div>
     </main>
 
-    <!-- File Preview Modal -->
-    <div id="preview-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-                <div class="flex items-center justify-between p-4 border-b">
-                    <h3 id="preview-title" class="text-lg font-semibold">파일 미리보기</h3>
-                    <button id="close-preview" class="p-2 hover:bg-gray-100 rounded-lg">
-                        <i data-lucide="x" class="w-5 h-5"></i>
-                    </button>
-                </div>
-                <div id="preview-content" class="p-4 overflow-auto" style="max-height: calc(90vh - 120px);">
-                    <!-- Preview content will be loaded here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40">
-        <div class="flex items-center justify-center min-h-screen">
-            <div class="bg-white rounded-lg p-6 text-center">
-                <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                <p class="text-lg font-medium text-gray-700">처리 중...</p>
-            </div>
-        </div>
-    </div>
-
     <!-- Scripts -->
     <script type="module" src="../js/config.js"></script>
     <script type="module" src="../js/utils.js"></script>
     <script type="module" src="../js/auth.js"></script>
-    <script type="module" src="../js/student/required-documents.js"></script>
+    <!-- 필수 서류 제출 관련 JavaScript 모듈들 -->
+    <script src="../js/student/required-documents-api.js"></script>
+    <script src="../js/student/required-documents-forms.js"></script>
+    <script src="../js/student/emergency-contacts.js"></script>
+    <script src="../js/student/required-documents.js"></script>
 </body>
 </html>
