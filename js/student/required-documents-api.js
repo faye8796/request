@@ -1,5 +1,5 @@
 /**
- * 필수 서류 제출 API 관리 모듈 v1.0.1
+ * 필수 서류 제출 API 관리 모듈 v1.0.2
  * 세종학당 문화인턴 지원 시스템
  * 
  * 기능:
@@ -11,9 +11,9 @@
 
 class RequiredDocumentsAPI {
     constructor() {
-        this.supabase = window.supabase;
         this.currentUser = null;
         this.storageBucket = 'required-documents';
+        this.supabaseReady = false;
         
         // 사용자 정보 확인 (비자 관리 페이지와 동일한 로직)
         try {
@@ -29,12 +29,92 @@ class RequiredDocumentsAPI {
                 throw new Error('올바르지 않은 사용자 정보입니다.');
             }
 
-            console.log('✅ RequiredDocumentsAPI 초기화됨:', this.currentUser.id);
+            console.log('✅ 사용자 정보 확인 완료:', this.currentUser.id);
+            
+            // Supabase 초기화 (지연 로딩)
+            this.initializeSupabase();
             
         } catch (error) {
             console.error('❌ RequiredDocumentsAPI 초기화 실패:', error);
             throw error;
         }
+    }
+
+    /**
+     * Supabase 클라이언트 초기화
+     */
+    async initializeSupabase() {
+        try {
+            // window.supabase가 이미 있는지 확인
+            if (window.supabase) {
+                this.supabase = window.supabase;
+                this.supabaseReady = true;
+                console.log('✅ 기존 Supabase 클라이언트 사용');
+                return;
+            }
+
+            // Supabase가 로드될 때까지 대기
+            let retries = 0;
+            const maxRetries = 20;
+            
+            while (retries < maxRetries) {
+                if (window.supabase) {
+                    this.supabase = window.supabase;
+                    this.supabaseReady = true;
+                    console.log('✅ Supabase 클라이언트 준비 완료');
+                    return;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 250));
+                retries++;
+            }
+
+            // 수동 초기화 시도
+            if (window.CONFIG && window.CONFIG.SUPABASE_URL && window.CONFIG.SUPABASE_ANON_KEY) {
+                console.log('🔧 CONFIG에서 Supabase 수동 초기화');
+                const { createClient } = window.supabase;
+                this.supabase = createClient(window.CONFIG.SUPABASE_URL, window.CONFIG.SUPABASE_ANON_KEY);
+                this.supabaseReady = true;
+                console.log('✅ Supabase 수동 초기화 성공');
+                return;
+            }
+
+            // 하드코딩된 값으로 최후 시도
+            if (window.supabase && window.supabase.createClient) {
+                console.log('🔧 하드코딩된 설정으로 Supabase 초기화');
+                const supabaseUrl = 'https://aazvopacnbbkvusihqva.supabase.co';
+                const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ0MjgyOTcsImV4cCI6MjA1MDAwNDI5N30.snkCLxCLQyBWOqHPGSj9oQs1vQ7j9R2H6AjhyNE2ub8';
+                
+                this.supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+                this.supabaseReady = true;
+                console.log('✅ 하드코딩된 설정으로 Supabase 초기화 성공');
+                return;
+            }
+
+            throw new Error('Supabase 초기화 실패');
+
+        } catch (error) {
+            console.error('❌ Supabase 초기화 오류:', error);
+            this.supabaseReady = false;
+        }
+    }
+
+    /**
+     * Supabase 준비 상태 확인
+     */
+    async ensureSupabaseReady() {
+        if (this.supabaseReady && this.supabase) {
+            return true;
+        }
+
+        console.log('⏳ Supabase 초기화 대기 중...');
+        await this.initializeSupabase();
+        
+        if (!this.supabaseReady || !this.supabase) {
+            throw new Error('Supabase 클라이언트가 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+        }
+
+        return true;
     }
 
     // ==================== 필수 서류 데이터 관리 ====================
@@ -45,6 +125,7 @@ class RequiredDocumentsAPI {
     async getRequiredDocuments() {
         try {
             console.log('필수 서류 정보 조회 시작:', this.currentUser.id);
+            await this.ensureSupabaseReady();
 
             const { data, error } = await this.supabase
                 .from('required_documents')
@@ -72,6 +153,7 @@ class RequiredDocumentsAPI {
     async saveRequiredDocuments(documentsData) {
         try {
             console.log('필수 서류 저장 시작:', documentsData);
+            await this.ensureSupabaseReady();
 
             const dataToSave = {
                 user_id: this.currentUser.id,
@@ -124,6 +206,7 @@ class RequiredDocumentsAPI {
     async submitRequiredDocuments() {
         try {
             console.log('필수 서류 최종 제출 시작');
+            await this.ensureSupabaseReady();
 
             const submitData = {
                 submission_status: 'pending',
@@ -157,6 +240,7 @@ class RequiredDocumentsAPI {
     async getEmergencyContacts() {
         try {
             console.log('비상연락망 정보 조회 시작:', this.currentUser.id);
+            await this.ensureSupabaseReady();
 
             const { data, error } = await this.supabase
                 .from('emergency_contacts')
@@ -184,6 +268,7 @@ class RequiredDocumentsAPI {
     async saveEmergencyContacts(emergencyData) {
         try {
             console.log('비상연락망 저장 시작:', emergencyData);
+            await this.ensureSupabaseReady();
 
             const dataToSave = {
                 user_id: this.currentUser.id,
@@ -238,6 +323,7 @@ class RequiredDocumentsAPI {
     async uploadRequiredDocument(file) {
         try {
             console.log('필수 서류 업로드 시작:', file.name);
+            await this.ensureSupabaseReady();
 
             // 파일 검증
             this.validateDocumentFile(file);
@@ -286,6 +372,7 @@ class RequiredDocumentsAPI {
     async uploadBankbookCopy(file) {
         try {
             console.log('통장 사본 업로드 시작:', file.name);
+            await this.ensureSupabaseReady();
 
             // 파일 검증
             this.validateImageFile(file);
@@ -334,6 +421,7 @@ class RequiredDocumentsAPI {
     async deleteFile(fileUrl) {
         try {
             console.log('파일 삭제 시작:', fileUrl);
+            await this.ensureSupabaseReady();
 
             // URL에서 파일 경로 추출
             const fileName = this.extractFileNameFromUrl(fileUrl);
@@ -366,6 +454,7 @@ class RequiredDocumentsAPI {
     async getOverallProgress() {
         try {
             console.log('전체 진행 상황 조회 시작');
+            await this.ensureSupabaseReady();
 
             const [documentsData, emergencyData] = await Promise.all([
                 this.getRequiredDocuments(),
@@ -617,4 +706,4 @@ class RequiredDocumentsAPI {
 // 전역 스코프에 클래스 등록
 window.RequiredDocumentsAPI = RequiredDocumentsAPI;
 
-console.log('RequiredDocumentsAPI 모듈 로드 완료 v1.0.1');
+console.log('RequiredDocumentsAPI 모듈 로드 완료 v1.0.2');
