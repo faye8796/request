@@ -1,5 +1,5 @@
 /**
- * 필수 서류 제출 메인 관리 모듈 v1.0.0
+ * 필수 서류 제출 메인 관리 모듈 v1.0.1
  * 세종학당 문화인턴 지원 시스템
  * 
  * 기능:
@@ -15,6 +15,7 @@ class RequiredDocumentsManager {
         this.forms = null;
         this.emergency = null;
         this.isInitialized = false;
+        this.currentUser = null;
         
         // 진행 상태
         this.progress = {
@@ -48,7 +49,7 @@ class RequiredDocumentsManager {
             emergencySection: null
         };
         
-        console.log('RequiredDocumentsManager 초기화됨');
+        console.log('RequiredDocumentsManager 초기화됨 v1.0.1');
     }
 
     /**
@@ -59,10 +60,15 @@ class RequiredDocumentsManager {
             console.log('필수 서류 제출 페이지 초기화 시작');
             
             // 사용자 인증 확인
-            this.checkAuthentication();
+            if (!this.checkAuthentication()) {
+                return; // 인증 실패시 초기화 중단
+            }
             
             // DOM 요소들 찾기
             this.findElements();
+            
+            // 사용자 정보 표시
+            this.displayUserInfo();
             
             // 서브 모듈들 초기화
             await this.initializeModules();
@@ -75,7 +81,7 @@ class RequiredDocumentsManager {
             
             // Lucide 아이콘 초기화
             this.initializeLucideIcons();
-            
+
             this.isInitialized = true;
             console.log('필수 서류 제출 페이지 초기화 완료');
             
@@ -86,18 +92,63 @@ class RequiredDocumentsManager {
     }
 
     /**
-     * 사용자 인증 확인
+     * 사용자 인증 확인 (비자 관리 페이지와 동일한 로직)
      */
     checkAuthentication() {
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        if (!currentUser) {
-            console.error('사용자 인증 정보가 없습니다.');
-            alert('로그인이 필요합니다.');
-            window.location.href = '/index.html';
-            return;
+        try {
+            // currentStudent 키로 사용자 데이터 확인 (비자 관리 페이지와 동일)
+            const userDataStr = localStorage.getItem('currentStudent');
+            if (!userDataStr) {
+                console.warn('⚠️ 사용자 데이터 없음 - 로그인 페이지로 이동');
+                alert('로그인이 필요합니다.');
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1000);
+                return false;
+            }
+
+            const userData = JSON.parse(userDataStr);
+            if (!userData.id) {
+                console.error('❌ 사용자 ID 없음');
+                alert('올바르지 않은 사용자 정보입니다.');
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1000);
+                return false;
+            }
+
+            this.currentUser = userData;
+            console.log('✅ 사용자 인증 확인 완료:', userData.name || userData.email);
+            return true;
+
+        } catch (error) {
+            console.error('❌ 사용자 인증 확인 실패:', error);
+            alert('사용자 인증에 실패했습니다. 다시 로그인해주세요.');
+            setTimeout(() => {
+                window.location.href = '../index.html';
+            }, 1000);
+            return false;
         }
-        
-        console.log('사용자 인증 확인 완료:', currentUser.email);
+    }
+
+    /**
+     * 사용자 정보 표시
+     */
+    displayUserInfo() {
+        if (!this.currentUser) return;
+
+        // 페이지 제목에 사용자 이름 추가
+        if (this.elements.pageTitle && this.currentUser.name) {
+            this.elements.pageTitle.textContent = `필수 서류 제출 - ${this.currentUser.name}님`;
+        }
+
+        // 사용자 이름 표시
+        const userNameEl = document.getElementById('user-name');
+        if (userNameEl && this.currentUser.name) {
+            userNameEl.textContent = this.currentUser.name;
+        }
+
+        console.log('사용자 정보 표시 완료');
     }
 
     /**
@@ -126,7 +177,7 @@ class RequiredDocumentsManager {
         this.elements.documentsSection = document.getElementById('documentsSection');
         this.elements.emergencySection = document.getElementById('emergencySection');
         
-        console.log('DOM 요소 찾기 완료:', this.elements);
+        console.log('DOM 요소 찾기 완료');
     }
 
     /**
@@ -135,21 +186,40 @@ class RequiredDocumentsManager {
     async initializeModules() {
         console.log('서브 모듈 초기화 시작');
         
-        // API 모듈 초기화
-        this.api = new RequiredDocumentsAPI();
-        
-        // Forms 모듈 초기화
-        this.forms = new RequiredDocumentsForms(this.api);
-        await this.forms.init();
-        
-        // Emergency 모듈 초기화
-        this.emergency = new EmergencyContacts(this.api);
-        await this.emergency.init();
-        
-        // 전역 참조 설정
-        window.requiredDocumentsForms = this.forms;
-        
-        console.log('서브 모듈 초기화 완료');
+        try {
+            // API 모듈 초기화
+            if (window.RequiredDocumentsAPI) {
+                this.api = new window.RequiredDocumentsAPI();
+            } else {
+                throw new Error('RequiredDocumentsAPI 클래스를 찾을 수 없습니다.');
+            }
+            
+            // Forms 모듈 초기화
+            if (window.RequiredDocumentsForms) {
+                this.forms = new window.RequiredDocumentsForms(this.api);
+                await this.forms.init();
+            } else {
+                throw new Error('RequiredDocumentsForms 클래스를 찾을 수 없습니다.');
+            }
+            
+            // Emergency 모듈 초기화
+            if (window.EmergencyContacts) {
+                this.emergency = new window.EmergencyContacts(this.api);
+                await this.emergency.init();
+            } else {
+                throw new Error('EmergencyContacts 클래스를 찾을 수 없습니다.');
+            }
+            
+            // 전역 참조 설정
+            window.requiredDocumentsForms = this.forms;
+            
+            console.log('서브 모듈 초기화 완료');
+            
+        } catch (error) {
+            console.error('서브 모듈 초기화 실패:', error);
+            this.showError(`필요한 모듈을 로드할 수 없습니다: ${error.message}`);
+            throw error;
+        }
     }
 
     /**
@@ -186,8 +256,26 @@ class RequiredDocumentsManager {
         setInterval(() => {
             this.saveAllTempData();
         }, 5 * 60 * 1000);
+
+        // 로그아웃 버튼 이벤트
+        const logoutBtns = document.querySelectorAll('[onclick="logout()"]');
+        logoutBtns.forEach(btn => {
+            btn.removeAttribute('onclick');
+            btn.addEventListener('click', this.logout.bind(this));
+        });
         
         console.log('이벤트 리스너 등록 완료');
+    }
+
+    /**
+     * 로그아웃 처리
+     */
+    logout() {
+        if (confirm('로그아웃 하시겠습니까?')) {
+            localStorage.removeItem('currentStudent');
+            localStorage.removeItem('currentUser');
+            window.location.href = '../index.html';
+        }
     }
 
     /**
@@ -196,7 +284,7 @@ class RequiredDocumentsManager {
     goBack() {
         if (confirm('작성 중인 내용이 있습니다. 페이지를 떠나시겠습니까?')) {
             this.saveAllTempData();
-            window.location.href = '/student/dashboard.html';
+            window.location.href = 'dashboard.html';
         }
     }
 
@@ -224,20 +312,34 @@ class RequiredDocumentsManager {
             console.log('전체 진행률 업데이트 시작');
             
             // API를 통해 진행률 조회
-            const progressData = await this.api.getOverallProgress();
-            this.progress = progressData;
-            
-            console.log('진행률 데이터:', progressData);
-            
-            // 진행률 바 업데이트
-            if (this.elements.progressBar) {
-                this.elements.progressBar.style.width = `${progressData.overall.percentage}%`;
-            }
-            
-            // 진행률 텍스트 업데이트
-            if (this.elements.progressText) {
-                this.elements.progressText.textContent = 
-                    `${progressData.overall.completedSteps}/${progressData.overall.totalSteps} 단계 완료 (${progressData.overall.percentage}%)`;
+            if (this.api && this.api.getOverallProgress) {
+                const progressData = await this.api.getOverallProgress();
+                this.progress = progressData;
+                
+                console.log('진행률 데이터:', progressData);
+                
+                // 진행률 바 업데이트
+                if (this.elements.progressBar) {
+                    this.elements.progressBar.style.width = `${progressData.overall.percentage}%`;
+                }
+                
+                // 진행률 텍스트 업데이트
+                if (this.elements.progressText) {
+                    this.elements.progressText.textContent = 
+                        `전체 진행률: ${progressData.overall.percentage}%`;
+                }
+            } else {
+                // API가 없는 경우 기본값 설정
+                console.warn('API 모듈이 없어 기본 진행률을 설정합니다.');
+                this.progress.overall.percentage = 0;
+                
+                if (this.elements.progressBar) {
+                    this.elements.progressBar.style.width = '0%';
+                }
+                
+                if (this.elements.progressText) {
+                    this.elements.progressText.textContent = '전체 진행률: 0%';
+                }
             }
             
             console.log('전체 진행률 업데이트 완료');
@@ -256,8 +358,7 @@ class RequiredDocumentsManager {
         // 1단계: 필수 서류 및 계좌 정보
         const step1Element = this.elements.progressSteps[0];
         if (step1Element) {
-            const isComplete = this.progress.documents.completed;
-            step1Element.className = `progress-step ${isComplete ? 'completed' : 'active'}`;
+            const isComplete = this.progress.documents && this.progress.documents.completed;
             
             const icon = step1Element.querySelector('.step-icon i');
             const status = step1Element.querySelector('.step-status');
@@ -274,10 +375,8 @@ class RequiredDocumentsManager {
         // 2단계: 비상연락망
         const step2Element = this.elements.progressSteps[1];
         if (step2Element) {
-            const isComplete = this.progress.emergency.completed;
-            const isActive = this.progress.documents.completed;
-            
-            step2Element.className = `progress-step ${isComplete ? 'completed' : isActive ? 'active' : 'pending'}`;
+            const isComplete = this.progress.emergency && this.progress.emergency.completed;
+            const isActive = this.progress.documents && this.progress.documents.completed;
             
             const icon = step2Element.querySelector('.step-icon i');
             const status = step2Element.querySelector('.step-status');
@@ -304,9 +403,7 @@ class RequiredDocumentsManager {
         }
         
         // Lucide 아이콘 재초기화
-        if (window.lucide) {
-            window.lucide.createIcons();
-        }
+        this.initializeLucideIcons();
         
         console.log('단계별 UI 업데이트 완료');
     }
@@ -317,7 +414,7 @@ class RequiredDocumentsManager {
     updateSubmitButton() {
         if (!this.elements.finalSubmitBtn) return;
         
-        const canSubmit = this.progress.overall.canSubmit;
+        const canSubmit = this.progress.overall && this.progress.overall.canSubmit;
         
         this.elements.finalSubmitBtn.disabled = !canSubmit;
         
@@ -330,9 +427,7 @@ class RequiredDocumentsManager {
         }
         
         // Lucide 아이콘 재초기화
-        if (window.lucide) {
-            window.lucide.createIcons();
-        }
+        this.initializeLucideIcons();
         
         console.log('제출 버튼 상태 업데이트:', canSubmit ? '활성화' : '비활성화');
     }
@@ -345,7 +440,7 @@ class RequiredDocumentsManager {
             console.log('최종 제출 처리 시작');
             
             // 제출 가능 여부 재확인
-            if (!this.progress.overall.canSubmit) {
+            if (!this.progress.overall || !this.progress.overall.canSubmit) {
                 this.showError('모든 항목을 완료해주세요.');
                 return;
             }
@@ -360,7 +455,11 @@ class RequiredDocumentsManager {
             this.elements.finalSubmitBtn.innerHTML = '<i data-lucide="loader-2" class="animate-spin"></i> 제출 중...';
             
             // API 호출
-            await this.api.submitRequiredDocuments();
+            if (this.api && this.api.submitRequiredDocuments) {
+                await this.api.submitRequiredDocuments();
+            } else {
+                throw new Error('제출 API를 사용할 수 없습니다.');
+            }
             
             // 성공 처리
             this.handleSubmitSuccess();
@@ -371,7 +470,7 @@ class RequiredDocumentsManager {
             
         } finally {
             // 제출 버튼 복구 (성공 시에는 다른 상태로 변경됨)
-            if (this.elements.finalSubmitBtn && !this.progress.overall.canSubmit) {
+            if (this.elements.finalSubmitBtn && (!this.progress.overall || !this.progress.overall.canSubmit)) {
                 this.updateSubmitButton();
             }
         }
@@ -390,9 +489,13 @@ class RequiredDocumentsManager {
         if (this.elements.submissionStatus) {
             this.elements.submissionStatus.className = 'submission-status submitted';
             this.elements.submissionStatus.innerHTML = `
-                <i data-lucide="check-circle"></i>
-                <span>제출 완료</span>
-                <small>관리자 검토 대기 중</small>
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="check-circle" class="w-6 h-6 text-green-600"></i>
+                    <div>
+                        <p class="text-sm font-medium text-green-700">제출 완료</p>
+                        <p class="text-xs text-green-600">관리자 검토 대기 중</p>
+                    </div>
+                </div>
             `;
         }
         
@@ -407,14 +510,12 @@ class RequiredDocumentsManager {
         this.clearAllTempData();
         
         // Lucide 아이콘 재초기화
-        if (window.lucide) {
-            window.lucide.createIcons();
-        }
+        this.initializeLucideIcons();
         
-        // 3초 후 대시보드로 이동
+        // 3초 후 대시보드로 이동 옵션 제공
         setTimeout(() => {
             if (confirm('대시보드로 이동하시겠습니까?')) {
-                window.location.href = '/student/dashboard.html';
+                window.location.href = 'dashboard.html';
             }
         }, 3000);
     }
@@ -437,16 +538,18 @@ class RequiredDocumentsManager {
         if (this.elements.submissionStatus) {
             this.elements.submissionStatus.className = 'submission-status error';
             this.elements.submissionStatus.innerHTML = `
-                <i data-lucide="x-circle"></i>
-                <span>제출 실패</span>
-                <small>다시 시도해주세요</small>
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="x-circle" class="w-6 h-6 text-red-600"></i>
+                    <div>
+                        <p class="text-sm font-medium text-red-700">제출 실패</p>
+                        <p class="text-xs text-red-600">다시 시도해주세요</p>
+                    </div>
+                </div>
             `;
         }
         
         // Lucide 아이콘 재초기화
-        if (window.lucide) {
-            window.lucide.createIcons();
-        }
+        this.initializeLucideIcons();
     }
 
     /**
@@ -456,11 +559,11 @@ class RequiredDocumentsManager {
         try {
             console.log('모든 임시 저장 데이터 저장 시작');
             
-            if (this.forms && this.forms.isInitialized) {
+            if (this.forms && this.forms.isInitialized && this.forms.saveTempData) {
                 this.forms.saveTempData();
             }
             
-            if (this.emergency && this.emergency.isInitialized) {
+            if (this.emergency && this.emergency.isInitialized && this.emergency.saveTempData) {
                 this.emergency.saveTempData();
             }
             
@@ -478,8 +581,10 @@ class RequiredDocumentsManager {
         try {
             console.log('모든 임시 저장 데이터 삭제 시작');
             
-            this.api.clearTempData('documents_form');
-            this.api.clearTempData('emergency_contacts');
+            if (this.api && this.api.clearTempData) {
+                this.api.clearTempData('documents_form');
+                this.api.clearTempData('emergency_contacts');
+            }
             
             console.log('모든 임시 저장 데이터 삭제 완료');
             
@@ -492,7 +597,7 @@ class RequiredDocumentsManager {
      * Lucide 아이콘 초기화
      */
     initializeLucideIcons() {
-        if (window.lucide) {
+        if (window.lucide && window.lucide.createIcons) {
             window.lucide.createIcons();
             console.log('Lucide 아이콘 초기화 완료');
         } else {
@@ -510,35 +615,30 @@ class RequiredDocumentsManager {
         this.clearNotifications();
         
         // 성공 알림 생성
-        const notification = document.createElement('div');
-        notification.className = 'notification success large';
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i data-lucide="check-circle"></i>
-                <div class="notification-text">
-                    <strong>성공!</strong>
-                    <span>${message}</span>
+        const alertContainer = document.getElementById('alert-container');
+        if (alertContainer) {
+            alertContainer.innerHTML = `
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-green-600 mr-3"></i>
+                        <div>
+                            <p class="text-sm font-medium text-green-800">성공!</p>
+                            <p class="text-sm text-green-700 mt-1">${message}</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <button type="button" class="btn-close" onclick="this.parentElement.remove()">
-                <i data-lucide="x"></i>
-            </button>
-        `;
-        
-        // 페이지 상단에 추가
-        document.body.insertBefore(notification, document.body.firstChild);
-        
-        // Lucide 아이콘 재초기화
-        if (window.lucide) {
-            window.lucide.createIcons();
+            `;
+            
+            // Lucide 아이콘 재초기화
+            this.initializeLucideIcons();
+            
+            // 5초 후 자동 제거
+            setTimeout(() => {
+                if (alertContainer) {
+                    alertContainer.innerHTML = '';
+                }
+            }, 5000);
         }
-        
-        // 5초 후 자동 제거
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 5000);
     }
 
     /**
@@ -551,214 +651,39 @@ class RequiredDocumentsManager {
         this.clearNotifications();
         
         // 오류 알림 생성
-        const notification = document.createElement('div');
-        notification.className = 'notification error large';
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i data-lucide="alert-circle"></i>
-                <div class="notification-text">
-                    <strong>오류!</strong>
-                    <span>${message}</span>
+        const alertContainer = document.getElementById('alert-container');
+        if (alertContainer) {
+            alertContainer.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 mr-3"></i>
+                        <div>
+                            <p class="text-sm font-medium text-red-800">오류!</p>
+                            <p class="text-sm text-red-700 mt-1">${message}</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <button type="button" class="btn-close" onclick="this.parentElement.remove()">
-                <i data-lucide="x"></i>
-            </button>
-        `;
-        
-        // 페이지 상단에 추가
-        document.body.insertBefore(notification, document.body.firstChild);
-        
-        // Lucide 아이콘 재초기화
-        if (window.lucide) {
-            window.lucide.createIcons();
+            `;
+            
+            // Lucide 아이콘 재초기화
+            this.initializeLucideIcons();
+            
+            // 7초 후 자동 제거
+            setTimeout(() => {
+                if (alertContainer) {
+                    alertContainer.innerHTML = '';
+                }
+            }, 7000);
         }
-        
-        // 7초 후 자동 제거
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 7000);
     }
 
     /**
      * 모든 알림 제거
      */
     clearNotifications() {
-        const notifications = document.querySelectorAll('.notification');
-        notifications.forEach(notification => notification.remove());
-    }
-
-    /**
-     * 현재 제출 상태 확인
-     */
-    async checkSubmissionStatus() {
-        try {
-            console.log('제출 상태 확인 시작');
-            
-            const documentsData = await this.api.getRequiredDocuments();
-            
-            if (documentsData && documentsData.submission_status === 'pending') {
-                // 이미 제출된 상태
-                this.handleAlreadySubmitted(documentsData);
-            } else if (documentsData && documentsData.submission_status === 'approved') {
-                // 승인된 상태
-                this.handleApproved(documentsData);
-            }
-            
-            console.log('제출 상태 확인 완료');
-            
-        } catch (error) {
-            console.error('제출 상태 확인 실패:', error);
-        }
-    }
-
-    /**
-     * 이미 제출된 상태 처리
-     */
-    handleAlreadySubmitted(documentsData) {
-        console.log('이미 제출된 상태 처리');
-        
-        // 제출 상태 표시
-        if (this.elements.submissionStatus) {
-            this.elements.submissionStatus.className = 'submission-status submitted';
-            this.elements.submissionStatus.innerHTML = `
-                <i data-lucide="clock"></i>
-                <span>검토 중</span>
-                <small>관리자 검토 대기 중입니다</small>
-            `;
-        }
-        
-        // 제출 버튼 비활성화
-        if (this.elements.finalSubmitBtn) {
-            this.elements.finalSubmitBtn.disabled = true;
-            this.elements.finalSubmitBtn.innerHTML = '<i data-lucide="clock"></i> 검토 중';
-            this.elements.finalSubmitBtn.classList.add('submitted');
-        }
-        
-        // 폼 비활성화
-        this.disableAllForms();
-        
-        // 안내 메시지
-        this.showInfo('필수 서류가 이미 제출되어 관리자 검토 중입니다.');
-    }
-
-    /**
-     * 승인된 상태 처리
-     */
-    handleApproved(documentsData) {
-        console.log('승인된 상태 처리');
-        
-        // 제출 상태 표시
-        if (this.elements.submissionStatus) {
-            this.elements.submissionStatus.className = 'submission-status approved';
-            this.elements.submissionStatus.innerHTML = `
-                <i data-lucide="check-circle"></i>
-                <span>승인 완료</span>
-                <small>필수 서류가 승인되었습니다</small>
-            `;
-        }
-        
-        // 제출 버튼 비활성화
-        if (this.elements.finalSubmitBtn) {
-            this.elements.finalSubmitBtn.disabled = true;
-            this.elements.finalSubmitBtn.innerHTML = '<i data-lucide="check-circle"></i> 승인 완료';
-            this.elements.finalSubmitBtn.classList.add('approved');
-        }
-        
-        // 폼 비활성화
-        this.disableAllForms();
-        
-        // 안내 메시지
-        this.showSuccess('필수 서류가 승인되었습니다!');
-    }
-
-    /**
-     * 모든 폼 비활성화
-     */
-    disableAllForms() {
-        console.log('모든 폼 비활성화');
-        
-        // 모든 입력 필드 비활성화
-        const inputs = document.querySelectorAll('input, textarea, select, button');
-        inputs.forEach(input => {
-            if (input.id !== 'backBtn') { // 뒤로가기 버튼은 제외
-                input.disabled = true;
-            }
-        });
-        
-        // 업로드 영역 비활성화
-        const uploadAreas = document.querySelectorAll('.upload-area');
-        uploadAreas.forEach(area => {
-            area.classList.add('disabled');
-        });
-    }
-
-    /**
-     * 정보 메시지 표시
-     */
-    showInfo(message) {
-        console.log('정보:', message);
-        
-        // 기존 알림 제거
-        this.clearNotifications();
-        
-        // 정보 알림 생성
-        const notification = document.createElement('div');
-        notification.className = 'notification info';
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i data-lucide="info"></i>
-                <div class="notification-text">
-                    <strong>안내</strong>
-                    <span>${message}</span>
-                </div>
-            </div>
-            <button type="button" class="btn-close" onclick="this.parentElement.remove()">
-                <i data-lucide="x"></i>
-            </button>
-        `;
-        
-        // 페이지 상단에 추가
-        document.body.insertBefore(notification, document.body.firstChild);
-        
-        // Lucide 아이콘 재초기화
-        if (window.lucide) {
-            window.lucide.createIcons();
-        }
-        
-        // 5초 후 자동 제거
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 5000);
-    }
-
-    /**
-     * 페이지 새로고침 처리
-     */
-    async refresh() {
-        try {
-            console.log('페이지 새로고침 시작');
-            
-            // 진행률 업데이트
-            await this.updateOverallProgress();
-            
-            // 단계별 UI 업데이트
-            this.updateStepsUI();
-            
-            // 제출 버튼 상태 업데이트
-            this.updateSubmitButton();
-            
-            // 제출 상태 확인
-            await this.checkSubmissionStatus();
-            
-            console.log('페이지 새로고침 완료');
-            
-        } catch (error) {
-            console.error('페이지 새로고침 실패:', error);
+        const alertContainer = document.getElementById('alert-container');
+        if (alertContainer) {
+            alertContainer.innerHTML = '';
         }
     }
 
@@ -767,11 +692,11 @@ class RequiredDocumentsManager {
      */
     destroy() {
         // 서브 모듈 정리
-        if (this.forms) {
+        if (this.forms && this.forms.destroy) {
             this.forms.destroy();
         }
         
-        if (this.emergency) {
+        if (this.emergency && this.emergency.destroy) {
             this.emergency.destroy();
         }
         
@@ -795,32 +720,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('필수 서류 제출 페이지 DOM 로드 완료');
     
     try {
-        // 필수 클래스 확인
-        if (!window.RequiredDocumentsAPI) {
-            throw new Error('RequiredDocumentsAPI 클래스를 찾을 수 없습니다.');
-        }
-        
-        if (!window.RequiredDocumentsForms) {
-            throw new Error('RequiredDocumentsForms 클래스를 찾을 수 없습니다.');
-        }
-        
-        if (!window.EmergencyContacts) {
-            throw new Error('EmergencyContacts 클래스를 찾을 수 없습니다.');
-        }
-        
-        // 매니저 초기화
+        // 매니저 초기화 (종속성 체크는 init 메서드에서 처리)
         const manager = new RequiredDocumentsManager();
         await manager.init();
         
         // 전역 참조 설정
         window.requiredDocumentsManager = manager;
         
-        console.log('필수 서류 제출 페이지 초기화 완료');
+        console.log('✅ 필수 서류 제출 페이지 초기화 완료');
         
     } catch (error) {
-        console.error('필수 서류 제출 페이지 초기화 실패:', error);
-        alert('페이지를 불러오는 중 오류가 발생했습니다. 새로고침 후 다시 시도해주세요.');
+        console.error('❌ 필수 서류 제출 페이지 초기화 실패:', error);
+        
+        // 사용자에게 알림
+        const alertContainer = document.getElementById('alert-container');
+        if (alertContainer) {
+            alertContainer.innerHTML = `
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-600 mr-3"></i>
+                        <div>
+                            <p class="text-sm font-medium text-yellow-800">시스템 준비 중</p>
+                            <p class="text-sm text-yellow-700 mt-1">페이지가 완전히 로드되지 않았습니다. 잠시 후 새로고침해주세요.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     }
 });
 
-console.log('RequiredDocumentsManager 모듈 로드 완료 v1.0.0');
+console.log('RequiredDocumentsManager 모듈 로드 완료 v1.0.1');
