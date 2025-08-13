@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>필수 서류 제출 - 세종학당 문화인턴 지원 시스템</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 <body class="bg-gray-50">
@@ -446,16 +445,19 @@
     </main>
 
     <!-- Scripts -->
+    <!-- 1단계: 기본 시스템 로드 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
     <script type="module" src="../js/config.js"></script>
     <script type="module" src="../js/utils.js"></script>
     <script type="module" src="../js/auth.js"></script>
-    <!-- 필수 서류 제출 관련 JavaScript 모듈들 -->
+    
+    <!-- 2단계: 필수 서류 제출 관련 JavaScript 모듈들 -->
     <script src="../js/student/required-documents-api.js"></script>
     <script src="../js/student/required-documents-forms.js"></script>
     <script src="../js/student/emergency-contacts.js"></script>
     <script src="../js/student/required-documents.js"></script>
 
-    <!-- 전역 함수 정의 -->
+    <!-- 3단계: 초기화 및 유틸리티 -->
     <script>
         // 로그아웃 함수 정의 (필수)
         function logout() {
@@ -468,8 +470,43 @@
 
         // Lucide 아이콘 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            if (window.lucide) {
+            console.log('🎨 Lucide 아이콘 초기화 시작');
+            if (window.lucide && window.lucide.createIcons) {
                 window.lucide.createIcons();
+                console.log('✅ Lucide 아이콘 초기화 완료');
+            } else {
+                console.warn('⚠️ Lucide 라이브러리를 찾을 수 없습니다.');
+            }
+        });
+
+        // Supabase 클라이언트 초기화 대기
+        async function waitForSupabase() {
+            let retries = 0;
+            const maxRetries = 10;
+            
+            while (retries < maxRetries) {
+                if (window.supabase) {
+                    console.log('✅ Supabase 클라이언트 준비 완료');
+                    return true;
+                }
+                
+                console.log(`⏳ Supabase 클라이언트 대기 중... (${retries + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                retries++;
+            }
+            
+            console.error('❌ Supabase 클라이언트 로드 타임아웃');
+            return false;
+        }
+
+        // 페이지 초기화 개선
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 페이지 초기화 시작');
+            
+            // Supabase 클라이언트 대기
+            const supabaseReady = await waitForSupabase();
+            if (!supabaseReady) {
+                console.error('❌ Supabase 초기화 실패 - 기능이 제한될 수 있습니다.');
             }
         });
     </script>
