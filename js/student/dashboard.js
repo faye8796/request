@@ -180,6 +180,19 @@ function navigateToEquipmentRequest() {
     }
 }
 
+
+function navigateToRequiredDocuments() {
+    try {
+        console.log('📋 필수 서류 제출 페이지로 이동 (보조)');
+        ensureDataSync();
+        window.location.href = 'required-documents.html';
+    } catch (error) {
+        console.error('❌ 페이지 이동 오류 (보조):', error);
+        alert('페이지 이동 중 오류가 발생했습니다.');
+    }
+}
+
+
 /**
  * 데이터 동기화 확인
  */
@@ -324,6 +337,13 @@ function handleKeyboardShortcuts(event) {
         event.preventDefault();
         navigateToEquipmentRequest();
     }
+    
+    // 🆕 추가: Ctrl + 4 - 필수 서류 제출
+    if (event.ctrlKey && event.key === '4') {
+        event.preventDefault();
+        navigateToRequiredDocuments();
+    }
+
 }
 
 /**
@@ -336,8 +356,10 @@ function setupGlobalFunctions() {
     window.navigateToInstituteInfo = navigateToInstituteInfo;
     window.navigateToFlightRequest = navigateToFlightRequest;
     window.navigateToEquipmentRequest = navigateToEquipmentRequest;
+    window.navigateToRequiredDocuments = navigateToRequiredDocuments;
     window.loadFeatureSettings = loadFeatureSettings;
     window.ensureDataSync = ensureDataSync;
+
     
     console.log('🌐 전역 함수 설정 완료 (보조)');
 }
