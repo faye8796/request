@@ -445,19 +445,24 @@
     </main>
 
     <!-- Scripts -->
-    <!-- 1단계: 기본 시스템 로드 -->
+    <!-- 1단계: Supabase & 기본 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
+    
+    <!-- 2단계: 기본 시스템 모듈 (순서 중요) -->
     <script type="module" src="../js/config.js"></script>
     <script type="module" src="../js/utils.js"></script>
-    <script type="module" src="../js/auth.js"></script>
     
-    <!-- 2단계: 필수 서류 제출 관련 JavaScript 모듈들 -->
+    <!-- 3단계: Supabase 시스템 (순서 중요) -->
+    <script src="../js/supabase/supabase-core.js"></script>
+    <script src="../js/auth.js"></script>
+    
+    <!-- 4단계: 필수 서류 제출 관련 JavaScript 모듈들 -->
     <script src="../js/student/required-documents-api.js"></script>
     <script src="../js/student/required-documents-forms.js"></script>
     <script src="../js/student/emergency-contacts.js"></script>
     <script src="../js/student/required-documents.js"></script>
 
-    <!-- 3단계: 초기화 및 유틸리티 -->
+    <!-- 5단계: 초기화 및 유틸리티 -->
     <script>
         // 로그아웃 함수 정의 (필수)
         function logout() {
@@ -485,7 +490,7 @@
             const maxRetries = 10;
             
             while (retries < maxRetries) {
-                if (window.supabase) {
+                if (window.supabase || (window.SupabaseCore && window.SupabaseCore.getClient)) {
                     console.log('✅ Supabase 클라이언트 준비 완료');
                     return true;
                 }
