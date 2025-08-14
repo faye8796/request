@@ -1,5 +1,5 @@
 /**
- * 필수 서류 제출 폼 관리 모듈 v1.0.1
+ * 필수 서류 제출 폼 관리 모듈 v1.0.2
  * 세종학당 문화인턴 지원 시스템
  * 
  * 기능:
@@ -9,10 +9,10 @@
  * - 간소화된 업로드 완료 UI
  * - 계좌 정보 폼 관리
  * 
- * 버전 1.0.1 업데이트:
- * - 업로드 완료 UI 간소화 (초록색 완료 버튼 형태)
- * - 파일 미리보기 오류 수정 (새 창에서 직접 열기)
- * - 브라우저 확장 프로그램 충돌 방지
+ * 버전 1.0.2 업데이트:
+ * - 팝업 차단 오류 해결 (HTML 링크 방식으로 변경)
+ * - 기존 시스템과 동일한 파일 열기 방식 적용
+ * - window.open() 대신 target="_blank" 링크 사용
  */
 
 class RequiredDocumentsForms {
@@ -300,7 +300,7 @@ class RequiredDocumentsForms {
     }
 
     /**
-     * 파일 미리보기 업데이트 (v1.0.1 - 간소화된 UI)
+     * 파일 미리보기 업데이트 (v1.0.2 - HTML 링크 방식)
      */
     updateFilePreview(type, fileData) {
         const previewElement = type === 'document' ? this.elements.documentPreview : this.elements.bankbookPreview;
@@ -311,19 +311,20 @@ class RequiredDocumentsForms {
         // 파일 타입에 따른 제목 설정
         const fileTypeTitle = type === 'document' ? '필수 서류' : '통장 사본';
         
-        // 간소화된 업로드 완료 UI
+        // HTML 링크 방식으로 변경 (기존 시스템과 동일)
         previewElement.innerHTML = `
             <div class="upload-complete-container">
-                <button type="button" 
-                        class="upload-complete-btn" 
-                        onclick="window.requiredDocumentsForms.openFileInNewWindow('${fileData.url}')"
-                        title="${fileTypeTitle} 파일 보기">
+                <a href="${fileData.url}" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="upload-complete-btn" 
+                   title="${fileTypeTitle} 파일 보기">
                     <div class="upload-complete-content">
                         <i data-lucide="check-circle" class="upload-complete-icon"></i>
                         <span class="upload-complete-text">업로드 완료</span>
                         <span class="upload-complete-subtitle">클릭하여 ${fileTypeTitle} 보기</span>
                     </div>
-                </button>
+                </a>
                 <button type="button" 
                         class="upload-delete-btn" 
                         onclick="window.requiredDocumentsForms.deleteFile('${type}', '${fileData.url}')" 
@@ -340,33 +341,6 @@ class RequiredDocumentsForms {
         
         // 상태 업데이트
         this.updateFileStatus(type, 'completed');
-    }
-
-    /**
-     * 새 창에서 파일 열기 (v1.0.1 - 새로운 함수)
-     */
-    openFileInNewWindow(fileUrl) {
-        if (!fileUrl) return;
-        
-        console.log('새 창에서 파일 열기:', fileUrl);
-        
-        try {
-            // 새 창에서 직접 열기 (iframe 사용하지 않아 확장 프로그램 충돌 방지)
-            const newWindow = window.open(fileUrl, '_blank', 'noopener,noreferrer');
-            
-            if (!newWindow) {
-                // 팝업이 차단된 경우 사용자에게 알림
-                this.showError('팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.');
-                
-                // 대안으로 현재 창에서 열기 (사용자 확인 후)
-                if (confirm('새 창이 차단되었습니다. 현재 창에서 파일을 여시겠습니까?')) {
-                    window.location.href = fileUrl;
-                }
-            }
-        } catch (error) {
-            console.error('파일 열기 실패:', error);
-            this.showError('파일을 열 수 없습니다.');
-        }
     }
 
     /**
@@ -396,31 +370,27 @@ class RequiredDocumentsForms {
     }
 
     /**
-     * 파일 미리보기 (v1.0.1 - 오류 수정)
+     * 파일 미리보기 (v1.0.2 - 사용하지 않음)
+     * 이제 HTML 링크를 직접 사용하므로 이 함수는 호출되지 않음
      */
     previewFile(fileUrl) {
-        if (!fileUrl) return;
-        
-        console.log('파일 미리보기:', fileUrl);
-        
-        // 브라우저 확장 프로그램 충돌 방지를 위해 새 창에서 직접 열기
-        this.openFileInNewWindow(fileUrl);
+        console.log('previewFile 함수는 v1.0.2에서 사용하지 않습니다. HTML 링크를 직접 사용합니다.');
+        // 만약 호출되는 경우를 대비한 fallback
+        if (fileUrl) {
+            window.open(fileUrl, '_blank', 'noopener,noreferrer');
+        }
     }
 
     /**
-     * 이미지 미리보기 모달 (사용하지 않음 - v1.0.1에서 제거)
+     * 새 창에서 파일 열기 (v1.0.2 - 사용하지 않음)
+     * HTML 링크 방식으로 대체되어 더 이상 사용하지 않음
      */
-    showImagePreview(imageUrl) {
-        // v1.0.1에서는 모달 대신 새 창에서 직접 열기
-        this.openFileInNewWindow(imageUrl);
-    }
-
-    /**
-     * PDF 미리보기 모달 (사용하지 않음 - v1.0.1에서 제거)
-     */
-    showPdfPreview(pdfUrl) {
-        // v1.0.1에서는 모달 대신 새 창에서 직접 열기
-        this.openFileInNewWindow(pdfUrl);
+    openFileInNewWindow(fileUrl) {
+        console.log('openFileInNewWindow 함수는 v1.0.2에서 사용하지 않습니다. HTML 링크를 직접 사용합니다.');
+        // 만약 호출되는 경우를 대비한 fallback
+        if (fileUrl) {
+            window.open(fileUrl, '_blank', 'noopener,noreferrer');
+        }
     }
 
     /**
@@ -895,4 +865,4 @@ window.RequiredDocumentsForms = RequiredDocumentsForms;
 // 전역 함수로 등록 (HTML에서 직접 호출용)
 window.requiredDocumentsForms = null;
 
-console.log('RequiredDocumentsForms 모듈 로드 완료 v1.0.1');
+console.log('RequiredDocumentsForms 모듈 로드 완료 v1.0.2');
