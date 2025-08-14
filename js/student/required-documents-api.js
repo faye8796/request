@@ -1,5 +1,5 @@
 /**
- * 필수 서류 제출 API 관리 모듈 v1.0.4
+ * 필수 서류 제출 API 관리 모듈 v1.0.5
  * 세종학당 문화인턴 지원 시스템
  * 
  * 기능:
@@ -8,10 +8,11 @@
  * - Storage 파일 업로드/다운로드
  * - 데이터 검증 및 변환
  * 
- * v1.0.4 변경사항:
- * - 기존 시스템과 동일한 API 키 사용 (config.js 참조)
- * - SupabaseCore 클라이언트 우선 사용으로 중복 인스턴스 방지
- * - Multiple GoTrueClient 경고 해결
+ * v1.0.5 변경사항:
+ * - Storage 업로드 인증 문제 해결
+ * - contentType 명시적 설정으로 업로드 안정성 향상
+ * - 상세한 오류 처리 및 디버깅 정보 추가
+ * - Public Storage 정책과 호환성 개선
  */
 
 class RequiredDocumentsAPI {
@@ -338,7 +339,7 @@ class RequiredDocumentsAPI {
     // ==================== 파일 업로드 관리 ====================
 
     /**
-     * 필수 서류 PDF 업로드
+     * 필수 서류 PDF 업로드 (v1.0.5 개선됨)
      */
     async uploadRequiredDocument(file) {
         try {
@@ -351,22 +352,36 @@ class RequiredDocumentsAPI {
             // 파일명 생성
             const fileName = `${this.currentUser.id}/documents/required_document_${Date.now()}.pdf`;
 
-            // Storage 업로드
+            console.log('📤 Storage 업로드 시도:', {
+                bucket: this.storageBucket,
+                fileName: fileName,
+                fileSize: this.formatFileSize(file.size),
+                fileType: file.type,
+                userId: this.currentUser.id
+            });
+
+            // Storage 업로드 (v1.0.5 개선된 옵션)
             const { data, error } = await this.supabase.storage
                 .from(this.storageBucket)
                 .upload(fileName, file, {
                     cacheControl: '3600',
-                    upsert: false
+                    upsert: false,
+                    contentType: file.type || 'application/pdf'
                 });
 
-            if (error) throw error;
+            if (error) {
+                console.error('❌ Storage 업로드 오류:', error);
+                throw error;
+            }
+
+            console.log('✅ Storage 업로드 성공:', data);
 
             // 공개 URL 생성
             const { data: urlData } = this.supabase.storage
                 .from(this.storageBucket)
                 .getPublicUrl(fileName);
 
-            console.log('필수 서류 업로드 완료:', urlData.publicUrl);
+            console.log('✅ 필수 서류 업로드 완료:', urlData.publicUrl);
 
             // DB 업데이트
             await this.saveRequiredDocuments({
@@ -381,13 +396,25 @@ class RequiredDocumentsAPI {
             };
 
         } catch (error) {
-            console.error('필수 서류 업로드 실패:', error);
+            console.error('❌ 필수 서류 업로드 실패:', error);
+            
+            // v1.0.5 향상된 오류 처리
+            if (error.message?.includes('signature verification failed')) {
+                throw new Error('파일 업로드 권한이 없습니다. 페이지를 새로고침 후 다시 시도하거나 관리자에게 문의하세요.');
+            } else if (error.message?.includes('not found') || error.message?.includes('bucket')) {
+                throw new Error('업로드 저장소를 찾을 수 없습니다. 관리자에게 문의하세요.');
+            } else if (error.message?.includes('size') || error.message?.includes('too large')) {
+                throw new Error('파일 크기가 너무 큽니다. 10MB 이하의 파일을 업로드해주세요.');
+            } else if (error.message?.includes('type') || error.message?.includes('format')) {
+                throw new Error('올바른 PDF 파일을 업로드해주세요.');
+            }
+            
             throw error;
         }
     }
 
     /**
-     * 통장 사본 업로드
+     * 통장 사본 업로드 (v1.0.5 개선됨)
      */
     async uploadBankbookCopy(file) {
         try {
@@ -401,22 +428,36 @@ class RequiredDocumentsAPI {
             const fileExt = file.name.split('.').pop();
             const fileName = `${this.currentUser.id}/bankbooks/bankbook_copy_${Date.now()}.${fileExt}`;
 
-            // Storage 업로드
+            console.log('📤 Storage 업로드 시도:', {
+                bucket: this.storageBucket,
+                fileName: fileName,
+                fileSize: this.formatFileSize(file.size),
+                fileType: file.type,
+                userId: this.currentUser.id
+            });
+
+            // Storage 업로드 (v1.0.5 개선된 옵션)
             const { data, error } = await this.supabase.storage
                 .from(this.storageBucket)
                 .upload(fileName, file, {
                     cacheControl: '3600',
-                    upsert: false
+                    upsert: false,
+                    contentType: file.type
                 });
 
-            if (error) throw error;
+            if (error) {
+                console.error('❌ Storage 업로드 오류:', error);
+                throw error;
+            }
+
+            console.log('✅ Storage 업로드 성공:', data);
 
             // 공개 URL 생성
             const { data: urlData } = this.supabase.storage
                 .from(this.storageBucket)
                 .getPublicUrl(fileName);
 
-            console.log('통장 사본 업로드 완료:', urlData.publicUrl);
+            console.log('✅ 통장 사본 업로드 완료:', urlData.publicUrl);
 
             // DB 업데이트
             await this.saveRequiredDocuments({
@@ -430,7 +471,19 @@ class RequiredDocumentsAPI {
             };
 
         } catch (error) {
-            console.error('통장 사본 업로드 실패:', error);
+            console.error('❌ 통장 사본 업로드 실패:', error);
+            
+            // v1.0.5 향상된 오류 처리
+            if (error.message?.includes('signature verification failed')) {
+                throw new Error('파일 업로드 권한이 없습니다. 페이지를 새로고침 후 다시 시도하거나 관리자에게 문의하세요.');
+            } else if (error.message?.includes('not found') || error.message?.includes('bucket')) {
+                throw new Error('업로드 저장소를 찾을 수 없습니다. 관리자에게 문의하세요.');
+            } else if (error.message?.includes('size') || error.message?.includes('too large')) {
+                throw new Error('파일 크기가 너무 큽니다. 10MB 이하의 파일을 업로드해주세요.');
+            } else if (error.message?.includes('type') || error.message?.includes('format')) {
+                throw new Error('JPG, PNG, WebP, PDF 파일만 업로드 가능합니다.');
+            }
+            
             throw error;
         }
     }
@@ -726,4 +779,4 @@ class RequiredDocumentsAPI {
 // 전역 스코프에 클래스 등록
 window.RequiredDocumentsAPI = RequiredDocumentsAPI;
 
-console.log('RequiredDocumentsAPI 모듈 로드 완료 v1.0.4');
+console.log('RequiredDocumentsAPI 모듈 로드 완료 v1.0.5 - Storage 인증 문제 해결');
