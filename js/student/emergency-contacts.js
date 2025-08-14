@@ -1,5 +1,5 @@
 /**
- * 비상연락망 관리 모듈 v1.0.0
+ * 비상연락망 관리 모듈 v1.1.0
  * 세종학당 문화인턴 지원 시스템
  * 
  * 기능:
@@ -7,6 +7,12 @@
  * - 실시간 필드 검증
  * - 자동 저장 기능
  * - 완료 상태 관리
+ * 
+ * v1.1.0 주요 업데이트:
+ * - 데이터 로딩 시 UI 상태 완전 동기화
+ * - 저장 버튼 텍스트 동적 변경 (최초 저장/저장)
+ * - 진행률 계산 정확도 개선
+ * - 실시간 상태 관리 강화
  */
 
 class EmergencyContacts {
@@ -16,6 +22,14 @@ class EmergencyContacts {
         this.autoSaveInterval = null;
         this.lastSaveTime = 0;
         this.saveDelay = 2000; // 2초 후 자동 저장
+        
+        // 🆕 v1.1.0: 폼 상태 관리
+        this.formState = {
+            completedFieldsCount: 0,
+            totalFieldsCount: 14, // 총 14개 필수 필드 (helper 제외)
+            isDataSaved: false, // 데이터 저장 여부
+            hasExistingData: false // 기존 데이터 존재 여부
+        };
         
         // 폼 요소들
         this.elements = {
@@ -29,7 +43,7 @@ class EmergencyContacts {
             // 파견 학당 관련
             instituteDirectorName: null,
             instituteManagerName: null,
-            instituteHelperName: null,
+            instituteHelperName: null, // 선택사항
             
             // 현지 비상연락처
             localEmergencyName: null,
@@ -52,7 +66,7 @@ class EmergencyContacts {
             completionStatus: null
         };
         
-        console.log('EmergencyContacts 초기화됨');
+        console.log('EmergencyContacts 초기화됨 v1.1.0');
     }
 
     /**
@@ -68,8 +82,8 @@ class EmergencyContacts {
             // 이벤트 리스너 등록
             this.bindEvents();
             
-            // 기존 데이터 로드
-            await this.loadExistingData();
+            // 🆕 v1.1.0: 기존 데이터 로드 및 상태 동기화
+            await this.loadExistingDataAndSyncState();
             
             // 자동 저장 설정
             this.setupAutoSave();
@@ -89,27 +103,27 @@ class EmergencyContacts {
     findElements() {
         console.log('비상연락망 DOM 요소 찾기 시작');
         
-        // 개인 기본 정보
+        // 개인 기본 정보 (5개)
         this.elements.bloodType = document.getElementById('bloodType');
         this.elements.localPhone = document.getElementById('localPhone');
         this.elements.domesticPhone = document.getElementById('domesticPhone');
         this.elements.localAddress = document.getElementById('localAddress');
         this.elements.domesticAddress = document.getElementById('domesticAddress');
         
-        // 파견 학당 관련
+        // 파견 학당 관련 (2개 필수 + 1개 선택)
         this.elements.instituteDirectorName = document.getElementById('instituteDirectorName');
         this.elements.instituteManagerName = document.getElementById('instituteManagerName');
-        this.elements.instituteHelperName = document.getElementById('instituteHelperName');
+        this.elements.instituteHelperName = document.getElementById('instituteHelperName'); // 선택사항
         
-        // 현지 비상연락처
+        // 현지 비상연락처 (2개)
         this.elements.localEmergencyName = document.getElementById('localEmergencyName');
         this.elements.localEmergencyPhone = document.getElementById('localEmergencyPhone');
         
-        // 국내 비상연락처
+        // 국내 비상연락처 (2개)
         this.elements.domesticEmergencyName = document.getElementById('domesticEmergencyName');
         this.elements.domesticEmergencyPhone = document.getElementById('domesticEmergencyPhone');
         
-        // 대학 정보
+        // 대학 정보 (3개)
         this.elements.universityName = document.getElementById('universityName');
         this.elements.universityContactName = document.getElementById('universityContactName');
         this.elements.universityContactPhone = document.getElementById('universityContactPhone');
@@ -125,6 +139,164 @@ class EmergencyContacts {
     }
 
     /**
+     * 🆕 v1.1.0: 기존 데이터 로드 및 상태 동기화
+     */
+    async loadExistingDataAndSyncState() {
+        try {
+            console.log('🔄 비상연락망 데이터 로드 및 상태 동기화 시작');
+            
+            const emergencyData = await this.api.getEmergencyContacts();
+            if (!emergencyData) {
+                console.log('기존 비상연락망 데이터 없음 - 초기 상태 유지');
+                this.updateProgress(); // 초기 진행률 계산
+                this.updateSaveButtonState(); // 초기 버튼 상태 설정
+                return;
+            }
+            
+            console.log('📋 기존 비상연락망 데이터 로드:', emergencyData);
+            
+            // 폼 데이터 채우기
+            this.populateFormData(emergencyData);
+            
+            // 🆕 상태 동기화
+            this.syncFormState(emergencyData);
+            
+            // 🆕 UI 상태 업데이트
+            this.updateAllUIStates();
+            
+            console.log('✅ 비상연락망 데이터 로드 및 상태 동기화 완료:', this.formState);
+            
+        } catch (error) {
+            console.error('❌ 비상연락망 데이터 로드 및 상태 동기화 실패:', error);
+            // 로드 실패는 심각한 오류가 아니므로 초기 상태로 설정
+            this.updateProgress();
+            this.updateSaveButtonState();
+        }
+    }
+
+    /**
+     * 🆕 v1.1.0: 폼 데이터 채우기
+     */
+    populateFormData(emergencyData) {
+        console.log('📝 비상연락망 폼 데이터 채우기 시작');
+        
+        // 데이터를 폼에 채우기
+        Object.keys(emergencyData).forEach(key => {
+            if (key === 'id' || key === 'user_id' || key === 'created_at' || key === 'updated_at') {
+                return; // 시스템 필드는 제외
+            }
+            
+            // snake_case를 camelCase로 변환
+            const camelKey = this.snakeToCamel(key);
+            const element = this.elements[camelKey];
+            
+            if (element && emergencyData[key]) {
+                element.value = emergencyData[key];
+                
+                // 검증 상태 업데이트
+                this.validateField(element);
+            }
+        });
+        
+        console.log('✅ 비상연락망 폼 데이터 채우기 완료');
+    }
+
+    /**
+     * 🆕 v1.1.0: 폼 상태 동기화
+     */
+    syncFormState(emergencyData) {
+        console.log('🔄 비상연락망 폼 상태 동기화 시작');
+        
+        // 기존 데이터 존재 여부
+        this.formState.hasExistingData = !!emergencyData;
+        this.formState.isDataSaved = !!emergencyData;
+        
+        // 완성된 필드 개수 계산
+        this.formState.completedFieldsCount = this.calculateCompletedFields();
+        
+        console.log('✅ 비상연락망 폼 상태 동기화 완료:', this.formState);
+    }
+
+    /**
+     * 🆕 v1.1.0: 모든 UI 상태 업데이트
+     */
+    updateAllUIStates() {
+        console.log('🎨 비상연락망 모든 UI 상태 업데이트 시작');
+        
+        // 진행률 업데이트
+        this.updateProgress();
+        
+        // 저장 버튼 상태 업데이트
+        this.updateSaveButtonState();
+        
+        console.log('✅ 비상연락망 모든 UI 상태 업데이트 완료');
+    }
+
+    /**
+     * 🆕 v1.1.0: 완성된 필드 개수 계산 (정확한 14개)
+     */
+    calculateCompletedFields() {
+        // 정확히 14개 필드 (institute_helper_name 제외)
+        const requiredFields = [
+            'bloodType', 'localPhone', 'domesticPhone', 'localAddress', 'domesticAddress',
+            'instituteDirectorName', 'instituteManagerName',
+            'localEmergencyName', 'localEmergencyPhone',
+            'domesticEmergencyName', 'domesticEmergencyPhone',
+            'universityName', 'universityContactName', 'universityContactPhone'
+        ];
+        
+        let completedCount = 0;
+        
+        requiredFields.forEach(fieldName => {
+            const element = this.elements[fieldName];
+            if (element && element.value && element.value.trim()) {
+                completedCount++;
+            }
+        });
+        
+        return completedCount;
+    }
+
+    /**
+     * 🆕 v1.1.0: 저장 버튼 상태 업데이트
+     */
+    updateSaveButtonState() {
+        if (!this.elements.saveEmergencyBtn) return;
+        
+        const completedFields = this.calculateCompletedFields();
+        
+        const btn = this.elements.saveEmergencyBtn;
+        
+        // 버튼 활성화 상태 (최소 1개 필드가 있으면 저장 가능)
+        btn.disabled = completedFields === 0;
+        
+        // 버튼 텍스트 및 스타일
+        if (this.formState.isDataSaved) {
+            // 이미 저장된 상태 - 수정 가능
+            btn.innerHTML = '<i data-lucide="save"></i> 저장';
+            btn.classList.remove('first-save');
+            btn.classList.add('update-save');
+        } else {
+            // 최초 저장 상태
+            btn.innerHTML = '<i data-lucide="user-plus"></i> 비상연락망 저장';
+            btn.classList.remove('update-save');
+            btn.classList.add('first-save');
+        }
+        
+        // Lucide 아이콘 재초기화
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+        
+        console.log('🔘 비상연락망 저장 버튼 상태 업데이트:', {
+            saved: this.formState.isDataSaved,
+            completed: completedFields,
+            total: this.formState.totalFieldsCount,
+            canSave: !btn.disabled
+        });
+    }
+
+    /**
      * 이벤트 리스너 등록
      */
     bindEvents() {
@@ -137,7 +309,7 @@ class EmergencyContacts {
             });
         }
         
-        // 실시간 입력 검증 및 자동 저장
+        // 🆕 v1.1.0: 실시간 입력 변경 감지로 버튼 상태 업데이트
         this.setupInputValidation();
         
         console.log('비상연락망 이벤트 리스너 등록 완료');
@@ -158,12 +330,14 @@ class EmergencyContacts {
             input.addEventListener('blur', () => {
                 this.validateField(input);
                 this.updateProgress();
+                this.updateSaveButtonState(); // 🆕 v1.1.0: 버튼 상태 업데이트
             });
             
             // 자동 저장 트리거
             input.addEventListener('input', () => {
                 this.scheduleAutoSave();
                 this.updateProgress();
+                this.updateSaveButtonState(); // 🆕 v1.1.0: 버튼 상태 업데이트
             });
             
             // 전화번호 필드 특별 검증
@@ -212,6 +386,7 @@ class EmergencyContacts {
                 
             case 'instituteDirectorName':
             case 'instituteManagerName':
+            case 'instituteHelperName':
             case 'localEmergencyName':
             case 'domesticEmergencyName':
             case 'universityContactName':
@@ -326,6 +501,11 @@ class EmergencyContacts {
             await this.api.saveEmergencyContacts(formData);
             
             this.lastSaveTime = 0; // 저장 완료
+            
+            // 🆕 v1.1.0: 상태 업데이트
+            this.formState.isDataSaved = true;
+            this.updateSaveButtonState();
+            
             this.showAutoSaveStatus('자동 저장됨');
             
             console.log('비상연락망 자동 저장 완료');
@@ -406,8 +586,10 @@ class EmergencyContacts {
         try {
             console.log('비상연락망 정보 저장 시작');
             
-            // 폼 검증
-            if (!this.validateForm()) {
+            // 폼 검증 (관대한 검증)
+            const completedFields = this.calculateCompletedFields();
+            if (completedFields === 0) {
+                this.showError('최소 1개 이상의 필드를 입력해주세요.');
                 return;
             }
             
@@ -420,6 +602,10 @@ class EmergencyContacts {
             // 폼 데이터 수집 및 저장
             const formData = this.collectFormData();
             await this.api.saveEmergencyContacts(formData);
+            
+            // 🆕 v1.1.0: 상태 업데이트
+            this.formState.isDataSaved = true;
+            this.formState.hasExistingData = true;
             
             // 성공 메시지
             this.showSuccess('비상연락망 정보가 저장되었습니다.');
@@ -435,21 +621,13 @@ class EmergencyContacts {
             this.showError('비상연락망 정보 저장 중 오류가 발생했습니다.');
             
         } finally {
-            // 저장 버튼 활성화
-            if (this.elements.saveEmergencyBtn) {
-                this.elements.saveEmergencyBtn.disabled = false;
-                this.elements.saveEmergencyBtn.innerHTML = '<i data-lucide="save"></i> 저장';
-                
-                // Lucide 아이콘 재초기화
-                if (window.lucide) {
-                    window.lucide.createIcons();
-                }
-            }
+            // 저장 버튼 복구
+            this.updateSaveButtonState();
         }
     }
 
     /**
-     * 폼 전체 검증
+     * 폼 전체 검증 (엄격한 검증 - 최종 제출용)
      */
     validateForm() {
         console.log('비상연락망 폼 검증 시작');
@@ -504,33 +682,23 @@ class EmergencyContacts {
     }
 
     /**
-     * 진행률 업데이트
+     * 진행률 업데이트 (🆕 v1.1.0: 정확한 14개 기준)
      */
     updateProgress() {
         if (!this.isInitialized) return;
         
-        const requiredFields = [
-            'bloodType', 'localPhone', 'domesticPhone', 'localAddress', 'domesticAddress',
-            'instituteDirectorName', 'instituteManagerName', 'localEmergencyName', 
-            'localEmergencyPhone', 'domesticEmergencyName', 'domesticEmergencyPhone',
-            'universityName', 'universityContactName', 'universityContactPhone'
-        ];
+        const completedFields = this.calculateCompletedFields();
+        const totalFields = this.formState.totalFieldsCount; // 14개
         
-        let completedFields = 0;
+        const percentage = Math.round((completedFields / totalFields) * 100);
+        const isComplete = completedFields === totalFields;
         
-        requiredFields.forEach(fieldName => {
-            const element = this.elements[fieldName];
-            if (element && element.value.trim()) {
-                completedFields++;
-            }
-        });
-        
-        const percentage = Math.round((completedFields / requiredFields.length) * 100);
-        const isComplete = completedFields === requiredFields.length;
+        // 🆕 v1.1.0: 상태 업데이트
+        this.formState.completedFieldsCount = completedFields;
         
         // 진행률 텍스트 업데이트
         if (this.elements.progressText) {
-            this.elements.progressText.textContent = `${completedFields}/${requiredFields.length} 항목 완료 (${percentage}%)`;
+            this.elements.progressText.textContent = `${completedFields}/${totalFields} 항목 완료`;
         }
         
         // 완료 상태 업데이트
@@ -546,51 +714,15 @@ class EmergencyContacts {
             }
         }
         
-        console.log(`비상연락망 진행률: ${percentage}% (${completedFields}/${requiredFields.length})`);
+        console.log(`비상연락망 진행률: ${percentage}% (${completedFields}/${totalFields})`);
     }
 
     /**
-     * 기존 데이터 로드
+     * 기존 데이터 로드 (호환성 유지)
      */
     async loadExistingData() {
-        try {
-            console.log('기존 비상연락망 데이터 로드 시작');
-            
-            const emergencyData = await this.api.getEmergencyContacts();
-            if (!emergencyData) {
-                console.log('기존 비상연락망 데이터 없음');
-                return;
-            }
-            
-            console.log('기존 비상연락망 데이터 로드:', emergencyData);
-            
-            // 데이터를 폼에 채우기
-            Object.keys(emergencyData).forEach(key => {
-                if (key === 'id' || key === 'user_id' || key === 'created_at' || key === 'updated_at') {
-                    return; // 시스템 필드는 제외
-                }
-                
-                // snake_case를 camelCase로 변환
-                const camelKey = this.snakeToCamel(key);
-                const element = this.elements[camelKey];
-                
-                if (element && emergencyData[key]) {
-                    element.value = emergencyData[key];
-                    
-                    // 검증 상태 업데이트
-                    this.validateField(element);
-                }
-            });
-            
-            // 진행률 업데이트
-            this.updateProgress();
-            
-            console.log('기존 비상연락망 데이터 로드 완료');
-            
-        } catch (error) {
-            console.error('기존 비상연락망 데이터 로드 실패:', error);
-            // 로드 실패는 심각한 오류가 아니므로 사용자에게 알리지 않음
-        }
+        console.log('⚠️ loadExistingData는 더 이상 사용되지 않습니다. loadExistingDataAndSyncState를 사용합니다.');
+        await this.loadExistingDataAndSyncState();
     }
 
     /**
@@ -703,8 +835,19 @@ class EmergencyContacts {
             }
         });
         
+        // 🆕 v1.1.0: 상태 초기화
+        this.formState = {
+            completedFieldsCount: 0,
+            totalFieldsCount: 14,
+            isDataSaved: false,
+            hasExistingData: false
+        };
+        
         // 진행률 초기화
         this.updateProgress();
+        
+        // 버튼 상태 초기화
+        this.updateSaveButtonState();
         
         // 임시 저장 데이터 삭제
         this.api.clearTempData('emergency_contacts');
@@ -713,13 +856,14 @@ class EmergencyContacts {
     }
 
     /**
-     * 폼 완료 상태 확인
+     * 폼 완료 상태 확인 (🆕 v1.1.0: 정확한 14개 기준)
      */
     isFormComplete() {
         const requiredFields = [
             'bloodType', 'localPhone', 'domesticPhone', 'localAddress', 'domesticAddress',
-            'instituteDirectorName', 'instituteManagerName', 'localEmergencyName', 
-            'localEmergencyPhone', 'domesticEmergencyName', 'domesticEmergencyPhone',
+            'instituteDirectorName', 'instituteManagerName',
+            'localEmergencyName', 'localEmergencyPhone',
+            'domesticEmergencyName', 'domesticEmergencyPhone',
             'universityName', 'universityContactName', 'universityContactPhone'
         ];
         
@@ -781,4 +925,4 @@ class EmergencyContacts {
 // 전역 스코프에 클래스 등록
 window.EmergencyContacts = EmergencyContacts;
 
-console.log('EmergencyContacts 모듈 로드 완료 v1.0.0');
+console.log('EmergencyContacts 모듈 로드 완료 v1.1.0');
