@@ -1,5 +1,5 @@
 /**
- * 필수 서류 제출 API 관리 모듈 v1.0.3
+ * 필수 서류 제출 API 관리 모듈 v1.0.4
  * 세종학당 문화인턴 지원 시스템
  * 
  * 기능:
@@ -7,6 +7,11 @@
  * - emergency_contacts CRUD 작업  
  * - Storage 파일 업로드/다운로드
  * - 데이터 검증 및 변환
+ * 
+ * v1.0.4 변경사항:
+ * - 기존 시스템과 동일한 API 키 사용 (config.js 참조)
+ * - SupabaseCore 클라이언트 우선 사용으로 중복 인스턴스 방지
+ * - Multiple GoTrueClient 경고 해결
  */
 
 class RequiredDocumentsAPI {
@@ -31,7 +36,7 @@ class RequiredDocumentsAPI {
 
             console.log('✅ 사용자 정보 확인 완료:', this.currentUser.id);
             
-            // Supabase 초기화 (기존 시스템과 동일한 패턴)
+            // Supabase 초기화 (기존 시스템과 완전 호환)
             this.initializeSupabase();
             
         } catch (error) {
@@ -41,26 +46,26 @@ class RequiredDocumentsAPI {
     }
 
     /**
-     * Supabase 클라이언트 초기화 (기존 시스템과 동일한 로직)
+     * Supabase 클라이언트 초기화 (기존 시스템과 완전 호환)
      */
     async initializeSupabase() {
         try {
-            // 1. window.supabase가 이미 있는지 확인 (기존 클라이언트 인스턴스)
-            if (window.supabase && typeof window.supabase.from === 'function') {
-                this.supabase = window.supabase;
-                this.supabaseReady = true;
-                console.log('✅ 기존 Supabase 클라이언트 사용');
-                return;
-            }
-
-            // 2. SupabaseCore가 있는지 확인
+            // 1. 기존 SupabaseCore 클라이언트 우선 사용 (중복 방지)
             if (window.SupabaseCore && window.SupabaseCore.getClient) {
                 this.supabase = window.SupabaseCore.getClient();
                 if (this.supabase && typeof this.supabase.from === 'function') {
                     this.supabaseReady = true;
-                    console.log('✅ SupabaseCore 클라이언트 사용');
+                    console.log('✅ 기존 SupabaseCore 클라이언트 사용');
                     return;
                 }
+            }
+
+            // 2. 전역 window.supabase 클라이언트 사용
+            if (window.supabase && typeof window.supabase.from === 'function') {
+                this.supabase = window.supabase;
+                this.supabaseReady = true;
+                console.log('✅ 기존 window.supabase 클라이언트 사용');
+                return;
             }
 
             // 3. Supabase가 로드될 때까지 대기
@@ -68,14 +73,7 @@ class RequiredDocumentsAPI {
             const maxRetries = 20;
             
             while (retries < maxRetries) {
-                if (window.supabase && typeof window.supabase.from === 'function') {
-                    this.supabase = window.supabase;
-                    this.supabaseReady = true;
-                    console.log('✅ Supabase 클라이언트 준비 완료');
-                    return;
-                }
-                
-                // SupabaseCore 다시 확인
+                // SupabaseCore 우선 확인
                 if (window.SupabaseCore && window.SupabaseCore.getClient) {
                     const client = window.SupabaseCore.getClient();
                     if (client && typeof client.from === 'function') {
@@ -86,34 +84,31 @@ class RequiredDocumentsAPI {
                     }
                 }
                 
+                // window.supabase 확인
+                if (window.supabase && typeof window.supabase.from === 'function') {
+                    this.supabase = window.supabase;
+                    this.supabaseReady = true;
+                    console.log('✅ window.supabase 클라이언트 대기 후 사용');
+                    return;
+                }
+                
                 await new Promise(resolve => setTimeout(resolve, 250));
                 retries++;
             }
 
-            // 4. 수동 초기화 시도 (createClient 방식)
+            // 4. 마지막 수단: 새 클라이언트 생성 (기존 시스템과 동일한 설정)
             if (window.supabase && window.supabase.createClient) {
-                console.log('🔧 createClient로 Supabase 수동 초기화');
-                const supabaseUrl = 'https://aazvopacnbbkvusihqva.supabase.co';
-                const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ0MjgyOTcsImV4cCI6MjA1MDAwNDI5N30.snkCLxCLQyBWOqHPGSj9oQs1vQ7j9R2H6AjhyNE2ub8';
+                console.log('🔧 새 Supabase 클라이언트 생성 (기존 설정 사용)');
+                
+                // config.js와 동일한 설정 사용
+                const supabaseUrl = window.CONFIG?.SUPABASE?.URL || 'https://aazvopacnbbkvusihqva.supabase.co';
+                const supabaseAnonKey = window.CONFIG?.SUPABASE?.ANON_KEY || 
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTQyMjQsImV4cCI6MjA2NTM3MDIyNH0.0NXI_tohwFCOl3xY4b1jIlxQR_zGTS9tWDM2OFxTq4s';
                 
                 this.supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
                 this.supabaseReady = true;
-                console.log('✅ createClient로 Supabase 초기화 성공');
+                console.log('✅ 새 Supabase 클라이언트 생성 완료');
                 return;
-            }
-
-            // 5. 글로벌 설정에서 초기화 시도
-            if (window.CONFIG && window.CONFIG.SUPABASE_URL && window.CONFIG.SUPABASE_ANON_KEY) {
-                console.log('🔧 CONFIG에서 Supabase 수동 초기화');
-                if (window.supabase && window.supabase.createClient) {
-                    this.supabase = window.supabase.createClient(
-                        window.CONFIG.SUPABASE_URL, 
-                        window.CONFIG.SUPABASE_ANON_KEY
-                    );
-                    this.supabaseReady = true;
-                    console.log('✅ CONFIG로 Supabase 초기화 성공');
-                    return;
-                }
             }
 
             throw new Error('Supabase 초기화 실패: 클라이언트를 찾을 수 없습니다.');
@@ -731,4 +726,4 @@ class RequiredDocumentsAPI {
 // 전역 스코프에 클래스 등록
 window.RequiredDocumentsAPI = RequiredDocumentsAPI;
 
-console.log('RequiredDocumentsAPI 모듈 로드 완료 v1.0.3');
+console.log('RequiredDocumentsAPI 모듈 로드 완료 v1.0.4');
