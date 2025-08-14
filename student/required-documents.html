@@ -6,22 +6,136 @@
     <title>필수 서류 제출 - 세종학당 문화인턴 지원 시스템</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        /* 기존 기능들과 일관된 헤더 스타일 */
+        .header {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            padding: 2rem 0;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" patternUnits="userSpaceOnUse" width="100" height="100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header-content {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-info h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-info p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            max-width: 600px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            line-height: 1.4;
+            white-space: nowrap;
+        }
+
+        .btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* 반응형 헤더 */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+                padding: 0 1rem;
+            }
+
+            .user-info h1 {
+                font-size: 2rem;
+            }
+
+            .header-actions {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .header-content {
+                padding: 0 0.5rem;
+            }
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center space-x-4">
-                    <button id="backBtn" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                        <i data-lucide="arrow-left" class="w-5 h-5 text-gray-600"></i>
-                    </button>
-                    <h1 id="pageTitle" class="text-xl font-semibold text-gray-900">필수 서류 제출</h1>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <span id="user-name" class="text-sm text-gray-600"></span>
-                    <button id="logoutBtn" class="text-sm text-red-600 hover:text-red-700">로그아웃</button>
-                </div>
+    <!-- 📝 일관성 있는 헤더로 변경 -->
+    <header class="header document-management-header">
+        <div class="header-content">
+            <div class="user-info">
+                <h1 id="userWelcome">필수 서류 제출</h1>
+                <p id="userDetails">파견 전 필수 서류와 정보를 체계적으로 제출해주세요.</p>
+            </div>
+            <div class="header-actions">
+                <button id="backBtn" class="btn secondary">
+                    <i data-lucide="arrow-left"></i>
+                    대시보드로 돌아가기
+                </button>
             </div>
         </div>
     </header>
@@ -473,6 +587,30 @@
             }
         }
 
+        // 📝 헤더 사용자 정보 업데이트 함수 추가
+        function updateHeaderUserInfo(userData) {
+            const welcomeEl = document.getElementById('userWelcome');
+            const detailsEl = document.getElementById('userDetails');
+
+            if (welcomeEl && userData.name) {
+                welcomeEl.textContent = `필수 서류 제출 - ${userData.name}님`;
+            }
+
+            if (detailsEl && userData.institute_name) {
+                detailsEl.textContent = `${userData.institute_name} 파견을 위한 필수 서류와 정보를 체계적으로 제출해주세요.`;
+            }
+        }
+
+        // 📝 뒤로가기 버튼 이벤트 설정
+        function setupBackButton() {
+            const backBtn = document.getElementById('backBtn');
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
+                    window.location.href = 'dashboard.html';
+                });
+            }
+        }
+
         // Lucide 아이콘 초기화
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🎨 Lucide 아이콘 초기화 시작');
@@ -481,6 +619,20 @@
                 console.log('✅ Lucide 아이콘 초기화 완료');
             } else {
                 console.warn('⚠️ Lucide 라이브러리를 찾을 수 없습니다.');
+            }
+
+            // 📝 뒤로가기 버튼 설정
+            setupBackButton();
+
+            // 📝 사용자 정보 로드 및 헤더 업데이트
+            try {
+                const userDataStr = localStorage.getItem('currentStudent');
+                if (userDataStr) {
+                    const userData = JSON.parse(userDataStr);
+                    updateHeaderUserInfo(userData);
+                }
+            } catch (error) {
+                console.warn('⚠️ 사용자 정보 로드 실패:', error);
             }
         });
 
