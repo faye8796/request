@@ -1,5 +1,5 @@
 /**
- * 필수 서류 제출 API 관리 모듈 v1.0.5
+ * 필수 서류 제출 API 관리 모듈 v1.0.6
  * 세종학당 문화인턴 지원 시스템
  * 
  * 기능:
@@ -8,11 +8,11 @@
  * - Storage 파일 업로드/다운로드
  * - 데이터 검증 및 변환
  * 
- * v1.0.5 변경사항:
- * - Storage 업로드 인증 문제 해결
- * - contentType 명시적 설정으로 업로드 안정성 향상
- * - 상세한 오류 처리 및 디버깅 정보 추가
- * - Public Storage 정책과 호환성 개선
+ * v1.0.6 변경사항:
+ * - 406 (Not Acceptable) 오류 해결
+ * - .single() 대신 배열 방식 조회로 변경
+ * - 빈 데이터 상태에서의 안정성 향상
+ * - RLS 비활성화 환경에 최적화
  */
 
 class RequiredDocumentsAPI {
@@ -141,29 +141,32 @@ class RequiredDocumentsAPI {
     // ==================== 필수 서류 데이터 관리 ====================
 
     /**
-     * 현재 사용자의 필수 서류 정보 조회
+     * 현재 사용자의 필수 서류 정보 조회 (v1.0.6 개선됨)
      */
     async getRequiredDocuments() {
         try {
-            console.log('필수 서류 정보 조회 시작:', this.currentUser.id);
+            console.log('📋 필수 서류 정보 조회 시작:', this.currentUser.id);
             await this.ensureSupabaseReady();
 
+            // v1.0.6: .single() 대신 배열 방식으로 조회하여 406 오류 방지
             const { data, error } = await this.supabase
                 .from('required_documents')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
-                .single();
+                .limit(1);
 
-            if (error && error.code !== 'PGRST116') { // Not found는 정상
-                console.error('필수 서류 조회 오류:', error);
+            if (error) {
+                console.error('❌ 필수 서류 조회 오류:', error);
                 throw error;
             }
 
-            console.log('필수 서류 조회 결과:', data);
-            return data || null;
+            // 배열에서 첫 번째 요소 추출 (없으면 null)
+            const result = data && data.length > 0 ? data[0] : null;
+            console.log('✅ 필수 서류 조회 결과:', result);
+            return result;
 
         } catch (error) {
-            console.error('필수 서류 조회 실패:', error);
+            console.error('❌ 필수 서류 조회 실패:', error);
             throw error;
         }
     }
@@ -173,7 +176,7 @@ class RequiredDocumentsAPI {
      */
     async saveRequiredDocuments(documentsData) {
         try {
-            console.log('필수 서류 저장 시작:', documentsData);
+            console.log('💾 필수 서류 저장 시작:', documentsData);
             await this.ensureSupabaseReady();
 
             const dataToSave = {
@@ -187,36 +190,34 @@ class RequiredDocumentsAPI {
 
             let result;
             if (existingData) {
-                // 업데이트
+                // 업데이트 (v1.0.6: .single() 제거)
                 const { data, error } = await this.supabase
                     .from('required_documents')
                     .update(dataToSave)
                     .eq('user_id', this.currentUser.id)
-                    .select()
-                    .single();
+                    .select();
 
                 if (error) throw error;
-                result = data;
-                console.log('필수 서류 업데이트 완료:', result);
+                result = data && data.length > 0 ? data[0] : null;
+                console.log('✅ 필수 서류 업데이트 완료:', result);
             } else {
-                // 새로 생성
+                // 새로 생성 (v1.0.6: .single() 제거)
                 dataToSave.created_at = new Date().toISOString();
                 
                 const { data, error } = await this.supabase
                     .from('required_documents')
                     .insert(dataToSave)
-                    .select()
-                    .single();
+                    .select();
 
                 if (error) throw error;
-                result = data;
-                console.log('필수 서류 생성 완료:', result);
+                result = data && data.length > 0 ? data[0] : null;
+                console.log('✅ 필수 서류 생성 완료:', result);
             }
 
             return result;
 
         } catch (error) {
-            console.error('필수 서류 저장 실패:', error);
+            console.error('❌ 필수 서류 저장 실패:', error);
             throw error;
         }
     }
@@ -226,7 +227,7 @@ class RequiredDocumentsAPI {
      */
     async submitRequiredDocuments() {
         try {
-            console.log('필수 서류 최종 제출 시작');
+            console.log('📤 필수 서류 최종 제출 시작');
             await this.ensureSupabaseReady();
 
             const submitData = {
@@ -239,16 +240,16 @@ class RequiredDocumentsAPI {
                 .from('required_documents')
                 .update(submitData)
                 .eq('user_id', this.currentUser.id)
-                .select()
-                .single();
+                .select();
 
             if (error) throw error;
 
-            console.log('필수 서류 제출 완료:', data);
-            return data;
+            const result = data && data.length > 0 ? data[0] : null;
+            console.log('✅ 필수 서류 제출 완료:', result);
+            return result;
 
         } catch (error) {
-            console.error('필수 서류 제출 실패:', error);
+            console.error('❌ 필수 서류 제출 실패:', error);
             throw error;
         }
     }
@@ -256,29 +257,32 @@ class RequiredDocumentsAPI {
     // ==================== 비상연락망 데이터 관리 ====================
 
     /**
-     * 비상연락망 정보 조회
+     * 비상연락망 정보 조회 (v1.0.6 개선됨)
      */
     async getEmergencyContacts() {
         try {
-            console.log('비상연락망 정보 조회 시작:', this.currentUser.id);
+            console.log('📞 비상연락망 정보 조회 시작:', this.currentUser.id);
             await this.ensureSupabaseReady();
 
+            // v1.0.6: .single() 대신 배열 방식으로 조회하여 406 오류 방지
             const { data, error } = await this.supabase
                 .from('emergency_contacts')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
-                .single();
+                .limit(1);
 
-            if (error && error.code !== 'PGRST116') { // Not found는 정상
-                console.error('비상연락망 조회 오류:', error);
+            if (error) {
+                console.error('❌ 비상연락망 조회 오류:', error);
                 throw error;
             }
 
-            console.log('비상연락망 조회 결과:', data);
-            return data || null;
+            // 배열에서 첫 번째 요소 추출 (없으면 null)
+            const result = data && data.length > 0 ? data[0] : null;
+            console.log('✅ 비상연락망 조회 결과:', result);
+            return result;
 
         } catch (error) {
-            console.error('비상연락망 조회 실패:', error);
+            console.error('❌ 비상연락망 조회 실패:', error);
             throw error;
         }
     }
@@ -288,7 +292,7 @@ class RequiredDocumentsAPI {
      */
     async saveEmergencyContacts(emergencyData) {
         try {
-            console.log('비상연락망 저장 시작:', emergencyData);
+            console.log('💾 비상연락망 저장 시작:', emergencyData);
             await this.ensureSupabaseReady();
 
             const dataToSave = {
@@ -302,36 +306,34 @@ class RequiredDocumentsAPI {
 
             let result;
             if (existingData) {
-                // 업데이트
+                // 업데이트 (v1.0.6: .single() 제거)
                 const { data, error } = await this.supabase
                     .from('emergency_contacts')
                     .update(dataToSave)
                     .eq('user_id', this.currentUser.id)
-                    .select()
-                    .single();
+                    .select();
 
                 if (error) throw error;
-                result = data;
-                console.log('비상연락망 업데이트 완료:', result);
+                result = data && data.length > 0 ? data[0] : null;
+                console.log('✅ 비상연락망 업데이트 완료:', result);
             } else {
-                // 새로 생성
+                // 새로 생성 (v1.0.6: .single() 제거)
                 dataToSave.created_at = new Date().toISOString();
                 
                 const { data, error } = await this.supabase
                     .from('emergency_contacts')
                     .insert(dataToSave)
-                    .select()
-                    .single();
+                    .select();
 
                 if (error) throw error;
-                result = data;
-                console.log('비상연락망 생성 완료:', result);
+                result = data && data.length > 0 ? data[0] : null;
+                console.log('✅ 비상연락망 생성 완료:', result);
             }
 
             return result;
 
         } catch (error) {
-            console.error('비상연락망 저장 실패:', error);
+            console.error('❌ 비상연락망 저장 실패:', error);
             throw error;
         }
     }
@@ -343,7 +345,7 @@ class RequiredDocumentsAPI {
      */
     async uploadRequiredDocument(file) {
         try {
-            console.log('필수 서류 업로드 시작:', file.name);
+            console.log('📄 필수 서류 업로드 시작:', file.name);
             await this.ensureSupabaseReady();
 
             // 파일 검증
@@ -418,7 +420,7 @@ class RequiredDocumentsAPI {
      */
     async uploadBankbookCopy(file) {
         try {
-            console.log('통장 사본 업로드 시작:', file.name);
+            console.log('🏦 통장 사본 업로드 시작:', file.name);
             await this.ensureSupabaseReady();
 
             // 파일 검증
@@ -493,7 +495,7 @@ class RequiredDocumentsAPI {
      */
     async deleteFile(fileUrl) {
         try {
-            console.log('파일 삭제 시작:', fileUrl);
+            console.log('🗑️ 파일 삭제 시작:', fileUrl);
             await this.ensureSupabaseReady();
 
             // URL에서 파일 경로 추출
@@ -510,11 +512,11 @@ class RequiredDocumentsAPI {
 
             if (error) throw error;
 
-            console.log('파일 삭제 완료:', fileName);
+            console.log('✅ 파일 삭제 완료:', fileName);
             return true;
 
         } catch (error) {
-            console.error('파일 삭제 실패:', error);
+            console.error('❌ 파일 삭제 실패:', error);
             throw error;
         }
     }
@@ -526,7 +528,7 @@ class RequiredDocumentsAPI {
      */
     async getOverallProgress() {
         try {
-            console.log('전체 진행 상황 조회 시작');
+            console.log('📊 전체 진행 상황 조회 시작');
             await this.ensureSupabaseReady();
 
             const [documentsData, emergencyData] = await Promise.all([
@@ -594,11 +596,11 @@ class RequiredDocumentsAPI {
             
             progress.overall.canSubmit = progress.overall.completedSteps === progress.overall.totalSteps;
 
-            console.log('전체 진행 상황 조회 완료:', progress);
+            console.log('✅ 전체 진행 상황 조회 완료:', progress);
             return progress;
 
         } catch (error) {
-            console.error('진행 상황 조회 실패:', error);
+            console.error('❌ 진행 상황 조회 실패:', error);
             // 오류가 발생해도 기본값 반환
             return {
                 documents: { completed: false, hasRequiredDocument: false, hasAccountInfo: false },
@@ -614,7 +616,7 @@ class RequiredDocumentsAPI {
      * PDF 파일 검증
      */
     validateDocumentFile(file) {
-        console.log('PDF 파일 검증:', file);
+        console.log('🔍 PDF 파일 검증:', file);
 
         if (!file) {
             throw new Error('파일이 선택되지 않았습니다.');
@@ -631,14 +633,14 @@ class RequiredDocumentsAPI {
             throw new Error('파일 크기는 10MB 이하여야 합니다.');
         }
 
-        console.log('PDF 파일 검증 통과');
+        console.log('✅ PDF 파일 검증 통과');
     }
 
     /**
      * 이미지 파일 검증
      */
     validateImageFile(file) {
-        console.log('이미지 파일 검증:', file);
+        console.log('🔍 이미지 파일 검증:', file);
 
         if (!file) {
             throw new Error('파일이 선택되지 않았습니다.');
@@ -656,7 +658,7 @@ class RequiredDocumentsAPI {
             throw new Error('파일 크기는 10MB 이하여야 합니다.');
         }
 
-        console.log('이미지 파일 검증 통과');
+        console.log('✅ 이미지 파일 검증 통과');
     }
 
     /**
@@ -674,7 +676,7 @@ class RequiredDocumentsAPI {
             
             return null;
         } catch (error) {
-            console.error('파일명 추출 실패:', error);
+            console.error('❌ 파일명 추출 실패:', error);
             return null;
         }
     }
@@ -728,9 +730,9 @@ class RequiredDocumentsAPI {
                 data: data,
                 timestamp: Date.now()
             }));
-            console.log('임시 데이터 저장 완료:', tempKey);
+            console.log('💾 임시 데이터 저장 완료:', tempKey);
         } catch (error) {
-            console.error('임시 데이터 저장 실패:', error);
+            console.error('❌ 임시 데이터 저장 실패:', error);
         }
     }
 
@@ -753,11 +755,11 @@ class RequiredDocumentsAPI {
                 return null;
             }
             
-            console.log('임시 데이터 불러오기 완료:', tempKey);
+            console.log('📂 임시 데이터 불러오기 완료:', tempKey);
             return parsed.data;
             
         } catch (error) {
-            console.error('임시 데이터 불러오기 실패:', error);
+            console.error('❌ 임시 데이터 불러오기 실패:', error);
             return null;
         }
     }
@@ -769,9 +771,9 @@ class RequiredDocumentsAPI {
         try {
             const tempKey = `required_docs_temp_${this.currentUser.id}_${key}`;
             localStorage.removeItem(tempKey);
-            console.log('임시 데이터 삭제 완료:', tempKey);
+            console.log('🗑️ 임시 데이터 삭제 완료:', tempKey);
         } catch (error) {
-            console.error('임시 데이터 삭제 실패:', error);
+            console.error('❌ 임시 데이터 삭제 실패:', error);
         }
     }
 }
@@ -779,4 +781,4 @@ class RequiredDocumentsAPI {
 // 전역 스코프에 클래스 등록
 window.RequiredDocumentsAPI = RequiredDocumentsAPI;
 
-console.log('RequiredDocumentsAPI 모듈 로드 완료 v1.0.5 - Storage 인증 문제 해결');
+console.log('✅ RequiredDocumentsAPI 모듈 로드 완료 v1.0.6 - 406 오류 해결 및 안정성 향상');
