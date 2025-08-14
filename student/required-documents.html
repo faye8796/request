@@ -121,6 +121,107 @@
                 padding: 0 0.5rem;
             }
         }
+
+        /* 업로드 완료 UI 스타일 */
+        .upload-complete-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: 1px solid #059669;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .upload-complete-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            padding: 0;
+            color: white;
+            transition: all 0.2s ease;
+        }
+
+        .upload-complete-btn:hover {
+            transform: translateY(-1px);
+            opacity: 0.9;
+        }
+
+        .upload-complete-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .upload-complete-icon {
+            width: 24px;
+            height: 24px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .upload-complete-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .upload-complete-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-left: auto;
+        }
+
+        .upload-delete-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .upload-delete-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .upload-delete-btn i {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* 반응형 디자인 - 업로드 완료 UI */
+        @media (max-width: 640px) {
+            .upload-complete-container {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .upload-complete-btn {
+                text-align: center;
+            }
+            
+            .upload-complete-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 8px;
+            }
+            
+            .upload-complete-subtitle {
+                margin-left: 0;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50">
