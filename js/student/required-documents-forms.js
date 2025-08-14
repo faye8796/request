@@ -1,5 +1,5 @@
 /**
- * 필수 서류 제출 폼 관리 모듈 v1.0.2
+ * 필수 서류 제출 폼 관리 모듈 v1.1.0
  * 세종학당 문화인턴 지원 시스템
  * 
  * 기능:
@@ -9,10 +9,11 @@
  * - 간소화된 업로드 완료 UI
  * - 계좌 정보 폼 관리
  * 
- * 버전 1.0.2 업데이트:
- * - 팝업 차단 오류 해결 (HTML 링크 방식으로 변경)
- * - 기존 시스템과 동일한 파일 열기 방식 적용
- * - window.open() 대신 target="_blank" 링크 사용
+ * v1.1.0 주요 업데이트:
+ * - 데이터 로딩 시 UI 상태 동기화 개선
+ * - 버튼 텍스트 상태별 표시 (최초 저장/저장)
+ * - 기존 데이터 로드 후 즉시 UI 반영
+ * - 팝업 차단 오류 완전 해결 (HTML 링크 방식)
  */
 
 class RequiredDocumentsForms {
@@ -20,6 +21,14 @@ class RequiredDocumentsForms {
         this.api = api;
         this.uploadingFiles = new Set(); // 현재 업로드 중인 파일들 추적
         this.isInitialized = false;
+        
+        // 🆕 v1.1.0: 폼 상태 관리
+        this.formState = {
+            hasRequiredDocument: false,
+            hasBankbookCopy: false,
+            hasAccountInfo: false,
+            isAccountInfoSaved: false // 계좌 정보 저장 여부
+        };
         
         // 폼 요소들
         this.elements = {
@@ -45,7 +54,7 @@ class RequiredDocumentsForms {
             progressText: null
         };
         
-        console.log('RequiredDocumentsForms 초기화됨');
+        console.log('RequiredDocumentsForms 초기화됨 v1.1.0');
     }
 
     /**
@@ -61,8 +70,8 @@ class RequiredDocumentsForms {
             // 이벤트 리스너 등록
             this.bindEvents();
             
-            // 기존 데이터 로드
-            await this.loadExistingData();
+            // 🆕 v1.1.0: 기존 데이터 로드 및 상태 동기화
+            await this.loadExistingDataAndSyncState();
             
             this.isInitialized = true;
             console.log('폼 초기화 완료');
@@ -145,10 +154,182 @@ class RequiredDocumentsForms {
             });
         }
         
+        // 🆕 v1.1.0: 실시간 입력 변경 감지
+        [this.elements.bankNameInput, this.elements.accountNumberInput, this.elements.accountHolderInput]
+            .forEach(input => {
+                if (input) {
+                    input.addEventListener('input', () => {
+                        this.updateAccountButtonState();
+                    });
+                }
+            });
+        
         // 실시간 입력 검증
         this.setupRealTimeValidation();
         
         console.log('이벤트 리스너 등록 완료');
+    }
+
+    /**
+     * 🆕 v1.1.0: 기존 데이터 로드 및 상태 동기화
+     */
+    async loadExistingDataAndSyncState() {
+        try {
+            console.log('🔄 기존 데이터 로드 및 상태 동기화 시작');
+            
+            const documentsData = await this.api.getRequiredDocuments();
+            if (!documentsData) {
+                console.log('기존 데이터 없음 - 초기 상태 유지');
+                this.updateAccountButtonState(); // 초기 버튼 상태 설정
+                return;
+            }
+            
+            console.log('📋 기존 데이터 로드:', documentsData);
+            
+            // 폼 데이터 채우기
+            this.populateFormData(documentsData);
+            
+            // 🆕 상태 동기화
+            this.syncFormState(documentsData);
+            
+            // 🆕 UI 상태 업데이트
+            this.updateAllUIStates();
+            
+            console.log('✅ 데이터 로드 및 상태 동기화 완료:', this.formState);
+            
+        } catch (error) {
+            console.error('❌ 데이터 로드 및 상태 동기화 실패:', error);
+            // 로드 실패는 심각한 오류가 아니므로 초기 상태로 설정
+            this.updateAccountButtonState();
+        }
+    }
+
+    /**
+     * 🆕 v1.1.0: 폼 데이터 채우기
+     */
+    populateFormData(documentsData) {
+        console.log('📝 폼 데이터 채우기 시작');
+        
+        // 필수 서류 파일 정보
+        if (documentsData.required_document_url) {
+            this.updateFilePreview('document', {
+                url: documentsData.required_document_url,
+                fileName: 'required_document.pdf',
+                uploadDate: documentsData.document_upload_date
+            });
+        }
+        
+        // 통장 사본 파일 정보
+        if (documentsData.bankbook_copy_url) {
+            this.updateFilePreview('bankbook', {
+                url: documentsData.bankbook_copy_url,
+                fileName: 'bankbook_copy',
+                uploadDate: documentsData.created_at
+            });
+        }
+        
+        // 계좌 정보
+        if (this.elements.bankNameInput && documentsData.salary_bank_name) {
+            this.elements.bankNameInput.value = documentsData.salary_bank_name;
+        }
+        
+        if (this.elements.accountNumberInput && documentsData.salary_account_number) {
+            this.elements.accountNumberInput.value = documentsData.salary_account_number;
+        }
+        
+        if (this.elements.accountHolderInput && documentsData.salary_account_holder) {
+            this.elements.accountHolderInput.value = documentsData.salary_account_holder;
+        }
+        
+        console.log('✅ 폼 데이터 채우기 완료');
+    }
+
+    /**
+     * 🆕 v1.1.0: 폼 상태 동기화
+     */
+    syncFormState(documentsData) {
+        console.log('🔄 폼 상태 동기화 시작');
+        
+        // 파일 업로드 상태
+        this.formState.hasRequiredDocument = !!documentsData.required_document_url;
+        this.formState.hasBankbookCopy = !!documentsData.bankbook_copy_url;
+        
+        // 계좌 정보 상태
+        this.formState.hasAccountInfo = !!(
+            documentsData.salary_bank_name && 
+            documentsData.salary_account_number && 
+            documentsData.salary_account_holder
+        );
+        
+        // 계좌 정보가 이미 저장되어 있으면 저장됨 상태로 설정
+        this.formState.isAccountInfoSaved = this.formState.hasAccountInfo;
+        
+        console.log('✅ 폼 상태 동기화 완료:', this.formState);
+    }
+
+    /**
+     * 🆕 v1.1.0: 모든 UI 상태 업데이트
+     */
+    updateAllUIStates() {
+        console.log('🎨 모든 UI 상태 업데이트 시작');
+        
+        // 계좌 정보 버튼 상태 업데이트
+        this.updateAccountButtonState();
+        
+        // 파일 상태 업데이트
+        if (this.formState.hasRequiredDocument) {
+            this.updateFileStatus('document', 'completed');
+        }
+        
+        if (this.formState.hasBankbookCopy) {
+            // bankbook은 별도 상태 표시가 없으므로 생략
+        }
+        
+        console.log('✅ 모든 UI 상태 업데이트 완료');
+    }
+
+    /**
+     * 🆕 v1.1.0: 계좌 정보 버튼 상태 업데이트
+     */
+    updateAccountButtonState() {
+        if (!this.elements.saveAccountBtn) return;
+        
+        const bankName = this.elements.bankNameInput?.value?.trim() || '';
+        const accountNumber = this.elements.accountNumberInput?.value?.trim() || '';
+        const accountHolder = this.elements.accountHolderInput?.value?.trim() || '';
+        
+        const hasCurrentInput = bankName && accountNumber && accountHolder;
+        const isFormComplete = hasCurrentInput && 
+            this.api.validateAccountNumber(accountNumber);
+        
+        const btn = this.elements.saveAccountBtn;
+        
+        // 버튼 활성화 상태
+        btn.disabled = !isFormComplete;
+        
+        // 버튼 텍스트 및 스타일
+        if (this.formState.isAccountInfoSaved) {
+            // 이미 저장된 상태 - 수정 가능
+            btn.innerHTML = '<i data-lucide="save"></i> 저장';
+            btn.classList.remove('first-save');
+            btn.classList.add('update-save');
+        } else {
+            // 최초 저장 상태
+            btn.innerHTML = '<i data-lucide="credit-card"></i> 계좌 정보 저장';
+            btn.classList.remove('update-save');
+            btn.classList.add('first-save');
+        }
+        
+        // Lucide 아이콘 재초기화
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+        
+        console.log('🔘 계좌 정보 버튼 상태 업데이트:', {
+            saved: this.formState.isAccountInfoSaved,
+            canSave: isFormComplete,
+            buttonText: btn.innerHTML
+        });
     }
 
     /**
@@ -233,6 +414,14 @@ class RequiredDocumentsForms {
             // 업로드 완료 처리
             this.showUploadProgress(type, 100);
             this.updateFilePreview(type, result);
+            
+            // 🆕 v1.1.0: 상태 업데이트
+            if (type === 'document') {
+                this.formState.hasRequiredDocument = true;
+            } else if (type === 'bankbook') {
+                this.formState.hasBankbookCopy = true;
+            }
+            
             this.showSuccess(`${type === 'document' ? '필수 서류' : '통장 사본'} 업로드가 완료되었습니다.`);
             
             // 진행률 업데이트 이벤트 발생
@@ -300,7 +489,7 @@ class RequiredDocumentsForms {
     }
 
     /**
-     * 파일 미리보기 업데이트 (v1.0.2 - HTML 링크 방식)
+     * 파일 미리보기 업데이트 (v1.1.0 - HTML 링크 방식)
      */
     updateFilePreview(type, fileData) {
         const previewElement = type === 'document' ? this.elements.documentPreview : this.elements.bankbookPreview;
@@ -370,24 +559,20 @@ class RequiredDocumentsForms {
     }
 
     /**
-     * 파일 미리보기 (v1.0.2 - 사용하지 않음)
-     * 이제 HTML 링크를 직접 사용하므로 이 함수는 호출되지 않음
+     * 파일 미리보기 (v1.1.0 - 사용하지 않음)
      */
     previewFile(fileUrl) {
-        console.log('previewFile 함수는 v1.0.2에서 사용하지 않습니다. HTML 링크를 직접 사용합니다.');
-        // 만약 호출되는 경우를 대비한 fallback
+        console.log('previewFile 함수는 v1.1.0에서 사용하지 않습니다. HTML 링크를 직접 사용합니다.');
         if (fileUrl) {
             window.open(fileUrl, '_blank', 'noopener,noreferrer');
         }
     }
 
     /**
-     * 새 창에서 파일 열기 (v1.0.2 - 사용하지 않음)
-     * HTML 링크 방식으로 대체되어 더 이상 사용하지 않음
+     * 새 창에서 파일 열기 (v1.1.0 - 사용하지 않음)
      */
     openFileInNewWindow(fileUrl) {
-        console.log('openFileInNewWindow 함수는 v1.0.2에서 사용하지 않습니다. HTML 링크를 직접 사용합니다.');
-        // 만약 호출되는 경우를 대비한 fallback
+        console.log('openFileInNewWindow 함수는 v1.1.0에서 사용하지 않습니다. HTML 링크를 직접 사용합니다.');
         if (fileUrl) {
             window.open(fileUrl, '_blank', 'noopener,noreferrer');
         }
@@ -417,6 +602,13 @@ class RequiredDocumentsForms {
                 await this.api.saveRequiredDocuments({
                     bankbook_copy_url: null
                 });
+            }
+            
+            // 🆕 v1.1.0: 상태 업데이트
+            if (type === 'document') {
+                this.formState.hasRequiredDocument = false;
+            } else if (type === 'bankbook') {
+                this.formState.hasBankbookCopy = false;
             }
             
             // UI 업데이트
@@ -465,6 +657,10 @@ class RequiredDocumentsForms {
             // API 호출
             await this.api.saveRequiredDocuments(accountData);
             
+            // 🆕 v1.1.0: 상태 업데이트
+            this.formState.hasAccountInfo = true;
+            this.formState.isAccountInfoSaved = true;
+            
             // 성공 메시지
             this.showSuccess('계좌 정보가 저장되었습니다.');
             
@@ -476,16 +672,8 @@ class RequiredDocumentsForms {
             this.showError('계좌 정보 저장 중 오류가 발생했습니다.');
             
         } finally {
-            // 저장 버튼 활성화
-            if (this.elements.saveAccountBtn) {
-                this.elements.saveAccountBtn.disabled = false;
-                this.elements.saveAccountBtn.innerHTML = '<i data-lucide="save"></i> 저장';
-                
-                // Lucide 아이콘 재초기화
-                if (window.lucide) {
-                    window.lucide.createIcons();
-                }
-            }
+            // 저장 버튼 복구
+            this.updateAccountButtonState();
         }
     }
 
@@ -621,57 +809,11 @@ class RequiredDocumentsForms {
     }
 
     /**
-     * 기존 데이터 로드
+     * 기존 데이터 로드 (호환성 유지)
      */
     async loadExistingData() {
-        try {
-            console.log('기존 데이터 로드 시작');
-            
-            const documentsData = await this.api.getRequiredDocuments();
-            if (!documentsData) {
-                console.log('기존 데이터 없음');
-                return;
-            }
-            
-            console.log('기존 데이터 로드:', documentsData);
-            
-            // 필수 서류 파일 정보
-            if (documentsData.required_document_url) {
-                this.updateFilePreview('document', {
-                    url: documentsData.required_document_url,
-                    fileName: 'required_document.pdf',
-                    uploadDate: documentsData.document_upload_date
-                });
-            }
-            
-            // 통장 사본 파일 정보
-            if (documentsData.bankbook_copy_url) {
-                this.updateFilePreview('bankbook', {
-                    url: documentsData.bankbook_copy_url,
-                    fileName: 'bankbook_copy',
-                    uploadDate: documentsData.created_at
-                });
-            }
-            
-            // 계좌 정보
-            if (this.elements.bankNameInput && documentsData.salary_bank_name) {
-                this.elements.bankNameInput.value = documentsData.salary_bank_name;
-            }
-            
-            if (this.elements.accountNumberInput && documentsData.salary_account_number) {
-                this.elements.accountNumberInput.value = documentsData.salary_account_number;
-            }
-            
-            if (this.elements.accountHolderInput && documentsData.salary_account_holder) {
-                this.elements.accountHolderInput.value = documentsData.salary_account_holder;
-            }
-            
-            console.log('기존 데이터 로드 완료');
-            
-        } catch (error) {
-            console.error('기존 데이터 로드 실패:', error);
-            // 로드 실패는 심각한 오류가 아니므로 사용자에게 알리지 않음
-        }
+        console.log('⚠️ loadExistingData는 더 이상 사용되지 않습니다. loadExistingDataAndSyncState를 사용합니다.');
+        await this.loadExistingDataAndSyncState();
     }
 
     /**
@@ -814,6 +956,14 @@ class RequiredDocumentsForms {
         if (this.elements.accountNumberInput) this.elements.accountNumberInput.value = '';
         if (this.elements.accountHolderInput) this.elements.accountHolderInput.value = '';
         
+        // 🆕 v1.1.0: 상태 초기화
+        this.formState = {
+            hasRequiredDocument: false,
+            hasBankbookCopy: false,
+            hasAccountInfo: false,
+            isAccountInfoSaved: false
+        };
+        
         // 검증 상태 초기화
         [this.elements.bankNameInput, this.elements.accountNumberInput, this.elements.accountHolderInput]
             .forEach(input => {
@@ -822,6 +972,9 @@ class RequiredDocumentsForms {
                     this.hideFieldError(input);
                 }
             });
+        
+        // 버튼 상태 업데이트
+        this.updateAccountButtonState();
         
         // 임시 저장 데이터 삭제
         this.api.clearTempData('documents_form');
@@ -840,11 +993,11 @@ class RequiredDocumentsForms {
         // 필수 필드 확인
         const hasAccountInfo = bankName && accountNumber && accountHolder;
         
-        // 파일 업로드 확인 (실제 DB에서 확인 필요)
-        const hasRequiredDocument = this.elements.documentPreview?.children.length > 0;
-        const hasBankbookCopy = this.elements.bankbookPreview?.children.length > 0;
-        
-        return hasAccountInfo && hasRequiredDocument && hasBankbookCopy;
+        // 🆕 v1.1.0: 상태 기반 확인
+        return this.formState.hasRequiredDocument && 
+               this.formState.hasBankbookCopy && 
+               hasAccountInfo && 
+               this.formState.isAccountInfoSaved;
     }
 
     /**
@@ -865,4 +1018,4 @@ window.RequiredDocumentsForms = RequiredDocumentsForms;
 // 전역 함수로 등록 (HTML에서 직접 호출용)
 window.requiredDocumentsForms = null;
 
-console.log('RequiredDocumentsForms 모듈 로드 완료 v1.0.2');
+console.log('RequiredDocumentsForms 모듈 로드 완료 v1.1.0');
