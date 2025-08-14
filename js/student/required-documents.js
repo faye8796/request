@@ -1,5 +1,5 @@
 /**
- * 필수 서류 제출 메인 관리 모듈 v1.0.1
+ * 필수 서류 제출 메인 관리 모듈 v1.1.0
  * 세종학당 문화인턴 지원 시스템
  * 
  * 기능:
@@ -7,6 +7,12 @@
  * - 3단계 진행률 관리 및 UI 업데이트
  * - 최종 제출 로직
  * - 전체 상태 관리
+ * 
+ * v1.1.0 주요 업데이트:
+ * - 데이터 로딩 후 UI 상태 완전 동기화
+ * - 제출 상태별 버튼 분기 (최종제출/수정제출/재제출)
+ * - 관리자 피드백 시스템 추가
+ * - 실시간 상태 관리 개선
  */
 
 class RequiredDocumentsManager {
@@ -17,7 +23,19 @@ class RequiredDocumentsManager {
         this.isInitialized = false;
         this.currentUser = null;
         
-        // 진행 상태
+        // 🆕 v1.1.0: 실시간 상태 관리 객체
+        this.pageState = {
+            isDataLoaded: false,
+            hasRequiredDocument: false,
+            hasAccountInfo: false,
+            emergencyContactsCount: 0,
+            submissionStatus: 'incomplete', // incomplete/pending/approved/rejected
+            isModified: false,
+            adminMessage: null,
+            reviewDate: null
+        };
+        
+        // 진행 상태 (기존 유지하되 새 상태 객체와 연동)
         this.progress = {
             documents: false,
             emergency: false,
@@ -40,6 +58,10 @@ class RequiredDocumentsManager {
             progressText: null,
             progressSteps: [],
             
+            // 🆕 관리자 피드백 표시
+            adminFeedbackSection: null,
+            adminMessageArea: null,
+            
             // 최종 제출
             finalSubmitBtn: null,
             submissionStatus: null,
@@ -49,7 +71,7 @@ class RequiredDocumentsManager {
             emergencySection: null
         };
         
-        console.log('RequiredDocumentsManager 초기화됨 v1.0.1');
+        console.log('RequiredDocumentsManager 초기화됨 v1.1.0');
     }
 
     /**
@@ -73,12 +95,15 @@ class RequiredDocumentsManager {
             // 서브 모듈들 초기화
             await this.initializeModules();
             
+            // 🆕 v1.1.0: 기존 데이터 로드 및 상태 동기화
+            await this.loadDataAndSyncState();
+            
             // 이벤트 리스너 등록
             this.bindEvents();
             
-            // 초기 진행률 업데이트
-            await this.updateOverallProgress();
-            
+            // 🆕 v1.1.0: UI 상태 완전 업데이트
+            await this.updateAllUIStates();
+
             // Lucide 아이콘 초기화
             this.initializeLucideIcons();
 
@@ -169,6 +194,10 @@ class RequiredDocumentsManager {
             document.getElementById('step2')
         ];
         
+        // 🆕 v1.1.0: 관리자 피드백 요소들
+        this.elements.adminFeedbackSection = document.getElementById('adminFeedbackSection');
+        this.elements.adminMessageArea = document.getElementById('adminMessageArea');
+        
         // 최종 제출
         this.elements.finalSubmitBtn = document.getElementById('finalSubmitBtn');
         this.elements.submissionStatus = document.getElementById('submissionStatus');
@@ -178,6 +207,297 @@ class RequiredDocumentsManager {
         this.elements.emergencySection = document.getElementById('emergencySection');
         
         console.log('DOM 요소 찾기 완료');
+    }
+
+    /**
+     * 🆕 v1.1.0: 기존 데이터 로드 및 상태 동기화
+     */
+    async loadDataAndSyncState() {
+        try {
+            console.log('🔄 기존 데이터 로드 및 상태 동기화 시작');
+            
+            if (!this.api) {
+                console.warn('API 모듈이 아직 준비되지 않음');
+                return;
+            }
+
+            // 필수 서류 데이터 로드
+            const documentsData = await this.api.getRequiredDocuments();
+            const emergencyData = await this.api.getEmergencyContacts();
+
+            console.log('📋 로드된 데이터:', { documentsData, emergencyData });
+
+            // 🆕 상태 동기화
+            this.syncPageState(documentsData, emergencyData);
+
+            this.pageState.isDataLoaded = true;
+            console.log('✅ 데이터 로드 및 상태 동기화 완료:', this.pageState);
+
+        } catch (error) {
+            console.error('❌ 데이터 로드 및 상태 동기화 실패:', error);
+            // 로드 실패는 치명적이지 않으므로 계속 진행
+        }
+    }
+
+    /**
+     * 🆕 v1.1.0: 페이지 상태 동기화
+     */
+    syncPageState(documentsData, emergencyData) {
+        console.log('🔄 페이지 상태 동기화 시작');
+
+        // 필수 서류 상태 동기화
+        if (documentsData) {
+            this.pageState.hasRequiredDocument = !!documentsData.required_document_url;
+            this.pageState.hasAccountInfo = !!(
+                documentsData.salary_bank_name && 
+                documentsData.salary_account_number && 
+                documentsData.salary_account_holder &&
+                documentsData.bankbook_copy_url
+            );
+            this.pageState.submissionStatus = documentsData.submission_status || 'incomplete';
+            this.pageState.adminMessage = documentsData.admin_notes || null;
+            this.pageState.reviewDate = documentsData.updated_at || null;
+        }
+
+        // 비상연락망 상태 동기화
+        if (emergencyData) {
+            this.pageState.emergencyContactsCount = this.countCompletedEmergencyFields(emergencyData);
+        }
+
+        // 진행률 재계산
+        this.recalculateProgress();
+
+        console.log('✅ 페이지 상태 동기화 완료:', this.pageState);
+    }
+
+    /**
+     * 🆕 v1.1.0: 비상연락망 완성 필드 개수 계산
+     */
+    countCompletedEmergencyFields(emergencyData) {
+        if (!emergencyData) return 0;
+
+        const requiredFields = [
+            'blood_type', 'local_phone', 'domestic_phone', 
+            'local_address', 'domestic_address',
+            'institute_director_name', 'institute_manager_name', 'institute_helper_name',
+            'local_emergency_name', 'local_emergency_phone',
+            'domestic_emergency_name', 'domestic_emergency_phone',
+            'university_name', 'university_contact_name', 'university_contact_phone'
+        ];
+
+        return requiredFields.filter(field => 
+            emergencyData[field] && emergencyData[field].toString().trim() !== ''
+        ).length;
+    }
+
+    /**
+     * 🆕 v1.1.0: 진행률 재계산
+     */
+    recalculateProgress() {
+        // 1단계: 필수서류 + 계좌정보
+        this.progress.documents = this.pageState.hasRequiredDocument && this.pageState.hasAccountInfo;
+        
+        // 2단계: 비상연락망 (14개 필드 모두 완성)
+        this.progress.emergency = this.pageState.emergencyContactsCount >= 14;
+        
+        // 전체 진행률
+        this.progress.overall.completedSteps = 0;
+        if (this.progress.documents) this.progress.overall.completedSteps++;
+        if (this.progress.emergency) this.progress.overall.completedSteps++;
+        
+        this.progress.overall.percentage = Math.round(
+            (this.progress.overall.completedSteps / this.progress.overall.totalSteps) * 100
+        );
+        
+        this.progress.overall.canSubmit = this.progress.overall.completedSteps === this.progress.overall.totalSteps;
+
+        console.log('📊 진행률 재계산 완료:', this.progress);
+    }
+
+    /**
+     * 🆕 v1.1.0: 모든 UI 상태 업데이트
+     */
+    async updateAllUIStates() {
+        console.log('🎨 모든 UI 상태 업데이트 시작');
+        
+        // 진행률 업데이트
+        await this.updateOverallProgress();
+        
+        // 단계별 UI 업데이트
+        this.updateStepsUI();
+        
+        // 🆕 제출 상태별 버튼 업데이트
+        this.updateSubmitButtonByStatus();
+        
+        // 🆕 관리자 피드백 표시
+        this.updateAdminFeedbackDisplay();
+        
+        console.log('✅ 모든 UI 상태 업데이트 완료');
+    }
+
+    /**
+     * 🆕 v1.1.0: 제출 상태별 버튼 업데이트
+     */
+    updateSubmitButtonByStatus() {
+        if (!this.elements.finalSubmitBtn) return;
+
+        console.log('🔘 제출 버튼 상태 업데이트:', this.pageState.submissionStatus);
+
+        const submitBtn = this.elements.finalSubmitBtn;
+        
+        // 기본적으로 완료 상태가 아니면 비활성화
+        if (!this.progress.overall.canSubmit) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('disabled');
+            submitBtn.innerHTML = '<i data-lucide="lock"></i> 모든 항목 완료 후 제출 가능';
+            return;
+        }
+
+        // 제출 상태별 분기 처리
+        switch (this.pageState.submissionStatus) {
+            case 'approved':
+                // 승인됨 - 수정 제출 모드
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('disabled');
+                submitBtn.classList.add('modify-mode');
+                submitBtn.innerHTML = '<i data-lucide="edit-3"></i> 수정 제출';
+                break;
+
+            case 'rejected':
+                // 반려됨 - 재제출 모드  
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('disabled');
+                submitBtn.classList.add('resubmit-mode');
+                submitBtn.innerHTML = '<i data-lucide="refresh-cw"></i> 재제출';
+                break;
+
+            case 'pending':
+                // 검토 중 - 수정 제출 모드
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('disabled');
+                submitBtn.classList.add('modify-mode');
+                submitBtn.innerHTML = '<i data-lucide="edit-3"></i> 수정 제출';
+                break;
+
+            case 'incomplete':
+            default:
+                // 최초 제출 모드
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('disabled', 'modify-mode', 'resubmit-mode');
+                submitBtn.innerHTML = '<i data-lucide="send"></i> 최종 제출';
+                break;
+        }
+
+        // Lucide 아이콘 재초기화
+        this.initializeLucideIcons();
+        
+        console.log('✅ 제출 버튼 상태 업데이트 완료');
+    }
+
+    /**
+     * 🆕 v1.1.0: 관리자 피드백 표시
+     */
+    updateAdminFeedbackDisplay() {
+        if (!this.elements.adminFeedbackSection) {
+            console.log('⚠️ 관리자 피드백 섹션을 찾을 수 없음');
+            return;
+        }
+
+        const feedbackSection = this.elements.adminFeedbackSection;
+        
+        // 제출 전이거나 메시지가 없으면 숨김
+        if (this.pageState.submissionStatus === 'incomplete' || !this.pageState.adminMessage) {
+            feedbackSection.style.display = 'none';
+            return;
+        }
+
+        // 상태별 표시 설정
+        let statusClass = '';
+        let statusIcon = '';
+        let statusTitle = '';
+        let statusColor = '';
+
+        switch (this.pageState.submissionStatus) {
+            case 'approved':
+                statusClass = 'approved';
+                statusIcon = 'check-circle';
+                statusTitle = '제출 승인';
+                statusColor = 'text-green-600';
+                break;
+            case 'rejected':
+                statusClass = 'rejected';
+                statusIcon = 'x-circle';
+                statusTitle = '제출 반려';
+                statusColor = 'text-red-600';
+                break;
+            case 'pending':
+                statusClass = 'pending';
+                statusIcon = 'clock';
+                statusTitle = '검토 중';
+                statusColor = 'text-yellow-600';
+                break;
+            default:
+                feedbackSection.style.display = 'none';
+                return;
+        }
+
+        // 관리자 피드백 HTML 생성
+        feedbackSection.className = `admin-feedback-section ${statusClass}`;
+        feedbackSection.style.display = 'block';
+        feedbackSection.innerHTML = `
+            <div class="admin-feedback-header">
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="${statusIcon}" class="w-6 h-6 ${statusColor}"></i>
+                    <div>
+                        <h3 class="text-lg font-semibold ${statusColor}">${statusTitle}</h3>
+                        ${this.pageState.reviewDate ? `<p class="text-sm text-gray-500">검토일: ${this.formatDate(this.pageState.reviewDate)}</p>` : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="admin-feedback-content">
+                <div class="admin-message">
+                    <h4 class="text-sm font-medium text-gray-700 mb-2">관리자 메시지</h4>
+                    <div class="message-text">${this.formatAdminMessage(this.pageState.adminMessage)}</div>
+                </div>
+            </div>
+        `;
+
+        // Lucide 아이콘 재초기화
+        this.initializeLucideIcons();
+        
+        console.log('✅ 관리자 피드백 표시 완료');
+    }
+
+    /**
+     * 🆕 v1.1.0: 관리자 메시지 포맷팅
+     */
+    formatAdminMessage(message) {
+        if (!message) return '';
+        
+        // HTML 이스케이프 및 줄바꿈 처리
+        return message
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\n/g, '<br>');
+    }
+
+    /**
+     * 🆕 v1.1.0: 날짜 포맷팅
+     */
+    formatDate(dateString) {
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            return dateString;
+        }
     }
 
     /**
@@ -294,6 +614,9 @@ class RequiredDocumentsManager {
     async handleProgressUpdate(detail) {
         console.log('진행률 업데이트 이벤트 수신:', detail);
         
+        // 🆕 v1.1.0: 데이터 다시 로드하여 최신 상태 반영
+        await this.loadDataAndSyncState();
+        
         // 전체 진행률 업데이트
         await this.updateOverallProgress();
         
@@ -301,7 +624,7 @@ class RequiredDocumentsManager {
         this.updateStepsUI();
         
         // 제출 버튼 상태 업데이트
-        this.updateSubmitButton();
+        this.updateSubmitButtonByStatus();
     }
 
     /**
@@ -311,9 +634,11 @@ class RequiredDocumentsManager {
         try {
             console.log('전체 진행률 업데이트 시작');
             
-            // API를 통해 진행률 조회
+            // API를 통해 진행률 조회 (기존 방식과 호환)
             if (this.api && this.api.getOverallProgress) {
                 const progressData = await this.api.getOverallProgress();
+                
+                // 🆕 v1.1.0: 내부 상태와 동기화
                 this.progress = progressData;
                 
                 console.log('진행률 데이터:', progressData);
@@ -329,16 +654,16 @@ class RequiredDocumentsManager {
                         `전체 진행률: ${progressData.overall.percentage}%`;
                 }
             } else {
-                // API가 없는 경우 기본값 설정
-                console.warn('API 모듈이 없어 기본 진행률을 설정합니다.');
-                this.progress.overall.percentage = 0;
+                // 🆕 v1.1.0: API가 없는 경우 내부 상태 사용
+                console.warn('API 모듈이 없어 내부 진행률을 사용합니다.');
                 
                 if (this.elements.progressBar) {
-                    this.elements.progressBar.style.width = '0%';
+                    this.elements.progressBar.style.width = `${this.progress.overall.percentage}%`;
                 }
                 
                 if (this.elements.progressText) {
-                    this.elements.progressText.textContent = '전체 진행률: 0%';
+                    this.elements.progressText.textContent = 
+                        `전체 진행률: ${this.progress.overall.percentage}%`;
                 }
             }
             
@@ -358,7 +683,7 @@ class RequiredDocumentsManager {
         // 1단계: 필수 서류 및 계좌 정보
         const step1Element = this.elements.progressSteps[0];
         if (step1Element) {
-            const isComplete = this.progress.documents && this.progress.documents.completed;
+            const isComplete = this.progress.documents;
             
             const icon = step1Element.querySelector('.step-icon i');
             const status = step1Element.querySelector('.step-status');
@@ -375,8 +700,8 @@ class RequiredDocumentsManager {
         // 2단계: 비상연락망
         const step2Element = this.elements.progressSteps[1];
         if (step2Element) {
-            const isComplete = this.progress.emergency && this.progress.emergency.completed;
-            const isActive = this.progress.documents && this.progress.documents.completed;
+            const isComplete = this.progress.emergency;
+            const isActive = this.progress.documents;
             
             const icon = step2Element.querySelector('.step-icon i');
             const status = step2Element.querySelector('.step-status');
@@ -409,27 +734,11 @@ class RequiredDocumentsManager {
     }
 
     /**
-     * 제출 버튼 상태 업데이트
+     * 제출 버튼 상태 업데이트 (기존 호환성 유지)
      */
     updateSubmitButton() {
-        if (!this.elements.finalSubmitBtn) return;
-        
-        const canSubmit = this.progress.overall && this.progress.overall.canSubmit;
-        
-        this.elements.finalSubmitBtn.disabled = !canSubmit;
-        
-        if (canSubmit) {
-            this.elements.finalSubmitBtn.classList.remove('disabled');
-            this.elements.finalSubmitBtn.innerHTML = '<i data-lucide="send"></i> 최종 제출';
-        } else {
-            this.elements.finalSubmitBtn.classList.add('disabled');
-            this.elements.finalSubmitBtn.innerHTML = '<i data-lucide="lock"></i> 모든 항목 완료 후 제출 가능';
-        }
-        
-        // Lucide 아이콘 재초기화
-        this.initializeLucideIcons();
-        
-        console.log('제출 버튼 상태 업데이트:', canSubmit ? '활성화' : '비활성화');
+        // 🆕 v1.1.0: 새로운 상태별 업데이트 함수로 위임
+        this.updateSubmitButtonByStatus();
     }
 
     /**
@@ -445,8 +754,22 @@ class RequiredDocumentsManager {
                 return;
             }
             
+            // 🆕 v1.1.0: 상태별 확인 메시지
+            let confirmMessage = '';
+            switch (this.pageState.submissionStatus) {
+                case 'approved':
+                    confirmMessage = '승인된 필수 서류를 수정 제출하시겠습니까?\n수정 후에는 다시 검토가 필요합니다.';
+                    break;
+                case 'rejected':
+                case 'pending':
+                    confirmMessage = '필수 서류를 재제출하시겠습니까?\n제출 후에는 관리자 검토가 진행됩니다.';
+                    break;
+                default:
+                    confirmMessage = '모든 정보를 최종 제출하시겠습니까?\n제출 후에는 관리자 검토가 진행됩니다.';
+            }
+            
             // 확인 대화상자
-            if (!confirm('모든 정보를 최종 제출하시겠습니까?\n제출 후에는 수정할 수 없습니다.')) {
+            if (!confirm(confirmMessage)) {
                 return;
             }
             
@@ -485,6 +808,10 @@ class RequiredDocumentsManager {
         // 성공 메시지
         this.showSuccess('필수 서류가 성공적으로 제출되었습니다!');
         
+        // 🆕 v1.1.0: 상태 업데이트
+        this.pageState.submissionStatus = 'pending';
+        this.pageState.adminMessage = null;
+        
         // 제출 상태 업데이트
         if (this.elements.submissionStatus) {
             this.elements.submissionStatus.className = 'submission-status submitted';
@@ -500,10 +827,11 @@ class RequiredDocumentsManager {
         }
         
         // 제출 버튼 업데이트
-        if (this.elements.finalSubmitBtn) {
-            this.elements.finalSubmitBtn.disabled = true;
-            this.elements.finalSubmitBtn.innerHTML = '<i data-lucide="check-circle"></i> 제출 완료';
-            this.elements.finalSubmitBtn.classList.add('submitted');
+        this.updateSubmitButtonByStatus();
+        
+        // 관리자 피드백 섹션 숨김
+        if (this.elements.adminFeedbackSection) {
+            this.elements.adminFeedbackSection.style.display = 'none';
         }
         
         // 임시 저장 데이터 삭제
@@ -750,4 +1078,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-console.log('RequiredDocumentsManager 모듈 로드 완료 v1.0.1');
+console.log('RequiredDocumentsManager 모듈 로드 완료 v1.1.0');
