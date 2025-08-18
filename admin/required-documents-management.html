@@ -809,7 +809,7 @@
                     
                     <div class="student-info-grid">
                         ${renderInfoSection('파견 학당', student.institute_name)}
-                        ${renderInfoSection('출생연도', student.birth_year ? `${student.birth_year}년` : null)}
+                        ${renderInfoSection('출생년월일', formatBirthDate(student.birth_date))}
                         ${renderInfoSection('혈액형', student.blood_type)}
                         ${renderInfoSection('휴대폰번호', formatPhoneInfo(student.local_phone, student.domestic_phone))}
                         ${renderInfoSection('거주지주소', formatAddressInfo(student.local_address, student.domestic_address))}
@@ -839,6 +839,22 @@
                     <p class="${isEmpty ? 'empty' : ''}">${isEmpty ? '정보 없음' : content}</p>
                 </div>
             `;
+        }
+
+        // 🔄 출생년월일 포맷팅 함수 (새로 추가)
+        function formatBirthDate(birthDate) {
+            if (!birthDate) return null;
+            
+            try {
+                const date = new Date(birthDate);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}년 ${month}월 ${day}일`;
+            } catch (error) {
+                console.error('출생년월일 포맷팅 오류:', error);
+                return birthDate; // 원본 반환
+            }
         }
 
         // 포맷팅 헬퍼 함수들
@@ -978,7 +994,7 @@
                 const exportData = filteredStudentsData.map(student => ({
                     '학생명': student.student_name,
                     '파견학당': student.institute_name || '',
-                    '출생연도': student.birth_year || '',
+                    '출생년월일': formatBirthDate(student.birth_date) || '', // 🔄 변경: 전체 날짜로
                     '혈액형': student.blood_type || '',
                     '현지연락처': student.local_phone || '',
                     '국내연락처': student.domestic_phone || '',
