@@ -699,6 +699,8 @@
                 // 5. 기존 신청 내역 확인
                 await checkExistingRequestDirect(userData);
 
+                
+                
                 console.log('✅ v9.3.0: 통합 초기화 완료');
 
             } catch (error) {
@@ -785,10 +787,10 @@
         }
 
         // 필수활동일 정보 직접 표시
+        // 필수활동일 정보 직접 표시
         async function displayRequiredDaysInfoDirect(userData) {
             try {
                 console.log('📅 필수활동일 정보 표시...');
-
                 const requiredEl = document.getElementById('requiredDays');
                 if (!requiredEl) {
                     console.warn('⚠️ requiredDays 요소 없음');
@@ -797,15 +799,18 @@
 
                 // 기본값 설정
                 let requiredDays = 90;
-                let maximumDays = 365;
+                let maximumDays = 120;
+                let requiredReturnDate = '2025-12-12'; // 🆕 기본값 설정
 
                 // 사용자 데이터에서 직접 가져오기
                 if (userData && userData.minimum_required_days) {
                     requiredDays = userData.minimum_required_days;
                     maximumDays = userData.maximum_allowed_days || userData.minimum_required_days;
+                    requiredReturnDate = userData.required_return_date || '2025-12-12'; // 🆕 기본값 폴백
                     console.log('✅ 사용자 데이터에서 활동일 정보 확인:', requiredDays, '일');
+                    console.log('✅ 사용자 데이터에서 필수귀국일 확인:', requiredReturnDate);
                 } else {
-                    console.warn('⚠️ 사용자 데이터 없음, 기본값 사용:', requiredDays, '일');
+                    console.warn('⚠️ 사용자 데이터 없음, 기본값 사용:', requiredDays, '일', requiredReturnDate);
                 }
 
                 // API 어댑터를 통한 추가 확인 (선택적)
@@ -815,17 +820,24 @@
                         if (response.success && response.data) {
                             requiredDays = response.data.minimum_required_days || requiredDays;
                             maximumDays = response.data.maximum_allowed_days || maximumDays;
+                            requiredReturnDate = response.data.required_return_date || requiredReturnDate; // 🆕 기본값 폴백
                             console.log('✅ API에서 활동일 정보 업데이트:', requiredDays, '일');
+                            console.log('✅ API에서 필수귀국일 업데이트:', requiredReturnDate);
                         }
                     } catch (apiError) {
                         console.warn('⚠️ API 호출 실패, 기존값 사용:', apiError);
                     }
                 }
 
+                // 🆕 ValidationState에 필수귀국일 저장 (항상 값이 있도록)
+                if (typeof ValidationState !== 'undefined') {
+                    ValidationState.requiredReturnDate = requiredReturnDate;
+                    console.log('✅ ValidationState에 필수귀국일 저장:', requiredReturnDate);
+                }
+
                 // UI 업데이트
                 requiredEl.textContent = requiredDays;
                 requiredEl.className = 'value required-days-value success';
-
                 const maximumEl = document.getElementById('maximumDays');
                 if (maximumEl) {
                     maximumEl.textContent = maximumDays;
@@ -833,11 +845,10 @@
                 }
 
                 console.log('✅ 필수활동일 정보 표시 완료:', requiredDays, '일');
-                return { requiredDays, maximumDays };
+                return { requiredDays, maximumDays, requiredReturnDate };
 
             } catch (error) {
                 console.error('❌ 필수활동일 정보 표시 실패:', error);
-
                 // 폴백: 기본값 설정
                 return setDefaultRequiredDaysDirect();
             }
@@ -854,23 +865,28 @@
                     requiredEl.className = 'value required-days-value fallback';
 
                     if (maximumEl) {
-                        maximumEl.textContent = '365';
+                        maximumEl.textContent = '120';
                         maximumEl.className = 'value maximum-days-value fallback';
+                    }
+
+                    // 🆕 기본 필수귀국일도 설정
+                    if (typeof ValidationState !== 'undefined') {
+                        ValidationState.requiredReturnDate = '2025-12-12';
+                        console.log('✅ 폴백 상황에서 기본 필수귀국일 설정: 2025-12-12');
                     }
 
                     console.log('✅ 기본 필수활동일 설정 완료: 90일 (폴백)');
                 }
 
-                return { requiredDays: 90, maximumDays: 365 };
+                return { requiredDays: 90, maximumDays: 120, requiredReturnDate: '2025-12-12' }; // 🆕 추가
 
             } catch (error) {
                 console.error('❌ 기본 필수활동일 설정 실패:', error);
-                return { requiredDays: 90, maximumDays: 365 };
+                return { requiredDays: 90, maximumDays: 120, requiredReturnDate: '2025-12-12' }; // 🆕 추가
             }
         }
-
+        
         // 여권정보 직접 체크
-
         async function checkPassportStatusDirect(userData) {
             try {
                 console.log('🔍 여권정보 체크...');
@@ -1126,10 +1142,15 @@
             lastValidationResult: null,
             validationTimer: null,
             requiredDays: 90,  // 기본값
-            maximumDays: 365,  // 기본값
+            maximumDays: 120,  // 기본값
+            requiredReturnDate: '2025-12-12',
             isInitialized: false
         };
     
+        // 전역으로 노출
+        window.ValidationState = ValidationState;
+
+        
         // ===== 1. 활동일수 계산 함수 =====
         function calculateActivityDays(arrivalDate, workEndDate) {
             if (!arrivalDate || !workEndDate) return 0;
@@ -1189,31 +1210,20 @@
         // 🆕 최대 귀국일 추가
         function getRequiredReturnDate() {
             try {
+                // 실시간으로 사용자 데이터에서 가져오기
                 const userData = JSON.parse(localStorage.getItem('currentStudent') || '{}');
-                const requiredReturnDate = userData.required_return_date;
+                const userRequiredReturnDate = userData.required_return_date;
 
-                if (requiredReturnDate) {
-                    console.log('✅ required_return_date 확인:', requiredReturnDate);
-
-                    // 티켓 모듈에 전달
-                    const ticketModule = window.flightRequestCoordinator?.ticket;
-                    if (ticketModule && typeof ticketModule.setUserRequirements === 'function') {
-                        ticketModule.setUserRequirements({
-                            userRequiredDays: userData.minimum_required_days || 90,
-                            userMaximumDays: userData.maximum_allowed_days || 365,
-                            dispatchEndDate: userData.dispatch_end_date,
-                            requiredReturnDate: requiredReturnDate
-                        });
-                        console.log('✅ 티켓 모듈에 required_return_date 설정 완료');
-                    }
-
-                    return requiredReturnDate;
+                if (userRequiredReturnDate) {
+                    ValidationState.requiredReturnDate = userRequiredReturnDate;  // 🆕 상태에 저장
+                    return userRequiredReturnDate;
                 }
             } catch (error) {
-                console.warn('⚠️ required_return_date 가져오기 실패:', error);
+                console.warn('⚠️ 필수귀국일 가져오기 실패, 기본값 사용:', error);
             }
-            return null;
+                return ValidationState.requiredReturnDate || '2025-12-12';
         }
+
 
         
         // ===== 3. 활동기간 검증 로직 =====

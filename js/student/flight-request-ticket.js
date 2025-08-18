@@ -409,9 +409,21 @@ class FlightRequestTicket {
             const workEnd = new Date(this.ticketData.actualWorkEndDate);
             
             // 🆕 v2.3.0: required_return_date 검증 (우선순위 1)
-            if (this.userRequirements.requiredReturnDate) {
-                const requiredReturnDate = new Date(this.userRequirements.requiredReturnDate);
-                
+            // 전역 ValidationState에서 직접 가져오기
+            let requiredReturnDateValue = this.userRequirements.requiredReturnDate;
+
+            // userRequirements에 없으면 전역 ValidationState에서 가져오기
+            if (!requiredReturnDateValue && typeof ValidationState !== 'undefined' && ValidationState.requiredReturnDate) {
+                requiredReturnDateValue = ValidationState.requiredReturnDate;
+            } 
+            // 전역 상태에도 없으면 함수 호출로 실시간 로드
+            else if (!requiredReturnDateValue && typeof getRequiredReturnDate === 'function') {
+                requiredReturnDateValue = getRequiredReturnDate();
+            }
+
+            if (requiredReturnDateValue) {
+                const requiredReturnDate = new Date(requiredReturnDateValue);
+
                 if (returnD > requiredReturnDate) {
                     this.showValidationError('return', 
                         `귀국일은 필수 귀국일(${this.formatDate(requiredReturnDate)}) 이전이어야 합니다.`);
