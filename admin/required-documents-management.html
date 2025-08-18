@@ -109,6 +109,32 @@
             transform: none;
         }
 
+        /* 🆕 지급계좌 전용 엑셀 버튼 스타일 */
+        .payment-excel-btn {
+            background: #7c3aed;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .payment-excel-btn:hover {
+            background: #6d28d9;
+            transform: translateY(-2px);
+        }
+
+        .payment-excel-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         /* Statistics */
         .statistics {
             display: grid;
@@ -308,6 +334,62 @@
             font-style: italic;
         }
 
+        /* 🆕 계좌 정보 섹션 스타일 (차별화된 디자인) */
+        .payment-account-section {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #0ea5e9;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .account-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .account-header h4 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0369a1;
+            margin: 0;
+        }
+
+        .account-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .account-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #bae6fd;
+        }
+
+        .account-item .label {
+            font-weight: 600;
+            color: #0369a1;
+            min-width: 60px;
+        }
+
+        .account-item .value {
+            color: #1e293b;
+            font-weight: 500;
+        }
+
+        .account-item .value.empty {
+            color: #64748b;
+            font-style: italic;
+        }
+
         .admin-feedback-section {
             background: #fafbfc;
             border-radius: 12px;
@@ -483,6 +565,10 @@
             .filter-group {
                 width: 100%;
             }
+
+            .account-details {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Toast Notifications */
@@ -533,6 +619,11 @@
                 <button class="excel-export-btn" id="exportExcelBtn">
                     <span>📥</span>
                     엑셀로 내보내기
+                </button>
+                <!-- 🆕 지급계좌 정보 엑셀 내보내기 버튼 추가 -->
+                <button class="payment-excel-btn" id="exportPaymentExcelBtn">
+                    <span>💰</span>
+                    지급계좌 정보 내보내기
                 </button>
             </div>
         </div>
@@ -640,6 +731,7 @@
         const statusFilter = document.getElementById('statusFilter');
         const clearFiltersBtn = document.getElementById('clearFiltersBtn');
         const exportExcelBtn = document.getElementById('exportExcelBtn');
+        const exportPaymentExcelBtn = document.getElementById('exportPaymentExcelBtn'); // 🆕 새 버튼
 
         // 통계 요소
         const totalCount = document.getElementById('totalCount');
@@ -712,6 +804,30 @@
             } finally {
                 isLoading = false;
                 hideLoading();
+            }
+        }
+
+        // 🆕 지급계좌 정보 로딩 함수
+        async function loadPaymentAccountsData() {
+            try {
+                console.log('💰 지급계좌 정보 로딩 시작...');
+                
+                const { data, error } = await supabase
+                    .from('v_student_payment_accounts')
+                    .select('*')
+                    .order('student_name');
+                
+                if (error) {
+                    console.error('지급계좌 데이터 로딩 실패:', error);
+                    throw error;
+                }
+                
+                console.log('✅ 지급계좌 데이터 로딩 성공:', data?.length || 0, '명');
+                return data || [];
+                
+            } catch (error) {
+                console.error('지급계좌 데이터 로딩 실패:', error);
+                throw error;
             }
         }
 
@@ -809,13 +925,34 @@
                     
                     <div class="student-info-grid">
                         ${renderInfoSection('파견 학당', student.institute_name)}
-                        ${renderInfoSection('출생년월일', formatBirthDate(student.birth_date))}
+                        ${renderInfoSection('출생년도', student.birth_year ? `${student.birth_year}년` : null)}
                         ${renderInfoSection('혈액형', student.blood_type)}
                         ${renderInfoSection('휴대폰번호', formatPhoneInfo(student.local_phone, student.domestic_phone))}
                         ${renderInfoSection('거주지주소', formatAddressInfo(student.local_address, student.domestic_address))}
                         ${renderInfoSection('파견 학당 관계자', formatInstituteStaff(student))}
                         ${renderInfoSection('비상연락처', formatEmergencyContacts(student))}
                         ${renderInfoSection('소속대학', formatUniversityInfo(student))}
+                    </div>
+                    
+                    <!-- 🆕 계좌 정보 섹션 (차별화된 디자인) -->
+                    <div class="payment-account-section">
+                        <div class="account-header">
+                            <h4>💰 활동비/체재비 지급 계좌</h4>
+                        </div>
+                        <div class="account-details">
+                            <div class="account-item">
+                                <span class="label">은행명:</span>
+                                <span class="value ${!student.salary_bank_name ? 'empty' : ''}">${student.salary_bank_name || '미입력'}</span>
+                            </div>
+                            <div class="account-item">
+                                <span class="label">계좌번호:</span>
+                                <span class="value ${!student.salary_account_number ? 'empty' : ''}">${student.salary_account_number || '미입력'}</span>
+                            </div>
+                            <div class="account-item">
+                                <span class="label">예금주:</span>
+                                <span class="value ${!student.salary_account_holder ? 'empty' : ''}">${student.salary_account_holder || '미입력'}</span>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="admin-feedback-section">
@@ -839,22 +976,6 @@
                     <p class="${isEmpty ? 'empty' : ''}">${isEmpty ? '정보 없음' : content}</p>
                 </div>
             `;
-        }
-
-        // 🔄 출생년월일 포맷팅 함수 (새로 추가)
-        function formatBirthDate(birthDate) {
-            if (!birthDate) return null;
-            
-            try {
-                const date = new Date(birthDate);
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                return `${year}년 ${month}월 ${day}일`;
-            } catch (error) {
-                console.error('출생년월일 포맷팅 오류:', error);
-                return birthDate; // 원본 반환
-            }
         }
 
         // 포맷팅 헬퍼 함수들
@@ -898,6 +1019,35 @@
                 parts.push(`담당자: ${student.university_contact_name} (${student.university_contact_phone})`);
             }
             return parts.length > 0 ? parts.join('\n') : null;
+        }
+
+        // 🆕 활동일 계산 함수
+        function calculateWorkDays(arrivalDate, endDate) {
+            if (!arrivalDate || !endDate) return null;
+            
+            try {
+                const arrival = new Date(arrivalDate);
+                const end = new Date(endDate);
+                const diffTime = Math.abs(end - arrival);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays;
+            } catch (error) {
+                console.error('활동일 계산 오류:', error);
+                return null;
+            }
+        }
+
+        // 🆕 날짜 포맷팅 함수
+        function formatDate(dateString) {
+            if (!dateString) return null;
+            
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('ko-KR');
+            } catch (error) {
+                console.error('날짜 포맷팅 오류:', error);
+                return dateString;
+            }
         }
 
         // 파일 다운로드 함수
@@ -985,7 +1135,7 @@
             renderStudents();
         }
 
-        // 엑셀 내보내기 함수
+        // 기존 엑셀 내보내기 함수 (필수서류 현황)
         async function exportToExcel() {
             try {
                 exportExcelBtn.disabled = true;
@@ -994,7 +1144,7 @@
                 const exportData = filteredStudentsData.map(student => ({
                     '학생명': student.student_name,
                     '파견학당': student.institute_name || '',
-                    '출생년월일': formatBirthDate(student.birth_date) || '', // 🔄 변경: 전체 날짜로
+                    '출생년도': student.birth_year ? `${student.birth_year}년` : '',
                     '혈액형': student.blood_type || '',
                     '현지연락처': student.local_phone || '',
                     '국내연락처': student.domestic_phone || '',
@@ -1038,6 +1188,57 @@
             }
         }
 
+        // 🆕 지급계좌 정보 엑셀 내보내기 함수
+        async function exportPaymentAccountsToExcel() {
+            try {
+                exportPaymentExcelBtn.disabled = true;
+                exportPaymentExcelBtn.innerHTML = '⏳ 내보내는 중...';
+                
+                console.log('💰 지급계좌 정보 엑셀 내보내기 시작...');
+                
+                // 지급계좌 정보 데이터 로딩
+                const paymentData = await loadPaymentAccountsData();
+                
+                const exportData = paymentData.map(student => {
+                    // 활동일 계산 (actual_work_days 우선, 없으면 날짜 차이 계산)
+                    let workDays = student.actual_work_days;
+                    if (!workDays && student.actual_arrival_date && student.actual_work_end_date) {
+                        workDays = calculateWorkDays(student.actual_arrival_date, student.actual_work_end_date);
+                    }
+                    
+                    return {
+                        '파견학당명': student.institute_name || '',
+                        '학생성명': student.student_name,
+                        '현지도착일': formatDate(student.actual_arrival_date) || '',
+                        '학당근무종료일': formatDate(student.actual_work_end_date) || '',
+                        '계산된활동일': workDays ? `${workDays}일` : '',
+                        '지급계좌은행명': student.salary_bank_name || '',
+                        '지급계좌계좌번호': student.salary_account_number || '',
+                        '지급계좌예금주성명': student.salary_account_holder || ''
+                    };
+                });
+                
+                console.log('📊 엑셀 데이터 생성 완료:', exportData.length, '건');
+                
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, '활동비지급계좌정보');
+                
+                const today = new Date().toISOString().split('T')[0];
+                const fileName = `활동비지급계좌정보_${today}.xlsx`;
+                
+                XLSX.writeFile(workbook, fileName);
+                showToast('지급계좌 정보 엑셀 파일이 다운로드되었습니다.');
+                
+            } catch (error) {
+                console.error('지급계좌 엑셀 내보내기 실패:', error);
+                showToast('지급계좌 정보 내보내기에 실패했습니다.', 'error');
+            } finally {
+                exportPaymentExcelBtn.disabled = false;
+                exportPaymentExcelBtn.innerHTML = '<span>💰</span> 지급계좌 정보 내보내기';
+            }
+        }
+
         // 필터 이벤트 리스너
         searchInput.addEventListener('input', applyFilters);
         instituteFilter.addEventListener('change', applyFilters);
@@ -1052,6 +1253,7 @@
 
         // 엑셀 내보내기 이벤트 리스너
         exportExcelBtn.addEventListener('click', exportToExcel);
+        exportPaymentExcelBtn.addEventListener('click', exportPaymentAccountsToExcel); // 🆕 새 버튼 이벤트
 
         // 🚀 초기화 - 관리자 인증 체크 후 데이터 로딩
         document.addEventListener('DOMContentLoaded', () => {
