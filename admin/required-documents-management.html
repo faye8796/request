@@ -612,6 +612,20 @@
     
     <!-- Main Script -->
     <script type="module">
+        // 🔐 관리자 인증 체크 (비자 관리 페이지와 동일)
+        function checkAdminAuth() {
+            console.log('🔐 관리자 인증 확인 시작...');
+            const adminSession = localStorage.getItem('adminSession');
+            if (!adminSession || adminSession !== 'true') {
+                console.warn('❌ 관리자 인증 실패 - adminSession:', adminSession);
+                alert('관리자 로그인이 필요합니다.');
+                window.location.href = '../admin.html';
+                return false;
+            }
+            console.log('✅ 관리자 인증 확인 완료');
+            return true;
+        }
+
         // 전역 변수
         let allStudentsData = [];
         let filteredStudentsData = [];
@@ -670,12 +684,19 @@
             showLoading();
             
             try {
+                console.log('📋 필수 서류 제출 데이터 로딩 시작...');
+                
                 const { data, error } = await supabase
                     .from('v_student_required_documents_summary')
                     .select('*')
                     .order('student_name');
                 
-                if (error) throw error;
+                if (error) {
+                    console.error('데이터 로딩 실패:', error);
+                    throw error;
+                }
+                
+                console.log('✅ 데이터 로딩 성공:', data?.length || 0, '명');
                 
                 allStudentsData = data || [];
                 filteredStudentsData = [...allStudentsData];
@@ -1016,9 +1037,16 @@
         // 엑셀 내보내기 이벤트 리스너
         exportExcelBtn.addEventListener('click', exportToExcel);
 
-        // 초기화
+        // 🚀 초기화 - 관리자 인증 체크 후 데이터 로딩
         document.addEventListener('DOMContentLoaded', () => {
             console.log('📋 필수 서류 제출 관리 페이지 초기화 시작');
+            
+            // 🔐 관리자 인증 체크 (필수)
+            if (!checkAdminAuth()) {
+                return; // 인증 실패 시 중단
+            }
+            
+            // 인증 성공 시 데이터 로딩
             loadStudentsData();
         });
     </script>
