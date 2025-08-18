@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>필수 서류 제출 관리 - 세종학당 문화인턴 관리 시스템</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📋%3C/text%3E%3C/svg%3E">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -523,17 +521,17 @@
         <div class="header">
             <div class="header-left">
                 <a href="../admin.html" class="back-button">
-                    <i data-lucide="arrow-left"></i>
+                    <span>←</span>
                     관리자 대시보드
                 </a>
                 <div class="header-title">
-                    <i data-lucide="file-text" size="32" style="color: #6366f1;"></i>
+                    <span>📋</span>
                     <h1>필수 서류 제출 관리</h1>
                 </div>
             </div>
             <div class="header-right">
                 <button class="excel-export-btn" id="exportExcelBtn">
-                    <i data-lucide="download"></i>
+                    <span>📥</span>
                     엑셀로 내보내기
                 </button>
             </div>
@@ -584,7 +582,7 @@
                 <div class="filter-group">
                     <label>&nbsp;</label>
                     <button class="clear-filters-btn" id="clearFiltersBtn">
-                        <i data-lucide="x"></i>
+                        <span>✖</span>
                         필터 초기화
                     </button>
                 </div>
@@ -609,14 +607,11 @@
         </div>
     </div>
 
-    <!-- Toast Container -->
-    <div id="toastContainer"></div>
-
-    <!-- JavaScript -->
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Main Script -->
     <script type="module">
-        // Lucide Icons 초기화
-        lucide.createIcons();
-
         // 전역 변수
         let allStudentsData = [];
         let filteredStudentsData = [];
@@ -660,7 +655,9 @@
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => {
-                    document.body.removeChild(toast);
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
                 }, 300);
             }, 3000);
         }
@@ -752,9 +749,6 @@
             emptyState.style.display = 'none';
             
             studentsContainer.innerHTML = filteredStudentsData.map(student => renderStudentCard(student)).join('');
-            
-            // 이벤트 리스너 재등록
-            attachEventListeners();
         }
 
         // 개별 학생 카드 렌더링
@@ -778,15 +772,15 @@
                             <div class="card-actions">
                                 ${student.required_document_url ? 
                                     `<button class="download-btn" onclick="downloadFile('${student.required_document_url}', '${student.student_name}_필수서류.pdf')">
-                                        <i data-lucide="file-text"></i> 필수서류
+                                        📄 필수서류
                                     </button>` : 
-                                    '<span class="no-file"><i data-lucide="x-circle"></i> 필수서류 미제출</span>'
+                                    '<span class="no-file">❌ 필수서류 미제출</span>'
                                 }
                                 ${student.bankbook_copy_url ? 
                                     `<button class="download-btn" onclick="downloadFile('${student.bankbook_copy_url}', '${student.student_name}_통장사본.pdf')">
-                                        <i data-lucide="credit-card"></i> 통장사본
+                                        💳 통장사본
                                     </button>` : 
-                                    '<span class="no-file"><i data-lucide="x-circle"></i> 통장사본 미제출</span>'
+                                    '<span class="no-file">❌ 통장사본 미제출</span>'
                                 }
                             </div>
                         </div>
@@ -804,7 +798,7 @@
                     </div>
                     
                     <div class="admin-feedback-section">
-                        <h4><i data-lucide="message-circle"></i> 관리자 피드백</h4>
+                        <h4>💬 관리자 피드백</h4>
                         <textarea class="feedback-input" data-user-id="${student.user_id}" placeholder="보완 요청 사항을 입력하세요...">${student.admin_notes || ''}</textarea>
                         <div class="feedback-actions">
                             <button class="save-feedback-btn" onclick="saveFeedback('${student.user_id}')">저장</button>
@@ -958,7 +952,7 @@
         async function exportToExcel() {
             try {
                 exportExcelBtn.disabled = true;
-                exportExcelBtn.innerHTML = '<i data-lucide="loader"></i> 내보내는 중...';
+                exportExcelBtn.innerHTML = '⏳ 내보내는 중...';
                 
                 const exportData = filteredStudentsData.map(student => ({
                     '학생명': student.student_name,
@@ -1003,15 +997,8 @@
                 showToast('엑셀 내보내기에 실패했습니다.', 'error');
             } finally {
                 exportExcelBtn.disabled = false;
-                exportExcelBtn.innerHTML = '<i data-lucide="download"></i> 엑셀로 내보내기';
-                lucide.createIcons();
+                exportExcelBtn.innerHTML = '<span>📥</span> 엑셀로 내보내기';
             }
-        }
-
-        // 이벤트 리스너 등록
-        function attachEventListeners() {
-            // 아이콘 재생성
-            lucide.createIcons();
         }
 
         // 필터 이벤트 리스너
@@ -1031,6 +1018,7 @@
 
         // 초기화
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('📋 필수 서류 제출 관리 페이지 초기화 시작');
             loadStudentsData();
         });
     </script>
