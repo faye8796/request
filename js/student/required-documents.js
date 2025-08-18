@@ -215,7 +215,7 @@ class RequiredDocumentsManager {
     async loadDataAndSyncState() {
         try {
             console.log('🔄 기존 데이터 로드 및 상태 동기화 시작');
-            
+
             if (!this.api) {
                 console.warn('API 모듈이 아직 준비되지 않음');
                 return;
@@ -230,12 +230,24 @@ class RequiredDocumentsManager {
             // 🆕 상태 동기화
             this.syncPageState(documentsData, emergencyData);
 
+            // ✅ 수정: 하위 모듈의 데이터 로드 완료를 기다림
+            if (this.emergency && this.emergency.loadExistingDataAndSyncState) {
+                await this.emergency.loadExistingDataAndSyncState();
+            }
+
+            // ✅ 수정: 강제로 진행률 업데이트 호출
+            setTimeout(() => {
+                this.updateOverallProgress();
+                if (this.emergency && this.emergency.updateProgress) {
+                    this.emergency.updateProgress();
+                }
+            }, 100);
+
             this.pageState.isDataLoaded = true;
             console.log('✅ 데이터 로드 및 상태 동기화 완료:', this.pageState);
 
         } catch (error) {
             console.error('❌ 데이터 로드 및 상태 동기화 실패:', error);
-            // 로드 실패는 치명적이지 않으므로 계속 진행
         }
     }
 

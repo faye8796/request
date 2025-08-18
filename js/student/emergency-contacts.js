@@ -144,7 +144,7 @@ class EmergencyContacts {
     async loadExistingDataAndSyncState() {
         try {
             console.log('🔄 비상연락망 데이터 로드 및 상태 동기화 시작');
-            
+
             const emergencyData = await this.api.getEmergencyContacts();
             if (!emergencyData) {
                 console.log('기존 비상연락망 데이터 없음 - 초기 상태 유지');
@@ -152,20 +152,27 @@ class EmergencyContacts {
                 this.updateSaveButtonState(); // 초기 버튼 상태 설정
                 return;
             }
-            
+
             console.log('📋 기존 비상연락망 데이터 로드:', emergencyData);
-            
+
             // 폼 데이터 채우기
             this.populateFormData(emergencyData);
-            
+
             // 🆕 상태 동기화
             this.syncFormState(emergencyData);
-            
-            // 🆕 UI 상태 업데이트
+
+            // 🆕 UI 상태 업데이트 (즉시 + 지연 호출)
             this.updateAllUIStates();
-            
+
+            // ✅ 수정: DOM 업데이트 완료를 위한 지연 호출
+            setTimeout(() => {
+                this.updateProgress();
+                this.updateSaveButtonState();
+                console.log('🔄 지연 UI 업데이트 완료');
+            }, 50);
+
             console.log('✅ 비상연락망 데이터 로드 및 상태 동기화 완료:', this.formState);
-            
+
         } catch (error) {
             console.error('❌ 비상연락망 데이터 로드 및 상태 동기화 실패:', error);
             // 로드 실패는 심각한 오류가 아니므로 초기 상태로 설정
@@ -220,18 +227,35 @@ class EmergencyContacts {
     /**
      * 🆕 v1.1.0: 모든 UI 상태 업데이트
      */
-    updateAllUIStates() {
-        console.log('🎨 비상연락망 모든 UI 상태 업데이트 시작');
-        
-        // 진행률 업데이트
-        this.updateProgress();
-        
-        // 저장 버튼 상태 업데이트
-        this.updateSaveButtonState();
-        
-        console.log('✅ 비상연락망 모든 UI 상태 업데이트 완료');
-    }
+    async updateAllUIStates() {
+        console.log('🎨 모든 UI 상태 업데이트 시작');
 
+        // 진행률 업데이트
+        await this.updateOverallProgress();
+
+        // 단계별 UI 업데이트
+        this.updateStepsUI();
+
+        // 🆕 제출 상태별 버튼 업데이트
+        this.updateSubmitButtonByStatus();
+
+        // 🆕 관리자 피드백 표시
+        this.updateAdminFeedbackDisplay();
+
+        // ✅ 수정: 하위 모듈 진행률 강제 업데이트
+        setTimeout(() => {
+            if (this.emergency && this.emergency.updateProgress) {
+                console.log('🔄 비상연락망 진행률 강제 업데이트');
+                this.emergency.updateProgress();
+            }
+            if (this.forms && this.forms.updateProgress) {
+                console.log('🔄 서류 폼 진행률 강제 업데이트');
+                this.forms.updateProgress();
+            }
+        }, 100);
+
+        console.log('✅ 모든 UI 상태 업데이트 완료');
+    }
     /**
      * 🆕 v1.1.0: 완성된 필드 개수 계산 (정확한 14개)
      */
@@ -698,7 +722,7 @@ class EmergencyContacts {
         
         // 진행률 텍스트 업데이트
         if (this.elements.progressText) {
-            this.elements.progressText.textContent = `${completedFields}/${totalFields} 항목 완료`;
+            this.elements.progressText.textContent = `${completedFields}/${totalFields} 항목 완료 (${percentage}%)`;
         }
         
         // 완료 상태 업데이트
