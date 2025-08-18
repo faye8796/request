@@ -772,6 +772,23 @@
                         </button>
                     </div>
 
+                    <!-- 📋 필수 서류 제출 관리 -->
+                    <div class="menu-card" onclick="navigateToRequiredDocumentsManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="file-text"></i>
+                        </div>
+                        <h2 class="menu-title">필수 서류 제출 관리</h2>
+                        <p class="menu-description">
+                            문화인턴 필수 서류 제출 현황을 조회<br>
+                            비상연락망 정보와 관리자 피드백을 관리
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>                    
+                    
+                    
                     <!-- 🆕 수료평가 관리 -->
                     <div class="menu-card" onclick="navigateToExamManagement()">
                         <div class="menu-icon">
@@ -1381,6 +1398,11 @@
                 window.location.href = 'admin/reimbursement-management.html';
             }
 
+            function navigateToRequiredDocumentsManagement() {
+                window.location.href = 'admin/required-documents-management.html';
+            }
+
+            
             
             // 전역 함수로 노출
             window.handleAdminLogin = handleAdminLogin;
@@ -1393,6 +1415,7 @@
             window.navigateToCountrySafetyManagement = navigateToCountrySafetyManagement;
             window.navigateToVisaManagement = navigateToVisaManagement;
             window.navigateToReimbursementManagement = navigateToReimbursementManagement;
+            window.navigateToRequiredDocumentsManagement = navigateToRequiredDocumentsManagement;   
 
             
             // DOMContentLoaded 이벤트 리스너
@@ -1409,7 +1432,8 @@
                 navigateToExamManagement,
                 navigateToCountrySafetyManagement,
                 navigateToVisaManagement,
-                navigateToReimbursementManagement
+                navigateToReimbursementManagement,
+                navigateToRequiredDocumentsManagement 
             };
         })();
 
