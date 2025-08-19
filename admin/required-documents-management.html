@@ -1141,20 +1141,6 @@
             }
         };
 
-        // URL에서 파일 확장자 추출 헬퍼 함수
-        function getFileExtensionFromUrl(url) {
-            try {
-                const pathname = new URL(url).pathname;
-                const extension = pathname.split('.').pop().toLowerCase();
-
-                // 허용된 확장자만 사용
-                const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'gif', 'webp'];
-                return allowedExtensions.includes(extension) ? extension : 'pdf'; // 기본값 pdf
-            } catch (error) {
-                console.error('확장자 추출 실패:', error);
-                return 'pdf'; // 오류 시 기본값
-            }
-        }
         
         // 🆕 승인 처리 함수
         window.approveSubmission = async function(userId) {
@@ -1225,6 +1211,21 @@
                 saveBtn.disabled = false;
             }
         };
+
+        // URL에서 파일 확장자 추출 헬퍼 함수
+        function getFileExtensionFromUrl(url) {
+            try {
+                const pathname = new URL(url).pathname;
+                const extension = pathname.split('.').pop().toLowerCase();
+
+                // 허용된 확장자만 사용
+                const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'gif', 'webp'];
+                return allowedExtensions.includes(extension) ? extension : 'pdf'; // 기본값 pdf
+            } catch (error) {
+                console.error('확장자 추출 실패:', error);
+                return 'pdf'; // 오류 시 기본값
+            }
+        }
 
         // 필터링 함수
         function applyFilters() {
