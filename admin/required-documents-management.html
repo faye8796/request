@@ -1114,18 +1114,25 @@
             }
         }
 
-        // 파일 다운로드 함수
-        window.downloadFile = async function(fileUrl, fileName) {
+        // 파일 다운로드 함수 (URL에서 원본 확장자 추출)
+        window.downloadFile = async function(fileUrl, baseFileName) {
             try {
+                // URL에서 원본 파일 확장자 추출
+                const originalExtension = getFileExtensionFromUrl(fileUrl);
+
+                // baseFileName에서 확장자 제거하고 원본 확장자 사용
+                const nameWithoutExt = baseFileName.replace(/\.[^/.]+$/, "");
+                const finalFileName = `${nameWithoutExt}.${originalExtension}`;
+
                 const response = await fetch(fileUrl);
                 if (!response.ok) throw new Error('파일을 찾을 수 없습니다.');
-                
+
                 const blob = await response.blob();
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = fileName;
+                link.download = finalFileName;
                 link.click();
-                
+
                 URL.revokeObjectURL(link.href);
                 showToast('파일 다운로드가 완료되었습니다.');
             } catch (error) {
@@ -1134,6 +1141,21 @@
             }
         };
 
+        // URL에서 파일 확장자 추출 헬퍼 함수
+        function getFileExtensionFromUrl(url) {
+            try {
+                const pathname = new URL(url).pathname;
+                const extension = pathname.split('.').pop().toLowerCase();
+
+                // 허용된 확장자만 사용
+                const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'gif', 'webp'];
+                return allowedExtensions.includes(extension) ? extension : 'pdf'; // 기본값 pdf
+            } catch (error) {
+                console.error('확장자 추출 실패:', error);
+                return 'pdf'; // 오류 시 기본값
+            }
+        }
+        
         // 🆕 승인 처리 함수
         window.approveSubmission = async function(userId) {
             try {
