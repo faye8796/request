@@ -724,6 +724,9 @@ const SupabaseStudent = {
                 account_id: formData.account_id || null,
                 account_pw: formData.account_pw || null,
                 
+                status: 'pending',
+
+                
                 updated_at: new Date().toISOString()
             };
 
