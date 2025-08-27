@@ -483,6 +483,35 @@
                 padding: 15px;
             }
         }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1f2937;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: #10b981;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
     </style>
 </head>
 <body>
@@ -756,237 +785,86 @@
         </div>
     </div>
 
-    <!-- JavaScript 모듈들 -->
-    <!-- 1단계: 기본 라이브러리 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
-    <script src="../js/config.js"></script>
-    <script src="../js/common/supabase-core.js"></script>
-    <script src="../js/utils.js"></script>
-    <script src="../js/auth.js"></script>
+    <!-- 관리자 방식 참고: ESM 모듈로 단순화된 스크립트 -->
+    <script type="module">
+        // 🎯 단순화된 초기화 시스템 (관리자 페이지 방식 참고)
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+        
+        // ✅ CONFIG 의존성 제거 - 직접 하드코딩
+        const supabaseUrl = 'https://aazvopacnbbkvusihqva.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTQyMjQsImV4cCI6MjA2NTM3MDIyNH0.0NXI_tohwFCOl3xY4b1jIlxQR_zGTS9tWDM2OFxTq4s';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    <!-- 2단계: 활동일 작성 전용 모듈들 (미래 추가 예정) -->
-    <!--
-    <script src="../js/student/activity-schedule-api.js"></script>
-    <script src="../js/student/activity-schedule-ui.js"></script>
-    <script src="../js/student/activity-schedule.js"></script>
-    -->
-
-    <!-- 3단계: 메인 초기화 스크립트 -->
-    <script>
         // 전역 변수
         let currentUser = null;
         let scheduleData = null;
-        let supabaseClient = null;
 
-        // 메인 초기화 함수
-        async function initializeActivitySchedulePage() {
-            try {
-                console.log('🚀 활동일 작성 페이지 초기화 시작...');
-                
-                // 로딩 상태 관리
-                const globalLoading = document.getElementById('globalLoadingState');
-                const app = document.getElementById('app');
+        // DOM 요소
+        const globalLoading = document.getElementById('globalLoadingState');
+        const app = document.getElementById('app');
+        const saveBtn = document.getElementById('saveScheduleBtn');
 
-                // Lucide 아이콘 초기화
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                    console.log('✅ Lucide 아이콘 초기화 완료');
-                }
-
-                // 사용자 인증 확인 및 데이터 동기화
-                currentUser = await loadAndSyncUserData();
-                if (!currentUser) {
-                    console.warn('❌ 사용자 인증 실패 - 로그인 페이지로 이동');
-                    window.location.href = '../index.html';
-                    return;
-                }
-                console.log('✅ 사용자 인증 확인:', currentUser.name);
-
-                // 기능 활성화 확인 (자동 활성화 포함)
-                const hasPermission = await checkAndEnableFeature();
-                if (!hasPermission) {
-                    console.log('⚠️ 활동일 작성 기능 비활성화');
-                    showMessage('현재 활동일 작성 기능이 비활성화되어 있습니다.', 'info');
-                    hideFormSections();
-                    
-                    // 앱 표시
-                    if (globalLoading) globalLoading.style.display = 'none';
-                    if (app) app.style.display = 'block';
-                    return;
-                }
-
-                // CONFIG 로딩 대기
-                await waitForConfig();
-
-                // Supabase 클라이언트 초기화
-                await initializeSupabaseClient();
-                
-                // UI 초기화
-                initializeUI();
-                
-                // 활동 정보 업데이트
-                updateActivityInfo();
-                
-                // 기존 데이터 로드
-                await loadScheduleData();
-
-                // 앱 표시
-                if (globalLoading) globalLoading.style.display = 'none';
-                if (app) app.style.display = 'block';
-
-                console.log('✅ 활동일 작성 페이지 초기화 완료');
-
-            } catch (error) {
-                console.error('❌ 초기화 오류:', error);
-                showMessage('페이지 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.', 'error');
-                
-                // 오류 발생시에도 앱 표시
-                const globalLoading = document.getElementById('globalLoadingState');
-                const app = document.getElementById('app');
-                if (globalLoading) globalLoading.style.display = 'none';
-                if (app) app.style.display = 'block';
-            }
+        // Toast 알림 함수
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
         }
 
-        // 🆕 사용자 데이터 로드 및 동기화 (데이터베이스와 localStorage 동기화)
-        async function loadAndSyncUserData() {
+        // ✅ 1단계: 사용자 인증 체크 (단순화)
+        function checkUserAuth() {
+            console.log('🔐 사용자 인증 확인 시작...');
+            
+            const userDataStr = localStorage.getItem('currentStudent');
+            if (!userDataStr) {
+                console.warn('❌ 사용자 데이터 없음');
+                showMessage('로그인이 필요합니다. 로그인 페이지로 이동합니다.', 'error');
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 2000);
+                return null;
+            }
+
             try {
-                const userDataStr = localStorage.getItem('currentStudent');
-                if (!userDataStr) {
-                    console.warn('⚠️ localStorage에 사용자 데이터 없음');
-                    return null;
+                const userData = JSON.parse(userDataStr);
+                if (!userData.id) {
+                    throw new Error('유효하지 않은 사용자 데이터');
                 }
-
-                let userData = JSON.parse(userDataStr);
-                if (!userData.id || !userData.email === undefined) {
-                    throw new Error('사용자 데이터가 불완전합니다.');
-                }
-
-                // 🔄 데이터베이스에서 최신 사용자 정보 동기화
-                try {
-                    // CONFIG 로딩 대기
-                    await waitForConfig();
-
-                    if (typeof supabase !== 'undefined' && window.CONFIG) {
-                        const client = supabase.createClient(
-                            window.CONFIG.SUPABASE_URL, 
-                            window.CONFIG.SUPABASE_ANON_KEY
-                        );
-
-                        const { data: latestUserData, error } = await client
-                            .from('user_profiles')
-                            .select('*')
-                            .eq('id', userData.id)
-                            .single();
-
-                        if (!error && latestUserData) {
-                            // 최신 데이터로 업데이트
-                            userData = { ...userData, ...latestUserData };
-                            
-                            // localStorage 업데이트
-                            localStorage.setItem('currentStudent', JSON.stringify(userData));
-                            
-                            console.log('✅ 사용자 데이터 동기화 완료:', {
-                                name: userData.name,
-                                activity_schedule_enabled: userData.individual_activity_schedule_enabled
-                            });
-                        }
-                    }
-                } catch (syncError) {
-                    console.warn('⚠️ 사용자 데이터 동기화 실패, 기존 데이터 사용:', syncError);
-                }
-
+                
+                console.log('✅ 사용자 인증 확인 완료:', userData.name || userData.email);
                 return userData;
-
+                
             } catch (error) {
-                console.error('❌ 사용자 데이터 로드/동기화 실패:', error);
+                console.error('❌ 사용자 데이터 파싱 실패:', error);
+                localStorage.removeItem('currentStudent');
+                window.location.href = '../index.html';
                 return null;
             }
         }
 
-        // 🆕 기능 활성화 확인 및 자동 활성화
-        async function checkAndEnableFeature() {
-            if (!currentUser) return false;
-
-            // 이미 활성화되어 있으면 통과
-            if (currentUser.individual_activity_schedule_enabled === true) {
-                return true;
-            }
-
-            // 활성화 시도
-            try {
-                await waitForConfig();
-                
-                if (typeof supabase !== 'undefined' && window.CONFIG) {
-                    const client = supabase.createClient(
-                        window.CONFIG.SUPABASE_URL, 
-                        window.CONFIG.SUPABASE_ANON_KEY
-                    );
-
-                    // 임시로 활성화 (실제 운영에서는 관리자가 설정)
-                    const { error } = await client
-                        .from('user_profiles')
-                        .update({ individual_activity_schedule_enabled: true })
-                        .eq('id', currentUser.id);
-
-                    if (!error) {
-                        currentUser.individual_activity_schedule_enabled = true;
-                        localStorage.setItem('currentStudent', JSON.stringify(currentUser));
-                        console.log('✅ 활동일 작성 기능 자동 활성화 완료');
-                        return true;
-                    }
-                }
-            } catch (error) {
-                console.warn('⚠️ 기능 활성화 실패:', error);
-            }
-
-            return false;
-        }
-
-        // CONFIG 로딩 대기
-        async function waitForConfig() {
-            let retries = 0;
-            while ((!window.CONFIG || !window.CONFIG.SUPABASE_URL) && retries < 100) {
-                await new Promise(resolve => setTimeout(resolve, 50));
-                retries++;
-            }
-
-            if (!window.CONFIG || !window.CONFIG.SUPABASE_URL) {
-                throw new Error('CONFIG 로드 타임아웃 - Supabase 설정을 찾을 수 없습니다.');
-            }
-
-            console.log('✅ CONFIG 로드 완료');
-        }
-
-        // Supabase 클라이언트 초기화
-        async function initializeSupabaseClient() {
-            try {
-                if (!window.CONFIG || !window.CONFIG.SUPABASE_URL) {
-                    throw new Error('CONFIG가 로드되지 않았습니다.');
-                }
-
-                // Supabase 클라이언트 생성
-                if (typeof supabase === 'undefined') {
-                    throw new Error('Supabase 라이브러리가 로드되지 않았습니다.');
-                }
-
-                supabaseClient = supabase.createClient(
-                    window.CONFIG.SUPABASE_URL, 
-                    window.CONFIG.SUPABASE_ANON_KEY
-                );
-                
-                console.log('✅ Supabase 클라이언트 초기화 완료');
-                return supabaseClient;
-
-            } catch (error) {
-                console.error('❌ Supabase 초기화 실패:', error);
-                throw error;
-            }
-        }
-
-        // UI 초기화
+        // ✅ 2단계: UI 초기화
         function initializeUI() {
             console.log('🎨 UI 초기화 시작...');
+            
+            // Lucide 아이콘 초기화
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
             
             // 시간 옵션 생성
             populateTimeOptions();
@@ -997,10 +875,12 @@
             });
 
             // 저장 버튼 이벤트
-            const saveBtn = document.getElementById('saveScheduleBtn');
             if (saveBtn) {
                 saveBtn.addEventListener('click', saveSchedule);
             }
+            
+            // 사용자 정보 표시
+            updateUserInfo();
             
             console.log('✅ UI 초기화 완료');
         }
@@ -1033,8 +913,6 @@
 
         // 활동 분류 변경 처리
         function handleTypeChange(event) {
-            console.log('🔄 활동 분류 변경:', event.target.value);
-            
             const dayRow = event.target.closest('.day-row');
             if (!dayRow) return;
             
@@ -1059,63 +937,22 @@
             }
         }
 
-        // 활동 정보 업데이트
-        function updateActivityInfo() {
+        // 사용자 정보 업데이트
+        function updateUserInfo() {
             const studentNameElements = document.querySelectorAll('#studentName, #studentName2');
             studentNameElements.forEach(el => {
-                if (el) el.textContent = currentUser.name || '문화인턴';
-            });
-        }
-
-        // 주간 활동 시간 계산 및 표시
-        function calculateAndDisplayWeeklyHours(scheduleData) {
-            let totalWeeklyHours = 0;
-            let culturalClassCount = 0;
-            
-            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-            
-            days.forEach(day => {
-                const type = scheduleData[`${day}_type`];
-                const startTime = scheduleData[`${day}_start_time`];
-                const endTime = scheduleData[`${day}_end_time`];
-                
-                if (type && type !== '휴무' && startTime && endTime) {
-                    const start = new Date(`2000-01-01T${startTime}`);
-                    const end = new Date(`2000-01-01T${endTime}`);
-                    const hours = (end - start) / (1000 * 60 * 60);
-                    totalWeeklyHours += hours;
-                    
-                    if (type === '문화수업') {
-                        culturalClassCount++;
-                    }
+                if (el && currentUser) {
+                    el.textContent = currentUser.name || '문화인턴';
                 }
             });
-            
-            // 주당 활동 시간 표시
-            const weeklyHoursEl = document.getElementById('weeklyHours');
-            if (weeklyHoursEl) {
-                weeklyHoursEl.textContent = `${totalWeeklyHours} / 40`;
-            }
-            
-            // 하루 최대 활동 시간 계산 (주당 시간에 따라)
-            const dailyMaxHours = totalWeeklyHours <= 25 ? 5 : 8;
-            const dailyMaxHoursEl = document.getElementById('dailyMaxHours');
-            if (dailyMaxHoursEl) {
-                dailyMaxHoursEl.textContent = `${dailyMaxHours}`;
-            }
         }
 
-        // 기존 스케줄 데이터 로드
+        // ✅ 3단계: 데이터 로드
         async function loadScheduleData() {
             try {
-                if (!supabaseClient) {
-                    console.warn('⚠️ Supabase 클라이언트가 초기화되지 않음');
-                    return;
-                }
-
                 console.log('📥 스케줄 데이터 로드 시작...');
                 
-                const { data, error } = await supabaseClient
+                const { data, error } = await supabase
                     .from('weekly_schedules')
                     .select('*')
                     .eq('user_id', currentUser.id)
@@ -1181,17 +1018,47 @@
             });
         }
 
+        // 주간 활동 시간 계산 및 표시
+        function calculateAndDisplayWeeklyHours(scheduleData) {
+            let totalWeeklyHours = 0;
+            
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            
+            days.forEach(day => {
+                const type = scheduleData[`${day}_type`];
+                const startTime = scheduleData[`${day}_start_time`];
+                const endTime = scheduleData[`${day}_end_time`];
+                
+                if (type && type !== '휴무' && startTime && endTime) {
+                    const start = new Date(`2000-01-01T${startTime}`);
+                    const end = new Date(`2000-01-01T${endTime}`);
+                    const hours = (end - start) / (1000 * 60 * 60);
+                    totalWeeklyHours += hours;
+                }
+            });
+            
+            // 주당 활동 시간 표시
+            const weeklyHoursEl = document.getElementById('weeklyHours');
+            if (weeklyHoursEl) {
+                weeklyHoursEl.textContent = `${totalWeeklyHours} / 40`;
+            }
+            
+            // 하루 최대 활동 시간 계산
+            const dailyMaxHours = totalWeeklyHours <= 25 ? 5 : 8;
+            const dailyMaxHoursEl = document.getElementById('dailyMaxHours');
+            if (dailyMaxHoursEl) {
+                dailyMaxHoursEl.textContent = `${dailyMaxHours}`;
+            }
+        }
+
         // 스케줄 저장
         async function saveSchedule() {
             try {
                 console.log('💾 스케줄 저장 시작...');
                 
                 // 로딩 상태
-                const saveBtn = document.getElementById('saveScheduleBtn');
-                if (saveBtn) {
-                    saveBtn.classList.add('loading');
-                    saveBtn.disabled = true;
-                }
+                saveBtn.classList.add('loading');
+                saveBtn.disabled = true;
 
                 // 폼 데이터 수집
                 const formData = collectFormData();
@@ -1202,12 +1069,8 @@
                     return;
                 }
 
-                if (!supabaseClient) {
-                    throw new Error('Supabase 클라이언트가 초기화되지 않았습니다.');
-                }
-
                 // 데이터베이스 저장
-                const { error } = await supabaseClient
+                const { error } = await supabase
                     .from('weekly_schedules')
                     .upsert({
                         user_id: currentUser.id,
@@ -1222,19 +1085,16 @@
                 // 활동 시간 재계산
                 calculateAndDisplayWeeklyHours(formData);
                 
-                showMessage('스케줄이 성공적으로 저장되었습니다.', 'success');
+                showToast('스케줄이 성공적으로 저장되었습니다.');
                 console.log('✅ 스케줄 저장 완료');
 
             } catch (error) {
                 console.error('❌ 저장 오류:', error);
-                showMessage('스케줄 저장 중 오류가 발생했습니다: ' + error.message, 'error');
+                showToast('스케줄 저장 중 오류가 발생했습니다: ' + error.message, 'error');
             } finally {
                 // 로딩 상태 해제
-                const saveBtn = document.getElementById('saveScheduleBtn');
-                if (saveBtn) {
-                    saveBtn.classList.remove('loading');
-                    saveBtn.disabled = false;
-                }
+                saveBtn.classList.remove('loading');
+                saveBtn.disabled = false;
             }
         }
 
@@ -1289,7 +1149,7 @@
             return true;
         }
 
-        // 메시지 표시 (안전한 DOM 접근)
+        // 메시지 표시
         function showMessage(text, type = 'info') {
             console.log(`📢 메시지 (${type}):`, text);
             
@@ -1305,7 +1165,7 @@
             if (textEl) textEl.textContent = text;
             messageEl.className = `status-message ${type}`;
             
-            // 아이콘 변경 (안전한 방식)
+            // 아이콘 변경
             if (iconEl) {
                 switch (type) {
                     case 'success':
@@ -1322,7 +1182,7 @@
 
             messageEl.style.display = 'flex';
             
-            // Lucide 아이콘 재초기화 (안전한 방식)
+            // Lucide 아이콘 재초기화
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
@@ -1333,22 +1193,39 @@
             }, 5000);
         }
 
-        // 폼 섹션 숨기기 (기능 비활성화시)
-        function hideFormSections() {
-            const sections = ['.schedule-form-section', '.button-section', '.activity-info-section'];
-            sections.forEach(selector => {
-                const element = document.querySelector(selector);
-                if (element) element.style.display = 'none';
-            });
+        // 🚀 메인 초기화 함수 (단순화)
+        async function initializeApp() {
+            try {
+                console.log('🚀 활동일 작성 앱 초기화 시작...');
+
+                // 1단계: 사용자 인증 체크
+                currentUser = checkUserAuth();
+                if (!currentUser) return;
+
+                // 2단계: UI 초기화
+                initializeUI();
+
+                // 3단계: 데이터 로드
+                await loadScheduleData();
+
+                console.log('✅ 활동일 작성 앱 초기화 완료');
+
+            } catch (error) {
+                console.error('❌ 앱 초기화 실패:', error);
+                showMessage('시스템 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.', 'error');
+            } finally {
+                // 로딩 상태 해제 및 앱 표시
+                if (globalLoading) globalLoading.style.display = 'none';
+                if (app) app.style.display = 'block';
+            }
         }
 
-        // DOM 로드 완료 시 초기화
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeActivitySchedulePage);
-        } else {
-            // 이미 로드된 경우 즉시 실행
-            initializeActivitySchedulePage();
-        }
+        // DOM 로드 완료 시 초기화 (관리자 페이지 방식)
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📅 활동일 작성 페이지 초기화 시작');
+            initializeApp();
+        });
+
     </script>
 </body>
 </html>
