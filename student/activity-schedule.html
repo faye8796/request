@@ -271,6 +271,63 @@
             color: var(--primary-color);
             font-weight: 600;
         }
+        
+        /* 활동 정보 리스트 스타일 - 말머리표 추가 */
+        .activity-info-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .activity-info-list li {
+            padding: 15px 0 15px 50px; /* 왼쪽 패딩을 25px로 증가 */
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 1rem;
+            position: relative; /* ::before 요소 위치 지정을 위해 필요 */
+        }
+
+        .activity-info-list li:last-child {
+            border-bottom: none;
+        }
+
+        .activity-info-list li strong {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* 말머리표 스타일 */
+        .activity-info-list li::before {
+            content: '•';
+            color: var(--primary-color);
+            font-weight: bold;
+            font-size: 1.2em;
+            position: absolute;
+            left: 8px;
+            top: 15px;
+        }
+
+        /* 개별 항목별 다른 말머리표 (선택사항) */
+        .activity-info-list li:nth-child(1)::before {
+            content: '📚'; /* 수업 관련 */
+        }
+
+        .activity-info-list li:nth-child(2)::before {
+            content: '📅'; /* 활동일 관련 */
+        }
+
+        .activity-info-list li:nth-child(3)::before {
+            content: '⏰'; /* 주당 시간 */
+        }
+
+        .activity-info-list li:nth-child(4)::before {
+            content: '🕐'; /* 일일 시간 */
+        }
+        /* 기존 .activity-info-grid 스타일 삭제 가능 */
+        .activity-info-grid {
+            display: none; /* 또는 완전히 삭제 */
+        }
 
         /* 메인 폼 섹션 */
         .schedule-form-section {
@@ -512,6 +569,31 @@
         .toast.error {
             background: #ef4444;
         }
+        
+        /* 오류 메시지 스타일 */
+        .validation-errors {
+            margin-bottom: 20px;
+            padding: 0;
+        }
+
+        .error-message {
+            background-color: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #dc2626;
+            font-weight: 500;
+        }
+
+        .error-message i {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+        
     </style>
 </head>
 <body>
@@ -537,7 +619,7 @@
                     <i data-lucide="calendar-days"></i>
                     활동일 작성
                 </h1>
-                <p>주간 정기 활동 스케줄을 작성하여 체계적으로 활동을 관리해보세요</p>
+                <p>주간 정기 활동 스케줄을 작성하여 주세요.</p>
             </header>
 
             <!-- 상태 메시지 -->
@@ -567,20 +649,12 @@
                     <i data-lucide="bar-chart-3"></i>
                     주간 활동 정보
                 </h3>
-                <div class="activity-info-grid">
-                    <div class="activity-info-item">
-                        모든 문화인턴은 <strong>최소 주 2회</strong> 문화 수업을 진행해야 합니다.
-                    </div>
-                    <div class="activity-info-item">
-                        문화인턴의 활동일은 <strong>주 5일</strong>입니다.
-                    </div>
-                    <div class="activity-info-item highlight" id="weeklyHoursInfo">
-                        <strong id="studentName">[학생성명]</strong>님의 주당 활동 시간은 <strong id="weeklyHours">[계산중...]</strong> 시간입니다.
-                    </div>
-                    <div class="activity-info-item highlight" id="dailyHoursInfo">
-                        <strong id="studentName2">[학생성명]</strong>님의 하루 최대 활동 시간은 <strong id="dailyMaxHours">[계산중...]</strong> 시간입니다.
-                    </div>
-                </div>
+                <ul class="activity-info-list">
+                    <li>모든 문화인턴은 <strong>최소 주 2회</strong> 문화 수업을 진행해야 합니다.</li>
+                    <li>문화인턴의 활동일은 <strong>주 5일</strong>입니다.</li>
+                    <li><strong id="studentName">[학생성명]</strong>님의 주당 활동 시간은 <strong id="weeklyHours">[계산중...]</strong> 시간입니다.</li>
+                    <li><strong id="studentName2">[학생성명]</strong>님의 하루 최대 활동 시간은 <strong id="dailyMaxHours">[계산중...]</strong> 시간입니다.</li>
+                </ul>
             </div>
 
             <!-- 메인 폼 섹션 -->
@@ -775,13 +849,18 @@
                 </div>
             </section>
 
-            <!-- 버튼 섹션 -->
-            <div class="button-section">
-                <button type="button" class="btn btn-primary" id="saveScheduleBtn">
-                    <i data-lucide="save"></i>
-                    저장하기
-                </button>
-            </div>
+            <!-- 저장 버튼 섹션 수정 -->
+            <section class="save-section">
+                <!-- 오류 메시지 영역 추가 -->
+                <div id="validationErrors" class="validation-errors" style="display: none;">
+                    <div class="error-message">
+                        <i data-lucide="alert-triangle"></i>
+                        <span id="errorText"></span>
+                    </div>
+                </div>
+
+                <button class="save-btn" id="saveSchedule">저장하기</button>
+            </section>
         </div>
     </div>
 
@@ -937,16 +1016,72 @@
             }
         }
 
-        // 사용자 정보 업데이트
+        
+        // 사용자 정보 업데이트 (간소화)
         function updateUserInfo() {
-            const studentNameElements = document.querySelectorAll('#studentName, #studentName2');
-            studentNameElements.forEach(el => {
-                if (el && currentUser) {
-                    el.textContent = currentUser.name || '문화인턴';
+            // loadStudentWeeklyHours()에서 처리하므로 여기서는 기본 정보만
+            console.log('✅ 사용자 정보 업데이트 준비 완료');
+        }
+        
+        
+        // 🆕 여기부터 추가 - loadStudentWeeklyHours 함수
+        async function loadStudentWeeklyHours() {
+            try {
+                console.log('📊 학생 주당 활동시간 정보 로드 시작...');
+
+                const { data, error } = await supabase
+                    .from('student_additional_info')
+                    .select('weekly_working_hours')
+                    .eq('user_id', currentUser.id)
+                    .single();
+
+                if (error) {
+                    console.warn('⚠️ 학생 추가정보 없음:', error.message);
+                    // 기본값 설정
+                    updateActivityInfo(currentUser.name, 25); // 기본 25시간
+                    return;
                 }
-            });
+
+                const weeklyHours = data?.weekly_working_hours || 25;
+                updateActivityInfo(currentUser.name, weeklyHours);
+
+                console.log('✅ 학생 주당 활동시간 로드 완료:', weeklyHours);
+
+            } catch (error) {
+                console.error('❌ 학생 추가정보 로드 오류:', error);
+                // 오류 시 기본값 설정
+                updateActivityInfo(currentUser.name, 25);
+            }
         }
 
+        // 🆕 여기도 추가 - updateActivityInfo 함수
+        function updateActivityInfo(studentName, weeklyHours) {
+            // 하루 최대 활동 시간 계산
+            const dailyMaxHours = weeklyHours <= 25 ? 5 : 8;
+
+            // 학생 이름 업데이트
+            const studentNameElements = document.querySelectorAll('#studentName, #studentName2');
+            studentNameElements.forEach(el => {
+                if (el) el.textContent = studentName || '문화인턴';
+            });
+
+            // 주당 활동 시간 업데이트
+            const weeklyHoursEl = document.getElementById('weeklyHours');
+            if (weeklyHoursEl) {
+                weeklyHoursEl.textContent = `${weeklyHours}`;
+            }
+
+            // 하루 최대 활동 시간 업데이트
+            const dailyMaxHoursEl = document.getElementById('dailyMaxHours');
+            if (dailyMaxHoursEl) {
+                dailyMaxHoursEl.textContent = `${dailyMaxHours}`;
+            }
+
+            console.log(`✅ 활동 정보 업데이트 완료: ${studentName}, 주당 ${weeklyHours}시간, 일일 최대 ${dailyMaxHours}시간`);
+        }
+
+        
+        
         // ✅ 3단계: 데이터 로드
         async function loadScheduleData() {
             try {
@@ -961,6 +1096,9 @@
                 if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
                     throw error;
                 }
+                
+                await loadStudentWeeklyHours();
+
 
                 if (data) {
                     scheduleData = data;
@@ -970,11 +1108,7 @@
                     console.log('✅ 스케줄 데이터 로드 완료');
                 } else {
                     console.log('💡 기존 스케줄 데이터 없음 - 신규 작성');
-                    // 기본 시간 표시
-                    const weeklyHoursEl = document.getElementById('weeklyHours');
-                    const dailyMaxHoursEl = document.getElementById('dailyMaxHours');
-                    if (weeklyHoursEl) weeklyHoursEl.textContent = '0 / 40';
-                    if (dailyMaxHoursEl) dailyMaxHoursEl.textContent = '8';
+                    
                 }
 
             } catch (error) {
@@ -1020,36 +1154,27 @@
 
         // 주간 활동 시간 계산 및 표시
         function calculateAndDisplayWeeklyHours(scheduleData) {
-            let totalWeeklyHours = 0;
-            
+            let totalScheduledHours = 0;
+
             const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-            
+
             days.forEach(day => {
                 const type = scheduleData[`${day}_type`];
                 const startTime = scheduleData[`${day}_start_time`];
                 const endTime = scheduleData[`${day}_end_time`];
-                
+
                 if (type && type !== '휴무' && startTime && endTime) {
                     const start = new Date(`2000-01-01T${startTime}`);
                     const end = new Date(`2000-01-01T${endTime}`);
                     const hours = (end - start) / (1000 * 60 * 60);
-                    totalWeeklyHours += hours;
+                    totalScheduledHours += hours;
                 }
             });
-            
-            // 주당 활동 시간 표시
-            const weeklyHoursEl = document.getElementById('weeklyHours');
-            if (weeklyHoursEl) {
-                weeklyHoursEl.textContent = `${totalWeeklyHours} / 40`;
-            }
-            
-            // 하루 최대 활동 시간 계산
-            const dailyMaxHours = totalWeeklyHours <= 25 ? 5 : 8;
-            const dailyMaxHoursEl = document.getElementById('dailyMaxHours');
-            if (dailyMaxHoursEl) {
-                dailyMaxHoursEl.textContent = `${dailyMaxHours}`;
-            }
+
+            console.log(`📊 입력된 스케줄 기준 주당 활동 시간: ${totalScheduledHours}시간`);
+            // UI는 서버 데이터 기반으로 이미 업데이트되어 있음
         }
+
 
         // 스케줄 저장
         async function saveSchedule() {
