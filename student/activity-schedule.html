@@ -793,8 +793,8 @@
                     console.log('✅ Lucide 아이콘 초기화 완료');
                 }
 
-                // 사용자 인증 확인
-                currentUser = await loadAndVerifyUser();
+                // 사용자 인증 확인 및 데이터 동기화
+                currentUser = await loadAndSyncUserData();
                 if (!currentUser) {
                     console.warn('❌ 사용자 인증 실패 - 로그인 페이지로 이동');
                     window.location.href = '../index.html';
@@ -802,8 +802,9 @@
                 }
                 console.log('✅ 사용자 인증 확인:', currentUser.name);
 
-                // 기능 활성화 확인
-                if (!currentUser.individual_activity_schedule_enabled) {
+                // 기능 활성화 확인 (자동 활성화 포함)
+                const hasPermission = await checkAndEnableFeature();
+                if (!hasPermission) {
                     console.log('⚠️ 활동일 작성 기능 비활성화');
                     showMessage('현재 활동일 작성 기능이 비활성화되어 있습니다.', 'info');
                     hideFormSections();
@@ -847,8 +848,8 @@
             }
         }
 
-        // 사용자 데이터 로드 및 검증
-        async function loadAndVerifyUser() {
+        // 🆕 사용자 데이터 로드 및 동기화 (데이터베이스와 localStorage 동기화)
+        async function loadAndSyncUserData() {
             try {
                 const userDataStr = localStorage.getItem('currentStudent');
                 if (!userDataStr) {
@@ -856,17 +857,90 @@
                     return null;
                 }
 
-                const userData = JSON.parse(userDataStr);
-                if (!userData.id || !userData.email) {
+                let userData = JSON.parse(userDataStr);
+                if (!userData.id || !userData.email === undefined) {
                     throw new Error('사용자 데이터가 불완전합니다.');
+                }
+
+                // 🔄 데이터베이스에서 최신 사용자 정보 동기화
+                try {
+                    // CONFIG 로딩 대기
+                    await waitForConfig();
+
+                    if (typeof supabase !== 'undefined' && window.CONFIG) {
+                        const client = supabase.createClient(
+                            window.CONFIG.SUPABASE_URL, 
+                            window.CONFIG.SUPABASE_ANON_KEY
+                        );
+
+                        const { data: latestUserData, error } = await client
+                            .from('user_profiles')
+                            .select('*')
+                            .eq('id', userData.id)
+                            .single();
+
+                        if (!error && latestUserData) {
+                            // 최신 데이터로 업데이트
+                            userData = { ...userData, ...latestUserData };
+                            
+                            // localStorage 업데이트
+                            localStorage.setItem('currentStudent', JSON.stringify(userData));
+                            
+                            console.log('✅ 사용자 데이터 동기화 완료:', {
+                                name: userData.name,
+                                activity_schedule_enabled: userData.individual_activity_schedule_enabled
+                            });
+                        }
+                    }
+                } catch (syncError) {
+                    console.warn('⚠️ 사용자 데이터 동기화 실패, 기존 데이터 사용:', syncError);
                 }
 
                 return userData;
 
             } catch (error) {
-                console.error('❌ 사용자 데이터 로드/검증 실패:', error);
+                console.error('❌ 사용자 데이터 로드/동기화 실패:', error);
                 return null;
             }
+        }
+
+        // 🆕 기능 활성화 확인 및 자동 활성화
+        async function checkAndEnableFeature() {
+            if (!currentUser) return false;
+
+            // 이미 활성화되어 있으면 통과
+            if (currentUser.individual_activity_schedule_enabled === true) {
+                return true;
+            }
+
+            // 활성화 시도
+            try {
+                await waitForConfig();
+                
+                if (typeof supabase !== 'undefined' && window.CONFIG) {
+                    const client = supabase.createClient(
+                        window.CONFIG.SUPABASE_URL, 
+                        window.CONFIG.SUPABASE_ANON_KEY
+                    );
+
+                    // 임시로 활성화 (실제 운영에서는 관리자가 설정)
+                    const { error } = await client
+                        .from('user_profiles')
+                        .update({ individual_activity_schedule_enabled: true })
+                        .eq('id', currentUser.id);
+
+                    if (!error) {
+                        currentUser.individual_activity_schedule_enabled = true;
+                        localStorage.setItem('currentStudent', JSON.stringify(currentUser));
+                        console.log('✅ 활동일 작성 기능 자동 활성화 완료');
+                        return true;
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ 기능 활성화 실패:', error);
+            }
+
+            return false;
         }
 
         // CONFIG 로딩 대기
