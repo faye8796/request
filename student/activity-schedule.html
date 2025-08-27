@@ -48,7 +48,7 @@
             padding: 20px;
         }
 
-        /* 헤더 스타일 */
+        /* 헤더 스타일 - 돌아가기 버튼 포함 */
         .header-section {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
             color: white;
@@ -57,6 +57,32 @@
             border-radius: var(--border-radius);
             text-align: center;
             box-shadow: var(--shadow-lg);
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--border-radius);
+            padding: 10px 15px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-50%) translateX(-2px);
         }
 
         .header-section h1 {
@@ -74,6 +100,34 @@
             opacity: 0.9;
             max-width: 600px;
             margin: 0 auto;
+        }
+
+        /* 상태 메시지 */
+        .status-message {
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-message.success {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .status-message.error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .status-message.info {
+            background: #dbeafe;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
         }
 
         /* 안내 카드 */
@@ -113,6 +167,50 @@
             font-weight: bold;
             position: absolute;
             left: 0;
+        }
+
+        /* 주간 활동 정보 섹션 */
+        .activity-info-section {
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .activity-info-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .activity-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .activity-info-item {
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: var(--border-radius);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .activity-info-item.highlight {
+            background: #eff6ff;
+            border-left-color: var(--success-color);
+        }
+
+        .activity-info-item strong {
+            color: var(--primary-color);
+            font-weight: 600;
         }
 
         /* 메인 폼 섹션 */
@@ -241,45 +339,6 @@
             box-shadow: var(--shadow-md);
         }
 
-        .btn-secondary {
-            background: var(--surface-color);
-            color: var(--text-secondary);
-            border: 2px solid var(--border-color);
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
-        }
-
-        /* 상태 메시지 */
-        .status-message {
-            padding: 15px 20px;
-            border-radius: var(--border-radius);
-            margin-bottom: 20px;
-            display: none;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-message.success {
-            background: #dcfce7;
-            border: 1px solid #bbf7d0;
-            color: #166534;
-        }
-
-        .status-message.error {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #991b1b;
-        }
-
-        .status-message.info {
-            background: #dbeafe;
-            border: 1px solid #bfdbfe;
-            color: #1e40af;
-        }
-
         /* 로딩 상태 */
         .loading {
             opacity: 0.6;
@@ -316,6 +375,15 @@
                 padding: 30px 20px;
             }
 
+            .back-button {
+                position: relative;
+                left: auto;
+                top: auto;
+                transform: none;
+                margin-bottom: 15px;
+                width: fit-content;
+            }
+
             .header-section h1 {
                 font-size: 2rem;
                 flex-direction: column;
@@ -345,14 +413,8 @@
                 margin-bottom: 10px;
             }
 
-            .button-section {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .btn {
-                width: 100%;
-                max-width: 280px;
+            .activity-info-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -362,58 +424,21 @@
             }
 
             .info-card,
-            .schedule-form-section {
+            .schedule-form-section,
+            .activity-info-section {
                 padding: 15px;
-            }
-        }
-
-        /* 추가 스타일 */
-        .schedule-summary {
-            background: var(--surface-color);
-            border-radius: var(--border-radius);
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border-color);
-        }
-
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .summary-item:last-child {
-            border-bottom: none;
-        }
-
-        .summary-label {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .summary-value {
-            color: var(--text-secondary);
-        }
-
-        /* 다크 모드 호환성 */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --background-color: #0f172a;
-                --surface-color: #1e293b;
-                --text-primary: #f1f5f9;
-                --text-secondary: #94a3b8;
-                --border-color: #334155;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- 헤더 섹션 -->
+        <!-- 헤더 섹션 - 돌아가기 버튼 포함 -->
         <header class="header-section">
+            <a href="../student/dashboard.html" class="back-button">
+                <i data-lucide="arrow-left"></i>
+                대시보드
+            </a>
             <h1>
                 <i data-lucide="calendar-days"></i>
                 활동일 작성
@@ -440,6 +465,28 @@
                 <li>시간은 현지 시각 기준으로 입력해주세요</li>
                 <li>분류 선택 후 시작시간과 종료시간을 설정할 수 있습니다</li>
             </ul>
+        </div>
+
+        <!-- 주간 활동 정보 섹션 -->
+        <div class="activity-info-section" id="activityInfoSection">
+            <h3>
+                <i data-lucide="bar-chart-3"></i>
+                주간 활동 정보
+            </h3>
+            <div class="activity-info-grid">
+                <div class="activity-info-item">
+                    모든 문화인턴은 <strong>최소 주 2회</strong> 문화 수업을 진행해야 합니다.
+                </div>
+                <div class="activity-info-item">
+                    문화인턴의 활동일은 <strong>주 5일</strong>입니다.
+                </div>
+                <div class="activity-info-item highlight" id="weeklyHoursInfo">
+                    <strong id="studentName">[학생성명]</strong>님의 주당 활동 시간은 <strong id="weeklyHours">[계산중...]</strong> 시간입니다.
+                </div>
+                <div class="activity-info-item highlight" id="dailyHoursInfo">
+                    <strong id="studentName2">[학생성명]</strong>님의 하루 최대 활동 시간은 <strong id="dailyMaxHours">[계산중...]</strong> 시간입니다.
+                </div>
+            </div>
         </div>
 
         <!-- 메인 폼 섹션 -->
@@ -636,10 +683,6 @@
 
         <!-- 버튼 섹션 -->
         <div class="button-section">
-            <button type="button" class="btn btn-secondary" onclick="history.back()">
-                <i data-lucide="arrow-left"></i>
-                돌아가기
-            </button>
             <button type="button" class="btn btn-primary" id="saveScheduleBtn">
                 <i data-lucide="save"></i>
                 저장하기
@@ -647,50 +690,94 @@
         </div>
     </div>
 
+    <!-- Supabase 클라이언트 -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
     <script>
-        // Lucide 아이콘 초기화
-        lucide.createIcons();
-
         // 전역 변수
         let currentUser = null;
         let scheduleData = null;
         let supabaseClient = null;
 
-        // 초기화
-        document.addEventListener('DOMContentLoaded', async function() {
+        // 초기화 함수
+        async function initializePage() {
             try {
-                // Supabase 클라이언트 초기화
-                supabaseClient = createSupabaseClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+                console.log('🚀 페이지 초기화 시작...');
                 
-                // 인증 확인
+                // Lucide 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                    console.log('✅ Lucide 아이콘 초기화 완료');
+                }
+
+                // 사용자 인증 확인
                 currentUser = getCurrentUser();
                 if (!currentUser) {
+                    console.warn('❌ 사용자 인증 실패 - 로그인 페이지로 이동');
                     window.location.href = '../index.html';
                     return;
                 }
+                console.log('✅ 사용자 인증 확인:', currentUser.name);
 
                 // 기능 활성화 확인
                 if (!currentUser.individual_activity_schedule_enabled) {
                     showMessage('현재 활동일 작성 기능이 비활성화되어 있습니다.', 'info');
-                    document.querySelector('.schedule-form-section').style.display = 'none';
-                    document.querySelector('.button-section').style.display = 'none';
+                    hideFormSections();
                     return;
                 }
 
+                // Supabase 클라이언트 초기화 (안전한 방식)
+                await initializeSupabaseClient();
+                
                 // UI 초기화
                 initializeUI();
+                
+                // 활동 정보 업데이트
+                updateActivityInfo();
                 
                 // 기존 데이터 로드
                 await loadScheduleData();
 
+                console.log('✅ 페이지 초기화 완료');
+
             } catch (error) {
-                console.error('초기화 오류:', error);
-                showMessage('페이지 초기화 중 오류가 발생했습니다.', 'error');
+                console.error('❌ 초기화 오류:', error);
+                showMessage('페이지 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.', 'error');
             }
-        });
+        }
+
+        // Supabase 클라이언트 안전한 초기화
+        async function initializeSupabaseClient() {
+            try {
+                // CONFIG가 로드될 때까지 대기
+                let retries = 0;
+                while ((!window.CONFIG || !window.CONFIG.SUPABASE_URL) && retries < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    retries++;
+                }
+
+                if (!window.CONFIG || !window.CONFIG.SUPABASE_URL) {
+                    throw new Error('CONFIG 로드 실패 - Supabase 설정을 찾을 수 없습니다.');
+                }
+
+                supabaseClient = supabase.createClient(
+                    window.CONFIG.SUPABASE_URL, 
+                    window.CONFIG.SUPABASE_ANON_KEY
+                );
+                
+                console.log('✅ Supabase 클라이언트 초기화 완료');
+                return supabaseClient;
+
+            } catch (error) {
+                console.error('❌ Supabase 초기화 실패:', error);
+                throw error;
+            }
+        }
 
         // UI 초기화
         function initializeUI() {
+            console.log('🎨 UI 초기화 시작...');
+            
             // 시간 옵션 생성
             populateTimeOptions();
             
@@ -700,7 +787,12 @@
             });
 
             // 저장 버튼 이벤트
-            document.getElementById('saveScheduleBtn').addEventListener('click', saveSchedule);
+            const saveBtn = document.getElementById('saveScheduleBtn');
+            if (saveBtn) {
+                saveBtn.addEventListener('click', saveSchedule);
+            }
+            
+            console.log('✅ UI 초기화 완료');
         }
 
         // 시간 드롭다운 옵션 생성
@@ -713,7 +805,8 @@
                 select.innerHTML = '<option value="">시작시간</option>';
                 for (let hour = 8; hour <= 17; hour++) {
                     const timeStr = `${hour.toString().padStart(2, '0')}:00`;
-                    select.appendChild(new Option(timeStr, timeStr));
+                    const option = new Option(timeStr, timeStr);
+                    select.appendChild(option);
                 }
             });
 
@@ -722,14 +815,19 @@
                 select.innerHTML = '<option value="">종료시간</option>';
                 for (let hour = 9; hour <= 18; hour++) {
                     const timeStr = `${hour.toString().padStart(2, '0')}:00`;
-                    select.appendChild(new Option(timeStr, timeStr));
+                    const option = new Option(timeStr, timeStr);
+                    select.appendChild(option);
                 }
             });
         }
 
         // 활동 분류 변경 처리
         function handleTypeChange(event) {
+            console.log('🔄 활동 분류 변경:', event.target.value);
+            
             const dayRow = event.target.closest('.day-row');
+            if (!dayRow) return;
+            
             const startTime = dayRow.querySelector('.start-time');
             const endTime = dayRow.querySelector('.end-time');
             const type = event.target.value;
@@ -740,16 +838,73 @@
                 endTime.disabled = true;
                 startTime.value = '';
                 endTime.value = '';
+                startTime.style.opacity = '0.6';
+                endTime.style.opacity = '0.6';
             } else {
                 // 문화수업이나 기타 선택시 시간 입력 활성화
                 startTime.disabled = false;
                 endTime.disabled = false;
+                startTime.style.opacity = '1';
+                endTime.style.opacity = '1';
+            }
+        }
+
+        // 활동 정보 업데이트
+        function updateActivityInfo() {
+            const studentNameElements = document.querySelectorAll('#studentName, #studentName2');
+            studentNameElements.forEach(el => {
+                if (el) el.textContent = currentUser.name || '문화인턴';
+            });
+        }
+
+        // 주간 활동 시간 계산 및 표시
+        function calculateAndDisplayWeeklyHours(scheduleData) {
+            let totalWeeklyHours = 0;
+            let culturalClassCount = 0;
+            
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            
+            days.forEach(day => {
+                const type = scheduleData[`${day}_type`];
+                const startTime = scheduleData[`${day}_start_time`];
+                const endTime = scheduleData[`${day}_end_time`];
+                
+                if (type && type !== '휴무' && startTime && endTime) {
+                    const start = new Date(`2000-01-01T${startTime}`);
+                    const end = new Date(`2000-01-01T${endTime}`);
+                    const hours = (end - start) / (1000 * 60 * 60);
+                    totalWeeklyHours += hours;
+                    
+                    if (type === '문화수업') {
+                        culturalClassCount++;
+                    }
+                }
+            });
+            
+            // 주당 활동 시간 표시
+            const weeklyHoursEl = document.getElementById('weeklyHours');
+            if (weeklyHoursEl) {
+                weeklyHoursEl.textContent = `${totalWeeklyHours} / 40`;
+            }
+            
+            // 하루 최대 활동 시간 계산 (주당 시간에 따라)
+            const dailyMaxHours = totalWeeklyHours <= 25 ? 5 : 8;
+            const dailyMaxHoursEl = document.getElementById('dailyMaxHours');
+            if (dailyMaxHoursEl) {
+                dailyMaxHoursEl.textContent = `${dailyMaxHours}`;
             }
         }
 
         // 기존 스케줄 데이터 로드
         async function loadScheduleData() {
             try {
+                if (!supabaseClient) {
+                    console.warn('⚠️ Supabase 클라이언트가 초기화되지 않음');
+                    return;
+                }
+
+                console.log('📥 스케줄 데이터 로드 시작...');
+                
                 const { data, error } = await supabaseClient
                     .from('weekly_schedules')
                     .select('*')
@@ -763,11 +918,15 @@
                 if (data) {
                     scheduleData = data;
                     populateFormWithData(data);
+                    calculateAndDisplayWeeklyHours(data);
                     showMessage('기존 스케줄 데이터를 불러왔습니다.', 'info');
+                    console.log('✅ 스케줄 데이터 로드 완료');
+                } else {
+                    console.log('💡 기존 스케줄 데이터 없음 - 신규 작성');
                 }
 
             } catch (error) {
-                console.error('데이터 로드 오류:', error);
+                console.error('❌ 데이터 로드 오류:', error);
                 showMessage('스케줄 데이터를 불러오는 중 오류가 발생했습니다.', 'error');
             }
         }
@@ -778,6 +937,8 @@
             
             days.forEach(day => {
                 const dayRow = document.querySelector(`[data-day="${day}"]`);
+                if (!dayRow) return;
+                
                 const typeSelect = dayRow.querySelector('.activity-type');
                 const startSelect = dayRow.querySelector('.start-time');
                 const endSelect = dayRow.querySelector('.end-time');
@@ -790,6 +951,8 @@
                     if (data[`${day}_type`] !== '휴무') {
                         startSelect.disabled = false;
                         endSelect.disabled = false;
+                        startSelect.style.opacity = '1';
+                        endSelect.style.opacity = '1';
                         
                         // 시간 설정
                         if (data[`${day}_start_time`]) {
@@ -806,17 +969,26 @@
         // 스케줄 저장
         async function saveSchedule() {
             try {
+                console.log('💾 스케줄 저장 시작...');
+                
                 // 로딩 상태
                 const saveBtn = document.getElementById('saveScheduleBtn');
-                saveBtn.classList.add('loading');
-                saveBtn.disabled = true;
+                if (saveBtn) {
+                    saveBtn.classList.add('loading');
+                    saveBtn.disabled = true;
+                }
 
                 // 폼 데이터 수집
-                const scheduleData = collectFormData();
+                const formData = collectFormData();
+                console.log('📝 수집된 폼 데이터:', formData);
                 
                 // 데이터 검증
-                if (!validateScheduleData(scheduleData)) {
+                if (!validateScheduleData(formData)) {
                     return;
+                }
+
+                if (!supabaseClient) {
+                    throw new Error('Supabase 클라이언트가 초기화되지 않았습니다.');
                 }
 
                 // 데이터베이스 저장
@@ -824,7 +996,7 @@
                     .from('weekly_schedules')
                     .upsert({
                         user_id: currentUser.id,
-                        ...scheduleData,
+                        ...formData,
                         updated_at: new Date().toISOString()
                     });
 
@@ -832,16 +1004,22 @@
                     throw error;
                 }
 
+                // 활동 시간 재계산
+                calculateAndDisplayWeeklyHours(formData);
+                
                 showMessage('스케줄이 성공적으로 저장되었습니다.', 'success');
+                console.log('✅ 스케줄 저장 완료');
 
             } catch (error) {
-                console.error('저장 오류:', error);
-                showMessage('스케줄 저장 중 오류가 발생했습니다.', 'error');
+                console.error('❌ 저장 오류:', error);
+                showMessage('스케줄 저장 중 오류가 발생했습니다: ' + error.message, 'error');
             } finally {
                 // 로딩 상태 해제
                 const saveBtn = document.getElementById('saveScheduleBtn');
-                saveBtn.classList.remove('loading');
-                saveBtn.disabled = false;
+                if (saveBtn) {
+                    saveBtn.classList.remove('loading');
+                    saveBtn.disabled = false;
+                }
             }
         }
 
@@ -852,13 +1030,15 @@
             
             days.forEach(day => {
                 const dayRow = document.querySelector(`[data-day="${day}"]`);
-                const type = dayRow.querySelector('.activity-type').value;
-                const startTime = dayRow.querySelector('.start-time').value;
-                const endTime = dayRow.querySelector('.end-time').value;
+                if (!dayRow) return;
+                
+                const type = dayRow.querySelector('.activity-type')?.value || '';
+                const startTime = dayRow.querySelector('.start-time')?.value || '';
+                const endTime = dayRow.querySelector('.end-time')?.value || '';
 
                 data[`${day}_type`] = type || null;
-                data[`${day}_start_time`] = (type && type !== '휴무') ? startTime : null;
-                data[`${day}_end_time`] = (type && type !== '휴무') ? endTime : null;
+                data[`${day}_start_time`] = (type && type !== '휴무' && startTime) ? startTime : null;
+                data[`${day}_end_time`] = (type && type !== '휴무' && endTime) ? endTime : null;
             });
 
             return data;
@@ -894,50 +1074,77 @@
             return true;
         }
 
-        // 메시지 표시
+        // 메시지 표시 (안전한 DOM 접근)
         function showMessage(text, type = 'info') {
+            console.log(`📢 메시지 (${type}):`, text);
+            
             const messageEl = document.getElementById('statusMessage');
+            if (!messageEl) {
+                console.warn('⚠️ 상태 메시지 요소를 찾을 수 없음');
+                return;
+            }
+            
             const textEl = messageEl.querySelector('.message-text');
             const iconEl = messageEl.querySelector('i');
 
-            textEl.textContent = text;
+            if (textEl) textEl.textContent = text;
             messageEl.className = `status-message ${type}`;
             
-            // 아이콘 변경
-            switch (type) {
-                case 'success':
-                    iconEl.setAttribute('data-lucide', 'check-circle');
-                    break;
-                case 'error':
-                    iconEl.setAttribute('data-lucide', 'x-circle');
-                    break;
-                default:
-                    iconEl.setAttribute('data-lucide', 'info');
-                    break;
+            // 아이콘 변경 (안전한 방식)
+            if (iconEl) {
+                switch (type) {
+                    case 'success':
+                        iconEl.setAttribute('data-lucide', 'check-circle');
+                        break;
+                    case 'error':
+                        iconEl.setAttribute('data-lucide', 'x-circle');
+                        break;
+                    default:
+                        iconEl.setAttribute('data-lucide', 'info');
+                        break;
+                }
             }
 
             messageEl.style.display = 'flex';
-            lucide.createIcons();
+            
+            // Lucide 아이콘 재초기화 (안전한 방식)
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
 
             // 3초 후 자동 숨김
             setTimeout(() => {
                 messageEl.style.display = 'none';
-            }, 3000);
+            }, 5000);
+        }
+
+        // 폼 섹션 숨기기 (기능 비활성화시)
+        function hideFormSections() {
+            const sections = ['.schedule-form-section', '.button-section', '.activity-info-section'];
+            sections.forEach(selector => {
+                const element = document.querySelector(selector);
+                if (element) element.style.display = 'none';
+            });
         }
 
         // 유틸리티: 현재 사용자 정보 가져오기
         function getCurrentUser() {
-            const userData = localStorage.getItem('currentUser');
-            return userData ? JSON.parse(userData) : null;
+            try {
+                const userData = localStorage.getItem('currentUser');
+                return userData ? JSON.parse(userData) : null;
+            } catch (error) {
+                console.error('❌ 사용자 데이터 파싱 오류:', error);
+                return null;
+            }
         }
 
-        // 유틸리티: Supabase 클라이언트 생성
-        function createSupabaseClient(url, key) {
-            return supabase.createClient(url, key);
+        // DOM이 로드되면 초기화 시작
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializePage);
+        } else {
+            // 이미 로드된 경우
+            initializePage();
         }
     </script>
-    
-    <!-- Supabase 클라이언트 -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </body>
 </html>
