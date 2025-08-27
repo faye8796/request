@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>활동일 작성 - 세종학당 문화인턴 지원시스템</title>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <script src="../js/config.js"></script>
-    <script src="../js/utils.js"></script>
-    <script src="../js/auth.js"></script>
     <style>
         * {
             margin: 0;
@@ -46,6 +43,68 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+        }
+
+        /* 로딩 상태 */
+        .global-loading-state {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+        }
+
+        .global-loading-state .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 2rem;
+        }
+
+        .loading-message h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .loading-message p {
+            font-size: 1rem;
+            opacity: 0.9;
+            text-align: center;
+        }
+
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        /* 앱 컨테이너 */
+        #app {
+            min-height: 100vh;
+            width: 100%;
+            display: none;
         }
 
         /* 헤더 스타일 - 돌아가기 버튼 포함 */
@@ -360,11 +419,6 @@
             animation: spin 1s linear infinite;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
         /* 반응형 디자인 */
         @media (max-width: 768px) {
             .container {
@@ -432,278 +486,307 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- 헤더 섹션 - 돌아가기 버튼 포함 -->
-        <header class="header-section">
-            <a href="../student/dashboard.html" class="back-button">
-                <i data-lucide="arrow-left"></i>
-                대시보드
-            </a>
-            <h1>
-                <i data-lucide="calendar-days"></i>
-                활동일 작성
-            </h1>
-            <p>주간 정기 활동 스케줄을 작성하여 체계적으로 활동을 관리해보세요</p>
-        </header>
-
-        <!-- 상태 메시지 -->
-        <div id="statusMessage" class="status-message">
-            <i data-lucide="info"></i>
-            <span class="message-text"></span>
-        </div>
-
-        <!-- 안내 정보 카드 -->
-        <div class="info-card">
-            <h3>
-                <i data-lucide="info"></i>
-                작성 안내
-            </h3>
-            <ul>
-                <li><strong>문화수업:</strong> 한국 문화 관련 정규 수업이나 활동</li>
-                <li><strong>기타:</strong> 행정업무, 준비작업 등 문화수업 외 활동</li>
-                <li><strong>휴무:</strong> 활동하지 않는 날</li>
-                <li>시간은 현지 시각 기준으로 입력해주세요</li>
-                <li>분류 선택 후 시작시간과 종료시간을 설정할 수 있습니다</li>
-            </ul>
-        </div>
-
-        <!-- 주간 활동 정보 섹션 -->
-        <div class="activity-info-section" id="activityInfoSection">
-            <h3>
-                <i data-lucide="bar-chart-3"></i>
-                주간 활동 정보
-            </h3>
-            <div class="activity-info-grid">
-                <div class="activity-info-item">
-                    모든 문화인턴은 <strong>최소 주 2회</strong> 문화 수업을 진행해야 합니다.
-                </div>
-                <div class="activity-info-item">
-                    문화인턴의 활동일은 <strong>주 5일</strong>입니다.
-                </div>
-                <div class="activity-info-item highlight" id="weeklyHoursInfo">
-                    <strong id="studentName">[학생성명]</strong>님의 주당 활동 시간은 <strong id="weeklyHours">[계산중...]</strong> 시간입니다.
-                </div>
-                <div class="activity-info-item highlight" id="dailyHoursInfo">
-                    <strong id="studentName2">[학생성명]</strong>님의 하루 최대 활동 시간은 <strong id="dailyMaxHours">[계산중...]</strong> 시간입니다.
-                </div>
-            </div>
-        </div>
-
-        <!-- 메인 폼 섹션 -->
-        <section class="schedule-form-section">
-            <h2 class="section-title">
-                <i data-lucide="calendar"></i>
-                주간 활동 스케줄
-            </h2>
-
-            <div class="schedule-grid" id="scheduleGrid">
-                <!-- 월요일 -->
-                <div class="day-row" data-day="monday">
-                    <div class="day-label">월요일</div>
-                    <div class="form-group">
-                        <label class="form-label">활동 분류</label>
-                        <select class="activity-type" name="monday_type">
-                            <option value="">분류 선택</option>
-                            <option value="문화수업">문화수업</option>
-                            <option value="기타">기타</option>
-                            <option value="휴무">휴무</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">시작시간</label>
-                        <select class="start-time" name="monday_start_time" disabled>
-                            <option value="">시작시간</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">종료시간</label>
-                        <select class="end-time" name="monday_end_time" disabled>
-                            <option value="">종료시간</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- 화요일 -->
-                <div class="day-row" data-day="tuesday">
-                    <div class="day-label">화요일</div>
-                    <div class="form-group">
-                        <label class="form-label">활동 분류</label>
-                        <select class="activity-type" name="tuesday_type">
-                            <option value="">분류 선택</option>
-                            <option value="문화수업">문화수업</option>
-                            <option value="기타">기타</option>
-                            <option value="휴무">휴무</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">시작시간</label>
-                        <select class="start-time" name="tuesday_start_time" disabled>
-                            <option value="">시작시간</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">종료시간</label>
-                        <select class="end-time" name="tuesday_end_time" disabled>
-                            <option value="">종료시간</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- 수요일 -->
-                <div class="day-row" data-day="wednesday">
-                    <div class="day-label">수요일</div>
-                    <div class="form-group">
-                        <label class="form-label">활동 분류</label>
-                        <select class="activity-type" name="wednesday_type">
-                            <option value="">분류 선택</option>
-                            <option value="문화수업">문화수업</option>
-                            <option value="기타">기타</option>
-                            <option value="휴무">휴무</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">시작시간</label>
-                        <select class="start-time" name="wednesday_start_time" disabled>
-                            <option value="">시작시간</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">종료시간</label>
-                        <select class="end-time" name="wednesday_end_time" disabled>
-                            <option value="">종료시간</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- 목요일 -->
-                <div class="day-row" data-day="thursday">
-                    <div class="day-label">목요일</div>
-                    <div class="form-group">
-                        <label class="form-label">활동 분류</label>
-                        <select class="activity-type" name="thursday_type">
-                            <option value="">분류 선택</option>
-                            <option value="문화수업">문화수업</option>
-                            <option value="기타">기타</option>
-                            <option value="휴무">휴무</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">시작시간</label>
-                        <select class="start-time" name="thursday_start_time" disabled>
-                            <option value="">시작시간</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">종료시간</label>
-                        <select class="end-time" name="thursday_end_time" disabled>
-                            <option value="">종료시간</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- 금요일 -->
-                <div class="day-row" data-day="friday">
-                    <div class="day-label">금요일</div>
-                    <div class="form-group">
-                        <label class="form-label">활동 분류</label>
-                        <select class="activity-type" name="friday_type">
-                            <option value="">분류 선택</option>
-                            <option value="문화수업">문화수업</option>
-                            <option value="기타">기타</option>
-                            <option value="휴무">휴무</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">시작시간</label>
-                        <select class="start-time" name="friday_start_time" disabled>
-                            <option value="">시작시간</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">종료시간</label>
-                        <select class="end-time" name="friday_end_time" disabled>
-                            <option value="">종료시간</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- 토요일 -->
-                <div class="day-row" data-day="saturday">
-                    <div class="day-label">토요일</div>
-                    <div class="form-group">
-                        <label class="form-label">활동 분류</label>
-                        <select class="activity-type" name="saturday_type">
-                            <option value="">분류 선택</option>
-                            <option value="문화수업">문화수업</option>
-                            <option value="기타">기타</option>
-                            <option value="휴무">휴무</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">시작시간</label>
-                        <select class="start-time" name="saturday_start_time" disabled>
-                            <option value="">시작시간</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">종료시간</label>
-                        <select class="end-time" name="saturday_end_time" disabled>
-                            <option value="">종료시간</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- 일요일 -->
-                <div class="day-row" data-day="sunday">
-                    <div class="day-label">일요일</div>
-                    <div class="form-group">
-                        <label class="form-label">활동 분류</label>
-                        <select class="activity-type" name="sunday_type">
-                            <option value="">분류 선택</option>
-                            <option value="문화수업">문화수업</option>
-                            <option value="기타">기타</option>
-                            <option value="휴무">휴무</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">시작시간</label>
-                        <select class="start-time" name="sunday_start_time" disabled>
-                            <option value="">시작시간</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">종료시간</label>
-                        <select class="end-time" name="sunday_end_time" disabled>
-                            <option value="">종료시간</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 버튼 섹션 -->
-        <div class="button-section">
-            <button type="button" class="btn btn-primary" id="saveScheduleBtn">
-                <i data-lucide="save"></i>
-                저장하기
-            </button>
+    <!-- 로딩 상태 -->
+    <div id="globalLoadingState" class="global-loading-state">
+        <div class="spinner"></div>
+        <div class="loading-message">
+            <h3>활동일 작성 시스템을 준비하고 있습니다<span class="loading-dots"></span></h3>
+            <p>잠시만 기다려주세요.</p>
         </div>
     </div>
 
-    <!-- Supabase 클라이언트 -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
+    <!-- 메인 앱 컨테이너 -->
+    <div id="app">
+        <div class="container">
+            <!-- 헤더 섹션 - 돌아가기 버튼 포함 -->
+            <header class="header-section">
+                <a href="../student/dashboard.html" class="back-button">
+                    <i data-lucide="arrow-left"></i>
+                    대시보드
+                </a>
+                <h1>
+                    <i data-lucide="calendar-days"></i>
+                    활동일 작성
+                </h1>
+                <p>주간 정기 활동 스케줄을 작성하여 체계적으로 활동을 관리해보세요</p>
+            </header>
+
+            <!-- 상태 메시지 -->
+            <div id="statusMessage" class="status-message">
+                <i data-lucide="info"></i>
+                <span class="message-text"></span>
+            </div>
+
+            <!-- 안내 정보 카드 -->
+            <div class="info-card">
+                <h3>
+                    <i data-lucide="info"></i>
+                    작성 안내
+                </h3>
+                <ul>
+                    <li><strong>문화수업:</strong> 한국 문화 관련 정규 수업이나 활동</li>
+                    <li><strong>기타:</strong> 행정업무, 준비작업 등 문화수업 외 활동</li>
+                    <li><strong>휴무:</strong> 활동하지 않는 날</li>
+                    <li>시간은 현지 시각 기준으로 입력해주세요</li>
+                    <li>분류 선택 후 시작시간과 종료시간을 설정할 수 있습니다</li>
+                </ul>
+            </div>
+
+            <!-- 주간 활동 정보 섹션 -->
+            <div class="activity-info-section" id="activityInfoSection">
+                <h3>
+                    <i data-lucide="bar-chart-3"></i>
+                    주간 활동 정보
+                </h3>
+                <div class="activity-info-grid">
+                    <div class="activity-info-item">
+                        모든 문화인턴은 <strong>최소 주 2회</strong> 문화 수업을 진행해야 합니다.
+                    </div>
+                    <div class="activity-info-item">
+                        문화인턴의 활동일은 <strong>주 5일</strong>입니다.
+                    </div>
+                    <div class="activity-info-item highlight" id="weeklyHoursInfo">
+                        <strong id="studentName">[학생성명]</strong>님의 주당 활동 시간은 <strong id="weeklyHours">[계산중...]</strong> 시간입니다.
+                    </div>
+                    <div class="activity-info-item highlight" id="dailyHoursInfo">
+                        <strong id="studentName2">[학생성명]</strong>님의 하루 최대 활동 시간은 <strong id="dailyMaxHours">[계산중...]</strong> 시간입니다.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 메인 폼 섹션 -->
+            <section class="schedule-form-section">
+                <h2 class="section-title">
+                    <i data-lucide="calendar"></i>
+                    주간 활동 스케줄
+                </h2>
+
+                <div class="schedule-grid" id="scheduleGrid">
+                    <!-- 월요일 -->
+                    <div class="day-row" data-day="monday">
+                        <div class="day-label">월요일</div>
+                        <div class="form-group">
+                            <label class="form-label">활동 분류</label>
+                            <select class="activity-type" name="monday_type">
+                                <option value="">분류 선택</option>
+                                <option value="문화수업">문화수업</option>
+                                <option value="기타">기타</option>
+                                <option value="휴무">휴무</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">시작시간</label>
+                            <select class="start-time" name="monday_start_time" disabled>
+                                <option value="">시작시간</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">종료시간</label>
+                            <select class="end-time" name="monday_end_time" disabled>
+                                <option value="">종료시간</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 화요일 -->
+                    <div class="day-row" data-day="tuesday">
+                        <div class="day-label">화요일</div>
+                        <div class="form-group">
+                            <label class="form-label">활동 분류</label>
+                            <select class="activity-type" name="tuesday_type">
+                                <option value="">분류 선택</option>
+                                <option value="문화수업">문화수업</option>
+                                <option value="기타">기타</option>
+                                <option value="휴무">휴무</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">시작시간</label>
+                            <select class="start-time" name="tuesday_start_time" disabled>
+                                <option value="">시작시간</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">종료시간</label>
+                            <select class="end-time" name="tuesday_end_time" disabled>
+                                <option value="">종료시간</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 수요일 -->
+                    <div class="day-row" data-day="wednesday">
+                        <div class="day-label">수요일</div>
+                        <div class="form-group">
+                            <label class="form-label">활동 분류</label>
+                            <select class="activity-type" name="wednesday_type">
+                                <option value="">분류 선택</option>
+                                <option value="문화수업">문화수업</option>
+                                <option value="기타">기타</option>
+                                <option value="휴무">휴무</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">시작시간</label>
+                            <select class="start-time" name="wednesday_start_time" disabled>
+                                <option value="">시작시간</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">종료시간</label>
+                            <select class="end-time" name="wednesday_end_time" disabled>
+                                <option value="">종료시간</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 목요일 -->
+                    <div class="day-row" data-day="thursday">
+                        <div class="day-label">목요일</div>
+                        <div class="form-group">
+                            <label class="form-label">활동 분류</label>
+                            <select class="activity-type" name="thursday_type">
+                                <option value="">분류 선택</option>
+                                <option value="문화수업">문화수업</option>
+                                <option value="기타">기타</option>
+                                <option value="휴무">휴무</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">시작시간</label>
+                            <select class="start-time" name="thursday_start_time" disabled>
+                                <option value="">시작시간</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">종료시간</label>
+                            <select class="end-time" name="thursday_end_time" disabled>
+                                <option value="">종료시간</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 금요일 -->
+                    <div class="day-row" data-day="friday">
+                        <div class="day-label">금요일</div>
+                        <div class="form-group">
+                            <label class="form-label">활동 분류</label>
+                            <select class="activity-type" name="friday_type">
+                                <option value="">분류 선택</option>
+                                <option value="문화수업">문화수업</option>
+                                <option value="기타">기타</option>
+                                <option value="휴무">휴무</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">시작시간</label>
+                            <select class="start-time" name="friday_start_time" disabled>
+                                <option value="">시작시간</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">종료시간</label>
+                            <select class="end-time" name="friday_end_time" disabled>
+                                <option value="">종료시간</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 토요일 -->
+                    <div class="day-row" data-day="saturday">
+                        <div class="day-label">토요일</div>
+                        <div class="form-group">
+                            <label class="form-label">활동 분류</label>
+                            <select class="activity-type" name="saturday_type">
+                                <option value="">분류 선택</option>
+                                <option value="문화수업">문화수업</option>
+                                <option value="기타">기타</option>
+                                <option value="휴무">휴무</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">시작시간</label>
+                            <select class="start-time" name="saturday_start_time" disabled>
+                                <option value="">시작시간</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">종료시간</label>
+                            <select class="end-time" name="saturday_end_time" disabled>
+                                <option value="">종료시간</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 일요일 -->
+                    <div class="day-row" data-day="sunday">
+                        <div class="day-label">일요일</div>
+                        <div class="form-group">
+                            <label class="form-label">활동 분류</label>
+                            <select class="activity-type" name="sunday_type">
+                                <option value="">분류 선택</option>
+                                <option value="문화수업">문화수업</option>
+                                <option value="기타">기타</option>
+                                <option value="휴무">휴무</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">시작시간</label>
+                            <select class="start-time" name="sunday_start_time" disabled>
+                                <option value="">시작시간</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">종료시간</label>
+                            <select class="end-time" name="sunday_end_time" disabled>
+                                <option value="">종료시간</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 버튼 섹션 -->
+            <div class="button-section">
+                <button type="button" class="btn btn-primary" id="saveScheduleBtn">
+                    <i data-lucide="save"></i>
+                    저장하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 모듈들 -->
+    <!-- 1단계: 기본 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/common/supabase-core.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/auth.js"></script>
+
+    <!-- 2단계: 활동일 작성 전용 모듈들 (미래 추가 예정) -->
+    <!--
+    <script src="../js/student/activity-schedule-api.js"></script>
+    <script src="../js/student/activity-schedule-ui.js"></script>
+    <script src="../js/student/activity-schedule.js"></script>
+    -->
+
+    <!-- 3단계: 메인 초기화 스크립트 -->
     <script>
         // 전역 변수
         let currentUser = null;
         let scheduleData = null;
         let supabaseClient = null;
 
-        // 초기화 함수
-        async function initializePage() {
+        // 메인 초기화 함수
+        async function initializeActivitySchedulePage() {
             try {
-                console.log('🚀 페이지 초기화 시작...');
+                console.log('🚀 활동일 작성 페이지 초기화 시작...');
                 
+                // 로딩 상태 관리
+                const globalLoading = document.getElementById('globalLoadingState');
+                const app = document.getElementById('app');
+
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
@@ -711,7 +794,7 @@
                 }
 
                 // 사용자 인증 확인
-                currentUser = getCurrentUser();
+                currentUser = await loadAndVerifyUser();
                 if (!currentUser) {
                     console.warn('❌ 사용자 인증 실패 - 로그인 페이지로 이동');
                     window.location.href = '../index.html';
@@ -721,12 +804,20 @@
 
                 // 기능 활성화 확인
                 if (!currentUser.individual_activity_schedule_enabled) {
+                    console.log('⚠️ 활동일 작성 기능 비활성화');
                     showMessage('현재 활동일 작성 기능이 비활성화되어 있습니다.', 'info');
                     hideFormSections();
+                    
+                    // 앱 표시
+                    if (globalLoading) globalLoading.style.display = 'none';
+                    if (app) app.style.display = 'block';
                     return;
                 }
 
-                // Supabase 클라이언트 초기화 (안전한 방식)
+                // CONFIG 로딩 대기
+                await waitForConfig();
+
+                // Supabase 클라이언트 초기화
                 await initializeSupabaseClient();
                 
                 // UI 초기화
@@ -738,26 +829,71 @@
                 // 기존 데이터 로드
                 await loadScheduleData();
 
-                console.log('✅ 페이지 초기화 완료');
+                // 앱 표시
+                if (globalLoading) globalLoading.style.display = 'none';
+                if (app) app.style.display = 'block';
+
+                console.log('✅ 활동일 작성 페이지 초기화 완료');
 
             } catch (error) {
                 console.error('❌ 초기화 오류:', error);
                 showMessage('페이지 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.', 'error');
+                
+                // 오류 발생시에도 앱 표시
+                const globalLoading = document.getElementById('globalLoadingState');
+                const app = document.getElementById('app');
+                if (globalLoading) globalLoading.style.display = 'none';
+                if (app) app.style.display = 'block';
             }
         }
 
-        // Supabase 클라이언트 안전한 초기화
-        async function initializeSupabaseClient() {
+        // 사용자 데이터 로드 및 검증
+        async function loadAndVerifyUser() {
             try {
-                // CONFIG가 로드될 때까지 대기
-                let retries = 0;
-                while ((!window.CONFIG || !window.CONFIG.SUPABASE_URL) && retries < 50) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    retries++;
+                const userDataStr = localStorage.getItem('currentStudent');
+                if (!userDataStr) {
+                    console.warn('⚠️ localStorage에 사용자 데이터 없음');
+                    return null;
                 }
 
+                const userData = JSON.parse(userDataStr);
+                if (!userData.id || !userData.email) {
+                    throw new Error('사용자 데이터가 불완전합니다.');
+                }
+
+                return userData;
+
+            } catch (error) {
+                console.error('❌ 사용자 데이터 로드/검증 실패:', error);
+                return null;
+            }
+        }
+
+        // CONFIG 로딩 대기
+        async function waitForConfig() {
+            let retries = 0;
+            while ((!window.CONFIG || !window.CONFIG.SUPABASE_URL) && retries < 100) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+                retries++;
+            }
+
+            if (!window.CONFIG || !window.CONFIG.SUPABASE_URL) {
+                throw new Error('CONFIG 로드 타임아웃 - Supabase 설정을 찾을 수 없습니다.');
+            }
+
+            console.log('✅ CONFIG 로드 완료');
+        }
+
+        // Supabase 클라이언트 초기화
+        async function initializeSupabaseClient() {
+            try {
                 if (!window.CONFIG || !window.CONFIG.SUPABASE_URL) {
-                    throw new Error('CONFIG 로드 실패 - Supabase 설정을 찾을 수 없습니다.');
+                    throw new Error('CONFIG가 로드되지 않았습니다.');
+                }
+
+                // Supabase 클라이언트 생성
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Supabase 라이브러리가 로드되지 않았습니다.');
                 }
 
                 supabaseClient = supabase.createClient(
@@ -923,6 +1059,11 @@
                     console.log('✅ 스케줄 데이터 로드 완료');
                 } else {
                     console.log('💡 기존 스케줄 데이터 없음 - 신규 작성');
+                    // 기본 시간 표시
+                    const weeklyHoursEl = document.getElementById('weeklyHours');
+                    const dailyMaxHoursEl = document.getElementById('dailyMaxHours');
+                    if (weeklyHoursEl) weeklyHoursEl.textContent = '0 / 40';
+                    if (dailyMaxHoursEl) dailyMaxHoursEl.textContent = '8';
                 }
 
             } catch (error) {
@@ -1112,7 +1253,7 @@
                 lucide.createIcons();
             }
 
-            // 3초 후 자동 숨김
+            // 5초 후 자동 숨김
             setTimeout(() => {
                 messageEl.style.display = 'none';
             }, 5000);
@@ -1127,23 +1268,12 @@
             });
         }
 
-        // 유틸리티: 현재 사용자 정보 가져오기
-        function getCurrentUser() {
-            try {
-                const userData = localStorage.getItem('currentUser');
-                return userData ? JSON.parse(userData) : null;
-            } catch (error) {
-                console.error('❌ 사용자 데이터 파싱 오류:', error);
-                return null;
-            }
-        }
-
-        // DOM이 로드되면 초기화 시작
+        // DOM 로드 완료 시 초기화
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializePage);
+            document.addEventListener('DOMContentLoaded', initializeActivitySchedulePage);
         } else {
-            // 이미 로드된 경우
-            initializePage();
+            // 이미 로드된 경우 즉시 실행
+            initializeActivitySchedulePage();
         }
     </script>
 </body>
