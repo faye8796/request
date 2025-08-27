@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>활동일 작성 - 세종학당 문화인턴 지원시스템</title>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/auth.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #2563eb;
+            --primary-light: #3b82f6;
+            --primary-dark: #1e40af;
+            --secondary-color: #64748b;
+            --success-color: #16a34a;
+            --warning-color: #d97706;
+            --error-color: #dc2626;
+            --background-color: #f8fafc;
+            --surface-color: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --border-radius: 8px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 헤더 스타일 */
+        .header-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 40px 0;
+            margin-bottom: 30px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header-section h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header-section p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* 안내 카드 */
+        .info-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .info-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+        }
+
+        .info-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .info-card li {
+            padding: 8px 0;
+            padding-left: 20px;
+            position: relative;
+            color: var(--text-secondary);
+        }
+
+        .info-card li::before {
+            content: '•';
+            color: var(--primary-color);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        /* 메인 폼 섹션 */
+        .schedule-form-section {
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: var(--text-primary);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        /* 스케줄 그리드 */
+        .schedule-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .day-row {
+            display: grid;
+            grid-template-columns: 100px 150px 1fr 1fr;
+            gap: 15px;
+            align-items: center;
+            padding: 20px;
+            background: #fafbfc;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .day-row:hover {
+            border-color: var(--primary-light);
+            background: #f1f5f9;
+        }
+
+        .day-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        /* 폼 요소들 */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        select {
+            padding: 12px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: var(--surface-color);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
+        }
+
+        select:disabled {
+            background: #f1f5f9;
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        select option {
+            padding: 10px;
+        }
+
+        /* 버튼 스타일 */
+        .button-section {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            padding: 30px 0;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--surface-color);
+            color: var(--text-secondary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        /* 상태 메시지 */
+        .status-message {
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-message.success {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .status-message.error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .status-message.info {
+            background: #dbeafe;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+        }
+
+        /* 로딩 상태 */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .loading .btn {
+            position: relative;
+        }
+
+        .loading .btn::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header-section {
+                padding: 30px 20px;
+            }
+
+            .header-section h1 {
+                font-size: 2rem;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .schedule-form-section {
+                padding: 20px;
+            }
+
+            .day-row {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                text-align: left;
+            }
+
+            .day-label {
+                text-align: center;
+                background: var(--primary-color);
+                color: white;
+                padding: 8px;
+                border-radius: var(--border-radius);
+                margin-bottom: 10px;
+            }
+
+            .form-group {
+                margin-bottom: 10px;
+            }
+
+            .button-section {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 280px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-section h1 {
+                font-size: 1.8rem;
+            }
+
+            .info-card,
+            .schedule-form-section {
+                padding: 15px;
+            }
+        }
+
+        /* 추가 스타일 */
+        .schedule-summary {
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .summary-value {
+            color: var(--text-secondary);
+        }
+
+        /* 다크 모드 호환성 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #0f172a;
+                --surface-color: #1e293b;
+                --text-primary: #f1f5f9;
+                --text-secondary: #94a3b8;
+                --border-color: #334155;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 섹션 -->
+        <header class="header-section">
+            <h1>
+                <i data-lucide="calendar-days"></i>
+                활동일 작성
+            </h1>
+            <p>주간 정기 활동 스케줄을 작성하여 체계적으로 활동을 관리해보세요</p>
+        </header>
+
+        <!-- 상태 메시지 -->
+        <div id="statusMessage" class="status-message">
+            <i data-lucide="info"></i>
+            <span class="message-text"></span>
+        </div>
+
+        <!-- 안내 정보 카드 -->
+        <div class="info-card">
+            <h3>
+                <i data-lucide="info"></i>
+                작성 안내
+            </h3>
+            <ul>
+                <li><strong>문화수업:</strong> 한국 문화 관련 정규 수업이나 활동</li>
+                <li><strong>기타:</strong> 행정업무, 준비작업 등 문화수업 외 활동</li>
+                <li><strong>휴무:</strong> 활동하지 않는 날</li>
+                <li>시간은 현지 시각 기준으로 입력해주세요</li>
+                <li>분류 선택 후 시작시간과 종료시간을 설정할 수 있습니다</li>
+            </ul>
+        </div>
+
+        <!-- 메인 폼 섹션 -->
+        <section class="schedule-form-section">
+            <h2 class="section-title">
+                <i data-lucide="calendar"></i>
+                주간 활동 스케줄
+            </h2>
+
+            <div class="schedule-grid" id="scheduleGrid">
+                <!-- 월요일 -->
+                <div class="day-row" data-day="monday">
+                    <div class="day-label">월요일</div>
+                    <div class="form-group">
+                        <label class="form-label">활동 분류</label>
+                        <select class="activity-type" name="monday_type">
+                            <option value="">분류 선택</option>
+                            <option value="문화수업">문화수업</option>
+                            <option value="기타">기타</option>
+                            <option value="휴무">휴무</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">시작시간</label>
+                        <select class="start-time" name="monday_start_time" disabled>
+                            <option value="">시작시간</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">종료시간</label>
+                        <select class="end-time" name="monday_end_time" disabled>
+                            <option value="">종료시간</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 화요일 -->
+                <div class="day-row" data-day="tuesday">
+                    <div class="day-label">화요일</div>
+                    <div class="form-group">
+                        <label class="form-label">활동 분류</label>
+                        <select class="activity-type" name="tuesday_type">
+                            <option value="">분류 선택</option>
+                            <option value="문화수업">문화수업</option>
+                            <option value="기타">기타</option>
+                            <option value="휴무">휴무</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">시작시간</label>
+                        <select class="start-time" name="tuesday_start_time" disabled>
+                            <option value="">시작시간</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">종료시간</label>
+                        <select class="end-time" name="tuesday_end_time" disabled>
+                            <option value="">종료시간</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 수요일 -->
+                <div class="day-row" data-day="wednesday">
+                    <div class="day-label">수요일</div>
+                    <div class="form-group">
+                        <label class="form-label">활동 분류</label>
+                        <select class="activity-type" name="wednesday_type">
+                            <option value="">분류 선택</option>
+                            <option value="문화수업">문화수업</option>
+                            <option value="기타">기타</option>
+                            <option value="휴무">휴무</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">시작시간</label>
+                        <select class="start-time" name="wednesday_start_time" disabled>
+                            <option value="">시작시간</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">종료시간</label>
+                        <select class="end-time" name="wednesday_end_time" disabled>
+                            <option value="">종료시간</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 목요일 -->
+                <div class="day-row" data-day="thursday">
+                    <div class="day-label">목요일</div>
+                    <div class="form-group">
+                        <label class="form-label">활동 분류</label>
+                        <select class="activity-type" name="thursday_type">
+                            <option value="">분류 선택</option>
+                            <option value="문화수업">문화수업</option>
+                            <option value="기타">기타</option>
+                            <option value="휴무">휴무</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">시작시간</label>
+                        <select class="start-time" name="thursday_start_time" disabled>
+                            <option value="">시작시간</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">종료시간</label>
+                        <select class="end-time" name="thursday_end_time" disabled>
+                            <option value="">종료시간</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 금요일 -->
+                <div class="day-row" data-day="friday">
+                    <div class="day-label">금요일</div>
+                    <div class="form-group">
+                        <label class="form-label">활동 분류</label>
+                        <select class="activity-type" name="friday_type">
+                            <option value="">분류 선택</option>
+                            <option value="문화수업">문화수업</option>
+                            <option value="기타">기타</option>
+                            <option value="휴무">휴무</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">시작시간</label>
+                        <select class="start-time" name="friday_start_time" disabled>
+                            <option value="">시작시간</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">종료시간</label>
+                        <select class="end-time" name="friday_end_time" disabled>
+                            <option value="">종료시간</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 토요일 -->
+                <div class="day-row" data-day="saturday">
+                    <div class="day-label">토요일</div>
+                    <div class="form-group">
+                        <label class="form-label">활동 분류</label>
+                        <select class="activity-type" name="saturday_type">
+                            <option value="">분류 선택</option>
+                            <option value="문화수업">문화수업</option>
+                            <option value="기타">기타</option>
+                            <option value="휴무">휴무</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">시작시간</label>
+                        <select class="start-time" name="saturday_start_time" disabled>
+                            <option value="">시작시간</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">종료시간</label>
+                        <select class="end-time" name="saturday_end_time" disabled>
+                            <option value="">종료시간</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 일요일 -->
+                <div class="day-row" data-day="sunday">
+                    <div class="day-label">일요일</div>
+                    <div class="form-group">
+                        <label class="form-label">활동 분류</label>
+                        <select class="activity-type" name="sunday_type">
+                            <option value="">분류 선택</option>
+                            <option value="문화수업">문화수업</option>
+                            <option value="기타">기타</option>
+                            <option value="휴무">휴무</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">시작시간</label>
+                        <select class="start-time" name="sunday_start_time" disabled>
+                            <option value="">시작시간</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">종료시간</label>
+                        <select class="end-time" name="sunday_end_time" disabled>
+                            <option value="">종료시간</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 버튼 섹션 -->
+        <div class="button-section">
+            <button type="button" class="btn btn-secondary" onclick="history.back()">
+                <i data-lucide="arrow-left"></i>
+                돌아가기
+            </button>
+            <button type="button" class="btn btn-primary" id="saveScheduleBtn">
+                <i data-lucide="save"></i>
+                저장하기
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Lucide 아이콘 초기화
+        lucide.createIcons();
+
+        // 전역 변수
+        let currentUser = null;
+        let scheduleData = null;
+        let supabaseClient = null;
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Supabase 클라이언트 초기화
+                supabaseClient = createSupabaseClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+                
+                // 인증 확인
+                currentUser = getCurrentUser();
+                if (!currentUser) {
+                    window.location.href = '../index.html';
+                    return;
+                }
+
+                // 기능 활성화 확인
+                if (!currentUser.individual_activity_schedule_enabled) {
+                    showMessage('현재 활동일 작성 기능이 비활성화되어 있습니다.', 'info');
+                    document.querySelector('.schedule-form-section').style.display = 'none';
+                    document.querySelector('.button-section').style.display = 'none';
+                    return;
+                }
+
+                // UI 초기화
+                initializeUI();
+                
+                // 기존 데이터 로드
+                await loadScheduleData();
+
+            } catch (error) {
+                console.error('초기화 오류:', error);
+                showMessage('페이지 초기화 중 오류가 발생했습니다.', 'error');
+            }
+        });
+
+        // UI 초기화
+        function initializeUI() {
+            // 시간 옵션 생성
+            populateTimeOptions();
+            
+            // 이벤트 리스너 등록
+            document.querySelectorAll('.activity-type').forEach(select => {
+                select.addEventListener('change', handleTypeChange);
+            });
+
+            // 저장 버튼 이벤트
+            document.getElementById('saveScheduleBtn').addEventListener('click', saveSchedule);
+        }
+
+        // 시간 드롭다운 옵션 생성
+        function populateTimeOptions() {
+            const startTimeSelects = document.querySelectorAll('.start-time');
+            const endTimeSelects = document.querySelectorAll('.end-time');
+
+            // 시작시간 (08:00 ~ 17:00)
+            startTimeSelects.forEach(select => {
+                select.innerHTML = '<option value="">시작시간</option>';
+                for (let hour = 8; hour <= 17; hour++) {
+                    const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+                    select.appendChild(new Option(timeStr, timeStr));
+                }
+            });
+
+            // 종료시간 (09:00 ~ 18:00)
+            endTimeSelects.forEach(select => {
+                select.innerHTML = '<option value="">종료시간</option>';
+                for (let hour = 9; hour <= 18; hour++) {
+                    const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+                    select.appendChild(new Option(timeStr, timeStr));
+                }
+            });
+        }
+
+        // 활동 분류 변경 처리
+        function handleTypeChange(event) {
+            const dayRow = event.target.closest('.day-row');
+            const startTime = dayRow.querySelector('.start-time');
+            const endTime = dayRow.querySelector('.end-time');
+            const type = event.target.value;
+
+            if (type === '휴무' || type === '') {
+                // 휴무이거나 미선택시 시간 입력 비활성화
+                startTime.disabled = true;
+                endTime.disabled = true;
+                startTime.value = '';
+                endTime.value = '';
+            } else {
+                // 문화수업이나 기타 선택시 시간 입력 활성화
+                startTime.disabled = false;
+                endTime.disabled = false;
+            }
+        }
+
+        // 기존 스케줄 데이터 로드
+        async function loadScheduleData() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('weekly_schedules')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+                    throw error;
+                }
+
+                if (data) {
+                    scheduleData = data;
+                    populateFormWithData(data);
+                    showMessage('기존 스케줄 데이터를 불러왔습니다.', 'info');
+                }
+
+            } catch (error) {
+                console.error('데이터 로드 오류:', error);
+                showMessage('스케줄 데이터를 불러오는 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 폼에 기존 데이터 채우기
+        function populateFormWithData(data) {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            
+            days.forEach(day => {
+                const dayRow = document.querySelector(`[data-day="${day}"]`);
+                const typeSelect = dayRow.querySelector('.activity-type');
+                const startSelect = dayRow.querySelector('.start-time');
+                const endSelect = dayRow.querySelector('.end-time');
+
+                // 분류 설정
+                if (data[`${day}_type`]) {
+                    typeSelect.value = data[`${day}_type`];
+                    
+                    // 시간 입력창 활성화 (휴무가 아닌 경우)
+                    if (data[`${day}_type`] !== '휴무') {
+                        startSelect.disabled = false;
+                        endSelect.disabled = false;
+                        
+                        // 시간 설정
+                        if (data[`${day}_start_time`]) {
+                            startSelect.value = data[`${day}_start_time`];
+                        }
+                        if (data[`${day}_end_time`]) {
+                            endSelect.value = data[`${day}_end_time`];
+                        }
+                    }
+                }
+            });
+        }
+
+        // 스케줄 저장
+        async function saveSchedule() {
+            try {
+                // 로딩 상태
+                const saveBtn = document.getElementById('saveScheduleBtn');
+                saveBtn.classList.add('loading');
+                saveBtn.disabled = true;
+
+                // 폼 데이터 수집
+                const scheduleData = collectFormData();
+                
+                // 데이터 검증
+                if (!validateScheduleData(scheduleData)) {
+                    return;
+                }
+
+                // 데이터베이스 저장
+                const { error } = await supabaseClient
+                    .from('weekly_schedules')
+                    .upsert({
+                        user_id: currentUser.id,
+                        ...scheduleData,
+                        updated_at: new Date().toISOString()
+                    });
+
+                if (error) {
+                    throw error;
+                }
+
+                showMessage('스케줄이 성공적으로 저장되었습니다.', 'success');
+
+            } catch (error) {
+                console.error('저장 오류:', error);
+                showMessage('스케줄 저장 중 오류가 발생했습니다.', 'error');
+            } finally {
+                // 로딩 상태 해제
+                const saveBtn = document.getElementById('saveScheduleBtn');
+                saveBtn.classList.remove('loading');
+                saveBtn.disabled = false;
+            }
+        }
+
+        // 폼 데이터 수집
+        function collectFormData() {
+            const data = {};
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            
+            days.forEach(day => {
+                const dayRow = document.querySelector(`[data-day="${day}"]`);
+                const type = dayRow.querySelector('.activity-type').value;
+                const startTime = dayRow.querySelector('.start-time').value;
+                const endTime = dayRow.querySelector('.end-time').value;
+
+                data[`${day}_type`] = type || null;
+                data[`${day}_start_time`] = (type && type !== '휴무') ? startTime : null;
+                data[`${day}_end_time`] = (type && type !== '휴무') ? endTime : null;
+            });
+
+            return data;
+        }
+
+        // 데이터 검증
+        function validateScheduleData(data) {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            const dayNames = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
+            
+            for (let i = 0; i < days.length; i++) {
+                const day = days[i];
+                const dayName = dayNames[i];
+                const type = data[`${day}_type`];
+                const startTime = data[`${day}_start_time`];
+                const endTime = data[`${day}_end_time`];
+
+                // 활동이 있는 날은 시간 입력 필수
+                if (type && type !== '휴무') {
+                    if (!startTime || !endTime) {
+                        showMessage(`${dayName}의 시작시간과 종료시간을 모두 입력해주세요.`, 'error');
+                        return false;
+                    }
+
+                    // 종료시간이 시작시간보다 나중인지 확인
+                    if (startTime >= endTime) {
+                        showMessage(`${dayName}의 종료시간이 시작시간보다 빠릅니다.`, 'error');
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        // 메시지 표시
+        function showMessage(text, type = 'info') {
+            const messageEl = document.getElementById('statusMessage');
+            const textEl = messageEl.querySelector('.message-text');
+            const iconEl = messageEl.querySelector('i');
+
+            textEl.textContent = text;
+            messageEl.className = `status-message ${type}`;
+            
+            // 아이콘 변경
+            switch (type) {
+                case 'success':
+                    iconEl.setAttribute('data-lucide', 'check-circle');
+                    break;
+                case 'error':
+                    iconEl.setAttribute('data-lucide', 'x-circle');
+                    break;
+                default:
+                    iconEl.setAttribute('data-lucide', 'info');
+                    break;
+            }
+
+            messageEl.style.display = 'flex';
+            lucide.createIcons();
+
+            // 3초 후 자동 숨김
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 3000);
+        }
+
+        // 유틸리티: 현재 사용자 정보 가져오기
+        function getCurrentUser() {
+            const userData = localStorage.getItem('currentUser');
+            return userData ? JSON.parse(userData) : null;
+        }
+
+        // 유틸리티: Supabase 클라이언트 생성
+        function createSupabaseClient(url, key) {
+            return supabase.createClient(url, key);
+        }
+    </script>
+    
+    <!-- Supabase 클라이언트 -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</body>
+</html>
