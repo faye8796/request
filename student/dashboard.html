@@ -418,6 +418,8 @@
                         return this.studentData.individual_reimbursement_request_enabled === true;
                     case 'required_documents':
                         return this.studentData.individual_required_documents_enabled === true;
+                    case 'activity_schedule':
+                        return this.studentData.individual_activity_schedule_enabled === true;
                     default:
                         return false;
                 }
@@ -478,13 +480,15 @@
                     const flightIndividual = this.checkIndividualFeatureAccess('flight_request');
                     const equipmentIndividual = this.checkIndividualFeatureAccess('equipment_request');
                     const reimbursementIndividual = this.checkIndividualFeatureAccess('reimbursement_request'); // 🆕 추가
-                    
-                    if (flightIndividual || equipmentIndividual) {
+                    const activityScheduleIndividual = this.checkIndividualFeatureAccess('activity_schedule');
+
+                    if (flightIndividual || equipmentIndividual || activityScheduleIndividual) {
                         console.log('🔓 개별 기능 활성화 감지:', {
                             user: studentData.name,
                             flight_request: flightIndividual,
                             equipment_request: equipmentIndividual,
-                            reimbursement_request: reimbursementIndividual
+                            reimbursement_request: reimbursementIndividual,
+                            activity_schedule: activityScheduleIndividual
                         });
                     }
                     
@@ -569,7 +573,8 @@
                     { feature_name: 'equipment_request', feature_title: '문화교구 신청', is_active: false, display_order: 5 },
                     { feature_name: 'visa_management', feature_title: '비자 발급 관리', is_active: false, display_order: 6 },
                     { feature_name: 'reimbursement_request', feature_title: '실비 지원 신청', is_active: false, display_order: 7 },
-                    { feature_name: 'required_documents', feature_title: '필수 서류 제출', is_active: true, display_order: 8 }
+                    { feature_name: 'required_documents', feature_title: '필수 서류 제출', is_active: true, display_order: 8 },
+                    { feature_name: 'activity_schedule', feature_title: '활동일 작성', is_active: false, display_order: 9 }
                 ];
             },
 
@@ -739,7 +744,16 @@
                         url: './required-documents.html',
                         buttonText: '제출하기',
                         buttonIcon: 'upload'
+                    },
+                    'activity_schedule': {
+                        icon: 'calendar-days',
+                        title: '활동일 작성',
+                        description: '주간 정기 활동 스케줄을 작성하고 관리할 수 있습니다.',
+                        url: './activity-schedule.html',
+                        buttonText: '작성하기',
+                        buttonIcon: 'arrow-right'
                     }
+
                 };
 
                 const config = configs[feature.feature_name];
