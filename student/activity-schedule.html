@@ -878,6 +878,12 @@
         let currentUser = null;
         let scheduleData = null;
 
+        let activityLimits = {
+            maxWeeklyHours: 25,  // 기본값
+            maxDailyHours: 5     // 기본값
+        };
+    
+        
         // DOM 요소
         const globalLoading = document.getElementById('globalLoadingState');
         const app = document.getElementById('app');
@@ -1054,10 +1060,14 @@
             }
         }
 
-        // 🆕 여기도 추가 - updateActivityInfo 함수
+        // updateActivityInfo 함수 수정 (기존 함수 찾아서 교체)
         function updateActivityInfo(studentName, weeklyHours) {
             // 하루 최대 활동 시간 계산
             const dailyMaxHours = weeklyHours <= 25 ? 5 : 8;
+
+            // ✅ 전역 변수에 제한값 저장
+            activityLimits.maxWeeklyHours = weeklyHours;
+            activityLimits.maxDailyHours = dailyMaxHours;
 
             // 학생 이름 업데이트
             const studentNameElements = document.querySelectorAll('#studentName, #studentName2');
@@ -1078,8 +1088,8 @@
             }
 
             console.log(`✅ 활동 정보 업데이트 완료: ${studentName}, 주당 ${weeklyHours}시간, 일일 최대 ${dailyMaxHours}시간`);
+            console.log(`📊 활동시간 제한값 설정:`, activityLimits);
         }
-
         
         
         // ✅ 3단계: 데이터 로드
@@ -1175,12 +1185,133 @@
             // UI는 서버 데이터 기반으로 이미 업데이트되어 있음
         }
 
+        // 시간 문자열을 분으로 변환 (예: "09:30" -> 570분)
+        function timeToMinutes(timeStr) {
+            if (!timeStr) return 0;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
 
-        // 스케줄 저장
+        // 분을 시간 문자열로 변환 (예: 90분 -> "1시간 30분")
+        function minutesToHourString(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            if (mins === 0) {
+                return `${hours}시간`;
+            }
+            return `${hours}시간 ${mins}분`;
+        }
+
+        // 일일 활동시간 계산
+        function calculateDailyHours(startTime, endTime) {
+            if (!startTime || !endTime) return 0;
+            const start = timeToMinutes(startTime);
+            const end = timeToMinutes(endTime);
+            return Math.max(0, end - start);
+        }
+
+        // 전체 주간 활동시간 계산
+        function calculateTotalWeeklyHours() {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            let totalMinutes = 0;
+
+            days.forEach(day => {
+                const dayRow = document.querySelector(`[data-day="${day}"]`);
+                if (!dayRow) return;
+
+                const type = dayRow.querySelector('.activity-type').value;
+                if (type && type !== '휴무') {
+                    const startTime = dayRow.querySelector('.start-time').value;
+                    const endTime = dayRow.querySelector('.end-time').value;
+                    totalMinutes += calculateDailyHours(startTime, endTime);
+                }
+            });
+
+            return totalMinutes;
+        }
+
+        // 오류 메시지 표시/숨김
+        function showValidationError(message) {
+            const errorDiv = document.getElementById('validationErrors');
+            const errorText = document.getElementById('errorText');
+
+            if (errorDiv && errorText) {
+                errorText.textContent = message;
+                errorDiv.style.display = 'block';
+
+                // 오류 메시지 위치로 스크롤
+                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function hideValidationError() {
+            const errorDiv = document.getElementById('validationErrors');
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+            }
+        }
+
+        // 활동시간 유효성 검증
+        function validateActivityHours() {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            const dayNames = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
+
+            // 일일 최대시간 검증
+            for (let i = 0; i < days.length; i++) {
+                const day = days[i];
+                const dayName = dayNames[i];
+                const dayRow = document.querySelector(`[data-day="${day}"]`);
+
+                if (!dayRow) continue;
+
+                const type = dayRow.querySelector('.activity-type').value;
+                if (type && type !== '휴무') {
+                    const startTime = dayRow.querySelector('.start-time').value;
+                    const endTime = dayRow.querySelector('.end-time').value;
+
+                    if (startTime && endTime) {
+                        const dailyMinutes = calculateDailyHours(startTime, endTime);
+                        const maxDailyMinutes = activityLimits.maxDailyHours * 60;
+
+                        if (dailyMinutes > maxDailyMinutes) {
+                            return {
+                                valid: false,
+                                message: `${dayName} 활동시간이 일일 최대 허용시간(${activityLimits.maxDailyHours}시간)을 초과했습니다. 현재: ${minutesToHourString(dailyMinutes)}`
+                            };
+                        }
+                    }
+                }
+            }
+
+            // 주간 최대시간 검증
+            const totalWeeklyMinutes = calculateTotalWeeklyHours();
+            const maxWeeklyMinutes = activityLimits.maxWeeklyHours * 60;
+
+            if (totalWeeklyMinutes > maxWeeklyMinutes) {
+                return {
+                    valid: false,
+                    message: `주간 총 활동시간이 최대 허용시간(${activityLimits.maxWeeklyHours}시간)을 초과했습니다. 현재: ${minutesToHourString(totalWeeklyMinutes)}`
+                };
+            }
+
+            return { valid: true };
+        }        
+        
+        // 스케줄 저장 (기존 함수 수정)
         async function saveSchedule() {
             try {
                 console.log('💾 스케줄 저장 시작...');
-                
+
+                // ✅ 기존 오류 메시지 숨김
+                hideValidationError();
+
+                // ✅ 활동시간 유효성 검증 추가
+                const validation = validateActivityHours();
+                if (!validation.valid) {
+                    showValidationError(validation.message);
+                    return; // 저장 중단
+                }
+
                 // 로딩 상태
                 saveBtn.classList.add('loading');
                 saveBtn.disabled = true;
@@ -1188,8 +1319,8 @@
                 // 폼 데이터 수집
                 const formData = collectFormData();
                 console.log('📝 수집된 폼 데이터:', formData);
-                
-                // 데이터 검증
+
+                // ✅ 기존 데이터 검증은 그대로 유지
                 if (!validateScheduleData(formData)) {
                     return;
                 }
@@ -1209,7 +1340,7 @@
 
                 // 활동 시간 재계산
                 calculateAndDisplayWeeklyHours(formData);
-                
+
                 showToast('스케줄이 성공적으로 저장되었습니다.');
                 console.log('✅ 스케줄 저장 완료');
 
