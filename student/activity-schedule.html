@@ -815,7 +815,7 @@
                             <label class="form-label">활동장소</label>
                             <input type="text" 
                                    class="location-input" 
-                                   name="monday_location" 
+                                   name="tuesday_location" 
                                    placeholder="세종학당 내 강의실, 강당 등" 
                                    disabled 
                                    maxlength="50">
@@ -851,7 +851,7 @@
                             <label class="form-label">활동장소</label>
                             <input type="text" 
                                    class="location-input" 
-                                   name="monday_location" 
+                                   name="wednesday_location" 
                                    placeholder="세종학당 내 강의실, 강당 등" 
                                    disabled 
                                    maxlength="50">
@@ -887,7 +887,7 @@
                             <label class="form-label">활동장소</label>
                             <input type="text" 
                                    class="location-input" 
-                                   name="monday_location" 
+                                   name="thursday_location" 
                                    placeholder="세종학당 내 강의실, 강당 등" 
                                    disabled 
                                    maxlength="50">
@@ -922,7 +922,7 @@
                             <label class="form-label">활동장소</label>
                             <input type="text" 
                                    class="location-input" 
-                                   name="monday_location" 
+                                   name="friday_location" 
                                    placeholder="세종학당 내 강의실, 강당 등" 
                                    disabled 
                                    maxlength="50">
@@ -958,7 +958,7 @@
                             <label class="form-label">활동장소</label>
                             <input type="text" 
                                    class="location-input" 
-                                   name="monday_location" 
+                                   name="saturday_location" 
                                    placeholder="세종학당 내 강의실, 강당 등" 
                                    disabled 
                                    maxlength="50">
@@ -994,7 +994,7 @@
                             <label class="form-label">활동장소</label>
                             <input type="text" 
                                    class="location-input" 
-                                   name="monday_location" 
+                                   name="sunday_location" 
                                    placeholder="세종학당 내 강의실, 강당 등" 
                                    disabled 
                                    maxlength="50">
@@ -1163,20 +1163,26 @@
 
             const startTime = dayRow.querySelector('.start-time');
             const endTime = dayRow.querySelector('.end-time');
+            const locationInput = dayRow.querySelector('.location-input'); // 추가
             const type = event.target.value;
 
             if (type === '휴무' || type === '') {
                 startTime.disabled = true;
                 endTime.disabled = true;
+                locationInput.disabled = true; // 추가
                 startTime.value = '';
                 endTime.value = '';
+                locationInput.value = '';
                 startTime.style.opacity = '0.6';
                 endTime.style.opacity = '0.6';
+                locationInput.style.opacity = '0.6';
             } else {
                 startTime.disabled = false;
                 endTime.disabled = false;
+                locationInput.disabled = false; 
                 startTime.style.opacity = '1';
                 endTime.style.opacity = '1';
+                locationInput.style.opacity = '1'; 
             }
         }
 
@@ -1288,7 +1294,7 @@
         // 폼에 기존 데이터 채우기
         function populateFormWithData(data) {
             const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-            
+
             days.forEach(day => {
                 const dayRow = document.querySelector(`[data-day="${day}"]`);
                 if (!dayRow) return;
@@ -1296,6 +1302,7 @@
                 const typeSelect = dayRow.querySelector('.activity-type');
                 const startSelect = dayRow.querySelector('.start-time');
                 const endSelect = dayRow.querySelector('.end-time');
+                const locationInput = dayRow.querySelector('.location-input'); // 추가
 
                 // 분류 설정
                 if (data[`${day}_type`]) {
@@ -1314,6 +1321,9 @@
                         }
                         if (data[`${day}_end_time`]) {
                             endSelect.value = data[`${day}_end_time`];
+                        }
+                        if (data[`${day}_location`]) {
+                            locationInput.value = data[`${day}_location`];
                         }
                     }
                 }
@@ -1563,18 +1573,20 @@
         function collectFormData() {
             const data = {};
             const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-            
+
             days.forEach(day => {
                 const dayRow = document.querySelector(`[data-day="${day}"]`);
                 if (!dayRow) return;
-                
+
                 const type = dayRow.querySelector('.activity-type')?.value || '';
                 const startTime = dayRow.querySelector('.start-time')?.value || '';
                 const endTime = dayRow.querySelector('.end-time')?.value || '';
+                const location = dayRow.querySelector('.location-input')?.value || ''; // 추가
 
                 data[`${day}_type`] = type || null;
                 data[`${day}_start_time`] = (type && type !== '휴무' && startTime) ? startTime : null;
                 data[`${day}_end_time`] = (type && type !== '휴무' && endTime) ? endTime : null;
+                data[`${day}_location`] = (type && type !== '휴무' && location) ? location : null; // 추가
             });
 
             return data;
