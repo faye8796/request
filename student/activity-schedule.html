@@ -594,6 +594,62 @@
             flex-shrink: 0;
         }
         
+        /* 저장 버튼 전용 스타일 */
+        .save-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 0;
+        }
+
+        .save-btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            min-width: 160px;
+            justify-content: center;
+            background: var(--primary-color);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .save-btn:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .save-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 로딩 상태 (저장 버튼용) */
+        .save-btn.loading {
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .save-btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }        
+        
     </style>
 </head>
 <body>
@@ -887,8 +943,8 @@
         // DOM 요소
         const globalLoading = document.getElementById('globalLoadingState');
         const app = document.getElementById('app');
-        const saveBtn = document.getElementById('saveScheduleBtn');
-
+        const saveBtn = document.getElementById('saveSchedule');
+        
         // Toast 알림 함수
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
@@ -959,10 +1015,12 @@
                 select.addEventListener('change', handleTypeChange);
             });
 
-            // 저장 버튼 이벤트
-            if (saveBtn) {
-                saveBtn.addEventListener('click', saveSchedule);
-            }
+
+            // 저장 버튼 이벤트 - 올바른 ID로 다시 조회
+            const saveButton = document.getElementById('saveSchedule');
+            if (saveButton) {
+                saveButton.addEventListener('click', saveSchedule);
+            }            
             
             // 사용자 정보 표시
             updateUserInfo();
@@ -1312,9 +1370,14 @@
                     return; // 저장 중단
                 }
 
+                const saveButton = document.getElementById('saveSchedule');
+
                 // 로딩 상태
-                saveBtn.classList.add('loading');
-                saveBtn.disabled = true;
+                if (saveButton) {
+                    saveButton.classList.add('loading');
+                    saveButton.disabled = true;
+                }
+
 
                 // 폼 데이터 수집
                 const formData = collectFormData();
@@ -1349,8 +1412,10 @@
                 showToast('스케줄 저장 중 오류가 발생했습니다: ' + error.message, 'error');
             } finally {
                 // 로딩 상태 해제
-                saveBtn.classList.remove('loading');
-                saveBtn.disabled = false;
+                if (saveButton) {
+                    saveButton.classList.remove('loading');
+                    saveButton.disabled = false;
+                }
             }
         }
 
