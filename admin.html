@@ -786,8 +786,23 @@
                             <i data-lucide="arrow-right"></i>
                             관리하기
                         </button>
-                    </div>                    
-                    
+                    </div>
+
+                    <!-- 📅 활동일 관리 -->
+                    <div class="menu-card" onclick="navigateToActivityScheduleManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="calendar-days"></i>
+                        </div>
+                        <h2 class="menu-title">활동일 관리</h2>
+                        <p class="menu-description">
+                            문화인턴 주간 활동 스케줄 현황을 조회<br>
+                            활동시간 검증 및 엑셀 내보내기를 지원
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
                     
                     <!-- 🆕 수료평가 관리 -->
                     <div class="menu-card" onclick="navigateToExamManagement()">
@@ -989,6 +1004,7 @@
                         <div class="alert alert-success">
                             <strong>🔐 관리자 시스템 v5.2.1 초기화 완료!</strong><br>
                             • 🆕 수료평가 관리 시스템 추가<br>
+                            • 📅 활동일 관리 시스템 추가 (v13.2.0)<br>
                             • 통합 관리: Core + Student + Admin 모듈 완전 로드<br>
                             • 관리자 권한: 모든 기능 접근 가능<br>
                             • 🔇 로그 제어: 프로덕션/개발 모드 지원<br>
@@ -1365,7 +1381,7 @@
                 }
             }
 
-            // 🆕 v5.2.1 네비게이션 함수들 (특별 예산 관리 추가)
+            // 🆕 v5.2.1 네비게이션 함수들 (활동일 관리 추가)
             function navigateToInstituteManagement() {
                 window.location.href = 'admin/institute-management.html';
             }
@@ -1402,7 +1418,9 @@
                 window.location.href = 'admin/required-documents-management.html';
             }
 
-            
+            function navigateToActivityScheduleManagement() {
+                window.location.href = 'admin/activity-schedule-management.html';
+            }
             
             // 전역 함수로 노출
             window.handleAdminLogin = handleAdminLogin;
@@ -1415,7 +1433,8 @@
             window.navigateToCountrySafetyManagement = navigateToCountrySafetyManagement;
             window.navigateToVisaManagement = navigateToVisaManagement;
             window.navigateToReimbursementManagement = navigateToReimbursementManagement;
-            window.navigateToRequiredDocumentsManagement = navigateToRequiredDocumentsManagement;   
+            window.navigateToRequiredDocumentsManagement = navigateToRequiredDocumentsManagement;
+            window.navigateToActivityScheduleManagement = navigateToActivityScheduleManagement;
 
             
             // DOMContentLoaded 이벤트 리스너
@@ -1433,13 +1452,15 @@
                 navigateToCountrySafetyManagement,
                 navigateToVisaManagement,
                 navigateToReimbursementManagement,
-                navigateToRequiredDocumentsManagement 
+                navigateToRequiredDocumentsManagement,
+                navigateToActivityScheduleManagement
             };
         })();
 
         LogController.system('🔐 관리자 v5.2.1 시스템 스크립트 로드 완료');
         LogController.system('📦 아키텍처: Core + Student + Admin + 통합매니저 + AdminFeatureSettings');
         LogController.system('🆕 v5.2.1: 수료평가 관리 시스템 추가');
+        LogController.system('📅 v13.2.0: 활동일 관리 시스템 추가');
         LogController.system('🔇 로그 제어: 프로덕션/개발 모드 지원 추가');
         LogController.system('✅ 모듈화 구조: admin-features.js 모듈 자동 연동 완료');
         LogController.system('🔧 기존 관리자 코드 100% 호환성 보장 + 성능 최적화');
