@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>활동일 관리 - 세종학당 문화인턴 관리 시스템</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📅%3C/text%3E%3C/svg%3E">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .back-button:hover {
+            background: #5855eb;
+            transform: translateY(-2px);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .excel-export-btn {
+            background: #059669;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .excel-export-btn:hover {
+            background: #047857;
+            transform: translateY(-2px);
+        }
+
+        .excel-export-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Statistics */
+        .statistics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .stat-card.total .stat-number { color: #3b82f6; }
+        .stat-card.submitted .stat-number { color: #10b981; }
+        .stat-card.incomplete .stat-number { color: #ef4444; }
+        .stat-card.over-limit .stat-number { color: #dc2626; animation: pulse 2s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Loading State */
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            margin-bottom: 24px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Filter Controls */
+        .filter-controls {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+
+        .filter-input, .filter-select {
+            padding: 8px 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+
+        .filter-input:focus, .filter-select:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        .clear-filters-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .clear-filters-btn:hover {
+            background: #dc2626;
+        }
+
+        /* Students Grid */
+        .students-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .student-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .student-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .student-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .student-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .institute-name {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.submitted {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .status-badge.incomplete {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .status-badge.over-limit {
+            background: #fef2f2;
+            color: #dc2626;
+            animation: pulse 2s infinite;
+        }
+
+        /* Weekly Summary */
+        .weekly-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .summary-item .label {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .summary-item .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .summary-item .value.over-limit {
+            color: #dc2626;
+            animation: pulse 2s infinite;
+        }
+
+        /* Schedule Table */
+        .schedule-details {
+            margin-top: 16px;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .schedule-table th {
+            background: #f8fafc;
+            padding: 12px 8px;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .schedule-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 14px;
+        }
+
+        .schedule-table tr.cultural-class {
+            background: #eff6ff;
+        }
+
+        .schedule-table tr.other-activity {
+            background: #fef3c7;
+        }
+
+        .schedule-table tr.rest-day {
+            background: #f9fafb;
+            color: #6b7280;
+        }
+
+        .day-cell {
+            font-weight: 600;
+            width: 60px;
+            text-align: center;
+        }
+
+        .type-cell {
+            width: 80px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .time-cell {
+            width: 140px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+        }
+
+        .location-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            color: #6b7280;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .no-data-message {
+            background: #fef9e7;
+            border: 1px solid #f3e8c7;
+            color: #92400e;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 12px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-group {
+                width: 100%;
+            }
+
+            .weekly-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .schedule-table {
+                font-size: 12px;
+            }
+
+            .schedule-table th,
+            .schedule-table td {
+                padding: 8px 4px;
+            }
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1f2937;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: #10b981;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <a href="../admin.html" class="back-button">
+                    <span>←</span>
+                    관리자 대시보드
+                </a>
+                <div class="header-title">
+                    <span>📅</span>
+                    <h1>활동일 관리</h1>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="excel-export-btn" id="exportExcelBtn">
+                    <span>📥</span>
+                    엑셀로 내보내기
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="statistics" id="statisticsContainer">
+            <div class="stat-card total">
+                <div class="stat-number" id="totalCount">0</div>
+                <div class="stat-label">전체 학생</div>
+            </div>
+            <div class="stat-card submitted">
+                <div class="stat-number" id="submittedCount">0</div>
+                <div class="stat-label">작성 완료</div>
+            </div>
+            <div class="stat-card incomplete">
+                <div class="stat-number" id="incompleteCount">0</div>
+                <div class="stat-label">미작성</div>
+            </div>
+            <div class="stat-card over-limit">
+                <div class="stat-number" id="overLimitCount">0</div>
+                <div class="stat-label">시간 초과</div>
+            </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="searchInput">학생명 검색</label>
+                    <input type="text" id="searchInput" class="filter-input" placeholder="학생명을 입력하세요">
+                </div>
+                <div class="filter-group">
+                    <label for="instituteFilter">학당 선택</label>
+                    <select id="instituteFilter" class="filter-select">
+                        <option value="">전체 학당</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="statusFilter">상태 선택</label>
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">전체 상태</option>
+                        <option value="submitted">작성 완료</option>
+                        <option value="incomplete">미작성</option>
+                        <option value="over-limit">시간 초과</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <button class="clear-filters-btn" id="clearFiltersBtn">
+                        <span>✖</span>
+                        필터 초기화
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-container" id="loadingContainer">
+            <div class="loading-spinner"></div>
+        </div>
+
+        <!-- Students Container -->
+        <div class="students-container" id="studentsContainer" style="display: none;">
+            <!-- Student cards will be rendered here -->
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-state-icon">📅</div>
+            <h3>활동일 데이터가 없습니다</h3>
+            <p>학생 데이터를 로딩 중입니다...</p>
+        </div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Main Script -->
+    <script type="module">
+        // 🔐 관리자 인증 체크
+        function checkAdminAuth() {
+            console.log('🔐 관리자 인증 확인 시작...');
+            const adminSession = localStorage.getItem('adminSession');
+            if (!adminSession || adminSession !== 'true') {
+                console.warn('❌ 관리자 인증 실패 - adminSession:', adminSession);
+                alert('관리자 로그인이 필요합니다.');
+                window.location.href = '../admin.html';
+                return false;
+            }
+            console.log('✅ 관리자 인증 확인 완료');
+            return true;
+        }
+
+        // 전역 변수
+        let allStudentsData = [];
+        let filteredStudentsData = [];
+        let isLoading = false;
+
+        // DOM 요소
+        const loadingContainer = document.getElementById('loadingContainer');
+        const studentsContainer = document.getElementById('studentsContainer');
+        const emptyState = document.getElementById('emptyState');
+        const searchInput = document.getElementById('searchInput');
+        const instituteFilter = document.getElementById('instituteFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+        const exportExcelBtn = document.getElementById('exportExcelBtn');
+
+        // 통계 요소
+        const totalCount = document.getElementById('totalCount');
+        const submittedCount = document.getElementById('submittedCount');
+        const incompleteCount = document.getElementById('incompleteCount');
+        const overLimitCount = document.getElementById('overLimitCount');
+
+        // Supabase 설정
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+        
+        const supabaseUrl = 'https://aazvopacnbbkvusihqva.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTQyMjQsImV4cCI6MjA2NTM3MDIyNH0.0NXI_tohwFCOl3xY4b1jIlxQR_zGTS9tWDM2OFxTq4s';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        // Toast 알림 함수
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // 활동시간 계산 함수 (분 단위)
+        function calculateDurationInMinutes(startTime, endTime) {
+            if (!startTime || !endTime) return 0;
+            
+            const [startHour, startMin] = startTime.split(':').map(Number);
+            const [endHour, endMin] = endTime.split(':').map(Number);
+            
+            const startMinutes = startHour * 60 + startMin;
+            const endMinutes = endHour * 60 + endMin;
+            
+            return Math.max(0, endMinutes - startMinutes);
+        }
+
+        // 활동일 통계 계산
+        function calculateScheduleStats(scheduleData, maxWeeklyHours) {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            let stats = {
+                activeDays: 0,
+                totalMinutes: 0,
+                culturalClassCount: 0,
+                isOverLimit: false
+            };
+            
+            days.forEach(day => {
+                const type = scheduleData[`${day}_type`];
+                if (type && type !== '휴무') {
+                    stats.activeDays++;
+                    
+                    if (type === '문화수업') {
+                        stats.culturalClassCount++;
+                    }
+                    
+                    const startTime = scheduleData[`${day}_start_time`];
+                    const endTime = scheduleData[`${day}_end_time`];
+                    if (startTime && endTime) {
+                        const minutes = calculateDurationInMinutes(startTime, endTime);
+                        stats.totalMinutes += minutes;
+                    }
+                }
+            });
+            
+            stats.totalHours = Math.floor(stats.totalMinutes / 60);
+            stats.remainingMinutes = stats.totalMinutes % 60;
+            stats.isOverLimit = stats.totalMinutes > (maxWeeklyHours * 60);
+            
+            return stats;
+        }
+
+        // 데이터 로딩 함수
+        async function loadStudentsData() {
+            if (isLoading) return;
+            
+            isLoading = true;
+            showLoading();
+            
+            try {
+                console.log('📅 활동일 관리 데이터 로딩 시작...');
+                
+                // 학생 기본 정보 + 활동일 데이터 + 학당 정보 조인
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .select(`
+                        id,
+                        name,
+                        email,
+                        assigned_institute_id,
+                        institutes:assigned_institute_id (
+                            name_korean
+                        ),
+                        weekly_schedules (
+                            monday_type, monday_start_time, monday_end_time, monday_location,
+                            tuesday_type, tuesday_start_time, tuesday_end_time, tuesday_location,
+                            wednesday_type, wednesday_start_time, wednesday_end_time, wednesday_location,
+                            thursday_type, thursday_start_time, thursday_end_time, thursday_location,
+                            friday_type, friday_start_time, friday_end_time, friday_location,
+                            saturday_type, saturday_start_time, saturday_end_time, saturday_location,
+                            sunday_type, sunday_start_time, sunday_end_time, sunday_location,
+                            created_at, updated_at
+                        ),
+                        student_additional_info (
+                            weekly_working_hours
+                        )
+                    `)
+                    .eq('role', 'student')
+                    .order('name');
+                
+                if (error) {
+                    console.error('데이터 로딩 실패:', error);
+                    throw error;
+                }
+                
+                console.log('✅ 데이터 로딩 성공:', data?.length || 0, '명');
+                
+                // 데이터 가공
+                allStudentsData = data.map(student => {
+                    const schedule = student.weekly_schedules[0]; // 첫 번째 스케줄 데이터
+                    const additionalInfo = student.student_additional_info[0];
+                    const maxWeeklyHours = additionalInfo?.weekly_working_hours || 25;
+                    
+                    return {
+                        id: student.id,
+                        name: student.name,
+                        email: student.email,
+                        institute_name: student.institutes?.name_korean || '학당 정보 없음',
+                        schedule: schedule,
+                        maxWeeklyHours: maxWeeklyHours,
+                        stats: schedule ? calculateScheduleStats(schedule, maxWeeklyHours) : null
+                    };
+                });
+                
+                filteredStudentsData = [...allStudentsData];
+                
+                populateFilters();
+                updateStatistics();
+                renderStudents();
+                
+            } catch (error) {
+                console.error('데이터 로딩 실패:', error);
+                showToast('데이터 로딩에 실패했습니다.', 'error');
+                showEmptyState();
+            } finally {
+                isLoading = false;
+                hideLoading();
+            }
+        }
+
+        // 로딩 상태 관리
+        function showLoading() {
+            loadingContainer.style.display = 'flex';
+            studentsContainer.style.display = 'none';
+            emptyState.style.display = 'none';
+        }
+
+        function hideLoading() {
+            loadingContainer.style.display = 'none';
+        }
+
+        function showEmptyState() {
+            emptyState.style.display = 'block';
+            studentsContainer.style.display = 'none';
+        }
+
+        // 필터 옵션 채우기
+        function populateFilters() {
+            // 학당 필터
+            const institutes = [...new Set(allStudentsData.map(s => s.institute_name).filter(Boolean))];
+            instituteFilter.innerHTML = '<option value="">전체 학당</option>';
+            institutes.forEach(institute => {
+                const option = document.createElement('option');
+                option.value = institute;
+                option.textContent = institute;
+                instituteFilter.appendChild(option);
+            });
+        }
+
+        // 상태 결정 함수
+        function getStudentStatus(student) {
+            if (!student.schedule) return 'incomplete';
+            return student.stats?.isOverLimit ? 'over-limit' : 'submitted';
+        }
+
+        // 통계 업데이트
+        function updateStatistics() {
+            const stats = {
+                total: filteredStudentsData.length,
+                submitted: filteredStudentsData.filter(s => getStudentStatus(s) === 'submitted').length,
+                incomplete: filteredStudentsData.filter(s => getStudentStatus(s) === 'incomplete').length,
+                overLimit: filteredStudentsData.filter(s => getStudentStatus(s) === 'over-limit').length
+            };
+
+            totalCount.textContent = stats.total;
+            submittedCount.textContent = stats.submitted;
+            incompleteCount.textContent = stats.incomplete;
+            overLimitCount.textContent = stats.overLimit;
+        }
+
+        // 필터링 함수
+        function applyFilters() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedInstitute = instituteFilter.value;
+            const selectedStatus = statusFilter.value;
+            
+            filteredStudentsData = allStudentsData.filter(student => {
+                const matchesSearch = !searchTerm || 
+                    student.name.toLowerCase().includes(searchTerm);
+                
+                const matchesInstitute = !selectedInstitute || 
+                    student.institute_name === selectedInstitute;
+                
+                const studentStatus = getStudentStatus(student);
+                const matchesStatus = !selectedStatus || studentStatus === selectedStatus;
+                
+                return matchesSearch && matchesInstitute && matchesStatus;
+            });
+            
+            updateStatistics();
+            renderStudents();
+        }
+
+        // 학생 카드 렌더링
+        function renderStudents() {
+            if (filteredStudentsData.length === 0) {
+                showEmptyState();
+                return;
+            }
+
+            studentsContainer.style.display = 'flex';
+            emptyState.style.display = 'none';
+            
+            studentsContainer.innerHTML = filteredStudentsData.map(student => renderStudentCard(student)).join('');
+        }
+
+        // 개별 학생 카드 렌더링
+        function renderStudentCard(student) {
+            const status = getStudentStatus(student);
+            const statusText = {
+                'submitted': '작성 완료',
+                'incomplete': '미작성',
+                'over-limit': '시간 초과'
+            };
+
+            return `
+                <div class="student-card" data-user-id="${student.id}">
+                    <div class="card-header">
+                        <div class="student-info">
+                            <div class="student-name">${student.name}</div>
+                            <div class="institute-name">${student.institute_name}</div>
+                        </div>
+                        <span class="status-badge ${status}">${statusText[status]}</span>
+                    </div>
+                    
+                    ${student.stats ? renderWeeklySummary(student.stats) : renderNoDataMessage()}
+                    ${student.schedule ? renderScheduleTable(student.schedule) : ''}
+                </div>
+            `;
+        }
+
+        // 주간 요약 렌더링
+        function renderWeeklySummary(stats) {
+            return `
+                <div class="weekly-summary">
+                    <div class="summary-item">
+                        <span class="label">총 활동일</span>
+                        <span class="value">${stats.activeDays}일</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">총 활동시간</span>
+                        <span class="value ${stats.isOverLimit ? 'over-limit' : ''}">${stats.totalHours}시간 ${stats.remainingMinutes}분</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">문화수업</span>
+                        <span class="value">${stats.culturalClassCount}회</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 데이터 없음 메시지
+        function renderNoDataMessage() {
+            return `
+                <div class="no-data-message">
+                    📝 아직 활동일을 작성하지 않았습니다.
+                </div>
+            `;
+        }
+
+        // 스케줄 테이블 렌더링
+        function renderScheduleTable(schedule) {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+            
+            const rows = days.map((day, index) => {
+                const type = schedule[`${day}_type`] || '';
+                const startTime = schedule[`${day}_start_time`] || '';
+                const endTime = schedule[`${day}_end_time`] || '';
+                const location = schedule[`${day}_location`] || '';
+                
+                let rowClass = 'rest-day';
+                if (type === '문화수업') rowClass = 'cultural-class';
+                else if (type === '기타') rowClass = 'other-activity';
+                
+                return `
+                    <tr class="${rowClass}">
+                        <td class="day-cell">${dayNames[index]}</td>
+                        <td class="type-cell">${type || '휴무'}</td>
+                        <td class="time-cell">${startTime && endTime ? `${startTime} ~ ${endTime}` : '-'}</td>
+                        <td class="location-cell">${location || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            return `
+                <div class="schedule-details">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>요일</th>
+                                <th>분류</th>
+                                <th>시간</th>
+                                <th>활동장소</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // 시간 범위 문자열 생성
+        function getTimeRange(startTime, endTime) {
+            if (!startTime || !endTime) return '';
+            return `${startTime} ~ ${endTime}`;
+        }
+
+        // 엑셀 내보내기
+        async function exportToExcel() {
+            try {
+                exportExcelBtn.disabled = true;
+                exportExcelBtn.innerHTML = '⏳ 내보내는 중...';
+                
+                const exportData = filteredStudentsData.map(student => {
+                    const schedule = student.schedule || {};
+                    const stats = student.stats;
+                    
+                    return {
+                        '학생명': student.name,
+                        '파견학당': student.institute_name || '',
+                        '총활동일': stats ? `${stats.activeDays}일` : '미작성',
+                        '총활동시간': stats ? `${stats.totalHours}시간 ${stats.remainingMinutes}분` : '미작성',
+                        '문화수업횟수': stats ? `${stats.culturalClassCount}회` : '미작성',
+                        '시간초과여부': stats && stats.isOverLimit ? '초과' : '정상',
+                        '월요일분류': schedule.monday_type || '',
+                        '월요일시간': getTimeRange(schedule.monday_start_time, schedule.monday_end_time),
+                        '월요일장소': schedule.monday_location || '',
+                        '화요일분류': schedule.tuesday_type || '',
+                        '화요일시간': getTimeRange(schedule.tuesday_start_time, schedule.tuesday_end_time),
+                        '화요일장소': schedule.tuesday_location || '',
+                        '수요일분류': schedule.wednesday_type || '',
+                        '수요일시간': getTimeRange(schedule.wednesday_start_time, schedule.wednesday_end_time),
+                        '수요일장소': schedule.wednesday_location || '',
+                        '목요일분류': schedule.thursday_type || '',
+                        '목요일시간': getTimeRange(schedule.thursday_start_time, schedule.thursday_end_time),
+                        '목요일장소': schedule.thursday_location || '',
+                        '금요일분류': schedule.friday_type || '',
+                        '금요일시간': getTimeRange(schedule.friday_start_time, schedule.friday_end_time),
+                        '금요일장소': schedule.friday_location || '',
+                        '토요일분류': schedule.saturday_type || '',
+                        '토요일시간': getTimeRange(schedule.saturday_start_time, schedule.saturday_end_time),
+                        '토요일장소': schedule.saturday_location || '',
+                        '일요일분류': schedule.sunday_type || '',
+                        '일요일시간': getTimeRange(schedule.sunday_start_time, schedule.sunday_end_time),
+                        '일요일장소': schedule.sunday_location || '',
+                        '작성일시': schedule.created_at ? new Date(schedule.created_at).toLocaleString('ko-KR') : '',
+                        '최종수정일시': schedule.updated_at ? new Date(schedule.updated_at).toLocaleString('ko-KR') : ''
+                    };
+                });
+                
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, '활동일관리현황');
+                
+                const today = new Date().toISOString().split('T')[0];
+                const fileName = `문화인턴활동일현황_${today}.xlsx`;
+                
+                XLSX.writeFile(workbook, fileName);
+                showToast('엑셀 파일이 다운로드되었습니다.');
+                
+            } catch (error) {
+                console.error('엑셀 내보내기 실패:', error);
+                showToast('엑셀 내보내기에 실패했습니다.', 'error');
+            } finally {
+                exportExcelBtn.disabled = false;
+                exportExcelBtn.innerHTML = '<span>📥</span> 엑셀로 내보내기';
+            }
+        }
+
+        // 필터 이벤트 리스너
+        searchInput.addEventListener('input', applyFilters);
+        instituteFilter.addEventListener('change', applyFilters);
+        statusFilter.addEventListener('change', applyFilters);
+
+        clearFiltersBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            instituteFilter.value = '';
+            statusFilter.value = '';
+            applyFilters();
+        });
+
+        // 엑셀 내보내기 이벤트 리스너
+        exportExcelBtn.addEventListener('click', exportToExcel);
+
+        // 🚀 초기화 - 관리자 인증 체크 후 데이터 로딩
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📅 활동일 관리 페이지 초기화 시작');
+            
+            // 🔐 관리자 인증 체크 (필수)
+            if (!checkAdminAuth()) {
+                return; // 인증 실패 시 중단
+            }
+            
+            // 인증 성공 시 데이터 로딩
+            loadStudentsData();
+        });
+    </script>
+</body>
+</html>
