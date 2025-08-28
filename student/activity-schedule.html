@@ -1163,29 +1163,28 @@
 
             const startTime = dayRow.querySelector('.start-time');
             const endTime = dayRow.querySelector('.end-time');
-            const locationInput = dayRow.querySelector('.location-input'); // 추가
+            const locationInput = dayRow.querySelector('.location-input'); // 🆕 추가
             const type = event.target.value;
 
             if (type === '휴무' || type === '') {
                 startTime.disabled = true;
                 endTime.disabled = true;
-                locationInput.disabled = true; // 추가
+                locationInput.disabled = true; // 🆕 추가
                 startTime.value = '';
                 endTime.value = '';
-                locationInput.value = '';
+                locationInput.value = ''; // 🆕 추가
                 startTime.style.opacity = '0.6';
                 endTime.style.opacity = '0.6';
-                locationInput.style.opacity = '0.6';
+                locationInput.style.opacity = '0.6'; // 🆕 추가
             } else {
                 startTime.disabled = false;
                 endTime.disabled = false;
-                locationInput.disabled = false; 
+                locationInput.disabled = false; // 🆕 추가
                 startTime.style.opacity = '1';
                 endTime.style.opacity = '1';
-                locationInput.style.opacity = '1'; 
+                locationInput.style.opacity = '1'; // 🆕 추가
             }
         }
-
         
         // 사용자 정보 업데이트 (간소화)
         function updateUserInfo() {
@@ -1302,7 +1301,7 @@
                 const typeSelect = dayRow.querySelector('.activity-type');
                 const startSelect = dayRow.querySelector('.start-time');
                 const endSelect = dayRow.querySelector('.end-time');
-                const locationInput = dayRow.querySelector('.location-input'); // 추가
+                const locationInput = dayRow.querySelector('.location-input');
 
                 // 분류 설정
                 if (data[`${day}_type`]) {
@@ -1312,16 +1311,24 @@
                     if (data[`${day}_type`] !== '휴무') {
                         startSelect.disabled = false;
                         endSelect.disabled = false;
+                        locationInput.disabled = false;
                         startSelect.style.opacity = '1';
                         endSelect.style.opacity = '1';
+                        locationInput.style.opacity = '1';
 
-                        // 시간 설정
+                        // 🔧 시간 설정 (초 부분 제거 처리)
                         if (data[`${day}_start_time`]) {
-                            startSelect.value = data[`${day}_start_time`];
+                            // "09:00:00" → "09:00" 변환
+                            const startTime = data[`${day}_start_time`].substring(0, 5);
+                            startSelect.value = startTime;
                         }
                         if (data[`${day}_end_time`]) {
-                            endSelect.value = data[`${day}_end_time`];
+                            // "14:00:00" → "14:00" 변환  
+                            const endTime = data[`${day}_end_time`].substring(0, 5);
+                            endSelect.value = endTime;
                         }
+
+                        // 활동장소 설정
                         if (data[`${day}_location`]) {
                             locationInput.value = data[`${day}_location`];
                         }
@@ -1329,7 +1336,6 @@
                 }
             });
         }
-
         // 주간 활동 시간 계산 및 표시
         function calculateAndDisplayWeeklyHours(scheduleData) {
             let totalScheduledHours = 0;
