@@ -380,29 +380,31 @@
             color: #6b7280;
         }
 
-        .day-cell {
+       .day-cell {
+            width: 10%; /* 요일: 1/10 = 10% */
             font-weight: 600;
-            width: 60px;
             text-align: center;
         }
 
         .type-cell {
-            width: 80px;
+            width: 20%; /* 분류: 2/10 = 20% */
             text-align: center;
             font-weight: 500;
         }
 
         .time-cell {
-            width: 140px;
+            width: 30%; /* 시간: 3/10 = 30% */
             text-align: center;
             font-family: 'Courier New', monospace;
         }
 
         .location-cell {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            width: 40%; /* 활동장소: 4/10 = 40% */
+            text-align: center; 
+            padding-left: 12px; /* 왼쪽 여백 추가 */
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            /* 기존의 overflow: hidden 제거하여 전체 내용 표시 */
         }
 
         /* Empty State */
@@ -716,24 +718,21 @@
         // 데이터 로딩 함수
         async function loadStudentsData() {
             if (isLoading) return;
-            
+
             isLoading = true;
             showLoading();
-            
+
             try {
                 console.log('📅 활동일 관리 데이터 로딩 시작...');
-                
-                // 학생 기본 정보 + 활동일 데이터 + 학당 정보 조인
+
+                // 정확한 컬럼명과 구조로 수정된 쿼리
                 const { data, error } = await supabase
                     .from('user_profiles')
                     .select(`
                         id,
                         name,
                         email,
-                        assigned_institute_id,
-                        institutes:assigned_institute_id (
-                            name_korean
-                        ),
+                        sejong_institute,
                         weekly_schedules (
                             monday_type, monday_start_time, monday_end_time, monday_location,
                             tuesday_type, tuesday_start_time, tuesday_end_time, tuesday_location,
@@ -748,42 +747,42 @@
                             weekly_working_hours
                         )
                     `)
-                    .eq('role', 'student')
+                    .eq('user_type', 'student')  // role → user_type 수정
                     .order('name');
-                
+
                 if (error) {
                     console.error('데이터 로딩 실패:', error);
                     throw error;
                 }
-                
+
                 console.log('✅ 데이터 로딩 성공:', data?.length || 0, '명');
-                
-                // 데이터 가공
+
+                // 데이터 가공 (정확한 구조 반영)
                 allStudentsData = data.map(student => {
-                    const schedule = student.weekly_schedules[0]; // 첫 번째 스케줄 데이터
-                    const additionalInfo = student.student_additional_info[0];
+                    const schedule = student.weekly_schedules?.[0] || null;  // 안전한 접근
+                    const additionalInfo = student.student_additional_info?.[0] || null;  // 안전한 접근
                     const maxWeeklyHours = additionalInfo?.weekly_working_hours || 25;
-                    
+
                     return {
                         id: student.id,
                         name: student.name,
                         email: student.email,
-                        institute_name: student.institutes?.name_korean || '학당 정보 없음',
+                        institute_name: student.sejong_institute || '학당 정보 없음',  // 직접 사용
                         schedule: schedule,
                         maxWeeklyHours: maxWeeklyHours,
                         stats: schedule ? calculateScheduleStats(schedule, maxWeeklyHours) : null
                     };
                 });
-                
+
                 filteredStudentsData = [...allStudentsData];
-                
+
                 populateFilters();
                 updateStatistics();
                 renderStudents();
-                
+
             } catch (error) {
                 console.error('데이터 로딩 실패:', error);
-                showToast('데이터 로딩에 실패했습니다.', 'error');
+                showToast('데이터 로딩에 실패했습니다: ' + error.message, 'error');
                 showEmptyState();
             } finally {
                 isLoading = false;
@@ -791,11 +790,24 @@
             }
         }
 
-        // 로딩 상태 관리
+
+        // 데이터 로딩 상태를 더 명확하게 표시하는 함수
         function showLoading() {
             loadingContainer.style.display = 'flex';
             studentsContainer.style.display = 'none';
             emptyState.style.display = 'none';
+
+            // 로딩 메시지에 더 많은 정보 제공
+            const loadingSpinner = loadingContainer.querySelector('.loading-spinner');
+            if (loadingSpinner && !loadingContainer.querySelector('.loading-text')) {
+                const loadingText = document.createElement('div');
+                loadingText.className = 'loading-text';
+                loadingText.style.marginTop = '20px';
+                loadingText.style.color = '#6b7280';
+                loadingText.style.fontSize = '14px';
+                loadingText.textContent = '활동일 데이터를 불러오는 중...';
+                loadingContainer.appendChild(loadingText);
+            }
         }
 
         function hideLoading() {
@@ -805,19 +817,32 @@
         function showEmptyState() {
             emptyState.style.display = 'block';
             studentsContainer.style.display = 'none';
-        }
 
+            // 더 자세한 안내 메시지
+            const emptyStateContent = emptyState.querySelector('p');
+            if (emptyStateContent) {
+                emptyStateContent.innerHTML = `
+                    학생 데이터 로딩이 완료되었지만 표시할 내용이 없습니다.<br>
+                    <small style="color: #9ca3af; margin-top: 8px; display: block;">
+                        • 필터 조건을 확인해주세요<br>
+                        • 학생들의 활동일 작성 현황을 확인해주세요
+                    </small>
+                `;
+            }
+        }
         // 필터 옵션 채우기
         function populateFilters() {
-            // 학당 필터
+            // 학당 필터 - sejong_institute 직접 사용
             const institutes = [...new Set(allStudentsData.map(s => s.institute_name).filter(Boolean))];
             instituteFilter.innerHTML = '<option value="">전체 학당</option>';
-            institutes.forEach(institute => {
+            institutes.sort().forEach(institute => {  // 정렬 추가
                 const option = document.createElement('option');
                 option.value = institute;
                 option.textContent = institute;
                 instituteFilter.appendChild(option);
             });
+
+            console.log('📋 학당 필터 옵션 생성:', institutes.length, '개');
         }
 
         // 상태 결정 함수
@@ -839,27 +864,42 @@
             submittedCount.textContent = stats.submitted;
             incompleteCount.textContent = stats.incomplete;
             overLimitCount.textContent = stats.overLimit;
+
+            console.log('📊 통계 업데이트:', stats);
         }
 
         // 필터링 함수
         function applyFilters() {
-            const searchTerm = searchInput.value.toLowerCase();
+            const searchTerm = searchInput.value.toLowerCase().trim();
             const selectedInstitute = instituteFilter.value;
             const selectedStatus = statusFilter.value;
-            
+
+            console.log('🔍 필터 적용 중:', {
+                searchTerm,
+                selectedInstitute,
+                selectedStatus,
+                totalStudents: allStudentsData.length
+            });
+
             filteredStudentsData = allStudentsData.filter(student => {
                 const matchesSearch = !searchTerm || 
-                    student.name.toLowerCase().includes(searchTerm);
-                
+                    student.name.toLowerCase().includes(searchTerm) ||
+                    student.institute_name.toLowerCase().includes(searchTerm);
+
                 const matchesInstitute = !selectedInstitute || 
                     student.institute_name === selectedInstitute;
-                
+
                 const studentStatus = getStudentStatus(student);
                 const matchesStatus = !selectedStatus || studentStatus === selectedStatus;
-                
+
                 return matchesSearch && matchesInstitute && matchesStatus;
             });
-            
+
+            console.log('✅ 필터링 완료:', {
+                filtered: filteredStudentsData.length,
+                total: allStudentsData.length
+            });
+
             updateStatistics();
             renderStudents();
         }
@@ -882,9 +922,14 @@
             const status = getStudentStatus(student);
             const statusText = {
                 'submitted': '작성 완료',
-                'incomplete': '미작성',
+                'incomplete': '미작성',  
                 'over-limit': '시간 초과'
             };
+
+            // 개발 중 디버깅용 (프로덕션에서는 제거 가능)
+            if (window.location.hostname === 'localhost' || window.location.hostname.includes('debug')) {
+                debugStudentData(student);
+            }
 
             return `
                 <div class="student-card" data-user-id="${student.id}">
@@ -895,12 +940,41 @@
                         </div>
                         <span class="status-badge ${status}">${statusText[status]}</span>
                     </div>
-                    
+
                     ${student.stats ? renderWeeklySummary(student.stats) : renderNoDataMessage()}
-                    ${student.schedule ? renderScheduleTable(student.schedule) : ''}
+                    ${student.schedule ? renderScheduleTable(student.schedule) : renderEmptyScheduleInfo()}
                 </div>
             `;
         }
+
+        
+        
+        
+        // 활동일 정보 없음 상태를 위한 새로운 함수
+        function renderEmptyScheduleInfo() {
+            return `
+                <div class="schedule-details">
+                    <div style="
+                        text-align: center; 
+                        padding: 30px 20px; 
+                        background: #f8fafc; 
+                        border: 2px dashed #cbd5e1; 
+                        border-radius: 12px; 
+                        color: #64748b;
+                        margin-top: 16px;
+                    ">
+                        <div style="font-size: 36px; margin-bottom: 12px;">📅</div>
+                        <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
+                            활동일 정보 없음
+                        </div>
+                        <div style="font-size: 14px;">
+                            학생이 아직 주간 활동 스케줄을 작성하지 않았습니다.
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
 
         // 주간 요약 렌더링
         function renderWeeklySummary(stats) {
