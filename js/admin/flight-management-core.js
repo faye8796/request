@@ -55,7 +55,7 @@ class FlightManagementSystem {
         // ⚙️ 설정
         this.config = {
             realTimeInterval: 30000, // 30초
-            autoRefreshEnabled: true,
+            autoRefreshEnabled: false,
             debugMode: true,
             retryAttempts: 3,
             timeoutMs: 10000
@@ -88,10 +88,7 @@ class FlightManagementSystem {
             // 4. 이벤트 시스템 설정
             this.setupEventSystem();
 
-            // 5. 실시간 데이터 동기화 시작
-            this.startRealTimeSync();
-
-            // 6. 초기 데이터 로드
+            // 5. 초기 데이터 로드
             await this.loadInitialData();
 
             this.state.isInitialized = true;
