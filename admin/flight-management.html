@@ -2316,9 +2316,9 @@
                         <i data-lucide="download"></i>
                         Excel 내보내기
                     </button>
-                    <button id="realTimeToggle" class="header-btn primary">
-                        <i data-lucide="refresh-cw"></i>
-                        실시간 동기화: 켜짐
+                    <button id="realTimeToggle" class="header-btn secondary">
+                        <i data-lucide="pause"></i>
+                        실시간 동기화: 꺼짐
                     </button>
                 </div>
             </div>
@@ -2764,13 +2764,17 @@
             const system = window.FlightManagementPage.system;
 
             if (system.state.isRealTimeEnabled) {
+                // 끄기
                 system.stopRealTimeSync();
+                system.config.autoRefreshEnabled = false;  // ← 추가
                 window.FlightManagementPage.realTimeEnabled = false;
                 realTimeToggle.innerHTML = '<i data-lucide="pause"></i>실시간 동기화: 꺼짐';
                 realTimeToggle.classList.remove('primary');
                 realTimeToggle.classList.add('secondary');
                 showRealTimeUpdate('실시간 동기화 비활성화됨');
             } else {
+                // 켜기
+                system.config.autoRefreshEnabled = true;  // ← 추가
                 system.startRealTimeSync();
                 window.FlightManagementPage.realTimeEnabled = true;
                 realTimeToggle.innerHTML = '<i data-lucide="refresh-cw"></i>실시간 동기화: 켜짐';
@@ -2784,7 +2788,6 @@
                 lucide.createIcons();
             }
         }
-
         // 📤 Excel 데이터 내보내기
         async function handleExportData() {
             console.log('📤 Excel 데이터 내보내기 시작');
