@@ -815,7 +815,7 @@
                     <div class="payment-label">일정</div>
                     <div class="payment-value">${dateText}</div>
                     ${payment.admin_notes ? `
-                        <div class="payment-label">관리자 메모</div>
+                        <div class="payment-label">안내 사항</div>
                         <div class="payment-value" style="font-size: 0.75rem; color: var(--text-secondary);">${payment.admin_notes}</div>
                     ` : ''}
                 `;

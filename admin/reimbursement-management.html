@@ -1312,7 +1312,50 @@
             }
         }
         
-        
+        /* 자료 보완 요청 버튼 스타일 */
+        .btn-supplement-request {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #d1d5db;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.3s;
+        }
+
+        .btn-supplement-request:hover {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        /* 보완 요청이 있는 경우 */
+        .btn-supplement-request.has-request {
+            background: #fef3c7;
+            color: #d97706;
+            border: 1px solid #f59e0b;
+            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+        }
+
+        .btn-supplement-request.has-request:hover {
+            background: #fde68a;
+            color: #b45309;
+        }
+
+        /* 모달 footer 개선 */
+        .modal-footer {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+        }        
         
     </style>
 </head>
@@ -1555,6 +1598,38 @@
         </div>
     </div>    
 
+    <!-- 자료 보완 요청 모달 -->
+    <div id="supplementRequestModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>자료 보완 요청</h2>
+                <button class="close-modal" onclick="closeModal('supplementRequestModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="student-summary">
+                    <h3 id="supplementStudentName">-</h3>
+                </div>
+                <div class="form-group">
+                    <label for="supplementText">보완 요청 내용</label>
+                    <textarea id="supplementText" 
+                             placeholder="학생에게 요청할 자료 보완 내용을 입력해주세요..."
+                             rows="6"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="deleteSupplementBtn" class="btn-cancel" onclick="window.reimbursementManagementSystem?.deleteSupplementRequest()" style="display: none; background: #dc3545;">
+                    <i data-lucide="trash-2"></i>
+                    삭제
+                </button>
+                <div class="modal-actions" style="margin-left: auto;">
+                    <button class="btn-cancel" onclick="closeModal('supplementRequestModal')">취소</button>
+                    <button class="btn-save-amount" onclick="window.reimbursementManagementSystem?.saveSupplementRequest()">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>    
+    
+    
     <!-- 전체화면 영수증 뷰어 -->
     <div id="receiptViewer" class="receipt-viewer">
         <button class="close-viewer" onclick="closeReceiptViewer()">&times;</button>

@@ -137,7 +137,7 @@ if (window.reimbursementManagementSystem) {
     /**
      * 액션 버튼들 생성
      */
-    system.createActionButtons = function(userId, paymentStatus, pendingReimbursement) {  // 파라미터 이름 변경
+    system.createActionButtons = function(userId, paymentStatus, pendingReimbursement) {
         const student = this.students.find(s => s.id === userId);
         const buttons = [];
 
@@ -154,6 +154,17 @@ if (window.reimbursementManagementSystem) {
             <button class="btn-set-amount" onclick="window.reimbursementManagementSystem.openAmountSettingModal('${userId}', '${student?.name}')">
                 <i data-lucide="edit"></i>
                 금액설정
+            </button>
+        `);
+
+        // 🆕 자료 보완 요청 버튼 (항상 표시)
+        const hasSupplementRequest = pendingReimbursement?.admin_supplement_request ? true : false;
+        const supplementButtonClass = hasSupplementRequest ? 'btn-supplement-request has-request' : 'btn-supplement-request';
+
+        buttons.push(`
+            <button class="${supplementButtonClass}" onclick="window.reimbursementManagementSystem.openSupplementRequestModal('${userId}', '${student?.name}')">
+                <i data-lucide="clipboard-list"></i>
+                자료 보완 요청
             </button>
         `);
 
@@ -180,6 +191,7 @@ if (window.reimbursementManagementSystem) {
 
         return buttons.join('');
     };
+    
     /**
      * 통계 대시보드 업데이트
      */

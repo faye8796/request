@@ -542,6 +542,150 @@
             background-color: #fefbf3;
             border-color: #f59e0b;
         }
+        
+        /* 자료 보완 요청 알림 스타일 - 기존 alert 스타일과 일관성 유지 */
+        .supplement-request-alert {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #f59e0b;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .supplement-request-alert::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .supplement-request-alert .alert-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .supplement-request-alert .alert-header i {
+            color: #d97706;
+            width: 20px;
+            height: 20px;
+        }
+
+        .supplement-request-alert .alert-header h3 {
+            margin: 0;
+            color: #92400e;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .supplement-request-alert .alert-content {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            margin-bottom: 12px;
+        }
+
+        .supplement-request-alert .alert-content p {
+            margin: 0;
+            color: #374151;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+
+        .supplement-request-alert .alert-footer {
+            text-align: right;
+        }
+
+        .supplement-request-alert .alert-footer small {
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .supplement-request-alert .alert-footer small::before {
+            content: '📅';
+            font-size: 12px;
+        }
+
+        /* 다크 모드 대응 (기존 다크 모드가 있다면) */
+        @media (prefers-color-scheme: dark) {
+            .supplement-request-alert {
+                background: linear-gradient(135deg, #451a03 0%, #92400e 100%);
+                border-color: #d97706;
+            }
+
+            .supplement-request-alert .alert-content {
+                background: rgba(0, 0, 0, 0.3);
+                border-color: rgba(217, 119, 6, 0.3);
+            }
+
+            .supplement-request-alert .alert-content p {
+                color: #f3f4f6;
+            }
+
+            .supplement-request-alert .alert-header h3 {
+                color: #fbbf24;
+            }
+        }
+
+        /* 애니메이션 효과 */
+        .supplement-request-alert {
+            animation: slideInFromTop 0.4s ease-out;
+        }
+
+        @keyframes slideInFromTop {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .supplement-request-alert {
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+
+            .supplement-request-alert .alert-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .supplement-request-alert .alert-header h3 {
+                font-size: 15px;
+            }
+
+            .supplement-request-alert .alert-content {
+                padding: 12px;
+            }
+
+            .supplement-request-alert .alert-footer {
+                text-align: left;
+                margin-top: 8px;
+            }
+        }
+        
+        
     </style>
 </head>
 <body>
@@ -624,16 +768,35 @@
                         실비 지원 내역
                     </h2>
                 </div>
+
                 <div class="card-content">
+
+                    <!-- 🆕 자료 보완 요청 알림 (최상단) -->
+                    <div id="supplementRequestAlert" class="supplement-request-alert" style="display: none;">
+                        <div class="alert-header">
+                            <i data-lucide="clipboard-list"></i>
+                            <h3>관리자 자료 보완 요청</h3>
+                        </div>
+                        <div class="alert-content">
+                            <p id="supplementRequestText"></p>
+                        </div>
+                        <div class="alert-footer">
+                            <small id="supplementRequestDate"></small>
+                        </div>
+                    </div>
+
+                    <!-- 기존 영수증 미등록 알림 -->
                     <div id="reimbursementAlert" class="alert alert-warning" style="display: none;">
                         <i data-lucide="alert-triangle"></i>
                         영수증이 등록되지 않은 항목이 있습니다.
                     </div>
 
+                    <!-- 실비 목록 -->
                     <div id="reimbursementList" class="reimbursement-list">
                         <!-- 동적으로 생성 -->
                     </div>
-                    
+
+                    <!-- 빈 상태 -->
                     <div id="emptyReimbursement" class="empty-state" style="display: none;">
                         <i data-lucide="file-x"></i>
                         <h3>실비 대상 항목이 없습니다</h3>
@@ -641,7 +804,7 @@
                     </div>
                 </div>
             </div>
-
+            
             <!-- 입금 정보 -->
             <div class="card" id="paymentInfoCard" style="display: none;">
                 <div class="card-header">
@@ -748,6 +911,10 @@
                 // 사용자 정보 표시
                 displayUserInfo(userData);
 
+                // 🆕 보완 요청 확인 및 표시 (추가)
+                await checkAndShowSupplementRequest();
+
+
                 console.log('✅ 실비 지원 신청 시스템 초기화 완료');
 
             } catch (error) {
@@ -755,6 +922,101 @@
                 showErrorMessage('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
             }
         }
+        
+        // 🆕 보완 요청 관련 함수들 추가
+        /**
+         * 보완 요청 확인 및 표시
+         */
+        async function checkAndShowSupplementRequest() {
+            try {
+                const userData = JSON.parse(localStorage.getItem('currentStudent') || '{}');
+                if (!userData.id) return;
+
+                const { data, error } = await window.supabaseClient
+                    .from('user_reimbursements')
+                    .select('admin_supplement_request, admin_supplement_updated_at')
+                    .eq('user_id', userData.id)
+                    .maybeSingle();
+
+                if (error && error.code !== 'PGRST116') { // PGRST116은 데이터 없음 에러
+                    throw error;
+                }
+
+                const alertElement = document.getElementById('supplementRequestAlert');
+                
+                if (data && data.admin_supplement_request) {
+                    // 보완 요청이 있는 경우 표시
+                    showSupplementRequestAlert(
+                        data.admin_supplement_request, 
+                        data.admin_supplement_updated_at
+                    );
+                } else {
+                    // 보완 요청이 없는 경우 숨김
+                    if (alertElement) {
+                        alertElement.style.display = 'none';
+                    }
+                }
+
+            } catch (error) {
+                console.error('보완 요청 확인 실패:', error);
+                
+                // 에러가 발생해도 페이지는 정상 동작하도록 처리
+                const alertElement = document.getElementById('supplementRequestAlert');
+                if (alertElement) {
+                    alertElement.style.display = 'none';
+                }
+            }
+        }
+
+        /**
+         * 보완 요청 알림 표시
+         */
+        function showSupplementRequestAlert(requestText, updatedAt) {
+            const alertElement = document.getElementById('supplementRequestAlert');
+            const textElement = document.getElementById('supplementRequestText');
+            const dateElement = document.getElementById('supplementRequestDate');
+            
+            if (!alertElement || !textElement || !dateElement) {
+                console.warn('보완 요청 알림 요소를 찾을 수 없습니다.');
+                return;
+            }
+
+            // 요청 내용 설정
+            textElement.textContent = requestText;
+
+            // 요청 날짜 설정
+            if (updatedAt) {
+                const date = new Date(updatedAt);
+                const formattedDate = date.toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                const formattedTime = date.toLocaleTimeString('ko-KR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                dateElement.textContent = `요청일: ${formattedDate} ${formattedTime}`;
+            } else {
+                dateElement.textContent = '';
+            }
+
+            // 알림 표시
+            alertElement.style.display = 'block';
+            
+            // 스크롤 시 자연스럽게 보이도록 처리
+            setTimeout(() => {
+                if (alertElement.scrollIntoView) {
+                    alertElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'nearest' 
+                    });
+                }
+            }, 100);
+
+            console.log('📋 자료 보완 요청 알림 표시:', requestText.substring(0, 50) + '...');
+        }
+        
 
         // 사용자 데이터 로드
         async function loadUserData() {

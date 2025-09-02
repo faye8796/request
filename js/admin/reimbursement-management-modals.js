@@ -306,6 +306,158 @@ if (window.reimbursementManagementSystem) {
             }
         }
     };
+    
+    /**
+     * 자료 보완 요청 모달 열기
+     */
+    system.openSupplementRequestModal = async function(userId, userName) {
+        try {
+            this.currentUser = { id: userId, name: userName };
+
+            // 모달 제목 설정
+            const titleElement = document.getElementById('supplementStudentName');
+            if (titleElement) {
+                titleElement.textContent = `${userName}님`;
+            }
+
+            // 기존 보완 요청 내용 조회 (가장 최신 레코드)
+            const { data, error } = await this.supabaseClient
+                .from('user_reimbursements')
+                .select('admin_supplement_request, payment_round')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (error && error.code !== 'PGRST116') { // PGRST116은 데이터 없음 에러
+                throw error;
+            }
+
+            const textarea = document.getElementById('supplementText');
+            const deleteBtn = document.getElementById('deleteSupplementBtn');
+
+            if (data && data.admin_supplement_request) {
+                // 기존 요청이 있는 경우
+                textarea.value = data.admin_supplement_request;
+                deleteBtn.style.display = 'block';
+                this.currentSupplementRequest = data.admin_supplement_request;
+                this.currentPaymentRound = data.payment_round; // 저장된 payment_round 기억
+            } else {
+                // 기존 요청이 없는 경우
+                textarea.value = '';
+                deleteBtn.style.display = 'none';
+                this.currentSupplementRequest = null;
+                this.currentPaymentRound = null;
+            }
+
+            // 모달 표시
+            this.openModal('supplementRequestModal');
+
+            console.log(`📋 자료 보완 요청 모달 열기: ${userName}`);
+
+        } catch (error) {
+            console.error('❌ 자료 보완 요청 모달 오류:', error);
+            this.showToast('보완 요청 정보를 불러오는데 실패했습니다.', 'error');
+        }
+    };
+
+    /**
+     * 자료 보완 요청 저장 (수정된 버전)
+     */
+    system.saveSupplementRequest = async function() {
+        if (!this.currentUser) return;
+
+        const textarea = document.getElementById('supplementText');
+        const requestText = textarea.value.trim();
+
+        if (!requestText) {
+            this.showToast('보완 요청 내용을 입력해주세요.', 'error');
+            return;
+        }
+
+        try {
+            const now = new Date().toISOString();
+
+            if (this.currentSupplementRequest && this.currentPaymentRound) {
+                // 기존 레코드 업데이트 (payment_round 기준)
+                const { error } = await this.supabaseClient
+                    .from('user_reimbursements')
+                    .update({
+                        admin_supplement_request: requestText,
+                        admin_supplement_updated_at: now
+                    })
+                    .eq('user_id', this.currentUser.id)
+                    .eq('payment_round', this.currentPaymentRound);
+
+                if (error) throw error;
+
+            } else {
+                // 새로운 레코드 생성 (기본 payment_round = 1로 가정)
+                const { error } = await this.supabaseClient
+                    .from('user_reimbursements')
+                    .insert({
+                        user_id: this.currentUser.id,
+                        payment_round: 1, // 기본값
+                        admin_supplement_request: requestText,
+                        admin_supplement_requested_at: now,
+                        admin_supplement_updated_at: now
+                    });
+
+                if (error) throw error;
+            }
+
+            this.showToast('자료 보완 요청이 저장되었습니다.');
+            this.closeModal('supplementRequestModal');
+
+            // 목록 새로고침
+            await this.refreshData();
+
+        } catch (error) {
+            console.error('❌ 보완 요청 저장 실패:', error);
+
+            // 더 자세한 에러 메시지 표시
+            let errorMessage = '보완 요청 저장에 실패했습니다.';
+            if (error.message) {
+                errorMessage += ` (${error.message})`;
+            }
+
+            this.showToast(errorMessage, 'error');
+        }
+    };
+
+    /**
+     * 자료 보완 요청 삭제 (수정된 버전)
+     */
+    system.deleteSupplementRequest = async function() {
+        if (!this.currentUser || !this.currentPaymentRound) return;
+
+        if (!confirm('자료 보완 요청을 삭제하시겠습니까?')) return;
+
+        try {
+            const { error } = await this.supabaseClient
+                .from('user_reimbursements')
+                .update({
+                    admin_supplement_request: null,
+                    admin_supplement_requested_at: null,
+                    admin_supplement_updated_at: null
+                })
+                .eq('user_id', this.currentUser.id)
+                .eq('payment_round', this.currentPaymentRound);
+
+            if (error) throw error;
+
+            this.showToast('자료 보완 요청이 삭제되었습니다.');
+            this.closeModal('supplementRequestModal');
+
+            // 목록 새로고침
+            await this.refreshData();
+
+        } catch (error) {
+            console.error('❌ 보완 요청 삭제 실패:', error);
+            this.showToast('보완 요청 삭제에 실패했습니다.', 'error');
+        }
+    };
+    
 
     /**
      * 전체 선택
@@ -355,7 +507,7 @@ if (window.reimbursementManagementSystem) {
         const scheduledDate = document.getElementById('scheduledDate')?.value;
         const paymentRound = parseInt(document.getElementById('paymentRound')?.value);
 
-        if (!scheduledAmount || scheduledAmount <= 0) {
+        if (!scheduledAmount || scheduledAmount < 0) {
             errors.push('유효한 실비 금액을 입력해주세요.');
         }
 
