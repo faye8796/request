@@ -911,7 +911,7 @@
                 // 사용자 정보 표시
                 displayUserInfo(userData);
 
-                // 🆕 보완 요청 확인 및 표시 (추가)
+                // 🆕 보완 요청 확인 및 표시 (개선된 로직)
                 await checkAndShowSupplementRequest();
 
 
@@ -923,44 +923,48 @@
             }
         }
         
-        // 🆕 보완 요청 관련 함수들 추가
+        // 🔧 개선된 보완 요청 관련 함수들
         /**
-         * 보완 요청 확인 및 표시
+         * 보완 요청 확인 및 표시 (가장 큰 payment_round 우선)
          */
         async function checkAndShowSupplementRequest() {
             try {
                 const userData = JSON.parse(localStorage.getItem('currentStudent') || '{}');
                 if (!userData.id) return;
 
+                // 🎯 가장 큰 payment_round의 자료 보완 요청 조회
                 const { data, error } = await window.supabaseClient
                     .from('user_reimbursements')
-                    .select('admin_supplement_request, admin_supplement_updated_at')
+                    .select('admin_supplement_request, admin_supplement_updated_at, payment_round')
                     .eq('user_id', userData.id)
+                    .not('admin_supplement_request', 'is', null)  // 보완 요청이 있는 것만
+                    .order('payment_round', { ascending: false })  // 큰 수부터
+                    .limit(1)
                     .maybeSingle();
 
-                if (error && error.code !== 'PGRST116') { // PGRST116은 데이터 없음 에러
+                if (error && error.code !== 'PGRST116') {
                     throw error;
                 }
 
                 const alertElement = document.getElementById('supplementRequestAlert');
                 
                 if (data && data.admin_supplement_request) {
-                    // 보완 요청이 있는 경우 표시
                     showSupplementRequestAlert(
                         data.admin_supplement_request, 
-                        data.admin_supplement_updated_at
+                        data.admin_supplement_updated_at,
+                        data.payment_round
                     );
+                    console.log(`📋 자료 보완 요청 표시: payment_round=${data.payment_round}`);
                 } else {
-                    // 보완 요청이 없는 경우 숨김
                     if (alertElement) {
                         alertElement.style.display = 'none';
                     }
+                    console.log('📋 자료 보완 요청 없음');
                 }
 
             } catch (error) {
-                console.error('보완 요청 확인 실패:', error);
+                console.error('❌ 보완 요청 확인 실패:', error);
                 
-                // 에러가 발생해도 페이지는 정상 동작하도록 처리
                 const alertElement = document.getElementById('supplementRequestAlert');
                 if (alertElement) {
                     alertElement.style.display = 'none';
@@ -969,22 +973,22 @@
         }
 
         /**
-         * 보완 요청 알림 표시
+         * 보완 요청 알림 표시 (payment_round 정보 포함)
          */
-        function showSupplementRequestAlert(requestText, updatedAt) {
+        function showSupplementRequestAlert(requestText, updatedAt, paymentRound = null) {
             const alertElement = document.getElementById('supplementRequestAlert');
             const textElement = document.getElementById('supplementRequestText');
             const dateElement = document.getElementById('supplementRequestDate');
             
             if (!alertElement || !textElement || !dateElement) {
-                console.warn('보완 요청 알림 요소를 찾을 수 없습니다.');
+                console.warn('⚠️ 보완 요청 알림 요소를 찾을 수 없습니다.');
                 return;
             }
 
             // 요청 내용 설정
             textElement.textContent = requestText;
 
-            // 요청 날짜 설정
+            // 요청 날짜 및 차수 정보 설정
             if (updatedAt) {
                 const date = new Date(updatedAt);
                 const formattedDate = date.toLocaleDateString('ko-KR', {
@@ -996,9 +1000,25 @@
                     hour: '2-digit',
                     minute: '2-digit'
                 });
-                dateElement.textContent = `요청일: ${formattedDate} ${formattedTime}`;
+                
+                let dateText = `요청일: ${formattedDate} ${formattedTime}`;
+                
+                // payment_round 정보 추가
+                if (paymentRound === 0) {
+                    dateText += ' (자료 보완 전용)';
+                } else if (paymentRound && paymentRound > 0) {
+                    dateText += ` (${paymentRound}차 실비 관련)`;
+                }
+                
+                dateElement.textContent = dateText;
             } else {
-                dateElement.textContent = '';
+                let dateText = '요청일: 정보 없음';
+                if (paymentRound === 0) {
+                    dateText += ' (자료 보완 전용)';
+                } else if (paymentRound && paymentRound > 0) {
+                    dateText += ` (${paymentRound}차 실비 관련)`;
+                }
+                dateElement.textContent = dateText;
             }
 
             // 알림 표시
@@ -1014,7 +1034,9 @@
                 }
             }, 100);
 
-            console.log('📋 자료 보완 요청 알림 표시:', requestText.substring(0, 50) + '...');
+            const displayText = requestText.length > 50 ? requestText.substring(0, 50) + '...' : requestText;
+            const roundInfo = paymentRound === 0 ? ' (자료보완전용)' : (paymentRound ? ` (${paymentRound}차)` : '');
+            console.log(`📋 자료 보완 요청 표시${roundInfo}:`, displayText);
         }
         
 
