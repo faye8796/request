@@ -314,46 +314,67 @@ if (window.reimbursementManagementSystem) {
         try {
             this.currentUser = { id: userId, name: userName };
 
-            // 모달 제목 설정
             const titleElement = document.getElementById('supplementStudentName');
             if (titleElement) {
                 titleElement.textContent = `${userName}님`;
             }
 
-            // 기존 보완 요청 내용 조회 (가장 최신 레코드)
-            const { data, error } = await this.supabaseClient
+            // 자료 보완 요청 조회 (payment_round=0 먼저, 없으면 최신 실비 차수)
+            let supplementData = null;
+
+            // 1순위: payment_round=0 (자료 보완 전용) 확인
+            const { data: supplementOnlyData, error: supplementError } = await this.supabaseClient
                 .from('user_reimbursements')
                 .select('admin_supplement_request, payment_round')
                 .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .limit(1)
+                .eq('payment_round', 0)
                 .maybeSingle();
 
-            if (error && error.code !== 'PGRST116') { // PGRST116은 데이터 없음 에러
-                throw error;
+            if (supplementError && supplementError.code !== 'PGRST116') {
+                throw supplementError;
             }
 
+            if (supplementOnlyData) {
+                supplementData = supplementOnlyData;
+                console.log('📋 자료 보완 전용 레코드 발견: payment_round=0');
+            } else {
+                // 2순위: 최신 실비 차수에서 자료 보완 요청 확인
+                const { data: latestReimbursementData, error: reimbursementError } = await this.supabaseClient
+                    .from('user_reimbursements')
+                    .select('admin_supplement_request, payment_round, scheduled_amount')
+                    .eq('user_id', userId)
+                    .gte('payment_round', 1)
+                    .order('payment_round', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (reimbursementError && reimbursementError.code !== 'PGRST116') {
+                    throw reimbursementError;
+                }
+
+                if (latestReimbursementData) {
+                    supplementData = latestReimbursementData;
+                    console.log(`💰 실비 차수에서 보완 요청 확인: payment_round=${latestReimbursementData.payment_round}`);
+                }
+            }
+
+            // UI 업데이트
             const textarea = document.getElementById('supplementText');
             const deleteBtn = document.getElementById('deleteSupplementBtn');
 
-            if (data && data.admin_supplement_request) {
-                // 기존 요청이 있는 경우
-                textarea.value = data.admin_supplement_request;
+            if (supplementData && supplementData.admin_supplement_request) {
+                textarea.value = supplementData.admin_supplement_request;
                 deleteBtn.style.display = 'block';
-                this.currentSupplementRequest = data.admin_supplement_request;
-                this.currentPaymentRound = data.payment_round; // 저장된 payment_round 기억
+                this.currentSupplementRequest = supplementData.admin_supplement_request;
+                this.currentPaymentRound = supplementData.payment_round;
             } else {
-                // 기존 요청이 없는 경우
                 textarea.value = '';
                 deleteBtn.style.display = 'none';
                 this.currentSupplementRequest = null;
-                this.currentPaymentRound = null;
+                this.currentPaymentRound = supplementData ? supplementData.payment_round : null;
             }
 
-            // 모달 표시
             this.openModal('supplementRequestModal');
-
-            console.log(`📋 자료 보완 요청 모달 열기: ${userName}`);
 
         } catch (error) {
             console.error('❌ 자료 보완 요청 모달 오류:', error);
@@ -378,78 +399,107 @@ if (window.reimbursementManagementSystem) {
         try {
             const now = new Date().toISOString();
 
-            if (this.currentSupplementRequest && this.currentPaymentRound) {
-                // 기존 레코드 업데이트 (payment_round 기준)
+            // 1단계: 실비 정보가 있는지 확인 (payment_round ≥ 1)
+            const { data: reimbursementRecords, error: fetchError } = await this.supabaseClient
+                .from('user_reimbursements')
+                .select('payment_round, scheduled_amount')
+                .eq('user_id', this.currentUser.id)
+                .gte('payment_round', 1)  // 실제 실비 차수만
+                .order('payment_round', { ascending: false });
+
+            if (fetchError) throw fetchError;
+
+            let targetPaymentRound;
+            let isSupplementOnly = false;
+
+            if (reimbursementRecords && reimbursementRecords.length > 0) {
+                // 실비 정보가 있으면 최신 차수에 저장
+                targetPaymentRound = reimbursementRecords[0].payment_round;
+                console.log(`💰 기존 실비 정보 발견: payment_round=${targetPaymentRound}에 보완 요청 저장`);
+            } else {
+                // 실비 정보가 없으면 payment_round=0 (자료 보완 전용)
+                targetPaymentRound = 0;
+                isSupplementOnly = true;
+                console.log(`📋 실비 정보 없음 → payment_round=0 (자료 보완 전용) 생성`);
+            }
+
+            // 2단계: UPSERT 데이터 구성
+            const upsertData = {
+                user_id: this.currentUser.id,
+                payment_round: targetPaymentRound,
+                admin_supplement_request: requestText,
+                admin_supplement_requested_at: now,
+                admin_supplement_updated_at: now
+            };
+
+            // payment_round=0 (자료 보완 전용)인 경우에만 기본 상태 설정
+            if (isSupplementOnly) {
+                upsertData.payment_status = 'supplement_only'; // 특별 상태값
+            }
+
+            // 3단계: UPSERT 실행
+            const { error } = await this.supabaseClient
+                .from('user_reimbursements')
+                .upsert(upsertData, {
+                    onConflict: 'user_id,payment_round',
+                    ignoreDuplicates: false
+                });
+
+            if (error) throw error;
+
+            // 성공 메시지
+            const message = isSupplementOnly ? 
+                '자료 보완 요청이 저장되었습니다. (보완 전용)' : 
+                `자료 보완 요청이 저장되었습니다. (${targetPaymentRound}차)`;
+
+            console.log(`✅ 자료 보완 요청 저장: payment_round=${targetPaymentRound} ${isSupplementOnly ? '(전용)' : ''}`);
+            this.showToast(message);
+            this.closeModal('supplementRequestModal');
+            await this.refreshData();
+
+        } catch (error) {
+            console.error('❌ 보완 요청 저장 실패:', error);
+            this.showToast('보완 요청 저장에 실패했습니다.', 'error');
+        }
+    };
+    /**
+     * 자료 보완 요청 삭제 (수정된 버전)
+     */
+    system.deleteSupplementRequest = async function() {
+        if (!this.currentUser || this.currentPaymentRound === null) return;
+
+        if (!confirm('자료 보완 요청을 삭제하시겠습니까?')) return;
+
+        try {
+            if (this.currentPaymentRound === 0) {
+                // payment_round=0 (자료 보완 전용) 레코드는 완전 삭제
+                const { error } = await this.supabaseClient
+                    .from('user_reimbursements')
+                    .delete()
+                    .eq('user_id', this.currentUser.id)
+                    .eq('payment_round', 0);
+
+                if (error) throw error;
+                console.log('🗑️ 자료 보완 전용 레코드 완전 삭제');
+
+            } else {
+                // 실비 차수 레코드는 보완 요청 필드만 NULL로
                 const { error } = await this.supabaseClient
                     .from('user_reimbursements')
                     .update({
-                        admin_supplement_request: requestText,
-                        admin_supplement_updated_at: now
+                        admin_supplement_request: null,
+                        admin_supplement_requested_at: null,
+                        admin_supplement_updated_at: null
                     })
                     .eq('user_id', this.currentUser.id)
                     .eq('payment_round', this.currentPaymentRound);
 
                 if (error) throw error;
-
-            } else {
-                // 새로운 레코드 생성 (기본 payment_round = 1로 가정)
-                const { error } = await this.supabaseClient
-                    .from('user_reimbursements')
-                    .insert({
-                        user_id: this.currentUser.id,
-                        payment_round: 1, // 기본값
-                        admin_supplement_request: requestText,
-                        admin_supplement_requested_at: now,
-                        admin_supplement_updated_at: now
-                    });
-
-                if (error) throw error;
+                console.log(`🧹 실비 차수 ${this.currentPaymentRound}에서 보완 요청만 삭제`);
             }
-
-            this.showToast('자료 보완 요청이 저장되었습니다.');
-            this.closeModal('supplementRequestModal');
-
-            // 목록 새로고침
-            await this.refreshData();
-
-        } catch (error) {
-            console.error('❌ 보완 요청 저장 실패:', error);
-
-            // 더 자세한 에러 메시지 표시
-            let errorMessage = '보완 요청 저장에 실패했습니다.';
-            if (error.message) {
-                errorMessage += ` (${error.message})`;
-            }
-
-            this.showToast(errorMessage, 'error');
-        }
-    };
-
-    /**
-     * 자료 보완 요청 삭제 (수정된 버전)
-     */
-    system.deleteSupplementRequest = async function() {
-        if (!this.currentUser || !this.currentPaymentRound) return;
-
-        if (!confirm('자료 보완 요청을 삭제하시겠습니까?')) return;
-
-        try {
-            const { error } = await this.supabaseClient
-                .from('user_reimbursements')
-                .update({
-                    admin_supplement_request: null,
-                    admin_supplement_requested_at: null,
-                    admin_supplement_updated_at: null
-                })
-                .eq('user_id', this.currentUser.id)
-                .eq('payment_round', this.currentPaymentRound);
-
-            if (error) throw error;
 
             this.showToast('자료 보완 요청이 삭제되었습니다.');
             this.closeModal('supplementRequestModal');
-
-            // 목록 새로고침
             await this.refreshData();
 
         } catch (error) {
