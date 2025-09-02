@@ -932,35 +932,34 @@
                 const userData = JSON.parse(localStorage.getItem('currentStudent') || '{}');
                 if (!userData.id) return;
 
-                // 🎯 가장 큰 payment_round의 자료 보완 요청 조회
-                const { data, error } = await window.supabaseClient
-                    .from('user_reimbursements')
-                    .select('admin_supplement_request, admin_supplement_updated_at, payment_round')
-                    .eq('user_id', userData.id)
-                    .not('admin_supplement_request', 'is', null)  // 보완 요청이 있는 것만
-                    .order('payment_round', { ascending: false })  // 큰 수부터
-                    .limit(1)
-                    .maybeSingle();
+        // 🎯 가장 큰 payment_round의 자료 보완 요청 조회
+        const { data, error } = await window.supabaseClient
+            .from('user_reimbursements')
+            .select('admin_supplement_request, admin_supplement_updated_at, payment_round')
+            .eq('user_id', userData.id)
+            .order('payment_round', { ascending: false });
 
-                if (error && error.code !== 'PGRST116') {
-                    throw error;
-                }
+        if (error && error.code !== 'PGRST116') {
+            throw error;
+        }
 
-                const alertElement = document.getElementById('supplementRequestAlert');
-                
-                if (data && data.admin_supplement_request) {
-                    showSupplementRequestAlert(
-                        data.admin_supplement_request, 
-                        data.admin_supplement_updated_at,
-                        data.payment_round
-                    );
-                    console.log(`📋 자료 보완 요청 표시: payment_round=${data.payment_round}`);
-                } else {
-                    if (alertElement) {
-                        alertElement.style.display = 'none';
-                    }
-                    console.log('📋 자료 보완 요청 없음');
-                }
+        const alertElement = document.getElementById('supplementRequestAlert');
+
+        // 🔧 가장 큰 payment_round에서 보완 요청이 있는 것을 찾기
+        const validData = (data || []).find(item => item.admin_supplement_request);
+        if (validData) {
+            showSupplementRequestAlert(
+                validData.admin_supplement_request, 
+                validData.admin_supplement_updated_at,
+                validData.payment_round
+            );
+            console.log(`📋 자료 보완 요청 표시: payment_round=${validData.payment_round}`);
+        } else {
+            if (alertElement) {
+                alertElement.style.display = 'none';
+            }
+            console.log('📋 자료 보완 요청 없음');
+        }
 
             } catch (error) {
                 console.error('❌ 보완 요청 확인 실패:', error);
