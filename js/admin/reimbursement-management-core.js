@@ -278,16 +278,19 @@ class ReimbursementManagementSystem {
         } else {
             const searchTerm = query.toLowerCase();
             this.filteredStudents = this.students.filter(student => {
-                return student.name.toLowerCase().includes(searchTerm) ||
-                       student.email.toLowerCase().includes(searchTerm) ||
-                       (student.sejong_institute && student.sejong_institute.toLowerCase().includes(searchTerm));
+                const studentName = student.name || '';
+                const studentEmail = student.email || '';
+                const studentInstitute = student.sejong_institute || '';
+
+                return studentName.toLowerCase().includes(searchTerm) ||
+                       studentEmail.toLowerCase().includes(searchTerm) ||
+                       studentInstitute.toLowerCase().includes(searchTerm);
             });
         }
-        
+
         this.renderStudentsTable();
         console.log(`🔍 검색 결과: ${this.filteredStudents.length}명`);
     }
-
     /**
      * 필터 적용
      */

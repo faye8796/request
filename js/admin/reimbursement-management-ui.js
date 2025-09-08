@@ -197,36 +197,97 @@ if (window.reimbursementManagementSystem) {
      */
     system.updateStatistics = async function() {
         try {
+            // 🔄 기존 통계 조회
             const stats = await this.getReimbursementSummaryStats();
 
-            // DOM 요소들 업데이트
-            const elements = {
+            // 🆕 차수별 금액 통계 추가 쿼리
+            const { data: amountStats, error } = await this.supabaseClient
+                .from('user_reimbursements')
+                .select('payment_round, scheduled_amount, actual_amount, payment_status');
+
+            if (error) {
+                throw new Error(`차수별 통계 조회 실패: ${error.message}`);
+            }
+
+            // 🆕 차수별 예정 금액 계산
+            const round1Scheduled = amountStats
+                ?.filter(item => item.payment_round === 1)
+                ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
+
+            const round2Scheduled = amountStats
+                ?.filter(item => item.payment_round === 2)
+                ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
+
+            const round3Scheduled = amountStats
+                ?.filter(item => item.payment_round === 3)
+                ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
+
+            // 🆕 실제 지급된 총 금액
+            const totalActualPaid = amountStats
+                ?.filter(item => item.payment_status === 'completed')
+                ?.reduce((sum, item) => sum + (parseFloat(item.actual_amount) || 0), 0) || 0;
+
+            // 🔄 기존 4개 DOM 요소들 업데이트 (완전 유지)
+            const existingElements = {
                 totalStudents: document.getElementById('total-students'),
                 totalItems: document.getElementById('total-items'),
                 pendingAmount: document.getElementById('pending-amount'),
-                completedPayments: document.getElementById('completed-payments')
+                completedPayments: document.getElementById('completed-payments') // 기존 그대로 유지
             };
 
-            if (elements.totalStudents) {
-                elements.totalStudents.textContent = stats.totalStudents;
+            if (existingElements.totalStudents) {
+                existingElements.totalStudents.textContent = stats.totalStudents;
             }
-            if (elements.totalItems) {
-                elements.totalItems.textContent = stats.totalItems;
+            if (existingElements.totalItems) {
+                existingElements.totalItems.textContent = stats.totalItems;
             }
-            if (elements.pendingAmount) {
-                elements.pendingAmount.textContent = stats.pendingAmount;
+            if (existingElements.pendingAmount) {
+                existingElements.pendingAmount.textContent = stats.pendingAmount;
             }
-            if (elements.completedPayments) {
-                elements.completedPayments.textContent = stats.completedPayments;
+            if (existingElements.completedPayments) {
+                existingElements.completedPayments.textContent = stats.completedPayments; // 기존 로직 유지
             }
 
-            console.log('📊 통계 업데이트 완료:', stats);
+            // 🆕 새로운 4개 금액 통계 DOM 업데이트
+            const newElements = {
+                round1Scheduled: document.getElementById('round1-scheduled'),
+                round2Scheduled: document.getElementById('round2-scheduled'),
+                round3Scheduled: document.getElementById('round3-scheduled'),
+                totalActualPaid: document.getElementById('total-actual-paid')
+            };
+
+            if (newElements.round1Scheduled) {
+                newElements.round1Scheduled.textContent = `${round1Scheduled.toLocaleString()}원`;
+            }
+            if (newElements.round2Scheduled) {
+                newElements.round2Scheduled.textContent = `${round2Scheduled.toLocaleString()}원`;
+            }
+            if (newElements.round3Scheduled) {
+                newElements.round3Scheduled.textContent = `${round3Scheduled.toLocaleString()}원`;
+            }
+            if (newElements.totalActualPaid) {
+                newElements.totalActualPaid.textContent = `${totalActualPaid.toLocaleString()}원`;
+            }
+
+            console.log('📊 통계 업데이트 완료:', { 
+                ...stats, 
+                round1Scheduled, 
+                round2Scheduled, 
+                round3Scheduled, 
+                totalActualPaid 
+            });
 
         } catch (error) {
             console.error('❌ 통계 업데이트 오류:', error);
+
+            // 오류 시 새로운 4개 요소들만 오류 표시
+            const errorIds = ['round1-scheduled', 'round2-scheduled', 'round3-scheduled', 'total-actual-paid'];
+            errorIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = '오류';
+            });
         }
     };
-
     /**
      * 영수증 상세보기 모달 열기
      */
@@ -626,6 +687,20 @@ if (window.reimbursementManagementSystem) {
             lucide.createIcons();
         }
     };       
+    
+    /**
+     * 🆕 통화 포맷 헬퍼 함수 (만원/억원 단위 변환)
+     */
+    system.formatCurrency = function(amount) {
+        if (amount === 0) return '0원';
+        if (amount >= 100000000) {
+            return `${(amount / 100000000).toFixed(1)}억원`;
+        } else if (amount >= 10000) {
+            return `${(amount / 10000).toFixed(0)}만원`;
+        } else {
+            return `${amount.toLocaleString()}원`;
+        }
+    };
     
     
     /**

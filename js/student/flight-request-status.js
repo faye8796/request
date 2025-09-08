@@ -322,6 +322,13 @@ class FlightRequestStatus {
                     event.preventDefault();
                     this.handleSpecialBaggageRequest();
                 }
+                
+                if (event.target.matches('.special-baggage-receipt-upload-btn, [data-action="special-baggage-receipt-upload"]')) {
+                    event.preventDefault();
+                    this.handleSpecialBaggageReceiptUpload();
+                }
+
+                
             });
             
             // API 이벤트 리스너 (상태 변경 감지)
@@ -2202,10 +2209,31 @@ class FlightRequestStatus {
                 </button>`;
 
             case 'approved':
-                return `<button type="button" class="btn btn-sm btn-outline" disabled>
-                    <i data-lucide="check"></i>
-                    승인 완료
-                </button>`;
+                const hasSpecialReceipt = !!(request.special_baggage_receipt_url);
+
+                if (hasSpecialReceipt) {
+                    // 영수증이 이미 업로드된 경우
+                    return `
+                        <div class="special-baggage-completed">
+                            <button type="button" class="btn btn-sm btn-outline" disabled>
+                                <i data-lucide="check-circle"></i>
+                                영수증 업로드 완료
+                            </button>
+                            <a href="${request.special_baggage_receipt_url}" target="_blank" class="btn btn-sm btn-outline">
+                                <i data-lucide="download"></i>
+                                영수증 보기
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    // 아직 영수증을 업로드하지 않은 경우
+                    return `
+                        <button type="button" class="btn btn-sm btn-primary special-baggage-receipt-upload-btn" data-action="special-baggage-receipt-upload">
+                            <i data-lucide="upload"></i>
+                            영수증 업로드
+                        </button>
+                    `;
+                }
 
             case 'rejected':
                 return `<button type="button" class="btn btn-sm btn-primary special-baggage-request-btn" data-action="special-baggage-request">
@@ -2609,6 +2637,130 @@ class FlightRequestStatus {
         } catch (error) {
             const typeLabel = type === 'departure' ? '출국편' : '귀국편';
             console.error(`❌ [${typeLabel}수하물] DB 업데이트 실패:`, error);
+            throw error;
+        }
+    }    
+    
+    // 🆕 특별 추가 수하물 영수증 업로드 핸들러
+    async handleSpecialBaggageReceiptUpload() {
+        console.log('🔄 [특별수하물영수증] 업로드 시작...');
+
+        try {
+            // 파일 선택 dialog
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*,application/pdf,.pdf,.jpg,.jpeg,.png,.gif';
+            input.style.display = 'none';
+
+            const fileSelected = new Promise((resolve, reject) => {
+                input.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        resolve(file);
+                    } else {
+                        reject(new Error('파일이 선택되지 않았습니다.'));
+                    }
+                });
+
+                setTimeout(() => {
+                    reject(new Error('파일 선택 시간이 초과되었습니다.'));
+                }, 60000);
+            });
+
+            document.body.appendChild(input);
+            input.click();
+
+            const file = await fileSelected;
+            document.body.removeChild(input);
+
+            console.log('📄 [특별수하물영수증] 선택된 파일:', {
+                name: file.name,
+                size: file.size,
+                type: file.type
+            });
+
+            if (file.size > 10 * 1024 * 1024) {
+                throw new Error('파일 크기는 10MB를 초과할 수 없습니다.');
+            }
+
+            this.showLoading(true);
+
+            // 파일 업로드
+            const uploadResult = await this.uploadSpecialBaggageReceiptFile(file);
+
+            // DB 업데이트
+            await this.updateRequestWithSpecialBaggageReceiptUrl(uploadResult.url);
+
+            // 데이터 새로고침
+            await this.loadCurrentRequest();
+            this.renderStatus();
+
+            this.showSuccess('특별 추가 수하물 영수증이 성공적으로 업로드되었습니다.');
+
+        } catch (error) {
+            console.error('❌ [특별수하물영수증] 업로드 실패:', error);
+            this.showError('특별 추가 수하물 영수증 업로드에 실패했습니다.', error);
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    // 🆕 특별 추가 수하물 영수증 파일 업로드 유틸리티
+    async uploadSpecialBaggageReceiptFile(file) {
+        try {
+            if (!this.api || typeof this.api.uploadFile !== 'function') {
+                throw new Error('파일 업로드 API를 찾을 수 없습니다.');
+            }
+
+            const timestamp = Date.now();
+            const fileExtension = file.name.split('.').pop();
+            const fileName = `${this.currentUser.id}_${timestamp}_special_baggage_receipt.${fileExtension}`;
+
+            const uploadedUrl = await this.api.uploadFile('baggage-receipts', fileName, file);
+
+            if (!uploadedUrl || typeof uploadedUrl !== 'string') {
+                throw new Error('파일 업로드에 실패했습니다.');
+            }
+
+            return {
+                success: true,
+                url: uploadedUrl
+            };
+
+        } catch (error) {
+            console.error('❌ [특별수하물영수증] 파일 업로드 실패:', error);
+            throw error;
+        }
+    }
+
+    // 🆕 특별 추가 수하물 영수증 URL로 DB 업데이트
+    async updateRequestWithSpecialBaggageReceiptUrl(receiptUrl) {
+        try {
+            console.log('💾 [DB업데이트] 특별 추가 수하물 영수증 URL 업데이트...');
+
+            if (!this.api || typeof this.api.updateData !== 'function') {
+                throw new Error('데이터 업데이트 API를 찾을 수 없습니다.');
+            }
+
+            const updatedData = await this.api.updateData('flight_requests', {
+                special_baggage_receipt_url: receiptUrl,
+                updated_at: new Date().toISOString()
+            }, {
+                id: this.currentRequest.id
+            });
+
+            if (!updatedData || !updatedData.id) {
+                throw new Error('DB 업데이트에 실패했습니다.');
+            }
+
+            console.log('✅ [DB업데이트] 특별 추가 수하물 영수증 URL 업데이트 성공');
+            return {
+                success: true,
+                data: updatedData
+            };
+
+        } catch (error) {
+            console.error('❌ [DB업데이트] 특별 추가 수하물 영수증 URL 업데이트 실패:', error);
             throw error;
         }
     }    

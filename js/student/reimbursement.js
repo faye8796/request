@@ -331,6 +331,9 @@
                 this.renderAccountInfo();
                 this.renderPaymentInfo();
 
+                // ✅ 새로 추가: 모든 렌더링 완료 후 자료 보완 요청 확인
+                await this.checkAndShowSupplementRequest();
+                
                 console.log('✅ 데이터 로딩 및 UI 업데이트 완료');
                 
             } catch (error) {
@@ -402,6 +405,14 @@
                     return `출국일: ${item.item_date || '날짜 미상'}`;
                 case 'baggage_return':
                     return `귀국일: ${item.item_date || '날짜 미상'}`;
+                case 'special_baggage':  
+                    if (item.additional_info && item.additional_info.special_reason) {
+                        return item.additional_info.special_reason;
+                    }
+                    if (item.total_amount) {
+                        return `${item.total_amount.toLocaleString()}원`;
+                    }
+                    return '특별 추가 수하물';
                 case 'equipment':
                     if (item.total_amount && item.purchase_store) {
                         return `${item.total_amount.toLocaleString()}원 (${item.purchase_store})`;
@@ -413,7 +424,6 @@
                     return item.additional_info || '';
             }
         }
-
         getCategoryStats() {
             const stats = {};
             this.reimbursementItems.forEach(item => {
@@ -943,7 +953,141 @@
                 }
             }, 3000);
         }
+        
+        /**
+         * 💬 자료 보완 요청 확인 및 표시
+         */
+        async checkAndShowSupplementRequest() {
+            try {
+                console.log('📋 자료 보완 요청 확인 중...');
 
+                if (!this.supabase || !this.currentUser?.id) {
+                    console.warn('⚠️ 클라이언트 또는 사용자 정보 없음');
+                    return;
+                }
+
+                // 가장 큰 payment_round의 자료 보완 요청 조회 (기존 클라이언트 재사용)
+                const { data, error } = await this.supabase
+                    .from('user_reimbursements')
+                    .select('admin_supplement_request, admin_supplement_updated_at, payment_round')
+                    .eq('user_id', this.currentUser.id)
+                    .order('payment_round', { ascending: false });
+
+                if (error) {
+                    console.warn('⚠️ 보완 요청 조회 실패:', error);
+                    this.hideSupplementRequestAlert();
+                    return;
+                }
+
+                // 가장 큰 payment_round에서 보완 요청이 있는 것을 찾기
+                const validData = (data || []).find(item => 
+                    item.admin_supplement_request && 
+                    item.admin_supplement_request.trim()
+                );
+
+                if (validData) {
+                    this.showSupplementRequestAlert(
+                        validData.admin_supplement_request,
+                        validData.admin_supplement_updated_at,
+                        validData.payment_round
+                    );
+                    console.log(`📋 자료 보완 요청 표시: payment_round=${validData.payment_round}`);
+                } else {
+                    this.hideSupplementRequestAlert();
+                    console.log('📋 자료 보완 요청 없음');
+                }
+
+            } catch (error) {
+                console.error('❌ 보완 요청 확인 실패:', error);
+                this.hideSupplementRequestAlert();
+
+                // 기존 에러 처리 시스템과 연동
+                if (error.message && error.message.includes('network')) {
+                    console.warn('⚠️ 네트워크 문제로 보완 요청을 확인할 수 없습니다.');
+                }
+            }
+        }
+        
+        /**
+         * 💬 자료 보완 요청 알림 표시
+         */
+        showSupplementRequestAlert(requestText, updatedAt, paymentRound = null) {
+            const alertElement = document.getElementById('supplementRequestAlert');
+            const textElement = document.getElementById('supplementRequestText');
+            const dateElement = document.getElementById('supplementRequestDate');
+
+            if (!alertElement || !textElement || !dateElement) {
+                console.warn('⚠️ 보완 요청 알림 DOM 요소를 찾을 수 없습니다.');
+                return;
+            }
+
+            // 요청 내용 설정 (안전한 텍스트 처리)
+            textElement.textContent = (requestText || '').trim();
+
+            // 날짜 포맷팅 (기존 유틸리티와 일관성 유지)
+            let dateText = '요청일: 정보 없음';
+            if (updatedAt) {
+                try {
+                    const date = new Date(updatedAt);
+                    if (!isNaN(date.getTime())) {
+                        const formattedDate = date.toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        const formattedTime = date.toLocaleTimeString('ko-KR', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        dateText = `요청일: ${formattedDate} ${formattedTime}`;
+                    }
+                } catch (dateError) {
+                    console.warn('⚠️ 날짜 파싱 실패:', dateError);
+                }
+            }
+
+            // payment_round 정보 추가
+            if (paymentRound === 0) {
+                dateText += ' (자료 보완 전용)';
+            } else if (paymentRound && paymentRound > 0) {
+                dateText += ` (${paymentRound}차 실비 관련)`;
+            }
+
+            dateElement.textContent = dateText;
+
+            // 알림 표시 (부드러운 애니메이션)
+            alertElement.style.display = 'block';
+
+            // 접근성을 위한 스크롤 처리 (기존 모달 로직과 유사)
+            setTimeout(() => {
+                if (alertElement.scrollIntoView) {
+                    alertElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'nearest' 
+                    });
+                }
+            }, 100);
+
+            // 디버깅 로그 (기존 스타일과 일치)
+            const displayText = requestText && requestText.length > 50 ? 
+                requestText.substring(0, 50) + '...' : 
+                requestText;
+            const roundInfo = paymentRound === 0 ? 
+                ' (자료보완전용)' : 
+                (paymentRound ? ` (${paymentRound}차)` : '');
+            console.log(`📋 자료 보완 요청 표시 완료${roundInfo}:`, displayText);
+        }
+
+        /**
+         * 💬 자료 보완 요청 알림 숨김
+         */
+        hideSupplementRequestAlert() {
+            const alertElement = document.getElementById('supplementRequestAlert');
+            if (alertElement) {
+                alertElement.style.display = 'none';
+            }
+        }
+        
         handleResize() {
             console.log('📱 화면 크기 변경됨');
         }

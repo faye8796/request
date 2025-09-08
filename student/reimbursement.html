@@ -543,14 +543,14 @@
             border-color: #f59e0b;
         }
         
-        /* 자료 보완 요청 알림 스타일 - 기존 alert 스타일과 일관성 유지 */
+        /* 자료 보완 요청 알림 스타일 - 파스텔 보라 톤 */
         .supplement-request-alert {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            border: 1px solid #f59e0b;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+            background: linear-gradient(135deg, #fdfdff 0%, #f8f4ff 100%);
+            border: 2px solid #e9d5ff;
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 25px rgba(196, 181, 253, 0.15);
             position: relative;
             overflow: hidden;
         }
@@ -561,46 +561,49 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+            height: 5px;
+            background: linear-gradient(90deg, #ddd6fe 0%, #c4b5fd 100%);
         }
 
         .supplement-request-alert .alert-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 14px;
+            margin-bottom: 18px;
         }
 
         .supplement-request-alert .alert-header i {
-            color: #d97706;
-            width: 20px;
-            height: 20px;
+            color: #a78bfa;
+            width: 26px;
+            height: 26px;
+            flex-shrink: 0;
         }
 
         .supplement-request-alert .alert-header h3 {
             margin: 0;
-            color: #92400e;
-            font-size: 16px;
+            color: #8b5cf6;
+            font-size: 19px;
             font-weight: 600;
-            letter-spacing: -0.025em;
+            letter-spacing: -0.02em;
         }
 
         .supplement-request-alert .alert-content {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            padding: 16px;
-            border-radius: 8px;
-            border: 1px solid rgba(245, 158, 11, 0.2);
-            margin-bottom: 12px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            padding: 22px;
+            border-radius: 16px;
+            border: 1px solid rgba(233, 213, 255, 0.5);
+            margin-bottom: 18px;
+            box-shadow: 0 2px 15px rgba(196, 181, 253, 0.08);
         }
 
         .supplement-request-alert .alert-content p {
             margin: 0;
-            color: #374151;
-            line-height: 1.7;
+            color: #4b5563;
+            line-height: 1.75;
             white-space: pre-wrap;
-            font-size: 14px;
+            font-size: 15px;
+            font-weight: 400;
         }
 
         .supplement-request-alert .alert-footer {
@@ -609,82 +612,145 @@
 
         .supplement-request-alert .alert-footer small {
             color: #6b7280;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 500;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 8px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 244, 255, 0.8) 100%);
+            padding: 10px 16px;
+            border-radius: 25px;
+            border: 1px solid rgba(233, 213, 255, 0.4);
+            box-shadow: 0 2px 10px rgba(196, 181, 253, 0.1);
         }
 
         .supplement-request-alert .alert-footer small::before {
             content: '📅';
-            font-size: 12px;
+            font-size: 15px;
+            margin-right: 2px;
+            filter: saturate(0.8) brightness(1.1);
         }
 
-        /* 다크 모드 대응 (기존 다크 모드가 있다면) */
-        @media (prefers-color-scheme: dark) {
-            .supplement-request-alert {
-                background: linear-gradient(135deg, #451a03 0%, #92400e 100%);
-                border-color: #d97706;
-            }
 
-            .supplement-request-alert .alert-content {
-                background: rgba(0, 0, 0, 0.3);
-                border-color: rgba(217, 119, 6, 0.3);
-            }
-
-            .supplement-request-alert .alert-content p {
-                color: #f3f4f6;
-            }
-
-            .supplement-request-alert .alert-header h3 {
-                color: #fbbf24;
-            }
-        }
-
-        /* 애니메이션 효과 */
+        /* 부드러운 애니메이션 */
         .supplement-request-alert {
-            animation: slideInFromTop 0.4s ease-out;
+            animation: gentleSlideIn 0.6s ease-out;
         }
 
-        @keyframes slideInFromTop {
+        @keyframes gentleSlideIn {
             from {
                 opacity: 0;
-                transform: translateY(-20px);
+                transform: translateY(-15px) scale(0.99);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
             }
+        }
+
+        /* 부드러운 호버 효과 */
+        .supplement-request-alert:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 35px rgba(196, 181, 253, 0.2);
+            border-color: #ddd6fe;
+            transition: all 0.4s ease;
+        }
+
+        .supplement-request-alert:hover .alert-content {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 20px rgba(196, 181, 253, 0.12);
+        }
+
+        .supplement-request-alert:hover .alert-footer small {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 244, 255, 0.9) 100%);
+            box-shadow: 0 4px 15px rgba(196, 181, 253, 0.15);
         }
 
         /* 반응형 디자인 */
         @media (max-width: 768px) {
             .supplement-request-alert {
-                padding: 16px;
-                margin-bottom: 16px;
+                padding: 22px;
+                margin-bottom: 20px;
+                border-radius: 16px;
             }
 
             .supplement-request-alert .alert-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+
+            .supplement-request-alert .alert-header i {
+                width: 24px;
+                height: 24px;
             }
 
             .supplement-request-alert .alert-header h3 {
-                font-size: 15px;
+                font-size: 17px;
             }
 
             .supplement-request-alert .alert-content {
-                padding: 12px;
+                padding: 18px;
+                border-radius: 14px;
+                margin-bottom: 16px;
+            }
+
+            .supplement-request-alert .alert-content p {
+                font-size: 14px;
+                line-height: 1.65;
             }
 
             .supplement-request-alert .alert-footer {
-                text-align: left;
-                margin-top: 8px;
+                text-align: center;
+                margin-top: 14px;
+            }
+
+            .supplement-request-alert .alert-footer small {
+                font-size: 12px;
+                padding: 8px 14px;
+                border-radius: 20px;
+            }
+
+            /* 모바일에서 호버 효과 비활성화 */
+            .supplement-request-alert:hover {
+                transform: none;
+                box-shadow: 0 4px 25px rgba(196, 181, 253, 0.15);
+                border-color: #e9d5ff;
+            }
+
+            .supplement-request-alert:hover .alert-content {
+                background: rgba(255, 255, 255, 0.85);
+                box-shadow: 0 2px 15px rgba(196, 181, 253, 0.08);
+            }
+
+            .supplement-request-alert:hover .alert-footer small {
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 244, 255, 0.8) 100%);
+                box-shadow: 0 2px 10px rgba(196, 181, 253, 0.1);
             }
         }
-        
+
+        /* 태블릿 최적화 */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .supplement-request-alert {
+                padding: 25px;
+            }
+
+            .supplement-request-alert .alert-header h3 {
+                font-size: 18px;
+            }
+
+            .supplement-request-alert .alert-content {
+                padding: 20px;
+            }
+        }
+
+        /* 추가: 미세한 그림자와 글로우 효과 */
+        .supplement-request-alert .alert-header i {
+            filter: drop-shadow(0 2px 4px rgba(167, 139, 250, 0.2));
+        }
+
+        .supplement-request-alert .alert-header h3 {
+            text-shadow: 0 1px 2px rgba(139, 92, 246, 0.1);
+        }
         
     </style>
 </head>
@@ -911,10 +977,6 @@
                 // 사용자 정보 표시
                 displayUserInfo(userData);
 
-                // 🆕 보완 요청 확인 및 표시 (개선된 로직)
-                await checkAndShowSupplementRequest();
-
-
                 console.log('✅ 실비 지원 신청 시스템 초기화 완료');
 
             } catch (error) {
@@ -923,121 +985,7 @@
             }
         }
         
-        // 🔧 개선된 보완 요청 관련 함수들
-        /**
-         * 보완 요청 확인 및 표시 (가장 큰 payment_round 우선)
-         */
-        async function checkAndShowSupplementRequest() {
-            try {
-                const userData = JSON.parse(localStorage.getItem('currentStudent') || '{}');
-                if (!userData.id) return;
-
-        // 🎯 가장 큰 payment_round의 자료 보완 요청 조회
-        const { data, error } = await window.supabaseClient
-            .from('user_reimbursements')
-            .select('admin_supplement_request, admin_supplement_updated_at, payment_round')
-            .eq('user_id', userData.id)
-            .order('payment_round', { ascending: false });
-
-        if (error && error.code !== 'PGRST116') {
-            throw error;
-        }
-
-        const alertElement = document.getElementById('supplementRequestAlert');
-
-        // 🔧 가장 큰 payment_round에서 보완 요청이 있는 것을 찾기
-        const validData = (data || []).find(item => item.admin_supplement_request);
-        if (validData) {
-            showSupplementRequestAlert(
-                validData.admin_supplement_request, 
-                validData.admin_supplement_updated_at,
-                validData.payment_round
-            );
-            console.log(`📋 자료 보완 요청 표시: payment_round=${validData.payment_round}`);
-        } else {
-            if (alertElement) {
-                alertElement.style.display = 'none';
-            }
-            console.log('📋 자료 보완 요청 없음');
-        }
-
-            } catch (error) {
-                console.error('❌ 보완 요청 확인 실패:', error);
-                
-                const alertElement = document.getElementById('supplementRequestAlert');
-                if (alertElement) {
-                    alertElement.style.display = 'none';
-                }
-            }
-        }
-
-        /**
-         * 보완 요청 알림 표시 (payment_round 정보 포함)
-         */
-        function showSupplementRequestAlert(requestText, updatedAt, paymentRound = null) {
-            const alertElement = document.getElementById('supplementRequestAlert');
-            const textElement = document.getElementById('supplementRequestText');
-            const dateElement = document.getElementById('supplementRequestDate');
-            
-            if (!alertElement || !textElement || !dateElement) {
-                console.warn('⚠️ 보완 요청 알림 요소를 찾을 수 없습니다.');
-                return;
-            }
-
-            // 요청 내용 설정
-            textElement.textContent = requestText;
-
-            // 요청 날짜 및 차수 정보 설정
-            if (updatedAt) {
-                const date = new Date(updatedAt);
-                const formattedDate = date.toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-                const formattedTime = date.toLocaleTimeString('ko-KR', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                let dateText = `요청일: ${formattedDate} ${formattedTime}`;
-                
-                // payment_round 정보 추가
-                if (paymentRound === 0) {
-                    dateText += ' (자료 보완 전용)';
-                } else if (paymentRound && paymentRound > 0) {
-                    dateText += ` (${paymentRound}차 실비 관련)`;
-                }
-                
-                dateElement.textContent = dateText;
-            } else {
-                let dateText = '요청일: 정보 없음';
-                if (paymentRound === 0) {
-                    dateText += ' (자료 보완 전용)';
-                } else if (paymentRound && paymentRound > 0) {
-                    dateText += ` (${paymentRound}차 실비 관련)`;
-                }
-                dateElement.textContent = dateText;
-            }
-
-            // 알림 표시
-            alertElement.style.display = 'block';
-            
-            // 스크롤 시 자연스럽게 보이도록 처리
-            setTimeout(() => {
-                if (alertElement.scrollIntoView) {
-                    alertElement.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'nearest' 
-                    });
-                }
-            }, 100);
-
-            const displayText = requestText.length > 50 ? requestText.substring(0, 50) + '...' : requestText;
-            const roundInfo = paymentRound === 0 ? ' (자료보완전용)' : (paymentRound ? ` (${paymentRound}차)` : '');
-            console.log(`📋 자료 보완 요청 표시${roundInfo}:`, displayText);
-        }
-        
+    
 
         // 사용자 데이터 로드
         async function loadUserData() {
@@ -1145,13 +1093,46 @@
 
     <!-- 5단계: 모달 및 유틸리티 함수 -->
     <script>
-        // 영수증 모달 관리 함수들
+        // 영수증 모달 관리 함수들 (개선된 버전)
         function showReceiptModal(receiptUrl, title) {
+            if (!receiptUrl) {
+                console.error('영수증 URL이 없습니다.');
+                return;
+            }
+
+            console.log('영수증 보기 요청:', { title, url: receiptUrl });
+
+            // PDF 파일 감지 (더 정확한 방법)
+            const isPDF = receiptUrl.toLowerCase().includes('.pdf') || 
+                          receiptUrl.toLowerCase().includes('pdf') ||
+                          receiptUrl.includes('%2Fpdf%2F') || // URL 인코딩된 경우
+                          receiptUrl.includes('/pdf/');
+
+            if (isPDF) {
+                console.log('PDF 파일 감지 - 새창에서 열기');
+                // PDF 파일은 새창에서 바로 열기
+                const newWindow = window.open(receiptUrl, '_blank');
+                if (!newWindow) {
+                    alert('팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.');
+                }
+                return;
+            }
+
+            console.log('이미지 파일 감지 - 모달에서 표시');
+
+            // 이미지 파일은 기존 모달로 처리
             const modal = document.getElementById('receiptModal');
             const modalTitle = document.querySelector('.modal-title');
             const receiptImage = document.getElementById('receiptImage');
             const receiptLoading = document.getElementById('receiptLoading');
             const receiptError = document.getElementById('receiptError');
+
+            if (!modal || !modalTitle || !receiptImage || !receiptLoading || !receiptError) {
+                console.error('모달 요소를 찾을 수 없습니다.');
+                // 모달 요소가 없으면 새창에서 열기
+                window.open(receiptUrl, '_blank');
+                return;
+            }
 
             modalTitle.textContent = `${title} 영수증`;
             receiptImage.style.display = 'none';
@@ -1166,10 +1147,29 @@
                 receiptImage.src = receiptUrl;
                 receiptImage.style.display = 'block';
                 receiptLoading.style.display = 'none';
+                console.log('이미지 로딩 성공');
             };
             img.onerror = function() {
+                console.error('이미지 로딩 실패:', receiptUrl);
                 receiptError.style.display = 'block';
                 receiptLoading.style.display = 'none';
+
+                // 이미지 로딩 실패시 새창에서 열기 시도
+                setTimeout(() => {
+                    const fallbackBtn = document.createElement('button');
+                    fallbackBtn.className = 'btn btn-primary';
+                    fallbackBtn.innerHTML = '<i data-lucide="external-link"></i> 새창에서 열기';
+                    fallbackBtn.onclick = () => {
+                        window.open(receiptUrl, '_blank');
+                        closeReceiptModal();
+                    };
+                    receiptError.appendChild(fallbackBtn);
+
+                    // 아이콘 재생성
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }, 500);
             };
             img.src = receiptUrl;
         }

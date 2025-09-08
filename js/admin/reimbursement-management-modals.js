@@ -434,7 +434,7 @@ if (window.reimbursementManagementSystem) {
 
             // payment_round=0 (자료 보완 전용)인 경우에만 기본 상태 설정
             if (isSupplementOnly) {
-                upsertData.payment_status = 'supplement_only'; // 특별 상태값
+                upsertData.payment_status = 'pending'; // 특별 상태값
             }
 
             // 3단계: UPSERT 실행

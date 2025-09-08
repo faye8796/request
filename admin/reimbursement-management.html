@@ -6,7 +6,7 @@
     <title>실비 지원 관리 - 세종학당 문화인턴 지원 시스템</title>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
-        * {
+        * { 
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -80,9 +80,10 @@
             gap: 8px;
         }
         
+        /* 8개 카드 4x2 그리드 */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 15px;
         }
         
@@ -94,6 +95,7 @@
             border-left: 4px solid #3498db;
         }
         
+        /* 기존 4개 카드 스타일 */
         .stat-card.pending {
             border-left-color: #f39c12;
         }
@@ -104,6 +106,23 @@
         
         .stat-card.not-set {
             border-left-color: #e74c3c;
+        }
+        
+        /* 새로운 4개 카드 스타일 */
+        .stat-card.first-round {
+            border-left-color: #3b82f6;
+        }
+
+        .stat-card.second-round {
+            border-left-color: #8b5cf6;
+        }
+
+        .stat-card.third-round {
+            border-left-color: #06b6d4;
+        }
+
+        .stat-card.actual-paid {
+            border-left-color: #10b981;
         }
         
         .stat-number {
@@ -202,13 +221,18 @@
             border-collapse: collapse;
             font-size: 14px;
         }
+        
         .reimbursement-table tr {
-          border-bottom: 1px solid #e2e8f0;
-        }                
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
         .reimbursement-table th,
         .reimbursement-table td {
-            padding: 12px;
+            padding: 16px 12px;
             text-align: left;
+            vertical-align: middle;
+            min-height: 80px;
+            height: 80px;
         }
         
         .reimbursement-table th {
@@ -236,6 +260,8 @@
             padding: 8px;
             border-radius: 4px;
             border-left: 3px solid #3498db;
+            line-height: 1.3;
+            font-size: 11px;
         }
         
         .no-account {
@@ -250,14 +276,19 @@
         .items-summary {
             display: flex;
             flex-wrap: wrap;
-            gap: 4px;
+            gap: 3px;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 40px;
         }
         
         .category-badge {
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-size: 10px;
             font-weight: 500;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         
         .category-badge.transport {
@@ -319,8 +350,13 @@
         
         .actions {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .actions button {
+            white-space: nowrap;
         }
         
         .btn-view-details,
@@ -362,6 +398,60 @@
         
         .btn-complete-payment:hover {
             background: #218838;
+        }
+        
+        .btn-payment-history {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-payment-history:hover {
+            background: #7c3aed;
+        }
+
+        .btn-payment-history i {
+            width: 14px;
+            height: 14px;
+        }
+        
+        .btn-supplement-request {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #d1d5db;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.3s;
+        }
+
+        .btn-supplement-request:hover {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-supplement-request.has-request {
+            background: #fef3c7;
+            color: #d97706;
+            border: 1px solid #f59e0b;
+            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+        }
+
+        .btn-supplement-request.has-request:hover {
+            background: #fde68a;
+            color: #b45309;
         }
         
         /* Modal Styles */
@@ -437,8 +527,14 @@
             border-top: 1px solid #dee2e6;
             border-radius: 0 0 12px 12px;
             display: flex;
-            justify-content: flex-end;
+            align-items: center;
             gap: 10px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
         }
         
         .btn-cancel,
@@ -523,13 +619,60 @@
         
         .receipt-preview img {
             max-width: 100%;
-            max-height: 100%;
+            max-height: 120px;
             object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .receipt-preview img:hover {
+            transform: scale(1.02);
+        }
+        
+        .pdf-preview, .file-fallback {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 120px;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pdf-preview:hover, .file-fallback:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .pdf-preview i, .file-fallback i {
+            font-size: 32px;
+            color: #dc3545;
+            margin-bottom: 8px;
+        }
+
+        .pdf-preview span, .file-fallback span {
+            font-size: 12px;
+            font-weight: 500;
         }
         
         .no-receipt {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 20px;
             color: #6c757d;
-            font-style: italic;
+            font-size: 14px;
+            min-height: 120px;
         }
         
         .receipt-actions {
@@ -638,15 +781,19 @@
         }
         
         .btn-view-receipt {
-            padding: 4px 8px;
             background: #17a2b8;
             color: white;
             border: none;
+            padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: background-color 0.3s;
         }
-        
+
         .btn-view-receipt:hover {
             background: #138496;
         }
@@ -698,282 +845,7 @@
             margin: 0;
         }
         
-        /* Loading States */
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-            color: #6c757d;
-        }
-        
-        .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #dee2e6;
-            border-top: 2px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .no-students, .error-state {
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
-        }
-        
-        .no-students i, .error-state i {
-            font-size: 48px;
-            margin-bottom: 15px;
-            opacity: 0.5;
-        }
-        
-        .error-state {
-            color: #dc3545;
-        }
-        
-        /* Toast System */
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10000;
-            pointer-events: none;
-        }
-        
-        .toast {
-            background: #17a2b8;
-            color: white;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-            pointer-events: auto;
-        }
-        
-        .toast.show {
-            transform: translateX(0);
-        }
-        
-        .toast.toast-success {
-            background: #28a745;
-        }
-        
-        .toast.toast-error {
-            background: #dc3545;
-        }
-        
-        .toast.toast-warning {
-            background: #ffc107;
-            color: #212529;
-        }
-        
-        .toast-content {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .header {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
-            }
-            
-            .filters-grid {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .reimbursement-table {
-                font-size: 12px;
-            }
-            
-            .reimbursement-table th,
-            .reimbursement-table td {
-                padding: 8px;
-            }
-            
-            .modal-content {
-                width: 95%;
-                margin: 2% auto;
-            }
-            
-            .receipts-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .actions {
-                flex-direction: column;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        /* Full Screen Receipt Viewer */
-        .receipt-viewer {
-            display: none;
-            position: fixed;
-            z-index: 10001;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.9);
-        }
-        
-        .receipt-viewer.show {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .receipt-viewer img {
-            max-width: 90%;
-            max-height: 90%;
-            object-fit: contain;
-        }
-        
-        .receipt-viewer .close-viewer {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        
-        .reimbursement-table td {
-            vertical-align: middle; /* 수직 중앙 정렬 */
-            padding: 16px 12px; /* 패딩 증가 */
-            min-height: 80px;
-            height: 80px;
-        }
-
-        .account-details {
-            line-height: 1.3; /* 줄간격 조정 */
-            font-size: 11px; /* 폰트 크기 축소 */
-        }
-        
-        .items-summary {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 3px; /* 기존 4px에서 축소 */
-            align-items: center;
-            justify-content: flex-start;
-            min-height: 40px; /* 최소 높이 설정 */
-        }
-
-        .category-badge {
-            padding: 1px 6px; /* 기존 2px 8px에서 축소 */
-            border-radius: 10px; /* 기존 12px에서 축 소 */
-            font-size: 10px; /* 기존 11px에서 축소 */
-            font-weight: 500;
-            white-space: nowrap; /* 텍스트 줄바꿈 방지 */
-            flex-shrink: 0; /* 크기 축소 방지 */
-        }
-        
-        /* PDF 및 파일 미리보기 스타일 */
-        .pdf-preview, .file-fallback {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: #f8f9fa;
-            border: 2px dashed #dee2e6;
-            border-radius: 8px;
-            padding: 20px;
-            min-height: 120px;
-            color: #6c757d;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .pdf-preview:hover, .file-fallback:hover {
-            background: #e9ecef;
-            border-color: #adb5bd;
-        }
-
-        .pdf-preview i, .file-fallback i {
-            font-size: 32px;
-            color: #dc3545;
-            margin-bottom: 8px;
-        }
-
-        .pdf-preview span, .file-fallback span {
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .receipt-preview img {
-            max-width: 100%;
-            max-height: 120px;
-            object-fit: contain;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
-
-        .receipt-preview img:hover {
-            transform: scale(1.02);
-        }
-
-        .no-receipt {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            padding: 20px;
-            color: #6c757d;
-            font-size: 14px;
-            min-height: 120px;
-        }
-        /* 체크박스 기반 항목 선택 스타일 */
+        /* Pending Items Section */
         .pending-items-section h4 {
             margin-bottom: 15px;
             color: #2c3e50;
@@ -1055,24 +927,6 @@
             margin-left: 12px;
         }
 
-        .btn-view-receipt {
-            background: #17a2b8;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            transition: background-color 0.3s;
-        }
-
-        .btn-view-receipt:hover {
-            background: #138496;
-        }
-
         .review-actions {
             display: flex;
             align-items: center;
@@ -1119,37 +973,8 @@
             font-weight: 500;
             margin-left: auto;
         }
-
-        /* 반응형 디자인 */
-        @media (max-width: 768px) {
-            .review-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-
-            .item-checkbox {
-                margin-right: 0;
-                align-self: flex-start;
-            }
-
-            .item-actions {
-                margin-left: 0;
-                align-self: stretch;
-            }
-
-            .review-actions {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .selected-count {
-                margin-left: 0;
-                text-align: center;
-            }
-        }
-
-        /* 🆕 지급정보 모달 스타일 */
+        
+        /* Payment History Modal */
         .payment-history-list {
             max-height: 400px;
             overflow-y: auto;
@@ -1252,45 +1077,188 @@
             margin: 0;
             font-size: 16px;
         }
-
-        /* 🆕 지급정보 버튼 스타일 */
-        .btn-payment-history {
-            background: #8b5cf6;
+        
+        /* Loading States */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #dee2e6;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .no-students, .error-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        .no-students i, .error-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .error-state {
+            color: #dc3545;
+        }
+        
+        /* Toast System */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        
+        .toast {
+            background: #17a2b8;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            pointer-events: auto;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .toast.toast-success {
+            background: #28a745;
+        }
+        
+        .toast.toast-error {
+            background: #dc3545;
+        }
+        
+        .toast.toast-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* Full Screen Receipt Viewer */
+        .receipt-viewer {
+            display: none;
+            position: fixed;
+            z-index: 10001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+        }
+        
+        .receipt-viewer.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .receipt-viewer img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+        
+        .receipt-viewer .close-viewer {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
             color: white;
             border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            transition: background-color 0.2s ease;
-        }
-
-        .btn-payment-history:hover {
-            background: #7c3aed;
-        }
-
-        .btn-payment-history i {
-            width: 14px;
-            height: 14px;
-        }
-
-        /* 🆕 액션 버튼들 간격 조정 */
-        .actions {
+            font-size: 20px;
             display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
             align-items: center;
+            justify-content: center;
         }
-
-        .actions button {
-            white-space: nowrap;
+        
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
-
-        /* 🆕 반응형 - 작은 화면에서 버튼들 세로 정렬 */
+        
         @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .filters-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .reimbursement-table {
+                font-size: 12px;
+            }
+            
+            .reimbursement-table th,
+            .reimbursement-table td {
+                padding: 8px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 2% auto;
+            }
+            
+            .receipts-grid {
+                grid-template-columns: 1fr;
+            }
+            
             .actions {
                 flex-direction: column;
                 align-items: stretch;
@@ -1310,52 +1278,33 @@
             .payment-amount {
                 align-self: flex-end;
             }
-        }
-        
-        /* 자료 보완 요청 버튼 스타일 */
-        .btn-supplement-request {
-            background: #f3f4f6;
-            color: #6b7280;
-            border: 1px solid #d1d5db;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            transition: all 0.3s;
-        }
+            
+            .review-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
 
-        .btn-supplement-request:hover {
-            background: #e5e7eb;
-            color: #374151;
-        }
+            .item-checkbox {
+                margin-right: 0;
+                align-self: flex-start;
+            }
 
-        /* 보완 요청이 있는 경우 */
-        .btn-supplement-request.has-request {
-            background: #fef3c7;
-            color: #d97706;
-            border: 1px solid #f59e0b;
-            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
-        }
+            .item-actions {
+                margin-left: 0;
+                align-self: stretch;
+            }
 
-        .btn-supplement-request.has-request:hover {
-            background: #fde68a;
-            color: #b45309;
-        }
+            .review-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
 
-        /* 모달 footer 개선 */
-        .modal-footer {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            .selected-count {
+                margin-left: 0;
+                text-align: center;
+            }
         }
-
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-        }        
         
     </style>
 </head>
@@ -1380,6 +1329,7 @@
                 실비 지원 현황 통계
             </h2>
             <div class="stats-grid">
+                <!-- 🔄 기존 4개 카드 완전 유지 (1줄) -->
                 <div class="stat-card">
                     <div class="stat-number" id="total-students">-</div>
                     <div class="stat-label">실비 대상 학생</div>
@@ -1395,6 +1345,24 @@
                 <div class="stat-card completed">
                     <div class="stat-number" id="completed-payments">-</div>
                     <div class="stat-label">입금 완료</div>
+                </div>
+
+                <!-- 🆕 새로 추가되는 4개 금액 카드 (2줄) -->
+                <div class="stat-card first-round">
+                    <div class="stat-number" id="round1-scheduled">-</div>
+                    <div class="stat-label">1차 실비 지원금(예정)</div>
+                </div>
+                <div class="stat-card second-round">
+                    <div class="stat-number" id="round2-scheduled">-</div>
+                    <div class="stat-label">2차 실비 지원금(예정)</div>
+                </div>
+                <div class="stat-card third-round">
+                    <div class="stat-number" id="round3-scheduled">-</div>
+                    <div class="stat-label">3차 실비 지원금(예정)</div>
+                </div>
+                <div class="stat-card actual-paid">
+                    <div class="stat-number" id="total-actual-paid">-</div>
+                    <div class="stat-label">실비지원 지출 금액(실제)</div>
                 </div>
             </div>
         </div>
