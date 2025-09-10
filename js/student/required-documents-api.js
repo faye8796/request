@@ -172,52 +172,76 @@ class RequiredDocumentsAPI {
     }
 
     /**
-     * 필수 서류 정보 저장/업데이트
+     * ✅ 수정된 비상연락망 정보 저장/업데이트 (UPSERT 패턴)
      */
-    async saveRequiredDocuments(documentsData) {
+    async saveEmergencyContacts(emergencyData, saveType = 'manual') {
         try {
-            console.log('💾 필수 서류 저장 시작:', documentsData);
+            console.log(`💾 비상연락망 저장 시작 (${saveType}):`, emergencyData);
             await this.ensureSupabaseReady();
 
             const dataToSave = {
                 user_id: this.currentUser.id,
-                ...documentsData,
+                ...emergencyData,
                 updated_at: new Date().toISOString()
             };
 
-            // 기존 데이터 확인
-            const existingData = await this.getRequiredDocuments();
+            // ✅ UPSERT 패턴 사용 (PostgreSQL 내장 기능)
+            const { data, error } = await this.supabase
+                .from('emergency_contacts')
+                .upsert(dataToSave, {
+                    onConflict: 'user_id',  // user_id 기준으로 중복 처리
+                    ignoreDuplicates: false // 중복 시 업데이트 수행
+                })
+                .select();
 
-            let result;
-            if (existingData) {
-                // 업데이트 (v1.0.6: .single() 제거)
-                const { data, error } = await this.supabase
-                    .from('required_documents')
-                    .update(dataToSave)
-                    .eq('user_id', this.currentUser.id)
-                    .select();
-
-                if (error) throw error;
-                result = data && data.length > 0 ? data[0] : null;
-                console.log('✅ 필수 서류 업데이트 완료:', result);
-            } else {
-                // 새로 생성 (v1.0.6: .single() 제거)
-                dataToSave.created_at = new Date().toISOString();
-                
-                const { data, error } = await this.supabase
-                    .from('required_documents')
-                    .insert(dataToSave)
-                    .select();
-
-                if (error) throw error;
-                result = data && data.length > 0 ? data[0] : null;
-                console.log('✅ 필수 서류 생성 완료:', result);
+            if (error) {
+                console.error('❌ 비상연락망 UPSERT 오류:', error);
+                throw error;
             }
 
+            const result = data && data.length > 0 ? data[0] : null;
+            console.log(`✅ 비상연락망 ${saveType} 저장 완료:`, result);
             return result;
 
         } catch (error) {
-            console.error('❌ 필수 서류 저장 실패:', error);
+            console.error(`❌ 비상연락망 ${saveType} 저장 실패:`, error);
+
+            // ✅ 특정 오류에 대한 재시도 로직
+            if (error.message?.includes('duplicate key') || error.code === '23505') {
+                console.log('🔄 중복 키 오류 감지 - UPDATE로 재시도');
+                return await this.fallbackUpdateEmergencyContacts(emergencyData, saveType);
+            }
+
+            throw error;
+        }
+    }
+
+    /**
+     * ✅ 추가: UPSERT 실패 시 대체 UPDATE 로직
+     */
+    async fallbackUpdateEmergencyContacts(emergencyData, saveType) {
+        try {
+            console.log(`🔄 비상연락망 대체 UPDATE 시작 (${saveType})`);
+
+            const dataToUpdate = {
+                ...emergencyData,
+                updated_at: new Date().toISOString()
+            };
+
+            const { data, error } = await this.supabase
+                .from('emergency_contacts')
+                .update(dataToUpdate)
+                .eq('user_id', this.currentUser.id)
+                .select();
+
+            if (error) throw error;
+
+            const result = data && data.length > 0 ? data[0] : null;
+            console.log(`✅ 비상연락망 대체 UPDATE 완료:`, result);
+            return result;
+
+        } catch (error) {
+            console.error(`❌ 비상연락망 대체 UPDATE 실패:`, error);
             throw error;
         }
     }
@@ -287,56 +311,6 @@ class RequiredDocumentsAPI {
         }
     }
 
-    /**
-     * 비상연락망 정보 저장/업데이트
-     */
-    async saveEmergencyContacts(emergencyData) {
-        try {
-            console.log('💾 비상연락망 저장 시작:', emergencyData);
-            await this.ensureSupabaseReady();
-
-            const dataToSave = {
-                user_id: this.currentUser.id,
-                ...emergencyData,
-                updated_at: new Date().toISOString()
-            };
-
-            // 기존 데이터 확인
-            const existingData = await this.getEmergencyContacts();
-
-            let result;
-            if (existingData) {
-                // 업데이트 (v1.0.6: .single() 제거)
-                const { data, error } = await this.supabase
-                    .from('emergency_contacts')
-                    .update(dataToSave)
-                    .eq('user_id', this.currentUser.id)
-                    .select();
-
-                if (error) throw error;
-                result = data && data.length > 0 ? data[0] : null;
-                console.log('✅ 비상연락망 업데이트 완료:', result);
-            } else {
-                // 새로 생성 (v1.0.6: .single() 제거)
-                dataToSave.created_at = new Date().toISOString();
-                
-                const { data, error } = await this.supabase
-                    .from('emergency_contacts')
-                    .insert(dataToSave)
-                    .select();
-
-                if (error) throw error;
-                result = data && data.length > 0 ? data[0] : null;
-                console.log('✅ 비상연락망 생성 완료:', result);
-            }
-
-            return result;
-
-        } catch (error) {
-            console.error('❌ 비상연락망 저장 실패:', error);
-            throw error;
-        }
-    }
 
     // ==================== 파일 업로드 관리 ====================
 

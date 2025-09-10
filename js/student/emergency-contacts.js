@@ -22,6 +22,12 @@ class EmergencyContacts {
         this.autoSaveInterval = null;
         this.lastSaveTime = 0;
         this.saveDelay = 2000; // 2초 후 자동 저장
+                        
+        // ✅ 추가: 중복 방지 플래그
+        this.isSaving = false;
+        this.isAutoSaving = false;       
+        this.saveHandler = null; // 이벤트 핸들러 참조
+
         
         // 🆕 v1.1.0: 폼 상태 관리
         this.formState = {
@@ -70,7 +76,7 @@ class EmergencyContacts {
     }
 
     /**
-     * 비상연락망 폼 초기화
+     * ✅ 수정된 초기화 메서드
      */
     async init() {
         try {
@@ -85,8 +91,11 @@ class EmergencyContacts {
             // 🆕 v1.1.0: 기존 데이터 로드 및 상태 동기화
             await this.loadExistingDataAndSyncState();
             
-            // 자동 저장 설정
+            // ✅ 자동 저장 설정 (초기화 완료 후)
             this.setupAutoSave();
+            
+            // ✅ 자동 저장 활성화
+            this.isAutoSaving = true;
             
             this.isInitialized = true;
             console.log('비상연락망 폼 초기화 완료');
@@ -321,21 +330,34 @@ class EmergencyContacts {
     }
 
     /**
-     * 이벤트 리스너 등록
+     * ✅ 수정된 이벤트 리스너 등록 (중복 클릭 방지)
      */
     bindEvents() {
         console.log('비상연락망 이벤트 리스너 등록 시작');
-        
-        // 저장 버튼 이벤트
+
+        // ✅ 저장 버튼 이벤트 (중복 클릭 방지)
         if (this.elements.saveEmergencyBtn) {
-            this.elements.saveEmergencyBtn.addEventListener('click', () => {
+            // 기존 이벤트 리스너 제거 (중복 방지)
+            if (this.saveHandler) {
+                this.elements.saveEmergencyBtn.removeEventListener('click', this.saveHandler);
+            }
+
+            // 새 이벤트 핸들러 생성
+            this.saveHandler = () => {
+                // 이미 저장 중이면 무시
+                if (this.isSaving) {
+                    console.log('저장 중이므로 클릭을 무시합니다.');
+                    return;
+                }
                 this.saveEmergencyContacts();
-            });
+            };
+
+            this.elements.saveEmergencyBtn.addEventListener('click', this.saveHandler);
         }
-        
+
         // 🆕 v1.1.0: 실시간 입력 변경 감지로 버튼 상태 업데이트
         this.setupInputValidation();
-        
+
         console.log('비상연락망 이벤트 리스너 등록 완료');
     }
 
@@ -515,14 +537,22 @@ class EmergencyContacts {
     }
 
     /**
-     * 자동 저장 실행
+     * ✅ 수정된 자동 저장 로직
      */
     async autoSaveData() {
+        // ✅ 수동 저장 중이거나 자동 저장이 비활성화된 경우 건너뛰기
+        if (this.isSaving || !this.isAutoSaving) {
+            console.log('자동 저장 건너뛰기 (수동 저장 중 또는 비활성화됨)');
+            return;
+        }
+
         try {
             console.log('비상연락망 자동 저장 시작');
             
             const formData = this.collectFormData();
-            await this.api.saveEmergencyContacts(formData);
+            
+            // ✅ 저장 타입 명시하여 API 호출
+            await this.api.saveEmergencyContacts(formData, 'auto');
             
             this.lastSaveTime = 0; // 저장 완료
             
@@ -539,6 +569,7 @@ class EmergencyContacts {
             this.lastSaveTime = Date.now() + 5000; // 5초 후 재시도
         }
     }
+
 
     /**
      * 자동 저장 상태 표시
@@ -603,12 +634,22 @@ class EmergencyContacts {
         return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
     }
 
+
     /**
-     * 비상연락망 정보 저장
+     * ✅ 수정된 비상연락망 정보 저장 (중복 방지)
      */
     async saveEmergencyContacts() {
+        // ✅ 1. 중복 저장 방지 체크
+        if (this.isSaving) {
+            console.log('이미 저장 중입니다. 요청을 무시합니다.');
+            return;
+        }
+
         try {
             console.log('비상연락망 정보 저장 시작');
+            
+            // ✅ 2. 저장 중 플래그 설정
+            this.isSaving = true;
             
             // 폼 검증 (관대한 검증)
             const completedFields = this.calculateCompletedFields();
@@ -617,15 +658,20 @@ class EmergencyContacts {
                 return;
             }
             
-            // 저장 버튼 비활성화
+            // ✅ 3. 저장 버튼 즉시 비활성화 (기존보다 더 빠르게)
             if (this.elements.saveEmergencyBtn) {
                 this.elements.saveEmergencyBtn.disabled = true;
                 this.elements.saveEmergencyBtn.innerHTML = '<i data-lucide="loader-2" class="animate-spin"></i> 저장 중...';
             }
             
+            // ✅ 4. 자동 저장 일시 중단
+            this.pauseAutoSave();
+            
             // 폼 데이터 수집 및 저장
             const formData = this.collectFormData();
-            await this.api.saveEmergencyContacts(formData);
+            
+            // ✅ 5. 저장 타입 명시하여 API 호출
+            await this.api.saveEmergencyContacts(formData, 'manual');
             
             // 🆕 v1.1.0: 상태 업데이트
             this.formState.isDataSaved = true;
@@ -645,9 +691,34 @@ class EmergencyContacts {
             this.showError('비상연락망 정보 저장 중 오류가 발생했습니다.');
             
         } finally {
+            // ✅ 6. 저장 중 플래그 해제
+            this.isSaving = false;
+            
             // 저장 버튼 복구
             this.updateSaveButtonState();
+            
+            // ✅ 7. 자동 저장 재개 (3초 후)
+            setTimeout(() => {
+                this.resumeAutoSave();
+            }, 3000);
         }
+    }
+
+    /**
+     * ✅ 추가: 자동 저장 일시 중단
+     */
+    pauseAutoSave() {
+        this.isAutoSaving = false;
+        this.lastSaveTime = 0; // 자동 저장 스케줄 초기화
+        console.log('자동 저장 일시 중단');
+    }
+
+    /**
+     * ✅ 추가: 자동 저장 재개
+     */
+    resumeAutoSave() {
+        this.isAutoSaving = true;
+        console.log('자동 저장 재개');
     }
 
     /**
