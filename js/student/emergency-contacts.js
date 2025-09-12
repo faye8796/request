@@ -1,5 +1,5 @@
 /**
- * 비상연락망 관리 모듈 v1.1.0
+ * 비상연락망 관리 모듈 v1.1.1
  * 세종학당 문화인턴 지원 시스템
  * 
  * 기능:
@@ -8,11 +8,9 @@
  * - 자동 저장 기능
  * - 완료 상태 관리
  * 
- * v1.1.0 주요 업데이트:
- * - 데이터 로딩 시 UI 상태 완전 동기화
- * - 저장 버튼 텍스트 동적 변경 (최초 저장/저장)
- * - 진행률 계산 정확도 개선
- * - 실시간 상태 관리 강화
+ * v1.1.1 버그 수정:
+ * - updateOverallProgress() 메서드 호출 오류 해결
+ * - 안전한 메서드 호출 패턴으로 변경
  */
 
 class EmergencyContacts {
@@ -72,7 +70,7 @@ class EmergencyContacts {
             completionStatus: null
         };
         
-        console.log('EmergencyContacts 초기화됨 v1.1.0');
+        console.log('EmergencyContacts 초기화됨 v1.1.1');
     }
 
     /**
@@ -234,37 +232,24 @@ class EmergencyContacts {
     }
 
     /**
-     * 🆕 v1.1.0: 모든 UI 상태 업데이트
+     * 🆕 v1.1.1: 모든 UI 상태 업데이트 (수정됨)
      */
-    async updateAllUIStates() {
+    updateAllUIStates() {
         console.log('🎨 모든 UI 상태 업데이트 시작');
 
-        // 진행률 업데이트
-        await this.updateOverallProgress();
+        // ✅ 수정: 존재하지 않는 updateOverallProgress() 호출 제거
+        // 대신 진행률 업데이트 이벤트 발생으로 상위 컴포넌트에 알림
+        this.dispatchProgressUpdate();
 
-        // 단계별 UI 업데이트
-        this.updateStepsUI();
-
-        // 🆕 제출 상태별 버튼 업데이트
-        this.updateSubmitButtonByStatus();
-
-        // 🆕 관리자 피드백 표시
-        this.updateAdminFeedbackDisplay();
-
-        // ✅ 수정: 하위 모듈 진행률 강제 업데이트
-        setTimeout(() => {
-            if (this.emergency && this.emergency.updateProgress) {
-                console.log('🔄 비상연락망 진행률 강제 업데이트');
-                this.emergency.updateProgress();
-            }
-            if (this.forms && this.forms.updateProgress) {
-                console.log('🔄 서류 폼 진행률 강제 업데이트');
-                this.forms.updateProgress();
-            }
-        }, 100);
+        // 로컬 진행률 업데이트
+        this.updateProgress();
+        
+        // 저장 버튼 상태 업데이트
+        this.updateSaveButtonState();
 
         console.log('✅ 모든 UI 상태 업데이트 완료');
     }
+
     /**
      * 🆕 v1.1.0: 완성된 필드 개수 계산 (정확한 14개)
      */
@@ -1020,4 +1005,4 @@ class EmergencyContacts {
 // 전역 스코프에 클래스 등록
 window.EmergencyContacts = EmergencyContacts;
 
-console.log('EmergencyContacts 모듈 로드 완료 v1.1.0');
+console.log('EmergencyContacts 모듈 로드 완료 v1.1.1');
