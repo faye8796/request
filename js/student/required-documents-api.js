@@ -389,6 +389,82 @@ class RequiredDocumentsAPI {
         }
     }
 
+    
+    /**
+     * ✅ 필수 서류 정보 저장/업데이트 (UPSERT 패턴)
+     */
+    async saveRequiredDocuments(documentsData, saveType = 'manual') {
+        try {
+            console.log(`💾 필수 서류 저장 시작 (${saveType}):`, documentsData);
+            await this.ensureSupabaseReady();
+
+            const dataToSave = {
+                user_id: this.currentUser.id,
+                ...documentsData,
+                updated_at: new Date().toISOString()
+            };
+
+            // UPSERT 패턴 사용
+            const { data, error } = await this.supabase
+                .from('required_documents')
+                .upsert(dataToSave, {
+                    onConflict: 'user_id',
+                    ignoreDuplicates: false
+                })
+                .select();
+
+            if (error) {
+                console.error('❌ 필수 서류 UPSERT 오류:', error);
+                throw error;
+            }
+
+            const result = data && data.length > 0 ? data[0] : null;
+            console.log(`✅ 필수 서류 ${saveType} 저장 완료:`, result);
+            return result;
+
+        } catch (error) {
+            console.error(`❌ 필수 서류 ${saveType} 저장 실패:`, error);
+
+            // 중복 키 오류 시 대체 UPDATE 로직
+            if (error.message?.includes('duplicate key') || error.code === '23505') {
+                console.log('🔄 중복 키 오류 감지 - UPDATE로 재시도');
+                return await this.fallbackUpdateRequiredDocuments(documentsData, saveType);
+            }
+
+            throw error;
+        }
+    }
+
+    /**
+     * ✅ 추가: UPSERT 실패 시 대체 UPDATE 로직
+     */
+    async fallbackUpdateRequiredDocuments(documentsData, saveType) {
+        try {
+            console.log(`🔄 필수 서류 대체 UPDATE 시작 (${saveType})`);
+
+            const dataToUpdate = {
+                ...documentsData,
+                updated_at: new Date().toISOString()
+            };
+
+            const { data, error } = await this.supabase
+                .from('required_documents')
+                .update(dataToUpdate)
+                .eq('user_id', this.currentUser.id)
+                .select();
+
+            if (error) throw error;
+
+            const result = data && data.length > 0 ? data[0] : null;
+            console.log(`✅ 필수 서류 대체 UPDATE 완료:`, result);
+            return result;
+
+        } catch (error) {
+            console.error(`❌ 필수 서류 대체 UPDATE 실패:`, error);
+            throw error;
+        }
+    }
+    
     /**
      * 통장 사본 업로드 (v1.0.5 개선됨)
      */
