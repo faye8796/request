@@ -28,7 +28,7 @@ class EmergencyContacts {
         
         // 🆕 v1.1.2: 이벤트 중복 방지
         this.isUpdatingUI = false;
-
+        this.hasDispatchedInitialEvent = false; 
         
         // 🆕 v1.1.0: 폼 상태 관리
         this.formState = {
@@ -238,7 +238,6 @@ class EmergencyContacts {
      * 🆕 v1.1.2: 모든 UI 상태 업데이트 (무한루프 방지)
      */
     updateAllUIStates(isInitialLoad = false) {
-        // 🆕 v1.1.2: 이미 업데이트 중이면 중단 (무한루프 방지)
         if (this.isUpdatingUI) {
             console.log('⚠️ UI 업데이트 중복 호출 차단');
             return;
@@ -248,22 +247,19 @@ class EmergencyContacts {
         console.log('🎨 모든 UI 상태 업데이트 시작');
 
         try {
-            // 로컬 진행률 업데이트
             this.updateProgress();
-            
-            // 저장 버튼 상태 업데이트
             this.updateSaveButtonState();
 
-            // 🆕 v1.1.2: 초기 로드시에만 이벤트 발생 (무한루프 방지)
-            if (isInitialLoad) {
-                console.log('📤 초기 로드 진행률 업데이트 이벤트 발생');
+            // 🔧 수정: 초기 이벤트는 단 한 번만 발생
+            if (isInitialLoad && !this.hasDispatchedInitialEvent) {
+                this.hasDispatchedInitialEvent = true;
+                console.log('📤 초기 로드 진행률 업데이트 이벤트 발생 (단 한 번만)');
                 this.dispatchProgressUpdate();
             }
 
             console.log('✅ 모든 UI 상태 업데이트 완료');
 
         } finally {
-            // 🆕 v1.1.2: 업데이트 플래그 해제 (반드시 실행)
             this.isUpdatingUI = false;
         }
     }

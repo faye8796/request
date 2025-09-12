@@ -21,6 +21,11 @@ class RequiredDocumentsAPI {
         this.storageBucket = 'required-documents';
         this.supabaseReady = false;
         
+        // 🔧 추가: API 호출 캐싱 (무한루프 방지)
+        this.apiCache = new Map();
+        this.cacheTimeout = 2000; // 2초간 캐시 유지
+
+        
         // 사용자 정보 확인 (기존 시스템과 동일한 로직)
         try {
             const userDataStr = localStorage.getItem('currentStudent');
@@ -145,6 +150,14 @@ class RequiredDocumentsAPI {
      */
     async getRequiredDocuments() {
         try {
+            // 🔧 추가: 캐시 확인 (무한루프 방지)
+            const cacheKey = `getRequiredDocuments_${this.currentUser.id}`;
+            const cached = this.apiCache.get(cacheKey);
+            if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+                console.log('📋 필수 서류 캐시 데이터 사용');
+                return cached.data;
+            }
+
             console.log('📋 필수 서류 정보 조회 시작:', this.currentUser.id);
             await this.ensureSupabaseReady();
 
@@ -163,6 +176,13 @@ class RequiredDocumentsAPI {
             // 배열에서 첫 번째 요소 추출 (없으면 null)
             const result = data && data.length > 0 ? data[0] : null;
             console.log('✅ 필수 서류 조회 결과:', result);
+
+            // 🔧 추가: 결과 캐싱
+            this.apiCache.set(cacheKey, {
+                data: result,
+                timestamp: Date.now()
+            });
+
             return result;
 
         } catch (error) {
@@ -285,6 +305,14 @@ class RequiredDocumentsAPI {
      */
     async getEmergencyContacts() {
         try {
+            // 🔧 추가: 캐시 확인 (무한루프 방지)
+            const cacheKey = `getEmergencyContacts_${this.currentUser.id}`;
+            const cached = this.apiCache.get(cacheKey);
+            if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+                console.log('📞 비상연락망 캐시 데이터 사용');
+                return cached.data;
+            }
+
             console.log('📞 비상연락망 정보 조회 시작:', this.currentUser.id);
             await this.ensureSupabaseReady();
 
@@ -303,6 +331,13 @@ class RequiredDocumentsAPI {
             // 배열에서 첫 번째 요소 추출 (없으면 null)
             const result = data && data.length > 0 ? data[0] : null;
             console.log('✅ 비상연락망 조회 결과:', result);
+
+            // 🔧 추가: 결과 캐싱
+            this.apiCache.set(cacheKey, {
+                data: result,
+                timestamp: Date.now()
+            });
+
             return result;
 
         } catch (error) {

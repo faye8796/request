@@ -235,14 +235,12 @@ class RequiredDocumentsManager {
                 await this.emergency.loadExistingDataAndSyncState();
             }
 
-            // ✅ 수정: 강제로 진행률 업데이트 호출
-            setTimeout(() => {
-                this.updateOverallProgress();
-                if (this.emergency && this.emergency.updateProgress) {
-                    this.emergency.updateProgress();
-                }
-            }, 100);
-
+            // 🔧 수정: setTimeout 제거하고 직접 호출 (무한루프 방지)
+            this.updateOverallProgress();
+            if (this.emergency && this.emergency.updateProgress) {
+                this.emergency.updateProgress();
+            }
+            
             this.pageState.isDataLoaded = true;
             console.log('✅ 데이터 로드 및 상태 동기화 완료:', this.pageState);
 
@@ -625,20 +623,20 @@ class RequiredDocumentsManager {
      */
     async handleProgressUpdate(detail) {
         console.log('진행률 업데이트 이벤트 수신:', detail);
-        
+
         // 🆕 v1.1.0: 데이터 다시 로드하여 최신 상태 반영
         await this.loadDataAndSyncState();
-        
+
         // 전체 진행률 업데이트
         await this.updateOverallProgress();
-        
+
         // 단계별 UI 업데이트
         this.updateStepsUI();
-        
+
         // 제출 버튼 상태 업데이트
         this.updateSubmitButtonByStatus();
     }
-
+    
     /**
      * 전체 진행률 업데이트
      */
