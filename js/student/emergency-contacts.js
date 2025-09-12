@@ -1,5 +1,5 @@
 /**
- * 비상연락망 관리 모듈 v1.1.1
+ * 비상연락망 관리 모듈 v1.1.2
  * 세종학당 문화인턴 지원 시스템
  * 
  * 기능:
@@ -8,9 +8,9 @@
  * - 자동 저장 기능
  * - 완료 상태 관리
  * 
- * v1.1.1 버그 수정:
- * - updateOverallProgress() 메서드 호출 오류 해결
- * - 안전한 메서드 호출 패턴으로 변경
+ * v1.1.2 버그 수정:
+ * - 무한 루프 방지: 이벤트 중복 발생 차단
+ * - updateAllUIStates()에서 조건부 이벤트 발생
  */
 
 class EmergencyContacts {
@@ -25,6 +25,9 @@ class EmergencyContacts {
         this.isSaving = false;
         this.isAutoSaving = false;       
         this.saveHandler = null; // 이벤트 핸들러 참조
+        
+        // 🆕 v1.1.2: 이벤트 중복 방지
+        this.isUpdatingUI = false;
 
         
         // 🆕 v1.1.0: 폼 상태 관리
@@ -70,7 +73,7 @@ class EmergencyContacts {
             completionStatus: null
         };
         
-        console.log('EmergencyContacts 초기화됨 v1.1.1');
+        console.log('EmergencyContacts 초기화됨 v1.1.2');
     }
 
     /**
@@ -168,8 +171,8 @@ class EmergencyContacts {
             // 🆕 상태 동기화
             this.syncFormState(emergencyData);
 
-            // 🆕 UI 상태 업데이트 (즉시 + 지연 호출)
-            this.updateAllUIStates();
+            // 🆕 v1.1.2: 조건부 UI 상태 업데이트 (초기 로드시에만 이벤트 발생)
+            this.updateAllUIStates(true); // 초기 로드 플래그
 
             // ✅ 수정: DOM 업데이트 완료를 위한 지연 호출
             setTimeout(() => {
@@ -232,22 +235,37 @@ class EmergencyContacts {
     }
 
     /**
-     * 🆕 v1.1.1: 모든 UI 상태 업데이트 (수정됨)
+     * 🆕 v1.1.2: 모든 UI 상태 업데이트 (무한루프 방지)
      */
-    updateAllUIStates() {
+    updateAllUIStates(isInitialLoad = false) {
+        // 🆕 v1.1.2: 이미 업데이트 중이면 중단 (무한루프 방지)
+        if (this.isUpdatingUI) {
+            console.log('⚠️ UI 업데이트 중복 호출 차단');
+            return;
+        }
+
+        this.isUpdatingUI = true;
         console.log('🎨 모든 UI 상태 업데이트 시작');
 
-        // ✅ 수정: 존재하지 않는 updateOverallProgress() 호출 제거
-        // 대신 진행률 업데이트 이벤트 발생으로 상위 컴포넌트에 알림
-        this.dispatchProgressUpdate();
+        try {
+            // 로컬 진행률 업데이트
+            this.updateProgress();
+            
+            // 저장 버튼 상태 업데이트
+            this.updateSaveButtonState();
 
-        // 로컬 진행률 업데이트
-        this.updateProgress();
-        
-        // 저장 버튼 상태 업데이트
-        this.updateSaveButtonState();
+            // 🆕 v1.1.2: 초기 로드시에만 이벤트 발생 (무한루프 방지)
+            if (isInitialLoad) {
+                console.log('📤 초기 로드 진행률 업데이트 이벤트 발생');
+                this.dispatchProgressUpdate();
+            }
 
-        console.log('✅ 모든 UI 상태 업데이트 완료');
+            console.log('✅ 모든 UI 상태 업데이트 완료');
+
+        } finally {
+            // 🆕 v1.1.2: 업데이트 플래그 해제 (반드시 실행)
+            this.isUpdatingUI = false;
+        }
     }
 
     /**
@@ -668,7 +686,7 @@ class EmergencyContacts {
             // 진행률 업데이트
             this.updateProgress();
             
-            // 진행률 업데이트 이벤트 발생
+            // 🆕 v1.1.2: 저장 완료 후 진행률 업데이트 이벤트 발생
             this.dispatchProgressUpdate();
             
         } catch (error) {
@@ -1005,4 +1023,4 @@ class EmergencyContacts {
 // 전역 스코프에 클래스 등록
 window.EmergencyContacts = EmergencyContacts;
 
-console.log('EmergencyContacts 모듈 로드 완료 v1.1.1');
+console.log('EmergencyContacts 모듈 로드 완료 v1.1.2');
