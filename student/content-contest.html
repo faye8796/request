@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 콘텐츠 공모전 - 세종학당 문화인턴</title>
+    
+    <!-- CSS 스타일 -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* 헤더 스타일 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-info p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* 탭 네비게이션 */
+        .tab-navigation {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0 2rem;
+            overflow-x: auto;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 0;
+            min-width: fit-content;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .tab-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 1.5rem;
+            border: none;
+            background: none;
+            color: #6b7280;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            font-size: 1rem;
+        }
+
+        .tab-button:hover:not(.disabled) {
+            color: #374151;
+            background: #f9fafb;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .tab-button.disabled {
+            color: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        .tab-button .coming-soon {
+            font-size: 0.75rem;
+            background: #fbbf24;
+            color: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.75rem;
+            margin-left: 0.5rem;
+            font-weight: 600;
+        }
+
+        /* 탭 콘텐츠 */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 컨테이너 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        /* 섹션 헤더 */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* 빈 상태 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6b7280;
+        }
+
+        .empty-state .empty-icon {
+            width: 4rem;
+            height: 4rem;
+            color: #9ca3af;
+            margin: 0 auto 1rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+
+        /* 콘텐츠 목록 */
+        .content-list {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        /* 콘텐츠 카드 */
+        .content-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .content-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            gap: 1rem;
+        }
+
+        .content-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            flex: 1;
+            word-break: break-word;
+        }
+
+        .content-description {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .content-meta {
+            font-size: 0.875rem;
+            color: #9ca3af;
+            border-top: 1px solid #f3f4f6;
+            padding-top: 1rem;
+        }
+
+        /* 상태 배지 */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-badge.status-draft {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .status-badge.status-submitted {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .status-badge.status-reviewed {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-badge.status-approved {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .status-badge.status-rejected {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        /* 콘텐츠 폼 */
+        .content-form-container {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-top: 2rem;
+            border: 2px solid #667eea;
+            display: none;
+        }
+
+        .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .form-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            color: #6b7280;
+            transition: all 0.2s ease;
+        }
+
+        .btn-close:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #dc2626;
+        }
+
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-input.error, .form-textarea.error {
+            border-color: #dc2626;
+        }
+
+        .form-hint {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        .char-count.over-limit {
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        /* 버튼 스타일 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #4b5563;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        /* 준비중 콘텐츠 */
+        .coming-soon-content {
+            text-align: center;
+            padding: 5rem 2rem;
+            color: #6b7280;
+        }
+
+        .coming-soon-content .coming-soon-icon {
+            width: 5rem;
+            height: 5rem;
+            color: #9ca3af;
+            margin: 0 auto 1.5rem;
+        }
+
+        .coming-soon-content h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+
+        .coming-soon-content p {
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        /* 토스트 알림 */
+        .toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .toast-success {
+            background: #059669;
+        }
+
+        .toast-error {
+            background: #dc2626;
+        }
+
+        .toast-info {
+            background: #0ea5e9;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .header-content {
+                padding: 0 1rem;
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .tab-navigation {
+                padding: 0 1rem;
+            }
+            
+            .tab-button .tab-text {
+                display: none;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+            
+            .content-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+            
+            .content-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .content-section {
+                padding: 1.5rem;
+            }
+            
+            .toast {
+                top: 1rem;
+                right: 1rem;
+                left: 1rem;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0.5rem;
+            }
+            
+            .content-section {
+                padding: 1rem;
+            }
+            
+            .btn {
+                padding: 0.625rem 1rem;
+            }
+        }
+    </style>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+    <!-- 헤더 -->
+    <header class="header">
+        <div class="header-content">
+            <div class="user-info">
+                <h1 id="userWelcome">🎨 콘텐츠 공모전</h1>
+                <p id="userDetails">창작 콘텐츠를 등록하고 관리해보세요.</p>
+            </div>
+            <div class="header-actions">
+                <button id="backToDashboard" class="btn btn-secondary">
+                    <i data-lucide="arrow-left"></i>
+                    대시보드로 돌아가기
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 탭 네비게이션 -->
+    <div class="tab-navigation">
+        <div class="tab-buttons">
+            <button class="tab-button active" data-tab="content-registration">
+                <i data-lucide="edit-3"></i>
+                <span class="tab-text">콘텐츠 등록</span>
+            </button>
+            <button class="tab-button disabled" data-tab="submission-history">
+                <i data-lucide="clock"></i>
+                <span class="tab-text">제출 현황</span>
+                <span class="coming-soon">준비중</span>
+            </button>
+            <button class="tab-button disabled" data-tab="contest-info">
+                <i data-lucide="info"></i>
+                <span class="tab-text">공모전 안내</span>
+                <span class="coming-soon">준비중</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="container">
+        <!-- 콘텐츠 등록 탭 -->
+        <div class="tab-content active" id="content-registration-tab">
+            <div class="content-section">
+                <!-- 섹션 헤더 -->
+                <div class="section-header">
+                    <h2>
+                        <i data-lucide="edit-3"></i>
+                        등록된 콘텐츠
+                    </h2>
+                    <button class="btn btn-primary" id="addContentBtn">
+                        <i data-lucide="plus"></i>
+                        콘텐츠 등록
+                    </button>
+                </div>
+                
+                <!-- 빈 상태 -->
+                <div class="empty-state" id="emptyState">
+                    <i data-lucide="file-plus" class="empty-icon"></i>
+                    <h3>등록한 콘텐츠가 없습니다</h3>
+                    <p>첫 번째 콘텐츠를 등록해보세요!</p>
+                </div>
+                
+                <!-- 콘텐츠 목록 -->
+                <div class="content-list" id="contentList">
+                    <!-- 동적 생성 -->
+                </div>
+                
+                <!-- 등록 폼 -->
+                <div class="content-form-container" id="contentFormContainer">
+                    <div class="form-header">
+                        <h3>새 콘텐츠 등록</h3>
+                        <button class="btn-close" id="cancelFormBtn">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                    
+                    <form class="content-form" id="contentForm">
+                        <div class="form-group">
+                            <label for="contentTitle" class="form-label required">콘텐츠 제목</label>
+                            <input type="text" id="contentTitle" name="title" 
+                                   class="form-input" placeholder="콘텐츠 제목을 입력하세요" 
+                                   maxlength="100" required>
+                            <div class="char-count" id="titleCount">0/100</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="contentDescription" class="form-label required">콘텐츠 설명</label>
+                            <textarea id="contentDescription" name="description" 
+                                      class="form-textarea" placeholder="콘텐츠에 대한 설명을 입력하세요" 
+                                      maxlength="500" rows="4" required></textarea>
+                            <div class="char-count" id="descriptionCount">0/500</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="contentUrl" class="form-label required">다운로드 URL</label>
+                            <input type="url" id="contentUrl" name="download_url" 
+                                   class="form-input" placeholder="https://example.com/content" required>
+                            <div class="form-hint">
+                                구글 드라이브, OneDrive, 유튜브 등의 공유 링크를 입력하세요
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancelFormBtn2">취소</button>
+                            <button type="submit" class="btn btn-primary" id="saveContentBtn">
+                                <i data-lucide="save"></i>
+                                저장하기
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 제출 현황 탭 (준비중) -->
+        <div class="tab-content" id="submission-history-tab">
+            <div class="content-section">
+                <div class="coming-soon-content">
+                    <i data-lucide="construction" class="coming-soon-icon"></i>
+                    <h3>제출 현황</h3>
+                    <p>이 기능은 곧 업데이트될 예정입니다.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 공모전 안내 탭 (준비중) -->
+        <div class="tab-content" id="contest-info-tab">
+            <div class="content-section">
+                <div class="coming-soon-content">
+                    <i data-lucide="construction" class="coming-soon-icon"></i>
+                    <h3>공모전 안내</h3>
+                    <p>이 기능은 곧 업데이트될 예정입니다.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript -->
+    <!-- 1단계: 기본 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/common/supabase-core.js"></script>
+    <script src="../js/utils.js"></script>
+    
+    <script>
+        // 2단계: 이벤트 버스 생성
+        window.moduleEventBus = {
+            events: new Map(),
+            emit(event, data) {
+                const listeners = this.events.get(event) || [];
+                listeners.forEach(listener => {
+                    try {
+                        listener(data);
+                    } catch (error) {
+                        console.warn(`Event listener error: ${event}`, error);
+                    }
+                });
+            },
+            on(event, listener) {
+                if (!this.events.has(event)) {
+                    this.events.set(event, []);
+                }
+                this.events.get(event).push(listener);
+            }
+        };
+
+        // 3단계: 콘텐츠 공모전 메인 클래스
+        class ContentContestApp {
+            constructor() {
+                this.currentTab = 'content-registration';
+                this.currentUser = null;
+                this.contents = [];
+                this.isFormVisible = false;
+                this.editingContentId = null;
+                this.supabase = window.supabase;
+            }
+
+            async init() {
+                try {
+                    await this.loadUserData();
+                    await this.checkFeatureEnabled();
+                    this.setupEventListeners();
+                    this.setupTabSystem();
+                    this.setupFormValidation();
+                    await this.loadContents();
+                    this.updateUI();
+                } catch (error) {
+                    console.error('앱 초기화 실패:', error);
+                    this.showToast('시스템 초기화에 실패했습니다.', 'error');
+                }
+            }
+
+            async loadUserData() {
+                const userDataStr = localStorage.getItem('currentStudent');
+                if (!userDataStr) {
+                    window.location.href = '../index.html';
+                    return;
+                }
+                
+                this.currentUser = JSON.parse(userDataStr);
+                
+                // 환영 메시지 업데이트
+                const welcomeEl = document.getElementById('userWelcome');
+                const detailsEl = document.getElementById('userDetails');
+                
+                if (welcomeEl && this.currentUser.name) {
+                    welcomeEl.textContent = `🎨 콘텐츠 공모전 - ${this.currentUser.name}님`;
+                }
+            }
+
+            async checkFeatureEnabled() {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('user_profiles')
+                        .select('individual_content_contest_enabled')
+                        .eq('id', this.currentUser.id)
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    if (!data.individual_content_contest_enabled) {
+                        this.showToast('이 기능은 관리자에 의해 비활성화되었습니다.', 'error');
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 2000);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('기능 활성화 확인 실패:', error);
+                }
+            }
+
+            // 탭 시스템
+            setupTabSystem() {
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (btn.classList.contains('disabled')) {
+                            this.showToast('준비 중인 기능입니다.', 'info');
+                            return;
+                        }
+                        this.switchTab(btn.dataset.tab);
+                    });
+                });
+            }
+
+            switchTab(tabName) {
+                document.querySelectorAll('.tab-button').forEach(btn => 
+                    btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => 
+                    content.classList.remove('active'));
+                    
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+                
+                this.currentTab = tabName;
+            }
+
+            // 이벤트 리스너
+            setupEventListeners() {
+                // 뒤로가기
+                document.getElementById('backToDashboard').addEventListener('click', () => {
+                    window.location.href = 'dashboard.html';
+                });
+
+                // 콘텐츠 등록 버튼
+                document.getElementById('addContentBtn').addEventListener('click', () => {
+                    this.showForm();
+                });
+
+                // 폼 취소 버튼들
+                document.getElementById('cancelFormBtn').addEventListener('click', () => {
+                    this.hideForm();
+                });
+                
+                document.getElementById('cancelFormBtn2').addEventListener('click', () => {
+                    this.hideForm();
+                });
+
+                // 폼 제출
+                document.getElementById('contentForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleFormSubmit();
+                });
+            }
+
+            // 폼 검증 설정
+            setupFormValidation() {
+                const titleInput = document.getElementById('contentTitle');
+                const descInput = document.getElementById('contentDescription');
+                const titleCount = document.getElementById('titleCount');
+                const descCount = document.getElementById('descriptionCount');
+
+                titleInput.addEventListener('input', (e) => {
+                    const length = e.target.value.length;
+                    titleCount.textContent = `${length}/100`;
+                    titleCount.classList.toggle('over-limit', length > 100);
+                });
+
+                descInput.addEventListener('input', (e) => {
+                    const length = e.target.value.length;
+                    descCount.textContent = `${length}/500`;
+                    descCount.classList.toggle('over-limit', length > 500);
+                });
+            }
+
+            // 폼 관리
+            showForm(content = null) {
+                const container = document.getElementById('contentFormContainer');
+                const form = document.getElementById('contentForm');
+                const header = container.querySelector('.form-header h3');
+                
+                if (content) {
+                    // 수정 모드
+                    this.editingContentId = content.id;
+                    header.textContent = '콘텐츠 수정';
+                    
+                    document.getElementById('contentTitle').value = content.title;
+                    document.getElementById('contentDescription').value = content.description;
+                    document.getElementById('contentUrl').value = content.download_url;
+                    
+                    // 문자 수 업데이트
+                    document.getElementById('titleCount').textContent = `${content.title.length}/100`;
+                    document.getElementById('descriptionCount').textContent = `${content.description.length}/500`;
+                } else {
+                    // 신규 등록 모드
+                    this.editingContentId = null;
+                    header.textContent = '새 콘텐츠 등록';
+                    this.resetForm();
+                }
+                
+                container.style.display = 'block';
+                container.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('contentTitle').focus();
+                this.isFormVisible = true;
+            }
+
+            hideForm() {
+                if (this.hasUnsavedChanges()) {
+                    if (!confirm('작성 중인 내용이 있습니다. 정말 취소하시겠습니까?')) {
+                        return;
+                    }
+                }
+                
+                document.getElementById('contentFormContainer').style.display = 'none';
+                this.resetForm();
+                this.isFormVisible = false;
+                this.editingContentId = null;
+            }
+
+            resetForm() {
+                document.getElementById('contentForm').reset();
+                document.getElementById('titleCount').textContent = '0/100';
+                document.getElementById('descriptionCount').textContent = '0/500';
+                
+                // 에러 클래스 제거
+                document.querySelectorAll('.form-input, .form-textarea').forEach(input => {
+                    input.classList.remove('error');
+                });
+            }
+
+            hasUnsavedChanges() {
+                const title = document.getElementById('contentTitle').value.trim();
+                const description = document.getElementById('contentDescription').value.trim();
+                const url = document.getElementById('contentUrl').value.trim();
+                
+                return title || description || url;
+            }
+
+            // 폼 제출 처리
+            async handleFormSubmit() {
+                const formData = this.getFormData();
+                
+                if (!this.validateForm(formData)) {
+                    return;
+                }
+                
+                const submitBtn = document.getElementById('saveContentBtn');
+                const originalText = submitBtn.innerHTML;
+                
+                try {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i data-lucide="loader-2"></i> 저장 중...';
+                    
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                    
+                    if (this.editingContentId) {
+                        await this.updateContent(this.editingContentId, formData);
+                    } else {
+                        await this.saveContent(formData);
+                    }
+                    
+                } catch (error) {
+                    console.error('폼 제출 실패:', error);
+                    this.showToast('저장에 실패했습니다.', 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            }
+
+            getFormData() {
+                return {
+                    title: document.getElementById('contentTitle').value.trim(),
+                    description: document.getElementById('contentDescription').value.trim(),
+                    download_url: document.getElementById('contentUrl').value.trim()
+                };
+            }
+
+            validateForm(formData) {
+                let isValid = true;
+                
+                // 제목 검증
+                const titleInput = document.getElementById('contentTitle');
+                if (!formData.title || formData.title.length > 100) {
+                    titleInput.classList.add('error');
+                    isValid = false;
+                } else {
+                    titleInput.classList.remove('error');
+                }
+                
+                // 설명 검증
+                const descInput = document.getElementById('contentDescription');
+                if (!formData.description || formData.description.length > 500) {
+                    descInput.classList.add('error');
+                    isValid = false;
+                } else {
+                    descInput.classList.remove('error');
+                }
+                
+                // URL 검증
+                const urlInput = document.getElementById('contentUrl');
+                try {
+                    new URL(formData.download_url);
+                    urlInput.classList.remove('error');
+                } catch {
+                    urlInput.classList.add('error');
+                    isValid = false;
+                }
+                
+                if (!isValid) {
+                    this.showToast('입력 정보를 확인해주세요.', 'error');
+                }
+                
+                return isValid;
+            }
+
+            // API 연동
+            async loadContents() {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('student_contents')
+                        .select('*')
+                        .eq('user_id', this.currentUser.id)
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) throw error;
+                    
+                    this.contents = data || [];
+                    this.renderContents();
+                } catch (error) {
+                    console.error('콘텐츠 로드 실패:', error);
+                    this.showToast('콘텐츠를 불러오는데 실패했습니다.', 'error');
+                }
+            }
+
+            async saveContent(formData) {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('student_contents')
+                        .insert([{
+                            user_id: this.currentUser.id,
+                            title: formData.title,
+                            description: formData.description,
+                            download_url: formData.download_url,
+                            status: 'draft'
+                        }])
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    this.contents.unshift(data);
+                    this.renderContents();
+                    this.hideForm();
+                    this.showToast('콘텐츠가 성공적으로 등록되었습니다!', 'success');
+                    
+                } catch (error) {
+                    console.error('콘텐츠 저장 실패:', error);
+                    this.showToast('콘텐츠 등록에 실패했습니다.', 'error');
+                }
+            }
+
+            async updateContent(contentId, formData) {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('student_contents')
+                        .update({
+                            title: formData.title,
+                            description: formData.description,
+                            download_url: formData.download_url
+                        })
+                        .eq('id', contentId)
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    // 로컬 데이터 업데이트
+                    const index = this.contents.findIndex(c => c.id === contentId);
+                    if (index !== -1) {
+                        this.contents[index] = data;
+                        this.renderContents();
+                    }
+                    
+                    this.hideForm();
+                    this.showToast('콘텐츠가 성공적으로 수정되었습니다!', 'success');
+                    
+                } catch (error) {
+                    console.error('콘텐츠 수정 실패:', error);
+                    this.showToast('콘텐츠 수정에 실패했습니다.', 'error');
+                }
+            }
+
+            async deleteContent(contentId) {
+                if (!confirm('정말로 이 콘텐츠를 삭제하시겠습니까?')) {
+                    return;
+                }
+                
+                try {
+                    const { error } = await this.supabase
+                        .from('student_contents')
+                        .delete()
+                        .eq('id', contentId);
+                    
+                    if (error) throw error;
+                    
+                    this.contents = this.contents.filter(c => c.id !== contentId);
+                    this.renderContents();
+                    this.showToast('콘텐츠가 삭제되었습니다.', 'success');
+                    
+                } catch (error) {
+                    console.error('콘텐츠 삭제 실패:', error);
+                    this.showToast('콘텐츠 삭제에 실패했습니다.', 'error');
+                }
+            }
+
+            // UI 렌더링
+            renderContents() {
+                const listContainer = document.getElementById('contentList');
+                const emptyState = document.getElementById('emptyState');
+                
+                if (this.contents.length === 0) {
+                    listContainer.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+                
+                emptyState.style.display = 'none';
+                listContainer.style.display = 'block';
+                
+                listContainer.innerHTML = this.contents.map(content => this.renderContentCard(content)).join('');
+                
+                // 아이콘 재생성
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+
+            renderContentCard(content) {
+                const createdDate = new Date(content.created_at).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                return `
+                    <div class="content-card">
+                        <div class="content-header">
+                            <h3 class="content-title">${this.escapeHtml(content.title)}</h3>
+                            <span class="status-badge status-${content.status}">
+                                ${this.getStatusText(content.status)}
+                            </span>
+                        </div>
+                        <div class="content-description">
+                            ${this.escapeHtml(content.description)}
+                        </div>
+                        <div class="content-actions">
+                            <a href="${content.download_url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-secondary">
+                                <i data-lucide="external-link"></i>
+                                링크 열기
+                            </a>
+                            <button onclick="contentApp.editContent('${content.id}')" class="btn btn-sm btn-primary">
+                                <i data-lucide="edit"></i>
+                                수정
+                            </button>
+                            <button onclick="contentApp.deleteContent('${content.id}')" class="btn btn-sm btn-danger">
+                                <i data-lucide="trash-2"></i>
+                                삭제
+                            </button>
+                        </div>
+                        <div class="content-meta">
+                            <small>등록일: ${createdDate}</small>
+                        </div>
+                    </div>
+                `;
+            }
+
+            editContent(contentId) {
+                const content = this.contents.find(c => c.id === contentId);
+                if (content) {
+                    this.showForm(content);
+                }
+            }
+
+            // UI 업데이트
+            updateUI() {
+                // 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+
+            // 유틸리티 함수들
+            showToast(message, type = 'info') {
+                // 기존 토스트 제거
+                const existingToast = document.querySelector('.toast');
+                if (existingToast) {
+                    existingToast.remove();
+                }
+                
+                const toast = document.createElement('div');
+                toast.className = `toast toast-${type}`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 3000);
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            getStatusText(status) {
+                const statusMap = {
+                    'draft': '작성중',
+                    'submitted': '제출완료',
+                    'reviewed': '검토중',
+                    'approved': '승인',
+                    'rejected': '반려'
+                };
+                return statusMap[status] || status;
+            }
+        }
+
+        // 4단계: 초기화 시스템
+        async function initializeApp() {
+            try {
+                // Lucide 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+
+                // 사용자 데이터 확인
+                const userDataStr = localStorage.getItem('currentStudent');
+                if (!userDataStr) {
+                    window.location.href = '../index.html';
+                    return;
+                }
+
+                // 앱 초기화
+                window.contentApp = new ContentContestApp();
+                await window.contentApp.init();
+
+            } catch (error) {
+                console.error('앱 초기화 실패:', error);
+            }
+        }
+
+        // DOM 로드 완료 시 초기화
+        document.addEventListener('DOMContentLoaded', initializeApp);
+        if (document.readyState !== 'loading') {
+            initializeApp();
+        }
+    </script>
+</body>
+</html>
