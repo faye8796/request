@@ -158,7 +158,7 @@ if (window.reimbursementManagementSystem) {
         `);
 
         // 🆕 자료 보완 요청 버튼 (항상 표시)
-        const hasSupplementRequest = pendingReimbursement?.admin_supplement_request ? true : false;
+        const hasSupplementRequest = this.hasAnySupplementRequest(userId);
         const supplementButtonClass = hasSupplementRequest ? 'btn-supplement-request has-request' : 'btn-supplement-request';
 
         buttons.push(`
@@ -190,6 +190,18 @@ if (window.reimbursementManagementSystem) {
         }
 
         return buttons.join('');
+    };
+    
+    
+    /**
+     * 🆕 사용자의 모든 차수에서 자료 보완 요청 존재 여부 확인
+     */
+    system.hasAnySupplementRequest = function(userId) {
+        const allReimbursements = this.reimbursementData.get(userId) || [];
+        return allReimbursements.some(r => 
+            r.admin_supplement_request && 
+            r.admin_supplement_request.trim() !== ''
+        );
     };
     
     /**

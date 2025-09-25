@@ -494,9 +494,25 @@ class ReimbursementManagementSystem {
      */
     getPendingReimbursement(userId) {
         const reimbursements = this.reimbursementData.get(userId) || [];
-        return reimbursements.find(r => r.payment_status === 'pending') || null;
-    }
+        const pendingReimbursements = reimbursements.filter(r => r.payment_status === 'pending');
 
+        if (pendingReimbursements.length === 0) return null;
+
+        // 1순위: scheduled_amount가 있는 차수 중 가장 낮은 차수
+        const withAmount = pendingReimbursements
+            .filter(r => r.scheduled_amount && r.scheduled_amount > 0)
+            .sort((a, b) => a.payment_round - b.payment_round);
+
+        if (withAmount.length > 0) return withAmount[0];
+
+        // 2순위: scheduled_amount가 없는 차수 중 가장 낮은 차수
+        const withoutAmount = pendingReimbursements
+            .filter(r => !r.scheduled_amount || r.scheduled_amount <= 0)
+            .sort((a, b) => a.payment_round - b.payment_round);
+
+        return withoutAmount.length > 0 ? withoutAmount[0] : null;
+    }
+    
     /**
      * 사용자의 완료된 차수들 조회
      */
