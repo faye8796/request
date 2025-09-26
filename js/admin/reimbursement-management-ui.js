@@ -221,7 +221,7 @@ if (window.reimbursementManagementSystem) {
                 throw new Error(`차수별 통계 조회 실패: ${error.message}`);
             }
 
-            // 🆕 차수별 예정 금액 계산
+            // 🆕 차수별 예정 금액 계산 (확장된 버전)
             const round1Scheduled = amountStats
                 ?.filter(item => item.payment_round === 1)
                 ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
@@ -232,6 +232,15 @@ if (window.reimbursementManagementSystem) {
 
             const round3Scheduled = amountStats
                 ?.filter(item => item.payment_round === 3)
+                ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
+
+            const round4Scheduled = amountStats
+                ?.filter(item => item.payment_round === 4)
+                ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
+
+            // 5차 이상은 모두 합쳐서 표시
+            const round5PlusScheduled = amountStats
+                ?.filter(item => item.payment_round >= 5)
                 ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
 
             // 🆕 실제 지급된 총 금액
@@ -260,11 +269,13 @@ if (window.reimbursementManagementSystem) {
                 existingElements.completedPayments.textContent = stats.completedPayments; // 기존 로직 유지
             }
 
-            // 🆕 새로운 4개 금액 통계 DOM 업데이트
+            // 🆕 새로운 금액 통계 DOM 업데이트 (확장된 버전)
             const newElements = {
                 round1Scheduled: document.getElementById('round1-scheduled'),
                 round2Scheduled: document.getElementById('round2-scheduled'),
                 round3Scheduled: document.getElementById('round3-scheduled'),
+                round4Scheduled: document.getElementById('round4-scheduled'),
+                round5PlusScheduled: document.getElementById('round5-scheduled'),
                 totalActualPaid: document.getElementById('total-actual-paid')
             };
 
@@ -277,17 +288,15 @@ if (window.reimbursementManagementSystem) {
             if (newElements.round3Scheduled) {
                 newElements.round3Scheduled.textContent = `${round3Scheduled.toLocaleString()}원`;
             }
+            if (newElements.round4Scheduled) {
+                newElements.round4Scheduled.textContent = `${round4Scheduled.toLocaleString()}원`;
+            }
+            if (newElements.round5PlusScheduled) {
+                newElements.round5PlusScheduled.textContent = `${round5PlusScheduled.toLocaleString()}원`;
+            }
             if (newElements.totalActualPaid) {
                 newElements.totalActualPaid.textContent = `${totalActualPaid.toLocaleString()}원`;
             }
-
-            console.log('📊 통계 업데이트 완료:', { 
-                ...stats, 
-                round1Scheduled, 
-                round2Scheduled, 
-                round3Scheduled, 
-                totalActualPaid 
-            });
 
         } catch (error) {
             console.error('❌ 통계 업데이트 오류:', error);
