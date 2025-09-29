@@ -735,6 +735,25 @@
             }
         };
 
+        // ✅ Supabase 초기화 대기 함수 추가
+        async function waitForSupabase(maxAttempts = 10) {
+            for (let i = 0; i < maxAttempts; i++) {
+                const client = window.supabase || 
+                              window.SupabaseAPI?.client || 
+                              window.SupabaseCore?.client;
+                
+                if (client) {
+                    console.log('✅ Supabase 클라이언트 준비 완료');
+                    return client;
+                }
+                
+                console.log(`⏳ Supabase 초기화 대기 중... (${i + 1}/${maxAttempts})`);
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            throw new Error('❌ Supabase client initialization timeout');
+        }
+
         // 3단계: 콘텐츠 공모전 메인 클래스
         class ContentContestApp {
             constructor() {
@@ -743,7 +762,6 @@
                 this.contents = [];
                 this.isFormVisible = false;
                 this.editingContentId = null;
-                // ✅ 수정: Constructor에서 Supabase 참조 제거
             }
 
             async init() {
@@ -781,7 +799,6 @@
 
             async checkFeatureEnabled() {
                 try {
-                    // ✅ 수정: 직접 접근
                     const { data, error } = await window.SupabaseCore.client
                         .from('user_profiles')
                         .select('individual_content_contest_enabled')
@@ -1025,7 +1042,6 @@
             // API 연동
             async loadContents() {
                 try {
-                    // ✅ 수정: 직접 접근
                     const { data, error } = await window.SupabaseCore.client
                         .from('student_contents')
                         .select('*')
@@ -1044,7 +1060,6 @@
 
             async saveContent(formData) {
                 try {
-                    // ✅ 수정: 직접 접근
                     const { data, error } = await window.SupabaseCore.client
                         .from('student_contents')
                         .insert([{
@@ -1072,7 +1087,6 @@
 
             async updateContent(contentId, formData) {
                 try {
-                    // ✅ 수정: 직접 접근
                     const { data, error } = await window.SupabaseCore.client
                         .from('student_contents')
                         .update({
@@ -1108,7 +1122,6 @@
                 }
                 
                 try {
-                    // ✅ 수정: 직접 접근
                     const { error } = await window.SupabaseCore.client
                         .from('student_contents')
                         .delete()
@@ -1243,6 +1256,10 @@
         // 4단계: 초기화 시스템
         async function initializeApp() {
             try {
+                // ✅ Supabase 초기화 대기
+                console.log('🚀 콘텐츠 공모전 앱 초기화 시작...');
+                await waitForSupabase();
+                
                 // Lucide 아이콘 초기화
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
@@ -1251,16 +1268,19 @@
                 // 사용자 데이터 확인
                 const userDataStr = localStorage.getItem('currentStudent');
                 if (!userDataStr) {
+                    console.log('❌ 사용자 데이터 없음, 로그인 페이지로 이동');
                     window.location.href = '../index.html';
                     return;
                 }
 
                 // 앱 초기화
+                console.log('✅ 콘텐츠 공모전 앱 인스턴스 생성');
                 window.contentApp = new ContentContestApp();
                 await window.contentApp.init();
+                console.log('🎉 콘텐츠 공모전 앱 초기화 완료');
 
             } catch (error) {
-                console.error('앱 초기화 실패:', error);
+                console.error('❌ 앱 초기화 실패:', error);
             }
         }
 
