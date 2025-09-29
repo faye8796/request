@@ -743,11 +743,19 @@
                 this.contents = [];
                 this.isFormVisible = false;
                 this.editingContentId = null;
-                this.supabase = window.supabase;
+                // ✅ 수정: window.supabase → window.SupabaseCore?.client
+                this.supabase = window.SupabaseCore?.client || null;
             }
 
             async init() {
                 try {
+                    // ✅ 추가: Supabase 클라이언트 확인
+                    if (!this.supabase) {
+                        console.error('Supabase 클라이언트를 찾을 수 없습니다.');
+                        this.showToast('시스템 초기화에 실패했습니다.', 'error');
+                        return;
+                    }
+                    
                     await this.loadUserData();
                     await this.checkFeatureEnabled();
                     this.setupEventListeners();
