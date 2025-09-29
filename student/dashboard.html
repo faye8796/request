@@ -420,6 +420,8 @@
                         return this.studentData.individual_required_documents_enabled === true;
                     case 'activity_schedule':
                         return this.studentData.individual_activity_schedule_enabled === true;
+                    case 'content_contest':
+                        return this.studentData.individual_content_contest_enabled === true;
                     default:
                         return false;
                 }
@@ -727,6 +729,14 @@
                         description: '비자 발급 현황 관리 및 관리자 코멘트를 확인할 수 있습니다.',
                         url: './visa-management.html',
                         buttonText: '관리하기',
+                        buttonIcon: 'arrow-right'
+                    },
+                    'content_contest': {
+                        icon: 'palette',
+                        title: '콘텐츠 공모전',
+                        description: '창작 콘텐츠를 등록하고 공모전에 참여할 수 있습니다.',
+                        url: './content-contest.html',
+                        buttonText: '참여하기',
                         buttonIcon: 'arrow-right'
                     },
                     'reimbursement_request': {
