@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 콘텐츠 공모전 관리 - 세종학당 문화인턴</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* 헤더 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .back-button {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-4px);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-title span {
+            font-size: 2rem;
+        }
+
+        .header-title h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .excel-export-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .excel-export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 컨테이너 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* 통계 대시보드 */
+        .statistics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card.total {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .stat-card.submitted {
+            border-left: 4px solid #10b981;
+        }
+
+        .stat-card.total-contents {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        /* 필터 컨트롤 */
+        .filter-controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-controls input,
+        .filter-controls select {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .filter-controls input:focus,
+        .filter-controls select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-controls button {
+            padding: 0.75rem 1.5rem;
+            background: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-controls button:hover {
+            background: #4b5563;
+        }
+
+        /* 학생 카드 */
+        .students-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .student-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .student-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            background: #f8fafc;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .student-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .student-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .institute-name {
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        .content-count-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* 콘텐츠 목록 */
+        .content-list {
+            padding: 1.5rem;
+        }
+
+        .content-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .content-item:hover {
+            background: #f1f5f9;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-title {
+            flex: 1;
+            font-weight: 500;
+            color: #1f2937;
+            margin-right: 1rem;
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .btn-download,
+        .btn-detail {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-download {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-download:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .btn-detail {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-detail:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .no-content {
+            text-align: center;
+            padding: 2rem;
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        /* 모달 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .modal-header h2 {
+            color: #1f2937;
+            font-size: 1.5rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+            transition: color 0.2s ease;
+        }
+
+        .modal-close:hover {
+            color: #1f2937;
+        }
+
+        .detail-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-group label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-group div,
+        .detail-group a {
+            color: #1f2937;
+            line-height: 1.6;
+        }
+
+        .btn-link {
+            color: #3b82f6;
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .btn-link:hover {
+            text-decoration: underline;
+        }
+
+        /* 빈 상태 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .empty-icon {
+            width: 4rem;
+            height: 4rem;
+            color: #9ca3af;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: #9ca3af;
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .statistics {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-controls {
+                flex-direction: column;
+            }
+
+            .filter-controls input,
+            .filter-controls select {
+                min-width: 100%;
+            }
+
+            .content-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+
+            .content-title {
+                margin-right: 0;
+            }
+
+            .content-actions {
+                justify-content: stretch;
+            }
+
+            .btn-download,
+            .btn-detail {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+    </style>
+    
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- 헤더 -->
+    <div class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="../admin.html" class="back-button">
+                    ← 관리자 대시보드
+                </a>
+                <div class="header-title">
+                    <span>🎨</span>
+                    <h1>콘텐츠 공모전 관리</h1>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="excel-export-btn" id="exportBtn">
+                    📥 엑셀로 내보내기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <div class="container">
+        <!-- 통계 대시보드 -->
+        <div class="statistics">
+            <div class="stat-card total">
+                <div class="stat-number" id="totalStudents">0</div>
+                <div class="stat-label">전체 학생</div>
+            </div>
+            <div class="stat-card submitted">
+                <div class="stat-number" id="studentsWithContents">0</div>
+                <div class="stat-label">콘텐츠 등록 학생</div>
+            </div>
+            <div class="stat-card total-contents">
+                <div class="stat-number" id="totalContents">0</div>
+                <div class="stat-label">총 콘텐츠 수</div>
+            </div>
+        </div>
+
+        <!-- 필터 컨트롤 -->
+        <div class="filter-controls">
+            <input type="text" id="searchInput" placeholder="학생명 검색">
+            <select id="instituteFilter">
+                <option value="">전체 학당</option>
+            </select>
+            <button id="clearFiltersBtn">필터 초기화</button>
+        </div>
+
+        <!-- 학생 카드 그리드 -->
+        <div class="students-grid" id="studentsContainer">
+            <!-- 동적 생성 -->
+        </div>
+
+        <!-- 빈 상태 -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <i data-lucide="inbox" class="empty-icon"></i>
+            <h3>검색 결과가 없습니다</h3>
+            <p>다른 검색어나 필터를 시도해보세요.</p>
+        </div>
+    </div>
+
+    <!-- 상세보기 모달 -->
+    <div id="contentDetailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>콘텐츠 상세 정보</h2>
+                <button class="modal-close" id="modalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-group">
+                    <label>학생명</label>
+                    <div id="modalStudentName"></div>
+                </div>
+                <div class="detail-group">
+                    <label>콘텐츠 제목</label>
+                    <div id="modalContentTitle"></div>
+                </div>
+                <div class="detail-group">
+                    <label>콘텐츠 설명</label>
+                    <div id="modalContentDescription"></div>
+                </div>
+                <div class="detail-group">
+                    <label>다운로드 링크</label>
+                    <a id="modalContentUrl" class="btn-link" target="_blank"></a>
+                </div>
+                <div class="detail-group">
+                    <label>등록일시</label>
+                    <div id="modalCreatedAt"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
+    <script src="../js/config.js"></script>
+    
+    <script type="module">
+        // Supabase 클라이언트 초기화
+        const { createClient } = supabase;
+        const supabaseClient = createClient(window.config.SUPABASE_URL, window.config.SUPABASE_ANON_KEY);
+
+        // 관리자 인증 체크
+        function checkAdminAuth() {
+            const adminData = localStorage.getItem('adminData');
+            if (!adminData) {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '../index.html';
+                return null;
+            }
+            return JSON.parse(adminData);
+        }
+
+        class ContentContestManagementApp {
+            constructor() {
+                this.students = [];
+                this.filteredStudents = [];
+                this.institutes = new Map();
+                this.supabase = supabaseClient;
+                this.adminData = null;
+            }
+
+            async init() {
+                try {
+                    this.adminData = checkAdminAuth();
+                    if (!this.adminData) return;
+
+                    await this.loadData();
+                    this.setupEventListeners();
+                    this.updateStatistics();
+                    this.renderStudents();
+                    
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                } catch (error) {
+                    console.error('앱 초기화 실패:', error);
+                    alert('시스템 초기화에 실패했습니다.');
+                }
+            }
+
+            async loadData() {
+                try {
+                    // 학생과 콘텐츠 데이터 로드
+                    const { data: students, error } = await this.supabase
+                        .from('user_profiles')
+                        .select(`
+                            id,
+                            name,
+                            email,
+                            assigned_institute_id,
+                            institutes:assigned_institute_id(name_korean),
+                            student_contents(
+                                id,
+                                title,
+                                description,
+                                download_url,
+                                created_at
+                            )
+                        `)
+                        .eq('role', 'student')
+                        .order('name');
+
+                    if (error) throw error;
+
+                    this.students = students || [];
+                    this.filteredStudents = [...this.students];
+
+                    // 학당 목록 추출
+                    this.students.forEach(student => {
+                        if (student.institutes?.name_korean) {
+                            this.institutes.set(
+                                student.institutes.name_korean,
+                                student.assigned_institute_id
+                            );
+                        }
+                    });
+
+                    // 학당 필터 드롭다운 채우기
+                    this.populateInstituteFilter();
+
+                } catch (error) {
+                    console.error('데이터 로드 실패:', error);
+                    alert('데이터를 불러오는데 실패했습니다.');
+                }
+            }
+
+            populateInstituteFilter() {
+                const select = document.getElementById('instituteFilter');
+                const institutes = Array.from(this.institutes.keys()).sort();
+                
+                institutes.forEach(instituteName => {
+                    const option = document.createElement('option');
+                    option.value = instituteName;
+                    option.textContent = instituteName;
+                    select.appendChild(option);
+                });
+            }
+
+            setupEventListeners() {
+                // 검색
+                document.getElementById('searchInput').addEventListener('input', (e) => {
+                    this.applyFilters();
+                });
+
+                // 학당 필터
+                document.getElementById('instituteFilter').addEventListener('change', () => {
+                    this.applyFilters();
+                });
+
+                // 필터 초기화
+                document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+                    document.getElementById('searchInput').value = '';
+                    document.getElementById('instituteFilter').value = '';
+                    this.applyFilters();
+                });
+
+                // 엑셀 내보내기
+                document.getElementById('exportBtn').addEventListener('click', () => {
+                    this.exportToExcel();
+                });
+
+                // 모달 닫기
+                document.getElementById('modalCloseBtn').addEventListener('click', () => {
+                    this.closeModal();
+                });
+
+                document.getElementById('contentDetailModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'contentDetailModal') {
+                        this.closeModal();
+                    }
+                });
+            }
+
+            applyFilters() {
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                const selectedInstitute = document.getElementById('instituteFilter').value;
+
+                this.filteredStudents = this.students.filter(student => {
+                    const matchesSearch = student.name.toLowerCase().includes(searchTerm);
+                    const matchesInstitute = !selectedInstitute || 
+                        student.institutes?.name_korean === selectedInstitute;
+
+                    return matchesSearch && matchesInstitute;
+                });
+
+                this.updateStatistics();
+                this.renderStudents();
+            }
+
+            updateStatistics() {
+                const totalStudents = this.filteredStudents.length;
+                const studentsWithContents = this.filteredStudents.filter(
+                    s => s.student_contents && s.student_contents.length > 0
+                ).length;
+                const totalContents = this.filteredStudents.reduce(
+                    (sum, s) => sum + (s.student_contents?.length || 0), 0
+                );
+
+                document.getElementById('totalStudents').textContent = totalStudents;
+                document.getElementById('studentsWithContents').textContent = studentsWithContents;
+                document.getElementById('totalContents').textContent = totalContents;
+            }
+
+            renderStudents() {
+                const container = document.getElementById('studentsContainer');
+                const emptyState = document.getElementById('emptyState');
+
+                if (this.filteredStudents.length === 0) {
+                    container.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                emptyState.style.display = 'none';
+                container.style.display = 'grid';
+
+                container.innerHTML = this.filteredStudents
+                    .map(student => this.renderStudentCard(student))
+                    .join('');
+
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+
+            renderStudentCard(student) {
+                const contents = student.student_contents || [];
+                const instituteName = student.institutes?.name_korean || '학당 정보 없음';
+
+                return `
+                    <div class="student-card">
+                        <div class="card-header">
+                            <div class="student-info">
+                                <div class="student-name">${this.escapeHtml(student.name)}</div>
+                                <div class="institute-name">${this.escapeHtml(instituteName)}</div>
+                            </div>
+                            <div class="content-count-badge">콘텐츠 ${contents.length}개</div>
+                        </div>
+                        
+                        ${contents.length > 0 ? `
+                            <div class="content-list">
+                                ${contents.map(content => `
+                                    <div class="content-item">
+                                        <div class="content-title">${this.escapeHtml(content.title)}</div>
+                                        <div class="content-actions">
+                                            <a href="${content.download_url}" target="_blank" class="btn-download">
+                                                <i data-lucide="download"></i>
+                                                다운로드
+                                            </a>
+                                            <button class="btn-detail" onclick="window.contentApp.showContentDetail('${content.id}', '${this.escapeHtml(student.name)}')">
+                                                <i data-lucide="eye"></i>
+                                                자세히 보기
+                                            </button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : `
+                            <div class="no-content">등록된 콘텐츠가 없습니다</div>
+                        `}
+                    </div>
+                `;
+            }
+
+            showContentDetail(contentId, studentName) {
+                const content = this.findContentById(contentId);
+                if (!content) {
+                    alert('콘텐츠를 찾을 수 없습니다.');
+                    return;
+                }
+
+                document.getElementById('modalStudentName').textContent = studentName;
+                document.getElementById('modalContentTitle').textContent = content.title;
+                document.getElementById('modalContentDescription').textContent = content.description;
+                document.getElementById('modalContentUrl').href = content.download_url;
+                document.getElementById('modalContentUrl').textContent = content.download_url;
+                document.getElementById('modalCreatedAt').textContent = 
+                    new Date(content.created_at).toLocaleString('ko-KR');
+
+                document.getElementById('contentDetailModal').style.display = 'flex';
+            }
+
+            closeModal() {
+                document.getElementById('contentDetailModal').style.display = 'none';
+            }
+
+            findContentById(contentId) {
+                for (const student of this.students) {
+                    const content = student.student_contents?.find(c => c.id === contentId);
+                    if (content) return content;
+                }
+                return null;
+            }
+
+            async exportToExcel() {
+                try {
+                    const exportBtn = document.getElementById('exportBtn');
+                    exportBtn.disabled = true;
+                    exportBtn.textContent = '⏳ 내보내는 중...';
+
+                    const exportData = [];
+
+                    this.filteredStudents.forEach(student => {
+                        const contents = student.student_contents || [];
+                        const instituteName = student.institutes?.name_korean || '';
+
+                        if (contents.length === 0) {
+                            exportData.push({
+                                '학생명': student.name,
+                                '파견학당': instituteName,
+                                '콘텐츠수': 0,
+                                '콘텐츠제목': '',
+                                '콘텐츠설명': '',
+                                '다운로드링크': '',
+                                '등록일시': ''
+                            });
+                        } else {
+                            contents.forEach(content => {
+                                exportData.push({
+                                    '학생명': student.name,
+                                    '파견학당': instituteName,
+                                    '콘텐츠수': contents.length,
+                                    '콘텐츠제목': content.title,
+                                    '콘텐츠설명': content.description,
+                                    '다운로드링크': content.download_url,
+                                    '등록일시': new Date(content.created_at).toLocaleString('ko-KR')
+                                });
+                            });
+                        }
+                    });
+
+                    const worksheet = XLSX.utils.json_to_sheet(exportData);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, '콘텐츠공모전');
+
+                    const today = new Date().toISOString().split('T')[0];
+                    const fileName = `콘텐츠공모전현황_${today}.xlsx`;
+
+                    XLSX.writeFile(workbook, fileName);
+
+                    alert('엑셀 파일이 다운로드되었습니다.');
+
+                } catch (error) {
+                    console.error('엑셀 내보내기 실패:', error);
+                    alert('엑셀 내보내기에 실패했습니다.');
+                } finally {
+                    const exportBtn = document.getElementById('exportBtn');
+                    exportBtn.disabled = false;
+                    exportBtn.textContent = '📥 엑셀로 내보내기';
+                }
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+
+        // 앱 초기화
+        async function initApp() {
+            window.contentApp = new ContentContestManagementApp();
+            await window.contentApp.init();
+        }
+
+        // DOM 로드 완료 시 초기화
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+    </script>
+</body>
+</html>
