@@ -735,22 +735,39 @@
             }
         };
 
-        // ✅ Supabase 초기화 대기 함수 추가
-        async function waitForSupabase(maxAttempts = 10) {
+        // ✅ 개선된 Supabase 초기화 대기 함수
+        async function waitForSupabase(maxAttempts = 30) {
+            console.log('🔍 Supabase 클라이언트 초기화 대기 시작...');
+            
             for (let i = 0; i < maxAttempts; i++) {
-                const client = window.supabase || 
-                              window.SupabaseAPI?.client || 
-                              window.SupabaseCore?.client;
+                // 디버깅: 현재 상태 확인
+                console.log(`[${i + 1}/${maxAttempts}] 확인 중...`, {
+                    'window.supabase': !!window.supabase,
+                    'window.SupabaseAPI': !!window.SupabaseAPI,
+                    'window.SupabaseCore': !!window.SupabaseCore,
+                    'window.SupabaseCore?.client': !!window.SupabaseCore?.client
+                });
                 
-                if (client) {
-                    console.log('✅ Supabase 클라이언트 준비 완료');
-                    return client;
+                // ✅ .client 속성이 실제로 초기화되었는지 확인
+                if (window.SupabaseCore?.client && window.SupabaseCore.client !== null) {
+                    console.log('✅ Supabase 클라이언트 준비 완료 (SupabaseCore.client)');
+                    return window.SupabaseCore.client;
                 }
                 
-                console.log(`⏳ Supabase 초기화 대기 중... (${i + 1}/${maxAttempts})`);
+                if (window.SupabaseAPI?.client && window.SupabaseAPI.client !== null) {
+                    console.log('✅ Supabase 클라이언트 준비 완료 (SupabaseAPI.client)');
+                    return window.SupabaseAPI.client;
+                }
+                
+                if (window.supabase && window.supabase !== null) {
+                    console.log('✅ Supabase 클라이언트 준비 완료 (window.supabase)');
+                    return window.supabase;
+                }
+                
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
             
+            console.error('❌ Supabase 클라이언트 초기화 타임아웃');
             throw new Error('❌ Supabase client initialization timeout');
         }
 
