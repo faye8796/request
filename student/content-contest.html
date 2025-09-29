@@ -743,19 +743,11 @@
                 this.contents = [];
                 this.isFormVisible = false;
                 this.editingContentId = null;
-                // ✅ 수정: window.supabase → window.SupabaseCore?.client
-                this.supabase = window.SupabaseCore?.client || null;
+                // ✅ 수정: Constructor에서 Supabase 참조 제거
             }
 
             async init() {
                 try {
-                    // ✅ 추가: Supabase 클라이언트 확인
-                    if (!this.supabase) {
-                        console.error('Supabase 클라이언트를 찾을 수 없습니다.');
-                        this.showToast('시스템 초기화에 실패했습니다.', 'error');
-                        return;
-                    }
-                    
                     await this.loadUserData();
                     await this.checkFeatureEnabled();
                     this.setupEventListeners();
@@ -789,7 +781,8 @@
 
             async checkFeatureEnabled() {
                 try {
-                    const { data, error } = await this.supabase
+                    // ✅ 수정: 직접 접근
+                    const { data, error } = await window.SupabaseCore.client
                         .from('user_profiles')
                         .select('individual_content_contest_enabled')
                         .eq('id', this.currentUser.id)
@@ -1032,7 +1025,8 @@
             // API 연동
             async loadContents() {
                 try {
-                    const { data, error } = await this.supabase
+                    // ✅ 수정: 직접 접근
+                    const { data, error } = await window.SupabaseCore.client
                         .from('student_contents')
                         .select('*')
                         .eq('user_id', this.currentUser.id)
@@ -1050,7 +1044,8 @@
 
             async saveContent(formData) {
                 try {
-                    const { data, error } = await this.supabase
+                    // ✅ 수정: 직접 접근
+                    const { data, error } = await window.SupabaseCore.client
                         .from('student_contents')
                         .insert([{
                             user_id: this.currentUser.id,
@@ -1077,7 +1072,8 @@
 
             async updateContent(contentId, formData) {
                 try {
-                    const { data, error } = await this.supabase
+                    // ✅ 수정: 직접 접근
+                    const { data, error } = await window.SupabaseCore.client
                         .from('student_contents')
                         .update({
                             title: formData.title,
@@ -1112,7 +1108,8 @@
                 }
                 
                 try {
-                    const { error } = await this.supabase
+                    // ✅ 수정: 직접 접근
+                    const { error } = await window.SupabaseCore.client
                         .from('student_contents')
                         .delete()
                         .eq('id', contentId);
