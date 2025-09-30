@@ -771,6 +771,21 @@
                             관리하기
                         </button>
                     </div>
+                    
+                    <!-- 🎨 콘텐츠 공모전 관리 -->
+                    <div class="menu-card" onclick="navigateToContentContestManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="palette"></i>
+                        </div>
+                        <h2 class="menu-title">콘텐츠 공모전 관리</h2>
+                        <p class="menu-description">
+                            학생들의 콘텐츠 등록 현황을 조회                            
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
 
                     <!-- 📋 필수 서류 제출 관리 -->
                     <div class="menu-card" onclick="navigateToRequiredDocumentsManagement()">
@@ -1421,6 +1436,10 @@
             function navigateToActivityScheduleManagement() {
                 window.location.href = 'admin/activity-schedule-management.html';
             }
+            function navigateToContentContestManagement() {
+                window.location.href = 'admin/content-contest-management.html';
+            }
+            
             
             // 전역 함수로 노출
             window.handleAdminLogin = handleAdminLogin;
@@ -1435,7 +1454,7 @@
             window.navigateToReimbursementManagement = navigateToReimbursementManagement;
             window.navigateToRequiredDocumentsManagement = navigateToRequiredDocumentsManagement;
             window.navigateToActivityScheduleManagement = navigateToActivityScheduleManagement;
-
+            window.navigateToContentContestManagement = navigateToContentContestManagement;
             
             // DOMContentLoaded 이벤트 리스너
             document.addEventListener('DOMContentLoaded', safeInitialize);
@@ -1453,7 +1472,8 @@
                 navigateToVisaManagement,
                 navigateToReimbursementManagement,
                 navigateToRequiredDocumentsManagement,
-                navigateToActivityScheduleManagement
+                navigateToActivityScheduleManagement,
+                navigateToContentContestManagement
             };
         })();
 
