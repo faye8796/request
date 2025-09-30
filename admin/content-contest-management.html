@@ -664,8 +664,7 @@
                 try {
                     console.log('📊 데이터 로딩 시작...');
                     
-                    // ✅ 수정: 별도 쿼리로 데이터 가져오기
-                    // 1. 학생 데이터와 콘텐츠 로드
+                    // ✅ 수정: 명시적으로 관계 이름 지정 (user_id 사용)
                     const { data: students, error: studentsError } = await this.supabase
                         .from('user_profiles')
                         .select(`
@@ -673,7 +672,7 @@
                             name,
                             email,
                             assigned_institute_id,
-                            student_contents(
+                            student_contents!student_contents_user_id_fkey(
                                 id,
                                 title,
                                 description,
@@ -686,21 +685,21 @@
 
                     if (studentsError) throw studentsError;
 
-                    // 2. 학당 데이터 로드
+                    // 학당 데이터 로드
                     const { data: institutes, error: institutesError } = await this.supabase
                         .from('institutes')
                         .select('id, name_korean');
 
                     if (institutesError) throw institutesError;
 
-                    // 3. 학당 정보를 Map으로 변환
+                    // 학당 정보를 Map으로 변환
                     const instituteMap = new Map();
                     institutes.forEach(inst => {
                         instituteMap.set(inst.id, inst.name_korean);
                         this.institutes.set(inst.name_korean, inst.id);
                     });
 
-                    // 4. 학생 데이터에 학당 정보 추가
+                    // 학생 데이터에 학당 정보 추가
                     this.students = (students || []).map(student => ({
                         ...student,
                         institute_name: instituteMap.get(student.assigned_institute_id) || null
