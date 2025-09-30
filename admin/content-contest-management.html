@@ -665,7 +665,7 @@
                 try {
                     console.log('📊 데이터 로딩 시작...');
                     
-                    // 학생과 콘텐츠 데이터 로드
+                    // ✅ 수정된 쿼리: 테이블명 직접 사용
                     const { data: students, error } = await this.supabase
                         .from('user_profiles')
                         .select(`
@@ -673,7 +673,7 @@
                             name,
                             email,
                             assigned_institute_id,
-                            institutes:assigned_institute_id(name_korean),
+                            institutes(name_korean),
                             student_contents(
                                 id,
                                 title,
