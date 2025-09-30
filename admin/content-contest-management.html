@@ -636,7 +636,7 @@
                 this.supabase = createClient(supabaseUrl, supabaseAnonKey);
                 this.students = [];
                 this.filteredStudents = [];
-                this.institutes = new Map();
+                this.institutes = new Set();
                 this.adminData = null;
             }
 
@@ -664,14 +664,14 @@
                 try {
                     console.log('📊 데이터 로딩 시작...');
                     
-                    // ✅ 수정: 명시적으로 관계 이름 지정 (user_id 사용)
+                    // ✅ 수정: sejong_institute 컬럼 사용
                     const { data: students, error: studentsError } = await this.supabase
                         .from('user_profiles')
                         .select(`
                             id,
                             name,
                             email,
-                            assigned_institute_id,
+                            sejong_institute,
                             student_contents!student_contents_user_id_fkey(
                                 id,
                                 title,
@@ -680,32 +680,20 @@
                                 created_at
                             )
                         `)
-                        .eq('role', 'student')
+                        .eq('user_type', 'student')
                         .order('name');
 
                     if (studentsError) throw studentsError;
 
-                    // 학당 데이터 로드
-                    const { data: institutes, error: institutesError } = await this.supabase
-                        .from('institutes')
-                        .select('id, name_korean');
-
-                    if (institutesError) throw institutesError;
-
-                    // 학당 정보를 Map으로 변환
-                    const instituteMap = new Map();
-                    institutes.forEach(inst => {
-                        instituteMap.set(inst.id, inst.name_korean);
-                        this.institutes.set(inst.name_korean, inst.id);
-                    });
-
-                    // 학생 데이터에 학당 정보 추가
-                    this.students = (students || []).map(student => ({
-                        ...student,
-                        institute_name: instituteMap.get(student.assigned_institute_id) || null
-                    }));
-
+                    this.students = students || [];
                     this.filteredStudents = [...this.students];
+
+                    // 학당 목록 추출 (Set 사용)
+                    this.students.forEach(student => {
+                        if (student.sejong_institute) {
+                            this.institutes.add(student.sejong_institute);
+                        }
+                    });
 
                     // 학당 필터 드롭다운 채우기
                     this.populateInstituteFilter();
@@ -720,7 +708,7 @@
 
             populateInstituteFilter() {
                 const select = document.getElementById('instituteFilter');
-                const institutes = Array.from(this.institutes.keys()).sort();
+                const institutes = Array.from(this.institutes).sort();
                 
                 institutes.forEach(instituteName => {
                     const option = document.createElement('option');
@@ -772,7 +760,7 @@
                 this.filteredStudents = this.students.filter(student => {
                     const matchesSearch = student.name.toLowerCase().includes(searchTerm);
                     const matchesInstitute = !selectedInstitute || 
-                        student.institute_name === selectedInstitute;
+                        student.sejong_institute === selectedInstitute;
 
                     return matchesSearch && matchesInstitute;
                 });
@@ -819,7 +807,7 @@
 
             renderStudentCard(student) {
                 const contents = student.student_contents || [];
-                const instituteName = student.institute_name || '학당 정보 없음';
+                const instituteName = student.sejong_institute || '학당 정보 없음';
 
                 return `
                     <div class="student-card">
@@ -896,7 +884,7 @@
 
                     this.filteredStudents.forEach(student => {
                         const contents = student.student_contents || [];
-                        const instituteName = student.institute_name || '';
+                        const instituteName = student.sejong_institute || '';
 
                         if (contents.length === 0) {
                             exportData.push({
