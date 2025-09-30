@@ -420,6 +420,35 @@
             color: #9ca3af;
         }
 
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1f2937;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: #10b981;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+
         /* 반응형 */
         @media (max-width: 768px) {
             .header-content {
@@ -559,39 +588,63 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
-    <script src="../js/config.js"></script>
-    
     <script type="module">
-        // Supabase 클라이언트 초기화
-        const { createClient } = supabase;
-        const supabaseClient = createClient(window.config.SUPABASE_URL, window.config.SUPABASE_ANON_KEY);
-
-        // 관리자 인증 체크
+        // 🔐 관리자 인증 체크 (required-documents-management.html 패턴)
         function checkAdminAuth() {
-            const adminData = localStorage.getItem('adminData');
-            if (!adminData) {
-                alert('관리자 권한이 필요합니다.');
-                window.location.href = '../index.html';
-                return null;
+            console.log('🔐 관리자 인증 확인 시작...');
+            const adminSession = localStorage.getItem('adminSession');
+            if (!adminSession || adminSession !== 'true') {
+                console.warn('❌ 관리자 인증 실패 - adminSession:', adminSession);
+                alert('관리자 로그인이 필요합니다.');
+                window.location.href = '../admin.html';
+                return false;
             }
-            return JSON.parse(adminData);
+            console.log('✅ 관리자 인증 확인 완료');
+            return true;
+        }
+
+        // Supabase 설정 (직접 초기화)
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+        
+        const supabaseUrl = 'https://aazvopacnbbkvusihqva.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTQyMjQsImV4cCI6MjA2NTM3MDIyNH0.0NXI_tohwFCOl3xY4b1jIlxQR_zGTS9tWDM2OFxTq4s';
+
+        // Toast 알림 함수
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
         }
 
         class ContentContestManagementApp {
             constructor() {
+                // ✅ 클래스 생성자 내부에서 Supabase 초기화
+                this.supabase = createClient(supabaseUrl, supabaseAnonKey);
                 this.students = [];
                 this.filteredStudents = [];
                 this.institutes = new Map();
-                this.supabase = supabaseClient;
                 this.adminData = null;
             }
 
             async init() {
                 try {
-                    this.adminData = checkAdminAuth();
-                    if (!this.adminData) return;
-
+                    console.log('🎨 콘텐츠 공모전 관리 시스템 초기화 시작...');
+                    
                     await this.loadData();
                     this.setupEventListeners();
                     this.updateStatistics();
@@ -600,14 +653,18 @@
                     if (typeof lucide !== 'undefined') {
                         lucide.createIcons();
                     }
+                    
+                    console.log('✅ 초기화 완료');
                 } catch (error) {
                     console.error('앱 초기화 실패:', error);
-                    alert('시스템 초기화에 실패했습니다.');
+                    showToast('시스템 초기화에 실패했습니다.', 'error');
                 }
             }
 
             async loadData() {
                 try {
+                    console.log('📊 데이터 로딩 시작...');
+                    
                     // 학생과 콘텐츠 데이터 로드
                     const { data: students, error } = await this.supabase
                         .from('user_profiles')
@@ -645,10 +702,12 @@
 
                     // 학당 필터 드롭다운 채우기
                     this.populateInstituteFilter();
+                    
+                    console.log('✅ 데이터 로딩 완료:', this.students.length, '명');
 
                 } catch (error) {
                     console.error('데이터 로드 실패:', error);
-                    alert('데이터를 불러오는데 실패했습니다.');
+                    showToast('데이터를 불러오는데 실패했습니다.', 'error');
                 }
             }
 
@@ -793,7 +852,7 @@
             showContentDetail(contentId, studentName) {
                 const content = this.findContentById(contentId);
                 if (!content) {
-                    alert('콘텐츠를 찾을 수 없습니다.');
+                    showToast('콘텐츠를 찾을 수 없습니다.', 'error');
                     return;
                 }
 
@@ -866,11 +925,11 @@
 
                     XLSX.writeFile(workbook, fileName);
 
-                    alert('엑셀 파일이 다운로드되었습니다.');
+                    showToast('엑셀 파일이 다운로드되었습니다.');
 
                 } catch (error) {
                     console.error('엑셀 내보내기 실패:', error);
-                    alert('엑셀 내보내기에 실패했습니다.');
+                    showToast('엑셀 내보내기에 실패했습니다.', 'error');
                 } finally {
                     const exportBtn = document.getElementById('exportBtn');
                     exportBtn.disabled = false;
@@ -885,18 +944,19 @@
             }
         }
 
-        // 앱 초기화
-        async function initApp() {
+        // 🚀 초기화 - DOMContentLoaded 이벤트 핸들러
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('📋 콘텐츠 공모전 관리 페이지 초기화 시작');
+            
+            // 🔐 관리자 인증 체크 (필수)
+            if (!checkAdminAuth()) {
+                return; // 인증 실패 시 중단
+            }
+            
+            // 인증 성공 시 앱 초기화
             window.contentApp = new ContentContestManagementApp();
             await window.contentApp.init();
-        }
-
-        // DOM 로드 완료 시 초기화
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initApp);
-        } else {
-            initApp();
-        }
+        });
     </script>
 </body>
 </html>
