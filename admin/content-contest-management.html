@@ -589,7 +589,7 @@
 
     <!-- JavaScript -->
     <script type="module">
-        // 🔐 관리자 인증 체크 (required-documents-management.html 패턴)
+        // 🔐 관리자 인증 체크
         function checkAdminAuth() {
             console.log('🔐 관리자 인증 확인 시작...');
             const adminSession = localStorage.getItem('adminSession');
@@ -603,7 +603,7 @@
             return true;
         }
 
-        // Supabase 설정 (직접 초기화)
+        // Supabase 설정
         import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
         
         const supabaseUrl = 'https://aazvopacnbbkvusihqva.supabase.co';
@@ -633,7 +633,6 @@
 
         class ContentContestManagementApp {
             constructor() {
-                // ✅ 클래스 생성자 내부에서 Supabase 초기화
                 this.supabase = createClient(supabaseUrl, supabaseAnonKey);
                 this.students = [];
                 this.filteredStudents = [];
@@ -665,15 +664,15 @@
                 try {
                     console.log('📊 데이터 로딩 시작...');
                     
-                    // ✅ 수정된 쿼리: 테이블명 직접 사용
-                    const { data: students, error } = await this.supabase
+                    // ✅ 수정: 별도 쿼리로 데이터 가져오기
+                    // 1. 학생 데이터와 콘텐츠 로드
+                    const { data: students, error: studentsError } = await this.supabase
                         .from('user_profiles')
                         .select(`
                             id,
                             name,
                             email,
                             assigned_institute_id,
-                            institutes(name_korean),
                             student_contents(
                                 id,
                                 title,
@@ -685,20 +684,29 @@
                         .eq('role', 'student')
                         .order('name');
 
-                    if (error) throw error;
+                    if (studentsError) throw studentsError;
 
-                    this.students = students || [];
-                    this.filteredStudents = [...this.students];
+                    // 2. 학당 데이터 로드
+                    const { data: institutes, error: institutesError } = await this.supabase
+                        .from('institutes')
+                        .select('id, name_korean');
 
-                    // 학당 목록 추출
-                    this.students.forEach(student => {
-                        if (student.institutes?.name_korean) {
-                            this.institutes.set(
-                                student.institutes.name_korean,
-                                student.assigned_institute_id
-                            );
-                        }
+                    if (institutesError) throw institutesError;
+
+                    // 3. 학당 정보를 Map으로 변환
+                    const instituteMap = new Map();
+                    institutes.forEach(inst => {
+                        instituteMap.set(inst.id, inst.name_korean);
+                        this.institutes.set(inst.name_korean, inst.id);
                     });
+
+                    // 4. 학생 데이터에 학당 정보 추가
+                    this.students = (students || []).map(student => ({
+                        ...student,
+                        institute_name: instituteMap.get(student.assigned_institute_id) || null
+                    }));
+
+                    this.filteredStudents = [...this.students];
 
                     // 학당 필터 드롭다운 채우기
                     this.populateInstituteFilter();
@@ -765,7 +773,7 @@
                 this.filteredStudents = this.students.filter(student => {
                     const matchesSearch = student.name.toLowerCase().includes(searchTerm);
                     const matchesInstitute = !selectedInstitute || 
-                        student.institutes?.name_korean === selectedInstitute;
+                        student.institute_name === selectedInstitute;
 
                     return matchesSearch && matchesInstitute;
                 });
@@ -812,7 +820,7 @@
 
             renderStudentCard(student) {
                 const contents = student.student_contents || [];
-                const instituteName = student.institutes?.name_korean || '학당 정보 없음';
+                const instituteName = student.institute_name || '학당 정보 없음';
 
                 return `
                     <div class="student-card">
@@ -889,7 +897,7 @@
 
                     this.filteredStudents.forEach(student => {
                         const contents = student.student_contents || [];
-                        const instituteName = student.institutes?.name_korean || '';
+                        const instituteName = student.institute_name || '';
 
                         if (contents.length === 0) {
                             exportData.push({
@@ -944,16 +952,14 @@
             }
         }
 
-        // 🚀 초기화 - DOMContentLoaded 이벤트 핸들러
+        // 🚀 초기화
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('📋 콘텐츠 공모전 관리 페이지 초기화 시작');
             
-            // 🔐 관리자 인증 체크 (필수)
             if (!checkAdminAuth()) {
-                return; // 인증 실패 시 중단
+                return;
             }
             
-            // 인증 성공 시 앱 초기화
             window.contentApp = new ContentContestManagementApp();
             await window.contentApp.init();
         });
