@@ -595,14 +595,13 @@
                 <i data-lucide="edit-3"></i>
                 <span class="tab-text">콘텐츠 등록</span>
             </button>
+            <button class="tab-button" data-tab="contest-info">
+                <i data-lucide="award"></i>
+                <span class="tab-text">정량 점수 평가기준</span>
+            </button>
             <button class="tab-button disabled" data-tab="submission-history">
                 <i data-lucide="clock"></i>
                 <span class="tab-text">조회수 집계 등록</span>
-                <span class="coming-soon">준비중</span>
-            </button>
-            <button class="tab-button disabled" data-tab="contest-info">
-                <i data-lucide="info"></i>
-                <span class="tab-text">정량 점수 평가기준</span>
                 <span class="coming-soon">준비중</span>
             </button>
         </div>
@@ -695,13 +694,147 @@
             </div>
         </div>
         
-        <!-- 정량 점수 평가 기준 탭 (준비중) -->
+        <!-- 정량 점수 평가 기준 탭 -->
         <div class="tab-content" id="contest-info-tab">
             <div class="content-section">
-                <div class="coming-soon-content">
-                    <i data-lucide="construction" class="coming-soon-icon"></i>
-                    <h3>정량 점수 평가기준</h3>
-                    <p>이 기능은 곧 업데이트될 예정입니다.</p>
+                <div class="section-header">
+                    <h2>
+                        <i data-lucide="award"></i>
+                        정량 점수 평가 기준 (50점)
+                    </h2>
+                </div>
+
+                <!-- 안내 문구 -->
+                <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 1rem 1.5rem; border-radius: 0.5rem; margin-bottom: 2rem;">
+                    <p style="color: #1e40af; font-weight: 500; margin: 0;">
+                        아래의 기준에 따라 항목별 배점하여 총점 합산 적용
+                    </p>
+                </div>
+
+                <!-- 평가 항목 테이블 -->
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #e5e7eb; border-radius: 0.75rem; overflow: hidden;">
+                        <thead>
+                            <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                <th style="padding: 1.25rem 1.5rem; text-align: left; font-weight: 700; font-size: 1.1rem; border-bottom: 2px solid #4f46e5;">구분</th>
+                                <th style="padding: 1.25rem 1.5rem; text-align: center; font-weight: 700; font-size: 1.1rem; border-bottom: 2px solid #4f46e5; width: 120px;">배점</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 1. 공식채널 콘텐츠 업로드 점수 -->
+                            <tr style="border-bottom: 1px solid #e5e7eb;">
+                                <td style="padding: 1.5rem; vertical-align: top;">
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <h3 style="color: #1f2937; font-weight: 700; font-size: 1.1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #3b82f6; color: white; border-radius: 50%; font-size: 0.9rem; font-weight: 700;">1</span>
+                                            공식채널 콘텐츠 업로드 점수
+                                        </h3>
+                                    </div>
+                                    <ul style="margin: 0; padding-left: 1.25rem; color: #4b5563; line-height: 1.8;">
+                                        <li style="margin-bottom: 0.75rem;">
+                                            매주 지난주 월~일 1주 간 제출된 콘텐츠 중 우수한 콘텐츠를 채택하여 1~5회 문화인턴 공식 인스타그램 채널에 업로드합니다.
+                                        </li>
+                                        <li style="margin-bottom: 0.75rem;">
+                                            문화인턴 공식 인스타그램에 제출한 콘텐츠가 업로드될 경우 배점을 부여합니다.
+                                        </li>
+                                        <li style="list-style-type:none; background: #fef3c7; padding: 0.75rem; border-radius: 0.5rem; border-left: 3px solid #f59e0b; color: #92400e;">
+                                            <strong>콘텐츠 채택시 최초 5점이 부여됩니다. 이후 추가로 채택된 콘텐츠는 2점씩 추가 점수를 부여합니다.</strong>
+                                        </li>
+                                    </ul>
+                                </td>
+                                <td style="padding: 1.5rem; text-align: center; vertical-align: middle; background: #f8fafc;">
+                                    <div style="font-size: 1.75rem; font-weight: 800; color: #3b82f6;">최대 10점</div>
+                                </td>
+                            </tr>
+
+                            <!-- 2. 공식채널 조회수 점수 -->
+                            <tr style="border-bottom: 1px solid #e5e7eb;">
+                                <td style="padding: 1.5rem; vertical-align: top;">
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <h3 style="color: #1f2937; font-weight: 700; font-size: 1.1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #10b981; color: white; border-radius: 50%; font-size: 0.9rem; font-weight: 700;">2</span>
+                                            공식채널 조회수 점수
+                                        </h3>
+                                    </div>
+                                    <ul style="margin: 0; padding-left: 1.25rem; color: #4b5563; line-height: 1.8;">
+                                        <li>
+                                            문화인턴 공식 인스타그램 채널에 업로드된 콘텐츠 중, 가장 많은 조회수를 기록한 콘텐츠의 조회수 기준을 10점으로 하여, 이에 따른 환산 점수를 부여합니다.
+                                        </li>
+                                    </ul>
+                                </td>
+                                <td style="padding: 1.5rem; text-align: center; vertical-align: middle; background: #f8fafc;">
+                                    <div style="font-size: 1.75rem; font-weight: 800; color: #10b981;">최대 10점</div>
+                                </td>
+                            </tr>
+
+                            <!-- 3. 공식채널 공감/댓글 점수 -->
+                            <tr style="border-bottom: 1px solid #e5e7eb;">
+                                <td style="padding: 1.5rem; vertical-align: top;">
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <h3 style="color: #1f2937; font-weight: 700; font-size: 1.1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #f59e0b; color: white; border-radius: 50%; font-size: 0.9rem; font-weight: 700;">3</span>
+                                            공식채널 공감/댓글 점수
+                                        </h3>
+                                    </div>
+                                    <ul style="margin: 0; padding-left: 1.25rem; color: #4b5563; line-height: 1.8;">
+                                        <li>
+                                            문화인턴 공식 인스타그램 채널에 업로드된 콘텐츠 중, 가장 많은 공감과 댓글을 받은 콘텐츠의 공감/댓글 수를 합산한 기록을 10점으로 하여, 이에 따른 환산점수를 부여합니다.
+                                        </li>
+                                    </ul>
+                                </td>
+                                <td style="padding: 1.5rem; text-align: center; vertical-align: middle; background: #f8fafc;">
+                                    <div style="font-size: 1.75rem; font-weight: 800; color: #f59e0b;">최대 10점</div>
+                                </td>
+                            </tr>
+
+                            <!-- 4. 비공식채널 확산 점수 -->
+                            <tr>
+                                <td style="padding: 1.5rem; vertical-align: top;">
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <h3 style="color: #1f2937; font-weight: 700; font-size: 1.1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #8b5cf6; color: white; border-radius: 50%; font-size: 0.9rem; font-weight: 700;">4</span>
+                                            비공식채널 확산 점수
+                                        </h3>
+                                    </div>
+                                    <ul style="margin: 0; padding-left: 1.25rem; color: #4b5563; line-height: 1.8;">
+                                        <li style="margin-bottom: 0.75rem;">
+                                            문화인턴 공식 인스타그램 채널 이외에, 본인의 인스타그램 계정 또는 블로그, 유튜브 등 기타 채널에 업로드된 문화인턴 관련 콘텐츠의 정량 지표(조회수, 댓글 등)에 따라 가장 높은 지표를 달성한 문화인턴을 20점 기준으로 하여, 환산 점수를 부여합니다.
+                                        </li>
+                                    </ul>
+
+                                    <!-- 주의사항 박스 -->
+                                    <div style="margin-top: 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 0.5rem; padding: 1rem;">
+                                        <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                            <div style="flex-shrink: 0; margin-top: 0.125rem;">
+                                                <i data-lucide="alert-circle" style="width: 20px; height: 20px; color: #dc2626;"></i>
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <div style="font-weight: 700; color: #991b1b; margin-bottom: 0.5rem; font-size: 0.95rem;">필수 요구사항</div>
+                                                <ul style="margin: 0; padding-left: 1rem; color: #7f1d1d; line-height: 1.7; font-size: 0.9rem;">
+                                                    <li style="margin-bottom: 0.5rem;">
+                                                        관련 콘텐츠에는 <strong>#세종학당재단 #세종학당문화인턴 #문화인턴</strong> 등의 해시태그를 필수로 포함
+                                                    </li>
+                                                    <li>
+                                                        개인 계정으로 인스타그램 업로드 시 <strong>'세종학당 문화인턴' 공식 인스타그램 '공동 작업자' 설정 필수</strong>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="padding: 1.5rem; text-align: center; vertical-align: middle; background: #f8fafc;">
+                                    <div style="font-size: 1.75rem; font-weight: 800; color: #8b5cf6;">최대 20점</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 총점 안내 -->
+                <div style="margin-top: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 0.75rem; text-align: center;">
+                    <div style="font-size: 0.9rem; font-weight: 500; margin-bottom: 0.5rem; opacity: 0.9;">정량 점수 총점</div>
+                    <div style="font-size: 2.5rem; font-weight: 800;">50점</div>
+                    <div style="font-size: 0.875rem; margin-top: 0.5rem; opacity: 0.8;">(전체 평가의 50%)</div>
                 </div>
             </div>
         </div>
