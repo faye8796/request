@@ -221,7 +221,7 @@ if (window.reimbursementManagementSystem) {
                 throw new Error(`차수별 통계 조회 실패: ${error.message}`);
             }
 
-            // 🆕 차수별 예정 금액 계산 (확장된 버전)
+           // 🆕 차수별 예정 금액 계산 (1~10차 개별)
             const round1Scheduled = amountStats
                 ?.filter(item => item.payment_round === 1)
                 ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
@@ -238,9 +238,28 @@ if (window.reimbursementManagementSystem) {
                 ?.filter(item => item.payment_round === 4)
                 ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
 
-            // 5차 이상은 모두 합쳐서 표시
-            const round5PlusScheduled = amountStats
-                ?.filter(item => item.payment_round >= 5)
+            const round5Scheduled = amountStats
+                ?.filter(item => item.payment_round === 5)
+                ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
+
+            const round6Scheduled = amountStats
+                ?.filter(item => item.payment_round === 6)
+                ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
+
+            const round7Scheduled = amountStats
+                ?.filter(item => item.payment_round === 7)
+                ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
+
+            const round8Scheduled = amountStats
+                ?.filter(item => item.payment_round === 8)
+                ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
+
+            const round9Scheduled = amountStats
+                ?.filter(item => item.payment_round === 9)
+                ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
+
+            const round10Scheduled = amountStats
+                ?.filter(item => item.payment_round === 10)
                 ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
 
             // 🆕 실제 지급된 총 금액
@@ -269,13 +288,18 @@ if (window.reimbursementManagementSystem) {
                 existingElements.completedPayments.textContent = stats.completedPayments; // 기존 로직 유지
             }
 
-            // 🆕 새로운 금액 통계 DOM 업데이트 (확장된 버전)
+            // 🆕 새로운 금액 통계 DOM 업데이트 (1~10차 개별)
             const newElements = {
                 round1Scheduled: document.getElementById('round1-scheduled'),
                 round2Scheduled: document.getElementById('round2-scheduled'),
                 round3Scheduled: document.getElementById('round3-scheduled'),
                 round4Scheduled: document.getElementById('round4-scheduled'),
-                round5PlusScheduled: document.getElementById('round5-scheduled'),
+                round5Scheduled: document.getElementById('round5-scheduled'),
+                round6Scheduled: document.getElementById('round6-scheduled'),
+                round7Scheduled: document.getElementById('round7-scheduled'),
+                round8Scheduled: document.getElementById('round8-scheduled'),
+                round9Scheduled: document.getElementById('round9-scheduled'),
+                round10Scheduled: document.getElementById('round10-scheduled'),
                 totalActualPaid: document.getElementById('total-actual-paid')
             };
 
@@ -291,8 +315,23 @@ if (window.reimbursementManagementSystem) {
             if (newElements.round4Scheduled) {
                 newElements.round4Scheduled.textContent = `${round4Scheduled.toLocaleString()}원`;
             }
-            if (newElements.round5PlusScheduled) {
-                newElements.round5PlusScheduled.textContent = `${round5PlusScheduled.toLocaleString()}원`;
+            if (newElements.round5Scheduled) {
+                newElements.round5Scheduled.textContent = `${round5Scheduled.toLocaleString()}원`;
+            }
+            if (newElements.round6Scheduled) {
+                newElements.round6Scheduled.textContent = `${round6Scheduled.toLocaleString()}원`;
+            }
+            if (newElements.round7Scheduled) {
+                newElements.round7Scheduled.textContent = `${round7Scheduled.toLocaleString()}원`;
+            }
+            if (newElements.round8Scheduled) {
+                newElements.round8Scheduled.textContent = `${round8Scheduled.toLocaleString()}원`;
+            }
+            if (newElements.round9Scheduled) {
+                newElements.round9Scheduled.textContent = `${round9Scheduled.toLocaleString()}원`;
+            }
+            if (newElements.round10Scheduled) {
+                newElements.round10Scheduled.textContent = `${round10Scheduled.toLocaleString()}원`;
             }
             if (newElements.totalActualPaid) {
                 newElements.totalActualPaid.textContent = `${totalActualPaid.toLocaleString()}원`;

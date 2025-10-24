@@ -417,8 +417,7 @@ const SupabaseStudent = {
             return await client
                 .from('requests')
                 .update({
-                    // status: 'purchased',
-                    // 🔧 v2.12 - purchased_at 컬럼 제거 (오류 수정)
+                    status: 'approved',
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', requestId)

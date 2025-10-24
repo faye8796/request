@@ -190,7 +190,6 @@ const SupabaseCore = {
             'approved': 'success', 
             'rejected': 'danger',
             'purchased': 'info',
-            'completed': 'info'
         };
         return statusMap[status] || 'secondary';
     },
@@ -201,7 +200,6 @@ const SupabaseCore = {
             'approved': '승인됨',
             'rejected': '반려됨',
             'purchased': '구매완료',
-            'completed': '구매완료'
         };
         return statusMap[status] || status;
     },
