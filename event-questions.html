@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💬 사업설명회 실시간 질문 - 세종학당 문화인턴</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            color: #333;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* 헤더 */
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        /* 질문 등록 폼 */
+        .question-form-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #dc2626;
+        }
+
+        /* 라디오 버튼 */
+        .radio-group {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 0.75rem 1.25rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .radio-option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .radio-option input[type="radio"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.75rem;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .radio-option label {
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .radio-option.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        /* 텍스트 영역 */
+        .form-textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 150px;
+            transition: all 0.2s ease;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+
+        /* 버튼 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 내 질문 목록 */
+        .my-questions-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        /* 빈 상태 */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6b7280;
+        }
+
+        .empty-state .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: #4b5563;
+        }
+
+        .empty-state p {
+            font-size: 0.95rem;
+        }
+
+        /* 질문 카드 */
+        .question-item {
+            background: #f9fafb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #667eea;
+        }
+
+        .question-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .question-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            background: white;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: #667eea;
+        }
+
+        .question-date {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .question-content {
+            color: #1f2937;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            word-break: break-word;
+        }
+
+        .question-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-answered {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        /* Toast 알림 */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+
+        .toast.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .toast.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* 로딩 오버레이 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem 0.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .header p {
+                font-size: 1rem;
+            }
+
+            .question-form-card,
+            .my-questions-card {
+                padding: 1.5rem;
+            }
+
+            .radio-group {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .radio-option {
+                min-width: 100%;
+            }
+
+            .toast {
+                bottom: 1rem;
+                right: 1rem;
+                left: 1rem;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 헤더 -->
+    <div class="header">
+        <h1>💬 사업설명회 실시간 질문</h1>
+        <p>궁금하신 사항을 자유롭게 질문해주세요</p>
+    </div>
+
+    <div class="container">
+        <!-- 질문 등록 폼 -->
+        <div class="question-form-card">
+            <form id="questionForm">
+                <!-- 질문자 구분 -->
+                <div class="form-section">
+                    <label class="form-label required">질문자 구분</label>
+                    <div class="radio-group">
+                        <div class="radio-option" data-value="student">
+                            <input type="radio" id="typeStudent" name="questionType" value="student" required>
+                            <label for="typeStudent">👨‍🎓 학생</label>
+                        </div>
+                        <div class="radio-option" data-value="school_staff">
+                            <input type="radio" id="typeStaff" name="questionType" value="school_staff" required>
+                            <label for="typeStaff">👔 학교 관계자</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 질문 내용 -->
+                <div class="form-section">
+                    <label class="form-label required" for="questionText">질문 내용</label>
+                    <textarea 
+                        id="questionText" 
+                        class="form-textarea" 
+                        placeholder="궁금하신 내용을 자유롭게 작성해주세요..."
+                        maxlength="1000"
+                        required
+                    ></textarea>
+                    <div class="char-count">
+                        <span id="charCount">0</span>/1000
+                    </div>
+                </div>
+
+                <!-- 등록 버튼 -->
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <span>📤</span>
+                    질문 등록하기
+                </button>
+            </form>
+        </div>
+
+        <!-- 내 질문 목록 -->
+        <div class="my-questions-card">
+            <h2 class="section-title">내가 등록한 질문</h2>
+            
+            <!-- 빈 상태 -->
+            <div class="empty-state" id="emptyState">
+                <div class="icon">📝</div>
+                <h3>등록한 질문이 없습니다</h3>
+                <p>첫 번째 질문을 등록해보세요!</p>
+            </div>
+
+            <!-- 질문 목록 -->
+            <div id="questionsList" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
+    
+    <script type="module">
+        // Supabase 설정
+        const SUPABASE_URL = 'https://aazvopacnbbkvusihqva.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTQyMjQsImV4cCI6MjA2NTM3MDIyNH0.0NXI_tohwFCOl3xY4b1jIlxQR_zGTS9tWDM2OFxTq4s';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 로컬 스토리지 키
+        const MY_QUESTIONS_KEY = 'my_event_questions';
+
+        // 앱 클래스
+        class EventQuestionsApp {
+            constructor() {
+                this.myQuestionIds = this.loadMyQuestionIds();
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.loadMyQuestions();
+            }
+
+            // 이벤트 리스너 설정
+            setupEventListeners() {
+                // 폼 제출
+                document.getElementById('questionForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleSubmit();
+                });
+
+                // 라디오 버튼 스타일
+                document.querySelectorAll('.radio-option').forEach(option => {
+                    option.addEventListener('click', () => {
+                        const radio = option.querySelector('input[type="radio"]');
+                        radio.checked = true;
+                        this.updateRadioStyles();
+                    });
+                });
+
+                // 글자 수 카운터
+                document.getElementById('questionText').addEventListener('input', (e) => {
+                    document.getElementById('charCount').textContent = e.target.value.length;
+                });
+            }
+
+            // 라디오 버튼 스타일 업데이트
+            updateRadioStyles() {
+                document.querySelectorAll('.radio-option').forEach(option => {
+                    const radio = option.querySelector('input[type="radio"]');
+                    if (radio.checked) {
+                        option.classList.add('selected');
+                    } else {
+                        option.classList.remove('selected');
+                    }
+                });
+            }
+
+            // 폼 제출 처리
+            async handleSubmit() {
+                const submitBtn = document.getElementById('submitBtn');
+                const questionType = document.querySelector('input[name="questionType"]:checked');
+                const questionText = document.getElementById('questionText');
+
+                if (!questionType || !questionText.value.trim()) {
+                    this.showToast('모든 필수 항목을 입력해주세요.', 'error');
+                    return;
+                }
+
+                try {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span>⏳</span> 등록 중...';
+
+                    const { data, error } = await supabase
+                        .from('event_questions')
+                        .insert([{
+                            question_type: questionType.value,
+                            question_text: questionText.value.trim()
+                        }])
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+
+                    // 내 질문 ID 저장
+                    this.myQuestionIds.push(data.id);
+                    this.saveMyQuestionIds();
+
+                    // 폼 리셋
+                    document.getElementById('questionForm').reset();
+                    document.getElementById('charCount').textContent = '0';
+                    this.updateRadioStyles();
+
+                    // 질문 목록 새로고침
+                    await this.loadMyQuestions();
+
+                    this.showToast('질문이 성공적으로 등록되었습니다! 🎉', 'success');
+
+                } catch (error) {
+                    console.error('질문 등록 실패:', error);
+                    this.showToast('질문 등록에 실패했습니다. 다시 시도해주세요.', 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>📤</span> 질문 등록하기';
+                }
+            }
+
+            // 내 질문 목록 로드
+            async loadMyQuestions() {
+                if (this.myQuestionIds.length === 0) {
+                    this.showEmptyState();
+                    return;
+                }
+
+                try {
+                    const { data, error } = await supabase
+                        .from('event_questions')
+                        .select('*')
+                        .in('id', this.myQuestionIds)
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+
+                    if (data && data.length > 0) {
+                        this.renderQuestions(data);
+                    } else {
+                        this.showEmptyState();
+                    }
+
+                } catch (error) {
+                    console.error('질문 로드 실패:', error);
+                    this.showToast('질문을 불러오는데 실패했습니다.', 'error');
+                }
+            }
+
+            // 질문 목록 렌더링
+            renderQuestions(questions) {
+                const listContainer = document.getElementById('questionsList');
+                const emptyState = document.getElementById('emptyState');
+
+                emptyState.style.display = 'none';
+                listContainer.style.display = 'block';
+
+                listContainer.innerHTML = questions.map(q => `
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-type">
+                                ${q.question_type === 'student' ? '👨‍🎓 학생' : '👔 학교 관계자'}
+                            </span>
+                            <span class="question-date">${this.formatDate(q.created_at)}</span>
+                        </div>
+                        <div class="question-content">${this.escapeHtml(q.question_text)}</div>
+                        <div class="question-status ${q.is_answered ? 'status-answered' : 'status-pending'}">
+                            ${q.is_answered ? '✅ 답변 완료' : '⏳ 답변 대기중'}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // 빈 상태 표시
+            showEmptyState() {
+                document.getElementById('emptyState').style.display = 'block';
+                document.getElementById('questionsList').style.display = 'none';
+            }
+
+            // 내 질문 ID 로드
+            loadMyQuestionIds() {
+                const stored = localStorage.getItem(MY_QUESTIONS_KEY);
+                return stored ? JSON.parse(stored) : [];
+            }
+
+            // 내 질문 ID 저장
+            saveMyQuestionIds() {
+                localStorage.setItem(MY_QUESTIONS_KEY, JSON.stringify(this.myQuestionIds));
+            }
+
+            // Toast 알림
+            showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.remove();
+                }, 3000);
+            }
+
+            // 날짜 포맷
+            formatDate(dateString) {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diff = now - date;
+                const minutes = Math.floor(diff / 60000);
+
+                if (minutes < 1) return '방금 전';
+                if (minutes < 60) return `${minutes}분 전`;
+                
+                const hours = Math.floor(minutes / 60);
+                if (hours < 24) return `${hours}시간 전`;
+
+                return date.toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+            // HTML 이스케이프
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+
+        // 앱 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            window.eventQuestionsApp = new EventQuestionsApp();
+        });
+    </script>
+</body>
+</html>
