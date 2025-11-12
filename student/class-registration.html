@@ -304,29 +304,39 @@
     <script src="../js/config.js"></script>
     
     <script>
-        // Supabase 초기화
-        const { createClient } = supabase;
-        const supabaseClient = createClient(window.CONFIG.SUPABASE_URL, window.CONFIG.ANON_KEY);
-        
+        // 전역 변수 선언
+        let supabaseClient = null;
         let currentUser = null;
         let classes = [];
         
         // 초기화
         async function init() {
-            // 사용자 확인
-            const userDataStr = localStorage.getItem('currentStudent');
-            if (!userDataStr) {
-                window.location.href = '../index.html';
-                return;
+            try {
+                // ✅ Supabase 클라이언트 초기화 (config 로드 후)
+                const { createClient } = supabase;
+                supabaseClient = createClient(window.CONFIG.SUPABASE_URL, window.CONFIG.ANON_KEY);
+                console.log('✅ Supabase 클라이언트 초기화 완료');
+                
+                // 사용자 확인
+                const userDataStr = localStorage.getItem('currentStudent');
+                if (!userDataStr) {
+                    window.location.href = '../index.html';
+                    return;
+                }
+                
+                currentUser = JSON.parse(userDataStr);
+                console.log('✅ 사용자 데이터 로드:', currentUser.name);
+                
+                // 수업 로드
+                await loadClasses();
+                
+                // 이벤트 리스너
+                setupEventListeners();
+                
+            } catch (error) {
+                console.error('❌ 초기화 실패:', error);
+                showToast('시스템 초기화에 실패했습니다.', 'error');
             }
-            
-            currentUser = JSON.parse(userDataStr);
-            
-            // 수업 로드
-            await loadClasses();
-            
-            // 이벤트 리스너
-            setupEventListeners();
         }
         
         // 수업 로드
@@ -480,8 +490,13 @@
         // 전역 함수 (onclick에서 사용)
         window.deleteClass = deleteClass;
         
-        // 초기화 실행
-        init();
+        // ✅ DOMContentLoaded 이벤트로 초기화 (config.js 로드 보장)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            // 이미 로드된 경우 즉시 실행
+            init();
+        }
     </script>
 </body>
 </html>
