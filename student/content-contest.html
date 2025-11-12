@@ -566,6 +566,586 @@
                 padding: 0.625rem 1rem;
             }
         }
+        
+        /* ========================================
+           조회수 집계 등록 탭 전용 CSS - 기존 HTML 스타일 태그에 추가
+           ======================================== */
+
+        /* 안내 배너 */
+        .info-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 4px solid #3b82f6;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-banner .info-icon {
+            width: 24px;
+            height: 24px;
+            color: #3b82f6;
+            flex-shrink: 0;
+            margin-top: 0.125rem;
+        }
+
+        .info-banner .info-content {
+            flex: 1;
+        }
+
+        .info-banner .info-content strong {
+            display: block;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-banner .info-content ul {
+            margin: 0;
+            padding-left: 1.25rem;
+            color: #1e3a8a;
+            line-height: 1.8;
+        }
+
+        .info-banner .info-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* 통계 카드 행 */
+        .statistics-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .stat-card.highlight {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-color: #3b82f6;
+        }
+
+        .stat-card .stat-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 0.75rem;
+            color: white;
+        }
+
+        .stat-card.highlight .stat-icon {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        .stat-card .stat-info {
+            flex: 1;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #1f2937;
+            line-height: 1;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        /* 섹션 헤더 개선 */
+        .section-header .header-info {
+            flex: 1;
+        }
+
+        .section-header .header-info h2 {
+            margin-bottom: 0.5rem;
+        }
+
+        .section-header .section-description {
+            font-size: 0.95rem;
+            color: #6b7280;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* 조회수 집계 목록 */
+        .view-tracking-list {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .view-tracking-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .view-tracking-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .vt-card-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-bottom: 2px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .vt-card-title {
+            flex: 1;
+        }
+
+        .vt-card-title h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            word-break: break-word;
+        }
+
+        .vt-card-title .vt-url {
+            font-size: 0.875rem;
+            color: #3b82f6;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: color 0.2s ease;
+        }
+
+        .vt-card-title .vt-url:hover {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+
+        .vt-card-body {
+            padding: 1.5rem;
+        }
+
+        .vt-description {
+            color: #4b5563;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .vt-scores {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .vt-score-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+        }
+
+        .vt-score-icon {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 0.5rem;
+            color: #667eea;
+        }
+
+        .vt-score-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+
+        .vt-score-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .vt-total-score {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1.25rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 0.75rem;
+            color: white;
+            margin-bottom: 1.5rem;
+        }
+
+        .vt-total-score .total-label {
+            font-size: 1rem;
+            font-weight: 600;
+            opacity: 0.95;
+        }
+
+        .vt-total-score .total-value {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .vt-proof-image {
+            margin-bottom: 1.5rem;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            border: 2px solid #e5e7eb;
+        }
+
+        .vt-proof-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .vt-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .vt-meta {
+            font-size: 0.875rem;
+            color: #9ca3af;
+        }
+
+        .vt-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        /* 모달 스타일 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-container {
+            position: relative;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid #e5e7eb;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            color: #6b7280;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            padding: 1.5rem 2rem;
+            border-top: 2px solid #f3f4f6;
+            background: #f8fafc;
+        }
+
+        /* 점수 섹션 */
+        .score-section {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 2px solid #bfdbfe;
+        }
+
+        .section-subtitle {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .score-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .score-input {
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .total-score-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 0.75rem;
+            color: white;
+        }
+
+        .total-score-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .total-score-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+        }
+
+        /* 파일 업로드 영역 */
+        .file-upload-area {
+            position: relative;
+            border: 2px dashed #d1d5db;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f9fafb;
+        }
+
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #f3f4f6;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #667eea;
+            background: #eff6ff;
+        }
+
+        .file-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-upload-content {
+            pointer-events: none;
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 1rem;
+            color: #9ca3af;
+        }
+
+        .upload-text {
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+
+        .upload-hint {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        /* 이미지 미리보기 */
+        .image-preview {
+            margin-top: 1rem;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 2px solid #e5e7eb;
+            position: relative;
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .remove-image-btn {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: rgba(220, 38, 38, 0.95);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .remove-image-btn:hover {
+            background: rgba(185, 28, 28, 0.95);
+            transform: scale(1.05);
+        }
+
+        /* 반응형 개선 */
+        @media (max-width: 768px) {
+            .statistics-row {
+                grid-template-columns: 1fr;
+            }
+
+            .score-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .vt-scores {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .modal-container {
+                max-height: 95vh;
+            }
+
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 1rem 1.5rem;
+            }
+
+            .total-score-display {
+                flex-direction: column;
+                gap: 0.75rem;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .vt-scores {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card {
+                padding: 1rem;
+            }
+
+            .stat-card .stat-value {
+                font-size: 1.5rem;
+            }
+        }
+
     </style>
     
     <!-- Lucide Icons -->
@@ -599,10 +1179,9 @@
                 <i data-lucide="award"></i>
                 <span class="tab-text">정량 점수 평가기준</span>
             </button>
-            <button class="tab-button disabled" data-tab="submission-history">
-                <i data-lucide="clock"></i>
+            <button class="tab-button" data-tab="submission-history">
+                <i data-lucide="trending-up"></i>
                 <span class="tab-text">조회수 집계 등록</span>
-                <span class="coming-soon">준비중</span>
             </button>
         </div>
     </div>
@@ -683,13 +1262,82 @@
             </div>
         </div>
         
-        <!-- 조회수 집계 자료 등록 탭 (준비중) -->
+       <!-- 조회수 집계 등록 탭 -->
         <div class="tab-content" id="submission-history-tab">
             <div class="content-section">
-                <div class="coming-soon-content">
-                    <i data-lucide="construction" class="coming-soon-icon"></i>
-                    <h3>조회수 집계 등록</h3>
-                    <p>이 기능은 곧 업데이트될 예정입니다.</p>
+                <!-- 섹션 헤더 -->
+                <div class="section-header">
+                    <div class="header-info">
+                        <h2>
+                            <i data-lucide="trending-up"></i>
+                            조회수 집계 등록
+                        </h2>
+                        <p class="section-description">
+                            콘텐츠의 조회수, 댓글, 공감 수를 집계하여 등록하세요. 
+                            수정 제한 없이 최신 데이터로 업데이트할 수 있습니다.
+                        </p>
+                    </div>
+                    <button class="btn btn-primary" id="addViewTrackingBtn">
+                        <i data-lucide="plus-circle"></i>
+                        조회수 집계 등록
+                    </button>
+                </div>
+
+                <!-- 안내 메시지 -->
+                <div class="info-banner">
+                    <i data-lucide="info" class="info-icon"></i>
+                    <div class="info-content">
+                        <strong>집계 방법 안내</strong>
+                        <ul>
+                            <li>콘텐츠의 현재 조회수, 댓글, 공감 수를 합산하여 입력하세요</li>
+                            <li>증빙 캡처 이미지를 필수로 첨부해주세요 (통계 화면 스크린샷)</li>
+                            <li>등록 후에도 언제든지 최신 데이터로 수정 가능합니다</li>
+                            <li>정량 점수 = 조회수 + 댓글 수 + 공감 수</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 통계 카드 -->
+                <div class="statistics-row">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i data-lucide="file-text"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="totalContentsCount">0</div>
+                            <div class="stat-label">등록된 콘텐츠</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card highlight">
+                        <div class="stat-icon"><i data-lucide="trending-up"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="totalEngagementScore">0</div>
+                            <div class="stat-label">총 정량 점수</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon"><i data-lucide="eye"></i></div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="totalViewCount">0</div>
+                            <div class="stat-label">총 조회수</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 빈 상태 -->
+                <div class="empty-state" id="viewTrackingEmptyState">
+                    <i data-lucide="bar-chart-3" class="empty-icon"></i>
+                    <h3>등록된 조회수 집계가 없습니다</h3>
+                    <p>첫 번째 콘텐츠의 조회수를 집계해보세요!</p>
+                    <button class="btn btn-primary" onclick="document.getElementById('addViewTrackingBtn').click()">
+                        <i data-lucide="plus-circle"></i>
+                        지금 등록하기
+                    </button>
+                </div>
+
+                <!-- 콘텐츠 목록 -->
+                <div class="view-tracking-list" id="viewTrackingList" style="display: none;">
+                    <!-- JavaScript로 동적 생성 -->
                 </div>
             </div>
         </div>
@@ -838,6 +1486,206 @@
                 </div>
             </div>
         </div>
+        
+
+        <!-- 조회수 집계 등록/수정 모달 -->
+        <div class="modal" id="viewTrackingModal" style="display: none;">
+            <div class="modal-overlay" onclick="viewTrackingApp.closeModal()"></div>
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h2 id="modalTitle">
+                        <i data-lucide="trending-up"></i>
+                        조회수 집계 등록
+                    </h2>
+                    <button class="modal-close" onclick="viewTrackingApp.closeModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <form id="viewTrackingForm">
+                        <!-- 콘텐츠 제목 -->
+                        <div class="form-group">
+                            <label for="contentTitleVT" class="form-label required">
+                                <i data-lucide="file-text"></i>
+                                콘텐츠 제목
+                            </label>
+                            <input 
+                                type="text" 
+                                id="contentTitleVT" 
+                                class="form-input" 
+                                placeholder="예: 한국 문화 소개 영상" 
+                                maxlength="100" 
+                                required
+                            >
+                            <div class="char-count">
+                                <span id="titleCharCountVT">0</span>/100
+                            </div>
+                        </div>
+
+                        <!-- 콘텐츠 링크 -->
+                        <div class="form-group">
+                            <label for="contentUrlVT" class="form-label required">
+                                <i data-lucide="link"></i>
+                                콘텐츠 링크
+                            </label>
+                            <input 
+                                type="url" 
+                                id="contentUrlVT" 
+                                class="form-input" 
+                                placeholder="https://youtube.com/watch?v=..." 
+                                required
+                            >
+                            <div class="form-hint">
+                                <i data-lucide="info"></i>
+                                유튜브, 인스타그램, 블로그 등의 URL을 입력하세요
+                            </div>
+                        </div>
+
+                        <!-- 정량 점수 입력 -->
+                        <div class="score-section">
+                            <h3 class="section-subtitle">
+                                <i data-lucide="bar-chart"></i>
+                                정량 점수 입력
+                            </h3>
+
+                            <div class="score-grid">
+                                <!-- 조회수 -->
+                                <div class="form-group">
+                                    <label for="viewCountVT" class="form-label required">
+                                        <i data-lucide="eye"></i>
+                                        조회수
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        id="viewCountVT" 
+                                        class="form-input score-input" 
+                                        placeholder="0" 
+                                        min="0" 
+                                        required
+                                    >
+                                </div>
+
+                                <!-- 댓글 수 -->
+                                <div class="form-group">
+                                    <label for="commentCountVT" class="form-label required">
+                                        <i data-lucide="message-circle"></i>
+                                        댓글 수
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        id="commentCountVT" 
+                                        class="form-input score-input" 
+                                        placeholder="0" 
+                                        min="0" 
+                                        required
+                                    >
+                                </div>
+
+                                <!-- 공감 수 -->
+                                <div class="form-group">
+                                    <label for="likeCountVT" class="form-label required">
+                                        <i data-lucide="heart"></i>
+                                        공감 수
+                                    </label>
+                                    <input 
+                                        type="number" 
+                                        id="likeCountVT" 
+                                        class="form-input score-input" 
+                                        placeholder="0" 
+                                        min="0" 
+                                        required
+                                    >
+                                </div>
+                            </div>
+
+                            <!-- 총점 표시 -->
+                            <div class="total-score-display">
+                                <div class="total-score-label">
+                                    <i data-lucide="calculator"></i>
+                                    총 정량 점수
+                                </div>
+                                <div class="total-score-value" id="totalScoreDisplay">0</div>
+                            </div>
+                        </div>
+
+                        <!-- 증빙 캡처 업로드 -->
+                        <div class="form-group">
+                            <label for="proofImageVT" class="form-label required">
+                                <i data-lucide="image"></i>
+                                증빙 캡처 이미지
+                            </label>
+
+                            <div class="file-upload-area" id="fileUploadArea">
+                                <input 
+                                    type="file" 
+                                    id="proofImageVT" 
+                                    class="file-input" 
+                                    accept="image/*" 
+                                    required
+                                >
+                                <div class="file-upload-content">
+                                    <i data-lucide="upload-cloud" class="upload-icon"></i>
+                                    <p class="upload-text">
+                                        <strong>이미지를 드래그하거나 클릭하여 업로드</strong>
+                                    </p>
+                                    <p class="upload-hint">
+                                        PNG, JPG, GIF (최대 5MB)
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- 업로드된 이미지 미리보기 -->
+                            <div class="image-preview" id="imagePreview" style="display: none;">
+                                <img id="previewImage" src="" alt="증빙 캡처">
+                                <button type="button" class="remove-image-btn" onclick="viewTrackingApp.removeImage()">
+                                    <i data-lucide="x-circle"></i>
+                                    이미지 제거
+                                </button>
+                            </div>
+
+                            <div class="form-hint">
+                                <i data-lucide="alert-circle"></i>
+                                조회수, 댓글, 공감 수가 모두 표시된 통계 화면 스크린샷을 첨부해주세요
+                            </div>
+                        </div>
+
+                        <!-- 추가 설명 (선택) -->
+                        <div class="form-group">
+                            <label for="contentDescriptionVT" class="form-label">
+                                <i data-lucide="align-left"></i>
+                                추가 설명 (선택)
+                            </label>
+                            <textarea 
+                                id="contentDescriptionVT" 
+                                class="form-textarea" 
+                                placeholder="콘텐츠에 대한 추가 설명을 입력하세요" 
+                                maxlength="500" 
+                                rows="4"
+                            ></textarea>
+                            <div class="char-count">
+                                <span id="descCharCountVT">0</span>/500
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="viewTrackingApp.closeModal()">
+                        <i data-lucide="x"></i>
+                        취소
+                    </button>
+                    <button type="button" class="btn btn-primary" id="saveViewTrackingBtn">
+                        <i data-lucide="save"></i>
+                        저장하기
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+
+        
+        
     </main>
 
     <!-- JavaScript - ESM 모듈 방식 -->
@@ -923,6 +1771,9 @@
                     await this.loadContents();
                     console.log('✅ 콘텐츠 로드 완료');
                     
+                    this.initViewTrackingManager();
+                    console.log('✅ 조회수 집계 매니저 초기화 완료');                    
+                    
                     this.updateUI();
                     console.log('✅ UI 업데이트 완료');
                     
@@ -932,6 +1783,17 @@
                 }
             }
 
+            initViewTrackingManager() {
+                if (typeof ViewTrackingManager !== 'undefined') {
+                    this.viewTrackingManager = new ViewTrackingManager(
+                        this.supabase,
+                        this.currentUser
+                    );
+                    window.viewTrackingApp = this.viewTrackingManager;
+                }
+            }
+
+            
             async loadUserData() {
                 const userDataStr = localStorage.getItem('currentStudent');
                 if (!userDataStr) {
@@ -1418,6 +2280,597 @@
                 return statusMap[status] || status;
             }
         }
+        
+        // ========================================
+        // ViewTrackingManager 클래스 - PART 1
+        // ContentContestApp 클래스 끝에 이어서 붙여넣기
+        // ========================================
+        class ViewTrackingManager {
+            constructor(supabase, currentUser) {
+                this.supabase = supabase;
+                this.currentUser = currentUser;
+                this.viewTrackingContents = [];
+                this.editingContentId = null;
+                this.uploadedImageFile = null;
+                this.uploadedImageUrl = null;
+
+                console.log('✅ ViewTrackingManager 생성 완료');
+                this.init();
+            }
+
+            init() {
+                try {
+                    this.setupViewTrackingListeners();
+                    this.loadViewTrackingContents();
+                } catch (error) {
+                    console.error('❌ ViewTrackingManager 초기화 실패:', error);
+                }
+            }
+
+            setupViewTrackingListeners() {
+                // 조회수 집계 등록 버튼
+                const addBtn = document.getElementById('addViewTrackingBtn');
+                if (addBtn) {
+                    addBtn.addEventListener('click', () => this.openModal());
+                }
+
+                // 모달 저장 버튼
+                const saveBtn = document.getElementById('saveViewTrackingBtn');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', () => this.handleSave());
+                }
+
+                // 폼 입력 이벤트
+                this.setupFormListeners();
+            }
+
+            setupFormListeners() {
+                // 제목 문자수
+                const titleInput = document.getElementById('contentTitleVT');
+                if (titleInput) {
+                    titleInput.addEventListener('input', (e) => {
+                        const count = e.target.value.length;
+                        document.getElementById('titleCharCountVT').textContent = count;
+                    });
+                }
+
+                // 설명 문자수
+                const descInput = document.getElementById('contentDescriptionVT');
+                if (descInput) {
+                    descInput.addEventListener('input', (e) => {
+                        const count = e.target.value.length;
+                        document.getElementById('descCharCountVT').textContent = count;
+                    });
+                }
+
+                // 점수 입력 - 실시간 총점 계산
+                ['viewCountVT', 'commentCountVT', 'likeCountVT'].forEach(id => {
+                    const input = document.getElementById(id);
+                    if (input) {
+                        input.addEventListener('input', () => this.updateTotalScore());
+                    }
+                });
+
+                // 이미지 업로드
+                const imageInput = document.getElementById('proofImageVT');
+                if (imageInput) {
+                    imageInput.addEventListener('change', (e) => this.handleImageSelect(e));
+                }
+
+                // 드래그 앤 드롭
+                const uploadArea = document.getElementById('fileUploadArea');
+                if (uploadArea) {
+                    uploadArea.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        uploadArea.classList.add('dragover');
+                    });
+
+                    uploadArea.addEventListener('dragleave', () => {
+                        uploadArea.classList.remove('dragover');
+                    });
+
+                    uploadArea.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        uploadArea.classList.remove('dragover');
+                        const file = e.dataTransfer.files[0];
+                        if (file && file.type.startsWith('image/')) {
+                            this.handleImageFile(file);
+                        }
+                    });
+                }
+            }
+
+            updateTotalScore() {
+                const viewCount = parseInt(document.getElementById('viewCountVT').value) || 0;
+                const commentCount = parseInt(document.getElementById('commentCountVT').value) || 0;
+                const likeCount = parseInt(document.getElementById('likeCountVT').value) || 0;
+
+                const total = viewCount + commentCount + likeCount;
+                document.getElementById('totalScoreDisplay').textContent = total.toLocaleString();
+            }
+
+            handleImageSelect(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    this.handleImageFile(file);
+                }
+            }
+
+            handleImageFile(file) {
+                // 파일 크기 검증 (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    this.showToast('이미지 크기는 5MB 이하여야 합니다.', 'error');
+                    return;
+                }
+
+                // 파일 타입 검증
+                if (!file.type.startsWith('image/')) {
+                    this.showToast('이미지 파일만 업로드 가능합니다.', 'error');
+                    return;
+                }
+
+                this.uploadedImageFile = file;
+
+                // 미리보기
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('previewImage').src = e.target.result;
+                    document.getElementById('fileUploadArea').style.display = 'none';
+                    document.getElementById('imagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+
+            removeImage() {
+                this.uploadedImageFile = null;
+                this.uploadedImageUrl = null;
+                document.getElementById('proofImageVT').value = '';
+                document.getElementById('previewImage').src = '';
+                document.getElementById('fileUploadArea').style.display = 'block';
+                document.getElementById('imagePreview').style.display = 'none';
+            }
+
+            openModal(content = null) {
+                const modal = document.getElementById('viewTrackingModal');
+                const modalTitle = document.getElementById('modalTitle');
+
+                if (content) {
+                    // 수정 모드
+                    this.editingContentId = content.id;
+                    modalTitle.innerHTML = '<i data-lucide="trending-up"></i> 조회수 집계 수정';
+
+                    document.getElementById('contentTitleVT').value = content.title;
+                    document.getElementById('contentUrlVT').value = content.download_url;
+                    document.getElementById('viewCountVT').value = content.view_count || 0;
+                    document.getElementById('commentCountVT').value = content.comment_count || 0;
+                    document.getElementById('likeCountVT').value = content.like_count || 0;
+                    document.getElementById('contentDescriptionVT').value = content.description || '';
+
+                    // 문자수 업데이트
+                    document.getElementById('titleCharCountVT').textContent = content.title.length;
+                    document.getElementById('descCharCountVT').textContent = (content.description || '').length;
+
+                    // 기존 이미지 표시
+                    if (content.proof_image_url) {
+                        this.uploadedImageUrl = content.proof_image_url;
+                        document.getElementById('previewImage').src = content.proof_image_url;
+                        document.getElementById('fileUploadArea').style.display = 'none';
+                        document.getElementById('imagePreview').style.display = 'block';
+                    }
+
+                    this.updateTotalScore();
+                } else {
+                    // 신규 등록 모드
+                    this.editingContentId = null;
+                    modalTitle.innerHTML = '<i data-lucide="trending-up"></i> 조회수 집계 등록';
+                    this.resetForm();
+                }
+
+                modal.style.display = 'flex';
+
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+
+            closeModal() {
+                const modal = document.getElementById('viewTrackingModal');
+                modal.style.display = 'none';
+                this.resetForm();
+                this.editingContentId = null;
+            }
+
+            resetForm() {
+                document.getElementById('viewTrackingForm').reset();
+                document.getElementById('titleCharCountVT').textContent = '0';
+                document.getElementById('descCharCountVT').textContent = '0';
+                document.getElementById('totalScoreDisplay').textContent = '0';
+                this.removeImage();
+            }
+
+            validateForm() {
+                const title = document.getElementById('contentTitleVT').value.trim();
+                const url = document.getElementById('contentUrlVT').value.trim();
+                const viewCount = document.getElementById('viewCountVT').value;
+                const commentCount = document.getElementById('commentCountVT').value;
+                const likeCount = document.getElementById('likeCountVT').value;
+
+                if (!title) {
+                    this.showToast('콘텐츠 제목을 입력하세요.', 'error');
+                    return false;
+                }
+
+                if (title.length > 100) {
+                    this.showToast('제목은 100자 이하로 입력하세요.', 'error');
+                    return false;
+                }
+
+                if (!url) {
+                    this.showToast('콘텐츠 링크를 입력하세요.', 'error');
+                    return false;
+                }
+
+                try {
+                    new URL(url);
+                } catch {
+                    this.showToast('올바른 URL 형식이 아닙니다.', 'error');
+                    return false;
+                }
+
+                if (!viewCount || !commentCount || !likeCount) {
+                    this.showToast('조회수, 댓글, 공감 수를 모두 입력하세요.', 'error');
+                    return false;
+                }
+
+                if (!this.editingContentId && !this.uploadedImageFile) {
+                    this.showToast('증빙 캡처 이미지를 업로드하세요.', 'error');
+                    return false;
+                }
+
+                return true;
+            }
+
+            async handleSave() {
+                if (!this.validateForm()) {
+                    return;
+                }
+
+                const saveBtn = document.getElementById('saveViewTrackingBtn');
+                const originalText = saveBtn.innerHTML;
+
+                try {
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<i data-lucide="loader-2"></i> 저장 중...';
+
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+
+                    // 이미지 업로드 (새 이미지가 있는 경우)
+                    let imageUrl = this.uploadedImageUrl;
+                    if (this.uploadedImageFile) {
+                        imageUrl = await this.uploadImage(this.uploadedImageFile);
+                    }
+
+                    const formData = this.getFormData();
+                    formData.proof_image_url = imageUrl;
+
+                    if (this.editingContentId) {
+                        await this.updateViewTracking(this.editingContentId, formData);
+                    } else {
+                        await this.saveViewTracking(formData);
+                    }
+
+                    this.closeModal();
+                    await this.loadViewTrackingContents();
+
+                } catch (error) {
+                    console.error('저장 실패:', error);
+                    this.showToast('저장에 실패했습니다.', 'error');
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalText;
+
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            }
+
+            getFormData() {
+                return {
+                    title: document.getElementById('contentTitleVT').value.trim(),
+                    download_url: document.getElementById('contentUrlVT').value.trim(),
+                    view_count: parseInt(document.getElementById('viewCountVT').value) || 0,
+                    comment_count: parseInt(document.getElementById('commentCountVT').value) || 0,
+                    like_count: parseInt(document.getElementById('likeCountVT').value) || 0,
+                    description: document.getElementById('contentDescriptionVT').value.trim() || null
+                };
+            }
+
+            async uploadImage(file) {
+                try {
+                    const timestamp = Date.now();
+                    const fileName = `${this.currentUser.id}_${timestamp}_${file.name}`;
+                    const filePath = `${this.currentUser.id}/${fileName}`;
+
+                    const { data, error } = await this.supabase.storage
+                        .from('content-proofs')
+                        .upload(filePath, file, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+
+                    if (error) throw error;
+
+                    const { data: { publicUrl } } = this.supabase.storage
+                        .from('content-proofs')
+                        .getPublicUrl(filePath);
+
+                    return publicUrl;
+
+                } catch (error) {
+                    console.error('이미지 업로드 실패:', error);
+                    throw new Error('이미지 업로드에 실패했습니다.');
+                }
+            }
+
+        // ========================================
+        // ViewTrackingManager 클래스 - PART 2
+        // Part 1 바로 다음에 이어서 붙여넣기
+        // ========================================
+
+            async saveViewTracking(formData) {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('student_contents')
+                        .insert([{
+                            user_id: this.currentUser.id,
+                            title: formData.title,
+                            description: formData.description,
+                            download_url: formData.download_url,
+                            view_count: formData.view_count,
+                            comment_count: formData.comment_count,
+                            like_count: formData.like_count,
+                            proof_image_url: formData.proof_image_url,
+                            content_type: 'view_tracking',
+                            status: 'draft'
+                        }])
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+
+                    this.showToast('조회수 집계가 성공적으로 등록되었습니다!', 'success');
+
+                } catch (error) {
+                    console.error('저장 실패:', error);
+                    throw error;
+                }
+            }
+
+            async updateViewTracking(contentId, formData) {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('student_contents')
+                        .update({
+                            title: formData.title,
+                            description: formData.description,
+                            download_url: formData.download_url,
+                            view_count: formData.view_count,
+                            comment_count: formData.comment_count,
+                            like_count: formData.like_count,
+                            proof_image_url: formData.proof_image_url
+                        })
+                        .eq('id', contentId)
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+
+                    this.showToast('조회수 집계가 성공적으로 수정되었습니다!', 'success');
+
+                } catch (error) {
+                    console.error('수정 실패:', error);
+                    throw error;
+                }
+            }
+
+            async loadViewTrackingContents() {
+                try {
+                    console.log('📊 조회수 집계 데이터 로드 시작...');
+
+                    const { data, error } = await this.supabase
+                        .from('student_contents')
+                        .select('*')
+                        .eq('user_id', this.currentUser.id)
+                        .eq('content_type', 'view_tracking')
+                        .order('last_updated_at', { ascending: false });
+
+                    if (error) throw error;
+
+                    this.viewTrackingContents = data || [];
+                    console.log('✅ 조회수 집계 데이터 로드 완료:', this.viewTrackingContents.length, '개');
+
+                    this.renderViewTrackingList();
+                    this.updateStatistics();
+
+                } catch (error) {
+                    console.error('❌ 조회수 집계 데이터 로드 실패:', error);
+                    this.showToast('데이터를 불러오는데 실패했습니다.', 'error');
+                }
+            }
+
+            updateStatistics() {
+                const totalCount = this.viewTrackingContents.length;
+                const totalEngagement = this.viewTrackingContents.reduce((sum, c) => 
+                    sum + (c.view_count || 0) + (c.comment_count || 0) + (c.like_count || 0), 0);
+                const totalViews = this.viewTrackingContents.reduce((sum, c) => 
+                    sum + (c.view_count || 0), 0);
+
+                document.getElementById('totalContentsCount').textContent = totalCount;
+                document.getElementById('totalEngagementScore').textContent = totalEngagement.toLocaleString();
+                document.getElementById('totalViewCount').textContent = totalViews.toLocaleString();
+            }
+
+            renderViewTrackingList() {
+                const listContainer = document.getElementById('viewTrackingList');
+                const emptyState = document.getElementById('viewTrackingEmptyState');
+
+                if (this.viewTrackingContents.length === 0) {
+                    listContainer.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                emptyState.style.display = 'none';
+                listContainer.style.display = 'block';
+
+                listContainer.innerHTML = this.viewTrackingContents
+                    .map(content => this.renderViewTrackingCard(content))
+                    .join('');
+
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+
+            renderViewTrackingCard(content) {
+                const totalScore = (content.view_count || 0) + (content.comment_count || 0) + (content.like_count || 0);
+                const updatedDate = new Date(content.last_updated_at || content.created_at).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                return `
+                    <div class="view-tracking-card">
+                        <div class="vt-card-header">
+                            <div class="vt-card-title">
+                                <h3>${this.escapeHtml(content.title)}</h3>
+                                <a href="${content.download_url}" target="_blank" rel="noopener noreferrer" class="vt-url">
+                                    <i data-lucide="external-link" style="width: 14px; height: 14px;"></i>
+                                    콘텐츠 링크
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="vt-card-body">
+                            ${content.description ? `
+                                <div class="vt-description">${this.escapeHtml(content.description)}</div>
+                            ` : ''}
+
+                            <div class="vt-scores">
+                                <div class="vt-score-item">
+                                    <i data-lucide="eye" class="vt-score-icon"></i>
+                                    <div class="vt-score-label">조회수</div>
+                                    <div class="vt-score-value">${(content.view_count || 0).toLocaleString()}</div>
+                                </div>
+
+                                <div class="vt-score-item">
+                                    <i data-lucide="message-circle" class="vt-score-icon"></i>
+                                    <div class="vt-score-label">댓글 수</div>
+                                    <div class="vt-score-value">${(content.comment_count || 0).toLocaleString()}</div>
+                                </div>
+
+                                <div class="vt-score-item">
+                                    <i data-lucide="heart" class="vt-score-icon"></i>
+                                    <div class="vt-score-label">공감 수</div>
+                                    <div class="vt-score-value">${(content.like_count || 0).toLocaleString()}</div>
+                                </div>
+                            </div>
+
+                            <div class="vt-total-score">
+                                <span class="total-label">
+                                    <i data-lucide="calculator" style="width: 20px; height: 20px;"></i>
+                                    총 정량 점수
+                                </span>
+                                <span class="total-value">${totalScore.toLocaleString()}</span>
+                            </div>
+
+                            ${content.proof_image_url ? `
+                                <div class="vt-proof-image">
+                                    <img src="${content.proof_image_url}" alt="증빙 캡처">
+                                </div>
+                            ` : ''}
+
+                            <div class="vt-card-footer">
+                                <div class="vt-meta">
+                                    최종 수정: ${updatedDate}
+                                </div>
+                                <div class="vt-actions">
+                                    <button onclick="viewTrackingApp.editViewTracking('${content.id}')" class="btn btn-sm btn-primary">
+                                        <i data-lucide="edit"></i>
+                                        수정
+                                    </button>
+                                    <button onclick="viewTrackingApp.deleteViewTracking('${content.id}')" class="btn btn-sm btn-danger">
+                                        <i data-lucide="trash-2"></i>
+                                        삭제
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            editViewTracking(contentId) {
+                const content = this.viewTrackingContents.find(c => c.id === contentId);
+                if (content) {
+                    this.openModal(content);
+                }
+            }
+
+            async deleteViewTracking(contentId) {
+                if (!confirm('정말로 이 조회수 집계를 삭제하시겠습니까?')) {
+                    return;
+                }
+
+                try {
+                    const { error } = await this.supabase
+                        .from('student_contents')
+                        .delete()
+                        .eq('id', contentId);
+
+                    if (error) throw error;
+
+                    this.showToast('삭제되었습니다.', 'success');
+                    await this.loadViewTrackingContents();
+
+                } catch (error) {
+                    console.error('삭제 실패:', error);
+                    this.showToast('삭제에 실패했습니다.', 'error');
+                }
+            }
+
+            showToast(message, type = 'info') {
+                const existingToast = document.querySelector('.toast');
+                if (existingToast) {
+                    existingToast.remove();
+                }
+
+                const toast = document.createElement('div');
+                toast.className = `toast toast-${type}`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 3000);
+            }
+
+            escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+
+        // ViewTrackingManager 클래스 종료
+
 
         // ========================================
         // 4단계: 초기화 시스템
