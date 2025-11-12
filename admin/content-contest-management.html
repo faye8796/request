@@ -489,6 +489,164 @@
                 justify-content: center;
             }
         }
+        
+        /* 정량 점수 표시 */
+        .engagement-score {
+            margin-top: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            color: #1e40af;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: inline-block;
+        }
+
+        /* 조회수 집계 콘텐츠 아이템 */
+        .content-item.tracking-content {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-left: 4px solid #10b981;
+        }
+
+        /* 콘텐츠 정보 영역 */
+        .content-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        /* 점수 배지 */
+        .score-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            background: #10b981;
+            color: white;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-left: 0.5rem;
+        }
+
+        /* 통계 표시 */
+        .tracking-stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: #059669;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-weight: 500;
+        }
+
+        /* 게시물 바로가기 버튼 */
+        .btn-link {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-link:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        /* 증빙자료 보기 버튼 */
+        .btn-proof {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-proof:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+        }
+
+        /* 이미지 모달 */
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            cursor: pointer;
+        }
+
+        .image-modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .image-modal-content img {
+            max-width: 100%;
+            max-height: 80vh;
+            display: block;
+            border-radius: 8px;
+        }
+
+        .image-modal-content .modal-close {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 36px;
+            height: 36px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .image-modal-content .modal-close:hover {
+            background: #dc2626;
+        }
     </style>
     
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -677,7 +835,12 @@
                                 title,
                                 description,
                                 download_url,
-                                created_at
+                                created_at,
+                                content_type,
+                                view_count,
+                                comment_count,
+                                like_count,
+                                proof_image_url
                             )
                         `)
                         .eq('user_type', 'student')
@@ -769,6 +932,21 @@
                 this.renderStudents();
             }
 
+            
+            calculateEngagementScore(contents) {
+                if (!contents || contents.length === 0) return 0;
+
+                // content_type === 'view_tracking'인 콘텐츠만 필터링
+                const trackingContents = contents.filter(c => c.content_type === 'view_tracking');
+
+                // 정량 점수 합산
+                return trackingContents.reduce((sum, content) => {
+                    return sum + (content.view_count || 0) + 
+                                 (content.comment_count || 0) + 
+                                 (content.like_count || 0);
+                }, 0);
+            }
+            
             updateStatistics() {
                 const totalStudents = this.filteredStudents.length;
                 const studentsWithContents = this.filteredStudents.filter(
@@ -782,6 +960,8 @@
                 document.getElementById('studentsWithContents').textContent = studentsWithContents;
                 document.getElementById('totalContents').textContent = totalContents;
             }
+            
+            
 
             renderStudents() {
                 const container = document.getElementById('studentsContainer');
@@ -806,36 +986,83 @@
             }
 
             renderStudentCard(student) {
-                const contents = student.student_contents || [];
-                const instituteName = student.sejong_institute || '학당 정보 없음';
+                    const contents = student.student_contents || [];
+                    const instituteName = student.sejong_institute || '학당 정보 없음';
 
-                return `
-                    <div class="student-card">
-                        <div class="card-header">
-                            <div class="student-info">
-                                <div class="student-name">${this.escapeHtml(student.name)}</div>
-                                <div class="institute-name">${this.escapeHtml(instituteName)}</div>
-                            </div>
+                    // 🆕 정량 점수 계산
+                    const totalEngagementScore = this.calculateEngagementScore(contents);
+
+                    return `
+                        <div class="student-card">
+                            <div class="card-header">
+                                <div class="student-info">
+                                    <div class="student-name">${this.escapeHtml(student.name)}</div>
+                                    <div class="institute-name">${this.escapeHtml(instituteName)}</div>
+                                    ${totalEngagementScore > 0 ? `
+                                        <div class="engagement-score">
+                                            📊 총 정량 점수: ${totalEngagementScore.toLocaleString()}점
+                                        </div>
+                                    ` : ''}
+                                </div>
                             <div class="content-count-badge">콘텐츠 ${contents.length}개</div>
                         </div>
                         
                         ${contents.length > 0 ? `
                             <div class="content-list">
-                                ${contents.map(content => `
-                                    <div class="content-item">
-                                        <div class="content-title">${this.escapeHtml(content.title)}</div>
-                                        <div class="content-actions">
-                                            <a href="${content.download_url}" target="_blank" class="btn-download">
-                                                <i data-lucide="download"></i>
-                                                다운로드
-                                            </a>
-                                            <button class="btn-detail" onclick="window.contentApp.showContentDetail('${content.id}', '${this.escapeHtml(student.name)}')">
-                                                <i data-lucide="eye"></i>
-                                                자세히 보기
-                                            </button>
-                                        </div>
-                                    </div>
-                                `).join('')}
+                                ${contents.map(content => {
+                                    // 🆕 콘텐츠 타입에 따라 다른 렌더링
+                                    if (content.content_type === 'view_tracking') {
+                                        const score = (content.view_count || 0) + 
+                                                     (content.comment_count || 0) + 
+                                                     (content.like_count || 0);
+
+                                        return `
+                                            <div class="content-item tracking-content">
+                                                <div class="content-info">
+                                                    <div class="content-title">
+                                                        📊 ${this.escapeHtml(content.title)}
+                                                        <span class="score-badge">${score.toLocaleString()}점</span>
+                                                    </div>
+                                                    <div class="tracking-stats">
+                                                        <span class="stat-item">👁️ ${(content.view_count || 0).toLocaleString()}</span>
+                                                        <span class="stat-item">💬 ${(content.comment_count || 0).toLocaleString()}</span>
+                                                        <span class="stat-item">❤️ ${(content.like_count || 0).toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="content-actions">
+                                                    <a href="${content.download_url}" 
+                                                       target="_blank" 
+                                                       class="btn-link">
+                                                        <i data-lucide="external-link"></i>
+                                                        게시물 바로가기
+                                                    </a>
+                                                    <button class="btn-proof" 
+                                                            onclick="window.contentApp.showProofImage('${content.proof_image_url}')">
+                                                        <i data-lucide="image"></i>
+                                                        증빙자료 보기
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        `;
+                                    } else {
+                                        // 일반 콘텐츠 (기존 코드 유지)
+                                        return `
+                                            <div class="content-item">
+                                                <div class="content-title">${this.escapeHtml(content.title)}</div>
+                                                <div class="content-actions">
+                                                    <a href="${content.download_url}" target="_blank" class="btn-download">
+                                                        <i data-lucide="download"></i>
+                                                        다운로드
+                                                    </a>
+                                                    <button class="btn-detail" onclick="window.contentApp.showContentDetail('${content.id}', '${this.escapeHtml(student.name)}')">
+                                                        <i data-lucide="eye"></i>
+                                                        자세히 보기
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }
+                                }).join('')}
                             </div>
                         ` : `
                             <div class="no-content">등록된 콘텐츠가 없습니다</div>
@@ -862,6 +1089,27 @@
                 document.getElementById('contentDetailModal').style.display = 'flex';
             }
 
+            showProofImage(imageUrl) {
+                if (!imageUrl) {
+                    showToast('증빙자료가 없습니다.', 'error');
+                    return;
+                }
+
+                // 이미지 모달 표시
+                const modal = document.createElement('div');
+                modal.className = 'image-modal';
+                modal.innerHTML = `
+                    <div class="image-modal-overlay" onclick="this.parentElement.remove()"></div>
+                    <div class="image-modal-content">
+                        <button class="modal-close" onclick="this.parentElement.parentElement.remove()">
+                            ×
+                        </button>
+                        <img src="${imageUrl}" alt="증빙 캡처">
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            
             closeModal() {
                 document.getElementById('contentDetailModal').style.display = 'none';
             }
@@ -891,22 +1139,54 @@
                                 '학생명': student.name,
                                 '파견학당': instituteName,
                                 '콘텐츠수': 0,
+                                '콘텐츠유형': '',
                                 '콘텐츠제목': '',
                                 '콘텐츠설명': '',
                                 '다운로드링크': '',
+                                '조회수': '',
+                                '댓글수': '',
+                                '공감수': '',
+                                '정량점수': '',
+                                '증빙자료URL': '',
                                 '등록일시': ''
                             });
                         } else {
                             contents.forEach(content => {
-                                exportData.push({
+                                const baseData = {
                                     '학생명': student.name,
                                     '파견학당': instituteName,
                                     '콘텐츠수': contents.length,
+                                    '콘텐츠유형': content.content_type === 'view_tracking' ? '조회수 집계' : '일반',
                                     '콘텐츠제목': content.title,
                                     '콘텐츠설명': content.description,
                                     '다운로드링크': content.download_url,
                                     '등록일시': new Date(content.created_at).toLocaleString('ko-KR')
-                                });
+                                };
+
+                                // 🆕 조회수 집계 콘텐츠인 경우 추가 데이터
+                                if (content.content_type === 'view_tracking') {
+                                    const score = (content.view_count || 0) + 
+                                                 (content.comment_count || 0) + 
+                                                 (content.like_count || 0);
+
+                                    exportData.push({
+                                        ...baseData,
+                                        '조회수': content.view_count || 0,
+                                        '댓글수': content.comment_count || 0,
+                                        '공감수': content.like_count || 0,
+                                        '정량점수': score,
+                                        '증빙자료URL': content.proof_image_url || ''
+                                    });
+                                } else {
+                                    exportData.push({
+                                        ...baseData,
+                                        '조회수': '',
+                                        '댓글수': '',
+                                        '공감수': '',
+                                        '정량점수': '',
+                                        '증빙자료URL': ''
+                                    });
+                                }
                             });
                         }
                     });

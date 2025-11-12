@@ -1289,7 +1289,7 @@
                     <div class="info-content">
                         <strong>집계 방법 안내</strong>
                         <ul>
-                            <li>콘텐츠의 현재 조회수, 댓글, 공감 수를 합산하여 입력하세요</li>
+                            <li>개인 인스타그램 계정 등 비공식 채널에 업로드한 관련 콘텐츠를 등록해주세요.</li>
                             <li>증빙 캡처 이미지를 필수로 첨부해주세요 (통계 화면 스크린샷)</li>
                             <li>등록 후에도 언제든지 최신 데이터로 수정 가능합니다</li>
                             <li>정량 점수 = 조회수 + 댓글 수 + 공감 수</li>
@@ -2068,6 +2068,7 @@
                         .from('student_contents')
                         .select('*')
                         .eq('user_id', this.currentUser.id)
+                        .neq('content_type', 'view_tracking')
                         .order('created_at', { ascending: false });
                     
                     if (error) {
