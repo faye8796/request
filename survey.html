@@ -1002,7 +1002,7 @@
         let selectedInternId = null;
         
         
-        // 국가별 영문명 매핑 (프랑스 추가)
+        // 국가별 영문명 매핑 (중국-타이완 추가)
         const countryEnglishNames = {
             '독일': 'Germany',
             '라오스': 'Laos',
@@ -1021,7 +1021,7 @@
             '인도': 'India',
             '인도네시아': 'Indonesia',
             '중국': 'China',
-            '중국 타이완': 'Taiwan, China', 
+            '중국-타이완': 'Taiwan, China',
             '체코': 'Czech Republic',
             '캄보디아': 'Cambodia',
             '캐나다': 'Canada',
@@ -1047,17 +1047,20 @@
         const submitSection = document.getElementById('submitSection');
         const thankYouMessage = document.getElementById('thankYouMessage');
         
-        // 국가명 추출 함수
+        // ✅ 개선된 국가명 추출 함수
         function extractCountryName(instituteName) {
-            const countryNames = Object.keys(countryEnglishNames);
-            for (const country of countryNames) {
-                if (instituteName.startsWith(country)) {
-                    return country;
+            // 1. 하이픈으로 연결된 국가명 우선 처리 (예: "중국-타이완")
+            const hyphenIndex = instituteName.indexOf('-');
+            if (hyphenIndex > 0) {
+                const nextSpaceIndex = instituteName.indexOf(' ', hyphenIndex);
+                if (nextSpaceIndex > 0) {
+                    return instituteName.substring(0, nextSpaceIndex).trim();
                 }
             }
-            // 첫 번째 공백 전까지가 국가명
+            
+            // 2. 일반적인 경우: 첫 번째 공백 전까지가 국가명
             const spaceIndex = instituteName.indexOf(' ');
-            return spaceIndex > 0 ? instituteName.substring(0, spaceIndex) : instituteName;
+            return spaceIndex > 0 ? instituteName.substring(0, spaceIndex).trim() : instituteName.trim();
         }
         
         // 초기화
