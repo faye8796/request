@@ -469,8 +469,8 @@
                     <div class="question-header">
                         <span class="question-number">1</span>
                         <div class="question-content">
-                            <div class="question-title">이번에 참여한 문화수업은 무엇인가요?</div>
-                            <div class="question-title-en">Which cultural class did you attend?</div>
+                            <div class="question-title">어느 문화인턴 선생님의 수업을 들으셨나요?</div>
+                            <div class="question-title-en">Which cultural intern's class did you attend?</div>
                         </div>
                     </div>
                     
@@ -496,12 +496,6 @@
                             </select>
                         </div>
                         
-                        <div class="select-wrapper">
-                            <label class="select-label">4️⃣ 수업명 / Class Name</label>
-                            <select id="classSelect" disabled required>
-                                <option value="">먼저 선생님을 선택하세요 / Select Teacher First</option>
-                            </select>
-                        </div>
                     </div>
                 </div>
                 
@@ -546,13 +540,32 @@
                     
                     <div class="likert-scale">
                         <div class="likert-option">
-                            <input type="radio" name="q3" value="5" id="q3-5" required>
-                            <label for="q3-5" class="likert-label">
-                                <span class="likert-number">5</span>
-                                <span class="likert-text-ko">매우 그렇다</span>
-                                <span class="likert-text-en">Strongly Agree</span>
+                            <input type="radio" name="q3" value="1" id="q3-1">
+                            <label for="q3-1" class="likert-label">
+                                <span class="likert-number">1</span>
+                                <span class="likert-text-ko">전혀 그렇지 않다</span>
+                                <span class="likert-text-en">Strongly Disagree</span>
                             </label>
                         </div>
+
+                        <div class="likert-option">
+                            <input type="radio" name="q3" value="2" id="q3-2">
+                            <label for="q3-2" class="likert-label">
+                                <span class="likert-number">2</span>
+                                <span class="likert-text-ko">그렇지 않다</span>
+                                <span class="likert-text-en">Disagree</span>
+                            </label>
+                        </div>
+                        
+                        <div class="likert-option">
+                            <input type="radio" name="q3" value="3" id="q3-3">
+                            <label for="q3-3" class="likert-label">
+                                <span class="likert-number">3</span>
+                                <span class="likert-text-ko">보통이다</span>
+                                <span class="likert-text-en">Neutral</span>
+                            </label>
+                        </div>
+                        
                         <div class="likert-option">
                             <input type="radio" name="q3" value="4" id="q3-4">
                             <label for="q3-4" class="likert-label">
@@ -562,27 +575,11 @@
                             </label>
                         </div>
                         <div class="likert-option">
-                            <input type="radio" name="q3" value="3" id="q3-3">
-                            <label for="q3-3" class="likert-label">
-                                <span class="likert-number">3</span>
-                                <span class="likert-text-ko">보통이다</span>
-                                <span class="likert-text-en">Neutral</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q3" value="2" id="q3-2">
-                            <label for="q3-2" class="likert-label">
-                                <span class="likert-number">2</span>
-                                <span class="likert-text-ko">그렇지 않다</span>
-                                <span class="likert-text-en">Disagree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q3" value="1" id="q3-1">
-                            <label for="q3-1" class="likert-label">
-                                <span class="likert-number">1</span>
-                                <span class="likert-text-ko">전혀 그렇지 않다</span>
-                                <span class="likert-text-en">Strongly Disagree</span>
+                            <input type="radio" name="q3" value="5" id="q3-5" required>
+                            <label for="q3-5" class="likert-label">
+                                <span class="likert-number">5</span>
+                                <span class="likert-text-ko">매우 그렇다</span>
+                                <span class="likert-text-en">Strongly Agree</span>
                             </label>
                         </div>
                     </div>
@@ -600,27 +597,11 @@
                     
                     <div class="likert-scale">
                         <div class="likert-option">
-                            <input type="radio" name="q4" value="5" id="q4-5" required>
-                            <label for="q4-5" class="likert-label">
-                                <span class="likert-number">5</span>
-                                <span class="likert-text-ko">매우 그렇다</span>
-                                <span class="likert-text-en">Strongly Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q4" value="4" id="q4-4">
-                            <label for="q4-4" class="likert-label">
-                                <span class="likert-number">4</span>
-                                <span class="likert-text-ko">그렇다</span>
-                                <span class="likert-text-en">Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q4" value="3" id="q4-3">
-                            <label for="q4-3" class="likert-label">
-                                <span class="likert-number">3</span>
-                                <span class="likert-text-ko">보통이다</span>
-                                <span class="likert-text-en">Neutral</span>
+                            <input type="radio" name="q4" value="1" id="q4-1" required>
+                            <label for="q4-1" class="likert-label">
+                                <span class="likert-number">1</span>
+                                <span class="likert-text-ko">전혀 그렇지 않다</span>
+                                <span class="likert-text-en">Strongly Disagree</span>
                             </label>
                         </div>
                         <div class="likert-option">
@@ -632,11 +613,27 @@
                             </label>
                         </div>
                         <div class="likert-option">
-                            <input type="radio" name="q4" value="1" id="q4-1">
-                            <label for="q4-1" class="likert-label">
-                                <span class="likert-number">1</span>
-                                <span class="likert-text-ko">전혀 그렇지 않다</span>
-                                <span class="likert-text-en">Strongly Disagree</span>
+                            <input type="radio" name="q4" value="3" id="q4-3">
+                            <label for="q4-3" class="likert-label">
+                                <span class="likert-number">3</span>
+                                <span class="likert-text-ko">보통이다</span>
+                                <span class="likert-text-en">Neutral</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q4" value="4" id="q4-4">
+                            <label for="q4-4" class="likert-label">
+                                <span class="likert-number">4</span>
+                                <span class="likert-text-ko">그렇다</span>
+                                <span class="likert-text-en">Agree</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q4" value="5" id="q4-5">
+                            <label for="q4-5" class="likert-label">
+                                <span class="likert-number">5</span>
+                                <span class="likert-text-ko">매우 그렇다</span>
+                                <span class="likert-text-en">Strongly Agree</span>
                             </label>
                         </div>
                     </div>
@@ -654,27 +651,11 @@
                     
                     <div class="likert-scale">
                         <div class="likert-option">
-                            <input type="radio" name="q5" value="5" id="q5-5" required>
-                            <label for="q5-5" class="likert-label">
-                                <span class="likert-number">5</span>
-                                <span class="likert-text-ko">매우 그렇다</span>
-                                <span class="likert-text-en">Strongly Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q5" value="4" id="q5-4">
-                            <label for="q5-4" class="likert-label">
-                                <span class="likert-number">4</span>
-                                <span class="likert-text-ko">그렇다</span>
-                                <span class="likert-text-en">Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q5" value="3" id="q5-3">
-                            <label for="q5-3" class="likert-label">
-                                <span class="likert-number">3</span>
-                                <span class="likert-text-ko">보통이다</span>
-                                <span class="likert-text-en">Neutral</span>
+                            <input type="radio" name="q5" value="1" id="q5-1" required>
+                            <label for="q5-1" class="likert-label">
+                                <span class="likert-number">1</span>
+                                <span class="likert-text-ko">전혀 그렇지 않다</span>
+                                <span class="likert-text-en">Strongly Disagree</span>
                             </label>
                         </div>
                         <div class="likert-option">
@@ -686,11 +667,27 @@
                             </label>
                         </div>
                         <div class="likert-option">
-                            <input type="radio" name="q5" value="1" id="q5-1">
-                            <label for="q5-1" class="likert-label">
-                                <span class="likert-number">1</span>
-                                <span class="likert-text-ko">전혀 그렇지 않다</span>
-                                <span class="likert-text-en">Strongly Disagree</span>
+                            <input type="radio" name="q5" value="3" id="q5-3">
+                            <label for="q5-3" class="likert-label">
+                                <span class="likert-number">3</span>
+                                <span class="likert-text-ko">보통이다</span>
+                                <span class="likert-text-en">Neutral</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q5" value="4" id="q5-4">
+                            <label for="q5-4" class="likert-label">
+                                <span class="likert-number">4</span>
+                                <span class="likert-text-ko">그렇다</span>
+                                <span class="likert-text-en">Agree</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q5" value="5" id="q5-5">
+                            <label for="q5-5" class="likert-label">
+                                <span class="likert-number">5</span>
+                                <span class="likert-text-ko">매우 그렇다</span>
+                                <span class="likert-text-en">Strongly Agree</span>
                             </label>
                         </div>
                     </div>
@@ -708,27 +705,11 @@
                     
                     <div class="likert-scale">
                         <div class="likert-option">
-                            <input type="radio" name="q6" value="5" id="q6-5" required>
-                            <label for="q6-5" class="likert-label">
-                                <span class="likert-number">5</span>
-                                <span class="likert-text-ko">매우 그렇다</span>
-                                <span class="likert-text-en">Strongly Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q6" value="4" id="q6-4">
-                            <label for="q6-4" class="likert-label">
-                                <span class="likert-number">4</span>
-                                <span class="likert-text-ko">그렇다</span>
-                                <span class="likert-text-en">Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q6" value="3" id="q6-3">
-                            <label for="q6-3" class="likert-label">
-                                <span class="likert-number">3</span>
-                                <span class="likert-text-ko">보통이다</span>
-                                <span class="likert-text-en">Neutral</span>
+                            <input type="radio" name="q6" value="1" id="q6-1" required>
+                            <label for="q6-1" class="likert-label">
+                                <span class="likert-number">1</span>
+                                <span class="likert-text-ko">전혀 그렇지 않다</span>
+                                <span class="likert-text-en">Strongly Disagree</span>
                             </label>
                         </div>
                         <div class="likert-option">
@@ -740,11 +721,27 @@
                             </label>
                         </div>
                         <div class="likert-option">
-                            <input type="radio" name="q6" value="1" id="q6-1">
-                            <label for="q6-1" class="likert-label">
-                                <span class="likert-number">1</span>
-                                <span class="likert-text-ko">전혀 그렇지 않다</span>
-                                <span class="likert-text-en">Strongly Disagree</span>
+                            <input type="radio" name="q6" value="3" id="q6-3">
+                            <label for="q6-3" class="likert-label">
+                                <span class="likert-number">3</span>
+                                <span class="likert-text-ko">보통이다</span>
+                                <span class="likert-text-en">Neutral</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q6" value="4" id="q6-4">
+                            <label for="q6-4" class="likert-label">
+                                <span class="likert-number">4</span>
+                                <span class="likert-text-ko">그렇다</span>
+                                <span class="likert-text-en">Agree</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q6" value="5" id="q6-5">
+                            <label for="q6-5" class="likert-label">
+                                <span class="likert-number">5</span>
+                                <span class="likert-text-ko">매우 그렇다</span>
+                                <span class="likert-text-en">Strongly Agree</span>
                             </label>
                         </div>
                     </div>
@@ -762,27 +759,11 @@
                     
                     <div class="likert-scale">
                         <div class="likert-option">
-                            <input type="radio" name="q7" value="5" id="q7-5" required>
-                            <label for="q7-5" class="likert-label">
-                                <span class="likert-number">5</span>
-                                <span class="likert-text-ko">매우 그렇다</span>
-                                <span class="likert-text-en">Strongly Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q7" value="4" id="q7-4">
-                            <label for="q7-4" class="likert-label">
-                                <span class="likert-number">4</span>
-                                <span class="likert-text-ko">그렇다</span>
-                                <span class="likert-text-en">Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q7" value="3" id="q7-3">
-                            <label for="q7-3" class="likert-label">
-                                <span class="likert-number">3</span>
-                                <span class="likert-text-ko">보통이다</span>
-                                <span class="likert-text-en">Neutral</span>
+                            <input type="radio" name="q7" value="1" id="q7-1" required>
+                            <label for="q7-1" class="likert-label">
+                                <span class="likert-number">1</span>
+                                <span class="likert-text-ko">전혀 그렇지 않다</span>
+                                <span class="likert-text-en">Strongly Disagree</span>
                             </label>
                         </div>
                         <div class="likert-option">
@@ -794,11 +775,27 @@
                             </label>
                         </div>
                         <div class="likert-option">
-                            <input type="radio" name="q7" value="1" id="q7-1">
-                            <label for="q7-1" class="likert-label">
-                                <span class="likert-number">1</span>
-                                <span class="likert-text-ko">전혀 그렇지 않다</span>
-                                <span class="likert-text-en">Strongly Disagree</span>
+                            <input type="radio" name="q7" value="3" id="q7-3">
+                            <label for="q7-3" class="likert-label">
+                                <span class="likert-number">3</span>
+                                <span class="likert-text-ko">보통이다</span>
+                                <span class="likert-text-en">Neutral</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q7" value="4" id="q7-4">
+                            <label for="q7-4" class="likert-label">
+                                <span class="likert-number">4</span>
+                                <span class="likert-text-ko">그렇다</span>
+                                <span class="likert-text-en">Agree</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q7" value="5" id="q7-5">
+                            <label for="q7-5" class="likert-label">
+                                <span class="likert-number">5</span>
+                                <span class="likert-text-ko">매우 그렇다</span>
+                                <span class="likert-text-en">Strongly Agree</span>
                             </label>
                         </div>
                     </div>
@@ -816,27 +813,11 @@
                     
                     <div class="likert-scale">
                         <div class="likert-option">
-                            <input type="radio" name="q8" value="5" id="q8-5" required>
-                            <label for="q8-5" class="likert-label">
-                                <span class="likert-number">5</span>
-                                <span class="likert-text-ko">매우 그렇다</span>
-                                <span class="likert-text-en">Strongly Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q8" value="4" id="q8-4">
-                            <label for="q8-4" class="likert-label">
-                                <span class="likert-number">4</span>
-                                <span class="likert-text-ko">그렇다</span>
-                                <span class="likert-text-en">Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q8" value="3" id="q8-3">
-                            <label for="q8-3" class="likert-label">
-                                <span class="likert-number">3</span>
-                                <span class="likert-text-ko">보통이다</span>
-                                <span class="likert-text-en">Neutral</span>
+                            <input type="radio" name="q8" value="1" id="q8-1" required>
+                            <label for="q8-1" class="likert-label">
+                                <span class="likert-number">1</span>
+                                <span class="likert-text-ko">전혀 그렇지 않다</span>
+                                <span class="likert-text-en">Strongly Disagree</span>
                             </label>
                         </div>
                         <div class="likert-option">
@@ -848,11 +829,27 @@
                             </label>
                         </div>
                         <div class="likert-option">
-                            <input type="radio" name="q8" value="1" id="q8-1">
-                            <label for="q8-1" class="likert-label">
-                                <span class="likert-number">1</span>
-                                <span class="likert-text-ko">전혀 그렇지 않다</span>
-                                <span class="likert-text-en">Strongly Disagree</span>
+                            <input type="radio" name="q8" value="3" id="q8-3">
+                            <label for="q8-3" class="likert-label">
+                                <span class="likert-number">3</span>
+                                <span class="likert-text-ko">보통이다</span>
+                                <span class="likert-text-en">Neutral</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q8" value="4" id="q8-4">
+                            <label for="q8-4" class="likert-label">
+                                <span class="likert-number">4</span>
+                                <span class="likert-text-ko">그렇다</span>
+                                <span class="likert-text-en">Agree</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q8" value="5" id="q8-5">
+                            <label for="q8-5" class="likert-label">
+                                <span class="likert-number">5</span>
+                                <span class="likert-text-ko">매우 그렇다</span>
+                                <span class="likert-text-en">Strongly Agree</span>
                             </label>
                         </div>
                     </div>
@@ -870,27 +867,11 @@
                     
                     <div class="likert-scale">
                         <div class="likert-option">
-                            <input type="radio" name="q9" value="5" id="q9-5" required>
-                            <label for="q9-5" class="likert-label">
-                                <span class="likert-number">5</span>
-                                <span class="likert-text-ko">매우 그렇다</span>
-                                <span class="likert-text-en">Strongly Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q9" value="4" id="q9-4">
-                            <label for="q9-4" class="likert-label">
-                                <span class="likert-number">4</span>
-                                <span class="likert-text-ko">그렇다</span>
-                                <span class="likert-text-en">Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q9" value="3" id="q9-3">
-                            <label for="q9-3" class="likert-label">
-                                <span class="likert-number">3</span>
-                                <span class="likert-text-ko">보통이다</span>
-                                <span class="likert-text-en">Neutral</span>
+                            <input type="radio" name="q9" value="1" id="q9-1" required>
+                            <label for="q9-1" class="likert-label">
+                                <span class="likert-number">1</span>
+                                <span class="likert-text-ko">전혀 그렇지 않다</span>
+                                <span class="likert-text-en">Strongly Disagree</span>
                             </label>
                         </div>
                         <div class="likert-option">
@@ -902,11 +883,27 @@
                             </label>
                         </div>
                         <div class="likert-option">
-                            <input type="radio" name="q9" value="1" id="q9-1">
-                            <label for="q9-1" class="likert-label">
-                                <span class="likert-number">1</span>
-                                <span class="likert-text-ko">전혀 그렇지 않다</span>
-                                <span class="likert-text-en">Strongly Disagree</span>
+                            <input type="radio" name="q9" value="3" id="q9-3">
+                            <label for="q9-3" class="likert-label">
+                                <span class="likert-number">3</span>
+                                <span class="likert-text-ko">보통이다</span>
+                                <span class="likert-text-en">Neutral</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q9" value="4" id="q9-4">
+                            <label for="q9-4" class="likert-label">
+                                <span class="likert-number">4</span>
+                                <span class="likert-text-ko">그렇다</span>
+                                <span class="likert-text-en">Agree</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q9" value="5" id="q9-5">
+                            <label for="q9-5" class="likert-label">
+                                <span class="likert-number">5</span>
+                                <span class="likert-text-ko">매우 그렇다</span>
+                                <span class="likert-text-en">Strongly Agree</span>
                             </label>
                         </div>
                     </div>
@@ -924,27 +921,11 @@
                     
                     <div class="likert-scale">
                         <div class="likert-option">
-                            <input type="radio" name="q10" value="5" id="q10-5" required>
-                            <label for="q10-5" class="likert-label">
-                                <span class="likert-number">5</span>
-                                <span class="likert-text-ko">매우 그렇다</span>
-                                <span class="likert-text-en">Strongly Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q10" value="4" id="q10-4">
-                            <label for="q10-4" class="likert-label">
-                                <span class="likert-number">4</span>
-                                <span class="likert-text-ko">그렇다</span>
-                                <span class="likert-text-en">Agree</span>
-                            </label>
-                        </div>
-                        <div class="likert-option">
-                            <input type="radio" name="q10" value="3" id="q10-3">
-                            <label for="q10-3" class="likert-label">
-                                <span class="likert-number">3</span>
-                                <span class="likert-text-ko">보통이다</span>
-                                <span class="likert-text-en">Neutral</span>
+                            <input type="radio" name="q10" value="1" id="q10-1" required>
+                            <label for="q10-1" class="likert-label">
+                                <span class="likert-number">1</span>
+                                <span class="likert-text-ko">전혀 그렇지 않다</span>
+                                <span class="likert-text-en">Strongly Disagree</span>
                             </label>
                         </div>
                         <div class="likert-option">
@@ -956,11 +937,27 @@
                             </label>
                         </div>
                         <div class="likert-option">
-                            <input type="radio" name="q10" value="1" id="q10-1">
-                            <label for="q10-1" class="likert-label">
-                                <span class="likert-number">1</span>
-                                <span class="likert-text-ko">전혀 그렇지 않다</span>
-                                <span class="likert-text-en">Strongly Disagree</span>
+                            <input type="radio" name="q10" value="3" id="q10-3">
+                            <label for="q10-3" class="likert-label">
+                                <span class="likert-number">3</span>
+                                <span class="likert-text-ko">보통이다</span>
+                                <span class="likert-text-en">Neutral</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q10" value="4" id="q10-4">
+                            <label for="q10-4" class="likert-label">
+                                <span class="likert-number">4</span>
+                                <span class="likert-text-ko">그렇다</span>
+                                <span class="likert-text-en">Agree</span>
+                            </label>
+                        </div>
+                        <div class="likert-option">
+                            <input type="radio" name="q10" value="5" id="q10-5">
+                            <label for="q10-5" class="likert-label">
+                                <span class="likert-number">5</span>
+                                <span class="likert-text-ko">매우 그렇다</span>
+                                <span class="likert-text-en">Strongly Agree</span>
                             </label>
                         </div>
                     </div>
@@ -1003,7 +1000,7 @@
         let selectedCountry = null;
         let selectedInstituteId = null;
         let selectedInternId = null;
-        let selectedClassId = null;
+        
         
         // 국가별 영문명 매핑 (프랑스 추가)
         const countryEnglishNames = {
@@ -1024,6 +1021,7 @@
             '인도': 'India',
             '인도네시아': 'Indonesia',
             '중국': 'China',
+            '중국 타이완': 'Taiwan, China', 
             '체코': 'Czech Republic',
             '캄보디아': 'Cambodia',
             '캐나다': 'Canada',
@@ -1042,7 +1040,6 @@
         const countrySelect = document.getElementById('countrySelect');
         const instituteSelect = document.getElementById('instituteSelect');
         const internSelect = document.getElementById('internSelect');
-        const classSelect = document.getElementById('classSelect');
         const surveyForm = document.getElementById('surveyForm');
         const submitBtn = document.getElementById('submitBtn');
         const errorMessage = document.getElementById('errorMessage');
@@ -1066,13 +1063,23 @@
         // 초기화
         async function init() {
             try {
+                // 제출 완료 여부 확인 (쿠키 체크)
+                const hasSubmitted = getCookie('survey_submitted');
+                if (hasSubmitted === 'true') {
+                    // 이미 제출한 경우 완료 메시지만 표시
+                    surveyBody.style.display = 'none';
+                    submitSection.style.display = 'none';
+                    thankYouMessage.classList.add('show');
+                    return;
+                }
+
                 await loadCountriesAndInstitutes();
                 setupEventListeners();
             } catch (error) {
                 console.error('초기화 실패:', error);
                 showError('시스템 초기화에 실패했습니다. 페이지를 새로고침해주세요.');
             }
-        }
+        }        
         
         // 국가 및 학당 목록 로드
         async function loadCountriesAndInstitutes() {
@@ -1179,41 +1186,6 @@
             });
         }
         
-        // 수업 목록 로드
-        async function loadClasses(internId) {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('cultural_classes')
-                    .select('id, class_name_ko, class_name_en, class_description')
-                    .eq('intern_id', internId)
-                    .eq('is_active', true)
-                    .order('class_name_ko');
-                
-                if (error) throw error;
-                
-                renderClassOptions(data || []);
-            } catch (error) {
-                console.error('수업 로드 실패:', error);
-                showError('수업 목록을 불러오는데 실패했습니다.');
-            }
-        }
-        
-        // 수업 드롭다운 렌더링
-        function renderClassOptions(classes) {
-            classSelect.innerHTML = '<option value="">선택하세요 / Please Select</option>';
-            
-            if (classes.length === 0) {
-                classSelect.innerHTML = '<option value="">등록된 수업이 없습니다 / No Classes Available</option>';
-                return;
-            }
-            
-            classes.forEach(cls => {
-                const option = document.createElement('option');
-                option.value = cls.id;
-                option.textContent = `${cls.class_name_ko} / ${cls.class_name_en || cls.class_name_ko}`;
-                classSelect.appendChild(option);
-            });
-        }
         
         // 이벤트 리스너 설정
         function setupEventListeners() {
@@ -1222,11 +1194,9 @@
                 selectedCountry = e.target.value;
                 instituteSelect.disabled = true;
                 internSelect.disabled = true;
-                classSelect.disabled = true;
                 
                 instituteSelect.innerHTML = '<option value="">선택하세요 / Please Select</option>';
                 internSelect.innerHTML = '<option value="">먼저 학당을 선택하세요 / Select Institute First</option>';
-                classSelect.innerHTML = '<option value="">먼저 선생님을 선택하세요 / Select Teacher First</option>';
                 
                 if (selectedCountry) {
                     renderInstituteOptions(selectedCountry);
@@ -1240,9 +1210,7 @@
             instituteSelect.addEventListener('change', async (e) => {
                 selectedInstituteId = e.target.value;
                 internSelect.disabled = true;
-                classSelect.disabled = true;
                 internSelect.innerHTML = '<option value="">로딩 중... / Loading...</option>';
-                classSelect.innerHTML = '<option value="">먼저 선생님을 선택하세요 / Select Teacher First</option>';
                 
                 if (selectedInstituteId) {
                     await loadInterns(selectedInstituteId);
@@ -1255,21 +1223,9 @@
             // 문화인턴 선택
             internSelect.addEventListener('change', async (e) => {
                 selectedInternId = e.target.value;
-                classSelect.disabled = true;
-                classSelect.innerHTML = '<option value="">로딩 중... / Loading...</option>';
                 
-                if (selectedInternId) {
-                    await loadClasses(selectedInternId);
-                    classSelect.disabled = false;
-                } else {
-                    classSelect.innerHTML = '<option value="">먼저 선생님을 선택하세요 / Select Teacher First</option>';
-                }
             });
             
-            // 수업 선택
-            classSelect.addEventListener('change', (e) => {
-                selectedClassId = e.target.value;
-            });
             
             // 라디오 버튼 시각 효과
             document.querySelectorAll('.radio-option input[type="radio"]').forEach(radio => {
@@ -1289,22 +1245,21 @@
         // 폼 제출 처리
         async function handleSubmit(e) {
             e.preventDefault();
-            
-            if (!selectedClassId) {
-                showError('수업을 선택해주세요. / Please select a class.');
+
+            if (!selectedInternId) {
+                showError('문화인턴 선생님을 선택해주세요. / Please select a cultural intern.');
                 return;
             }
-            
+
             const formData = new FormData(surveyForm);
-            
+
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="loading-spinner"></span>제출 중... / Submitting...';
-            
+
             try {
                 const surveyData = {
                     institute_id: selectedInstituteId,
                     intern_id: selectedInternId,
-                    class_id: selectedClassId,
                     participation_count: formData.get('participation_count'),
                     q3_recruitment_info: parseInt(formData.get('q3')),
                     q4_content_interest: parseInt(formData.get('q4')),
@@ -1316,30 +1271,33 @@
                     q10_recommendation: parseInt(formData.get('q10')),
                     response_language: 'ko'
                 };
-                
+
                 const { error } = await supabaseClient
                     .from('class_surveys')
                     .insert([surveyData]);
-                
+
                 if (error) {
                     // 중복 응답 에러 체크
                     if (error.code === '23505') {
-                        showError('이미 이 수업에 대한 설문을 제출하셨습니다. (24시간 내 중복 응답 불가) / You have already submitted a survey for this class within 24 hours.');
+                        showError('이미 이 문화인턴 선생님의 수업에 대한 설문을 제출하셨습니다. / You have already submitted a survey for this instructor.');
                         submitBtn.disabled = false;
                         submitBtn.textContent = '설문 제출하기 / Submit Survey';
                         return;
                     }
                     throw error;
                 }
-                
+
+                // ✅ 제출 성공 시 쿠키 저장 (30일 유효)
+                setCookie('survey_submitted', 'true', 30);
+
                 // 성공 메시지 표시
                 surveyBody.style.display = 'none';
                 submitSection.style.display = 'none';
                 thankYouMessage.classList.add('show');
-                
+
                 // 페이지 최상단으로 스크롤
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-                
+
             } catch (error) {
                 console.error('제출 실패:', error);
                 showError('설문 제출에 실패했습니다. 다시 시도해주세요. / Submission failed. Please try again.');
@@ -1358,6 +1316,29 @@
                 errorMessage.classList.remove('show');
             }, 5000);
         }
+        
+        // ===== 쿠키 관련 유틸리티 함수 =====
+        function setCookie(name, value, days) {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+            document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+
+        function generateSurveyKey(instituteId, internId) {
+            return `survey_${instituteId}_${internId}`;
+        }
+        
         
         // 초기화 실행
         init();
