@@ -19,7 +19,7 @@
         }
         
         .container {
-            max-width: 600px;
+            max-width: 700px;
             margin: 0 auto;
         }
         
@@ -66,14 +66,27 @@
             border: 2px dashed #d1d5db;
         }
         
-        .input-group {
-            display: flex;
+        /* 입력 필드 레이아웃 */
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 0.75rem;
             margin-bottom: 0.5rem;
         }
         
-        .input-group input {
-            flex: 1;
+        .input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .input-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .input-wrapper input {
             padding: 0.75rem 1rem;
             border: 2px solid #e5e7eb;
             border-radius: 0.5rem;
@@ -81,38 +94,40 @@
             transition: all 0.3s ease;
         }
         
-        .input-group input:focus {
+        .input-wrapper input:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
-        .input-group button {
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-        
-        .input-group button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-        
         .char-count {
             text-align: right;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             color: #6b7280;
         }
         
         .char-count.warning {
             color: #dc2626;
             font-weight: 600;
+        }
+        
+        .add-button {
+            width: 100%;
+            padding: 0.875rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 0.75rem;
+        }
+        
+        .add-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
         
         .class-list {
@@ -125,10 +140,10 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem 1.25rem;
+            padding: 1.25rem;
             background: white;
             border: 2px solid #e5e7eb;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             transition: all 0.3s ease;
         }
         
@@ -137,10 +152,23 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
-        .class-name {
-            font-weight: 500;
-            color: #1f2937;
+        .class-info {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .class-name-ko {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #1f2937;
+        }
+        
+        .class-name-en {
+            font-size: 0.9rem;
+            color: #6b7280;
+            font-style: italic;
         }
         
         .delete-btn {
@@ -150,6 +178,7 @@
             border: none;
             border-radius: 0.375rem;
             font-size: 0.875rem;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
         }
@@ -238,14 +267,14 @@
                 padding: 1.5rem;
             }
             
-            .input-group {
-                flex-direction: column;
+            .input-row {
+                grid-template-columns: 1fr;
             }
             
             .class-item {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 0.75rem;
+                gap: 1rem;
             }
             
             .delete-btn {
@@ -259,7 +288,7 @@
         <!-- 헤더 -->
         <div class="header">
             <h1>📚 문화수업 등록</h1>
-            <p>설문조사에 표시될 수업명을 등록해주세요</p>
+            <p>설문조사에 표시될 수업명을 한글과 영문으로 등록해주세요</p>
         </div>
         
         <!-- 메인 콘텐츠 -->
@@ -271,14 +300,27 @@
             
             <!-- 추가 폼 -->
             <div class="add-form">
-                <div class="input-group">
-                    <input type="text" 
-                           id="classNameInput" 
-                           placeholder="수업명 입력 (예: 한지공예 체험)" 
-                           maxlength="40">
-                    <button id="addBtn">추가</button>
+                <div class="input-row">
+                    <div class="input-wrapper">
+                        <label class="input-label">한글 수업명</label>
+                        <input type="text" 
+                               id="classNameKoInput" 
+                               placeholder="예: 한지공예 체험" 
+                               maxlength="40">
+                        <div class="char-count" id="charCountKo">0/40</div>
+                    </div>
+                    
+                    <div class="input-wrapper">
+                        <label class="input-label">영문 수업명</label>
+                        <input type="text" 
+                               id="classNameEnInput" 
+                               placeholder="예: Hanji Craft Experience" 
+                               maxlength="50">
+                        <div class="char-count" id="charCountEn">0/50</div>
+                    </div>
                 </div>
-                <div class="char-count" id="charCount">0/40</div>
+                
+                <button class="add-button" id="addBtn">➕ 수업 추가</button>
             </div>
             
             <!-- 수업 목록 -->
@@ -309,7 +351,7 @@
         let currentUser = null;
         let classes = [];
         
-        // ✅ CONFIG 로드 대기 함수 (수정된 경로)
+        // CONFIG 로드 대기 함수
         function waitForConfig(maxAttempts = 50, interval = 100) {
             return new Promise((resolve, reject) => {
                 let attempts = 0;
@@ -317,7 +359,6 @@
                 const checkConfig = () => {
                     attempts++;
                     
-                    // ✅ 올바른 경로: CONFIG.SUPABASE.URL
                     if (window.CONFIG && 
                         window.CONFIG.SUPABASE && 
                         window.CONFIG.SUPABASE.URL && 
@@ -338,10 +379,8 @@
         // 초기화
         async function init() {
             try {
-                // ✅ CONFIG 로드 대기
                 await waitForConfig();
                 
-                // ✅ Supabase 클라이언트 초기화 (수정된 경로)
                 const { createClient } = supabase;
                 supabaseClient = createClient(
                     window.CONFIG.SUPABASE.URL, 
@@ -376,7 +415,7 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('cultural_classes')
-                    .select('id, class_name_ko')
+                    .select('id, class_name_ko, class_name_en')
                     .eq('intern_id', currentUser.id)
                     .eq('is_active', true)
                     .order('created_at', { ascending: false });
@@ -395,11 +434,21 @@
         
         // 수업 추가
         async function addClass() {
-            const input = document.getElementById('classNameInput');
-            const className = input.value.trim();
+            const inputKo = document.getElementById('classNameKoInput');
+            const inputEn = document.getElementById('classNameEnInput');
+            const classNameKo = inputKo.value.trim();
+            const classNameEn = inputEn.value.trim();
             
-            if (!className) {
-                showToast('수업명을 입력해주세요.', 'error');
+            // 검증
+            if (!classNameKo) {
+                showToast('한글 수업명을 입력해주세요.', 'error');
+                inputKo.focus();
+                return;
+            }
+            
+            if (!classNameEn) {
+                showToast('영문 수업명을 입력해주세요.', 'error');
+                inputEn.focus();
                 return;
             }
             
@@ -408,14 +457,19 @@
                     .from('cultural_classes')
                     .insert([{
                         intern_id: currentUser.id,
-                        class_name_ko: className,
+                        class_name_ko: classNameKo,
+                        class_name_en: classNameEn,
                         is_active: true
                     }]);
                 
                 if (error) throw error;
                 
-                input.value = '';
-                document.getElementById('charCount').textContent = '0/40';
+                // 입력 필드 초기화
+                inputKo.value = '';
+                inputEn.value = '';
+                document.getElementById('charCountKo').textContent = '0/40';
+                document.getElementById('charCountEn').textContent = '0/50';
+                
                 await loadClasses();
                 showToast('수업이 추가되었습니다!', 'success');
                 
@@ -465,7 +519,10 @@
             
             container.innerHTML = classes.map(cls => `
                 <div class="class-item">
-                    <span class="class-name">${escapeHtml(cls.class_name_ko)}</span>
+                    <div class="class-info">
+                        <div class="class-name-ko">${escapeHtml(cls.class_name_ko)}</div>
+                        <div class="class-name-en">${escapeHtml(cls.class_name_en || '')}</div>
+                    </div>
                     <button class="delete-btn" onclick="deleteClass('${cls.id}')">삭제</button>
                 </div>
             `).join('');
@@ -478,19 +535,35 @@
         
         // 이벤트 리스너
         function setupEventListeners() {
-            const input = document.getElementById('classNameInput');
+            const inputKo = document.getElementById('classNameKoInput');
+            const inputEn = document.getElementById('classNameEnInput');
             const addBtn = document.getElementById('addBtn');
             
-            // 글자 수 카운트
-            input.addEventListener('input', (e) => {
+            // 한글 글자 수 카운트
+            inputKo.addEventListener('input', (e) => {
                 const count = e.target.value.length;
-                const countEl = document.getElementById('charCount');
+                const countEl = document.getElementById('charCountKo');
                 countEl.textContent = `${count}/40`;
                 countEl.classList.toggle('warning', count > 35);
             });
             
-            // Enter 키로 추가
-            input.addEventListener('keypress', (e) => {
+            // 영문 글자 수 카운트
+            inputEn.addEventListener('input', (e) => {
+                const count = e.target.value.length;
+                const countEl = document.getElementById('charCountEn');
+                countEl.textContent = `${count}/50`;
+                countEl.classList.toggle('warning', count > 45);
+            });
+            
+            // Enter 키로 추가 (한글 입력 필드)
+            inputKo.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    inputEn.focus(); // 영문 필드로 이동
+                }
+            });
+            
+            // Enter 키로 추가 (영문 입력 필드)
+            inputEn.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     addClass();
                 }
@@ -522,7 +595,7 @@
         // 전역 함수 (onclick에서 사용)
         window.deleteClass = deleteClass;
         
-        // ✅ 초기화 시작
+        // 초기화 시작
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {
