@@ -487,7 +487,7 @@
                     <div id="settlementPhotoUploadArea" class="photo-upload-area">
                         <i data-lucide="image-plus" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
                         <p class="text-sm font-medium text-gray-700 mb-1">클릭하거나 이미지를 드래그하여 업로드</p>
-                        <p class="text-xs text-gray-500">JPG, PNG 파일 (각 최대 5MB)</p>
+                        <p class="text-xs text-gray-500">JPG, PNG 파일 (각 최대 15MB)</p>
                     </div>
                     <input type="file" id="settlementPhotoInput" accept="image/jpeg,image/jpg,image/png,image/webp" multiple class="hidden">
                     
@@ -581,7 +581,7 @@
                     <div id="classPhotoUploadArea" class="photo-upload-area">
                         <i data-lucide="image-plus" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
                         <p class="text-sm font-medium text-gray-700 mb-1">클릭하거나 이미지를 드래그하여 업로드</p>
-                        <p class="text-xs text-gray-500">JPG, PNG 파일 (각 최대 5MB)</p>
+                        <p class="text-xs text-gray-500">JPG, PNG 파일 (각 최대 15MB)</p>
                     </div>
                     <input type="file" id="classPhotoInput" accept="image/jpeg,image/jpg,image/png,image/webp" multiple class="hidden">
                     
@@ -659,7 +659,7 @@
                     <div id="reflectionPhotoUploadArea" class="photo-upload-area">
                         <i data-lucide="image-plus" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
                         <p class="text-sm font-medium text-gray-700 mb-1">클릭하거나 이미지를 드래그하여 업로드</p>
-                        <p class="text-xs text-gray-500">JPG, PNG 파일 (각 최대 5MB)</p>
+                        <p class="text-xs text-gray-500">JPG, PNG 파일 (각 최대 15MB)</p>
                     </div>
                     <input type="file" id="reflectionPhotoInput" accept="image/jpeg,image/jpg,image/png,image/webp" multiple class="hidden">
                     
@@ -1085,12 +1085,37 @@ function fillFormWithData(data) {
 }
 
 function loadPhotos(type, urls) {
-    if (!urls || urls.length === 0) return;
+    if (!urls || urls.length === 0) {
+        console.log(`ℹ️ ${type}: 저장된 사진 없음`);
+        return;
+    }
 
-    photoState[type] = urls;
+    console.log(`📸 ${type} 사진 로드 시작:`, urls.length + '개');
+    
+    // URL 배열을 photoState 형식으로 변환
+    photoState[type] = urls.map((url, index) => {
+        // URL에서 파일명 추출
+        const urlParts = url.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+        
+        return {
+            url: url,
+            fileName: fileName,
+            uploaded: true,
+            originalName: fileName  // 원본 파일명
+        };
+    });
+
+    console.log(`✅ ${type} 사진 ${photoState[type].length}개 로드 완료`);
+    
+    // 그리드 렌더링
     renderPhotoGrid(type);
+    
+    // 카운트 업데이트
+    const countId = `${type}PhotoCount`;
+    const maxPhotos = 5;
+    updatePhotoCount(type, countId, maxPhotos);
 }
-
 function updateStatusBadge(status) {
     const badge = document.getElementById('statusBadge');
     if (!badge) return;

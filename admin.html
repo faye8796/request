@@ -802,6 +802,23 @@
                         </button>
                     </div>
 
+                    <!-- 📝 활동수기 관리 -->
+                    <div class="menu-card" onclick="navigateToActivityReportManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="book-open"></i>
+                        </div>
+                        <h2 class="menu-title">활동수기 관리</h2>
+                        <p class="menu-description">
+                            문화인턴 활동수기 제출 현황을 조회<br>
+                            제출된 활동수기를 확인하고 PDF로 저장
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
+
+                    
                     <!-- 📋 필수 서류 제출 관리 -->
                     <div class="menu-card" onclick="navigateToRequiredDocumentsManagement()">
                         <div class="menu-icon">
@@ -1459,6 +1476,11 @@
             function navigateToSurvey() {
                 window.location.href = 'admin/survey-management.html';
             }
+            function navigateToActivityReportManagement() {
+                window.location.href = 'admin/activity-report-management.html';
+            }
+
+            
             
             
             // 전역 함수로 노출
@@ -1476,6 +1498,8 @@
             window.navigateToActivityScheduleManagement = navigateToActivityScheduleManagement;
             window.navigateToContentContestManagement = navigateToContentContestManagement;
             window.navigateToSurvey = navigateToSurvey;
+            window.navigateToActivityReportManagement = navigateToActivityReportManagement;
+
 
             // DOMContentLoaded 이벤트 리스너
             document.addEventListener('DOMContentLoaded', safeInitialize);
