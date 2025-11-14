@@ -862,7 +862,7 @@
                 const { data: interns, error: internsError } = await supabase
                     .from('user_profiles')
                     .select('id, name, sejong_institute')
-                    .eq('role', 'student')
+                    .eq('user_type', 'student')  
                     .order('name');
                 
                 if (internsError) throw internsError;

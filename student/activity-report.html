@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>활동 수기 등록 - 세종학당 문화인턴 지원 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        /* 기존 기능들과 일관된 헤더 스타일 */
+        .header {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            padding: 2rem 0;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" patternUnits="userSpaceOnUse" width="100" height="100"><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header-content {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-info h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-info p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            max-width: 600px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            line-height: 1.4;
+            white-space: nowrap;
+        }
+
+        .btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* 반응형 헤더 */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+                padding: 0 1rem;
+            }
+
+            .user-info h1 {
+                font-size: 2rem;
+            }
+
+            .header-actions {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .header-content {
+                padding: 0 0.5rem;
+            }
+        }
+
+        /* 텍스트 영역 스타일 */
+        .textarea-container {
+            position: relative;
+        }
+
+        .char-counter {
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .char-counter.valid {
+            color: #059669;
+            border: 1px solid #059669;
+        }
+
+        .char-counter.invalid {
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        /* 사진 업로드 영역 */
+        .photo-upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .photo-upload-area:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .photo-upload-area.dragover {
+            border-color: #3b82f6;
+            background: #dbeafe;
+        }
+
+        /* 사진 썸네일 그리드 */
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .photo-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e5e7eb;
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            background: rgba(239, 68, 68, 0.9);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .photo-delete-btn:hover {
+            background: rgba(220, 38, 38, 1);
+            transform: scale(1.1);
+        }
+
+        /* 파트 헤더 */
+        .part-header {
+            padding: 1.5rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .part-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+
+        .part-header p {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        /* 상태 배지 */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status-badge.draft {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-badge.submitted {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-badge.approved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 헤더 -->
+    <header class="header">
+        <div class="header-content">
+            <div class="user-info">
+                <h1 id="pageTitle">활동 수기 등록</h1>
+                <p id="pageSubtitle">문화인턴 활동을 마무리하며 소중한 경험을 공유해주세요</p>
+            </div>
+            <div class="header-actions">
+                <button id="backBtn" class="btn secondary">
+                    <i data-lucide="arrow-left"></i>
+                    대시보드로 돌아가기
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 진행 상태 표시 -->
+    <div class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm font-medium text-gray-700">작성 진행률:</span>
+                    <div class="flex-1 h-2 w-64 bg-gray-200 rounded-full">
+                        <div id="progressBar" class="h-2 bg-green-600 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <span id="progressText" class="text-sm font-semibold text-gray-900">0%</span>
+                </div>
+                <div id="statusBadge" class="status-badge draft">
+                    <i data-lucide="file-edit"></i>
+                    <span>작성중</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    <div id="alert-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6"></div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        <!-- 파트 1: 기본정보 -->
+        <section class="bg-white rounded-lg shadow-sm border">
+            <div class="part-header">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i data-lucide="user" class="w-5 h-5 text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h2>기본정보</h2>
+                        <p>자동으로 불러온 기본 정보를 확인하고 주요 활동 내용을 작성해주세요</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- 자동 불러오는 정보 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">성명</label>
+                        <input type="text" id="studentName" readonly 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">소속대학</label>
+                        <input type="text" id="university" readonly 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">전공</label>
+                        <input type="text" id="major" readonly 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">파견지 (파견 세종학당)</label>
+                        <input type="text" id="institute" readonly 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">활동 분야</label>
+                        <input type="text" id="activityField" readonly 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">활동 기간</label>
+                        <input type="text" id="activityPeriod" readonly 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                    </div>
+                </div>
+
+                <!-- 학생이 직접 작성하는 항목 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        주요 활동 내용 <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-sm text-gray-500 mb-3">
+                        문화인턴으로서 수행한 주요 활동들을 간략히 요약해주세요
+                    </p>
+                    <div class="textarea-container">
+                        <textarea id="mainActivities" rows="6"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                                  placeholder="예: 한국어 문화 수업 진행, 한국 전통문화 체험 프로그램 기획 및 운영, 학당 행사 지원 등"></textarea>
+                        <div class="char-counter invalid">
+                            <span id="mainActivitiesCounter">0</span>자
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 임시저장 버튼 -->
+                <div class="flex justify-end">
+                    <button id="saveDraftBtn1" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                        <i data-lucide="save" class="w-4 h-4 inline mr-2"></i>임시저장
+                    </button>
+                </div>
+            </div>
+        </section>
+        <!-- 파트 2: 현지 정착 정보 -->
+        <section class="bg-white rounded-lg shadow-sm border">
+            <div class="part-header">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <i data-lucide="map-pin" class="w-5 h-5 text-purple-600"></i>
+                    </div>
+                    <div>
+                        <h2>현지 정착 정보</h2>
+                        <p>후배 문화인턴들이 현지 생활을 준비하는데 도움이 될 정보를 공유해주세요</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 space-y-8">
+                
+                <!-- 1. 비자발급 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 mb-2">
+                        1. 비자발급 <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-sm text-gray-600 mb-3">
+                        발급받은 비자 종류 및 비자 발급 과정에서 알아야할 정보(발급 방법, 최대 체류 가능일 등)를 적어주세요
+                    </p>
+                    <div class="textarea-container">
+                        <textarea id="visaInfo" rows="6"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                  placeholder="비자 종류, 발급 절차, 필요 서류, 소요 기간, 주의사항 등을 구체적으로 작성해주세요"></textarea>
+                        <div class="char-counter invalid">
+                            <span id="visaInfoCounter">0</span> / 최소 300자
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. 거주지 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 mb-2">
+                        2. 거주지 <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-sm text-gray-600 mb-3">
+                        거주하신 곳의 특징 및 숙소를 어떤 방식으로 구했는지 등 관련한 내용을 적어주세요
+                    </p>
+                    <div class="textarea-container">
+                        <textarea id="accommodationInfo" rows="6"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                  placeholder="숙소 형태(기숙사/원룸 등), 찾은 방법, 비용, 위치, 시설, 장단점 등을 작성해주세요"></textarea>
+                        <div class="char-counter invalid">
+                            <span id="accommodationInfoCounter">0</span> / 최소 300자
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 교통 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 mb-2">
+                        3. 교통 <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-sm text-gray-600 mb-3">
+                        학당 출퇴근과 관련하여 주로 이용한 교통수단 등에 대해 적어주세요
+                    </p>
+                    <div class="textarea-container">
+                        <textarea id="transportationInfo" rows="5"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                  placeholder="주요 교통수단, 교통비, 소요 시간, 교통 관련 팁 등을 작성해주세요"></textarea>
+                        <div class="char-counter">
+                            <span id="transportationInfoCounter">0</span>자
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. 출국 전 준비 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 mb-2">
+                        4. 출국 전 준비 <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-sm text-gray-600 mb-3">
+                        현지 생활과 관련해, 출국 전에 미리 준비하면 좋을 내용에 대해 적어주세요
+                    </p>
+                    <div class="textarea-container">
+                        <textarea id="preparationInfo" rows="6"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                  placeholder="준비물, 사전 학습, 예방접종, 현지 통신, 환전 등 출국 전 준비사항을 작성해주세요"></textarea>
+                        <div class="char-counter invalid">
+                            <span id="preparationInfoCounter">0</span> / 최소 300자
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. 현지 생활 관련 참고 사항 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 mb-2">
+                        5. 현지 생활 관련 참고 사항 <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-sm text-gray-600 mb-3">
+                        현지에서 생활할 때 도움이 될 만한 정보, 또는 유의해야할 사항(현지 문화 관련 등)이 있다면 자유롭게 적어주세요
+                    </p>
+                    <div class="textarea-container">
+                        <textarea id="livingTips" rows="6"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                  placeholder="현지 문화, 관습, 안전, 날씨, 생활 팁 등을 자유롭게 작성해주세요"></textarea>
+                        <div class="char-counter">
+                            <span id="livingTipsCounter">0</span>자
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 대표 사진 등록 -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="block text-sm font-medium text-gray-900">
+                            현지 정착 대표 사진 (최대 5개)
+                        </label>
+                        <span id="settlementPhotoCount" class="text-sm text-gray-500">0 / 5</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">
+                        비자, 숙소, 교통 등 현지 정착과 관련된 사진을 업로드해주세요
+                    </p>
+                    
+                    <div id="settlementPhotoUploadArea" class="photo-upload-area">
+                        <i data-lucide="image-plus" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
+                        <p class="text-sm font-medium text-gray-700 mb-1">클릭하거나 이미지를 드래그하여 업로드</p>
+                        <p class="text-xs text-gray-500">JPG, PNG 파일 (각 최대 5MB)</p>
+                    </div>
+                    <input type="file" id="settlementPhotoInput" accept="image/jpeg,image/jpg,image/png,image/webp" multiple class="hidden">
+                    
+                    <!-- 사진 미리보기 그리드 -->
+                    <div id="settlementPhotoGrid" class="photo-grid"></div>
+                </div>
+
+                <!-- 임시저장 버튼 -->
+                <div class="flex justify-end">
+                    <button id="saveDraftBtn2" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                        <i data-lucide="save" class="w-4 h-4 inline mr-2"></i>임시저장
+                    </button>
+                </div>
+            </div>
+        </section>
+        <!-- 파트 3: 수업 정보 -->
+        <section class="bg-white rounded-lg shadow-sm border">
+            <div class="part-header">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <i data-lucide="book-open" class="w-5 h-5 text-orange-600"></i>
+                    </div>
+                    <div>
+                        <h2>수업 정보</h2>
+                        <p>진행한 문화수업에 대한 경험과 노하우를 공유해주세요</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 space-y-8">
+                
+                <!-- 1. 파견 세종학당에서 어떤 수업을 진행하셨나요? -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 mb-2">
+                        1. 파견 세종학당에서 어떤 수업을 진행하셨나요? <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-sm text-gray-600 mb-3">
+                        담당 문화수업 정보를 간단히 적어주시고, 수업 준비 과정과 수업 결과, 세부적인 커리큘럼을 학당과 조율한 과정 등에 대한 내용을 적어주세요
+                    </p>
+                    <div class="textarea-container">
+                        <textarea id="classDescription" rows="7"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                                  placeholder="담당 수업 주제, 대상 학습자, 수업 빈도, 준비 과정, 커리큘럼 조율 과정, 수업 결과 등을 구체적으로 작성해주세요"></textarea>
+                        <div class="char-counter invalid">
+                            <span id="classDescriptionCounter">0</span> / 최소 300자
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. 활동 기간 중 가장 기억에 남는 수업이 있었다면 무엇인가요? -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 mb-2">
+                        2. 활동 기간 중 가장 기억에 남는 수업이 있었다면 무엇인가요? <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-sm text-gray-600 mb-3">
+                        담당 문화수업 중 가장 기억에 남는 수업에 대해 그 수업의 주제와 인상 깊었던 이유를 중심으로 작성해주세요. 학생들의 반응이나 특별한 에피소드, 수업을 통해 느낀 보람이나 배운 점이 있다면 적어주세요
+                    </p>
+                    <div class="textarea-container">
+                        <textarea id="memorableClass" rows="7"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                                  placeholder="수업 주제, 인상 깊었던 이유, 학생들의 반응, 특별한 에피소드, 느낀 보람 등을 작성해주세요"></textarea>
+                        <div class="char-counter invalid">
+                            <span id="memorableClassCounter">0</span> / 최소 300자
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 수업을 준비 또는 진행하면서 겪은 어려웠던 점, 그것을 극복한 방법은 무엇이었나요? -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 mb-2">
+                        3. 수업을 준비 또는 진행하면서 겪은 어려웠던 점, 그것을 극복한 방법은 무엇이었나요? <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-sm text-gray-600 mb-3">
+                        수업을 준비하거나 진행하면서 어려웠던 점이 있었다면 구체적으로 적어주시고, 그 어려움을 해결하기 위해 시도한 방법과 극복 과정 등을 작성해주세요
+                    </p>
+                    <div class="textarea-container">
+                        <textarea id="challengesSolutions" rows="7"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                                  placeholder="어려웠던 점, 원인 분석, 시도한 해결 방법, 극복 과정, 배운 점 등을 작성해주세요"></textarea>
+                        <div class="char-counter invalid">
+                            <span id="challengesSolutionsCounter">0</span> / 최소 300자
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 대표 사진 등록 -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="block text-sm font-medium text-gray-900">
+                            수업 정보 대표 사진 (최대 5개)
+                        </label>
+                        <span id="classPhotoCount" class="text-sm text-gray-500">0 / 5</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">
+                        수업 진행, 학생들과의 활동, 교구 등 수업과 관련된 사진을 업로드해주세요
+                    </p>
+                    
+                    <div id="classPhotoUploadArea" class="photo-upload-area">
+                        <i data-lucide="image-plus" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
+                        <p class="text-sm font-medium text-gray-700 mb-1">클릭하거나 이미지를 드래그하여 업로드</p>
+                        <p class="text-xs text-gray-500">JPG, PNG 파일 (각 최대 5MB)</p>
+                    </div>
+                    <input type="file" id="classPhotoInput" accept="image/jpeg,image/jpg,image/png,image/webp" multiple class="hidden">
+                    
+                    <!-- 사진 미리보기 그리드 -->
+                    <div id="classPhotoGrid" class="photo-grid"></div>
+                </div>
+
+                <!-- 임시저장 버튼 -->
+                <div class="flex justify-end">
+                    <button id="saveDraftBtn3" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                        <i data-lucide="save" class="w-4 h-4 inline mr-2"></i>임시저장
+                    </button>
+                </div>
+            </div>
+        </section>
+        <!-- 파트 4: 활동 소감 -->
+        <section class="bg-white rounded-lg shadow-sm border">
+            <div class="part-header">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="flex-shrink-0 w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
+                        <i data-lucide="heart" class="w-5 h-5 text-pink-600"></i>
+                    </div>
+                    <div>
+                        <h2>활동 소감</h2>
+                        <p>문화인턴 활동을 마무리하며 느낀 점과 후배들에게 전하고 싶은 말을 공유해주세요</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 space-y-8">
+                
+                <!-- 1. 문화인턴 활동을 마치며, 그 소감을 한 문장으로 표현한다면? -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 mb-2">
+                        1. 문화인턴 활동을 마치며, 그 소감을 한 문장으로 표현한다면? 그렇게 표현한 이유는 무엇인가요? <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-sm text-gray-600 mb-3">
+                        문화인턴 활동을 한 문장으로 표현하여 주시고 (예: 나에게 문화인턴은 _________다), 그렇게 표현한 사유를 작성해주세요. 전체 인턴 활동을 마무리하며 느낀점, 가장 보람 있었던 순간, 본인의 변화나 성장 등을 자유롭게 써주세요.
+                    </p>
+                    <div class="textarea-container">
+                        <textarea id="oneSentenceSummary" rows="8"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+                                  placeholder="예시: '나에게 문화인턴은 도전과 성장의 시간이었다'&#10;&#10;이러한 표현을 선택한 이유와 함께, 활동을 통해 느낀 점, 보람 있었던 순간, 본인의 변화와 성장 등을 자유롭게 작성해주세요"></textarea>
+                        <div class="char-counter invalid">
+                            <span id="oneSentenceSummaryCounter">0</span> / 최소 300자
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. 미래의 문화인턴에게 해주고 싶은 조언이 있다면? -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 mb-2">
+                        2. 미래의 문화인턴에게 해주고 싶은 조언이 있다면 무엇인가요? <span class="text-red-500">*</span>
+                    </label>
+                    <p class="text-sm text-gray-600 mb-3">
+                        앞서 작성한 현지 정착 정보, 수업 정보 등을 종합하여 문화인턴 후배가 활동할 때 실제로 도움이 될 수 있는 현장형 조언을 중심으로 작성해 주세요.
+                    </p>
+                    <div class="textarea-container">
+                        <textarea id="adviceForFuture" rows="8"
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+                                  placeholder="후배 문화인턴들이 활동을 준비하고 수행하는데 실질적으로 도움이 될 수 있는 조언을 작성해주세요. 현지 정착, 수업 준비, 학당 적응, 마음가짐 등 다양한 측면에서 조언해주세요"></textarea>
+                        <div class="char-counter invalid">
+                            <span id="adviceForFutureCounter">0</span> / 최소 300자
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 대표 사진 등록 -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="block text-sm font-medium text-gray-900">
+                            활동 소감 대표 사진 (최대 5개)
+                        </label>
+                        <span id="reflectionPhotoCount" class="text-sm text-gray-500">0 / 5</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-4">
+                        문화인턴 활동의 의미 있는 순간들을 담은 사진을 업로드해주세요
+                    </p>
+                    
+                    <div id="reflectionPhotoUploadArea" class="photo-upload-area">
+                        <i data-lucide="image-plus" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
+                        <p class="text-sm font-medium text-gray-700 mb-1">클릭하거나 이미지를 드래그하여 업로드</p>
+                        <p class="text-xs text-gray-500">JPG, PNG 파일 (각 최대 5MB)</p>
+                    </div>
+                    <input type="file" id="reflectionPhotoInput" accept="image/jpeg,image/jpg,image/png,image/webp" multiple class="hidden">
+                    
+                    <!-- 사진 미리보기 그리드 -->
+                    <div id="reflectionPhotoGrid" class="photo-grid"></div>
+                </div>
+
+                <!-- 임시저장 버튼 -->
+                <div class="flex justify-end">
+                    <button id="saveDraftBtn4" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                        <i data-lucide="save" class="w-4 h-4 inline mr-2"></i>임시저장
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 최종 제출 섹션 -->
+        <section class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg shadow-sm border-2 border-green-200">
+            <div class="p-8">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="send" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">활동 수기 최종 제출</h2>
+                    <p class="text-gray-600">모든 항목을 완료한 후 제출하시면 관리자가 검토합니다</p>
+                </div>
+
+                <!-- 제출 전 체크리스트 -->
+                <div class="bg-white rounded-lg p-6 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">제출 전 확인사항</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-start space-x-3">
+                            <div id="check1" class="flex-shrink-0 w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center">
+                                <i data-lucide="x" class="w-3 h-3 text-gray-400"></i>
+                            </div>
+                            <p class="text-sm text-gray-700">기본정보의 주요 활동 내용을 작성했습니다</p>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div id="check2" class="flex-shrink-0 w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center">
+                                <i data-lucide="x" class="w-3 h-3 text-gray-400"></i>
+                            </div>
+                            <p class="text-sm text-gray-700">현지 정착 정보 5개 항목을 모두 작성했습니다 (최소 300자 항목 포함)</p>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div id="check3" class="flex-shrink-0 w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center">
+                                <i data-lucide="x" class="w-3 h-3 text-gray-400"></i>
+                            </div>
+                            <p class="text-sm text-gray-700">수업 정보 3개 문항을 모두 작성했습니다 (각 최소 300자)</p>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div id="check4" class="flex-shrink-0 w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center">
+                                <i data-lucide="x" class="w-3 h-3 text-gray-400"></i>
+                            </div>
+                            <p class="text-sm text-gray-700">활동 소감 2개 문항을 모두 작성했습니다 (각 최소 300자)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 안내사항 -->
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start space-x-3">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0"></i>
+                        <div class="text-sm text-yellow-800">
+                            <p class="font-semibold mb-1">제출 전 유의사항</p>
+                            <ul class="space-y-1">
+                                <li>• 제출 후에는 관리자 승인 전까지 수정이 제한됩니다</li>
+                                <li>• 모든 필수 항목(*)을 완료해야 제출 버튼이 활성화됩니다</li>
+                                <li>• 최소 글자 수 요구사항을 충족해야 합니다</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 제출 버튼 -->
+                <div class="flex justify-center space-x-4">
+                    <button id="finalSaveDraftBtn" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium">
+                        <i data-lucide="save" class="w-5 h-5 inline mr-2"></i>최종 임시저장
+                    </button>
+                    <button id="finalSubmitBtn" disabled 
+                            class="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold text-lg">
+                        <i data-lucide="send" class="w-5 h-5 inline mr-2"></i>최종 제출하기
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.2"></script>
+    <script type="module" src="../js/config.js"></script>
+    <script type="module" src="../js/utils.js"></script>
+    <script src="../js/supabase/supabase-core.js"></script>
+    <script src="../js/auth.js"></script>
+
+    <script>
+        // ============================================
+        // 전역 변수 및 초기화
+        // ============================================
+        let supabase = null;
+        let currentUser = null;
+        let currentReport = null;
+
+        // 사진 업로드 상태 관리
+        const photoState = {
+            settlement: [],
+            class: [],
+            reflection: []
+        };
+
+        // ============================================
+        // Supabase 초기화
+        // ============================================
+        async function initializeSupabase() {
+            try {
+                if (window.supabase) {
+                    supabase = window.supabase;
+                } else if (window.SupabaseCore) {
+                    supabase = window.SupabaseCore.getClient();
+                }
+
+                if (!supabase) {
+                    throw new Error('Supabase 클라이언트를 찾을 수 없습니다');
+                }
+
+                console.log('✅ Supabase 초기화 완료');
+                return true;
+            } catch (error) {
+                console.error('❌ Supabase 초기화 실패:', error);
+                showAlert('시스템 초기화에 실패했습니다', 'error');
+                return false;
+            }
+        }
+
+        // ============================================
+        // 인증 및 사용자 정보
+        // ============================================
+        function loadUserData() {
+            try {
+                const userDataStr = localStorage.getItem('currentStudent');
+                if (!userDataStr) {
+                    throw new Error('로그인 정보가 없습니다');
+                }
+
+                currentUser = JSON.parse(userDataStr);
+                console.log('✅ 사용자 정보 로드:', currentUser);
+
+                // 헤더 정보 업데이트
+                updateHeaderInfo();
+                // 기본정보 자동 입력
+                fillBasicInfo();
+
+                return true;
+            } catch (error) {
+                console.error('❌ 사용자 정보 로드 실패:', error);
+                showAlert('로그인이 필요합니다', 'error');
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 2000);
+                return false;
+            }
+        }
+
+        function updateHeaderInfo() {
+            const titleEl = document.getElementById('pageTitle');
+            const subtitleEl = document.getElementById('pageSubtitle');
+
+            if (currentUser.name) {
+                titleEl.textContent = `활동 수기 등록 - ${currentUser.name}님`;
+            }
+            if (currentUser.institute_name) {
+                subtitleEl.textContent = `${currentUser.institute_name}에서의 소중한 경험을 공유해주세요`;
+            }
+        }
+
+        function fillBasicInfo() {
+            document.getElementById('studentName').value = currentUser.name || '';
+            document.getElementById('university').value = currentUser.university_name || '정보 없음';
+            document.getElementById('major').value = currentUser.major || '정보 없음';
+            document.getElementById('institute').value = currentUser.institute_name || '';
+            document.getElementById('activityField').value = '한국 문화 교육';
+            
+            // 활동 기간
+            if (currentUser.actual_arrival_date && currentUser.actual_work_end_date) {
+                const startDate = new Date(currentUser.actual_arrival_date).toLocaleDateString('ko-KR');
+                const endDate = new Date(currentUser.actual_work_end_date).toLocaleDateString('ko-KR');
+                document.getElementById('activityPeriod').value = `${startDate} ~ ${endDate}`;
+            }
+        }
+
+        // ============================================
+        // 데이터 로드
+        // ============================================
+        async function loadExistingReport() {
+            try {
+                const { data, error } = await supabase
+                    .from('activity_reports')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') {
+                    throw error;
+                }
+
+                if (data) {
+                    currentReport = data;
+                    fillFormWithData(data);
+                    updateStatusBadge(data.status);
+                    console.log('✅ 기존 활동 수기 로드:', data);
+                }
+            } catch (error) {
+                console.error('❌ 활동 수기 로드 실패:', error);
+            }
+        }
+
+        function fillFormWithData(data) {
+            // 기본정보
+            if (data.main_activities) {
+                document.getElementById('mainActivities').value = data.main_activities;
+            }
+
+            // 현지 정착 정보
+            if (data.visa_info) document.getElementById('visaInfo').value = data.visa_info;
+            if (data.accommodation_info) document.getElementById('accommodationInfo').value = data.accommodation_info;
+            if (data.transportation_info) document.getElementById('transportationInfo').value = data.transportation_info;
+            if (data.preparation_info) document.getElementById('preparationInfo').value = data.preparation_info;
+            if (data.living_tips) document.getElementById('livingTips').value = data.living_tips;
+
+            // 수업 정보
+            if (data.class_description) document.getElementById('classDescription').value = data.class_description;
+            if (data.memorable_class) document.getElementById('memorableClass').value = data.memorable_class;
+            if (data.challenges_solutions) document.getElementById('challengesSolutions').value = data.challenges_solutions;
+
+            // 활동 소감
+            if (data.one_sentence_summary) document.getElementById('oneSentenceSummary').value = data.one_sentence_summary;
+            if (data.advice_for_future) document.getElementById('adviceForFuture').value = data.advice_for_future;
+
+            // 사진 로드
+            if (data.settlement_photos) loadPhotos('settlement', data.settlement_photos);
+            if (data.class_photos) loadPhotos('class', data.class_photos);
+            if (data.reflection_photos) loadPhotos('reflection', data.reflection_photos);
+
+            // 글자 수 카운터 업데이트
+            updateAllCharCounters();
+            updateProgress();
+        }
+
+        function loadPhotos(type, urls) {
+            if (!urls || urls.length === 0) return;
+            
+            photoState[type] = urls;
+            renderPhotoGrid(type);
+        }
+
+        function updateStatusBadge(status) {
+            const badge = document.getElementById('statusBadge');
+            badge.className = 'status-badge';
+            
+            if (status === 'draft') {
+                badge.classList.add('draft');
+                badge.innerHTML = '<i data-lucide="file-edit"></i><span>작성중</span>';
+            } else if (status === 'submitted') {
+                badge.classList.add('submitted');
+                badge.innerHTML = '<i data-lucide="clock"></i><span>검토중</span>';
+            } else if (status === 'approved') {
+                badge.classList.add('approved');
+                badge.innerHTML = '<i data-lucide="check-circle"></i><span>승인완료</span>';
+            }
+            
+            lucide.createIcons();
+        }
+
+        // ============================================
+        // 글자 수 카운터
+        // ============================================
+        function setupCharCounters() {
+            const textareas = [
+                { id: 'mainActivities', counterId: 'mainActivitiesCounter', minLength: 0 },
+                { id: 'visaInfo', counterId: 'visaInfoCounter', minLength: 300 },
+                { id: 'accommodationInfo', counterId: 'accommodationInfoCounter', minLength: 300 },
+                { id: 'transportationInfo', counterId: 'transportationInfoCounter', minLength: 0 },
+                { id: 'preparationInfo', counterId: 'preparationInfoCounter', minLength: 300 },
+                { id: 'livingTips', counterId: 'livingTipsCounter', minLength: 0 },
+                { id: 'classDescription', counterId: 'classDescriptionCounter', minLength: 300 },
+                { id: 'memorableClass', counterId: 'memorableClassCounter', minLength: 300 },
+                { id: 'challengesSolutions', counterId: 'challengesSolutionsCounter', minLength: 300 },
+                { id: 'oneSentenceSummary', counterId: 'oneSentenceSummaryCounter', minLength: 300 },
+                { id: 'adviceForFuture', counterId: 'adviceForFutureCounter', minLength: 300 }
+            ];
+
+            textareas.forEach(({ id, counterId, minLength }) => {
+                const textarea = document.getElementById(id);
+                const counter = document.getElementById(counterId);
+
+                if (!textarea || !counter) return;
+
+                textarea.addEventListener('input', () => {
+                    const length = textarea.value.length;
+                    counter.textContent = length;
+
+                    const counterParent = counter.parentElement;
+                    if (minLength > 0) {
+                        if (length >= minLength) {
+                            counterParent.classList.remove('invalid');
+                            counterParent.classList.add('valid');
+                        } else {
+                            counterParent.classList.remove('valid');
+                            counterParent.classList.add('invalid');
+                        }
+                    }
+
+                    updateProgress();
+                });
+
+                // 초기 값 설정
+                textarea.dispatchEvent(new Event('input'));
+            });
+        }
+
+        function updateAllCharCounters() {
+            const textareas = document.querySelectorAll('textarea[id]');
+            textareas.forEach(textarea => {
+                textarea.dispatchEvent(new Event('input'));
+            });
+        }
+
+        // ============================================
+        // 진행률 계산
+        // ============================================
+        function updateProgress() {
+            const required = {
+                mainActivities: document.getElementById('mainActivities').value.length > 0,
+                visaInfo: document.getElementById('visaInfo').value.length >= 300,
+                accommodationInfo: document.getElementById('accommodationInfo').value.length >= 300,
+                transportationInfo: document.getElementById('transportationInfo').value.length > 0,
+                preparationInfo: document.getElementById('preparationInfo').value.length >= 300,
+                livingTips: document.getElementById('livingTips').value.length > 0,
+                classDescription: document.getElementById('classDescription').value.length >= 300,
+                memorableClass: document.getElementById('memorableClass').value.length >= 300,
+                challengesSolutions: document.getElementById('challengesSolutions').value.length >= 300,
+                oneSentenceSummary: document.getElementById('oneSentenceSummary').value.length >= 300,
+                adviceForFuture: document.getElementById('adviceForFuture').value.length >= 300
+            };
+
+            const completed = Object.values(required).filter(v => v).length;
+            const total = Object.keys(required).length;
+            const percentage = Math.round((completed / total) * 100);
+
+            // 진행률 바 업데이트
+            document.getElementById('progressBar').style.width = `${percentage}%`;
+            document.getElementById('progressText').textContent = `${percentage}%`;
+
+            // 체크리스트 업데이트
+            document.getElementById('check1').innerHTML = required.mainActivities ? 
+                '<i data-lucide="check" class="w-3 h-3 text-green-600"></i>' :
+                '<i data-lucide="x" class="w-3 h-3 text-gray-400"></i>';
+
+            const settlementComplete = required.visaInfo && required.accommodationInfo && 
+                                      required.transportationInfo && required.preparationInfo && required.livingTips;
+            document.getElementById('check2').innerHTML = settlementComplete ?
+                '<i data-lucide="check" class="w-3 h-3 text-green-600"></i>' :
+                '<i data-lucide="x" class="w-3 h-3 text-gray-400"></i>';
+
+            const classComplete = required.classDescription && required.memorableClass && required.challengesSolutions;
+            document.getElementById('check3').innerHTML = classComplete ?
+                '<i data-lucide="check" class="w-3 h-3 text-green-600"></i>' :
+                '<i data-lucide="x" class="w-3 h-3 text-gray-400"></i>';
+
+            const reflectionComplete = required.oneSentenceSummary && required.adviceForFuture;
+            document.getElementById('check4').innerHTML = reflectionComplete ?
+                '<i data-lucide="check" class="w-3 h-3 text-green-600"></i>' :
+                '<i data-lucide="x" class="w-3 h-3 text-gray-400"></i>';
+
+            // 최종 제출 버튼 활성화
+            const allComplete = completed === total;
+            const submitBtn = document.getElementById('finalSubmitBtn');
+            submitBtn.disabled = !allComplete;
+
+            if (allComplete) {
+                submitBtn.innerHTML = '<i data-lucide="send" class="w-5 h-5 inline mr-2"></i>최종 제출하기';
+            } else {
+                submitBtn.innerHTML = '<i data-lucide="lock" class="w-5 h-5 inline mr-2"></i>모든 항목 완료 후 제출 가능';
+            }
+
+            lucide.createIcons();
+        }
+
+        // ============================================
+        // 사진 업로드
+        // ============================================
+        function setupPhotoUploads() {
+            setupPhotoUpload('settlement', 'settlementPhoto');
+            setupPhotoUpload('class', 'classPhoto');
+            setupPhotoUpload('reflection', 'reflectionPhoto');
+        }
+
+        function setupPhotoUpload(type, idPrefix) {
+            const uploadArea = document.getElementById(`${idPrefix}UploadArea`);
+            const input = document.getElementById(`${idPrefix}Input`);
+
+            uploadArea.addEventListener('click', () => {
+                if (photoState[type].length >= 5) {
+                    showAlert('최대 5개까지만 업로드 가능합니다', 'warning');
+                    return;
+                }
+                input.click();
+            });
+
+            input.addEventListener('change', async (e) => {
+                await handlePhotoUpload(type, e.target.files);
+                input.value = '';
+            });
+
+            // 드래그 앤 드롭
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                if (photoState[type].length >= 5) {
+                    showAlert('최대 5개까지만 업로드 가능합니다', 'warning');
+                    return;
+                }
+
+                await handlePhotoUpload(type, e.dataTransfer.files);
+            });
+        }
+
+        async function handlePhotoUpload(type, files) {
+            const remainingSlots = 5 - photoState[type].length;
+            const filesToUpload = Array.from(files).slice(0, remainingSlots);
+
+            for (const file of filesToUpload) {
+                // 파일 크기 체크 (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    showAlert(`${file.name}은(는) 5MB를 초과하여 업로드할 수 없습니다`, 'error');
+                    continue;
+                }
+
+                // 파일 형식 체크
+                if (!file.type.startsWith('image/')) {
+                    showAlert(`${file.name}은(는) 이미지 파일이 아닙니다`, 'error');
+                    continue;
+                }
+
+                try {
+                    const url = await uploadPhotoToStorage(type, file);
+                    photoState[type].push(url);
+                    console.log(`✅ ${type} 사진 업로드 성공:`, url);
+                } catch (error) {
+                    console.error(`❌ ${type} 사진 업로드 실패:`, error);
+                    showAlert(`${file.name} 업로드에 실패했습니다`, 'error');
+                }
+            }
+
+            renderPhotoGrid(type);
+            updatePhotoCount(type);
+        }
+
+        async function uploadPhotoToStorage(type, file) {
+            const fileName = `${currentUser.id}/${type}/${Date.now()}_${file.name}`;
+            
+            const { data, error } = await supabase.storage
+                .from('activity-report-photos')
+                .upload(fileName, file);
+
+            if (error) throw error;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('activity-report-photos')
+                .getPublicUrl(fileName);
+
+            return publicUrl;
+        }
+
+        function renderPhotoGrid(type) {
+            const gridId = `${type === 'settlement' ? 'settlement' : type}PhotoGrid`;
+            const grid = document.getElementById(gridId);
+            
+            grid.innerHTML = photoState[type].map((url, index) => `
+                <div class="photo-item">
+                    <img src="${url}" alt="사진 ${index + 1}">
+                    <button class="photo-delete-btn" onclick="deletePhoto('${type}', ${index})">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function updatePhotoCount(type) {
+            const countId = `${type === 'settlement' ? 'settlement' : type}PhotoCount`;
+            const countEl = document.getElementById(countId);
+            if (countEl) {
+                countEl.textContent = `${photoState[type].length} / 5`;
+            }
+        }
+
+        async function deletePhoto(type, index) {
+            if (!confirm('이 사진을 삭제하시겠습니까?')) return;
+
+            try {
+                const url = photoState[type][index];
+                
+                // Storage에서 삭제
+                const fileName = url.split('/activity-report-photos/')[1];
+                if (fileName) {
+                    await supabase.storage
+                        .from('activity-report-photos')
+                        .remove([fileName]);
+                }
+
+                photoState[type].splice(index, 1);
+                renderPhotoGrid(type);
+                updatePhotoCount(type);
+                showAlert('사진이 삭제되었습니다', 'success');
+            } catch (error) {
+                console.error('❌ 사진 삭제 실패:', error);
+                showAlert('사진 삭제에 실패했습니다', 'error');
+            }
+        }
+
+        // ============================================
+        // 저장 및 제출
+        // ============================================
+        function collectFormData() {
+            return {
+                user_id: currentUser.id,
+                main_activities: document.getElementById('mainActivities').value,
+                visa_info: document.getElementById('visaInfo').value,
+                accommodation_info: document.getElementById('accommodationInfo').value,
+                transportation_info: document.getElementById('transportationInfo').value,
+                preparation_info: document.getElementById('preparationInfo').value,
+                living_tips: document.getElementById('livingTips').value,
+                settlement_photos: photoState.settlement,
+                class_description: document.getElementById('classDescription').value,
+                memorable_class: document.getElementById('memorableClass').value,
+                challenges_solutions: document.getElementById('challengesSolutions').value,
+                class_photos: photoState.class,
+                one_sentence_summary: document.getElementById('oneSentenceSummary').value,
+                advice_for_future: document.getElementById('adviceForFuture').value,
+                reflection_photos: photoState.reflection,
+                status: 'draft'
+            };
+        }
+
+        async function saveDraft() {
+            try {
+                const data = collectFormData();
+
+                let result;
+                if (currentReport) {
+                    // 업데이트
+                    result = await supabase
+                        .from('activity_reports')
+                        .update(data)
+                        .eq('id', currentReport.id)
+                        .select()
+                        .single();
+                } else {
+                    // 신규 생성
+                    result = await supabase
+                        .from('activity_reports')
+                        .insert([data])
+                        .select()
+                        .single();
+                }
+
+                if (result.error) throw result.error;
+
+                currentReport = result.data;
+                showAlert('임시저장되었습니다', 'success');
+                console.log('✅ 임시저장 성공:', result.data);
+            } catch (error) {
+                console.error('❌ 임시저장 실패:', error);
+                showAlert('임시저장에 실패했습니다', 'error');
+            }
+        }
+
+        async function finalSubmit() {
+            if (!confirm('활동 수기를 제출하시겠습니까?\n제출 후에는 관리자 승인 전까지 수정이 제한됩니다.')) {
+                return;
+            }
+
+            try {
+                const data = collectFormData();
+                data.status = 'submitted';
+                data.submitted_at = new Date().toISOString();
+
+                let result;
+                if (currentReport) {
+                    result = await supabase
+                        .from('activity_reports')
+                        .update(data)
+                        .eq('id', currentReport.id)
+                        .select()
+                        .single();
+                } else {
+                    result = await supabase
+                        .from('activity_reports')
+                        .insert([data])
+                        .select()
+                        .single();
+                }
+
+                if (result.error) throw result.error;
+
+                showAlert('활동 수기가 제출되었습니다', 'success');
+                updateStatusBadge('submitted');
+                
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 2000);
+
+                console.log('✅ 최종 제출 성공:', result.data);
+            } catch (error) {
+                console.error('❌ 최종 제출 실패:', error);
+                showAlert('제출에 실패했습니다', 'error');
+            }
+        }
+
+        // ============================================
+        // 이벤트 리스너
+        // ============================================
+        function setupEventListeners() {
+            // 뒤로가기
+            document.getElementById('backBtn').addEventListener('click', () => {
+                window.location.href = 'dashboard.html';
+            });
+
+            // 임시저장 버튼들
+            document.getElementById('saveDraftBtn1').addEventListener('click', saveDraft);
+            document.getElementById('saveDraftBtn2').addEventListener('click', saveDraft);
+            document.getElementById('saveDraftBtn3').addEventListener('click', saveDraft);
+            document.getElementById('saveDraftBtn4').addEventListener('click', saveDraft);
+            document.getElementById('finalSaveDraftBtn').addEventListener('click', saveDraft);
+
+            // 최종 제출
+            document.getElementById('finalSubmitBtn').addEventListener('click', finalSubmit);
+        }
+
+        // ============================================
+        // Alert 함수
+        // ============================================
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alert-container');
+            const colors = {
+                success: 'bg-green-50 border-green-200 text-green-800',
+                error: 'bg-red-50 border-red-200 text-red-800',
+                warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                info: 'bg-blue-50 border-blue-200 text-blue-800'
+            };
+
+            const icons = {
+                success: 'check-circle',
+                error: 'x-circle',
+                warning: 'alert-triangle',
+                info: 'info'
+            };
+
+            const alert = document.createElement('div');
+            alert.className = `${colors[type]} border rounded-lg p-4 mb-4 flex items-center space-x-3`;
+            alert.innerHTML = `
+                <i data-lucide="${icons[type]}" class="w-5 h-5 flex-shrink-0"></i>
+                <p class="flex-1">${message}</p>
+                <button onclick="this.parentElement.remove()" class="text-gray-500 hover:text-gray-700">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            `;
+            
+            container.appendChild(alert);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        // ============================================
+        // 페이지 초기화
+        // ============================================
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 활동 수기 페이지 초기화 시작');
+
+            // Lucide 아이콘 초기화
+            lucide.createIcons();
+
+            // Supabase 초기화
+            const supabaseReady = await initializeSupabase();
+            if (!supabaseReady) return;
+
+            // 사용자 정보 로드
+            const userReady = loadUserData();
+            if (!userReady) return;
+
+            // 기존 활동 수기 로드
+            await loadExistingReport();
+
+            // 글자 수 카운터 설정
+            setupCharCounters();
+
+            // 사진 업로드 설정
+            setupPhotoUploads();
+
+            // 이벤트 리스너 설정
+            setupEventListeners();
+
+            // 진행률 초기화
+            updateProgress();
+
+            console.log('✅ 페이지 초기화 완료');
+        });
+    </script>
+</body>
+</html>
