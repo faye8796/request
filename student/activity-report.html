@@ -774,6 +774,13 @@ const photoState = {
     reflection: []
 };
 
+// 📝 타입별 파일명 prefix 매핑
+const photoTypeNames = {
+    settlement: 'location',   // 현지 정착 정보
+    class: 'class',           // 수업 정보
+    reflection: 'review'      // 활동 소감
+};
+        
 // ============================================
 // ✨ 개선된 Supabase 초기화 (retry 로직 추가)
 // ============================================
@@ -1340,26 +1347,103 @@ async function handlePhotoFiles(files, type, maxPhotos, countId) {
     const remainingSlots = maxPhotos - photoState[type].length;
     const filesToUpload = files.slice(0, remainingSlots);
 
+    if (filesToUpload.length === 0) {
+        showAlert(`최대 ${maxPhotos}개까지만 업로드할 수 있습니다`, 'warning');
+        return;
+    }
+
+    showAlert('사진 업로드 중...', 'info');
+
     for (const file of filesToUpload) {
-        // 파일 크기 검증 (5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            showAlert(`${file.name}은(는) 5MB를 초과합니다`, 'warning');
+        // 파일 크기 검증 (15MB)
+        if (file.size > 15 * 1024 * 1024) {
+            showAlert(`${file.name}은(는) 15MB를 초과합니다`, 'warning');
             continue;
         }
 
-        // Base64로 변환하여 미리보기
-        const reader = new FileReader();
-        reader.onload = (e) => {
+        try {
+            // 📝 현재 인덱스 계산
+            const currentIndex = photoState[type].length;
+            
+            // 📝 파일 확장자 추출 (원본 파일의 확장자 유지)
+            const fileExt = getFileExtension(file.name);
+            
+            // 📝 새로운 파일명 생성: {user_id}_{type}_{number}.{ext}
+            const prefix = photoTypeNames[type] || type;
+            const fileNumber = currentIndex + 1;
+            const fileName = `${currentUser.id}_${prefix}_${fileNumber}${fileExt}`;
+            
+            console.log(`📝 원본 파일명: ${file.name}`);
+            console.log(`📤 저장 파일명: ${fileName}`);
+
+            // 파일 확장자에 맞게 MIME 타입 조정
+            let fileToUpload = file;
+            if (fileExt === '.png' || fileExt === '.jpg' || fileExt === '.jpeg') {
+                // 원본 그대로 사용
+            } else {
+                // 지원하지 않는 확장자는 .jpg로 변환
+                console.log(`⚠️ 지원하지 않는 확장자 ${fileExt}, .jpg로 저장`);
+            }
+
+            // Supabase Storage에 업로드
+            const { data, error } = await supabase.storage
+                .from('activity-report-photos')
+                .upload(fileName, fileToUpload, {
+                    cacheControl: '3600',
+                    upsert: false  // 같은 이름 파일 덮어쓰기 방지
+                });
+
+            if (error) {
+                console.error('❌ 사진 업로드 실패:', error);
+                
+                // 이미 존재하는 파일인 경우 덮어쓰기 시도
+                if (error.message && error.message.includes('already exists')) {
+                    console.log('🔄 기존 파일 덮어쓰기 시도...');
+                    
+                    const { data: updateData, error: updateError } = await supabase.storage
+                        .from('activity-report-photos')
+                        .update(fileName, fileToUpload, {
+                            cacheControl: '3600',
+                            upsert: true
+                        });
+                    
+                    if (updateError) {
+                        showAlert(`${file.name} 업로드 실패: ${updateError.message}`, 'error');
+                        continue;
+                    }
+                } else {
+                    showAlert(`${file.name} 업로드 실패: ${error.message}`, 'error');
+                    continue;
+                }
+            }
+
+            // 업로드된 파일의 공개 URL 생성
+            const { data: urlData } = supabase.storage
+                .from('activity-report-photos')
+                .getPublicUrl(fileName);
+
+            // photoState에 추가
             photoState[type].push({
-                url: e.target.result,
-                file: file,
-                uploaded: false
+                url: urlData.publicUrl,
+                fileName: fileName,
+                uploaded: true,
+                originalName: file.name  // 원본 파일명 보관
             });
-            renderPhotoGrid(type);
-            updatePhotoCount(type, countId, maxPhotos);
-            updateProgress();
-        };
-        reader.readAsDataURL(file);
+
+            console.log(`✅ ${file.name} → ${fileName} 업로드 완료`);
+
+        } catch (error) {
+            console.error('❌ 업로드 처리 오류:', error);
+            showAlert(`${file.name} 업로드 오류: ${error.message}`, 'error');
+        }
+    }
+
+    renderPhotoGrid(type);
+    updatePhotoCount(type, countId, maxPhotos);
+    updateProgress();
+    
+    if (photoState[type].length > 0) {
+        showAlert('사진 업로드 완료', 'success');
     }
 }
 
@@ -1387,14 +1471,77 @@ function renderPhotoGrid(type) {
     }
 }
 
-function deletePhoto(type, index) {
+async function deletePhoto(type, index) {
+    const photo = photoState[type][index];
+    
+    // Storage에서 파일 삭제
+    if (photo.uploaded && photo.fileName) {
+        try {
+            const { error } = await supabase.storage
+                .from('activity-report-photos')
+                .remove([photo.fileName]);
+            
+            if (error) {
+                console.warn('⚠️ Storage 파일 삭제 실패:', error);
+            } else {
+                console.log('✅ Storage 파일 삭제 완료:', photo.fileName);
+            }
+        } catch (error) {
+            console.error('❌ Storage 삭제 오류:', error);
+        }
+    }
+    
+    // photoState에서 제거
     photoState[type].splice(index, 1);
+    
+    // 🔄 나머지 사진들의 파일명을 재정렬 (순서 유지)
+    await reorderPhotos(type);
+    
     renderPhotoGrid(type);
     
     const countId = `${type}PhotoCount`;
     const maxPhotos = 5;
     updatePhotoCount(type, countId, maxPhotos);
     updateProgress();
+}
+
+// 🔄 사진 순서 재정렬 함수
+async function reorderPhotos(type) {
+    // Storage에 업로드된 사진들의 파일명을 순서대로 재정렬
+    for (let i = 0; i < photoState[type].length; i++) {
+        const photo = photoState[type][i];
+        const prefix = photoTypeNames[type] || type;
+        const correctFileName = `${currentUser.id}_${prefix}_${i + 1}.jpg`;
+        
+        // 현재 파일명이 순서와 맞지 않으면 rename
+        if (photo.fileName !== correctFileName && photo.uploaded) {
+            try {
+                console.log(`🔄 파일명 변경: ${photo.fileName} → ${correctFileName}`);
+                
+                // Supabase는 직접 rename이 없으므로 move 사용
+                const { error } = await supabase.storage
+                    .from('activity-report-photos')
+                    .move(photo.fileName, correctFileName);
+                
+                if (error) {
+                    console.warn('⚠️ 파일명 변경 실패:', error);
+                } else {
+                    // photoState 업데이트
+                    photo.fileName = correctFileName;
+                    
+                    // URL 재생성
+                    const { data: urlData } = supabase.storage
+                        .from('activity-report-photos')
+                        .getPublicUrl(correctFileName);
+                    
+                    photo.url = urlData.publicUrl;
+                    console.log('✅ 파일명 변경 완료:', correctFileName);
+                }
+            } catch (error) {
+                console.error('❌ 파일명 변경 오류:', error);
+            }
+        }
+    }
 }
 
 function updatePhotoCount(type, countId, maxPhotos) {
@@ -1404,6 +1551,27 @@ function updatePhotoCount(type, countId, maxPhotos) {
     }
 }
 
+// ============================================
+// 파일명 생성 함수
+// ============================================
+function generateFileName(type, index) {
+    // type: 'settlement', 'class', 'reflection'
+    // index: 현재 배열의 인덱스 (0부터 시작)
+    
+    const prefix = photoTypeNames[type] || type;
+    const fileNumber = index + 1;  // 1부터 시작
+    
+    return `${currentUser.id}_${prefix}_${fileNumber}.jpg`;
+}
+
+// 파일 확장자 추출 함수
+function getFileExtension(fileName) {
+    const lastDot = fileName.lastIndexOf('.');
+    if (lastDot === -1) return '.jpg';  // 기본값
+    return fileName.substring(lastDot).toLowerCase();
+}        
+        
+        
 // ============================================
 // 임시저장
 // ============================================
