@@ -456,6 +456,7 @@
             constructor() {
                 this.supabase = createClient(supabaseUrl, supabaseAnonKey);
                 this.students = [];
+                this.reportsMap = new Map(); // user_id -> report 매핑
                 this.filteredStudents = [];
                 this.institutes = new Set();
             }
@@ -484,25 +485,26 @@
                 try {
                     console.log('📊 데이터 로딩 시작...');
                     
-                    // 학생 정보 + 활동수기 정보 조인
+                    // 학생 정보 조회
                     const { data: students, error: studentsError } = await this.supabase
                         .from('user_profiles')
-                        .select(`
-                            id,
-                            name,
-                            email,
-                            sejong_institute,
-                            activity_reports (
-                                id,
-                                status,
-                                submitted_at,
-                                created_at
-                            )
-                        `)
+                        .select('id, name, email, sejong_institute')
                         .eq('user_type', 'student')
                         .order('name');
 
                     if (studentsError) throw studentsError;
+
+                    // 활동수기 정보 별도 조회
+                    const { data: reports, error: reportsError } = await this.supabase
+                        .from('activity_reports')
+                        .select('id, user_id, status, submitted_at, created_at');
+
+                    if (reportsError) throw reportsError;
+
+                    // reports를 Map으로 변환
+                    reports?.forEach(report => {
+                        this.reportsMap.set(report.user_id, report);
+                    });
 
                     this.students = students || [];
                     this.filteredStudents = [...this.students];
@@ -518,6 +520,7 @@
                     this.populateInstituteFilter();
                     
                     console.log('✅ 데이터 로딩 완료:', this.students.length, '명');
+                    console.log('✅ 활동수기:', reports?.length || 0, '건');
 
                 } catch (error) {
                     console.error('데이터 로드 실패:', error);
@@ -569,7 +572,7 @@
 
                 this.filteredStudents = this.students.filter(student => {
                     const matchesSearch = student.name.toLowerCase().includes(searchTerm);
-                    const report = student.activity_reports?.[0];
+                    const report = this.reportsMap.get(student.id);
                     const studentStatus = report?.status === 'submitted' ? 'submitted' : 'pending';
                     const matchesStatus = !selectedStatus || studentStatus === selectedStatus;
                     const matchesInstitute = !selectedInstitute || 
@@ -585,7 +588,7 @@
             updateStatistics() {
                 const total = this.filteredStudents.length;
                 const submitted = this.filteredStudents.filter(
-                    s => s.activity_reports?.[0]?.status === 'submitted'
+                    s => this.reportsMap.get(s.id)?.status === 'submitted'
                 ).length;
                 const pending = total - submitted;
 
@@ -617,7 +620,7 @@
             }
 
             renderStudentCard(student) {
-                const report = student.activity_reports?.[0];
+                const report = this.reportsMap.get(student.id);
                 const isSubmitted = report?.status === 'submitted';
                 const instituteName = student.sejong_institute || '학당 정보 없음';
                 const submittedDate = isSubmitted && report.submitted_at 
