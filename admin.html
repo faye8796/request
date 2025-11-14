@@ -787,6 +787,21 @@
                         </button>
                     </div>
 
+                    <!-- 📊 설문조사 관리 (수정됨) -->
+                    <div class="menu-card" onclick="navigateToSurvey()">
+                        <div class="menu-icon">
+                            <i data-lucide="bar-chart-2"></i>
+                        </div>
+                        <h2 class="menu-title">설문조사 관리</h2>
+                        <p class="menu-description">
+                            수강생 설문 응답 현황 및 통계 관리
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
+
                     <!-- 📋 필수 서류 제출 관리 -->
                     <div class="menu-card" onclick="navigateToRequiredDocumentsManagement()">
                         <div class="menu-icon">
@@ -818,6 +833,8 @@
                             관리하기
                         </button>
                     </div>
+                    
+    
                     
                     <!-- 🆕 수료평가 관리 -->
                     <div class="menu-card" onclick="navigateToExamManagement()">
@@ -1439,6 +1456,9 @@
             function navigateToContentContestManagement() {
                 window.location.href = 'admin/content-contest-management.html';
             }
+            function navigateToSurvey() {
+                window.location.href = 'admin/survey-management.html';
+            }
             
             
             // 전역 함수로 노출
@@ -1455,7 +1475,8 @@
             window.navigateToRequiredDocumentsManagement = navigateToRequiredDocumentsManagement;
             window.navigateToActivityScheduleManagement = navigateToActivityScheduleManagement;
             window.navigateToContentContestManagement = navigateToContentContestManagement;
-            
+            window.navigateToSurvey = navigateToSurvey;
+
             // DOMContentLoaded 이벤트 리스너
             document.addEventListener('DOMContentLoaded', safeInitialize);
 
