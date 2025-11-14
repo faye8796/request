@@ -255,6 +255,49 @@
             background: #d1fae5;
             color: #065f46;
         }
+        
+        /* 추가 미디어 URL 섹션 스타일 */
+        .save-url-btn {
+            padding: 10px 20px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .save-url-btn:hover {
+            background: #059669;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .save-url-btn:active {
+            transform: translateY(0);
+        }
+
+        .save-url-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .optional-tag {
+            font-size: 0.8em;
+            color: #6b7280;
+            font-weight: normal;
+            margin-left: 5px;
+        }
+
+        .url-status {
+            margin-top: 8px;
+            font-size: 0.9em;
+            min-height: 20px;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -676,6 +719,74 @@
             </div>
         </section>
 
+        <!-- 추가 미디어 URL 섹션 -->
+        <section class="bg-white rounded-lg shadow-sm border">
+            
+            <div class="p-6 space-y-6">
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start space-x-3">
+                        <i data-lucide="info" class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"></i>
+                        <div class="text-sm text-blue-800">
+                            <p class="font-semibold mb-1">📸 추가 미디어 제출 안내</p>
+                            <p class="mb-2">추가로 사진과 영상을 제출하고 싶으신 분들은, 사진과 영상을 따로 ZIP으로 묶어 
+                            <strong>구글 드라이브에 업로드</strong> 한 후 <strong>다운로드 가능한 링크</strong>를 등록하여 주세요.</p>
+                            <p class="text-xs">💡 팁: 구글 드라이브에서 "링크가 있는 모든 사용자" 권한으로 공유 설정 후 링크를 복사해주세요.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 사진 URL -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 mb-2">
+                        📷 사진 ZIP 파일 URL
+                        <span class="text-gray-500 text-xs ml-2">(선택사항)</span>
+                    </label>
+                    <div class="flex gap-3">
+                        <input 
+                            type="url" 
+                            id="photosDriveUrl" 
+                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                            placeholder="예: https://drive.google.com/file/d/..."
+                        >
+                        <button 
+                            type="button" 
+                            id="savePhotosUrlBtn" 
+                            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap"
+                        >
+                            💾 저장
+                        </button>
+                    </div>
+                    <div id="photosUrlStatus" class="mt-2 text-sm"></div>
+                </div>
+
+                <!-- 영상 URL -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 mb-2">
+                        🎥 영상 ZIP 파일 URL
+                        <span class="text-gray-500 text-xs ml-2">(선택사항)</span>
+                    </label>
+                    <div class="flex gap-3">
+                        <input 
+                            type="url" 
+                            id="videosDriveUrl" 
+                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                            placeholder="예: https://drive.google.com/file/d/..."
+                        >
+                        <button 
+                            type="button" 
+                            id="saveVideosUrlBtn" 
+                            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium whitespace-nowrap"
+                        >
+                            💾 저장
+                        </button>
+                    </div>
+                    <div id="videosUrlStatus" class="mt-2 text-sm"></div>
+                </div>
+
+            </div>
+        </section>        
+        
         <!-- 최종 제출 섹션 -->
         <section class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg shadow-sm border-2 border-green-200">
             <div class="p-8">
@@ -1074,6 +1185,18 @@ function fillFormWithData(data) {
     if (data.one_sentence_summary) document.getElementById('oneSentenceSummary').value = data.one_sentence_summary;
     if (data.advice_for_future) document.getElementById('adviceForFuture').value = data.advice_for_future;
 
+    // 미디어 URL 로드
+    if (data.photos_drive_url) {
+        const photosUrlInput = document.getElementById('photosDriveUrl');
+        if (photosUrlInput) photosUrlInput.value = data.photos_drive_url;
+    }
+
+    if (data.videos_drive_url) {
+        const videosUrlInput = document.getElementById('videosDriveUrl');
+        if (videosUrlInput) videosUrlInput.value = data.videos_drive_url;
+    }
+
+    
     // 사진 로드
     if (data.settlement_photos) loadPhotos('settlement', data.settlement_photos);
     if (data.class_photos) loadPhotos('class', data.class_photos);
@@ -1804,10 +1927,95 @@ function collectFormData() {
         advice_for_future: document.getElementById('adviceForFuture').value,
         settlement_photos: photoState.settlement.map(p => p.url),
         class_photos: photoState.class.map(p => p.url),
-        reflection_photos: photoState.reflection.map(p => p.url)
+        reflection_photos: photoState.reflection.map(p => p.url),
+        photos_drive_url: document.getElementById('photosDriveUrl')?.value || null,
+        videos_drive_url: document.getElementById('videosDriveUrl')?.value || null
+
     };
 }
+        
+        
+// ============================================
+// 미디어 URL 저장
+// ============================================
+async function saveMediaUrl(urlType) {
+    const urlInput = document.getElementById(urlType === 'photos' ? 'photosDriveUrl' : 'videosDriveUrl');
+    const statusDiv = document.getElementById(urlType === 'photos' ? 'photosUrlStatus' : 'videosUrlStatus');
+    const saveBtn = document.getElementById(urlType === 'photos' ? 'savePhotosUrlBtn' : 'saveVideosUrlBtn');
+    
+    const url = urlInput.value.trim();
+    
+    // URL 유효성 검사
+    if (url && !isValidUrl(url)) {
+        statusDiv.innerHTML = '<span class="text-red-600">❌ 올바른 URL 형식이 아닙니다.</span>';
+        return;
+    }
+    
+    try {
+        saveBtn.disabled = true;
+        saveBtn.textContent = '저장 중...';
+        statusDiv.innerHTML = '<span class="text-blue-600">💾 저장 중...</span>';
+        
+        const columnName = urlType === 'photos' ? 'photos_drive_url' : 'videos_drive_url';
+        
+        // 기존 데이터 확인
+        const { data: existingData, error: checkError } = await supabase
+            .from('activity_reports')
+            .select('id')
+            .eq('user_id', currentUser.id)
+            .maybeSingle();
 
+        if (checkError) {
+            throw checkError;
+        }
+
+        if (existingData) {
+            // 업데이트
+            const { error } = await supabase
+                .from('activity_reports')
+                .update({
+                    [columnName]: url || null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', currentUser.id);
+                
+            if (error) throw error;
+        } else {
+            // 새로 생성
+            const { error } = await supabase
+                .from('activity_reports')
+                .insert({
+                    user_id: currentUser.id,
+                    [columnName]: url || null,
+                    status: 'draft'
+                });
+                
+            if (error) throw error;
+        }
+        
+        statusDiv.innerHTML = `<span class="text-green-600">✅ ${urlType === 'photos' ? '사진' : '영상'} URL이 저장되었습니다.</span>`;
+        setTimeout(() => {
+            statusDiv.innerHTML = '';
+        }, 3000);
+        
+    } catch (error) {
+        console.error('URL 저장 오류:', error);
+        statusDiv.innerHTML = '<span class="text-red-600">❌ 저장 중 오류가 발생했습니다.</span>';
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '💾 저장';
+    }
+}
+
+// URL 유효성 검사 함수
+function isValidUrl(string) {
+    try {
+        const url = new URL(string);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (_) {
+        return false;
+    }
+}
 // ============================================
 // ✨ 수정된 페이지 초기화 - retry 로직 적용
 // ============================================
@@ -1859,6 +2067,8 @@ async function initializeActivityReportApp() {
         showAlert('시스템 초기화에 실패했습니다', 'error');
     }
 }
+        
+        
 
 // ============================================
 // 이벤트 리스너
@@ -1889,6 +2099,20 @@ function setupEventListeners() {
     if (submitBtn) {
         submitBtn.addEventListener('click', finalSubmit);
     }
+    
+        // 미디어 URL 저장 버튼
+    const savePhotosUrlBtn = document.getElementById('savePhotosUrlBtn');
+    const saveVideosUrlBtn = document.getElementById('saveVideosUrlBtn');
+
+    if (savePhotosUrlBtn) {
+        savePhotosUrlBtn.addEventListener('click', () => saveMediaUrl('photos'));
+    }
+
+    if (saveVideosUrlBtn) {
+        saveVideosUrlBtn.addEventListener('click', () => saveMediaUrl('videos'));
+    }
+
+    
 }
 
 // ============================================
