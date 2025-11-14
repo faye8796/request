@@ -577,7 +577,9 @@
                     { feature_name: 'reimbursement_request', feature_title: '실비 지원 신청', is_active: false, display_order: 7 },
                     { feature_name: 'required_documents', feature_title: '필수 서류 제출', is_active: true, display_order: 8 },
                     { feature_name: 'activity_schedule', feature_title: '활동일 작성', is_active: false, display_order: 9 },
-                    { feature_name: 'content_contest', feature_title: '콘텐츠 공모전', is_active: true, display_order: 10 }
+                    { feature_name: 'content_contest', feature_title: '콘텐츠 공모전', is_active: true, display_order: 10 },
+                    { feature_name: 'activity_report', feature_title: '활동 수기 등록', is_active: true, display_order: 11 }
+
                 ];
             },
 
@@ -763,6 +765,14 @@
                         url: './activity-schedule.html',
                         buttonText: '작성하기',
                         buttonIcon: 'arrow-right'
+                    },
+                    'activity_report': {
+                        icon: 'file-text',
+                        title: '활동 수기 등록',
+                        description: '문화인턴 활동을 마무리하며 소중한 경험을 공유해주세요.',
+                        url: './activity-report.html',
+                        buttonText: '작성하기',
+                        buttonIcon: 'edit'
                     }
 
                 };
