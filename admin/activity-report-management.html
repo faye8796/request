@@ -494,10 +494,10 @@
 
                     if (studentsError) throw studentsError;
 
-                    // 활동수기 정보 별도 조회
+                    // 활동수기 정보 별도 조회 (드라이브 URL 포함)
                     const { data: reports, error: reportsError } = await this.supabase
                         .from('activity_reports')
-                        .select('id, user_id, status, submitted_at, created_at');
+                        .select('id, user_id, status, submitted_at, created_at, photos_drive_url, videos_drive_url');
 
                     if (reportsError) throw reportsError;
 
@@ -627,6 +627,10 @@
                     ? new Date(report.submitted_at).toLocaleString('ko-KR')
                     : null;
 
+                // 드라이브 URL 확인
+                const hasPhotosUrl = report?.photos_drive_url && report.photos_drive_url.trim() !== '';
+                const hasVideosUrl = report?.videos_drive_url && report.videos_drive_url.trim() !== '';
+
                 return `
                     <div class="student-card">
                         <div class="card-header">
@@ -642,6 +646,62 @@
                                     📅 제출일시: ${submittedDate}
                                 </div>
                             ` : ''}
+
+                            ${(hasPhotosUrl || hasVideosUrl) ? `
+                                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                                    ${hasPhotosUrl ? `
+                                        <button 
+                                            onclick="window.open('${report.photos_drive_url}', '_blank')"
+                                            style="
+                                                flex: 1;
+                                                padding: 10px;
+                                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                                color: white;
+                                                border: none;
+                                                border-radius: 8px;
+                                                cursor: pointer;
+                                                font-size: 14px;
+                                                font-weight: 600;
+                                                transition: all 0.3s ease;
+                                                display: flex;
+                                                align-items: center;
+                                                justify-content: center;
+                                                gap: 6px;
+                                            "
+                                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)';"
+                                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';"
+                                        >
+                                            📸 사진 다운로드
+                                        </button>
+                                    ` : ''}
+                                    ${hasVideosUrl ? `
+                                        <button 
+                                            onclick="window.open('${report.videos_drive_url}', '_blank')"
+                                            style="
+                                                flex: 1;
+                                                padding: 10px;
+                                                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                                                color: white;
+                                                border: none;
+                                                border-radius: 8px;
+                                                cursor: pointer;
+                                                font-size: 14px;
+                                                font-weight: 600;
+                                                transition: all 0.3s ease;
+                                                display: flex;
+                                                align-items: center;
+                                                justify-content: center;
+                                                gap: 6px;
+                                            "
+                                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(245, 87, 108, 0.4)';"
+                                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';"
+                                        >
+                                            🎥 영상 다운로드
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            ` : ''}
+
                             <button 
                                 class="view-report-btn" 
                                 onclick="window.reportApp.viewReport('${student.id}')"
