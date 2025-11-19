@@ -870,8 +870,7 @@
             async loadData() {
                 try {
                     console.log('📊 데이터 로딩 시작...');
-                    
-                    // ✅ 수정: sejong_institute 컬럼 사용
+
                     const { data: students, error: studentsError } = await this.supabase
                         .from('user_profiles')
                         .select(`
@@ -889,7 +888,9 @@
                                 view_count,
                                 comment_count,
                                 like_count,
-                                proof_image_url
+                                proof_image_url,
+                                official_uploaded,
+                                official_upload_date
                             )
                         `)
                         .eq('user_type', 'student')
@@ -909,7 +910,7 @@
 
                     // 학당 필터 드롭다운 채우기
                     this.populateInstituteFilter();
-                    
+
                     console.log('✅ 데이터 로딩 완료:', this.students.length, '명');
 
                 } catch (error) {
