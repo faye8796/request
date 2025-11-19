@@ -221,6 +221,10 @@
 
         /* 인쇄 스타일 */
         @media print {
+            @page {
+                margin: 2cm; /* 페이지 전체 여백 */
+            }
+
             body {
                 padding: 0;
                 background: white;
@@ -232,28 +236,56 @@
 
             .container {
                 max-width: 100%;
+                padding: 0 1cm; /* 컨테이너 좌우 여백 추가 */
             }
 
             .report-header {
                 page-break-after: avoid;
+                margin-bottom: 2rem; /* 헤더 아래 여백 */
+            }
+
+            .basic-info {
+                margin-bottom: 2rem; /* 기본 정보 아래 여백 */
+                padding: 1.5rem; /* 내부 여백 유지 */
             }
 
             .report-section {
                 page-break-inside: avoid;
-                margin-bottom: 2rem;
+                margin-bottom: 2.5rem; /* 섹션 간 간격 증가 */
+            }
+
+            .section-header {
+                margin-bottom: 1.5rem; /* 섹션 헤더 아래 여백 */
             }
 
             .section-content {
                 background: white;
                 border: 1px solid #e5e7eb;
+                padding: 2rem; /* 본문 여백 증가 (기존 1.5rem → 2rem) */
+                margin-bottom: 1.5rem; /* 본문 아래 여백 추가 */
+                line-height: 2.2; /* 줄 간격 증가 */
+            }
+
+            .section-content p {
+                margin-bottom: 1rem; /* 문단 간 간격 */
+            }
+
+            h3 {
+                margin-top: 2rem !important; /* 소제목 위 여백 */
+                margin-bottom: 1rem !important; /* 소제목 아래 여백 */
             }
 
             .photo-gallery {
                 page-break-inside: avoid;
+                margin-top: 1.5rem; /* 사진 갤러리 위 여백 */
             }
 
             .photo-item {
                 page-break-inside: avoid;
+            }
+
+            .no-photos {
+                padding: 1.5rem; /* 사진 없음 메시지 여백 */
             }
         }
 
