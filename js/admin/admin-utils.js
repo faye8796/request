@@ -84,8 +84,8 @@ AdminManager.Utils = {
                 };
                 isAdminReceipt = true;
             } else {
-                // 3. 관리자 영수증이 없으면 학생 영수증 조회
-                const { data: studentReceipt, error: receiptError } = await client
+                // 3. 관리자 영수증이 없으면 학생 영수증 조회 (최신 것만)
+                const { data: studentReceipts, error: receiptError } = await client
                     .from('receipts')
                     .select(`
                         file_url,
@@ -97,7 +97,10 @@ AdminManager.Utils = {
                         total_amount
                     `)
                     .eq('request_id', requestId)
-                    .single();
+                    .order('uploaded_at', { ascending: false })
+                    .limit(1);
+
+                const studentReceipt = studentReceipts && studentReceipts.length > 0 ? studentReceipts[0] : null;
 
                 if (receiptError || !studentReceipt?.file_url) {
                     Utils.showToast('영수증을 찾을 수 없습니다.', 'error');
@@ -146,7 +149,7 @@ AdminManager.Utils = {
             const receiptImage = Utils.$('#viewReceiptImage');
             receiptImage.src = receiptData.image_path || '';
 
-            
+
             // ✅ 올바른 파일명 생성 및 PDF 여부 판단
             const getFileExtension = (url) => {
                 try {
@@ -165,7 +168,7 @@ AdminManager.Utils = {
             this.currentViewingReceipt = {
                 image: imageUrl,
                 fileName: `receipt_${requestId}_${prefix}.${extension}`,
-                isPDF: isPDF  // 🆕 PDF 여부 추가
+                isPDF: isPDF
             };
 
             console.log('🔍 영수증 정보 설정됨:', this.currentViewingReceipt);
