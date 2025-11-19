@@ -647,6 +647,55 @@
         .image-modal-content .modal-close:hover {
             background: #dc2626;
         }
+        /* 공식 업로드 체크 버튼 */
+        .btn-check-upload {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-check-upload:hover {
+            background: #7c3aed;
+            transform: translateY(-2px);
+        }
+
+        .btn-check-upload.uploaded {
+            background: #10b981;
+        }
+
+        .btn-check-upload.uploaded:hover {
+            background: #059669;
+        }
+
+        /* 업로드 상태 배지 */
+        .upload-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .upload-status-badge.uploaded {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .upload-status-badge.pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
     </style>
     
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -986,27 +1035,27 @@
             }
 
             renderStudentCard(student) {
-                    const contents = student.student_contents || [];
-                    const instituteName = student.sejong_institute || '학당 정보 없음';
+                const contents = student.student_contents || [];
+                const instituteName = student.sejong_institute || '학당 정보 없음';
 
-                    // 🆕 정량 점수 계산
-                    const totalEngagementScore = this.calculateEngagementScore(contents);
+                // 🆕 정량 점수 계산
+                const totalEngagementScore = this.calculateEngagementScore(contents);
 
-                    return `
-                        <div class="student-card">
-                            <div class="card-header">
-                                <div class="student-info">
-                                    <div class="student-name">${this.escapeHtml(student.name)}</div>
-                                    <div class="institute-name">${this.escapeHtml(instituteName)}</div>
-                                    ${totalEngagementScore > 0 ? `
-                                        <div class="engagement-score">
-                                            📊 총 정량 점수: ${totalEngagementScore.toLocaleString()}점
-                                        </div>
-                                    ` : ''}
-                                </div>
+                return `
+                    <div class="student-card">
+                        <div class="card-header">
+                            <div class="student-info">
+                                <div class="student-name">${this.escapeHtml(student.name)}</div>
+                                <div class="institute-name">${this.escapeHtml(instituteName)}</div>
+                                ${totalEngagementScore > 0 ? `
+                                    <div class="engagement-score">
+                                        📊 총 정량 점수: ${totalEngagementScore.toLocaleString()}점
+                                    </div>
+                                ` : ''}
+                            </div>
                             <div class="content-count-badge">콘텐츠 ${contents.length}개</div>
                         </div>
-                        
+
                         ${contents.length > 0 ? `
                             <div class="content-list">
                                 ${contents.map(content => {
@@ -1045,10 +1094,26 @@
                                             </div>
                                         `;
                                     } else {
-                                        // 일반 콘텐츠 (기존 코드 유지)
+                                        // 일반 콘텐츠 - 공식 업로드 체크 기능 추가
+                                        const isUploaded = content.official_uploaded === true;
+                                        const uploadDate = content.official_upload_date 
+                                            ? new Date(content.official_upload_date).toLocaleDateString('ko-KR')
+                                            : '';
+
                                         return `
                                             <div class="content-item">
-                                                <div class="content-title">${this.escapeHtml(content.title)}</div>
+                                                <div class="content-title">
+                                                    ${this.escapeHtml(content.title)}
+                                                    ${isUploaded ? `
+                                                        <span class="upload-status-badge uploaded">
+                                                            ✓ 공식 업로드 완료 (${uploadDate})
+                                                        </span>
+                                                    ` : `
+                                                        <span class="upload-status-badge pending">
+                                                            대기중
+                                                        </span>
+                                                    `}
+                                                </div>
                                                 <div class="content-actions">
                                                     <a href="${content.download_url}" target="_blank" class="btn-download">
                                                         <i data-lucide="download"></i>
@@ -1057,6 +1122,11 @@
                                                     <button class="btn-detail" onclick="window.contentApp.showContentDetail('${content.id}', '${this.escapeHtml(student.name)}')">
                                                         <i data-lucide="eye"></i>
                                                         자세히 보기
+                                                    </button>
+                                                    <button class="btn-check-upload ${isUploaded ? 'uploaded' : ''}" 
+                                                            onclick="window.contentApp.toggleOfficialUpload('${content.id}', ${!isUploaded})">
+                                                        <i data-lucide="${isUploaded ? 'check-circle' : 'upload'}"></i>
+                                                        ${isUploaded ? '업로드 취소' : '공식 업로드 완료'}
                                                     </button>
                                                 </div>
                                             </div>
@@ -1122,6 +1192,48 @@
                 return null;
             }
 
+            async toggleOfficialUpload(contentId, setAsUploaded) {
+                try {
+                    const confirmMessage = setAsUploaded 
+                        ? '이 콘텐츠를 공식 계정에 업로드 완료로 표시하시겠습니까?'
+                        : '공식 업로드 완료 표시를 취소하시겠습니까?';
+
+                    if (!confirm(confirmMessage)) {
+                        return;
+                    }
+
+                    const updateData = {
+                        official_uploaded: setAsUploaded,
+                        official_upload_date: setAsUploaded ? new Date().toISOString() : null
+                    };
+
+                    const { error } = await this.supabase
+                        .from('student_contents')
+                        .update(updateData)
+                        .eq('id', contentId);
+
+                    if (error) throw error;
+
+                    showToast(
+                        setAsUploaded ? '공식 업로드로 표시되었습니다.' : '공식 업로드 표시가 취소되었습니다.',
+                        'success'
+                    );
+
+                    // 데이터 새로고침
+                    await this.loadData();
+                    this.renderStudents();
+
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+
+                } catch (error) {
+                    console.error('공식 업로드 상태 변경 실패:', error);
+                    showToast('상태 변경에 실패했습니다.', 'error');
+                }
+            }            
+                        
+                        
             async exportToExcel() {
                 try {
                     const exportBtn = document.getElementById('exportBtn');
@@ -1148,7 +1260,11 @@
                                 '공감수': '',
                                 '정량점수': '',
                                 '증빙자료URL': '',
-                                '등록일시': ''
+                                '등록일시': '',
+                                '공식업로드': content.official_uploaded ? 'O' : 'X',
+                                '공식업로드일시': content.official_upload_date 
+                                    ? new Date(content.official_upload_date).toLocaleString('ko-KR')
+                                    : ''
                             });
                         } else {
                             contents.forEach(content => {
