@@ -1262,10 +1262,8 @@
                                 '정량점수': '',
                                 '증빙자료URL': '',
                                 '등록일시': '',
-                                '공식업로드': content.official_uploaded ? 'O' : 'X',
-                                '공식업로드일시': content.official_upload_date 
-                                    ? new Date(content.official_upload_date).toLocaleString('ko-KR')
-                                    : ''
+                                '공식업로드': '',
+                                '공식업로드일시': ''
                             });
                         } else {
                             contents.forEach(content => {
@@ -1280,7 +1278,7 @@
                                     '등록일시': new Date(content.created_at).toLocaleString('ko-KR')
                                 };
 
-                                // 🆕 조회수 집계 콘텐츠인 경우 추가 데이터
+                                // 조회수 집계 콘텐츠인 경우
                                 if (content.content_type === 'view_tracking') {
                                     const score = (content.view_count || 0) + 
                                                  (content.comment_count || 0) + 
@@ -1292,16 +1290,23 @@
                                         '댓글수': content.comment_count || 0,
                                         '공감수': content.like_count || 0,
                                         '정량점수': score,
-                                        '증빙자료URL': content.proof_image_url || ''
+                                        '증빙자료URL': content.proof_image_url || '',
+                                        '공식업로드': '',  // 조회수 집계는 해당 없음
+                                        '공식업로드일시': ''
                                     });
                                 } else {
+                                    // 일반 콘텐츠인 경우
                                     exportData.push({
                                         ...baseData,
                                         '조회수': '',
                                         '댓글수': '',
                                         '공감수': '',
                                         '정량점수': '',
-                                        '증빙자료URL': ''
+                                        '증빙자료URL': '',
+                                        '공식업로드': content.official_uploaded ? 'O' : 'X',
+                                        '공식업로드일시': content.official_upload_date 
+                                            ? new Date(content.official_upload_date).toLocaleString('ko-KR')
+                                            : ''
                                     });
                                 }
                             });
