@@ -817,6 +817,22 @@
                             관리하기
                         </button>
                     </div>
+                    
+                    <!-- 📋 활동 평가표 관리 -->
+                    <div class="menu-card" onclick="navigateToEvaluationManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="clipboard-list"></i>
+                        </div>
+                        <h2 class="menu-title">활동 평가표 관리</h2>
+                        <p class="menu-description">
+                            학당에서 업로드한 활동 평가표를 다운로드<br>
+                            학생별/학당별 평가표 현황 확인
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
 
                     
                     <!-- 📋 필수 서류 제출 관리 -->
@@ -1479,6 +1495,9 @@
             function navigateToActivityReportManagement() {
                 window.location.href = 'admin/activity-report-management.html';
             }
+            function navigateToEvaluationManagement() {
+                window.location.href = 'admin/evaluation-management.html';
+            }
 
             
             
@@ -1499,6 +1518,7 @@
             window.navigateToContentContestManagement = navigateToContentContestManagement;
             window.navigateToSurvey = navigateToSurvey;
             window.navigateToActivityReportManagement = navigateToActivityReportManagement;
+            window.navigateToEvaluationManagement = navigateToEvaluationManagement;
 
 
             // DOMContentLoaded 이벤트 리스너
@@ -1518,7 +1538,8 @@
                 navigateToReimbursementManagement,
                 navigateToRequiredDocumentsManagement,
                 navigateToActivityScheduleManagement,
-                navigateToContentContestManagement
+                navigateToContentContestManagement,
+                navigateToEvaluationManagement
             };
         })();
 
