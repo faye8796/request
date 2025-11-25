@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 활동 평가표 관리 - 세종학당 문화인턴</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* 헤더 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .back-button {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-4px);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-title span {
+            font-size: 2rem;
+        }
+
+        .header-title h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .header-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .download-all-btn {
+            background: #10b981;
+            color: white;
+        }
+
+        .download-all-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .export-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .export-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 컨테이너 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* 통계 대시보드 */
+        .statistics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card.total {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .stat-card.uploaded {
+            border-left: 4px solid #10b981;
+        }
+
+        .stat-card.pending {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .stat-card.institutes {
+            border-left: 4px solid #8b5cf6;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        /* 필터 컨트롤 */
+        .filter-controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-controls input,
+        .filter-controls select {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .filter-controls input:focus,
+        .filter-controls select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-controls button {
+            padding: 0.75rem 1.5rem;
+            background: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-controls button:hover {
+            background: #4b5563;
+        }
+
+        /* 테이블 */
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .data-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #374151;
+            white-space: nowrap;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* 상태 배지 */
+        .status-badge {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-badge.uploaded {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .status-badge.pending {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        /* 버튼 */
+        .download-btn {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .download-btn:disabled {
+            background: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 빈 상태 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .empty-icon {
+            width: 4rem;
+            height: 4rem;
+            color: #9ca3af;
+            margin: 0 auto 1rem;
+        }
+
+        .empty-state h3 {
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: #9ca3af;
+        }
+
+        /* 업로드 날짜 */
+        .upload-date {
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        /* 로딩 오버레이 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 2rem 3rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .loading-progress {
+            margin-top: 0.5rem;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1f2937;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: #10b981;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .header-right {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .statistics {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-controls {
+                flex-direction: column;
+            }
+
+            .filter-controls input,
+            .filter-controls select {
+                min-width: 100%;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            .data-table {
+                min-width: 800px;
+            }
+        }
+    </style>
+    
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- 헤더 -->
+    <div class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="../admin.html" class="back-button">
+                    ← 관리자 대시보드
+                </a>
+                <div class="header-title">
+                    <span>📋</span>
+                    <h1>활동 평가표 관리</h1>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="header-btn download-all-btn" id="downloadAllBtn">
+                    📦 전체 다운로드 (ZIP)
+                </button>
+                <button class="header-btn export-btn" id="exportExcelBtn">
+                    📊 엑셀 내보내기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <div class="container">
+        <!-- 통계 대시보드 -->
+        <div class="statistics">
+            <div class="stat-card total">
+                <div class="stat-number" id="totalCount">0</div>
+                <div class="stat-label">전체 문화인턴</div>
+            </div>
+            <div class="stat-card uploaded">
+                <div class="stat-number" id="uploadedCount">0</div>
+                <div class="stat-label">평가표 업로드 완료</div>
+            </div>
+            <div class="stat-card pending">
+                <div class="stat-number" id="pendingCount">0</div>
+                <div class="stat-label">미업로드</div>
+            </div>
+            <div class="stat-card institutes">
+                <div class="stat-number" id="instituteCount">0</div>
+                <div class="stat-label">참여 학당 수</div>
+            </div>
+        </div>
+
+        <!-- 필터 컨트롤 -->
+        <div class="filter-controls">
+            <input type="text" id="searchInput" placeholder="학생명 검색">
+            <select id="statusFilter">
+                <option value="">전체 상태</option>
+                <option value="uploaded">업로드 완료</option>
+                <option value="pending">미업로드</option>
+            </select>
+            <select id="instituteFilter">
+                <option value="">전체 학당</option>
+            </select>
+            <button id="clearFiltersBtn">필터 초기화</button>
+        </div>
+
+        <!-- 테이블 -->
+        <div class="table-container" id="tableContainer">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>학당명</th>
+                        <th>학생명</th>
+                        <th>이메일</th>
+                        <th>활동 기간</th>
+                        <th>평가표 상태</th>
+                        <th>업로드 일시</th>
+                        <th>다운로드</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- 동적 생성 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 빈 상태 -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <i data-lucide="inbox" class="empty-icon"></i>
+            <h3>검색 결과가 없습니다</h3>
+            <p>다른 검색어나 필터를 시도해보세요.</p>
+        </div>
+    </div>
+
+    <!-- 로딩 오버레이 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text" id="loadingText">다운로드 준비 중...</div>
+            <div class="loading-progress" id="loadingProgress"></div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script type="module">
+        // 🔐 관리자 인증 체크
+        function checkAdminAuth() {
+            console.log('🔐 관리자 인증 확인 시작...');
+            const adminSession = localStorage.getItem('adminSession');
+            if (!adminSession || adminSession !== 'true') {
+                console.warn('❌ 관리자 인증 실패 - adminSession:', adminSession);
+                alert('관리자 로그인이 필요합니다.');
+                window.location.href = '../admin.html';
+                return false;
+            }
+            console.log('✅ 관리자 인증 확인 완료');
+            return true;
+        }
+
+        // Supabase 설정
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+        
+        const supabaseUrl = 'https://aazvopacnbbkvusihqva.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTQyMjQsImV4cCI6MjA2NTM3MDIyNH0.0NXI_tohwFCOl3xY4b1jIlxQR_zGTS9tWDM2OFxTq4s';
+
+        // Toast 알림 함수
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        class EvaluationManagementApp {
+            constructor() {
+                this.supabase = createClient(supabaseUrl, supabaseAnonKey);
+                this.interns = [];
+                this.filteredInterns = [];
+                this.institutes = new Set();
+            }
+
+            async init() {
+                try {
+                    console.log('📋 활동 평가표 관리 시스템 초기화 시작...');
+                    
+                    await this.loadData();
+                    this.setupEventListeners();
+                    this.updateStatistics();
+                    this.renderTable();
+                    
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                    
+                    console.log('✅ 초기화 완료');
+                } catch (error) {
+                    console.error('앱 초기화 실패:', error);
+                    showToast('시스템 초기화에 실패했습니다.', 'error');
+                }
+            }
+
+            async loadData() {
+                try {
+                    console.log('📊 데이터 로딩 시작...');
+                    
+                    // institute_dashboard_interns 테이블에서 데이터 조회
+                    const { data, error } = await this.supabase
+                        .from('institute_dashboard_interns')
+                        .select('*')
+                        .eq('is_current_assignment', true)
+                        .order('institute_name')
+                        .order('student_name');
+
+                    if (error) throw error;
+
+                    this.interns = data || [];
+                    this.filteredInterns = [...this.interns];
+
+                    // 학당 목록 추출
+                    this.interns.forEach(intern => {
+                        if (intern.institute_name) {
+                            this.institutes.add(intern.institute_name);
+                        }
+                    });
+
+                    // 학당 필터 드롭다운 채우기
+                    this.populateInstituteFilter();
+                    
+                    console.log('✅ 데이터 로딩 완료:', this.interns.length, '명');
+
+                } catch (error) {
+                    console.error('데이터 로드 실패:', error);
+                    showToast('데이터를 불러오는데 실패했습니다.', 'error');
+                }
+            }
+
+            populateInstituteFilter() {
+                const select = document.getElementById('instituteFilter');
+                const institutes = Array.from(this.institutes).sort();
+                
+                institutes.forEach(instituteName => {
+                    const option = document.createElement('option');
+                    option.value = instituteName;
+                    option.textContent = instituteName;
+                    select.appendChild(option);
+                });
+            }
+
+            setupEventListeners() {
+                // 검색
+                document.getElementById('searchInput').addEventListener('input', () => {
+                    this.applyFilters();
+                });
+
+                // 상태 필터
+                document.getElementById('statusFilter').addEventListener('change', () => {
+                    this.applyFilters();
+                });
+
+                // 학당 필터
+                document.getElementById('instituteFilter').addEventListener('change', () => {
+                    this.applyFilters();
+                });
+
+                // 필터 초기화
+                document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+                    document.getElementById('searchInput').value = '';
+                    document.getElementById('statusFilter').value = '';
+                    document.getElementById('instituteFilter').value = '';
+                    this.applyFilters();
+                });
+
+                // 전체 다운로드
+                document.getElementById('downloadAllBtn').addEventListener('click', () => {
+                    this.downloadAllAsZip();
+                });
+
+                // 엑셀 내보내기
+                document.getElementById('exportExcelBtn').addEventListener('click', () => {
+                    this.exportToExcel();
+                });
+            }
+
+            applyFilters() {
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                const selectedStatus = document.getElementById('statusFilter').value;
+                const selectedInstitute = document.getElementById('instituteFilter').value;
+
+                this.filteredInterns = this.interns.filter(intern => {
+                    const matchesSearch = intern.student_name?.toLowerCase().includes(searchTerm);
+                    const isUploaded = !!intern.evaluation_pdf_url;
+                    const internStatus = isUploaded ? 'uploaded' : 'pending';
+                    const matchesStatus = !selectedStatus || internStatus === selectedStatus;
+                    const matchesInstitute = !selectedInstitute || 
+                        intern.institute_name === selectedInstitute;
+
+                    return matchesSearch && matchesStatus && matchesInstitute;
+                });
+
+                this.updateStatistics();
+                this.renderTable();
+            }
+
+            updateStatistics() {
+                const total = this.filteredInterns.length;
+                const uploaded = this.filteredInterns.filter(i => !!i.evaluation_pdf_url).length;
+                const pending = total - uploaded;
+                const instituteCount = new Set(this.filteredInterns.map(i => i.institute_name)).size;
+
+                document.getElementById('totalCount').textContent = total;
+                document.getElementById('uploadedCount').textContent = uploaded;
+                document.getElementById('pendingCount').textContent = pending;
+                document.getElementById('instituteCount').textContent = instituteCount;
+            }
+
+            renderTable() {
+                const tableContainer = document.getElementById('tableContainer');
+                const emptyState = document.getElementById('emptyState');
+                const tableBody = document.getElementById('tableBody');
+
+                if (this.filteredInterns.length === 0) {
+                    tableContainer.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                emptyState.style.display = 'none';
+                tableContainer.style.display = 'block';
+
+                tableBody.innerHTML = this.filteredInterns
+                    .map(intern => this.renderTableRow(intern))
+                    .join('');
+
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+
+            renderTableRow(intern) {
+                const isUploaded = !!intern.evaluation_pdf_url;
+                const uploadDate = intern.evaluation_uploaded_at 
+                    ? new Date(intern.evaluation_uploaded_at).toLocaleString('ko-KR')
+                    : '-';
+                
+                const activityPeriod = this.formatActivityPeriod(
+                    intern.activity_start_date, 
+                    intern.activity_end_date
+                );
+
+                return `
+                    <tr>
+                        <td>${this.escapeHtml(intern.institute_name || '-')}</td>
+                        <td><strong>${this.escapeHtml(intern.student_name || '-')}</strong></td>
+                        <td>${this.escapeHtml(intern.student_email || '-')}</td>
+                        <td>${activityPeriod}</td>
+                        <td>
+                            <span class="status-badge ${isUploaded ? 'uploaded' : 'pending'}">
+                                ${isUploaded ? '✅ 업로드 완료' : '⏳ 미업로드'}
+                            </span>
+                        </td>
+                        <td class="upload-date">${uploadDate}</td>
+                        <td>
+                            <button 
+                                class="download-btn" 
+                                onclick="window.evalApp.downloadEvaluation('${intern.id}')"
+                                ${!isUploaded ? 'disabled' : ''}
+                            >
+                                <i data-lucide="download"></i>
+                                다운로드
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            formatActivityPeriod(startDate, endDate) {
+                if (!startDate || !endDate) {
+                    return '기간 미정';
+                }
+                return `${startDate} ~ ${endDate}`;
+            }
+
+            async downloadEvaluation(internId) {
+                const intern = this.interns.find(i => i.id === internId);
+                if (!intern || !intern.evaluation_pdf_url) {
+                    showToast('평가표를 찾을 수 없습니다.', 'error');
+                    return;
+                }
+
+                try {
+                    const fileName = `${intern.institute_name}_${intern.student_name}_활동평가표.pdf`;
+                    await this.downloadFile(intern.evaluation_pdf_url, fileName);
+                    showToast('다운로드가 시작되었습니다.', 'success');
+                } catch (error) {
+                    console.error('다운로드 실패:', error);
+                    showToast('다운로드에 실패했습니다.', 'error');
+                }
+            }
+
+            async downloadFile(url, fileName) {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('파일 다운로드 실패');
+                
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(blobUrl);
+            }
+
+            async downloadAllAsZip() {
+                const uploadedInterns = this.filteredInterns.filter(i => !!i.evaluation_pdf_url);
+                
+                if (uploadedInterns.length === 0) {
+                    showToast('다운로드할 평가표가 없습니다.', 'error');
+                    return;
+                }
+
+                this.showLoading(true, '평가표 다운로드 준비 중...');
+
+                try {
+                    const zip = new JSZip();
+                    let downloaded = 0;
+                    const total = uploadedInterns.length;
+
+                    for (const intern of uploadedInterns) {
+                        try {
+                            this.updateLoadingProgress(`${downloaded + 1}/${total} 다운로드 중...`);
+                            
+                            const response = await fetch(intern.evaluation_pdf_url);
+                            if (!response.ok) continue;
+                            
+                            const blob = await response.blob();
+                            const fileName = `${intern.institute_name}_${intern.student_name}_활동평가표.pdf`;
+                            
+                            zip.file(fileName, blob);
+                            downloaded++;
+                        } catch (err) {
+                            console.warn(`${intern.student_name} 평가표 다운로드 실패:`, err);
+                        }
+                    }
+
+                    if (downloaded === 0) {
+                        showToast('다운로드에 실패했습니다.', 'error');
+                        return;
+                    }
+
+                    this.updateLoadingText('ZIP 파일 생성 중...');
+                    
+                    const zipBlob = await zip.generateAsync({ 
+                        type: 'blob',
+                        compression: 'DEFLATE',
+                        compressionOptions: { level: 6 }
+                    });
+                    
+                    const now = new Date();
+                    const dateStr = now.toISOString().split('T')[0];
+                    const zipFileName = `활동평가표_${dateStr}.zip`;
+                    
+                    const blobUrl = window.URL.createObjectURL(zipBlob);
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = zipFileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(blobUrl);
+
+                    showToast(`${downloaded}개의 평가표를 다운로드했습니다.`, 'success');
+
+                } catch (error) {
+                    console.error('ZIP 다운로드 실패:', error);
+                    showToast('다운로드에 실패했습니다.', 'error');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            exportToExcel() {
+                try {
+                    const exportData = this.filteredInterns.map(intern => ({
+                        '학당명': intern.institute_name || '',
+                        '학생명': intern.student_name || '',
+                        '이메일': intern.student_email || '',
+                        '활동 시작일': intern.activity_start_date || '',
+                        '활동 종료일': intern.activity_end_date || '',
+                        '평가표 상태': intern.evaluation_pdf_url ? '업로드 완료' : '미업로드',
+                        '업로드 일시': intern.evaluation_uploaded_at 
+                            ? new Date(intern.evaluation_uploaded_at).toLocaleString('ko-KR')
+                            : '',
+                        '평가표 URL': intern.evaluation_pdf_url || ''
+                    }));
+
+                    const ws = XLSX.utils.json_to_sheet(exportData);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, '활동평가표현황');
+
+                    // 열 너비 설정
+                    ws['!cols'] = [
+                        { wch: 20 }, // 학당명
+                        { wch: 15 }, // 학생명
+                        { wch: 25 }, // 이메일
+                        { wch: 12 }, // 활동 시작일
+                        { wch: 12 }, // 활동 종료일
+                        { wch: 12 }, // 평가표 상태
+                        { wch: 20 }, // 업로드 일시
+                        { wch: 50 }  // 평가표 URL
+                    ];
+
+                    const now = new Date();
+                    const dateStr = now.toISOString().split('T')[0];
+                    XLSX.writeFile(wb, `활동평가표현황_${dateStr}.xlsx`);
+
+                    showToast('엑셀 파일이 다운로드되었습니다.', 'success');
+                } catch (error) {
+                    console.error('엑셀 내보내기 실패:', error);
+                    showToast('엑셀 내보내기에 실패했습니다.', 'error');
+                }
+            }
+
+            showLoading(show, text = '') {
+                const overlay = document.getElementById('loadingOverlay');
+                if (show) {
+                    document.getElementById('loadingText').textContent = text;
+                    document.getElementById('loadingProgress').textContent = '';
+                    overlay.classList.add('show');
+                } else {
+                    overlay.classList.remove('show');
+                }
+            }
+
+            updateLoadingText(text) {
+                document.getElementById('loadingText').textContent = text;
+            }
+
+            updateLoadingProgress(progress) {
+                document.getElementById('loadingProgress').textContent = progress;
+            }
+
+            escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+
+        // 🚀 초기화
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('📋 활동 평가표 관리 페이지 초기화 시작');
+            
+            if (!checkAdminAuth()) {
+                return;
+            }
+            
+            window.evalApp = new EvaluationManagementApp();
+            await window.evalApp.init();
+        });
+    </script>
+</body>
+</html>
