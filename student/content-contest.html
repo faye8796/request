@@ -2591,9 +2591,12 @@
 
             async uploadImage(file) {
                 try {
-                    const timestamp = Date.now();
-                    const fileName = `${this.currentUser.id}_${timestamp}_${file.name}`;
-                    const filePath = `${this.currentUser.id}/${fileName}`;
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    const today = new Date().toISOString().slice(0,10).replace(/-/g, '');
+                    const uuid = crypto.randomUUID().slice(0,8);
+                    const seq = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+                    const safeFileName = `proof_${uuid}_${today}_${seq}.${fileExtension}`;
+                    const filePath = `${this.currentUser.id}/${safeFileName}`;
 
                     const { data, error } = await this.supabase.storage
                         .from('content-proofs')

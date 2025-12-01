@@ -422,6 +422,9 @@
                         return this.studentData.individual_activity_schedule_enabled === true;
                     case 'content_contest':
                         return this.studentData.individual_content_contest_enabled === true;
+                    case 'satisfaction_survey':
+                        return this.studentData.individual_satisfaction_survey_enabled === true;
+                        
                     default:
                         return false;
                 }
@@ -578,7 +581,8 @@
                     { feature_name: 'required_documents', feature_title: '필수 서류 제출', is_active: true, display_order: 8 },
                     { feature_name: 'activity_schedule', feature_title: '활동일 작성', is_active: false, display_order: 9 },
                     { feature_name: 'content_contest', feature_title: '콘텐츠 공모전', is_active: true, display_order: 10 },
-                    { feature_name: 'activity_report', feature_title: '활동 수기 등록', is_active: true, display_order: 11 }
+                    { feature_name: 'activity_report', feature_title: '활동 수기 등록', is_active: true, display_order: 11 },
+                    { feature_name: 'satisfaction_survey', feature_title: '사업 만족도 조사', is_active: false, display_order: 12 }
 
                 ];
             },
@@ -773,8 +777,15 @@
                         url: './activity-report.html',
                         buttonText: '작성하기',
                         buttonIcon: 'edit'
+                    },
+                    'satisfaction_survey': {
+                        icon: 'clipboard-check',
+                        title: '사업 만족도 조사',
+                        description: '2025 세종학당 문화인턴 사업에 대한 만족도 조사입니다.',
+                        url: './satisfaction-survey.html',
+                        buttonText: '참여하기',
+                        buttonIcon: 'arrow-right'
                     }
-
                 };
 
                 const config = configs[feature.feature_name];
