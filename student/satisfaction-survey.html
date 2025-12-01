@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 사업 만족도 조사 - 세종학당 문화인턴</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* 헤더 스타일 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-info p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* 컨테이너 */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* 진행률 표시 */
+        .progress-section {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .progress-title {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .progress-text {
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        /* 섹션 스타일 */
+        .survey-section {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .section-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-right: 0.75rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-description {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+            padding-left: 2.75rem;
+        }
+
+        .section-body {
+            padding: 2rem;
+        }
+
+        /* 질문 스타일 */
+        .question-item {
+            margin-bottom: 2.5rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .question-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .question-header {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1.25rem;
+        }
+
+        .question-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            height: 36px;
+            background: #eff6ff;
+            color: #3b82f6;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .question-text {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1f2937;
+            line-height: 1.5;
+        }
+
+        /* 리커트 척도 */
+        .likert-scale {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.75rem;
+        }
+
+        .likert-option {
+            position: relative;
+        }
+
+        .likert-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .likert-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem 0.5rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            min-height: 100px;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .likert-label:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .likert-option input[type="radio"]:checked + .likert-label {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        }
+
+        .likert-option input[type="radio"]:checked + .likert-label .likert-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .likert-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: #f3f4f6;
+            color: #6b7280;
+            border-radius: 50%;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .likert-text {
+            font-size: 0.8rem;
+            color: #4b5563;
+            line-height: 1.3;
+        }
+
+        /* 서술형 입력 */
+        .textarea-wrapper {
+            position: relative;
+        }
+
+        .form-textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-textarea:disabled {
+            background: #f9fafb;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 0.85rem;
+            color: #9ca3af;
+            margin-top: 0.5rem;
+        }
+
+        /* 버튼 스타일 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #4b5563;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        /* 액션 버튼 영역 */
+        .action-section {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .action-info {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* 제출 완료 상태 */
+        .submitted-notice {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border: 2px solid #10b981;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .submitted-notice .notice-icon {
+            width: 64px;
+            height: 64px;
+            color: #059669;
+            margin: 0 auto 1rem;
+        }
+
+        .submitted-notice h3 {
+            font-size: 1.5rem;
+            color: #065f46;
+            margin-bottom: 0.5rem;
+        }
+
+        .submitted-notice p {
+            color: #047857;
+        }
+
+        /* 토스트 알림 */
+        .toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .toast-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .toast-error {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .toast-info {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* 로딩 스피너 */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .section-body {
+                padding: 1.5rem;
+            }
+
+            .likert-scale {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 0.4rem;
+            }
+
+            .likert-label {
+                padding: 0.75rem 0.25rem;
+                min-height: 90px;
+            }
+
+            .likert-number {
+                width: 28px;
+                height: 28px;
+                font-size: 0.9rem;
+            }
+
+            .likert-text {
+                font-size: 0.65rem;
+            }
+
+            .action-section {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .action-buttons {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .action-buttons .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .user-info h1 {
+                font-size: 1.25rem;
+            }
+
+            .section-title {
+                font-size: 1.1rem;
+            }
+
+            .question-text {
+                font-size: 0.95rem;
+            }
+
+            .likert-label {
+                min-height: 80px;
+            }
+
+            .likert-text {
+                font-size: 0.6rem;
+            }
+        }
+    </style>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+    <!-- 헤더 -->
+    <header class="header">
+        <div class="header-content">
+            <div class="user-info">
+                <h1 id="userWelcome">📊 2025 문화인턴 사업 만족도 조사</h1>
+                <p id="userDetails">소중한 의견을 들려주세요</p>
+            </div>
+            <div class="header-actions">
+                <button id="backToDashboard" class="btn btn-secondary">
+                    <i data-lucide="arrow-left"></i>
+                    대시보드
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="container">
+        <!-- 제출 완료 안내 (제출 시에만 표시) -->
+        <div class="submitted-notice" id="submittedNotice" style="display: none;">
+            <svg class="notice-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h3>설문이 제출되었습니다</h3>
+            <p>소중한 의견 감사합니다. 제출된 설문은 수정할 수 없습니다.</p>
+        </div>
+
+        <!-- 진행률 표시 -->
+        <div class="progress-section" id="progressSection">
+            <div class="progress-header">
+                <span class="progress-title">작성 진행률</span>
+                <span class="progress-text" id="progressText">0 / 15 문항</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- 설문 폼 -->
+        <form id="surveyForm">
+            <!-- 섹션 1: 전반적인 만족도 -->
+            <section class="survey-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="section-number">1</span>
+                        전반적인 만족도
+                    </h2>
+                </div>
+                <div class="section-body">
+                    <!-- Q1-1 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">1-1</span>
+                            <span class="question-text">2025 세종학당 문화인턴 사업에 참여한 것에 만족하십니까?</span>
+                        </div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q1_1" value="5" id="q1_1_5">
+                                <label for="q1_1_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_1" value="4" id="q1_1_4">
+                                <label for="q1_1_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_1" value="3" id="q1_1_3">
+                                <label for="q1_1_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_1" value="2" id="q1_1_2">
+                                <label for="q1_1_2" class="likert-label">
+                                    <span class="likert-number">2</span>
+                                    <span class="likert-text">불만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_1" value="1" id="q1_1_1">
+                                <label for="q1_1_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">매우 불만족</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Q1-2 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">1-2</span>
+                            <span class="question-text">문화인턴 활동과 관련하여, 세종학당재단 및 운영사무국의 활동 지원에 전반적으로 만족하십니까?</span>
+                        </div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q1_2" value="5" id="q1_2_5">
+                                <label for="q1_2_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_2" value="4" id="q1_2_4">
+                                <label for="q1_2_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_2" value="3" id="q1_2_3">
+                                <label for="q1_2_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_2" value="2" id="q1_2_2">
+                                <label for="q1_2_2" class="likert-label">
+                                    <span class="likert-number">2</span>
+                                    <span class="likert-text">불만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_2" value="1" id="q1_2_1">
+                                <label for="q1_2_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">매우 불만족</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Q1-3 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">1-3</span>
+                            <span class="question-text">문화인턴 활동과 관련하여, 파견된 세종학당의 활동 지원에 전반적으로 만족하십니까?</span>
+                        </div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q1_3" value="5" id="q1_3_5">
+                                <label for="q1_3_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_3" value="4" id="q1_3_4">
+                                <label for="q1_3_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_3" value="3" id="q1_3_3">
+                                <label for="q1_3_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_3" value="2" id="q1_3_2">
+                                <label for="q1_3_2" class="likert-label">
+                                    <span class="likert-number">2</span>
+                                    <span class="likert-text">불만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_3" value="1" id="q1_3_1">
+                                <label for="q1_3_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">매우 불만족</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Q1-4 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">1-4</span>
+                            <span class="question-text">문화인턴 사업에 대해 주변 사람들에게 추천할 의향이 있으십니까?</span>
+                        </div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q1_4" value="5" id="q1_4_5">
+                                <label for="q1_4_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_4" value="4" id="q1_4_4">
+                                <label for="q1_4_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_4" value="3" id="q1_4_3">
+                                <label for="q1_4_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_4" value="2" id="q1_4_2">
+                                <label for="q1_4_2" class="likert-label">
+                                    <span class="likert-number">2</span>
+                                    <span class="likert-text">그렇지 않다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_4" value="1" id="q1_4_1">
+                                <label for="q1_4_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 그렇지 않다</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 섹션 2: 문화인턴 수업 지원 관련 -->
+            <section class="survey-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="section-number">2</span>
+                        문화인턴 수업 지원 관련
+                    </h2>
+                    <p class="section-description">아래는 문화인턴 수업 지원과 관련된 설문 문항입니다.</p>
+                </div>
+                <div class="section-body">
+                    <!-- Q2-1 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">2-1</span>
+                            <span class="question-text">파견 전 국내 교육 프로그램의 교육 내용이 문화인턴 활동 준비 및 문화 수업 준비에 도움이 되었습니까?</span>
+                        </div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q2_1" value="5" id="q2_1_5">
+                                <label for="q2_1_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 도움됨</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_1" value="4" id="q2_1_4">
+                                <label for="q2_1_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">도움됨</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_1" value="3" id="q2_1_3">
+                                <label for="q2_1_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_1" value="2" id="q2_1_2">
+                                <label for="q2_1_2" class="likert-label">
+                                    <span class="likert-number">2</span>
+                                    <span class="likert-text">도움 안됨</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_1" value="1" id="q2_1_1">
+                                <label for="q2_1_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 도움 안됨</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Q2-2 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">2-2</span>
+                            <span class="question-text">문화 교구 지원이 수업을 운영하는데 도움이 되었습니까?</span>
+                        </div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q2_2" value="5" id="q2_2_5">
+                                <label for="q2_2_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 도움됨</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_2" value="4" id="q2_2_4">
+                                <label for="q2_2_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">도움됨</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_2" value="3" id="q2_2_3">
+                                <label for="q2_2_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_2" value="2" id="q2_2_2">
+                                <label for="q2_2_2" class="likert-label">
+                                    <span class="likert-number">2</span>
+                                    <span class="likert-text">도움 안됨</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_2" value="1" id="q2_2_1">
+                                <label for="q2_2_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 도움 안됨</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Q2-3 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">2-3</span>
+                            <span class="question-text">파견된 세종학당 현지 운영요원의 지원이 수업을 운영하는데 도움이 되었습니까?</span>
+                        </div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q2_3" value="5" id="q2_3_5">
+                                <label for="q2_3_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 도움됨</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_3" value="4" id="q2_3_4">
+                                <label for="q2_3_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">도움됨</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_3" value="3" id="q2_3_3">
+                                <label for="q2_3_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_3" value="2" id="q2_3_2">
+                                <label for="q2_3_2" class="likert-label">
+                                    <span class="likert-number">2</span>
+                                    <span class="likert-text">도움 안됨</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_3" value="1" id="q2_3_1">
+                                <label for="q2_3_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 도움 안됨</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 섹션 3: 현지 정착 지원 관련 -->
+            <section class="survey-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="section-number">3</span>
+                        현지 정착 지원 관련
+                    </h2>
+                    <p class="section-description">아래는 현지 정착 지원과 관련된 설문 문항입니다.</p>
+                </div>
+                <div class="section-body">
+                    <!-- Q3-1 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">3-1</span>
+                            <span class="question-text">비자 발급과 관련하여 운영사무국과 현지 세종학당 담당자의 적절한 안내 및 지원이 이루어졌습니까?</span>
+                        </div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q3_1" value="5" id="q3_1_5">
+                                <label for="q3_1_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_1" value="4" id="q3_1_4">
+                                <label for="q3_1_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_1" value="3" id="q3_1_3">
+                                <label for="q3_1_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_1" value="2" id="q3_1_2">
+                                <label for="q3_1_2" class="likert-label">
+                                    <span class="likert-number">2</span>
+                                    <span class="likert-text">그렇지 않다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_1" value="1" id="q3_1_1">
+                                <label for="q3_1_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 그렇지 않다</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Q3-2 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">3-2</span>
+                            <span class="question-text">숙소를 구하는 과정에서, 현지 세종학당 담당자의 적절한 안내 및 지원이 이루어졌습니까?</span>
+                        </div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q3_2" value="5" id="q3_2_5">
+                                <label for="q3_2_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_2" value="4" id="q3_2_4">
+                                <label for="q3_2_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_2" value="3" id="q3_2_3">
+                                <label for="q3_2_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_2" value="2" id="q3_2_2">
+                                <label for="q3_2_2" class="likert-label">
+                                    <span class="likert-number">2</span>
+                                    <span class="likert-text">그렇지 않다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_2" value="1" id="q3_2_1">
+                                <label for="q3_2_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 그렇지 않다</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Q3-3 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">3-3</span>
+                            <span class="question-text">현지 적응과 관련하여, 전담 운영요원의 지원이 도움이 되었습니까?</span>
+                        </div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q3_3" value="5" id="q3_3_5">
+                                <label for="q3_3_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_3" value="4" id="q3_3_4">
+                                <label for="q3_3_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_3" value="3" id="q3_3_3">
+                                <label for="q3_3_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_3" value="2" id="q3_3_2">
+                                <label for="q3_3_2" class="likert-label">
+                                    <span class="likert-number">2</span>
+                                    <span class="likert-text">그렇지 않다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_3" value="1" id="q3_3_1">
+                                <label for="q3_3_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 그렇지 않다</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Q3-4 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">3-4</span>
+                            <span class="question-text">안전한 해외체류와 관련하여 안전 관련 국내 교육 및 기초 안내자료, 보험가입, 의료서비스 등이 도움이 되었습니까?</span>
+                        </div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q3_4" value="5" id="q3_4_5">
+                                <label for="q3_4_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_4" value="4" id="q3_4_4">
+                                <label for="q3_4_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_4" value="3" id="q3_4_3">
+                                <label for="q3_4_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_4" value="2" id="q3_4_2">
+                                <label for="q3_4_2" class="likert-label">
+                                    <span class="likert-number">2</span>
+                                    <span class="likert-text">그렇지 않다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_4" value="1" id="q3_4_1">
+                                <label for="q3_4_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 그렇지 않다</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Q3-5 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">3-5</span>
+                            <span class="question-text">세종학당재단의 체재비 및 활동비 지원 수준에 만족하십니까?</span>
+                        </div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q3_5" value="5" id="q3_5_5">
+                                <label for="q3_5_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_5" value="4" id="q3_5_4">
+                                <label for="q3_5_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_5" value="3" id="q3_5_3">
+                                <label for="q3_5_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_5" value="2" id="q3_5_2">
+                                <label for="q3_5_2" class="likert-label">
+                                    <span class="likert-number">2</span>
+                                    <span class="likert-text">부족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_5" value="1" id="q3_5_1">
+                                <label for="q3_5_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">매우 부족</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 섹션 4: 사업 개선 방향 관련 -->
+            <section class="survey-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="section-number">4</span>
+                        사업 개선 방향 관련
+                    </h2>
+                    <p class="section-description">아래는 문화인턴 사업 개선 방향과 관련된 설문 문항입니다.</p>
+                </div>
+                <div class="section-body">
+                    <!-- Q4-1 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">4-1</span>
+                            <span class="question-text">문화인턴 활동이 본인에게 있어 가장 도움이 되었던 점은 무엇인가요?</span>
+                        </div>
+                        <div class="textarea-wrapper">
+                            <textarea 
+                                class="form-textarea" 
+                                id="q4_1" 
+                                name="q4_1" 
+                                placeholder="자유롭게 작성해주세요..."
+                                maxlength="2000"
+                            ></textarea>
+                            <div class="char-count"><span id="q4_1_count">0</span> / 2000</div>
+                        </div>
+                    </div>
+
+                    <!-- Q4-2 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">4-2</span>
+                            <span class="question-text">문화인턴 파견 전, 추가적인 안내가 필요하거나 교육이 필요하다고 생각되는 사항이 있으시다면 자유롭게 적어주세요.</span>
+                        </div>
+                        <div class="textarea-wrapper">
+                            <textarea 
+                                class="form-textarea" 
+                                id="q4_2" 
+                                name="q4_2" 
+                                placeholder="자유롭게 작성해주세요..."
+                                maxlength="2000"
+                            ></textarea>
+                            <div class="char-count"><span id="q4_2_count">0</span> / 2000</div>
+                        </div>
+                    </div>
+
+                    <!-- Q4-3 -->
+                    <div class="question-item">
+                        <div class="question-header">
+                            <span class="question-number">4-3</span>
+                            <span class="question-text">기타 문화인턴 사업과 관련하여 건의하고 싶은 사항이 있으시다면 자유롭게 적어주세요.</span>
+                        </div>
+                        <div class="textarea-wrapper">
+                            <textarea 
+                                class="form-textarea" 
+                                id="q4_3" 
+                                name="q4_3" 
+                                placeholder="자유롭게 작성해주세요..."
+                                maxlength="2000"
+                            ></textarea>
+                            <div class="char-count"><span id="q4_3_count">0</span> / 2000</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 액션 버튼 영역 -->
+            <div class="action-section" id="actionSection">
+                <p class="action-info" id="actionInfo">
+                    <i data-lucide="info" style="width: 16px; height: 16px; display: inline; vertical-align: middle;"></i>
+                    임시저장 후 나중에 이어서 작성할 수 있습니다.
+                </p>
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-secondary" id="saveDraftBtn">
+                        <i data-lucide="save"></i>
+                        임시저장
+                    </button>
+                    <button type="button" class="btn btn-success" id="submitBtn">
+                        <i data-lucide="send"></i>
+                        최종 제출
+                    </button>
+                </div>
+            </div>
+        </form>
+    </main>
+
+    <!-- JavaScript -->
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const SUPABASE_URL = 'https://aazvopacnbbkvusihqva.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTQyMjQsImV4cCI6MjA2NTM3MDIyNH0.0NXI_tohwFCOl3xY4b1jIlxQR_zGTS9tWDM2OFxTq4s';
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 앱 상태
+        let currentUser = null;
+        let existingSurvey = null;
+        let isSubmitted = false;
+
+        // 질문 목록 (진행률 계산용)
+        const likertQuestions = ['q1_1', 'q1_2', 'q1_3', 'q1_4', 'q2_1', 'q2_2', 'q2_3', 'q3_1', 'q3_2', 'q3_3', 'q3_4', 'q3_5'];
+        const textQuestions = ['q4_1', 'q4_2', 'q4_3'];
+        const totalQuestions = likertQuestions.length + textQuestions.length;
+
+        // 초기화
+        async function init() {
+            try {
+                console.log('🚀 사업 만족도 조사 앱 초기화...');
+
+                // 사용자 인증 확인
+                await loadUserData();
+
+                // 이벤트 리스너 설정
+                setupEventListeners();
+
+                // 기존 설문 데이터 로드
+                await loadExistingSurvey();
+
+                // Lucide 아이콘 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+
+                console.log('✅ 초기화 완료');
+            } catch (error) {
+                console.error('❌ 초기화 실패:', error);
+                showToast('시스템 초기화에 실패했습니다.', 'error');
+            }
+        }
+
+        // 사용자 데이터 로드
+        async function loadUserData() {
+            const userDataStr = localStorage.getItem('currentStudent');
+            if (!userDataStr) {
+                window.location.href = '../index.html';
+                return;
+            }
+
+            currentUser = JSON.parse(userDataStr);
+
+            // 환영 메시지 업데이트
+            const welcomeEl = document.getElementById('userWelcome');
+            if (welcomeEl && currentUser.name) {
+                welcomeEl.textContent = `📊 ${currentUser.name}님의 사업 만족도 조사`;
+            }
+        }
+
+        // 기존 설문 데이터 로드
+        async function loadExistingSurvey() {
+            try {
+                const { data, error } = await supabase
+                    .from('satisfaction_surveys')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .maybeSingle();
+
+                if (error) throw error;
+
+                if (data) {
+                    existingSurvey = data;
+                    isSubmitted = data.status === 'submitted';
+
+                    // 기존 데이터로 폼 채우기
+                    fillFormWithData(data);
+
+                    // 제출된 경우 UI 처리
+                    if (isSubmitted) {
+                        showSubmittedState();
+                    }
+                }
+
+                updateProgress();
+            } catch (error) {
+                console.error('설문 데이터 로드 실패:', error);
+            }
+        }
+
+        // 폼에 데이터 채우기
+        function fillFormWithData(data) {
+            // 리커트 척도 질문
+            likertQuestions.forEach(q => {
+                const dbKey = q.replace('q', 'q').replace('_', '_');
+                const value = data[dbKey];
+                if (value) {
+                    const radio = document.querySelector(`input[name="${q}"][value="${value}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                    }
+                }
+            });
+
+            // 서술형 질문
+            textQuestions.forEach(q => {
+                const dbKey = q.replace('q4_1', 'q4_1_best_benefit')
+                    .replace('q4_2', 'q4_2_additional_training')
+                    .replace('q4_3', 'q4_3_suggestions');
+                const textarea = document.getElementById(q);
+                const value = data[dbKey];
+                if (textarea && value) {
+                    textarea.value = value;
+                    updateCharCount(textarea, q);
+                }
+            });
+        }
+
+        // 제출 완료 상태 표시
+        function showSubmittedState() {
+            document.getElementById('submittedNotice').style.display = 'block';
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('actionSection').style.display = 'none';
+
+            // 모든 입력 비활성화
+            document.querySelectorAll('input[type="radio"]').forEach(input => {
+                input.disabled = true;
+            });
+            document.querySelectorAll('textarea').forEach(textarea => {
+                textarea.disabled = true;
+            });
+        }
+
+        // 이벤트 리스너 설정
+        function setupEventListeners() {
+            // 대시보드로 돌아가기
+            document.getElementById('backToDashboard').addEventListener('click', () => {
+                window.location.href = 'dashboard.html';
+            });
+
+            // 임시저장
+            document.getElementById('saveDraftBtn').addEventListener('click', () => {
+                saveSurvey(false);
+            });
+
+            // 최종 제출
+            document.getElementById('submitBtn').addEventListener('click', () => {
+                if (validateForm()) {
+                    if (confirm('제출 후에는 수정할 수 없습니다. 정말 제출하시겠습니까?')) {
+                        saveSurvey(true);
+                    }
+                }
+            });
+
+            // 라디오 버튼 변경 시 진행률 업데이트
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.addEventListener('change', updateProgress);
+            });
+
+            // 텍스트 영역 변경 시 글자수 카운트 및 진행률 업데이트
+            textQuestions.forEach(q => {
+                const textarea = document.getElementById(q);
+                if (textarea) {
+                    textarea.addEventListener('input', () => {
+                        updateCharCount(textarea, q);
+                        updateProgress();
+                    });
+                }
+            });
+        }
+
+        // 글자수 업데이트
+        function updateCharCount(textarea, id) {
+            const countEl = document.getElementById(`${id}_count`);
+            if (countEl) {
+                countEl.textContent = textarea.value.length;
+            }
+        }
+
+        // 진행률 업데이트
+        function updateProgress() {
+            let answered = 0;
+
+            // 리커트 척도 질문 체크
+            likertQuestions.forEach(q => {
+                const checked = document.querySelector(`input[name="${q}"]:checked`);
+                if (checked) answered++;
+            });
+
+            // 서술형 질문 체크 (내용이 있으면 응답한 것으로 간주)
+            textQuestions.forEach(q => {
+                const textarea = document.getElementById(q);
+                if (textarea && textarea.value.trim().length > 0) {
+                    answered++;
+                }
+            });
+
+            const percentage = Math.round((answered / totalQuestions) * 100);
+
+            document.getElementById('progressText').textContent = `${answered} / ${totalQuestions} 문항`;
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+        }
+
+        // 폼 유효성 검사
+        function validateForm() {
+            // 필수 리커트 질문 체크
+            for (const q of likertQuestions) {
+                const checked = document.querySelector(`input[name="${q}"]:checked`);
+                if (!checked) {
+                    showToast('모든 객관식 문항에 응답해주세요.', 'error');
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // 폼 데이터 수집
+        function collectFormData() {
+            const formData = {
+                user_id: currentUser.id
+            };
+
+            // 리커트 척도 질문
+            likertQuestions.forEach(q => {
+                const checked = document.querySelector(`input[name="${q}"]:checked`);
+                formData[q] = checked ? parseInt(checked.value) : null;
+            });
+
+            // 서술형 질문
+            formData.q4_1_best_benefit = document.getElementById('q4_1').value.trim() || null;
+            formData.q4_2_additional_training = document.getElementById('q4_2').value.trim() || null;
+            formData.q4_3_suggestions = document.getElementById('q4_3').value.trim() || null;
+
+            return formData;
+        }
+
+        // 설문 저장
+        async function saveSurvey(isSubmitting) {
+            const btn = isSubmitting ? document.getElementById('submitBtn') : document.getElementById('saveDraftBtn');
+            const originalText = btn.innerHTML;
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="loading-spinner"></span> ${isSubmitting ? '제출 중...' : '저장 중...'}`;
+
+                const formData = collectFormData();
+
+                if (isSubmitting) {
+                    formData.status = 'submitted';
+                    formData.submitted_at = new Date().toISOString();
+                } else {
+                    formData.status = 'draft';
+                }
+
+                formData.updated_at = new Date().toISOString();
+
+                let result;
+
+                if (existingSurvey) {
+                    // 기존 데이터 업데이트
+                    result = await supabase
+                        .from('satisfaction_surveys')
+                        .update(formData)
+                        .eq('id', existingSurvey.id)
+                        .select()
+                        .single();
+                } else {
+                    // 새로 생성
+                    result = await supabase
+                        .from('satisfaction_surveys')
+                        .insert([formData])
+                        .select()
+                        .single();
+                }
+
+                if (result.error) throw result.error;
+
+                existingSurvey = result.data;
+
+                if (isSubmitting) {
+                    showToast('설문이 성공적으로 제출되었습니다!', 'success');
+                    isSubmitted = true;
+                    showSubmittedState();
+                } else {
+                    showToast('임시저장되었습니다.', 'success');
+                }
+
+            } catch (error) {
+                console.error('저장 실패:', error);
+                showToast('저장에 실패했습니다. 다시 시도해주세요.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+        }
+
+        // 토스트 메시지
+        function showToast(message, type = 'info') {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, 3000);
+        }
+
+        // DOM 로드 시 초기화
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
