@@ -1296,6 +1296,22 @@
         const textQuestions = ['q4_1', 'q4_2', 'q4_3'];
         const totalQuestions = likertQuestions.length + textQuestions.length;
 
+        
+        // 리커트 척도 질문 DB 키 매핑
+        const likertQuestionMapping = {
+            'q1_1': 'q1_1_overall_satisfaction',
+            'q1_2': 'q1_2_foundation_support',
+            'q1_3': 'q1_3_institute_support',
+            'q1_4': 'q1_4_recommendation',
+            'q2_1': 'q2_1_domestic_education',
+            'q2_2': 'q2_2_equipment_support',
+            'q2_3': 'q2_3_local_coordinator',
+            'q3_1': 'q3_1_visa_support',
+            'q3_2': 'q3_2_accommodation_support',
+            'q3_3': 'q3_3_coordinator_help',
+            'q3_4': 'q3_4_safety_support',
+            'q3_5': 'q3_5_expense_support'
+        };
         // 서술형 질문 DB 키 매핑
         const textQuestionMapping = {
             'q4_1': 'q4_1_best_benefit',
@@ -1380,7 +1396,8 @@
         function fillFormWithData(data) {
             // 리커트 척도 질문
             likertQuestions.forEach(q => {
-                const value = data[q];
+                const dbKey = likertQuestionMapping[q];
+                const value = data[dbKey];
                 if (value) {
                     const radio = document.querySelector(`input[name="${q}"][value="${value}"]`);
                     if (radio) {
@@ -1388,7 +1405,6 @@
                     }
                 }
             });
-
             // 서술형 질문 (수정된 매핑 로직)
             textQuestions.forEach(q => {
                 const dbKey = textQuestionMapping[q];
@@ -1508,10 +1524,10 @@
 
             // 리커트 척도 질문
             likertQuestions.forEach(q => {
+                const dbKey = likertQuestionMapping[q];
                 const checked = document.querySelector(`input[name="${q}"]:checked`);
-                formData[q] = checked ? parseInt(checked.value) : null;
+                formData[dbKey] = checked ? parseInt(checked.value) : null;
             });
-
             // 서술형 질문
             formData.q4_1_best_benefit = document.getElementById('q4_1').value.trim() || null;
             formData.q4_2_additional_training = document.getElementById('q4_2').value.trim() || null;
