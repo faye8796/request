@@ -188,11 +188,24 @@
             line-height: 1.5;
         }
 
-        /* 리커트 척도 */
+        /* 리커트 척도 - 1점부터 5점까지 왼쪽에서 오른쪽으로 */
         .likert-scale {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 0.75rem;
+            gap: 0.5rem;
+        }
+
+        /* 척도 라벨 영역 */
+        .likert-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding: 0 0.25rem;
+        }
+
+        .likert-labels span {
+            font-size: 0.75rem;
+            color: #6b7280;
         }
 
         .likert-option {
@@ -214,13 +227,13 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 1rem 0.5rem;
+            padding: 0.75rem 0.25rem;
             border: 2px solid #e5e7eb;
             border-radius: 0.75rem;
             cursor: pointer;
             transition: all 0.3s ease;
             background: white;
-            min-height: 100px;
+            min-height: 80px;
             justify-content: center;
             text-align: center;
         }
@@ -244,21 +257,22 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             background: #f3f4f6;
             color: #6b7280;
             border-radius: 50%;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
             transition: all 0.3s ease;
         }
 
         .likert-text {
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: #4b5563;
-            line-height: 1.3;
+            line-height: 1.2;
+            word-break: keep-all;
         }
 
         /* 서술형 입력 */
@@ -450,7 +464,7 @@
             to { transform: rotate(360deg); }
         }
 
-        /* 반응형 디자인 */
+        /* 반응형 디자인 - 모바일에서도 5개 유지 */
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -468,22 +482,26 @@
 
             .likert-scale {
                 grid-template-columns: repeat(5, 1fr);
-                gap: 0.4rem;
+                gap: 0.3rem;
             }
 
             .likert-label {
-                padding: 0.75rem 0.25rem;
-                min-height: 90px;
+                padding: 0.5rem 0.15rem;
+                min-height: 70px;
+                border-radius: 0.5rem;
+                border-width: 1.5px;
             }
 
             .likert-number {
-                width: 28px;
-                height: 28px;
-                font-size: 0.9rem;
+                width: 26px;
+                height: 26px;
+                font-size: 0.85rem;
+                margin-bottom: 0.2rem;
             }
 
             .likert-text {
-                font-size: 0.65rem;
+                font-size: 0.55rem;
+                line-height: 1.15;
             }
 
             .action-section {
@@ -515,12 +533,41 @@
                 font-size: 0.95rem;
             }
 
+            .likert-scale {
+                gap: 0.2rem;
+            }
+
             .likert-label {
-                min-height: 80px;
+                min-height: 65px;
+                padding: 0.4rem 0.1rem;
+            }
+
+            .likert-number {
+                width: 24px;
+                height: 24px;
+                font-size: 0.8rem;
             }
 
             .likert-text {
-                font-size: 0.6rem;
+                font-size: 0.5rem;
+            }
+        }
+
+        /* 아주 작은 화면에서도 5개 유지 */
+        @media (max-width: 360px) {
+            .likert-label {
+                min-height: 60px;
+                padding: 0.35rem 0.05rem;
+            }
+
+            .likert-number {
+                width: 22px;
+                height: 22px;
+                font-size: 0.75rem;
+            }
+
+            .likert-text {
+                font-size: 0.45rem;
             }
         }
     </style>
@@ -586,24 +633,10 @@
                         </div>
                         <div class="likert-scale">
                             <div class="likert-option">
-                                <input type="radio" name="q1_1" value="5" id="q1_1_5">
-                                <label for="q1_1_5" class="likert-label">
-                                    <span class="likert-number">5</span>
-                                    <span class="likert-text">매우 만족</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q1_1" value="4" id="q1_1_4">
-                                <label for="q1_1_4" class="likert-label">
-                                    <span class="likert-number">4</span>
-                                    <span class="likert-text">만족</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q1_1" value="3" id="q1_1_3">
-                                <label for="q1_1_3" class="likert-label">
-                                    <span class="likert-number">3</span>
-                                    <span class="likert-text">보통</span>
+                                <input type="radio" name="q1_1" value="1" id="q1_1_1">
+                                <label for="q1_1_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">매우 불만족</span>
                                 </label>
                             </div>
                             <div class="likert-option">
@@ -614,10 +647,24 @@
                                 </label>
                             </div>
                             <div class="likert-option">
-                                <input type="radio" name="q1_1" value="1" id="q1_1_1">
-                                <label for="q1_1_1" class="likert-label">
-                                    <span class="likert-number">1</span>
-                                    <span class="likert-text">매우 불만족</span>
+                                <input type="radio" name="q1_1" value="3" id="q1_1_3">
+                                <label for="q1_1_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_1" value="4" id="q1_1_4">
+                                <label for="q1_1_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_1" value="5" id="q1_1_5">
+                                <label for="q1_1_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 만족</span>
                                 </label>
                             </div>
                         </div>
@@ -631,24 +678,10 @@
                         </div>
                         <div class="likert-scale">
                             <div class="likert-option">
-                                <input type="radio" name="q1_2" value="5" id="q1_2_5">
-                                <label for="q1_2_5" class="likert-label">
-                                    <span class="likert-number">5</span>
-                                    <span class="likert-text">매우 만족</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q1_2" value="4" id="q1_2_4">
-                                <label for="q1_2_4" class="likert-label">
-                                    <span class="likert-number">4</span>
-                                    <span class="likert-text">만족</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q1_2" value="3" id="q1_2_3">
-                                <label for="q1_2_3" class="likert-label">
-                                    <span class="likert-number">3</span>
-                                    <span class="likert-text">보통</span>
+                                <input type="radio" name="q1_2" value="1" id="q1_2_1">
+                                <label for="q1_2_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">매우 불만족</span>
                                 </label>
                             </div>
                             <div class="likert-option">
@@ -659,10 +692,24 @@
                                 </label>
                             </div>
                             <div class="likert-option">
-                                <input type="radio" name="q1_2" value="1" id="q1_2_1">
-                                <label for="q1_2_1" class="likert-label">
-                                    <span class="likert-number">1</span>
-                                    <span class="likert-text">매우 불만족</span>
+                                <input type="radio" name="q1_2" value="3" id="q1_2_3">
+                                <label for="q1_2_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_2" value="4" id="q1_2_4">
+                                <label for="q1_2_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_2" value="5" id="q1_2_5">
+                                <label for="q1_2_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 만족</span>
                                 </label>
                             </div>
                         </div>
@@ -676,24 +723,10 @@
                         </div>
                         <div class="likert-scale">
                             <div class="likert-option">
-                                <input type="radio" name="q1_3" value="5" id="q1_3_5">
-                                <label for="q1_3_5" class="likert-label">
-                                    <span class="likert-number">5</span>
-                                    <span class="likert-text">매우 만족</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q1_3" value="4" id="q1_3_4">
-                                <label for="q1_3_4" class="likert-label">
-                                    <span class="likert-number">4</span>
-                                    <span class="likert-text">만족</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q1_3" value="3" id="q1_3_3">
-                                <label for="q1_3_3" class="likert-label">
-                                    <span class="likert-number">3</span>
-                                    <span class="likert-text">보통</span>
+                                <input type="radio" name="q1_3" value="1" id="q1_3_1">
+                                <label for="q1_3_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">매우 불만족</span>
                                 </label>
                             </div>
                             <div class="likert-option">
@@ -704,10 +737,24 @@
                                 </label>
                             </div>
                             <div class="likert-option">
-                                <input type="radio" name="q1_3" value="1" id="q1_3_1">
-                                <label for="q1_3_1" class="likert-label">
-                                    <span class="likert-number">1</span>
-                                    <span class="likert-text">매우 불만족</span>
+                                <input type="radio" name="q1_3" value="3" id="q1_3_3">
+                                <label for="q1_3_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_3" value="4" id="q1_3_4">
+                                <label for="q1_3_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_3" value="5" id="q1_3_5">
+                                <label for="q1_3_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 만족</span>
                                 </label>
                             </div>
                         </div>
@@ -721,24 +768,10 @@
                         </div>
                         <div class="likert-scale">
                             <div class="likert-option">
-                                <input type="radio" name="q1_4" value="5" id="q1_4_5">
-                                <label for="q1_4_5" class="likert-label">
-                                    <span class="likert-number">5</span>
-                                    <span class="likert-text">매우 그렇다</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q1_4" value="4" id="q1_4_4">
-                                <label for="q1_4_4" class="likert-label">
-                                    <span class="likert-number">4</span>
-                                    <span class="likert-text">그렇다</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q1_4" value="3" id="q1_4_3">
-                                <label for="q1_4_3" class="likert-label">
-                                    <span class="likert-number">3</span>
-                                    <span class="likert-text">보통</span>
+                                <input type="radio" name="q1_4" value="1" id="q1_4_1">
+                                <label for="q1_4_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 그렇지 않다</span>
                                 </label>
                             </div>
                             <div class="likert-option">
@@ -749,10 +782,24 @@
                                 </label>
                             </div>
                             <div class="likert-option">
-                                <input type="radio" name="q1_4" value="1" id="q1_4_1">
-                                <label for="q1_4_1" class="likert-label">
-                                    <span class="likert-number">1</span>
-                                    <span class="likert-text">전혀 그렇지 않다</span>
+                                <input type="radio" name="q1_4" value="3" id="q1_4_3">
+                                <label for="q1_4_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_4" value="4" id="q1_4_4">
+                                <label for="q1_4_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_4" value="5" id="q1_4_5">
+                                <label for="q1_4_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 그렇다</span>
                                 </label>
                             </div>
                         </div>
@@ -778,24 +825,10 @@
                         </div>
                         <div class="likert-scale">
                             <div class="likert-option">
-                                <input type="radio" name="q2_1" value="5" id="q2_1_5">
-                                <label for="q2_1_5" class="likert-label">
-                                    <span class="likert-number">5</span>
-                                    <span class="likert-text">매우 도움됨</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q2_1" value="4" id="q2_1_4">
-                                <label for="q2_1_4" class="likert-label">
-                                    <span class="likert-number">4</span>
-                                    <span class="likert-text">도움됨</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q2_1" value="3" id="q2_1_3">
-                                <label for="q2_1_3" class="likert-label">
-                                    <span class="likert-number">3</span>
-                                    <span class="likert-text">보통</span>
+                                <input type="radio" name="q2_1" value="1" id="q2_1_1">
+                                <label for="q2_1_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 도움 안됨</span>
                                 </label>
                             </div>
                             <div class="likert-option">
@@ -806,10 +839,24 @@
                                 </label>
                             </div>
                             <div class="likert-option">
-                                <input type="radio" name="q2_1" value="1" id="q2_1_1">
-                                <label for="q2_1_1" class="likert-label">
-                                    <span class="likert-number">1</span>
-                                    <span class="likert-text">전혀 도움 안됨</span>
+                                <input type="radio" name="q2_1" value="3" id="q2_1_3">
+                                <label for="q2_1_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_1" value="4" id="q2_1_4">
+                                <label for="q2_1_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">도움됨</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_1" value="5" id="q2_1_5">
+                                <label for="q2_1_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 도움됨</span>
                                 </label>
                             </div>
                         </div>
@@ -823,24 +870,10 @@
                         </div>
                         <div class="likert-scale">
                             <div class="likert-option">
-                                <input type="radio" name="q2_2" value="5" id="q2_2_5">
-                                <label for="q2_2_5" class="likert-label">
-                                    <span class="likert-number">5</span>
-                                    <span class="likert-text">매우 도움됨</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q2_2" value="4" id="q2_2_4">
-                                <label for="q2_2_4" class="likert-label">
-                                    <span class="likert-number">4</span>
-                                    <span class="likert-text">도움됨</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q2_2" value="3" id="q2_2_3">
-                                <label for="q2_2_3" class="likert-label">
-                                    <span class="likert-number">3</span>
-                                    <span class="likert-text">보통</span>
+                                <input type="radio" name="q2_2" value="1" id="q2_2_1">
+                                <label for="q2_2_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 도움 안됨</span>
                                 </label>
                             </div>
                             <div class="likert-option">
@@ -851,10 +884,24 @@
                                 </label>
                             </div>
                             <div class="likert-option">
-                                <input type="radio" name="q2_2" value="1" id="q2_2_1">
-                                <label for="q2_2_1" class="likert-label">
-                                    <span class="likert-number">1</span>
-                                    <span class="likert-text">전혀 도움 안됨</span>
+                                <input type="radio" name="q2_2" value="3" id="q2_2_3">
+                                <label for="q2_2_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_2" value="4" id="q2_2_4">
+                                <label for="q2_2_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">도움됨</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_2" value="5" id="q2_2_5">
+                                <label for="q2_2_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 도움됨</span>
                                 </label>
                             </div>
                         </div>
@@ -868,24 +915,10 @@
                         </div>
                         <div class="likert-scale">
                             <div class="likert-option">
-                                <input type="radio" name="q2_3" value="5" id="q2_3_5">
-                                <label for="q2_3_5" class="likert-label">
-                                    <span class="likert-number">5</span>
-                                    <span class="likert-text">매우 도움됨</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q2_3" value="4" id="q2_3_4">
-                                <label for="q2_3_4" class="likert-label">
-                                    <span class="likert-number">4</span>
-                                    <span class="likert-text">도움됨</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q2_3" value="3" id="q2_3_3">
-                                <label for="q2_3_3" class="likert-label">
-                                    <span class="likert-number">3</span>
-                                    <span class="likert-text">보통</span>
+                                <input type="radio" name="q2_3" value="1" id="q2_3_1">
+                                <label for="q2_3_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 도움 안됨</span>
                                 </label>
                             </div>
                             <div class="likert-option">
@@ -896,10 +929,24 @@
                                 </label>
                             </div>
                             <div class="likert-option">
-                                <input type="radio" name="q2_3" value="1" id="q2_3_1">
-                                <label for="q2_3_1" class="likert-label">
-                                    <span class="likert-number">1</span>
-                                    <span class="likert-text">전혀 도움 안됨</span>
+                                <input type="radio" name="q2_3" value="3" id="q2_3_3">
+                                <label for="q2_3_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_3" value="4" id="q2_3_4">
+                                <label for="q2_3_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">도움됨</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_3" value="5" id="q2_3_5">
+                                <label for="q2_3_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 도움됨</span>
                                 </label>
                             </div>
                         </div>
@@ -925,24 +972,10 @@
                         </div>
                         <div class="likert-scale">
                             <div class="likert-option">
-                                <input type="radio" name="q3_1" value="5" id="q3_1_5">
-                                <label for="q3_1_5" class="likert-label">
-                                    <span class="likert-number">5</span>
-                                    <span class="likert-text">매우 그렇다</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q3_1" value="4" id="q3_1_4">
-                                <label for="q3_1_4" class="likert-label">
-                                    <span class="likert-number">4</span>
-                                    <span class="likert-text">그렇다</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q3_1" value="3" id="q3_1_3">
-                                <label for="q3_1_3" class="likert-label">
-                                    <span class="likert-number">3</span>
-                                    <span class="likert-text">보통</span>
+                                <input type="radio" name="q3_1" value="1" id="q3_1_1">
+                                <label for="q3_1_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 그렇지 않다</span>
                                 </label>
                             </div>
                             <div class="likert-option">
@@ -953,10 +986,24 @@
                                 </label>
                             </div>
                             <div class="likert-option">
-                                <input type="radio" name="q3_1" value="1" id="q3_1_1">
-                                <label for="q3_1_1" class="likert-label">
-                                    <span class="likert-number">1</span>
-                                    <span class="likert-text">전혀 그렇지 않다</span>
+                                <input type="radio" name="q3_1" value="3" id="q3_1_3">
+                                <label for="q3_1_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_1" value="4" id="q3_1_4">
+                                <label for="q3_1_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_1" value="5" id="q3_1_5">
+                                <label for="q3_1_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 그렇다</span>
                                 </label>
                             </div>
                         </div>
@@ -970,24 +1017,10 @@
                         </div>
                         <div class="likert-scale">
                             <div class="likert-option">
-                                <input type="radio" name="q3_2" value="5" id="q3_2_5">
-                                <label for="q3_2_5" class="likert-label">
-                                    <span class="likert-number">5</span>
-                                    <span class="likert-text">매우 그렇다</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q3_2" value="4" id="q3_2_4">
-                                <label for="q3_2_4" class="likert-label">
-                                    <span class="likert-number">4</span>
-                                    <span class="likert-text">그렇다</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q3_2" value="3" id="q3_2_3">
-                                <label for="q3_2_3" class="likert-label">
-                                    <span class="likert-number">3</span>
-                                    <span class="likert-text">보통</span>
+                                <input type="radio" name="q3_2" value="1" id="q3_2_1">
+                                <label for="q3_2_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 그렇지 않다</span>
                                 </label>
                             </div>
                             <div class="likert-option">
@@ -998,10 +1031,24 @@
                                 </label>
                             </div>
                             <div class="likert-option">
-                                <input type="radio" name="q3_2" value="1" id="q3_2_1">
-                                <label for="q3_2_1" class="likert-label">
-                                    <span class="likert-number">1</span>
-                                    <span class="likert-text">전혀 그렇지 않다</span>
+                                <input type="radio" name="q3_2" value="3" id="q3_2_3">
+                                <label for="q3_2_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_2" value="4" id="q3_2_4">
+                                <label for="q3_2_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_2" value="5" id="q3_2_5">
+                                <label for="q3_2_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 그렇다</span>
                                 </label>
                             </div>
                         </div>
@@ -1015,24 +1062,10 @@
                         </div>
                         <div class="likert-scale">
                             <div class="likert-option">
-                                <input type="radio" name="q3_3" value="5" id="q3_3_5">
-                                <label for="q3_3_5" class="likert-label">
-                                    <span class="likert-number">5</span>
-                                    <span class="likert-text">매우 그렇다</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q3_3" value="4" id="q3_3_4">
-                                <label for="q3_3_4" class="likert-label">
-                                    <span class="likert-number">4</span>
-                                    <span class="likert-text">그렇다</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q3_3" value="3" id="q3_3_3">
-                                <label for="q3_3_3" class="likert-label">
-                                    <span class="likert-number">3</span>
-                                    <span class="likert-text">보통</span>
+                                <input type="radio" name="q3_3" value="1" id="q3_3_1">
+                                <label for="q3_3_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 그렇지 않다</span>
                                 </label>
                             </div>
                             <div class="likert-option">
@@ -1043,10 +1076,24 @@
                                 </label>
                             </div>
                             <div class="likert-option">
-                                <input type="radio" name="q3_3" value="1" id="q3_3_1">
-                                <label for="q3_3_1" class="likert-label">
-                                    <span class="likert-number">1</span>
-                                    <span class="likert-text">전혀 그렇지 않다</span>
+                                <input type="radio" name="q3_3" value="3" id="q3_3_3">
+                                <label for="q3_3_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_3" value="4" id="q3_3_4">
+                                <label for="q3_3_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_3" value="5" id="q3_3_5">
+                                <label for="q3_3_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 그렇다</span>
                                 </label>
                             </div>
                         </div>
@@ -1060,24 +1107,10 @@
                         </div>
                         <div class="likert-scale">
                             <div class="likert-option">
-                                <input type="radio" name="q3_4" value="5" id="q3_4_5">
-                                <label for="q3_4_5" class="likert-label">
-                                    <span class="likert-number">5</span>
-                                    <span class="likert-text">매우 그렇다</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q3_4" value="4" id="q3_4_4">
-                                <label for="q3_4_4" class="likert-label">
-                                    <span class="likert-number">4</span>
-                                    <span class="likert-text">그렇다</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q3_4" value="3" id="q3_4_3">
-                                <label for="q3_4_3" class="likert-label">
-                                    <span class="likert-number">3</span>
-                                    <span class="likert-text">보통</span>
+                                <input type="radio" name="q3_4" value="1" id="q3_4_1">
+                                <label for="q3_4_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">전혀 그렇지 않다</span>
                                 </label>
                             </div>
                             <div class="likert-option">
@@ -1088,10 +1121,24 @@
                                 </label>
                             </div>
                             <div class="likert-option">
-                                <input type="radio" name="q3_4" value="1" id="q3_4_1">
-                                <label for="q3_4_1" class="likert-label">
-                                    <span class="likert-number">1</span>
-                                    <span class="likert-text">전혀 그렇지 않다</span>
+                                <input type="radio" name="q3_4" value="3" id="q3_4_3">
+                                <label for="q3_4_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_4" value="4" id="q3_4_4">
+                                <label for="q3_4_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">그렇다</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_4" value="5" id="q3_4_5">
+                                <label for="q3_4_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 그렇다</span>
                                 </label>
                             </div>
                         </div>
@@ -1105,24 +1152,10 @@
                         </div>
                         <div class="likert-scale">
                             <div class="likert-option">
-                                <input type="radio" name="q3_5" value="5" id="q3_5_5">
-                                <label for="q3_5_5" class="likert-label">
-                                    <span class="likert-number">5</span>
-                                    <span class="likert-text">매우 만족</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q3_5" value="4" id="q3_5_4">
-                                <label for="q3_5_4" class="likert-label">
-                                    <span class="likert-number">4</span>
-                                    <span class="likert-text">만족</span>
-                                </label>
-                            </div>
-                            <div class="likert-option">
-                                <input type="radio" name="q3_5" value="3" id="q3_5_3">
-                                <label for="q3_5_3" class="likert-label">
-                                    <span class="likert-number">3</span>
-                                    <span class="likert-text">보통</span>
+                                <input type="radio" name="q3_5" value="1" id="q3_5_1">
+                                <label for="q3_5_1" class="likert-label">
+                                    <span class="likert-number">1</span>
+                                    <span class="likert-text">매우 부족</span>
                                 </label>
                             </div>
                             <div class="likert-option">
@@ -1133,10 +1166,24 @@
                                 </label>
                             </div>
                             <div class="likert-option">
-                                <input type="radio" name="q3_5" value="1" id="q3_5_1">
-                                <label for="q3_5_1" class="likert-label">
-                                    <span class="likert-number">1</span>
-                                    <span class="likert-text">매우 부족</span>
+                                <input type="radio" name="q3_5" value="3" id="q3_5_3">
+                                <label for="q3_5_3" class="likert-label">
+                                    <span class="likert-number">3</span>
+                                    <span class="likert-text">보통</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_5" value="4" id="q3_5_4">
+                                <label for="q3_5_4" class="likert-label">
+                                    <span class="likert-number">4</span>
+                                    <span class="likert-text">만족</span>
+                                </label>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_5" value="5" id="q3_5_5">
+                                <label for="q3_5_5" class="likert-label">
+                                    <span class="likert-number">5</span>
+                                    <span class="likert-text">매우 만족</span>
                                 </label>
                             </div>
                         </div>
@@ -1249,6 +1296,13 @@
         const textQuestions = ['q4_1', 'q4_2', 'q4_3'];
         const totalQuestions = likertQuestions.length + textQuestions.length;
 
+        // 서술형 질문 DB 키 매핑
+        const textQuestionMapping = {
+            'q4_1': 'q4_1_best_benefit',
+            'q4_2': 'q4_2_additional_training',
+            'q4_3': 'q4_3_suggestions'
+        };
+
         // 초기화
         async function init() {
             try {
@@ -1322,12 +1376,11 @@
             }
         }
 
-        // 폼에 데이터 채우기
+        // 폼에 데이터 채우기 (버그 수정됨)
         function fillFormWithData(data) {
             // 리커트 척도 질문
             likertQuestions.forEach(q => {
-                const dbKey = q.replace('q', 'q').replace('_', '_');
-                const value = data[dbKey];
+                const value = data[q];
                 if (value) {
                     const radio = document.querySelector(`input[name="${q}"][value="${value}"]`);
                     if (radio) {
@@ -1336,11 +1389,9 @@
                 }
             });
 
-            // 서술형 질문
+            // 서술형 질문 (수정된 매핑 로직)
             textQuestions.forEach(q => {
-                const dbKey = q.replace('q4_1', 'q4_1_best_benefit')
-                    .replace('q4_2', 'q4_2_additional_training')
-                    .replace('q4_3', 'q4_3_suggestions');
+                const dbKey = textQuestionMapping[q];
                 const textarea = document.getElementById(q);
                 const value = data[dbKey];
                 if (textarea && value) {
