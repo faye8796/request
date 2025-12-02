@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 사업 만족도 조사 관리 - 세종학당 문화인턴 관리 시스템</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📊%3C/text%3E%3C/svg%3E">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .back-button:hover {
+            background: #5855eb;
+            transform: translateY(-2px);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-success {
+            background: #059669;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #047857;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #4b5563;
+            transform: translateY(-2px);
+        }
+
+        /* Statistics */
+        .statistics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .stat-icon {
+            font-size: 32px;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        .stat-card.total .stat-icon { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        .stat-card.submitted .stat-icon { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .stat-card.draft .stat-icon { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .stat-card.none .stat-icon { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .stat-card.rate .stat-icon { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+        .stat-card.average .stat-icon { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); }
+
+        /* Filter Controls */
+        .filter-controls {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+
+        .filter-input, .filter-select {
+            padding: 10px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+            background: white;
+        }
+
+        .filter-input:focus, .filter-select:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        .clear-filters-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            height: 42px;
+        }
+
+        .clear-filters-btn:hover {
+            background: #dc2626;
+        }
+
+        /* Table Container */
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+            margin-bottom: 24px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .data-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #374151;
+            white-space: nowrap;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.submitted {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.draft {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-badge.none {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .score-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 50px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .score-badge.excellent { background: #d1fae5; color: #065f46; }
+        .score-badge.good { background: #dbeafe; color: #1e40af; }
+        .score-badge.average { background: #fef3c7; color: #92400e; }
+        .score-badge.low { background: #fee2e2; color: #991b1b; }
+
+        .btn-view {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-view:hover {
+            background: #5855eb;
+            transform: translateY(-1px);
+        }
+
+        /* Question Statistics Section */
+        .question-stats-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .question-category {
+            margin-bottom: 24px;
+        }
+
+        .category-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .question-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 12px;
+        }
+
+        .question-stat-item {
+            display: grid;
+            grid-template-columns: 1fr 100px 60px;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .question-stat-item:hover {
+            background: #f3f4f6;
+        }
+
+        .question-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .question-bar {
+            height: 10px;
+            background: #e5e7eb;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .question-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+            transition: width 0.6s ease;
+        }
+
+        .question-score {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1f2937;
+            text-align: center;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 2px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: sticky;
+            top: 0;
+            background: white;
+            border-radius: 20px 20px 0 0;
+            z-index: 10;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .modal-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .modal-close {
+            background: #f3f4f6;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .response-section {
+            margin-bottom: 28px;
+        }
+
+        .response-section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 16px;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .response-item {
+            margin-bottom: 16px;
+            padding: 14px;
+            background: #f9fafb;
+            border-radius: 10px;
+        }
+
+        .response-question {
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 10px;
+        }
+
+        .response-answer-likert {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .likert-score {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1f2937;
+            min-width: 50px;
+        }
+
+        .likert-bar-container {
+            flex: 1;
+            height: 12px;
+            background: #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .likert-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+            transition: width 0.6s ease;
+        }
+
+        .likert-label {
+            font-size: 13px;
+            color: #6b7280;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .response-answer-text {
+            font-size: 14px;
+            color: #374151;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .no-answer {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        /* Loading */
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #e5e7eb;
+            border-top: 5px solid #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            background: #1f2937;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 12px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-left {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-title h1 {
+                font-size: 20px;
+            }
+
+            .statistics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .filter-group {
+                min-width: 100%;
+            }
+
+            .question-stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .question-stat-item {
+                grid-template-columns: 1fr 80px 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <a href="../admin.html" class="back-button">
+                    <span>←</span>
+                    관리자 대시보드
+                </a>
+                <div class="header-title">
+                    <span>📊</span>
+                    <h1>사업 만족도 조사 관리</h1>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-success" id="exportExcelBtn">
+                    <span>📥</span>
+                    전체 엑셀 내보내기
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="statistics">
+            <div class="stat-card total">
+                <div class="stat-icon">👥</div>
+                <div class="stat-content">
+                    <div class="stat-number" id="statTotal">0</div>
+                    <div class="stat-label">전체 대상자</div>
+                </div>
+            </div>
+            <div class="stat-card submitted">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <div class="stat-number" id="statSubmitted">0</div>
+                    <div class="stat-label">제출 완료</div>
+                </div>
+            </div>
+            <div class="stat-card draft">
+                <div class="stat-icon">⏳</div>
+                <div class="stat-content">
+                    <div class="stat-number" id="statDraft">0</div>
+                    <div class="stat-label">임시 저장</div>
+                </div>
+            </div>
+            <div class="stat-card none">
+                <div class="stat-icon">❌</div>
+                <div class="stat-content">
+                    <div class="stat-number" id="statNone">0</div>
+                    <div class="stat-label">미응답</div>
+                </div>
+            </div>
+            <div class="stat-card rate">
+                <div class="stat-icon">📈</div>
+                <div class="stat-content">
+                    <div class="stat-number" id="statRate">0%</div>
+                    <div class="stat-label">제출률</div>
+                </div>
+            </div>
+            <div class="stat-card average">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-content">
+                    <div class="stat-number" id="statAverage">0.0</div>
+                    <div class="stat-label">평균 만족도</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="searchInput">이름 검색</label>
+                    <input type="text" id="searchInput" class="filter-input" placeholder="학생 이름 검색">
+                </div>
+                <div class="filter-group">
+                    <label for="instituteFilter">파견 학당</label>
+                    <select id="instituteFilter" class="filter-select">
+                        <option value="">전체 학당</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="statusFilter">상태</label>
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">전체</option>
+                        <option value="submitted">제출 완료</option>
+                        <option value="draft">임시 저장</option>
+                        <option value="none">미응답</option>
+                    </select>
+                </div>
+                <button class="clear-filters-btn" id="clearFiltersBtn">
+                    ✖ 초기화
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-container" id="loadingContainer">
+            <div class="loading-spinner"></div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="table-container" id="tableContainer" style="display: none;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>이름</th>
+                        <th>파견 학당</th>
+                        <th>상태</th>
+                        <th>제출일</th>
+                        <th>평균 점수</th>
+                        <th>액션</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Question Statistics Section -->
+        <div class="question-stats-section" id="questionStatsSection" style="display: none;">
+            <div class="section-title">
+                <span>📈</span>
+                문항별 통계 (제출 완료 응답 기준)
+            </div>
+            <div id="questionStatsContent"></div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-state-icon">📭</div>
+            <h3>표시할 데이터가 없습니다</h3>
+            <p>필터 조건에 맞는 데이터가 없습니다.</p>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="modalTitle">응답 상세</div>
+                    <div class="modal-subtitle" id="modalSubtitle"></div>
+                </div>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+            </div>
+        </div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Main Script -->
+    <script type="module">
+        // 🔐 관리자 인증 체크
+        function checkAdminAuth() {
+            const adminSession = localStorage.getItem('adminSession');
+            if (!adminSession || adminSession !== 'true') {
+                alert('관리자 로그인이 필요합니다.');
+                window.location.href = '../admin.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Supabase 설정
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+        
+        const supabaseUrl = 'https://aazvopacnbbkvusihqva.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTQyMjQsImV4cCI6MjA2NTM3MDIyNH0.0NXI_tohwFCOl3xY4b1jIlxQR_zGTS9tWDM2OFxTq4s';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        // 질문 정의
+        const QUESTIONS = {
+            section1: {
+                title: '1. 전반적인 만족도',
+                questions: [
+                    { key: 'q1_1_overall_satisfaction', label: '사업 참여 만족도' },
+                    { key: 'q1_2_foundation_support', label: '재단/운영사무국 활동 지원 만족도' },
+                    { key: 'q1_3_institute_support', label: '파견학당 활동 지원 만족도' },
+                    { key: 'q1_4_recommendation', label: '주변 추천 의향' }
+                ]
+            },
+            section2: {
+                title: '2. 수업 지원 관련',
+                questions: [
+                    { key: 'q2_1_domestic_education', label: '국내 교육 프로그램 도움 정도' },
+                    { key: 'q2_2_equipment_support', label: '문화 교구 지원 도움 정도' },
+                    { key: 'q2_3_local_coordinator', label: '담당자 소통 및 지원 충분성' },
+                    { key: 'q2_4_workspace_support', label: '사무/수업 공간, 기자재 지원 충분성' }
+                ]
+            },
+            section3: {
+                title: '3. 현지 정착 지원 관련',
+                questions: [
+                    { key: 'q3_1_visa_support', label: '비자 발급 안내/지원' },
+                    { key: 'q3_2_accommodation_support', label: '숙소 안내/지원' },
+                    { key: 'q3_3_coordinator_help', label: '현지 적응 전담 인력 지원 도움 정도' },
+                    { key: 'q3_4_safety_support', label: '안전 관련 서비스 도움 정도' },
+                    { key: 'q3_5_expense_support', label: '활동비 및 체재비 지원 도움 정도' }
+                ]
+            },
+            section4: {
+                title: '4. 사업 관련',
+                questions: [
+                    { key: 'q4_1_competency_improvement', label: '역량 향상에 도움 정도' }
+                ],
+                textQuestions: [
+                    { key: 'q4_2_best_benefit', label: '가장 도움이 되었던 점 (필수)', required: true },
+                    { key: 'q4_3_difficulties', label: '활동 중 어려웠던 점 (선택)' },
+                    { key: 'q4_4_additional_training', label: '추가 안내/교육 필요 사항 (선택)' },
+                    { key: 'q4_5_suggestions', label: '건의 사항 (선택)' }
+                ]
+            }
+        };
+
+        // 리커트 척도 라벨
+        const LIKERT_LABELS = {
+            1: '매우 불만족',
+            2: '불만족',
+            3: '보통',
+            4: '만족',
+            5: '매우 만족'
+        };
+
+        // 전역 변수
+        let allData = [];
+        let filteredData = [];
+        let isLoading = false;
+
+        // DOM 요소
+        const loadingContainer = document.getElementById('loadingContainer');
+        const tableContainer = document.getElementById('tableContainer');
+        const tableBody = document.getElementById('tableBody');
+        const emptyState = document.getElementById('emptyState');
+        const questionStatsSection = document.getElementById('questionStatsSection');
+        const searchInput = document.getElementById('searchInput');
+        const instituteFilter = document.getElementById('instituteFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+        const exportExcelBtn = document.getElementById('exportExcelBtn');
+        const detailModal = document.getElementById('detailModal');
+
+        // Toast 알림
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // 데이터 로딩
+        async function loadData() {
+            if (isLoading) return;
+            
+            isLoading = true;
+            showLoading();
+            
+            try {
+                // 1. 모든 학생 조회
+                const { data: students, error: studentsError } = await supabase
+                    .from('user_profiles')
+                    .select('id, name, sejong_institute')
+                    .eq('user_type', 'student')
+                    .order('name');
+                
+                if (studentsError) throw studentsError;
+                
+                // 2. 모든 만족도 설문 응답 조회
+                const { data: surveys, error: surveysError } = await supabase
+                    .from('satisfaction_surveys')
+                    .select('*');
+                
+                if (surveysError) throw surveysError;
+                
+                // 3. 데이터 병합
+                allData = students.map(student => {
+                    const survey = surveys.find(s => s.user_id === student.id);
+                    return {
+                        student,
+                        survey,
+                        status: survey ? survey.status : 'none',
+                        averageScore: survey && survey.status === 'submitted' ? calculateAverageScore(survey) : null
+                    };
+                });
+                
+                filteredData = [...allData];
+                
+                populateFilters();
+                updateStatistics();
+                renderTable();
+                renderQuestionStats();
+                
+            } catch (error) {
+                console.error('데이터 로딩 실패:', error);
+                showToast('데이터 로딩에 실패했습니다.', 'error');
+                showEmptyState();
+            } finally {
+                isLoading = false;
+                hideLoading();
+            }
+        }
+
+        // 평균 점수 계산
+        function calculateAverageScore(survey) {
+            const likertKeys = [
+                'q1_1_overall_satisfaction', 'q1_2_foundation_support', 'q1_3_institute_support', 'q1_4_recommendation',
+                'q2_1_domestic_education', 'q2_2_equipment_support', 'q2_3_local_coordinator', 'q2_4_workspace_support',
+                'q3_1_visa_support', 'q3_2_accommodation_support', 'q3_3_coordinator_help', 'q3_4_safety_support', 'q3_5_expense_support',
+                'q4_1_competency_improvement'
+            ];
+            
+            let sum = 0;
+            let count = 0;
+            
+            likertKeys.forEach(key => {
+                if (survey[key] !== null && survey[key] !== undefined) {
+                    sum += survey[key];
+                    count++;
+                }
+            });
+            
+            return count > 0 ? (sum / count).toFixed(2) : 0;
+        }
+
+        // 로딩 상태
+        function showLoading() {
+            loadingContainer.style.display = 'flex';
+            tableContainer.style.display = 'none';
+            emptyState.style.display = 'none';
+            questionStatsSection.style.display = 'none';
+        }
+
+        function hideLoading() {
+            loadingContainer.style.display = 'none';
+        }
+
+        function showEmptyState() {
+            emptyState.style.display = 'block';
+            tableContainer.style.display = 'none';
+            questionStatsSection.style.display = 'none';
+        }
+
+        // 필터 채우기
+        function populateFilters() {
+            const institutes = [...new Set(allData.map(d => d.student.sejong_institute).filter(Boolean))].sort();
+            
+            instituteFilter.innerHTML = '<option value="">전체 학당</option>';
+            institutes.forEach(inst => {
+                const option = document.createElement('option');
+                option.value = inst;
+                option.textContent = inst;
+                instituteFilter.appendChild(option);
+            });
+        }
+
+        // 통계 업데이트
+        function updateStatistics() {
+            const total = filteredData.length;
+            const submitted = filteredData.filter(d => d.status === 'submitted').length;
+            const draft = filteredData.filter(d => d.status === 'draft').length;
+            const none = filteredData.filter(d => d.status === 'none').length;
+            const rate = total > 0 ? Math.round((submitted / total) * 100) : 0;
+            
+            // 제출 완료된 응답의 평균 점수
+            const submittedData = filteredData.filter(d => d.status === 'submitted' && d.averageScore);
+            const avgScore = submittedData.length > 0 
+                ? (submittedData.reduce((sum, d) => sum + parseFloat(d.averageScore), 0) / submittedData.length).toFixed(2)
+                : '0.0';
+            
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statSubmitted').textContent = submitted;
+            document.getElementById('statDraft').textContent = draft;
+            document.getElementById('statNone').textContent = none;
+            document.getElementById('statRate').textContent = `${rate}%`;
+            document.getElementById('statAverage').textContent = avgScore;
+        }
+
+        // 테이블 렌더링
+        function renderTable() {
+            if (filteredData.length === 0) {
+                showEmptyState();
+                return;
+            }
+            
+            tableContainer.style.display = 'block';
+            emptyState.style.display = 'none';
+            
+            tableBody.innerHTML = filteredData.map(data => {
+                const statusBadge = getStatusBadge(data.status);
+                const scoreBadge = data.averageScore ? getScoreBadge(parseFloat(data.averageScore)) : '-';
+                const submittedDate = data.survey?.submitted_at 
+                    ? new Date(data.survey.submitted_at).toLocaleDateString('ko-KR')
+                    : '-';
+                
+                return `
+                    <tr>
+                        <td><strong>${data.student.name}</strong></td>
+                        <td>${data.student.sejong_institute || '-'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${submittedDate}</td>
+                        <td>${scoreBadge}</td>
+                        <td>
+                            ${data.survey ? `<button class="btn-view" onclick="openDetailModal('${data.student.id}')">상세보기</button>` : '-'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 상태 배지
+        function getStatusBadge(status) {
+            const badges = {
+                submitted: '<span class="status-badge submitted">✅ 제출 완료</span>',
+                draft: '<span class="status-badge draft">⏳ 임시 저장</span>',
+                none: '<span class="status-badge none">❌ 미응답</span>'
+            };
+            return badges[status] || badges.none;
+        }
+
+        // 점수 배지
+        function getScoreBadge(score) {
+            let className = 'average';
+            if (score >= 4.5) className = 'excellent';
+            else if (score >= 4.0) className = 'good';
+            else if (score < 3.0) className = 'low';
+            
+            return `<span class="score-badge ${className}">${score}</span>`;
+        }
+
+        // 문항별 통계 렌더링
+        function renderQuestionStats() {
+            const submittedSurveys = allData.filter(d => d.status === 'submitted' && d.survey).map(d => d.survey);
+            
+            if (submittedSurveys.length === 0) {
+                questionStatsSection.style.display = 'none';
+                return;
+            }
+            
+            questionStatsSection.style.display = 'block';
+            
+            let html = '';
+            
+            Object.entries(QUESTIONS).forEach(([sectionKey, section]) => {
+                if (!section.questions || section.questions.length === 0) return;
+                
+                html += `
+                    <div class="question-category">
+                        <div class="category-title">${section.title}</div>
+                        <div class="question-stats-grid">
+                `;
+                
+                section.questions.forEach(q => {
+                    const avg = calculateQuestionAverage(submittedSurveys, q.key);
+                    const percentage = (avg / 5 * 100).toFixed(0);
+                    
+                    html += `
+                        <div class="question-stat-item">
+                            <div class="question-label">${q.label}</div>
+                            <div class="question-bar">
+                                <div class="question-bar-fill" style="width: ${percentage}%"></div>
+                            </div>
+                            <div class="question-score">${avg}</div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('questionStatsContent').innerHTML = html;
+        }
+
+        // 질문별 평균 계산
+        function calculateQuestionAverage(surveys, key) {
+            let sum = 0;
+            let count = 0;
+            
+            surveys.forEach(survey => {
+                if (survey[key] !== null && survey[key] !== undefined) {
+                    sum += survey[key];
+                    count++;
+                }
+            });
+            
+            return count > 0 ? (sum / count).toFixed(2) : '0.00';
+        }
+
+        // 필터링
+        function applyFilters() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedInstitute = instituteFilter.value;
+            const selectedStatus = statusFilter.value;
+            
+            filteredData = allData.filter(data => {
+                const matchesSearch = !searchTerm || data.student.name.toLowerCase().includes(searchTerm);
+                const matchesInstitute = !selectedInstitute || data.student.sejong_institute === selectedInstitute;
+                const matchesStatus = !selectedStatus || data.status === selectedStatus;
+                
+                return matchesSearch && matchesInstitute && matchesStatus;
+            });
+            
+            updateStatistics();
+            renderTable();
+        }
+
+        // 상세 모달 열기
+        window.openDetailModal = function(studentId) {
+            const data = allData.find(d => d.student.id === studentId);
+            if (!data || !data.survey) return;
+            
+            document.getElementById('modalTitle').textContent = `${data.student.name}님의 응답`;
+            document.getElementById('modalSubtitle').textContent = `${data.student.sejong_institute || '학당 정보 없음'} | ${data.status === 'submitted' ? '제출 완료' : '임시 저장'}`;
+            
+            let bodyHtml = '';
+            
+            Object.entries(QUESTIONS).forEach(([sectionKey, section]) => {
+                bodyHtml += `
+                    <div class="response-section">
+                        <div class="response-section-title">
+                            <span>📝</span>
+                            ${section.title}
+                        </div>
+                `;
+                
+                // 리커트 척도 질문
+                if (section.questions) {
+                    section.questions.forEach(q => {
+                        const value = data.survey[q.key];
+                        const percentage = value ? (value / 5 * 100) : 0;
+                        const label = value ? LIKERT_LABELS[value] : '응답 없음';
+                        
+                        bodyHtml += `
+                            <div class="response-item">
+                                <div class="response-question">${q.label}</div>
+                                <div class="response-answer-likert">
+                                    <div class="likert-score">${value || '-'}</div>
+                                    <div class="likert-bar-container">
+                                        <div class="likert-bar-fill" style="width: ${percentage}%"></div>
+                                    </div>
+                                    <div class="likert-label">${label}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                // 서술형 질문
+                if (section.textQuestions) {
+                    section.textQuestions.forEach(q => {
+                        const value = data.survey[q.key];
+                        
+                        bodyHtml += `
+                            <div class="response-item">
+                                <div class="response-question">${q.label}</div>
+                                <div class="response-answer-text ${!value ? 'no-answer' : ''}">
+                                    ${value || '응답 없음'}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                bodyHtml += '</div>';
+            });
+            
+            document.getElementById('modalBody').innerHTML = bodyHtml;
+            detailModal.classList.add('active');
+        };
+
+        // 모달 닫기
+        window.closeModal = function() {
+            detailModal.classList.remove('active');
+        };
+
+        // 모달 외부 클릭 시 닫기
+        detailModal.addEventListener('click', (e) => {
+            if (e.target === detailModal) {
+                closeModal();
+            }
+        });
+
+        // 엑셀 내보내기
+        async function exportToExcel() {
+            try {
+                exportExcelBtn.disabled = true;
+                exportExcelBtn.innerHTML = '⏳ 내보내는 중...';
+                
+                const submittedData = allData.filter(d => d.status === 'submitted' && d.survey);
+                
+                if (submittedData.length === 0) {
+                    showToast('내보낼 데이터가 없습니다.', 'error');
+                    return;
+                }
+                
+                const exportData = submittedData.map(d => {
+                    const row = {
+                        '이름': d.student.name,
+                        '파견 학당': d.student.sejong_institute || '',
+                        '상태': '제출 완료',
+                        '제출일': d.survey.submitted_at ? new Date(d.survey.submitted_at).toLocaleDateString('ko-KR') : '',
+                        '평균 점수': d.averageScore
+                    };
+                    
+                    // 리커트 척도 질문 추가
+                    Object.values(QUESTIONS).forEach(section => {
+                        if (section.questions) {
+                            section.questions.forEach(q => {
+                                row[q.label] = d.survey[q.key] || '';
+                            });
+                        }
+                        if (section.textQuestions) {
+                            section.textQuestions.forEach(q => {
+                                row[q.label] = d.survey[q.key] || '';
+                            });
+                        }
+                    });
+                    
+                    return row;
+                });
+                
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, '만족도조사결과');
+                
+                const today = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(workbook, `사업만족도조사_${today}.xlsx`);
+                
+                showToast('엑셀 파일이 다운로드되었습니다.');
+                
+            } catch (error) {
+                console.error('엑셀 내보내기 실패:', error);
+                showToast('엑셀 내보내기에 실패했습니다.', 'error');
+            } finally {
+                exportExcelBtn.disabled = false;
+                exportExcelBtn.innerHTML = '<span>📥</span> 전체 엑셀 내보내기';
+            }
+        }
+
+        // 이벤트 리스너
+        searchInput.addEventListener('input', applyFilters);
+        instituteFilter.addEventListener('change', applyFilters);
+        statusFilter.addEventListener('change', applyFilters);
+        
+        clearFiltersBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            instituteFilter.value = '';
+            statusFilter.value = '';
+            applyFilters();
+        });
+        
+        exportExcelBtn.addEventListener('click', exportToExcel);
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && detailModal.classList.contains('active')) {
+                closeModal();
+            }
+        });
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!checkAdminAuth()) return;
+            loadData();
+        });
+    </script>
+</body>
+</html>
