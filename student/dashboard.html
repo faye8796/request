@@ -333,6 +333,21 @@
             <div class="student-info" id="studentInfo">
                 <h3 id="studentName" class="loading">학생 정보를 불러오는 중...</h3>
                 <p id="studentDetails" class="loading">정보를 불러오는 중...</p>
+
+                <!-- 🆕 설문조사 제출 현황 -->
+                <div id="surveyStatusArea" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #cbd5e0; display: none;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                        <span style="font-size: 1.5rem;">📊</span>
+                        <div>
+                            <span style="font-weight: 600; color: #2d3748;">내 수업 설문조사 제출 현황</span>
+                            <span id="surveyCount" style="display: inline-block; margin-left: 0.5rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 0.25rem 0.75rem; border-radius: 1rem; font-weight: 700; font-size: 0.9rem;">0명</span>
+                        </div>
+                        <a href="https://culturing.org/intern-system/survey.html" target="_blank" style="margin-left: auto; font-size: 0.85rem; color: #667eea; text-decoration: none; display: flex; align-items: center; gap: 0.25rem;">
+                            설문 링크 복사하기 📋
+                        </a>
+                    </div>
+                    <p id="surveyMessage" style="margin-top: 0.5rem; font-size: 0.85rem; color: #718096;"></p>
+                </div>
             </div>
         </div>
 
@@ -519,6 +534,10 @@
                     // 다음 단계로 진행 - 기능 설정 로드
                     console.log('✅ 학생 정보 로딩 완료 - 기능 설정 로딩 시작');
                     this.initializationStep = 'features';
+                    
+                    // 🆕 설문조사 제출 현황 조회
+                    this.loadSurveyStatus(studentData.id);
+
                     this.loadFeatureSettings();
                     
                 } catch (error) {
@@ -568,6 +587,55 @@
                 }
             },
 
+            // 🆕 설문조사 제출 현황 조회
+            async loadSurveyStatus(userId) {
+                console.log('📊 설문조사 현황 조회 시작...');
+
+                try {
+                    const surveyStatusArea = document.getElementById('surveyStatusArea');
+                    const surveyCount = document.getElementById('surveyCount');
+                    const surveyMessage = document.getElementById('surveyMessage');
+
+                    if (!surveyStatusArea) return;
+
+                    // Supabase에서 해당 학생(intern_id)의 설문 개수 조회
+                    if (window.SupabaseCore?.client) {
+                        const { data, error, count } = await window.SupabaseCore.client
+                            .from('class_surveys')
+                            .select('id', { count: 'exact', head: true })
+                            .eq('intern_id', userId);
+
+                        if (error) {
+                            console.error('❌ 설문 현황 조회 실패:', error);
+                            return;
+                        }
+
+                        const surveyTotal = count || 0;
+
+                        // UI 업데이트
+                        surveyStatusArea.style.display = 'block';
+                        surveyCount.textContent = `${surveyTotal}명`;
+
+                        // 메시지 설정
+                        if (surveyTotal === 0) {
+                            surveyMessage.textContent = '아직 제출된 설문이 없습니다. 수강생들에게 설문 링크를 공유해 주세요!';
+                            surveyMessage.style.color = '#e53e3e';
+                        } else if (surveyTotal < 10) {
+                            surveyMessage.textContent = `${surveyTotal}명이 설문에 참여했습니다. 더 많은 수강생에게 설문을 안내해 주세요!`;
+                            surveyMessage.style.color = '#dd6b20';
+                        } else {
+                            surveyMessage.textContent = `${surveyTotal}명이 설문에 참여했습니다. 감사합니다! 🎉`;
+                            surveyMessage.style.color = '#38a169';
+                        }
+
+                        console.log(`✅ 설문 현황 조회 완료: ${surveyTotal}명 제출`);
+                    }
+                } catch (error) {
+                    console.error('❌ 설문 현황 조회 오류:', error);
+                }
+            },
+            
+            
             // 기본 기능 설정
             getDefaultFeatureSettings() {
                 return [
