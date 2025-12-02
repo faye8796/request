@@ -2432,6 +2432,14 @@
             }
 
             openModal(content = null) {
+                
+                // ✅ 신규 등록 마감 처리
+                if (!content) {
+                    this.showToast('제출기한이 마감되었습니다.', 'error');
+                    return;
+                }
+
+
                 const modal = document.getElementById('viewTrackingModal');
                 const modalTitle = document.getElementById('modalTitle');
 

@@ -261,6 +261,15 @@ if (window.reimbursementManagementSystem) {
             const round10Scheduled = amountStats
                 ?.filter(item => item.payment_round === 10)
                 ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
+            
+            const round11Scheduled = amountStats
+                ?.filter(item => item.payment_round === 11)
+                ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
+
+            const round12Scheduled = amountStats
+                ?.filter(item => item.payment_round === 12)
+                ?.reduce((sum, item) => sum + (parseFloat(item.scheduled_amount) || 0), 0) || 0;
+            
 
             // 🆕 실제 지급된 총 금액
             const totalActualPaid = amountStats
@@ -300,6 +309,8 @@ if (window.reimbursementManagementSystem) {
                 round8Scheduled: document.getElementById('round8-scheduled'),
                 round9Scheduled: document.getElementById('round9-scheduled'),
                 round10Scheduled: document.getElementById('round10-scheduled'),
+                round11Scheduled: document.getElementById('round11-scheduled'),
+                round12Scheduled: document.getElementById('round12-scheduled'),
                 totalActualPaid: document.getElementById('total-actual-paid')
             };
 
@@ -333,6 +344,15 @@ if (window.reimbursementManagementSystem) {
             if (newElements.round10Scheduled) {
                 newElements.round10Scheduled.textContent = `${round10Scheduled.toLocaleString()}원`;
             }
+            if (newElements.round11Scheduled) {
+                newElements.round11Scheduled.textContent = `${round11Scheduled.toLocaleString()}원`;
+            }
+            if (newElements.round12Scheduled) {
+                newElements.round12Scheduled.textContent = `${round12Scheduled.toLocaleString()}원`;
+            }
+
+            
+            
             if (newElements.totalActualPaid) {
                 newElements.totalActualPaid.textContent = `${totalActualPaid.toLocaleString()}원`;
             }

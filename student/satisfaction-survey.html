@@ -581,7 +581,7 @@
         <div class="header-content">
             <div class="user-info">
                 <h1 id="userWelcome">📊 2025 문화인턴 사업 만족도 조사</h1>
-                <p id="userDetails">소중한 의견을 들려주세요</p>
+                <p id="userDetails">여러분의 소중한 의견은 향후 보다 나은 문화인턴 파견 사업을 위해 사용됩니다.</p>
             </div>
             <div class="header-actions">
                 <button id="backToDashboard" class="btn btn-secondary">
@@ -1528,7 +1528,7 @@
                 const checked = document.querySelector(`input[name="${q}"]:checked`);
                 formData[dbKey] = checked ? parseInt(checked.value) : null;
             });
-            // 서술형 질문
+            // 서술형 질문   
             formData.q4_1_best_benefit = document.getElementById('q4_1').value.trim() || null;
             formData.q4_2_additional_training = document.getElementById('q4_2').value.trim() || null;
             formData.q4_3_suggestions = document.getElementById('q4_3').value.trim() || null;
