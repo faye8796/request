@@ -801,6 +801,23 @@
                             관리하기
                         </button>
                     </div>
+                    
+                    <!-- 📊 사업 만족도 조사 관리 -->
+                    <div class="menu-card" onclick="navigateToSatisfactionSurveyManagement()">
+                        <div class="menu-icon">
+                            <i data-lucide="clipboard-check"></i>
+                        </div>
+                        <h2 class="menu-title">사업 만족도 조사 관리</h2>
+                        <p class="menu-description">
+                            문화인턴 사업 만족도 조사 응답 현황<br>
+                            통계 분석 및 엑셀 내보내기
+                        </p>
+                        <button class="menu-button">
+                            <i data-lucide="arrow-right"></i>
+                            관리하기
+                        </button>
+                    </div>
+
 
                     <!-- 📝 활동수기 관리 -->
                     <div class="menu-card" onclick="navigateToActivityReportManagement()">
@@ -1498,7 +1515,9 @@
             function navigateToEvaluationManagement() {
                 window.location.href = 'admin/evaluation-management.html';
             }
-
+            function navigateToSatisfactionSurveyManagement() {
+                window.location.href = 'admin/satisfaction-survey-management.html';
+            }
             
             
             
@@ -1519,7 +1538,7 @@
             window.navigateToSurvey = navigateToSurvey;
             window.navigateToActivityReportManagement = navigateToActivityReportManagement;
             window.navigateToEvaluationManagement = navigateToEvaluationManagement;
-
+            window.navigateToSatisfactionSurveyManagement = navigateToSatisfactionSurveyManagement;
 
             // DOMContentLoaded 이벤트 리스너
             document.addEventListener('DOMContentLoaded', safeInitialize);
