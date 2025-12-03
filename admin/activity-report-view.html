@@ -25,15 +25,15 @@
             margin: 0 auto;
         }
 
-        /* 인쇄 버튼 */
-        .print-button-container {
+        /* 내보내기 버튼 */
+        .export-button-container {
             position: fixed;
             top: 20px;
             right: 20px;
             z-index: 1000;
         }
 
-        .print-button {
+        .export-button {
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -49,9 +49,14 @@
             transition: all 0.3s ease;
         }
 
-        .print-button:hover {
+        .export-button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .export-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
 
         /* 헤더 */
@@ -117,7 +122,6 @@
         /* 섹션 스타일 */
         .report-section {
             margin-bottom: 3rem;
-            page-break-inside: avoid;
         }
 
         .section-header {
@@ -166,6 +170,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
+            cursor: pointer;
         }
 
         .photo-item:hover {
@@ -185,6 +190,68 @@
             padding: 2rem;
             color: #9ca3af;
             font-style: italic;
+        }
+
+        /* 이미지 확대 모달 */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .image-modal.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .image-modal.fade-out {
+            opacity: 0;
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            font-size: 2rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
         }
 
         /* 로딩 상태 */
@@ -219,76 +286,6 @@
             margin-bottom: 1rem;
         }
 
-        /* 인쇄 스타일 */
-        @media print {
-            @page {
-                margin: 2cm; /* 페이지 전체 여백 */
-            }
-
-            body {
-                padding: 0;
-                background: white;
-            }
-
-            .print-button-container {
-                display: none !important;
-            }
-
-            .container {
-                max-width: 100%;
-                padding: 0 1cm; /* 컨테이너 좌우 여백 추가 */
-            }
-
-            .report-header {
-                page-break-after: avoid;
-                margin-bottom: 2rem; /* 헤더 아래 여백 */
-            }
-
-            .basic-info {
-                margin-bottom: 2rem; /* 기본 정보 아래 여백 */
-                padding: 1.5rem; /* 내부 여백 유지 */
-            }
-
-            .report-section {
-                page-break-inside: avoid;
-                margin-bottom: 2.5rem; /* 섹션 간 간격 증가 */
-            }
-
-            .section-header {
-                margin-bottom: 1.5rem; /* 섹션 헤더 아래 여백 */
-            }
-
-            .section-content {
-                background: white;
-                border: 1px solid #e5e7eb;
-                padding: 2rem; /* 본문 여백 증가 (기존 1.5rem → 2rem) */
-                margin-bottom: 1.5rem; /* 본문 아래 여백 추가 */
-                line-height: 2.2; /* 줄 간격 증가 */
-            }
-
-            .section-content p {
-                margin-bottom: 1rem; /* 문단 간 간격 */
-            }
-
-            h3 {
-                margin-top: 2rem !important; /* 소제목 위 여백 */
-                margin-bottom: 1rem !important; /* 소제목 아래 여백 */
-            }
-
-            .photo-gallery {
-                page-break-inside: avoid;
-                margin-top: 1.5rem; /* 사진 갤러리 위 여백 */
-            }
-
-            .photo-item {
-                page-break-inside: avoid;
-            }
-
-            .no-photos {
-                padding: 1.5rem; /* 사진 없음 메시지 여백 */
-            }
-        }
-
         /* 반응형 */
         @media (max-width: 768px) {
             body {
@@ -307,12 +304,12 @@
                 grid-template-columns: 1fr;
             }
 
-            .print-button-container {
+            .export-button-container {
                 position: static;
                 margin-bottom: 1rem;
             }
 
-            .print-button {
+            .export-button {
                 width: 100%;
                 justify-content: center;
             }
@@ -320,11 +317,19 @@
     </style>
 </head>
 <body>
-    <!-- 인쇄 버튼 -->
-    <div class="print-button-container">
-        <button class="print-button" onclick="window.print()">
-            🖨️ PDF로 저장하기
+    <!-- 내보내기 버튼 -->
+    <div class="export-button-container">
+        <button class="export-button" id="exportButton" onclick="exportToHtml()">
+            📥 HTML로 저장하기
         </button>
+    </div>
+
+    <!-- 이미지 확대 모달 -->
+    <div class="image-modal" id="imageModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeImageModal()">×</button>
+            <img src="" alt="확대 이미지" id="modalImage">
+        </div>
     </div>
 
     <!-- 메인 콘텐츠 -->
@@ -355,6 +360,15 @@
         const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTQyMjQsImV4cCI6MjA2NTM3MDIyNH0.0NXI_tohwFCOl3xY4b1jIlxQR_zGTS9tWDM2OFxTq4s';
 
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        // 전역 변수
+        let currentUserData = null;
+        let currentReportData = null;
+
+        // 전역 함수 등록
+        window.exportToHtml = exportToHtml;
+        window.openImageModal = openImageModal;
+        window.closeImageModal = closeImageModal;
 
         // URL에서 userId 파라미터 가져오기
         const urlParams = new URLSearchParams(window.location.search);
@@ -399,6 +413,10 @@
                     }
                     throw reportError;
                 }
+
+                // 전역 변수에 저장
+                currentUserData = userData;
+                currentReportData = reportData;
 
                 console.log('✅ 데이터 로딩 완료');
                 renderReport(userData, reportData);
@@ -545,7 +563,7 @@
             }
 
             const photoItems = photos.map(photo => `
-                <div class="photo-item">
+                <div class="photo-item" onclick="openImageModal('${photo}')">
                     <img src="${photo}" alt="${title}" loading="lazy">
                 </div>
             `).join('');
@@ -556,6 +574,557 @@
                     ${photoItems}
                 </div>
             `;
+        }
+
+        // 이미지 모달 열기
+        function openImageModal(imageSrc) {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            modalImage.src = imageSrc;
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 이미지 모달 닫기
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.add('fade-out');
+            setTimeout(() => {
+                modal.classList.remove('show', 'fade-out');
+                document.body.style.overflow = '';
+            }, 300);
+        }
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+
+        // 모달 배경 클릭으로 닫기
+        document.getElementById('imageModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                closeImageModal();
+            }
+        });
+
+        // HTML 내보내기 함수
+        async function exportToHtml() {
+            if (!currentUserData || !currentReportData) {
+                alert('데이터를 먼저 불러와주세요.');
+                return;
+            }
+
+            const button = document.getElementById('exportButton');
+            const originalText = button.innerHTML;
+            button.innerHTML = '⏳ 내보내기 중...';
+            button.disabled = true;
+
+            try {
+                // 모든 이미지 URL 수집
+                const imageUrls = [];
+                const photos = [
+                    ...(currentReportData.settlement_photos || []),
+                    ...(currentReportData.class_photos || []),
+                    ...(currentReportData.reflection_photos || [])
+                ];
+                imageUrls.push(...photos);
+
+                // 이미지를 Base64로 변환
+                const imageMap = new Map();
+                
+                for (const url of imageUrls) {
+                    try {
+                        const response = await fetch(url);
+                        const blob = await response.blob();
+                        const base64 = await blobToBase64(blob);
+                        imageMap.set(url, base64);
+                    } catch (err) {
+                        console.warn('이미지 로드 실패:', url, err);
+                        imageMap.set(url, url); // 실패 시 원본 URL 사용
+                    }
+                }
+
+                // HTML 생성
+                const htmlContent = generateExportHtml(currentUserData, currentReportData, imageMap);
+
+                // 파일 다운로드
+                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+                const downloadUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                
+                // 파일명 생성: 활동수기_학생이름_파견학당명.html
+                const studentName = currentUserData.name || '학생';
+                const instituteName = currentUserData.sejong_institute || '학당';
+                const fileName = `활동수기_${studentName}_${instituteName}.html`;
+                
+                link.href = downloadUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(downloadUrl);
+
+                console.log('✅ HTML 내보내기 완료:', fileName);
+
+            } catch (error) {
+                console.error('HTML 내보내기 실패:', error);
+                alert('HTML 내보내기에 실패했습니다.');
+            } finally {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+        // Blob을 Base64로 변환
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        // 내보내기용 HTML 생성
+        function generateExportHtml(user, report, imageMap) {
+            const dispatchPeriod = formatDispatchPeriod(user.dispatch_start_date, user.dispatch_end_date);
+            const submittedDate = formatDate(report.submitted_at);
+            const exportDate = new Date().toLocaleString('ko-KR');
+
+            // 이미지 갤러리 HTML 생성 (Base64 사용)
+            function generatePhotoGalleryHtml(title, photos) {
+                if (!photos || photos.length === 0) {
+                    return `
+                        <h3 style="color: #374151; margin: 2rem 0 1rem;">${title}</h3>
+                        <div class="no-photos">등록된 사진이 없습니다</div>
+                    `;
+                }
+
+                const photoItems = photos.map((photo, index) => {
+                    const base64 = imageMap.get(photo) || photo;
+                    return `
+                        <div class="photo-item" onclick="openImageModal(this.querySelector('img').src)">
+                            <img src="${base64}" alt="${title} ${index + 1}">
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <h3 style="color: #374151; margin: 2rem 0 1rem;">${title}</h3>
+                    <div class="photo-gallery">
+                        ${photoItems}
+                    </div>
+                `;
+            }
+
+            return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>활동수기 - ${escapeHtml(user.name)} (${escapeHtml(user.sejong_institute || '')})</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
+            background: white;
+            color: #333;
+            line-height: 1.8;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .export-info {
+            text-align: right;
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .report-header {
+            text-align: center;
+            padding: 2rem 0;
+            border-bottom: 3px solid #667eea;
+            margin-bottom: 3rem;
+        }
+
+        .report-header h1 {
+            font-size: 2.5rem;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+
+        .report-header .subtitle {
+            font-size: 1.2rem;
+            color: #6b7280;
+        }
+
+        .basic-info {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-left: 4px solid #3b82f6;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 3rem;
+        }
+
+        .basic-info h2 {
+            color: #1e40af;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.95rem;
+        }
+
+        .info-value {
+            color: #1f2937;
+            font-size: 1.05rem;
+        }
+
+        .report-section {
+            margin-bottom: 3rem;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .section-icon {
+            font-size: 2rem;
+        }
+
+        .section-header h2 {
+            color: #1f2937;
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        .section-content {
+            padding: 1.5rem;
+            background: #f9fafb;
+            border-radius: 8px;
+            line-height: 2;
+        }
+
+        .section-content p {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #374151;
+        }
+
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .photo-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .photo-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .no-photos {
+            text-align: center;
+            padding: 2rem;
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        /* 이미지 확대 모달 */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .image-modal.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .image-modal.fade-out {
+            opacity: 0;
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            font-size: 2rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .report-header h1 {
+                font-size: 2rem;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .photo-gallery {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 이미지 확대 모달 -->
+    <div class="image-modal" id="imageModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeImageModal()">×</button>
+            <img src="" alt="확대 이미지" id="modalImage">
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="export-info">내보내기 일시: ${exportDate}</div>
+
+        <!-- 헤더 -->
+        <div class="report-header">
+            <h1>📝 문화인턴 활동수기</h1>
+            <div class="subtitle">King Sejong Institute Cultural Intern Activity Report</div>
+        </div>
+
+        <!-- 기본 정보 -->
+        <div class="basic-info">
+            <h2>👤 기본 정보</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">이름</div>
+                    <div class="info-value">${escapeHtml(user.name)}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">파견학당</div>
+                    <div class="info-value">${escapeHtml(user.sejong_institute || '-')}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">파견 기간</div>
+                    <div class="info-value">${dispatchPeriod}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">제출일시</div>
+                    <div class="info-value">${submittedDate}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1. 학당 정착 및 생활 -->
+        <div class="report-section">
+            <div class="section-header">
+                <span class="section-icon">🏠</span>
+                <h2>학당 정착 및 생활</h2>
+            </div>
+            
+            <h3 style="color: #374151; margin-bottom: 1rem;">주요 활동</h3>
+            <div class="section-content">
+                <p>${escapeHtml(report.main_activities || '작성되지 않음')}</p>
+            </div>
+
+            <h3 style="color: #374151; margin: 2rem 0 1rem;">비자 발급</h3>
+            <div class="section-content">
+                <p>${escapeHtml(report.visa_info || '작성되지 않음')}</p>
+            </div>
+
+            <h3 style="color: #374151; margin: 2rem 0 1rem;">거주지 구하기</h3>
+            <div class="section-content">
+                <p>${escapeHtml(report.accommodation_info || '작성되지 않음')}</p>
+            </div>
+
+            <h3 style="color: #374151; margin: 2rem 0 1rem;">교통수단</h3>
+            <div class="section-content">
+                <p>${escapeHtml(report.transportation_info || '작성되지 않음')}</p>
+            </div>
+
+            <h3 style="color: #374151; margin: 2rem 0 1rem;">현지 생활 준비물</h3>
+            <div class="section-content">
+                <p>${escapeHtml(report.preparation_info || '작성되지 않음')}</p>
+            </div>
+
+            <h3 style="color: #374151; margin: 2rem 0 1rem;">생활 팁</h3>
+            <div class="section-content">
+                <p>${escapeHtml(report.living_tips || '작성되지 않음')}</p>
+            </div>
+
+            ${generatePhotoGalleryHtml('정착 사진', report.settlement_photos)}
+        </div>
+
+        <!-- 2. 수업 및 활동 -->
+        <div class="report-section">
+            <div class="section-header">
+                <span class="section-icon">📚</span>
+                <h2>수업 및 활동</h2>
+            </div>
+            
+            <h3 style="color: #374151; margin-bottom: 1rem;">수업 및 활동 소개</h3>
+            <div class="section-content">
+                <p>${escapeHtml(report.class_description || '작성되지 않음')}</p>
+            </div>
+
+            <h3 style="color: #374151; margin: 2rem 0 1rem;">가장 기억에 남는 수업</h3>
+            <div class="section-content">
+                <p>${escapeHtml(report.memorable_class || '작성되지 않음')}</p>
+            </div>
+
+            <h3 style="color: #374151; margin: 2rem 0 1rem;">수업의 어려움과 해결 방법</h3>
+            <div class="section-content">
+                <p>${escapeHtml(report.challenges_solutions || '작성되지 않음')}</p>
+            </div>
+
+            ${generatePhotoGalleryHtml('수업 사진', report.class_photos)}
+        </div>
+
+        <!-- 3. 소감 -->
+        <div class="report-section">
+            <div class="section-header">
+                <span class="section-icon">💭</span>
+                <h2>소감</h2>
+            </div>
+            
+            <h3 style="color: #374151; margin-bottom: 1rem;">한 줄 소감</h3>
+            <div class="section-content">
+                <p>${escapeHtml(report.one_sentence_summary || '작성되지 않음')}</p>
+            </div>
+
+            <h3 style="color: #374151; margin: 2rem 0 1rem;">미래 문화인턴에게 전하는 조언</h3>
+            <div class="section-content">
+                <p>${escapeHtml(report.advice_for_future || '작성되지 않음')}</p>
+            </div>
+
+            ${generatePhotoGalleryHtml('소감 사진', report.reflection_photos)}
+        </div>
+    </div>
+
+    <script>
+        // 이미지 모달 열기
+        function openImageModal(imageSrc) {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            modalImage.src = imageSrc;
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 이미지 모달 닫기
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.add('fade-out');
+            setTimeout(() => {
+                modal.classList.remove('show', 'fade-out');
+                document.body.style.overflow = '';
+            }, 300);
+        }
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+
+        // 모달 배경 클릭으로 닫기
+        document.getElementById('imageModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                closeImageModal();
+            }
+        });
+    </script>
+</body>
+</html>`;
         }
 
         function formatDate(dateStr) {
