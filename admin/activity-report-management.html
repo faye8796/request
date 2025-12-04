@@ -623,8 +623,8 @@
                     // 활동수기 정보 별도 조회 (다운로드 체크 필드 포함)
                     const { data: reports, error: reportsError } = await this.supabase
                         .from('activity_reports')
-                        .select('id, user_id, status, submitted_at, created_at, photos_drive_url, videos_drive_url, photos_downloaded, videos_downloaded, photos_downloaded_at, videos_downloaded_at, html_exported, html_exported_at');
-
+                        .select('id, user_id, status, submitted_at, created_at, photos_drive_url, videos_drive_url, photos_downloaded, videos_downloaded, photos_downloaded_at, videos_downloaded_at, html_exported, html_exported_at, final_activity_field');
+                    
                     if (reportsError) throw reportsError;
 
                     // reports를 Map으로 변환
@@ -796,6 +796,8 @@
                 const report = this.reportsMap.get(student.id);
                 const isSubmitted = report?.status === 'submitted';
                 const instituteName = student.sejong_institute || '학당 정보 없음';
+                const finalActivityField = report?.final_activity_field || '';
+
                 const submittedDate = isSubmitted && report.submitted_at 
                     ? new Date(report.submitted_at).toLocaleString('ko-KR')
                     : null;
@@ -824,9 +826,14 @@
                         <div class="card-header">
                             <div class="student-name">${this.escapeHtml(student.name)}</div>
                             <div class="institute-name">${this.escapeHtml(instituteName)}</div>
-                            <span class="status-badge ${isSubmitted ? 'submitted' : 'pending'}">
+                                ${finalActivityField ? `
+                                    <div style="font-size: 0.85rem; color: #059669; margin-bottom: 0.5rem; font-weight: 500;">
+                                        🎯 ${this.escapeHtml(finalActivityField)}
+                                    </div>
+                                ` : ''}
+                                <span class="status-badge ${isSubmitted ? 'submitted' : 'pending'}">
                                 ${isSubmitted ? '✅ 제출 완료' : '⏳ 미제출'}
-                            </span>
+                                </span>
                         </div>
                         <div class="card-body">
                             ${submittedDate ? `
