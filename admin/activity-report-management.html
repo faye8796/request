@@ -83,14 +83,14 @@
         /* 통계 대시보드 */
         .statistics {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
             margin-bottom: 2rem;
         }
 
         .stat-card {
             background: white;
-            padding: 1.5rem;
+            padding: 1.25rem;
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
@@ -121,15 +121,19 @@
             border-left: 4px solid #ec4899;
         }
 
+        .stat-card.html-done {
+            border-left: 4px solid #06b6d4;
+        }
+
         .stat-number {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
         }
 
         .stat-label {
             color: #6b7280;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
         }
 
         /* 필터 컨트롤 */
@@ -147,7 +151,7 @@
         .filter-controls input,
         .filter-controls select {
             flex: 1;
-            min-width: 200px;
+            min-width: 180px;
             padding: 0.75rem 1rem;
             border: 2px solid #e5e7eb;
             border-radius: 8px;
@@ -180,7 +184,7 @@
         /* 학생 카드 */
         .students-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
             gap: 1.5rem;
         }
 
@@ -328,8 +332,15 @@
             white-space: nowrap;
         }
 
+        /* 활동수기 보기 영역 */
+        .report-action-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .view-report-btn {
-            width: 100%;
+            flex: 1;
             padding: 0.875rem;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -355,6 +366,10 @@
             color: #9ca3af;
             cursor: not-allowed;
             transform: none;
+        }
+
+        .view-report-btn:disabled:hover {
+            box-shadow: none;
         }
 
         /* 빈 상태 */
@@ -473,11 +488,15 @@
             </div>
             <div class="stat-card photos-done">
                 <div class="stat-number" id="photosDownloadedCount">0</div>
-                <div class="stat-label">📸 사진 다운완료</div>
+                <div class="stat-label">📸 사진 다운</div>
             </div>
             <div class="stat-card videos-done">
                 <div class="stat-number" id="videosDownloadedCount">0</div>
-                <div class="stat-label">🎥 영상 다운완료</div>
+                <div class="stat-label">🎥 영상 다운</div>
+            </div>
+            <div class="stat-card html-done">
+                <div class="stat-number" id="htmlExportedCount">0</div>
+                <div class="stat-label">📄 HTML 내보내기</div>
             </div>
         </div>
 
@@ -493,7 +512,8 @@
                 <option value="">다운로드 상태</option>
                 <option value="photos_not_downloaded">📸 사진 미다운</option>
                 <option value="videos_not_downloaded">🎥 영상 미다운</option>
-                <option value="all_downloaded">전체 다운완료</option>
+                <option value="html_not_exported">📄 HTML 미내보내기</option>
+                <option value="all_done">전체 완료</option>
             </select>
             <select id="instituteFilter">
                 <option value="">전체 학당</option>
@@ -603,7 +623,7 @@
                     // 활동수기 정보 별도 조회 (다운로드 체크 필드 포함)
                     const { data: reports, error: reportsError } = await this.supabase
                         .from('activity_reports')
-                        .select('id, user_id, status, submitted_at, created_at, photos_drive_url, videos_drive_url, photos_downloaded, videos_downloaded, photos_downloaded_at, videos_downloaded_at');
+                        .select('id, user_id, status, submitted_at, created_at, photos_drive_url, videos_drive_url, photos_downloaded, videos_downloaded, photos_downloaded_at, videos_downloaded_at, html_exported, html_exported_at');
 
                     if (reportsError) throw reportsError;
 
@@ -698,15 +718,19 @@
                         const hasVideosUrl = report?.videos_drive_url && report.videos_drive_url.trim() !== '';
                         const photosDownloaded = report?.photos_downloaded || false;
                         const videosDownloaded = report?.videos_downloaded || false;
+                        const htmlExported = report?.html_exported || false;
+                        const isSubmitted = report?.status === 'submitted';
 
                         if (selectedDownload === 'photos_not_downloaded') {
                             matchesDownload = hasPhotosUrl && !photosDownloaded;
                         } else if (selectedDownload === 'videos_not_downloaded') {
                             matchesDownload = hasVideosUrl && !videosDownloaded;
-                        } else if (selectedDownload === 'all_downloaded') {
+                        } else if (selectedDownload === 'html_not_exported') {
+                            matchesDownload = isSubmitted && !htmlExported;
+                        } else if (selectedDownload === 'all_done') {
                             const photosDone = !hasPhotosUrl || photosDownloaded;
                             const videosDone = !hasVideosUrl || videosDownloaded;
-                            matchesDownload = photosDone && videosDone && (hasPhotosUrl || hasVideosUrl);
+                            matchesDownload = isSubmitted && photosDone && videosDone && htmlExported;
                         }
                     }
 
@@ -727,12 +751,14 @@
                 // 다운로드 완료 수 계산
                 let photosDownloadedCount = 0;
                 let videosDownloadedCount = 0;
+                let htmlExportedCount = 0;
 
                 this.filteredStudents.forEach(s => {
                     const report = this.reportsMap.get(s.id);
                     if (report) {
                         if (report.photos_downloaded) photosDownloadedCount++;
                         if (report.videos_downloaded) videosDownloadedCount++;
+                        if (report.html_exported) htmlExportedCount++;
                     }
                 });
 
@@ -741,6 +767,7 @@
                 document.getElementById('pendingCount').textContent = pending;
                 document.getElementById('photosDownloadedCount').textContent = photosDownloadedCount;
                 document.getElementById('videosDownloadedCount').textContent = videosDownloadedCount;
+                document.getElementById('htmlExportedCount').textContent = htmlExportedCount;
             }
 
             renderStudents() {
@@ -780,11 +807,16 @@
                 // 다운로드 체크 상태
                 const photosDownloaded = report?.photos_downloaded || false;
                 const videosDownloaded = report?.videos_downloaded || false;
+                const htmlExported = report?.html_exported || false;
+                
                 const photosDownloadedAt = report?.photos_downloaded_at 
                     ? new Date(report.photos_downloaded_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
                     : '';
                 const videosDownloadedAt = report?.videos_downloaded_at 
                     ? new Date(report.videos_downloaded_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : '';
+                const htmlExportedAt = report?.html_exported_at 
+                    ? new Date(report.html_exported_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
                     : '';
 
                 return `
@@ -850,14 +882,29 @@
                                 </div>
                             ` : ''}
 
-                            <button 
-                                class="view-report-btn" 
-                                onclick="window.reportApp.viewReport('${student.id}')"
-                                ${!isSubmitted ? 'disabled' : ''}
-                            >
-                                <i data-lucide="file-text"></i>
-                                ${isSubmitted ? '활동수기 보기' : '아직 제출되지 않았습니다'}
-                            </button>
+                            <div class="report-action-row">
+                                <button 
+                                    class="view-report-btn" 
+                                    onclick="window.reportApp.viewReport('${student.id}')"
+                                    ${!isSubmitted ? 'disabled' : ''}
+                                >
+                                    <i data-lucide="file-text"></i>
+                                    ${isSubmitted ? '활동수기 보기' : '아직 제출되지 않았습니다'}
+                                </button>
+                                ${isSubmitted && report ? `
+                                    <div class="check-container">
+                                        <button 
+                                            class="check-btn ${htmlExported ? 'checked' : ''}"
+                                            id="html-check-${report.id}"
+                                            onclick="window.reportApp.toggleDownloadCheck('${report.id}', 'html', ${!htmlExported})"
+                                            title="${htmlExported ? 'HTML 내보내기 완료 취소' : 'HTML 내보내기 완료 체크'}"
+                                        >
+                                            ${htmlExported ? '✓' : ''}
+                                        </button>
+                                        ${htmlExportedAt ? `<span class="check-time">${htmlExportedAt}</span>` : ''}
+                                    </div>
+                                ` : ''}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -879,9 +926,12 @@
                     if (type === 'photos') {
                         updateData.photos_downloaded = checked;
                         updateData.photos_downloaded_at = checked ? new Date().toISOString() : null;
-                    } else {
+                    } else if (type === 'videos') {
                         updateData.videos_downloaded = checked;
                         updateData.videos_downloaded_at = checked ? new Date().toISOString() : null;
+                    } else if (type === 'html') {
+                        updateData.html_exported = checked;
+                        updateData.html_exported_at = checked ? new Date().toISOString() : null;
                     }
 
                     const { error } = await this.supabase
@@ -897,9 +947,12 @@
                             if (type === 'photos') {
                                 report.photos_downloaded = checked;
                                 report.photos_downloaded_at = checked ? new Date().toISOString() : null;
-                            } else {
+                            } else if (type === 'videos') {
                                 report.videos_downloaded = checked;
                                 report.videos_downloaded_at = checked ? new Date().toISOString() : null;
+                            } else if (type === 'html') {
+                                report.html_exported = checked;
+                                report.html_exported_at = checked ? new Date().toISOString() : null;
                             }
                             break;
                         }
@@ -913,7 +966,8 @@
                     // 통계 업데이트
                     this.updateStatistics();
 
-                    showToast(checked ? '다운로드 완료 체크됨' : '체크 해제됨', 'success');
+                    const typeLabel = type === 'photos' ? '사진 다운로드' : (type === 'videos' ? '영상 다운로드' : 'HTML 내보내기');
+                    showToast(checked ? `${typeLabel} 완료 체크됨` : '체크 해제됨', 'success');
 
                 } catch (error) {
                     console.error('체크 상태 저장 실패:', error);
