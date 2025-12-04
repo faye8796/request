@@ -696,404 +696,27 @@
             // 이미지 갤러리 HTML 생성 (Base64 사용)
             function generatePhotoGalleryHtml(title, photos) {
                 if (!photos || photos.length === 0) {
-                    return `
-                        <h3 style="color: #374151; margin: 2rem 0 1rem;">${title}</h3>
-                        <div class="no-photos">등록된 사진이 없습니다</div>
-                    `;
+                    return '<h3 style="color: #374151; margin: 2rem 0 1rem;">' + title + '</h3>' +
+                        '<div class="no-photos">등록된 사진이 없습니다</div>';
                 }
 
                 const photoItems = photos.map((photo, index) => {
                     const base64 = imageMap.get(photo) || photo;
-                    return `
-                        <div class="photo-item" onclick="openImageModal(this.querySelector('img').src)">
-                            <img src="${base64}" alt="${title} ${index + 1}">
-                        </div>
-                    `;
+                    return '<div class="photo-item" onclick="openImageModal(this.querySelector(\'img\').src)">' +
+                        '<img src="' + base64 + '" alt="' + title + ' ' + (index + 1) + '">' +
+                        '</div>';
                 }).join('');
 
-                return `
-                    <h3 style="color: #374151; margin: 2rem 0 1rem;">${title}</h3>
-                    <div class="photo-gallery">
-                        ${photoItems}
-                    </div>
-                `;
+                return '<h3 style="color: #374151; margin: 2rem 0 1rem;">' + title + '</h3>' +
+                    '<div class="photo-gallery">' + photoItems + '</div>';
             }
 
-            return `<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>활동수기 - ${escapeHtml(user.name)} (${escapeHtml(user.sejong_institute || '')})</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
-            background: white;
-            color: #333;
-            line-height: 1.8;
-            padding: 2rem;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .export-info {
-            text-align: right;
-            color: #9ca3af;
-            font-size: 0.85rem;
-            margin-bottom: 1rem;
-        }
-
-        .report-header {
-            text-align: center;
-            padding: 2rem 0;
-            border-bottom: 3px solid #667eea;
-            margin-bottom: 3rem;
-        }
-
-        .report-header h1 {
-            font-size: 2.5rem;
-            color: #1f2937;
-            margin-bottom: 1rem;
-        }
-
-        .report-header .subtitle {
-            font-size: 1.2rem;
-            color: #6b7280;
-        }
-
-        .basic-info {
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            border-left: 4px solid #3b82f6;
-            padding: 2rem;
-            border-radius: 12px;
-            margin-bottom: 3rem;
-        }
-
-        .basic-info h2 {
-            color: #1e40af;
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-        }
-
-        .info-item {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: #374151;
-            font-size: 0.95rem;
-        }
-
-        .info-value {
-            color: #1f2937;
-            font-size: 1.05rem;
-        }
-
-        .report-section {
-            margin-bottom: 3rem;
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #e5e7eb;
-        }
-
-        .section-icon {
-            font-size: 2rem;
-        }
-
-        .section-header h2 {
-            color: #1f2937;
-            font-size: 1.75rem;
-            font-weight: 700;
-        }
-
-        .section-content {
-            padding: 1.5rem;
-            background: #f9fafb;
-            border-radius: 8px;
-            line-height: 2;
-        }
-
-        .section-content p {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            color: #374151;
-        }
-
-        .photo-gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-        }
-
-        .photo-item {
-            position: relative;
-            overflow: hidden;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .photo-item:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .photo-item img {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-            display: block;
-        }
-
-        .no-photos {
-            text-align: center;
-            padding: 2rem;
-            color: #9ca3af;
-            font-style: italic;
-        }
-
-        /* 이미지 확대 모달 */
-        .image-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 10000;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .image-modal.show {
-            display: flex;
-            opacity: 1;
-        }
-
-        .image-modal.fade-out {
-            opacity: 0;
-        }
-
-        .modal-content {
-            position: relative;
-            max-width: 90%;
-            max-height: 90%;
-        }
-
-        .modal-content img {
-            max-width: 100%;
-            max-height: 90vh;
-            object-fit: contain;
-            border-radius: 8px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-close {
-            position: absolute;
-            top: -40px;
-            right: 0;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: white;
-            font-size: 2rem;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .modal-close:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.1);
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 1rem;
-            }
-
-            .report-header h1 {
-                font-size: 2rem;
-            }
-
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .photo-gallery {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- 이미지 확대 모달 -->
-    <div class="image-modal" id="imageModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeImageModal()">×</button>
-            <img src="" alt="확대 이미지" id="modalImage">
-        </div>
-    </div>
-
-    <div class="container">
-        <div class="export-info">내보내기 일시: ${exportDate}</div>
-
-        <!-- 헤더 -->
-        <div class="report-header">
-            <h1>📝 문화인턴 활동수기</h1>
-            <div class="subtitle">King Sejong Institute Cultural Intern Activity Report</div>
-        </div>
-
-        <!-- 기본 정보 -->
-        <div class="basic-info">
-            <h2>👤 기본 정보</h2>
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-label">이름</div>
-                    <div class="info-value">${escapeHtml(user.name)}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">파견학당</div>
-                    <div class="info-value">${escapeHtml(user.sejong_institute || '-')}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">파견 기간</div>
-                    <div class="info-value">${dispatchPeriod}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">제출일시</div>
-                    <div class="info-value">${submittedDate}</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 1. 학당 정착 및 생활 -->
-        <div class="report-section">
-            <div class="section-header">
-                <span class="section-icon">🏠</span>
-                <h2>학당 정착 및 생활</h2>
-            </div>
-            
-            <h3 style="color: #374151; margin-bottom: 1rem;">주요 활동</h3>
-            <div class="section-content">
-                <p>${escapeHtml(report.main_activities || '작성되지 않음')}</p>
-            </div>
-
-            <h3 style="color: #374151; margin: 2rem 0 1rem;">비자 발급</h3>
-            <div class="section-content">
-                <p>${escapeHtml(report.visa_info || '작성되지 않음')}</p>
-            </div>
-
-            <h3 style="color: #374151; margin: 2rem 0 1rem;">거주지 구하기</h3>
-            <div class="section-content">
-                <p>${escapeHtml(report.accommodation_info || '작성되지 않음')}</p>
-            </div>
-
-            <h3 style="color: #374151; margin: 2rem 0 1rem;">교통수단</h3>
-            <div class="section-content">
-                <p>${escapeHtml(report.transportation_info || '작성되지 않음')}</p>
-            </div>
-
-            <h3 style="color: #374151; margin: 2rem 0 1rem;">현지 생활 준비물</h3>
-            <div class="section-content">
-                <p>${escapeHtml(report.preparation_info || '작성되지 않음')}</p>
-            </div>
-
-            <h3 style="color: #374151; margin: 2rem 0 1rem;">생활 팁</h3>
-            <div class="section-content">
-                <p>${escapeHtml(report.living_tips || '작성되지 않음')}</p>
-            </div>
-
-            ${generatePhotoGalleryHtml('정착 사진', report.settlement_photos)}
-        </div>
-
-        <!-- 2. 수업 및 활동 -->
-        <div class="report-section">
-            <div class="section-header">
-                <span class="section-icon">📚</span>
-                <h2>수업 및 활동</h2>
-            </div>
-            
-            <h3 style="color: #374151; margin-bottom: 1rem;">수업 및 활동 소개</h3>
-            <div class="section-content">
-                <p>${escapeHtml(report.class_description || '작성되지 않음')}</p>
-            </div>
-
-            <h3 style="color: #374151; margin: 2rem 0 1rem;">가장 기억에 남는 수업</h3>
-            <div class="section-content">
-                <p>${escapeHtml(report.memorable_class || '작성되지 않음')}</p>
-            </div>
-
-            <h3 style="color: #374151; margin: 2rem 0 1rem;">수업의 어려움과 해결 방법</h3>
-            <div class="section-content">
-                <p>${escapeHtml(report.challenges_solutions || '작성되지 않음')}</p>
-            </div>
-
-            ${generatePhotoGalleryHtml('수업 사진', report.class_photos)}
-        </div>
-
-        <!-- 3. 소감 -->
-        <div class="report-section">
-            <div class="section-header">
-                <span class="section-icon">💭</span>
-                <h2>소감</h2>
-            </div>
-            
-            <h3 style="color: #374151; margin-bottom: 1rem;">한 줄 소감</h3>
-            <div class="section-content">
-                <p>${escapeHtml(report.one_sentence_summary || '작성되지 않음')}</p>
-            </div>
-
-            <h3 style="color: #374151; margin: 2rem 0 1rem;">미래 문화인턴에게 전하는 조언</h3>
-            <div class="section-content">
-                <p>${escapeHtml(report.advice_for_future || '작성되지 않음')}</p>
-            </div>
-
-            ${generatePhotoGalleryHtml('소감 사진', report.reflection_photos)}
-        </div>
-    </div>
-
-    <script>
+            // 스크립트 태그를 안전하게 생성
+            const scriptContent = `
         // 이미지 모달 열기
         function openImageModal(imageSrc) {
-            const modal = document.getElementById('imageModal');
-            const modalImage = document.getElementById('modalImage');
+            var modal = document.getElementById('imageModal');
+            var modalImage = document.getElementById('modalImage');
             modalImage.src = imageSrc;
             modal.classList.add('show');
             document.body.style.overflow = 'hidden';
@@ -1101,30 +724,168 @@
 
         // 이미지 모달 닫기
         function closeImageModal() {
-            const modal = document.getElementById('imageModal');
+            var modal = document.getElementById('imageModal');
             modal.classList.add('fade-out');
-            setTimeout(() => {
+            setTimeout(function() {
                 modal.classList.remove('show', 'fade-out');
                 document.body.style.overflow = '';
             }, 300);
         }
 
         // ESC 키로 모달 닫기
-        document.addEventListener('keydown', (e) => {
+        document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeImageModal();
             }
         });
 
         // 모달 배경 클릭으로 닫기
-        document.getElementById('imageModal').addEventListener('click', (e) => {
+        document.getElementById('imageModal').addEventListener('click', function(e) {
             if (e.target === e.currentTarget) {
                 closeImageModal();
             }
         });
-    </script>
-</body>
-</html>`;
+            `;
+
+            const htmlParts = [];
+            
+            htmlParts.push('<!DOCTYPE html>');
+            htmlParts.push('<html lang="ko">');
+            htmlParts.push('<head>');
+            htmlParts.push('    <meta charset="UTF-8">');
+            htmlParts.push('    <meta name="viewport" content="width=device-width, initial-scale=1.0">');
+            htmlParts.push('    <title>활동수기 - ' + escapeHtml(user.name) + ' (' + escapeHtml(user.sejong_institute || '') + ')</title>');
+            htmlParts.push('    <style>');
+            htmlParts.push('        * { margin: 0; padding: 0; box-sizing: border-box; }');
+            htmlParts.push('        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Malgun Gothic", sans-serif; background: white; color: #333; line-height: 1.8; padding: 2rem; }');
+            htmlParts.push('        .container { max-width: 900px; margin: 0 auto; }');
+            htmlParts.push('        .export-info { text-align: right; color: #9ca3af; font-size: 0.85rem; margin-bottom: 1rem; }');
+            htmlParts.push('        .report-header { text-align: center; padding: 2rem 0; border-bottom: 3px solid #667eea; margin-bottom: 3rem; }');
+            htmlParts.push('        .report-header h1 { font-size: 2.5rem; color: #1f2937; margin-bottom: 1rem; }');
+            htmlParts.push('        .report-header .subtitle { font-size: 1.2rem; color: #6b7280; }');
+            htmlParts.push('        .basic-info { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #3b82f6; padding: 2rem; border-radius: 12px; margin-bottom: 3rem; }');
+            htmlParts.push('        .basic-info h2 { color: #1e40af; font-size: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }');
+            htmlParts.push('        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }');
+            htmlParts.push('        .info-item { display: flex; flex-direction: column; gap: 0.5rem; }');
+            htmlParts.push('        .info-label { font-weight: 600; color: #374151; font-size: 0.95rem; }');
+            htmlParts.push('        .info-value { color: #1f2937; font-size: 1.05rem; }');
+            htmlParts.push('        .report-section { margin-bottom: 3rem; }');
+            htmlParts.push('        .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #e5e7eb; }');
+            htmlParts.push('        .section-icon { font-size: 2rem; }');
+            htmlParts.push('        .section-header h2 { color: #1f2937; font-size: 1.75rem; font-weight: 700; }');
+            htmlParts.push('        .section-content { padding: 1.5rem; background: #f9fafb; border-radius: 8px; line-height: 2; }');
+            htmlParts.push('        .section-content p { white-space: pre-wrap; word-wrap: break-word; color: #374151; }');
+            htmlParts.push('        .photo-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }');
+            htmlParts.push('        .photo-item { position: relative; overflow: hidden; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; cursor: pointer; }');
+            htmlParts.push('        .photo-item:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); }');
+            htmlParts.push('        .photo-item img { width: 100%; height: 250px; object-fit: cover; display: block; }');
+            htmlParts.push('        .no-photos { text-align: center; padding: 2rem; color: #9ca3af; font-style: italic; }');
+            htmlParts.push('        .image-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 10000; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }');
+            htmlParts.push('        .image-modal.show { display: flex; opacity: 1; }');
+            htmlParts.push('        .image-modal.fade-out { opacity: 0; }');
+            htmlParts.push('        .modal-content { position: relative; max-width: 90%; max-height: 90%; }');
+            htmlParts.push('        .modal-content img { max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }');
+            htmlParts.push('        .modal-close { position: absolute; top: -40px; right: 0; background: rgba(255, 255, 255, 0.1); border: none; color: white; font-size: 2rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }');
+            htmlParts.push('        .modal-close:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.1); }');
+            htmlParts.push('        @media (max-width: 768px) { body { padding: 1rem; } .report-header h1 { font-size: 2rem; } .info-grid { grid-template-columns: 1fr; } .photo-gallery { grid-template-columns: 1fr; } }');
+            htmlParts.push('    </style>');
+            htmlParts.push('</head>');
+            htmlParts.push('<body>');
+            htmlParts.push('    <!-- 이미지 확대 모달 -->');
+            htmlParts.push('    <div class="image-modal" id="imageModal">');
+            htmlParts.push('        <div class="modal-content">');
+            htmlParts.push('            <button class="modal-close" onclick="closeImageModal()">×</button>');
+            htmlParts.push('            <img src="" alt="확대 이미지" id="modalImage">');
+            htmlParts.push('        </div>');
+            htmlParts.push('    </div>');
+            htmlParts.push('');
+            htmlParts.push('    <div class="container">');
+            htmlParts.push('        <div class="export-info">내보내기 일시: ' + exportDate + '</div>');
+            htmlParts.push('');
+            htmlParts.push('        <!-- 헤더 -->');
+            htmlParts.push('        <div class="report-header">');
+            htmlParts.push('            <h1>📝 문화인턴 활동수기</h1>');
+            htmlParts.push('            <div class="subtitle">King Sejong Institute Cultural Intern Activity Report</div>');
+            htmlParts.push('        </div>');
+            htmlParts.push('');
+            htmlParts.push('        <!-- 기본 정보 -->');
+            htmlParts.push('        <div class="basic-info">');
+            htmlParts.push('            <h2>👤 기본 정보</h2>');
+            htmlParts.push('            <div class="info-grid">');
+            htmlParts.push('                <div class="info-item">');
+            htmlParts.push('                    <div class="info-label">이름</div>');
+            htmlParts.push('                    <div class="info-value">' + escapeHtml(user.name) + '</div>');
+            htmlParts.push('                </div>');
+            htmlParts.push('                <div class="info-item">');
+            htmlParts.push('                    <div class="info-label">파견학당</div>');
+            htmlParts.push('                    <div class="info-value">' + escapeHtml(user.sejong_institute || '-') + '</div>');
+            htmlParts.push('                </div>');
+            htmlParts.push('                <div class="info-item">');
+            htmlParts.push('                    <div class="info-label">파견 기간</div>');
+            htmlParts.push('                    <div class="info-value">' + dispatchPeriod + '</div>');
+            htmlParts.push('                </div>');
+            htmlParts.push('                <div class="info-item">');
+            htmlParts.push('                    <div class="info-label">제출일시</div>');
+            htmlParts.push('                    <div class="info-value">' + submittedDate + '</div>');
+            htmlParts.push('                </div>');
+            htmlParts.push('            </div>');
+            htmlParts.push('        </div>');
+            htmlParts.push('');
+            htmlParts.push('        <!-- 1. 학당 정착 및 생활 -->');
+            htmlParts.push('        <div class="report-section">');
+            htmlParts.push('            <div class="section-header">');
+            htmlParts.push('                <span class="section-icon">🏠</span>');
+            htmlParts.push('                <h2>학당 정착 및 생활</h2>');
+            htmlParts.push('            </div>');
+            htmlParts.push('            <h3 style="color: #374151; margin-bottom: 1rem;">주요 활동</h3>');
+            htmlParts.push('            <div class="section-content"><p>' + escapeHtml(report.main_activities || '작성되지 않음') + '</p></div>');
+            htmlParts.push('            <h3 style="color: #374151; margin: 2rem 0 1rem;">비자 발급</h3>');
+            htmlParts.push('            <div class="section-content"><p>' + escapeHtml(report.visa_info || '작성되지 않음') + '</p></div>');
+            htmlParts.push('            <h3 style="color: #374151; margin: 2rem 0 1rem;">거주지 구하기</h3>');
+            htmlParts.push('            <div class="section-content"><p>' + escapeHtml(report.accommodation_info || '작성되지 않음') + '</p></div>');
+            htmlParts.push('            <h3 style="color: #374151; margin: 2rem 0 1rem;">교통수단</h3>');
+            htmlParts.push('            <div class="section-content"><p>' + escapeHtml(report.transportation_info || '작성되지 않음') + '</p></div>');
+            htmlParts.push('            <h3 style="color: #374151; margin: 2rem 0 1rem;">현지 생활 준비물</h3>');
+            htmlParts.push('            <div class="section-content"><p>' + escapeHtml(report.preparation_info || '작성되지 않음') + '</p></div>');
+            htmlParts.push('            <h3 style="color: #374151; margin: 2rem 0 1rem;">생활 팁</h3>');
+            htmlParts.push('            <div class="section-content"><p>' + escapeHtml(report.living_tips || '작성되지 않음') + '</p></div>');
+            htmlParts.push('            ' + generatePhotoGalleryHtml('정착 사진', report.settlement_photos));
+            htmlParts.push('        </div>');
+            htmlParts.push('');
+            htmlParts.push('        <!-- 2. 수업 및 활동 -->');
+            htmlParts.push('        <div class="report-section">');
+            htmlParts.push('            <div class="section-header">');
+            htmlParts.push('                <span class="section-icon">📚</span>');
+            htmlParts.push('                <h2>수업 및 활동</h2>');
+            htmlParts.push('            </div>');
+            htmlParts.push('            <h3 style="color: #374151; margin-bottom: 1rem;">수업 및 활동 소개</h3>');
+            htmlParts.push('            <div class="section-content"><p>' + escapeHtml(report.class_description || '작성되지 않음') + '</p></div>');
+            htmlParts.push('            <h3 style="color: #374151; margin: 2rem 0 1rem;">가장 기억에 남는 수업</h3>');
+            htmlParts.push('            <div class="section-content"><p>' + escapeHtml(report.memorable_class || '작성되지 않음') + '</p></div>');
+            htmlParts.push('            <h3 style="color: #374151; margin: 2rem 0 1rem;">수업의 어려움과 해결 방법</h3>');
+            htmlParts.push('            <div class="section-content"><p>' + escapeHtml(report.challenges_solutions || '작성되지 않음') + '</p></div>');
+            htmlParts.push('            ' + generatePhotoGalleryHtml('수업 사진', report.class_photos));
+            htmlParts.push('        </div>');
+            htmlParts.push('');
+            htmlParts.push('        <!-- 3. 소감 -->');
+            htmlParts.push('        <div class="report-section">');
+            htmlParts.push('            <div class="section-header">');
+            htmlParts.push('                <span class="section-icon">💭</span>');
+            htmlParts.push('                <h2>소감</h2>');
+            htmlParts.push('            </div>');
+            htmlParts.push('            <h3 style="color: #374151; margin-bottom: 1rem;">한 줄 소감</h3>');
+            htmlParts.push('            <div class="section-content"><p>' + escapeHtml(report.one_sentence_summary || '작성되지 않음') + '</p></div>');
+            htmlParts.push('            <h3 style="color: #374151; margin: 2rem 0 1rem;">미래 문화인턴에게 전하는 조언</h3>');
+            htmlParts.push('            <div class="section-content"><p>' + escapeHtml(report.advice_for_future || '작성되지 않음') + '</p></div>');
+            htmlParts.push('            ' + generatePhotoGalleryHtml('소감 사진', report.reflection_photos));
+            htmlParts.push('        </div>');
+            htmlParts.push('    </div>');
+            htmlParts.push('');
+            htmlParts.push('    <script>' + scriptContent + '</' + 'script>');
+            htmlParts.push('</body>');
+            htmlParts.push('</html>');
+
+            return htmlParts.join('\n');
         }
 
         function formatDate(dateStr) {
