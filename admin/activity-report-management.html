@@ -83,7 +83,7 @@
         /* 통계 대시보드 */
         .statistics {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
@@ -111,6 +111,14 @@
 
         .stat-card.pending {
             border-left: 4px solid #f59e0b;
+        }
+
+        .stat-card.photos-done {
+            border-left: 4px solid #8b5cf6;
+        }
+
+        .stat-card.videos-done {
+            border-left: 4px solid #ec4899;
         }
 
         .stat-number {
@@ -172,7 +180,7 @@
         /* 학생 카드 */
         .students-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
             gap: 1.5rem;
         }
 
@@ -234,6 +242,90 @@
             color: #6b7280;
             font-size: 0.9rem;
             margin-bottom: 1rem;
+        }
+
+        /* 다운로드 버튼 영역 */
+        .download-section {
+            margin-bottom: 12px;
+        }
+
+        .download-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .download-btn {
+            flex: 1;
+            padding: 10px 16px;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .download-btn.photos {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .download-btn.videos {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 체크박스 스타일 */
+        .check-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .check-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .check-btn:hover {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .check-btn.checked {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-color: #10b981;
+            color: white;
+        }
+
+        .check-btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .check-time {
+            font-size: 11px;
+            color: #6b7280;
+            white-space: nowrap;
         }
 
         .view-report-btn {
@@ -327,7 +419,7 @@
             }
 
             .statistics {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
             }
 
             .filter-controls {
@@ -379,6 +471,14 @@
                 <div class="stat-number" id="pendingCount">0</div>
                 <div class="stat-label">미제출</div>
             </div>
+            <div class="stat-card photos-done">
+                <div class="stat-number" id="photosDownloadedCount">0</div>
+                <div class="stat-label">📸 사진 다운완료</div>
+            </div>
+            <div class="stat-card videos-done">
+                <div class="stat-number" id="videosDownloadedCount">0</div>
+                <div class="stat-label">🎥 영상 다운완료</div>
+            </div>
         </div>
 
         <!-- 필터 컨트롤 -->
@@ -388,6 +488,12 @@
                 <option value="">전체 상태</option>
                 <option value="submitted">제출 완료</option>
                 <option value="pending">미제출</option>
+            </select>
+            <select id="downloadFilter">
+                <option value="">다운로드 상태</option>
+                <option value="photos_not_downloaded">📸 사진 미다운</option>
+                <option value="videos_not_downloaded">🎥 영상 미다운</option>
+                <option value="all_downloaded">전체 다운완료</option>
             </select>
             <select id="instituteFilter">
                 <option value="">전체 학당</option>
@@ -494,10 +600,10 @@
 
                     if (studentsError) throw studentsError;
 
-                    // 활동수기 정보 별도 조회 (드라이브 URL 포함)
+                    // 활동수기 정보 별도 조회 (다운로드 체크 필드 포함)
                     const { data: reports, error: reportsError } = await this.supabase
                         .from('activity_reports')
-                        .select('id, user_id, status, submitted_at, created_at, photos_drive_url, videos_drive_url');
+                        .select('id, user_id, status, submitted_at, created_at, photos_drive_url, videos_drive_url, photos_downloaded, videos_downloaded, photos_downloaded_at, videos_downloaded_at');
 
                     if (reportsError) throw reportsError;
 
@@ -551,6 +657,11 @@
                     this.applyFilters();
                 });
 
+                // 다운로드 필터
+                document.getElementById('downloadFilter').addEventListener('change', () => {
+                    this.applyFilters();
+                });
+
                 // 학당 필터
                 document.getElementById('instituteFilter').addEventListener('change', () => {
                     this.applyFilters();
@@ -560,6 +671,7 @@
                 document.getElementById('clearFiltersBtn').addEventListener('click', () => {
                     document.getElementById('searchInput').value = '';
                     document.getElementById('statusFilter').value = '';
+                    document.getElementById('downloadFilter').value = '';
                     document.getElementById('instituteFilter').value = '';
                     this.applyFilters();
                 });
@@ -568,6 +680,7 @@
             applyFilters() {
                 const searchTerm = document.getElementById('searchInput').value.toLowerCase();
                 const selectedStatus = document.getElementById('statusFilter').value;
+                const selectedDownload = document.getElementById('downloadFilter').value;
                 const selectedInstitute = document.getElementById('instituteFilter').value;
 
                 this.filteredStudents = this.students.filter(student => {
@@ -578,7 +691,26 @@
                     const matchesInstitute = !selectedInstitute || 
                         student.sejong_institute === selectedInstitute;
 
-                    return matchesSearch && matchesStatus && matchesInstitute;
+                    // 다운로드 필터
+                    let matchesDownload = true;
+                    if (selectedDownload) {
+                        const hasPhotosUrl = report?.photos_drive_url && report.photos_drive_url.trim() !== '';
+                        const hasVideosUrl = report?.videos_drive_url && report.videos_drive_url.trim() !== '';
+                        const photosDownloaded = report?.photos_downloaded || false;
+                        const videosDownloaded = report?.videos_downloaded || false;
+
+                        if (selectedDownload === 'photos_not_downloaded') {
+                            matchesDownload = hasPhotosUrl && !photosDownloaded;
+                        } else if (selectedDownload === 'videos_not_downloaded') {
+                            matchesDownload = hasVideosUrl && !videosDownloaded;
+                        } else if (selectedDownload === 'all_downloaded') {
+                            const photosDone = !hasPhotosUrl || photosDownloaded;
+                            const videosDone = !hasVideosUrl || videosDownloaded;
+                            matchesDownload = photosDone && videosDone && (hasPhotosUrl || hasVideosUrl);
+                        }
+                    }
+
+                    return matchesSearch && matchesStatus && matchesInstitute && matchesDownload;
                 });
 
                 this.updateStatistics();
@@ -592,9 +724,23 @@
                 ).length;
                 const pending = total - submitted;
 
+                // 다운로드 완료 수 계산
+                let photosDownloadedCount = 0;
+                let videosDownloadedCount = 0;
+
+                this.filteredStudents.forEach(s => {
+                    const report = this.reportsMap.get(s.id);
+                    if (report) {
+                        if (report.photos_downloaded) photosDownloadedCount++;
+                        if (report.videos_downloaded) videosDownloadedCount++;
+                    }
+                });
+
                 document.getElementById('totalStudents').textContent = total;
                 document.getElementById('submittedCount').textContent = submitted;
                 document.getElementById('pendingCount').textContent = pending;
+                document.getElementById('photosDownloadedCount').textContent = photosDownloadedCount;
+                document.getElementById('videosDownloadedCount').textContent = videosDownloadedCount;
             }
 
             renderStudents() {
@@ -631,6 +777,16 @@
                 const hasPhotosUrl = report?.photos_drive_url && report.photos_drive_url.trim() !== '';
                 const hasVideosUrl = report?.videos_drive_url && report.videos_drive_url.trim() !== '';
 
+                // 다운로드 체크 상태
+                const photosDownloaded = report?.photos_downloaded || false;
+                const videosDownloaded = report?.videos_downloaded || false;
+                const photosDownloadedAt = report?.photos_downloaded_at 
+                    ? new Date(report.photos_downloaded_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : '';
+                const videosDownloadedAt = report?.videos_downloaded_at 
+                    ? new Date(report.videos_downloaded_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : '';
+
                 return `
                     <div class="student-card">
                         <div class="card-header">
@@ -648,56 +804,48 @@
                             ` : ''}
 
                             ${(hasPhotosUrl || hasVideosUrl) ? `
-                                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                                <div class="download-section">
                                     ${hasPhotosUrl ? `
-                                        <button 
-                                            onclick="window.open('${report.photos_drive_url}', '_blank')"
-                                            style="
-                                                flex: 1;
-                                                padding: 10px;
-                                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                                                color: white;
-                                                border: none;
-                                                border-radius: 8px;
-                                                cursor: pointer;
-                                                font-size: 14px;
-                                                font-weight: 600;
-                                                transition: all 0.3s ease;
-                                                display: flex;
-                                                align-items: center;
-                                                justify-content: center;
-                                                gap: 6px;
-                                            "
-                                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)';"
-                                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';"
-                                        >
-                                            📸 사진 다운로드
-                                        </button>
+                                        <div class="download-row">
+                                            <button 
+                                                class="download-btn photos"
+                                                onclick="window.open('${report.photos_drive_url}', '_blank')"
+                                            >
+                                                📸 사진 다운로드
+                                            </button>
+                                            <div class="check-container">
+                                                <button 
+                                                    class="check-btn ${photosDownloaded ? 'checked' : ''}"
+                                                    id="photos-check-${report.id}"
+                                                    onclick="window.reportApp.toggleDownloadCheck('${report.id}', 'photos', ${!photosDownloaded})"
+                                                    title="${photosDownloaded ? '다운로드 완료 취소' : '다운로드 완료 체크'}"
+                                                >
+                                                    ${photosDownloaded ? '✓' : ''}
+                                                </button>
+                                                ${photosDownloadedAt ? `<span class="check-time">${photosDownloadedAt}</span>` : ''}
+                                            </div>
+                                        </div>
                                     ` : ''}
                                     ${hasVideosUrl ? `
-                                        <button 
-                                            onclick="window.open('${report.videos_drive_url}', '_blank')"
-                                            style="
-                                                flex: 1;
-                                                padding: 10px;
-                                                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-                                                color: white;
-                                                border: none;
-                                                border-radius: 8px;
-                                                cursor: pointer;
-                                                font-size: 14px;
-                                                font-weight: 600;
-                                                transition: all 0.3s ease;
-                                                display: flex;
-                                                align-items: center;
-                                                justify-content: center;
-                                                gap: 6px;
-                                            "
-                                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(245, 87, 108, 0.4)';"
-                                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';"
-                                        >
-                                            🎥 영상 다운로드
-                                        </button>
+                                        <div class="download-row">
+                                            <button 
+                                                class="download-btn videos"
+                                                onclick="window.open('${report.videos_drive_url}', '_blank')"
+                                            >
+                                                🎥 영상 다운로드
+                                            </button>
+                                            <div class="check-container">
+                                                <button 
+                                                    class="check-btn ${videosDownloaded ? 'checked' : ''}"
+                                                    id="videos-check-${report.id}"
+                                                    onclick="window.reportApp.toggleDownloadCheck('${report.id}', 'videos', ${!videosDownloaded})"
+                                                    title="${videosDownloaded ? '다운로드 완료 취소' : '다운로드 완료 체크'}"
+                                                >
+                                                    ${videosDownloaded ? '✓' : ''}
+                                                </button>
+                                                ${videosDownloadedAt ? `<span class="check-time">${videosDownloadedAt}</span>` : ''}
+                                            </div>
+                                        </div>
                                     ` : ''}
                                 </div>
                             ` : ''}
@@ -713,6 +861,66 @@
                         </div>
                     </div>
                 `;
+            }
+
+            async toggleDownloadCheck(reportId, type, checked) {
+                const btnId = `${type}-check-${reportId}`;
+                const btn = document.getElementById(btnId);
+                
+                if (!btn) return;
+
+                // 로딩 상태
+                btn.classList.add('loading');
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = '⏳';
+
+                try {
+                    const updateData = {};
+                    if (type === 'photos') {
+                        updateData.photos_downloaded = checked;
+                        updateData.photos_downloaded_at = checked ? new Date().toISOString() : null;
+                    } else {
+                        updateData.videos_downloaded = checked;
+                        updateData.videos_downloaded_at = checked ? new Date().toISOString() : null;
+                    }
+
+                    const { error } = await this.supabase
+                        .from('activity_reports')
+                        .update(updateData)
+                        .eq('id', reportId);
+
+                    if (error) throw error;
+
+                    // 로컬 데이터 업데이트
+                    for (const [userId, report] of this.reportsMap) {
+                        if (report.id === reportId) {
+                            if (type === 'photos') {
+                                report.photos_downloaded = checked;
+                                report.photos_downloaded_at = checked ? new Date().toISOString() : null;
+                            } else {
+                                report.videos_downloaded = checked;
+                                report.videos_downloaded_at = checked ? new Date().toISOString() : null;
+                            }
+                            break;
+                        }
+                    }
+
+                    // UI 업데이트
+                    btn.classList.remove('loading');
+                    btn.classList.toggle('checked', checked);
+                    btn.innerHTML = checked ? '✓' : '';
+
+                    // 통계 업데이트
+                    this.updateStatistics();
+
+                    showToast(checked ? '다운로드 완료 체크됨' : '체크 해제됨', 'success');
+
+                } catch (error) {
+                    console.error('체크 상태 저장 실패:', error);
+                    btn.classList.remove('loading');
+                    btn.innerHTML = originalContent;
+                    showToast('저장에 실패했습니다.', 'error');
+                }
             }
 
             viewReport(userId) {
