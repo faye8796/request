@@ -696,6 +696,123 @@
             background: #fef3c7;
             color: #d97706;
         }
+        
+        /* 공식 게시물 정보 모달 */
+        .official-post-modal .modal-content {
+            max-width: 500px;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn-save {
+            flex: 1;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-cancel {
+            flex: 1;
+            padding: 0.75rem 1.5rem;
+            background: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #4b5563;
+        }
+
+        /* 공식 게시물 정보 표시 */
+        .official-post-info {
+            margin-top: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: #f0fdf4;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .official-post-info a {
+            color: #059669;
+            text-decoration: none;
+        }
+
+        .official-post-info a:hover {
+            text-decoration: underline;
+        }
+
+        .official-post-stats {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.25rem;
+            color: #059669;
+            font-weight: 500;
+        }
+
+        /* 공식 게시물 정보 입력 버튼 */
+        .btn-edit-post {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-edit-post:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+        }
+        
     </style>
     
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -762,6 +879,39 @@
         </div>
     </div>
 
+    <!-- 공식 게시물 정보 모달 -->
+    <div id="officialPostModal" class="modal official-post-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📱 공식 게시물 정보 입력</h2>
+                <button class="modal-close" onclick="window.contentApp.closeOfficialPostModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>게시글 URL</label>
+                    <input type="url" id="officialPostUrl" placeholder="https://www.instagram.com/p/...">
+                </div>
+                <div class="form-group">
+                    <label>조회수</label>
+                    <input type="number" id="officialViewCount" min="0" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>댓글수</label>
+                    <input type="number" id="officialCommentCount" min="0" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>공감수 (좋아요)</label>
+                    <input type="number" id="officialLikeCount" min="0" placeholder="0">
+                </div>
+                <div class="form-actions">
+                    <button class="btn-cancel" onclick="window.contentApp.closeOfficialPostModal()">취소</button>
+                    <button class="btn-save" onclick="window.contentApp.saveOfficialPostInfo()">💾 저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
     <!-- 상세보기 모달 -->
     <div id="contentDetailModal" class="modal">
         <div class="modal-content">
@@ -890,7 +1040,12 @@
                                 like_count,
                                 proof_image_url,
                                 official_uploaded,
-                                official_upload_date
+                                official_upload_date,
+                                official_post_url,
+                                official_view_count,
+                                official_comment_count,
+                                official_like_count
+
                             )
                         `)
                         .eq('user_type', 'student')
@@ -1095,25 +1250,47 @@
                                             </div>
                                         `;
                                     } else {
-                                        // 일반 콘텐츠 - 공식 업로드 체크 기능 추가
+                                        // 일반 콘텐츠 - 공식 업로드 체크 기능 + 게시물 정보 입력
                                         const isUploaded = content.official_uploaded === true;
                                         const uploadDate = content.official_upload_date 
                                             ? new Date(content.official_upload_date).toLocaleDateString('ko-KR')
                                             : '';
+                                        
+                                        // 공식 게시물 정보 확인
+                                        const hasPostInfo = content.official_post_url || 
+                                                           content.official_view_count > 0 || 
+                                                           content.official_comment_count > 0 || 
+                                                           content.official_like_count > 0;
 
                                         return `
                                             <div class="content-item">
-                                                <div class="content-title">
-                                                    ${this.escapeHtml(content.title)}
-                                                    ${isUploaded ? `
-                                                        <span class="upload-status-badge uploaded">
-                                                            ✓ 공식 업로드 완료 (${uploadDate})
-                                                        </span>
-                                                    ` : `
-                                                        <span class="upload-status-badge pending">
-                                                            대기중
-                                                        </span>
-                                                    `}
+                                                <div class="content-info">
+                                                    <div class="content-title">
+                                                        ${this.escapeHtml(content.title)}
+                                                        ${isUploaded ? `
+                                                            <span class="upload-status-badge uploaded">
+                                                                ✓ 공식 업로드 완료 (${uploadDate})
+                                                            </span>
+                                                        ` : `
+                                                            <span class="upload-status-badge pending">
+                                                                대기중
+                                                            </span>
+                                                        `}
+                                                    </div>
+                                                    ${isUploaded && hasPostInfo ? `
+                                                        <div class="official-post-info">
+                                                            ${content.official_post_url ? `
+                                                                <a href="${content.official_post_url}" target="_blank">
+                                                                    🔗 게시글 바로가기
+                                                                </a>
+                                                            ` : ''}
+                                                            <div class="official-post-stats">
+                                                                <span>👁️ ${(content.official_view_count || 0).toLocaleString()}</span>
+                                                                <span>💬 ${(content.official_comment_count || 0).toLocaleString()}</span>
+                                                                <span>❤️ ${(content.official_like_count || 0).toLocaleString()}</span>
+                                                            </div>
+                                                        </div>
+                                                    ` : ''}
                                                 </div>
                                                 <div class="content-actions">
                                                     <a href="${content.download_url}" target="_blank" class="btn-download">
@@ -1129,6 +1306,13 @@
                                                         <i data-lucide="${isUploaded ? 'check-circle' : 'upload'}"></i>
                                                         ${isUploaded ? '업로드 취소' : '공식 업로드 완료'}
                                                     </button>
+                                                    ${isUploaded ? `
+                                                        <button class="btn-edit-post" 
+                                                                onclick="window.contentApp.openOfficialPostModal('${content.id}')">
+                                                            <i data-lucide="edit-3"></i>
+                                                            게시물 정보
+                                                        </button>
+                                                    ` : ''}
                                                 </div>
                                             </div>
                                         `;
@@ -1233,7 +1417,69 @@
                     showToast('상태 변경에 실패했습니다.', 'error');
                 }
             }            
-                        
+
+            // 공식 게시물 정보 모달 열기
+            openOfficialPostModal(contentId) {
+                this.currentEditingContentId = contentId;
+                const content = this.findContentById(contentId);
+                
+                if (content) {
+                    document.getElementById('officialPostUrl').value = content.official_post_url || '';
+                    document.getElementById('officialViewCount').value = content.official_view_count || 0;
+                    document.getElementById('officialCommentCount').value = content.official_comment_count || 0;
+                    document.getElementById('officialLikeCount').value = content.official_like_count || 0;
+                }
+                
+                document.getElementById('officialPostModal').style.display = 'flex';
+            }
+
+            // 공식 게시물 정보 모달 닫기
+            closeOfficialPostModal() {
+                document.getElementById('officialPostModal').style.display = 'none';
+                this.currentEditingContentId = null;
+            }
+
+            // 공식 게시물 정보 저장
+            async saveOfficialPostInfo() {
+                if (!this.currentEditingContentId) {
+                    showToast('콘텐츠를 찾을 수 없습니다.', 'error');
+                    return;
+                }
+
+                const postUrl = document.getElementById('officialPostUrl').value.trim();
+                const viewCount = parseInt(document.getElementById('officialViewCount').value) || 0;
+                const commentCount = parseInt(document.getElementById('officialCommentCount').value) || 0;
+                const likeCount = parseInt(document.getElementById('officialLikeCount').value) || 0;
+
+                try {
+                    const { error } = await this.supabase
+                        .from('student_contents')
+                        .update({
+                            official_post_url: postUrl || null,
+                            official_view_count: viewCount,
+                            official_comment_count: commentCount,
+                            official_like_count: likeCount
+                        })
+                        .eq('id', this.currentEditingContentId);
+
+                    if (error) throw error;
+
+                    showToast('공식 게시물 정보가 저장되었습니다.', 'success');
+                    this.closeOfficialPostModal();
+
+                    // 데이터 새로고침
+                    await this.loadData();
+                    this.renderStudents();
+
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+
+                } catch (error) {
+                    console.error('공식 게시물 정보 저장 실패:', error);
+                    showToast('저장에 실패했습니다.', 'error');
+                }
+            }
                         
             async exportToExcel() {
                 try {
@@ -1248,7 +1494,7 @@
                         const instituteName = student.sejong_institute || '';
 
                         if (contents.length === 0) {
-                            exportData.push({
+                                                        exportData.push({
                                 '학생명': student.name,
                                 '파견학당': instituteName,
                                 '콘텐츠수': 0,
@@ -1263,7 +1509,11 @@
                                 '증빙자료URL': '',
                                 '등록일시': '',
                                 '공식업로드': '',
-                                '공식업로드일시': ''
+                                '공식업로드일시': '',
+                                '공식게시글URL': '',
+                                '공식조회수': '',
+                                '공식댓글수': '',
+                                '공식공감수': ''
                             });
                         } else {
                             contents.forEach(content => {
@@ -1306,7 +1556,11 @@
                                         '공식업로드': content.official_uploaded ? 'O' : 'X',
                                         '공식업로드일시': content.official_upload_date 
                                             ? new Date(content.official_upload_date).toLocaleString('ko-KR')
-                                            : ''
+                                            : '',
+                                        '공식게시글URL': content.official_post_url || '',
+                                        '공식조회수': content.official_view_count || 0,
+                                        '공식댓글수': content.official_comment_count || 0,
+                                        '공식공감수': content.official_like_count || 0
                                     });
                                 }
                             });
