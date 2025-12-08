@@ -812,6 +812,62 @@
             background: #d97706;
             transform: translateY(-2px);
         }
+        /* 정량 점수 박스 스타일 */
+        .quantitative-score-box {
+            margin-top: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 8px;
+        }
+
+        .quantitative-score-box .total-score {
+            font-size: 1.1rem;
+            color: #92400e;
+            margin-bottom: 0.5rem;
+        }
+
+        .quantitative-score-box .total-score strong {
+            font-size: 1.3rem;
+            color: #b45309;
+        }
+
+        .quantitative-score-box .score-details {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: #a16207;
+            flex-wrap: wrap;
+        }
+
+        .quantitative-score-box .score-details span {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: help;
+        }
+
+        .quantitative-score-box.no-score {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+            color: #6b7280;
+        }
+
+        /* 점수 순위 하이라이트 */
+        .student-card.rank-1 .quantitative-score-box {
+            background: linear-gradient(135deg, #fef08a 0%, #facc15 100%);
+            border-color: #eab308;
+        }
+
+        .student-card.rank-2 .quantitative-score-box {
+            background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+            border-color: #9ca3af;
+        }
+
+        .student-card.rank-3 .quantitative-score-box {
+            background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+            border-color: #f97316;
+        }
         
     </style>
     
@@ -1045,7 +1101,16 @@
                                 official_view_count,
                                 official_comment_count,
                                 official_like_count
-
+                            ),
+                            contest_scores(
+                                score_official_upload,
+                                score_official_views,
+                                score_official_engagement,
+                                score_unofficial,
+                                total_quantitative_score,
+                                official_upload_count,
+                                official_views_total,
+                                calculated_at
                             )
                         `)
                         .eq('user_type', 'student')
@@ -1194,8 +1259,9 @@
                 const contents = student.student_contents || [];
                 const instituteName = student.sejong_institute || '학당 정보 없음';
 
-                // 🆕 정량 점수 계산
-                const totalEngagementScore = this.calculateEngagementScore(contents);
+                // 🆕 contest_scores에서 점수 가져오기
+                const scores = student.contest_scores?.[0] || null;
+                const totalScore = scores ? parseFloat(scores.total_quantitative_score) : 0;
 
                 return `
                     <div class="student-card">
@@ -1203,11 +1269,23 @@
                             <div class="student-info">
                                 <div class="student-name">${this.escapeHtml(student.name)}</div>
                                 <div class="institute-name">${this.escapeHtml(instituteName)}</div>
-                                ${totalEngagementScore > 0 ? `
-                                    <div class="engagement-score">
-                                        📊 총 정량 점수: ${totalEngagementScore.toLocaleString()}점
+                                ${scores ? `
+                                    <div class="quantitative-score-box">
+                                        <div class="total-score">
+                                            🏆 정량점수: <strong>${totalScore.toFixed(2)}점</strong> / 50점
+                                        </div>
+                                        <div class="score-details">
+                                            <span title="공식채널 업로드">📤 ${parseFloat(scores.score_official_upload).toFixed(1)}</span>
+                                            <span title="공식채널 조회수">👁️ ${parseFloat(scores.score_official_views).toFixed(1)}</span>
+                                            <span title="공식채널 공감/댓글">💬 ${parseFloat(scores.score_official_engagement).toFixed(1)}</span>
+                                            <span title="비공식채널">📱 ${parseFloat(scores.score_unofficial).toFixed(1)}</span>
+                                        </div>
                                     </div>
-                                ` : ''}
+                                ` : `
+                                    <div class="quantitative-score-box no-score">
+                                        📊 정량점수: 0점
+                                    </div>
+                                `}
                             </div>
                             <div class="content-count-badge">콘텐츠 ${contents.length}개</div>
                         </div>
@@ -1494,10 +1572,15 @@
                         const instituteName = student.sejong_institute || '';
 
                         if (contents.length === 0) {
-                                                        exportData.push({
+                            exportData.push({
                                 '학생명': student.name,
                                 '파견학당': instituteName,
                                 '콘텐츠수': 0,
+                                '정량점수_업로드': scores ? parseFloat(scores.score_official_upload).toFixed(2) : 0,
+                                '정량점수_조회수': scores ? parseFloat(scores.score_official_views).toFixed(2) : 0,
+                                '정량점수_공감댓글': scores ? parseFloat(scores.score_official_engagement).toFixed(2) : 0,
+                                '정량점수_비공식': scores ? parseFloat(scores.score_unofficial).toFixed(2) : 0,
+                                '정량점수_총점': scores ? parseFloat(scores.total_quantitative_score).toFixed(2) : 0,
                                 '콘텐츠유형': '',
                                 '콘텐츠제목': '',
                                 '콘텐츠설명': '',
