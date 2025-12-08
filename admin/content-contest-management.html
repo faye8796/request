@@ -1077,6 +1077,7 @@
                 try {
                     console.log('📊 데이터 로딩 시작...');
 
+                    // 1. 학생 + 콘텐츠 로드
                     const { data: students, error: studentsError } = await this.supabase
                         .from('user_profiles')
                         .select(`
@@ -1101,16 +1102,6 @@
                                 official_view_count,
                                 official_comment_count,
                                 official_like_count
-                            ),
-                            contest_scores(
-                                score_official_upload,
-                                score_official_views,
-                                score_official_engagement,
-                                score_unofficial,
-                                total_quantitative_score,
-                                official_upload_count,
-                                official_views_total,
-                                calculated_at
                             )
                         `)
                         .eq('user_type', 'student')
@@ -1118,7 +1109,29 @@
 
                     if (studentsError) throw studentsError;
 
-                    this.students = students || [];
+                    // 2. 정량점수 별도 로드
+                    const { data: scores, error: scoresError } = await this.supabase
+                        .from('contest_scores')
+                        .select('*');
+
+                    if (scoresError) {
+                        console.warn('정량점수 로드 실패:', scoresError);
+                    }
+
+                    // 3. 점수를 학생 데이터에 매핑
+                    const scoresMap = new Map();
+                    if (scores) {
+                        scores.forEach(score => {
+                            scoresMap.set(score.user_id, score);
+                        });
+                    }
+
+                    // 4. 학생 데이터에 점수 추가
+                    this.students = (students || []).map(student => ({
+                        ...student,
+                        contest_score: scoresMap.get(student.id) || null
+                    }));
+
                     this.filteredStudents = [...this.students];
 
                     // 학당 목록 추출 (Set 사용)
@@ -1260,7 +1273,7 @@
                 const instituteName = student.sejong_institute || '학당 정보 없음';
 
                 // 🆕 contest_scores에서 점수 가져오기
-                const scores = student.contest_scores?.[0] || null;
+                const scores = student.contest_score || null;
                 const totalScore = scores ? parseFloat(scores.total_quantitative_score) : 0;
 
                 return `
@@ -1275,10 +1288,10 @@
                                             🏆 정량점수: <strong>${totalScore.toFixed(2)}점</strong> / 50점
                                         </div>
                                         <div class="score-details">
-                                            <span title="공식채널 업로드">📤 ${parseFloat(scores.score_official_upload).toFixed(1)}</span>
-                                            <span title="공식채널 조회수">👁️ ${parseFloat(scores.score_official_views).toFixed(1)}</span>
-                                            <span title="공식채널 공감/댓글">💬 ${parseFloat(scores.score_official_engagement).toFixed(1)}</span>
-                                            <span title="비공식채널">📱 ${parseFloat(scores.score_unofficial).toFixed(1)}</span>
+                                            <span title="공식채널 업로드">📤 ${parseFloat(scores.score_official_upload).toFixed(2)}</span>
+                                            <span title="공식채널 조회수">👁️ ${parseFloat(scores.score_official_views).toFixed(2)}</span>
+                                            <span title="공식채널 공감/댓글">💬 ${parseFloat(scores.score_official_engagement).toFixed(2)}</span>
+                                            <span title="비공식채널">📱 ${parseFloat(scores.score_unofficial).toFixed(2)}</span>
                                         </div>
                                     </div>
                                 ` : `
