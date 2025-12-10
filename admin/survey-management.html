@@ -103,6 +103,49 @@
             transform: none;
         }
 
+        /* Tab Navigation */
+        .tab-navigation {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 8px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 8px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: transparent;
+            color: #6b7280;
+        }
+
+        .tab-button:hover {
+            background: #f3f4f6;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .tab-button .tab-icon {
+            font-size: 20px;
+        }
+
         /* Statistics */
         .statistics {
             display: grid;
@@ -240,7 +283,264 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Intern Survey Cards */
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ===== 전체 결과 탭 스타일 ===== */
+        .overall-stats-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .stats-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .question-stats-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .question-stats-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .question-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .question-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .positive-rate-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .question-content {
+            display: grid;
+            grid-template-columns: 1fr 200px;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (max-width: 768px) {
+            .question-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Stats Table */
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .stats-table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .stats-table th:first-child {
+            border-radius: 8px 0 0 0;
+        }
+
+        .stats-table th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+
+        .stats-table td {
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .stats-table tr:last-child td {
+            border-bottom: none;
+            font-weight: 700;
+            background: #f3f4f6;
+        }
+
+        .stats-table tr:last-child td:first-child {
+            border-radius: 0 0 0 8px;
+        }
+
+        .stats-table tr:last-child td:last-child {
+            border-radius: 0 0 8px 0;
+        }
+
+        .stats-table td:nth-child(2),
+        .stats-table td:nth-child(3),
+        .stats-table th:nth-child(2),
+        .stats-table th:nth-child(3) {
+            text-align: center;
+        }
+
+        /* Donut Chart */
+        .donut-chart-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .donut-chart {
+            position: relative;
+            width: 140px;
+            height: 140px;
+        }
+
+        .donut-chart svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .donut-chart circle {
+            fill: none;
+            stroke-width: 20;
+        }
+
+        .donut-chart .bg {
+            stroke: #e5e7eb;
+        }
+
+        .donut-chart .progress {
+            stroke: #4a8f3c;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.8s ease;
+        }
+
+        .donut-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .donut-total {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .donut-number {
+            font-size: 20px;
+            font-weight: 700;
+            color: #4a8f3c;
+        }
+
+        .donut-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend-color.positive {
+            background: #4a8f3c;
+        }
+
+        .legend-color.negative {
+            background: #e5e7eb;
+        }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .summary-card .label {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .summary-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .summary-card .sub-value {
+            font-size: 14px;
+            color: #10b981;
+            margin-top: 4px;
+        }
+
+        /* ===== 학생별 결과 탭 스타일 ===== */
         .interns-container {
             display: flex;
             flex-direction: column;
@@ -675,6 +975,15 @@
             .chart-bar {
                 grid-template-columns: 50px 1fr 60px;
             }
+
+            .tab-button {
+                padding: 12px 16px;
+                font-size: 14px;
+            }
+
+            .tab-button .tab-icon {
+                font-size: 16px;
+            }
         }
     </style>
 </head>
@@ -695,6 +1004,18 @@
             <button class="excel-export-btn" id="exportExcelBtn">
                 <span>📥</span>
                 전체 엑셀로 내보내기
+            </button>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" data-tab="overall">
+                <span class="tab-icon">📈</span>
+                전체 결과
+            </button>
+            <button class="tab-button" data-tab="individual">
+                <span class="tab-icon">👤</span>
+                학생별 결과
             </button>
         </div>
 
@@ -730,56 +1051,72 @@
             </div>
         </div>
 
-        <!-- Filter Controls -->
-        <div class="filter-controls">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label for="searchInput">문화인턴 검색</label>
-                    <input type="text" id="searchInput" class="filter-input" placeholder="이름 검색">
-                </div>
-                <div class="filter-group">
-                    <label for="countryFilter">국가</label>
-                    <select id="countryFilter" class="filter-select">
-                        <option value="">전체 국가</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="instituteFilter">학당</label>
-                    <select id="instituteFilter" class="filter-select">
-                        <option value="">전체 학당</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="ratingFilter">평가 등급</label>
-                    <select id="ratingFilter" class="filter-select">
-                        <option value="">전체 평가</option>
-                        <option value="excellent">우수 (4.5~5.0)</option>
-                        <option value="good">양호 (4.0~4.4)</option>
-                        <option value="average">보통 (3.0~3.9)</option>
-                        <option value="low">개선필요 (3.0 미만)</option>
-                    </select>
-                </div>
-                <button class="clear-filters-btn" id="clearFiltersBtn">
-                    ✖ 초기화
-                </button>
+        <!-- Tab Content: 전체 결과 -->
+        <div class="tab-content active" id="overallTab">
+            <!-- Loading State -->
+            <div class="loading-container" id="overallLoadingContainer">
+                <div class="loading-spinner"></div>
+            </div>
+
+            <!-- Overall Stats Container -->
+            <div class="overall-stats-container" id="overallStatsContainer" style="display: none;">
+                <!-- Will be populated dynamically -->
             </div>
         </div>
 
-        <!-- Loading State -->
-        <div class="loading-container" id="loadingContainer">
-            <div class="loading-spinner"></div>
-        </div>
+        <!-- Tab Content: 학생별 결과 -->
+        <div class="tab-content" id="individualTab">
+            <!-- Filter Controls -->
+            <div class="filter-controls">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="searchInput">문화인턴 검색</label>
+                        <input type="text" id="searchInput" class="filter-input" placeholder="이름 검색">
+                    </div>
+                    <div class="filter-group">
+                        <label for="countryFilter">국가</label>
+                        <select id="countryFilter" class="filter-select">
+                            <option value="">전체 국가</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="instituteFilter">학당</label>
+                        <select id="instituteFilter" class="filter-select">
+                            <option value="">전체 학당</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="ratingFilter">평가 등급</label>
+                        <select id="ratingFilter" class="filter-select">
+                            <option value="">전체 평가</option>
+                            <option value="excellent">우수 (4.5~5.0)</option>
+                            <option value="good">양호 (4.0~4.4)</option>
+                            <option value="average">보통 (3.0~3.9)</option>
+                            <option value="low">개선필요 (3.0 미만)</option>
+                        </select>
+                    </div>
+                    <button class="clear-filters-btn" id="clearFiltersBtn">
+                        ✖ 초기화
+                    </button>
+                </div>
+            </div>
 
-        <!-- Interns Container -->
-        <div class="interns-container" id="internsContainer" style="display: none;">
-            <!-- Intern cards will be rendered here -->
-        </div>
+            <!-- Loading State -->
+            <div class="loading-container" id="loadingContainer">
+                <div class="loading-spinner"></div>
+            </div>
 
-        <!-- Empty State -->
-        <div class="empty-state" id="emptyState" style="display: none;">
-            <div class="empty-state-icon">📊</div>
-            <h3>설문 데이터가 없습니다</h3>
-            <p>아직 제출된 설문이 없거나 필터 조건에 맞는 데이터가 없습니다.</p>
+            <!-- Interns Container -->
+            <div class="interns-container" id="internsContainer" style="display: none;">
+                <!-- Intern cards will be rendered here -->
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-state-icon">📊</div>
+                <h3>설문 데이터가 없습니다</h3>
+                <p>아직 제출된 설문이 없거나 필터 조건에 맞는 데이터가 없습니다.</p>
+            </div>
         </div>
     </div>
 
@@ -809,11 +1146,16 @@
         // 전역 변수
         let allInternsData = [];
         let filteredInternsData = [];
+        let allSurveysData = [];
+        let overallStats = null;
         let isLoading = false;
+        let currentTab = 'overall';
 
         // DOM 요소
         const loadingContainer = document.getElementById('loadingContainer');
+        const overallLoadingContainer = document.getElementById('overallLoadingContainer');
         const internsContainer = document.getElementById('internsContainer');
+        const overallStatsContainer = document.getElementById('overallStatsContainer');
         const emptyState = document.getElementById('emptyState');
         const searchInput = document.getElementById('searchInput');
         const countryFilter = document.getElementById('countryFilter');
@@ -836,7 +1178,23 @@
             }, 3000);
         }
 
-        // 국가명 추출 함수 (survey.html과 동일)
+        // 탭 전환
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.dataset.tab;
+                currentTab = tabName;
+                
+                // 버튼 활성화 상태 변경
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                // 탭 콘텐츠 표시/숨김
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(tabName + 'Tab').classList.add('active');
+            });
+        });
+
+        // 국가명 추출 함수
         function extractCountryName(instituteName) {
             if (!instituteName) return '';
             const hyphenIndex = instituteName.indexOf('-');
@@ -848,6 +1206,42 @@
             }
             const spaceIndex = instituteName.indexOf(' ');
             return spaceIndex > 0 ? instituteName.substring(0, spaceIndex).trim() : instituteName.trim();
+        }
+
+        // ===== 퍼센테이지 100% 조정 (Largest Remainder Method) =====
+        function adjustPercentages(counts, total) {
+            if (total === 0) return counts.map(() => 0);
+            
+            // 1. 정확한 비율 계산
+            const exactPercentages = counts.map(count => (count / total) * 100);
+            
+            // 2. 소수점 첫째자리까지 내림
+            const flooredPercentages = exactPercentages.map(p => Math.floor(p * 10) / 10);
+            
+            // 3. 나머지 계산
+            const remainders = exactPercentages.map((exact, i) => ({
+                index: i,
+                remainder: exact - flooredPercentages[i],
+                count: counts[i] // 원본 응답수 (가중치용)
+            }));
+            
+            // 4. 현재 합계와 100의 차이 계산
+            const currentSum = flooredPercentages.reduce((a, b) => a + b, 0);
+            let difference = Math.round((100 - currentSum) * 10); // 0.1 단위로 계산
+            
+            // 5. 나머지가 큰 순서대로 정렬 (같으면 응답수가 큰 것 우선)
+            remainders.sort((a, b) => {
+                if (b.remainder !== a.remainder) return b.remainder - a.remainder;
+                return b.count - a.count;
+            });
+            
+            // 6. 차이만큼 0.1씩 추가
+            const result = [...flooredPercentages];
+            for (let i = 0; i < difference && i < remainders.length; i++) {
+                result[remainders[i].index] = Math.round((result[remainders[i].index] + 0.1) * 10) / 10;
+            }
+            
+            return result;
         }
 
         // 데이터 로딩
@@ -877,7 +1271,12 @@
                 
                 if (surveysError) throw surveysError;
                 
-                // 3. 인턴별로 데이터 그룹화
+                allSurveysData = surveys;
+                
+                // 3. 전체 통계 계산
+                overallStats = calculateOverallStats(surveys);
+                
+                // 4. 인턴별로 데이터 그룹화
                 allInternsData = interns.map(intern => {
                     const internSurveys = surveys.filter(s => s.intern_id === intern.id);
                     
@@ -907,6 +1306,7 @@
                 
                 populateFilters();
                 updateStatistics();
+                renderOverallStats();
                 renderInterns();
                 
             } catch (error) {
@@ -919,15 +1319,309 @@
             }
         }
 
+        // ===== 전체 통계 계산 =====
+        function calculateOverallStats(surveys) {
+            const total = surveys.length;
+            if (total === 0) return null;
+            
+            // 참여 경험 분포
+            const participation = {
+                first: surveys.filter(s => s.participation_count === 'first').length,
+                second: surveys.filter(s => s.participation_count === 'second').length,
+                third_or_more: surveys.filter(s => s.participation_count === 'third_or_more').length
+            };
+            
+            // 각 문항별 응답 분포
+            const questions = [
+                { key: 'q3_recruitment_info', title: '수강생 모집 안내 적절성', labels: ['매우 적절함', '적절함', '보통', '적절하지 않음', '전혀 적절하지 않음'] },
+                { key: 'q4_content_interest', title: '수업 내용 흥미도', labels: ['매우 흥미로움', '흥미로움', '보통', '흥미롭지 않음', '전혀 흥미롭지 않음'] },
+                { key: 'q5_class_appropriateness', title: '수업 구성 적절성', labels: ['매우 적절함', '적절함', '보통', '적절하지 않음', '전혀 적절하지 않음'] },
+                { key: 'q6_instructor_communication', title: '강사 소통 능력', labels: ['매우 좋음', '좋음', '보통', '좋지 않음', '매우 좋지 않음'] },
+                { key: 'q7_explanation_clarity', title: '설명 명확성', labels: ['매우 명확함', '명확함', '보통', '명확하지 않음', '전혀 명확하지 않음'] },
+                { key: 'q8_cultural_learning', title: '한국문화 이해 도움 정도', labels: ['매우 도움이 됨', '도움이 됨', '보통', '도움이 되지 않음', '전혀 도움이 되지 않음'] },
+                { key: 'q9_overall_satisfaction', title: '전반적 만족도', labels: ['매우 만족', '만족', '보통', '불만족', '매우 불만족'] },
+                { key: 'q10_recommendation', title: '추천 의향', labels: ['적극 추천함', '추천함', '보통', '추천하지 않음', '전혀 추천하지 않음'] }
+            ];
+            
+            const questionStats = questions.map(q => {
+                const distribution = [0, 0, 0, 0, 0]; // 5점, 4점, 3점, 2점, 1점
+                let sum = 0;
+                
+                surveys.forEach(s => {
+                    const score = s[q.key];
+                    if (score >= 1 && score <= 5) {
+                        distribution[5 - score]++;
+                        sum += score;
+                    }
+                });
+                
+                const avg = (sum / total).toFixed(2);
+                const positiveCount = distribution[0] + distribution[1]; // 5점 + 4점
+                const positiveRate = ((positiveCount / total) * 100).toFixed(1);
+                
+                // 퍼센테이지 조정
+                const adjustedPercentages = adjustPercentages(distribution, total);
+                
+                return {
+                    ...q,
+                    distribution,
+                    adjustedPercentages,
+                    average: avg,
+                    positiveCount,
+                    positiveRate
+                };
+            });
+            
+            // 전체 평균
+            const scoreFields = ['q3_recruitment_info', 'q4_content_interest', 'q5_class_appropriateness',
+                'q6_instructor_communication', 'q7_explanation_clarity', 'q8_cultural_learning',
+                'q9_overall_satisfaction', 'q10_recommendation'];
+            
+            let totalSum = 0;
+            let count = 0;
+            surveys.forEach(s => {
+                scoreFields.forEach(field => {
+                    totalSum += s[field];
+                    count++;
+                });
+            });
+            const overallAverage = (totalSum / count).toFixed(2);
+            
+            // 참여 경험 퍼센테이지 조정
+            const participationCounts = [participation.first, participation.second, participation.third_or_more];
+            const participationPercentages = adjustPercentages(participationCounts, total);
+            
+            return {
+                total,
+                participation: {
+                    first: { count: participation.first, percentage: participationPercentages[0] },
+                    second: { count: participation.second, percentage: participationPercentages[1] },
+                    third_or_more: { count: participation.third_or_more, percentage: participationPercentages[2] }
+                },
+                questions: questionStats,
+                overallAverage
+            };
+        }
+
+        // ===== 전체 결과 렌더링 =====
+        function renderOverallStats() {
+            if (!overallStats) {
+                overallStatsContainer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><h3>설문 데이터가 없습니다</h3></div>';
+                overallStatsContainer.style.display = 'block';
+                overallLoadingContainer.style.display = 'none';
+                return;
+            }
+            
+            const stats = overallStats;
+            
+            let html = `
+                <!-- 요약 카드 -->
+                <div class="stats-section">
+                    <div class="section-title">📋 응답 요약</div>
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="label">총 응답 수</div>
+                            <div class="value">${stats.total}명</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="label">전체 평균 만족도</div>
+                            <div class="value">${stats.overallAverage}점</div>
+                            <div class="sub-value">5점 만점</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="label">전체 긍정 응답률</div>
+                            <div class="value">${calculateOverallPositiveRate(stats)}%</div>
+                            <div class="sub-value">4점 이상 응답</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 참여 경험 분포 -->
+                <div class="stats-section">
+                    <div class="section-title">👥 1. 참여 경험</div>
+                    <div class="question-stats-card">
+                        <div class="question-content">
+                            <table class="stats-table">
+                                <thead>
+                                    <tr>
+                                        <th>구분</th>
+                                        <th>응답 수</th>
+                                        <th>비율 (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>처음 참여</td>
+                                        <td>${stats.participation.first.count}명</td>
+                                        <td>${stats.participation.first.percentage.toFixed(1)}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>두 번째 참여</td>
+                                        <td>${stats.participation.second.count}명</td>
+                                        <td>${stats.participation.second.percentage.toFixed(1)}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>세 번째 이상 참여</td>
+                                        <td>${stats.participation.third_or_more.count}명</td>
+                                        <td>${stats.participation.third_or_more.percentage.toFixed(1)}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>계</strong></td>
+                                        <td><strong>${stats.total}명</strong></td>
+                                        <td><strong>100.0%</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            ${renderDonutChart(stats.participation.first.count, stats.total, '처음 참여')}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 문화수업 전반적 만족도 -->
+                <div class="stats-section">
+                    <div class="section-title">📊 2. 문화수업 전반적 만족도</div>
+                    ${stats.questions.map((q, index) => renderQuestionStats(q, index + 1, stats.total)).join('')}
+                </div>
+                
+                <!-- 종합 요약 테이블 -->
+                <div class="stats-section">
+                    <div class="section-title">📋 종합 요약</div>
+                    <div class="question-stats-card">
+                        <table class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>문항</th>
+                                    <th>평균 점수 (5점 만점)</th>
+                                    <th>긍정 응답률</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${stats.questions.map(q => `
+                                    <tr>
+                                        <td>${q.title}</td>
+                                        <td>${q.average}</td>
+                                        <td>${q.positiveRate}%</td>
+                                    </tr>
+                                `).join('')}
+                                <tr>
+                                    <td><strong>전체 평균</strong></td>
+                                    <td><strong>${stats.overallAverage}</strong></td>
+                                    <td><strong>${calculateOverallPositiveRate(stats)}%</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            overallStatsContainer.innerHTML = html;
+            overallStatsContainer.style.display = 'flex';
+            overallLoadingContainer.style.display = 'none';
+        }
+
+        // 문항별 통계 렌더링
+        function renderQuestionStats(question, number, total) {
+            const dist = question.distribution;
+            const pct = question.adjustedPercentages;
+            
+            return `
+                <div class="question-stats-card">
+                    <div class="question-header">
+                        <div>
+                            <div class="question-title">${number}) ${question.title}</div>
+                            <div class="question-subtitle">평균: ${question.average}점</div>
+                        </div>
+                        <div class="positive-rate-badge">긍정 응답률 ${question.positiveRate}%</div>
+                    </div>
+                    <div class="question-content">
+                        <table class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>구분</th>
+                                    <th>응답 수</th>
+                                    <th>비율 (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${question.labels.map((label, i) => `
+                                    <tr>
+                                        <td>${label}</td>
+                                        <td>${dist[i]}명</td>
+                                        <td>${pct[i].toFixed(1)}%</td>
+                                    </tr>
+                                `).join('')}
+                                <tr>
+                                    <td><strong>계</strong></td>
+                                    <td><strong>${total}명</strong></td>
+                                    <td><strong>100.0%</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        ${renderDonutChart(question.positiveCount, total, '긍정 응답')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 도넛 차트 렌더링
+        function renderDonutChart(positiveCount, total, label) {
+            const percentage = total > 0 ? (positiveCount / total * 100) : 0;
+            const circumference = 2 * Math.PI * 50;
+            const offset = circumference * (1 - percentage / 100);
+            
+            return `
+                <div class="donut-chart-container">
+                    <div class="donut-chart">
+                        <svg viewBox="0 0 120 120">
+                            <circle class="bg" cx="60" cy="60" r="50"></circle>
+                            <circle class="progress" cx="60" cy="60" r="50" 
+                                stroke-dasharray="${circumference}" 
+                                stroke-dashoffset="${offset}"></circle>
+                        </svg>
+                        <div class="donut-center">
+                            <div class="donut-total">총 ${total}명</div>
+                            <div class="donut-number">${percentage.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                    <div class="donut-legend">
+                        <div class="legend-item">
+                            <div class="legend-color positive"></div>
+                            <span>${label}: ${positiveCount}명</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color negative"></div>
+                            <span>기타: ${total - positiveCount}명</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 전체 긍정 응답률 계산
+        function calculateOverallPositiveRate(stats) {
+            let totalPositive = 0;
+            let totalResponses = 0;
+            
+            stats.questions.forEach(q => {
+                totalPositive += q.positiveCount;
+                totalResponses += stats.total;
+            });
+            
+            return totalResponses > 0 ? ((totalPositive / totalResponses) * 100).toFixed(1) : 0;
+        }
+
         // 로딩 상태
         function showLoading() {
             loadingContainer.style.display = 'flex';
+            overallLoadingContainer.style.display = 'flex';
             internsContainer.style.display = 'none';
+            overallStatsContainer.style.display = 'none';
             emptyState.style.display = 'none';
         }
 
         function hideLoading() {
             loadingContainer.style.display = 'none';
+            overallLoadingContainer.style.display = 'none';
         }
 
         function showEmptyState() {
@@ -1276,38 +1970,91 @@
                 exportExcelBtn.disabled = true;
                 exportExcelBtn.innerHTML = '⏳ 내보내는 중...';
                 
-                const exportData = filteredInternsData
-                    .filter(data => data.hasData)
-                    .map(data => ({
-                        '문화인턴명': data.intern.name,
-                        '국가': data.country,
-                        '파견학당': data.intern.sejong_institute || '',
-                        '총응답수': data.responseCount,
-                        '평균만족도': data.averageScore,
-                        '수강생모집안내': data.detailedScores.recruitmentInfo,
-                        '수업내용흥미': data.detailedScores.contentInterest,
-                        '수업구성적절성': data.detailedScores.classAppropriateness,
-                        '강사소통능력': data.detailedScores.instructorCommunication,
-                        '설명명확성': data.detailedScores.explanationClarity,
-                        '문화학습효과': data.detailedScores.culturalLearning,
-                        '전반적만족도': data.detailedScores.overallSatisfaction,
-                        '추천의향': data.detailedScores.recommendation,
-                        '처음참여자': data.participationDistribution.first,
-                        '두번째참여자': data.participationDistribution.second,
-                        '세번째이상참여자': data.participationDistribution.third_or_more,
-                        '1점응답': data.scoreDistribution[1],
-                        '2점응답': data.scoreDistribution[2],
-                        '3점응답': data.scoreDistribution[3],
-                        '4점응답': data.scoreDistribution[4],
-                        '5점응답': data.scoreDistribution[5]
-                    }));
-                
-                const worksheet = XLSX.utils.json_to_sheet(exportData);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, '설문결과');
-                
-                const today = new Date().toISOString().split('T')[0];
-                XLSX.writeFile(workbook, `문화수업만족도설문_${today}.xlsx`);
+                if (currentTab === 'overall' && overallStats) {
+                    // 전체 결과 엑셀 내보내기
+                    const workbook = XLSX.utils.book_new();
+                    
+                    // 요약 시트
+                    const summaryData = [
+                        ['문화수업 만족도 설문 전체 결과'],
+                        [''],
+                        ['총 응답 수', overallStats.total],
+                        ['전체 평균 만족도', overallStats.overallAverage],
+                        [''],
+                        ['참여 경험 분포'],
+                        ['구분', '응답 수', '비율(%)'],
+                        ['처음 참여', overallStats.participation.first.count, overallStats.participation.first.percentage],
+                        ['두 번째 참여', overallStats.participation.second.count, overallStats.participation.second.percentage],
+                        ['세 번째 이상 참여', overallStats.participation.third_or_more.count, overallStats.participation.third_or_more.percentage],
+                        ['계', overallStats.total, 100.0]
+                    ];
+                    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+                    XLSX.utils.book_append_sheet(workbook, summarySheet, '요약');
+                    
+                    // 문항별 상세 시트
+                    overallStats.questions.forEach((q, index) => {
+                        const questionData = [
+                            [`${index + 1}. ${q.title}`],
+                            ['평균 점수', q.average],
+                            ['긍정 응답률', q.positiveRate + '%'],
+                            [''],
+                            ['구분', '응답 수', '비율(%)'],
+                            ...q.labels.map((label, i) => [label, q.distribution[i], q.adjustedPercentages[i].toFixed(1)]),
+                            ['계', overallStats.total, '100.0']
+                        ];
+                        const questionSheet = XLSX.utils.aoa_to_sheet(questionData);
+                        XLSX.utils.book_append_sheet(workbook, questionSheet, `Q${index + 1}`);
+                    });
+                    
+                    // 종합 요약 시트
+                    const comprehensiveData = [
+                        ['종합 요약'],
+                        [''],
+                        ['문항', '평균 점수', '긍정 응답률'],
+                        ...overallStats.questions.map(q => [q.title, q.average, q.positiveRate + '%']),
+                        ['전체 평균', overallStats.overallAverage, calculateOverallPositiveRate(overallStats) + '%']
+                    ];
+                    const comprehensiveSheet = XLSX.utils.aoa_to_sheet(comprehensiveData);
+                    XLSX.utils.book_append_sheet(workbook, comprehensiveSheet, '종합요약');
+                    
+                    const today = new Date().toISOString().split('T')[0];
+                    XLSX.writeFile(workbook, `문화수업만족도_전체결과_${today}.xlsx`);
+                    
+                } else {
+                    // 학생별 결과 엑셀 내보내기
+                    const exportData = filteredInternsData
+                        .filter(data => data.hasData)
+                        .map(data => ({
+                            '문화인턴명': data.intern.name,
+                            '국가': data.country,
+                            '파견학당': data.intern.sejong_institute || '',
+                            '총응답수': data.responseCount,
+                            '평균만족도': data.averageScore,
+                            '수강생모집안내': data.detailedScores.recruitmentInfo,
+                            '수업내용흥미': data.detailedScores.contentInterest,
+                            '수업구성적절성': data.detailedScores.classAppropriateness,
+                            '강사소통능력': data.detailedScores.instructorCommunication,
+                            '설명명확성': data.detailedScores.explanationClarity,
+                            '문화학습효과': data.detailedScores.culturalLearning,
+                            '전반적만족도': data.detailedScores.overallSatisfaction,
+                            '추천의향': data.detailedScores.recommendation,
+                            '처음참여자': data.participationDistribution.first,
+                            '두번째참여자': data.participationDistribution.second,
+                            '세번째이상참여자': data.participationDistribution.third_or_more,
+                            '1점응답': data.scoreDistribution[1],
+                            '2점응답': data.scoreDistribution[2],
+                            '3점응답': data.scoreDistribution[3],
+                            '4점응답': data.scoreDistribution[4],
+                            '5점응답': data.scoreDistribution[5]
+                        }));
+                    
+                    const worksheet = XLSX.utils.json_to_sheet(exportData);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, '학생별결과');
+                    
+                    const today = new Date().toISOString().split('T')[0];
+                    XLSX.writeFile(workbook, `문화수업만족도_학생별결과_${today}.xlsx`);
+                }
                 
                 showToast('엑셀 파일이 다운로드되었습니다.');
                 
