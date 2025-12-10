@@ -603,6 +603,20 @@
         .score-badge.average { background: #fef3c7; color: #92400e; }
         .score-badge.low { background: #fee2e2; color: #991b1b; }
 
+        /* 관리자 입력 점수 배지 스타일 */
+        .score-badge.admin-score {
+            border: 2px solid #6366f1;
+            position: relative;
+        }
+
+        .score-badge.admin-score::before {
+            content: '✏️';
+            font-size: 10px;
+            position: absolute;
+            top: -8px;
+            right: -8px;
+        }
+
         .btn-view {
             background: #6366f1;
             color: white;
@@ -788,6 +802,19 @@
         .no-answer {
             color: #9ca3af;
             font-style: italic;
+        }
+
+        /* 관리자 수정 표시 스타일 */
+        .admin-modified-badge {
+            color: #6366f1;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .original-score-note {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 4px;
         }
 
         /* Loading */
@@ -1032,6 +1059,7 @@
                             <th>상태</th>
                             <th>제출일</th>
                             <th>평균 점수</th>
+                            <th>관리자 입력 점수</th>
                             <th>액션</th>
                         </tr>
                     </thead>
@@ -1086,6 +1114,14 @@
         const supabaseUrl = 'https://aazvopacnbbkvusihqva.supabase.co';
         const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTQyMjQsImV4cCI6MjA2NTM3MDIyNH0.0NXI_tohwFCOl3xY4b1jIlxQR_zGTS9tWDM2OFxTq4s';
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        // 리커트 척도 질문 키 목록
+        const LIKERT_KEYS = [
+            'q1_1_overall_satisfaction', 'q1_2_foundation_support', 'q1_3_institute_support', 'q1_4_recommendation',
+            'q2_1_domestic_education', 'q2_2_equipment_support', 'q2_3_local_coordinator', 'q2_4_workspace_support',
+            'q3_1_visa_support', 'q3_2_accommodation_support', 'q3_3_coordinator_help', 'q3_4_safety_support', 'q3_5_expense_support',
+            'q4_1_competency_improvement'
+        ];
 
         // 질문 정의 (보고서용 라벨 포함)
         const QUESTIONS = {
@@ -1245,11 +1281,15 @@
                 // 3. 데이터 병합
                 allData = students.map(student => {
                     const survey = surveys.find(s => s.user_id === student.id);
+                    const hasAdminScores = survey ? checkHasAdminScores(survey) : false;
+                    
                     return {
                         student,
                         survey,
                         status: survey ? survey.status : 'none',
-                        averageScore: survey && survey.status === 'submitted' ? calculateAverageScore(survey) : null
+                        averageScore: survey && survey.status === 'submitted' ? calculateAverageScore(survey, false) : null,
+                        adminAverageScore: survey && survey.status === 'submitted' && hasAdminScores ? calculateAverageScore(survey, true) : null,
+                        hasAdminScores
                     };
                 });
                 
@@ -1272,6 +1312,14 @@
                 isLoading = false;
                 hideLoading();
             }
+        }
+
+        // 관리자 점수 존재 여부 확인
+        function checkHasAdminScores(survey) {
+            return LIKERT_KEYS.some(key => {
+                const adminKey = key + '_admin';
+                return survey[adminKey] !== null && survey[adminKey] !== undefined;
+            });
         }
 
         // ===== 전체 통계 계산 =====
@@ -1318,12 +1366,11 @@
             });
             
             // 전체 평균 계산
-            const likertKeys = allQuestions.map(q => q.key);
             let totalSum = 0;
             let totalCount = 0;
             
             surveys.forEach(s => {
-                likertKeys.forEach(key => {
+                LIKERT_KEYS.forEach(key => {
                     if (s[key] !== null && s[key] !== undefined) {
                         totalSum += s[key];
                         totalCount++;
@@ -1528,21 +1575,31 @@
             return totalResponses > 0 ? ((totalPositive / totalResponses) * 100).toFixed(1) : '0.0';
         }
 
-        // 평균 점수 계산
-        function calculateAverageScore(survey) {
-            const likertKeys = [
-                'q1_1_overall_satisfaction', 'q1_2_foundation_support', 'q1_3_institute_support', 'q1_4_recommendation',
-                'q2_1_domestic_education', 'q2_2_equipment_support', 'q2_3_local_coordinator', 'q2_4_workspace_support',
-                'q3_1_visa_support', 'q3_2_accommodation_support', 'q3_3_coordinator_help', 'q3_4_safety_support', 'q3_5_expense_support',
-                'q4_1_competency_improvement'
-            ];
-            
+        // 평균 점수 계산 (관리자 점수 사용 옵션)
+        function calculateAverageScore(survey, useAdminScores = false) {
             let sum = 0;
             let count = 0;
             
-            likertKeys.forEach(key => {
-                if (survey[key] !== null && survey[key] !== undefined) {
-                    sum += survey[key];
+            LIKERT_KEYS.forEach(key => {
+                let score = null;
+                
+                if (useAdminScores) {
+                    // 관리자 점수 우선 사용, 없으면 원래 점수 사용
+                    const adminKey = key + '_admin';
+                    if (survey[adminKey] !== null && survey[adminKey] !== undefined) {
+                        score = survey[adminKey];
+                    } else if (survey[key] !== null && survey[key] !== undefined) {
+                        score = survey[key];
+                    }
+                } else {
+                    // 원래 점수만 사용
+                    if (survey[key] !== null && survey[key] !== undefined) {
+                        score = survey[key];
+                    }
+                }
+                
+                if (score !== null) {
+                    sum += score;
                     count++;
                 }
             });
@@ -1615,7 +1672,8 @@
             
             tableBody.innerHTML = filteredData.map(data => {
                 const statusBadge = getStatusBadge(data.status);
-                const scoreBadge = data.averageScore ? getScoreBadge(parseFloat(data.averageScore)) : '-';
+                const scoreBadge = data.averageScore ? getScoreBadge(parseFloat(data.averageScore), false) : '-';
+                const adminScoreBadge = data.adminAverageScore ? getScoreBadge(parseFloat(data.adminAverageScore), true) : '-';
                 const submittedDate = data.survey?.submitted_at 
                     ? new Date(data.survey.submitted_at).toLocaleDateString('ko-KR')
                     : '-';
@@ -1627,6 +1685,7 @@
                         <td>${statusBadge}</td>
                         <td>${submittedDate}</td>
                         <td>${scoreBadge}</td>
+                        <td>${adminScoreBadge}</td>
                         <td>
                             ${data.survey ? `<button class="btn-view" onclick="openDetailModal('${data.student.id}')">상세보기</button>` : '-'}
                         </td>
@@ -1645,14 +1704,15 @@
             return badges[status] || badges.none;
         }
 
-        // 점수 배지
-        function getScoreBadge(score) {
+        // 점수 배지 (관리자 점수 여부 표시)
+        function getScoreBadge(score, isAdmin = false) {
             let className = 'average';
             if (score >= 4.5) className = 'excellent';
             else if (score >= 4.0) className = 'good';
             else if (score < 3.0) className = 'low';
             
-            return `<span class="score-badge ${className}">${score}</span>`;
+            const adminClass = isAdmin ? ' admin-score' : '';
+            return `<span class="score-badge ${className}${adminClass}">${score}</span>`;
         }
 
         // 필터링
@@ -1694,20 +1754,30 @@
                 
                 if (section.questions) {
                     section.questions.forEach(q => {
-                        const value = data.survey[q.key];
-                        const percentage = value ? (value / 5 * 100) : 0;
-                        const label = value ? LIKERT_LABELS[value] : '응답 없음';
+                        const originalValue = data.survey[q.key];
+                        const adminKey = q.key + '_admin';
+                        const adminValue = data.survey[adminKey];
+                        const hasAdminValue = adminValue !== null && adminValue !== undefined;
+                        
+                        // 표시할 값: 관리자 값이 있으면 관리자 값, 없으면 원래 값
+                        const displayValue = hasAdminValue ? adminValue : originalValue;
+                        const percentage = displayValue ? (displayValue / 5 * 100) : 0;
+                        const label = displayValue ? LIKERT_LABELS[displayValue] : '응답 없음';
                         
                         bodyHtml += `
                             <div class="response-item">
-                                <div class="response-question">${q.label}</div>
+                                <div class="response-question">
+                                    ${q.label}
+                                    ${hasAdminValue ? '<span class="admin-modified-badge">✏️ 관리자 수정</span>' : ''}
+                                </div>
                                 <div class="response-answer-likert">
-                                    <div class="likert-score">${value || '-'}</div>
+                                    <div class="likert-score" ${hasAdminValue ? 'style="color: #6366f1;"' : ''}>${displayValue || '-'}</div>
                                     <div class="likert-bar-container">
                                         <div class="likert-bar-fill" style="width: ${percentage}%"></div>
                                     </div>
                                     <div class="likert-label">${label}</div>
                                 </div>
+                                ${hasAdminValue ? `<div class="original-score-note">원래 응답: ${originalValue || '-'}점</div>` : ''}
                             </div>
                         `;
                     });
@@ -1830,13 +1900,15 @@
                             '파견 학당': d.student.sejong_institute || '',
                             '상태': '제출 완료',
                             '제출일': d.survey.submitted_at ? new Date(d.survey.submitted_at).toLocaleDateString('ko-KR') : '',
-                            '평균 점수': d.averageScore
+                            '평균 점수': d.averageScore,
+                            '관리자 입력 점수': d.adminAverageScore || ''
                         };
                         
                         Object.values(QUESTIONS).forEach(section => {
                             if (section.questions) {
                                 section.questions.forEach(q => {
                                     row[q.label] = d.survey[q.key] || '';
+                                    row[q.label + ' (관리자)'] = d.survey[q.key + '_admin'] || '';
                                 });
                             }
                             if (section.textQuestions) {
