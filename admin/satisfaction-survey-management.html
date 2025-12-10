@@ -113,24 +113,47 @@
             transform: translateY(-2px);
         }
 
-        .btn-primary {
+        /* Tab Navigation */
+        .tab-navigation {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 8px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 8px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: transparent;
+            color: #6b7280;
+        }
+
+        .tab-button:hover {
+            background: #f3f4f6;
+        }
+
+        .tab-button.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
         }
 
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-secondary {
-            background: #6b7280;
-            color: white;
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: #4b5563;
-            transform: translateY(-2px);
+        .tab-button .tab-icon {
+            font-size: 20px;
         }
 
         /* Statistics */
@@ -185,7 +208,264 @@
         .stat-card.rate .stat-icon { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
         .stat-card.average .stat-icon { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); }
 
-        /* Filter Controls */
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ===== 전체 결과 탭 스타일 ===== */
+        .overall-stats-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .stats-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .question-stats-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .question-stats-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .question-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .question-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .positive-rate-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .question-content {
+            display: grid;
+            grid-template-columns: 1fr 200px;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (max-width: 768px) {
+            .question-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Stats Table */
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .stats-table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .stats-table th:first-child {
+            border-radius: 8px 0 0 0;
+        }
+
+        .stats-table th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+
+        .stats-table td {
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .stats-table tr:last-child td {
+            border-bottom: none;
+            font-weight: 700;
+            background: #f3f4f6;
+        }
+
+        .stats-table tr:last-child td:first-child {
+            border-radius: 0 0 0 8px;
+        }
+
+        .stats-table tr:last-child td:last-child {
+            border-radius: 0 0 8px 0;
+        }
+
+        .stats-table td:nth-child(2),
+        .stats-table td:nth-child(3),
+        .stats-table th:nth-child(2),
+        .stats-table th:nth-child(3) {
+            text-align: center;
+        }
+
+        /* Donut Chart */
+        .donut-chart-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .donut-chart {
+            position: relative;
+            width: 140px;
+            height: 140px;
+        }
+
+        .donut-chart svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .donut-chart circle {
+            fill: none;
+            stroke-width: 20;
+        }
+
+        .donut-chart .bg {
+            stroke: #e5e7eb;
+        }
+
+        .donut-chart .progress {
+            stroke: #4a8f3c;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.8s ease;
+        }
+
+        .donut-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .donut-total {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .donut-number {
+            font-size: 20px;
+            font-weight: 700;
+            color: #4a8f3c;
+        }
+
+        .donut-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend-color.positive {
+            background: #4a8f3c;
+        }
+
+        .legend-color.negative {
+            background: #e5e7eb;
+        }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .summary-card .label {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .summary-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .summary-card .sub-value {
+            font-size: 14px;
+            color: #10b981;
+            margin-top: 4px;
+        }
+
+        /* ===== 학생별 결과 탭 스타일 ===== */
         .filter-controls {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -338,87 +618,6 @@
         .btn-view:hover {
             background: #5855eb;
             transform: translateY(-1px);
-        }
-
-        /* Question Statistics Section */
-        .question-stats-section {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            margin-bottom: 24px;
-        }
-
-        .section-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .question-category {
-            margin-bottom: 24px;
-        }
-
-        .category-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #e5e7eb;
-        }
-
-        .question-stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 12px;
-        }
-
-        .question-stat-item {
-            display: grid;
-            grid-template-columns: 1fr 100px 60px;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            background: #f9fafb;
-            border-radius: 10px;
-            transition: all 0.2s ease;
-        }
-
-        .question-stat-item:hover {
-            background: #f3f4f6;
-        }
-
-        .question-label {
-            font-size: 13px;
-            font-weight: 500;
-            color: #374151;
-        }
-
-        .question-bar {
-            height: 10px;
-            background: #e5e7eb;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-
-        .question-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            border-radius: 5px;
-            transition: width 0.6s ease;
-        }
-
-        .question-score {
-            font-size: 16px;
-            font-weight: 700;
-            color: #1f2937;
-            text-align: center;
         }
 
         /* Modal */
@@ -621,6 +820,9 @@
             text-align: center;
             padding: 60px 20px;
             color: #6b7280;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
         }
 
         .empty-state-icon {
@@ -681,12 +883,13 @@
                 min-width: 100%;
             }
 
-            .question-stats-grid {
-                grid-template-columns: 1fr;
+            .tab-button {
+                padding: 12px 16px;
+                font-size: 14px;
             }
 
-            .question-stat-item {
-                grid-template-columns: 1fr 80px 50px;
+            .tab-button .tab-icon {
+                font-size: 16px;
             }
         }
     </style>
@@ -711,6 +914,18 @@
                     전체 엑셀 내보내기
                 </button>
             </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" data-tab="overall">
+                <span class="tab-icon">📈</span>
+                전체 결과
+            </button>
+            <button class="tab-button" data-tab="individual">
+                <span class="tab-icon">👤</span>
+                학생별 결과
+            </button>
         </div>
 
         <!-- Statistics -->
@@ -759,71 +974,78 @@
             </div>
         </div>
 
-        <!-- Filter Controls -->
-        <div class="filter-controls">
-            <div class="filter-row">
-                <div class="filter-group">
-                    <label for="searchInput">이름 검색</label>
-                    <input type="text" id="searchInput" class="filter-input" placeholder="학생 이름 검색">
-                </div>
-                <div class="filter-group">
-                    <label for="instituteFilter">파견 학당</label>
-                    <select id="instituteFilter" class="filter-select">
-                        <option value="">전체 학당</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="statusFilter">상태</label>
-                    <select id="statusFilter" class="filter-select">
-                        <option value="">전체</option>
-                        <option value="submitted">제출 완료</option>
-                        <option value="draft">임시 저장</option>
-                        <option value="none">미응답</option>
-                    </select>
-                </div>
-                <button class="clear-filters-btn" id="clearFiltersBtn">
-                    ✖ 초기화
-                </button>
+        <!-- Tab Content: 전체 결과 -->
+        <div class="tab-content active" id="overallTab">
+            <!-- Loading State -->
+            <div class="loading-container" id="overallLoadingContainer">
+                <div class="loading-spinner"></div>
+            </div>
+
+            <!-- Overall Stats Container -->
+            <div class="overall-stats-container" id="overallStatsContainer" style="display: none;">
+                <!-- Will be populated dynamically -->
             </div>
         </div>
 
-        <!-- Loading State -->
-        <div class="loading-container" id="loadingContainer">
-            <div class="loading-spinner"></div>
-        </div>
-
-        <!-- Table Container -->
-        <div class="table-container" id="tableContainer" style="display: none;">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>이름</th>
-                        <th>파견 학당</th>
-                        <th>상태</th>
-                        <th>제출일</th>
-                        <th>평균 점수</th>
-                        <th>액션</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Question Statistics Section -->
-        <div class="question-stats-section" id="questionStatsSection" style="display: none;">
-            <div class="section-title">
-                <span>📈</span>
-                문항별 통계 (제출 완료 응답 기준)
+        <!-- Tab Content: 학생별 결과 -->
+        <div class="tab-content" id="individualTab">
+            <!-- Filter Controls -->
+            <div class="filter-controls">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="searchInput">이름 검색</label>
+                        <input type="text" id="searchInput" class="filter-input" placeholder="학생 이름 검색">
+                    </div>
+                    <div class="filter-group">
+                        <label for="instituteFilter">파견 학당</label>
+                        <select id="instituteFilter" class="filter-select">
+                            <option value="">전체 학당</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="statusFilter">상태</label>
+                        <select id="statusFilter" class="filter-select">
+                            <option value="">전체</option>
+                            <option value="submitted">제출 완료</option>
+                            <option value="draft">임시 저장</option>
+                            <option value="none">미응답</option>
+                        </select>
+                    </div>
+                    <button class="clear-filters-btn" id="clearFiltersBtn">
+                        ✖ 초기화
+                    </button>
+                </div>
             </div>
-            <div id="questionStatsContent"></div>
-        </div>
 
-        <!-- Empty State -->
-        <div class="empty-state" id="emptyState" style="display: none;">
-            <div class="empty-state-icon">📭</div>
-            <h3>표시할 데이터가 없습니다</h3>
-            <p>필터 조건에 맞는 데이터가 없습니다.</p>
+            <!-- Loading State -->
+            <div class="loading-container" id="loadingContainer">
+                <div class="loading-spinner"></div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="table-container" id="tableContainer" style="display: none;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>이름</th>
+                            <th>파견 학당</th>
+                            <th>상태</th>
+                            <th>제출일</th>
+                            <th>평균 점수</th>
+                            <th>액션</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-state-icon">📭</div>
+                <h3>표시할 데이터가 없습니다</h3>
+                <p>필터 조건에 맞는 데이터가 없습니다.</p>
+            </div>
         </div>
     </div>
 
@@ -865,40 +1087,40 @@
         const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhenZvcGFjbmJia3Z1c2locXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3OTQyMjQsImV4cCI6MjA2NTM3MDIyNH0.0NXI_tohwFCOl3xY4b1jIlxQR_zGTS9tWDM2OFxTq4s';
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-        // 질문 정의
+        // 질문 정의 (보고서용 라벨 포함)
         const QUESTIONS = {
             section1: {
                 title: '1. 전반적인 만족도',
                 questions: [
-                    { key: 'q1_1_overall_satisfaction', label: '사업 참여 만족도' },
-                    { key: 'q1_2_foundation_support', label: '재단/운영사무국 활동 지원 만족도' },
-                    { key: 'q1_3_institute_support', label: '파견학당 활동 지원 만족도' },
-                    { key: 'q1_4_recommendation', label: '주변 추천 의향' }
+                    { key: 'q1_1_overall_satisfaction', label: '사업 참여 만족도', labels: ['매우 만족', '만족', '보통', '불만족', '매우 불만족'] },
+                    { key: 'q1_2_foundation_support', label: '재단/운영사무국 활동 지원 만족도', labels: ['매우 만족', '만족', '보통', '불만족', '매우 불만족'] },
+                    { key: 'q1_3_institute_support', label: '파견학당 활동 지원 만족도', labels: ['매우 만족', '만족', '보통', '불만족', '매우 불만족'] },
+                    { key: 'q1_4_recommendation', label: '주변 추천 의향', labels: ['적극 추천함', '추천함', '보통', '추천하지 않음', '전혀 추천하지 않음'] }
                 ]
             },
             section2: {
                 title: '2. 수업 지원 관련',
                 questions: [
-                    { key: 'q2_1_domestic_education', label: '국내 교육 프로그램 도움 정도' },
-                    { key: 'q2_2_equipment_support', label: '문화 교구 지원 도움 정도' },
-                    { key: 'q2_3_local_coordinator', label: '담당자 소통 및 지원 충분성' },
-                    { key: 'q2_4_workspace_support', label: '사무/수업 공간, 기자재 지원 충분성' }
+                    { key: 'q2_1_domestic_education', label: '국내 교육 프로그램 도움 정도', labels: ['매우 도움이 됨', '도움이 됨', '보통', '도움이 되지 않음', '전혀 도움이 되지 않음'] },
+                    { key: 'q2_2_equipment_support', label: '문화 교구 지원 도움 정도', labels: ['매우 도움이 됨', '도움이 됨', '보통', '도움이 되지 않음', '전혀 도움이 되지 않음'] },
+                    { key: 'q2_3_local_coordinator', label: '담당자 소통 및 지원 충분성', labels: ['매우 충분함', '충분함', '보통', '충분하지 않음', '매우 부족함'] },
+                    { key: 'q2_4_workspace_support', label: '사무/수업 공간, 기자재 지원 충분성', labels: ['매우 충분함', '충분함', '보통', '충분하지 않음', '매우 부족함'] }
                 ]
             },
             section3: {
                 title: '3. 현지 정착 지원 관련',
                 questions: [
-                    { key: 'q3_1_visa_support', label: '비자 발급 안내/지원' },
-                    { key: 'q3_2_accommodation_support', label: '숙소 안내/지원' },
-                    { key: 'q3_3_coordinator_help', label: '현지 적응 전담 인력 지원 도움 정도' },
-                    { key: 'q3_4_safety_support', label: '안전 관련 서비스 도움 정도' },
-                    { key: 'q3_5_expense_support', label: '활동비 및 체재비 지원 도움 정도' }
+                    { key: 'q3_1_visa_support', label: '비자 발급 안내/지원', labels: ['매우 도움이 됨', '도움이 됨', '보통', '도움이 되지 않음', '전혀 도움이 되지 않음'] },
+                    { key: 'q3_2_accommodation_support', label: '숙소 안내/지원', labels: ['매우 도움이 됨', '도움이 됨', '보통', '도움이 되지 않음', '전혀 도움이 되지 않음'] },
+                    { key: 'q3_3_coordinator_help', label: '현지 적응 전담 인력 지원 도움 정도', labels: ['매우 도움이 됨', '도움이 됨', '보통', '도움이 되지 않음', '전혀 도움이 되지 않음'] },
+                    { key: 'q3_4_safety_support', label: '안전 관련 서비스 도움 정도', labels: ['매우 도움이 됨', '도움이 됨', '보통', '도움이 되지 않음', '전혀 도움이 되지 않음'] },
+                    { key: 'q3_5_expense_support', label: '활동비 및 체재비 지원 도움 정도', labels: ['매우 도움이 됨', '도움이 됨', '보통', '도움이 되지 않음', '전혀 도움이 되지 않음'] }
                 ]
             },
             section4: {
                 title: '4. 사업 관련',
                 questions: [
-                    { key: 'q4_1_competency_improvement', label: '역량 향상에 도움 정도' }
+                    { key: 'q4_1_competency_improvement', label: '역량 향상에 도움 정도', labels: ['매우 도움이 됨', '도움이 됨', '보통', '도움이 되지 않음', '전혀 도움이 되지 않음'] }
                 ],
                 textQuestions: [
                     { key: 'q4_2_best_benefit', label: '가장 도움이 되었던 점 (필수)', required: true },
@@ -921,14 +1143,17 @@
         // 전역 변수
         let allData = [];
         let filteredData = [];
+        let overallStats = null;
         let isLoading = false;
+        let currentTab = 'overall';
 
         // DOM 요소
         const loadingContainer = document.getElementById('loadingContainer');
+        const overallLoadingContainer = document.getElementById('overallLoadingContainer');
         const tableContainer = document.getElementById('tableContainer');
         const tableBody = document.getElementById('tableBody');
+        const overallStatsContainer = document.getElementById('overallStatsContainer');
         const emptyState = document.getElementById('emptyState');
-        const questionStatsSection = document.getElementById('questionStatsSection');
         const searchInput = document.getElementById('searchInput');
         const instituteFilter = document.getElementById('instituteFilter');
         const statusFilter = document.getElementById('statusFilter');
@@ -948,6 +1173,49 @@
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
+        }
+
+        // 탭 전환
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.dataset.tab;
+                currentTab = tabName;
+                
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(tabName + 'Tab').classList.add('active');
+            });
+        });
+
+        // ===== 퍼센테이지 100% 조정 (Largest Remainder Method) =====
+        function adjustPercentages(counts, total) {
+            if (total === 0) return counts.map(() => 0);
+            
+            const exactPercentages = counts.map(count => (count / total) * 100);
+            const flooredPercentages = exactPercentages.map(p => Math.floor(p * 10) / 10);
+            
+            const remainders = exactPercentages.map((exact, i) => ({
+                index: i,
+                remainder: exact - flooredPercentages[i],
+                count: counts[i]
+            }));
+            
+            const currentSum = flooredPercentages.reduce((a, b) => a + b, 0);
+            let difference = Math.round((100 - currentSum) * 10);
+            
+            remainders.sort((a, b) => {
+                if (b.remainder !== a.remainder) return b.remainder - a.remainder;
+                return b.count - a.count;
+            });
+            
+            const result = [...flooredPercentages];
+            for (let i = 0; i < difference && i < remainders.length; i++) {
+                result[remainders[i].index] = Math.round((result[remainders[i].index] + 0.1) * 10) / 10;
+            }
+            
+            return result;
         }
 
         // 데이터 로딩
@@ -987,10 +1255,14 @@
                 
                 filteredData = [...allData];
                 
+                // 전체 통계 계산
+                const submittedSurveys = surveys.filter(s => s.status === 'submitted');
+                overallStats = calculateOverallStats(submittedSurveys);
+                
                 populateFilters();
                 updateStatistics();
+                renderOverallStats();
                 renderTable();
-                renderQuestionStats();
                 
             } catch (error) {
                 console.error('데이터 로딩 실패:', error);
@@ -1000,6 +1272,260 @@
                 isLoading = false;
                 hideLoading();
             }
+        }
+
+        // ===== 전체 통계 계산 =====
+        function calculateOverallStats(surveys) {
+            const total = surveys.length;
+            if (total === 0) return null;
+            
+            // 모든 리커트 질문에 대한 통계 계산
+            const allQuestions = [];
+            
+            Object.entries(QUESTIONS).forEach(([sectionKey, section]) => {
+                if (section.questions) {
+                    section.questions.forEach(q => {
+                        const distribution = [0, 0, 0, 0, 0]; // 5점, 4점, 3점, 2점, 1점
+                        let sum = 0;
+                        let count = 0;
+                        
+                        surveys.forEach(s => {
+                            const score = s[q.key];
+                            if (score >= 1 && score <= 5) {
+                                distribution[5 - score]++;
+                                sum += score;
+                                count++;
+                            }
+                        });
+                        
+                        const avg = count > 0 ? (sum / count).toFixed(2) : '0.00';
+                        const positiveCount = distribution[0] + distribution[1];
+                        const positiveRate = count > 0 ? ((positiveCount / count) * 100).toFixed(1) : '0.0';
+                        const adjustedPercentages = adjustPercentages(distribution, count);
+                        
+                        allQuestions.push({
+                            ...q,
+                            sectionTitle: section.title,
+                            distribution,
+                            adjustedPercentages,
+                            average: avg,
+                            positiveCount,
+                            positiveRate,
+                            totalResponses: count
+                        });
+                    });
+                }
+            });
+            
+            // 전체 평균 계산
+            const likertKeys = allQuestions.map(q => q.key);
+            let totalSum = 0;
+            let totalCount = 0;
+            
+            surveys.forEach(s => {
+                likertKeys.forEach(key => {
+                    if (s[key] !== null && s[key] !== undefined) {
+                        totalSum += s[key];
+                        totalCount++;
+                    }
+                });
+            });
+            
+            const overallAverage = totalCount > 0 ? (totalSum / totalCount).toFixed(2) : '0.00';
+            
+            return {
+                total,
+                questions: allQuestions,
+                overallAverage
+            };
+        }
+
+        // ===== 전체 결과 렌더링 =====
+        function renderOverallStats() {
+            if (!overallStats) {
+                overallStatsContainer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><h3>제출된 설문 데이터가 없습니다</h3></div>';
+                overallStatsContainer.style.display = 'block';
+                overallLoadingContainer.style.display = 'none';
+                return;
+            }
+            
+            const stats = overallStats;
+            
+            let html = `
+                <!-- 요약 카드 -->
+                <div class="stats-section">
+                    <div class="section-title">📋 응답 요약</div>
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="label">제출 완료 응답</div>
+                            <div class="value">${stats.total}명</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="label">전체 평균 만족도</div>
+                            <div class="value">${stats.overallAverage}점</div>
+                            <div class="sub-value">5점 만점</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="label">전체 긍정 응답률</div>
+                            <div class="value">${calculateOverallPositiveRate(stats)}%</div>
+                            <div class="sub-value">4점 이상 응답</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 섹션별 문항 통계
+            let currentSection = '';
+            let questionNumber = 0;
+            
+            stats.questions.forEach(q => {
+                if (currentSection !== q.sectionTitle) {
+                    if (currentSection !== '') {
+                        html += `</div>`; // 이전 섹션 닫기
+                    }
+                    currentSection = q.sectionTitle;
+                    html += `
+                        <div class="stats-section">
+                            <div class="section-title">📊 ${currentSection}</div>
+                    `;
+                }
+                
+                questionNumber++;
+                html += renderQuestionStats(q, questionNumber);
+            });
+            
+            if (currentSection !== '') {
+                html += `</div>`; // 마지막 섹션 닫기
+            }
+            
+            // 종합 요약 테이블
+            html += `
+                <div class="stats-section">
+                    <div class="section-title">📋 종합 요약</div>
+                    <div class="question-stats-card">
+                        <table class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>문항</th>
+                                    <th>평균 점수 (5점 만점)</th>
+                                    <th>긍정 응답률</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${stats.questions.map(q => `
+                                    <tr>
+                                        <td>${q.label}</td>
+                                        <td>${q.average}</td>
+                                        <td>${q.positiveRate}%</td>
+                                    </tr>
+                                `).join('')}
+                                <tr>
+                                    <td><strong>전체 평균</strong></td>
+                                    <td><strong>${stats.overallAverage}</strong></td>
+                                    <td><strong>${calculateOverallPositiveRate(stats)}%</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            overallStatsContainer.innerHTML = html;
+            overallStatsContainer.style.display = 'flex';
+            overallLoadingContainer.style.display = 'none';
+        }
+
+        // 문항별 통계 렌더링
+        function renderQuestionStats(question, number) {
+            const dist = question.distribution;
+            const pct = question.adjustedPercentages;
+            const total = question.totalResponses;
+            const labels = question.labels || ['매우 만족', '만족', '보통', '불만족', '매우 불만족'];
+            
+            return `
+                <div class="question-stats-card">
+                    <div class="question-header">
+                        <div>
+                            <div class="question-title">${number}) ${question.label}</div>
+                            <div class="question-subtitle">평균: ${question.average}점</div>
+                        </div>
+                        <div class="positive-rate-badge">긍정 응답률 ${question.positiveRate}%</div>
+                    </div>
+                    <div class="question-content">
+                        <table class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>구분</th>
+                                    <th>응답 수</th>
+                                    <th>비율 (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${labels.map((label, i) => `
+                                    <tr>
+                                        <td>${label}</td>
+                                        <td>${dist[i]}명</td>
+                                        <td>${pct[i].toFixed(1)}%</td>
+                                    </tr>
+                                `).join('')}
+                                <tr>
+                                    <td><strong>계</strong></td>
+                                    <td><strong>${total}명</strong></td>
+                                    <td><strong>100.0%</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        ${renderDonutChart(question.positiveCount, total, '긍정 응답')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 도넛 차트 렌더링
+        function renderDonutChart(positiveCount, total, label) {
+            const percentage = total > 0 ? (positiveCount / total * 100) : 0;
+            const circumference = 2 * Math.PI * 50;
+            const offset = circumference * (1 - percentage / 100);
+            
+            return `
+                <div class="donut-chart-container">
+                    <div class="donut-chart">
+                        <svg viewBox="0 0 120 120">
+                            <circle class="bg" cx="60" cy="60" r="50"></circle>
+                            <circle class="progress" cx="60" cy="60" r="50" 
+                                stroke-dasharray="${circumference}" 
+                                stroke-dashoffset="${offset}"></circle>
+                        </svg>
+                        <div class="donut-center">
+                            <div class="donut-total">총 ${total}명</div>
+                            <div class="donut-number">${percentage.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                    <div class="donut-legend">
+                        <div class="legend-item">
+                            <div class="legend-color positive"></div>
+                            <span>${label}: ${positiveCount}명</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color negative"></div>
+                            <span>기타: ${total - positiveCount}명</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 전체 긍정 응답률 계산
+        function calculateOverallPositiveRate(stats) {
+            let totalPositive = 0;
+            let totalResponses = 0;
+            
+            stats.questions.forEach(q => {
+                totalPositive += q.positiveCount;
+                totalResponses += q.totalResponses;
+            });
+            
+            return totalResponses > 0 ? ((totalPositive / totalResponses) * 100).toFixed(1) : '0.0';
         }
 
         // 평균 점수 계산
@@ -1027,19 +1553,20 @@
         // 로딩 상태
         function showLoading() {
             loadingContainer.style.display = 'flex';
+            overallLoadingContainer.style.display = 'flex';
             tableContainer.style.display = 'none';
+            overallStatsContainer.style.display = 'none';
             emptyState.style.display = 'none';
-            questionStatsSection.style.display = 'none';
         }
 
         function hideLoading() {
             loadingContainer.style.display = 'none';
+            overallLoadingContainer.style.display = 'none';
         }
 
         function showEmptyState() {
             emptyState.style.display = 'block';
             tableContainer.style.display = 'none';
-            questionStatsSection.style.display = 'none';
         }
 
         // 필터 채우기
@@ -1063,7 +1590,6 @@
             const none = filteredData.filter(d => d.status === 'none').length;
             const rate = total > 0 ? Math.round((submitted / total) * 100) : 0;
             
-            // 제출 완료된 응답의 평균 점수
             const submittedData = filteredData.filter(d => d.status === 'submitted' && d.averageScore);
             const avgScore = submittedData.length > 0 
                 ? (submittedData.reduce((sum, d) => sum + parseFloat(d.averageScore), 0) / submittedData.length).toFixed(2)
@@ -1129,67 +1655,6 @@
             return `<span class="score-badge ${className}">${score}</span>`;
         }
 
-        // 문항별 통계 렌더링
-        function renderQuestionStats() {
-            const submittedSurveys = allData.filter(d => d.status === 'submitted' && d.survey).map(d => d.survey);
-            
-            if (submittedSurveys.length === 0) {
-                questionStatsSection.style.display = 'none';
-                return;
-            }
-            
-            questionStatsSection.style.display = 'block';
-            
-            let html = '';
-            
-            Object.entries(QUESTIONS).forEach(([sectionKey, section]) => {
-                if (!section.questions || section.questions.length === 0) return;
-                
-                html += `
-                    <div class="question-category">
-                        <div class="category-title">${section.title}</div>
-                        <div class="question-stats-grid">
-                `;
-                
-                section.questions.forEach(q => {
-                    const avg = calculateQuestionAverage(submittedSurveys, q.key);
-                    const percentage = (avg / 5 * 100).toFixed(0);
-                    
-                    html += `
-                        <div class="question-stat-item">
-                            <div class="question-label">${q.label}</div>
-                            <div class="question-bar">
-                                <div class="question-bar-fill" style="width: ${percentage}%"></div>
-                            </div>
-                            <div class="question-score">${avg}</div>
-                        </div>
-                    `;
-                });
-                
-                html += `
-                        </div>
-                    </div>
-                `;
-            });
-            
-            document.getElementById('questionStatsContent').innerHTML = html;
-        }
-
-        // 질문별 평균 계산
-        function calculateQuestionAverage(surveys, key) {
-            let sum = 0;
-            let count = 0;
-            
-            surveys.forEach(survey => {
-                if (survey[key] !== null && survey[key] !== undefined) {
-                    sum += survey[key];
-                    count++;
-                }
-            });
-            
-            return count > 0 ? (sum / count).toFixed(2) : '0.00';
-        }
-
         // 필터링
         function applyFilters() {
             const searchTerm = searchInput.value.toLowerCase();
@@ -1227,7 +1692,6 @@
                         </div>
                 `;
                 
-                // 리커트 척도 질문
                 if (section.questions) {
                     section.questions.forEach(q => {
                         const value = data.survey[q.key];
@@ -1249,7 +1713,6 @@
                     });
                 }
                 
-                // 서술형 질문
                 if (section.textQuestions) {
                     section.textQuestions.forEach(q => {
                         const value = data.survey[q.key];
@@ -1277,7 +1740,6 @@
             detailModal.classList.remove('active');
         };
 
-        // 모달 외부 클릭 시 닫기
         detailModal.addEventListener('click', (e) => {
             if (e.target === detailModal) {
                 closeModal();
@@ -1290,45 +1752,110 @@
                 exportExcelBtn.disabled = true;
                 exportExcelBtn.innerHTML = '⏳ 내보내는 중...';
                 
-                const submittedData = allData.filter(d => d.status === 'submitted' && d.survey);
-                
-                if (submittedData.length === 0) {
-                    showToast('내보낼 데이터가 없습니다.', 'error');
-                    return;
-                }
-                
-                const exportData = submittedData.map(d => {
-                    const row = {
-                        '이름': d.student.name,
-                        '파견 학당': d.student.sejong_institute || '',
-                        '상태': '제출 완료',
-                        '제출일': d.survey.submitted_at ? new Date(d.survey.submitted_at).toLocaleDateString('ko-KR') : '',
-                        '평균 점수': d.averageScore
-                    };
+                if (currentTab === 'overall' && overallStats) {
+                    // 전체 결과 엑셀 내보내기
+                    const workbook = XLSX.utils.book_new();
                     
-                    // 리커트 척도 질문 추가
-                    Object.values(QUESTIONS).forEach(section => {
-                        if (section.questions) {
-                            section.questions.forEach(q => {
-                                row[q.label] = d.survey[q.key] || '';
-                            });
+                    // 요약 시트
+                    const summaryData = [
+                        ['사업 만족도 조사 전체 결과'],
+                        [''],
+                        ['제출 완료 응답', overallStats.total],
+                        ['전체 평균 만족도', overallStats.overallAverage],
+                        ['전체 긍정 응답률', calculateOverallPositiveRate(overallStats) + '%']
+                    ];
+                    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+                    XLSX.utils.book_append_sheet(workbook, summarySheet, '요약');
+                    
+                    // 문항별 상세 시트
+                    let currentSection = '';
+                    let sectionNumber = 0;
+                    let sectionData = [];
+                    
+                    overallStats.questions.forEach((q, index) => {
+                        if (currentSection !== q.sectionTitle) {
+                            if (currentSection !== '' && sectionData.length > 0) {
+                                const sheet = XLSX.utils.aoa_to_sheet(sectionData);
+                                XLSX.utils.book_append_sheet(workbook, sheet, `섹션${sectionNumber}`);
+                            }
+                            currentSection = q.sectionTitle;
+                            sectionNumber++;
+                            sectionData = [[currentSection], ['']];
                         }
-                        if (section.textQuestions) {
-                            section.textQuestions.forEach(q => {
-                                row[q.label] = d.survey[q.key] || '';
-                            });
-                        }
+                        
+                        const labels = q.labels || ['매우 만족', '만족', '보통', '불만족', '매우 불만족'];
+                        sectionData.push(
+                            [`${q.label}`],
+                            ['평균 점수', q.average],
+                            ['긍정 응답률', q.positiveRate + '%'],
+                            [''],
+                            ['구분', '응답 수', '비율(%)'],
+                            ...labels.map((label, i) => [label, q.distribution[i], q.adjustedPercentages[i].toFixed(1)]),
+                            ['계', q.totalResponses, '100.0'],
+                            ['']
+                        );
                     });
                     
-                    return row;
-                });
-                
-                const worksheet = XLSX.utils.json_to_sheet(exportData);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, '만족도조사결과');
-                
-                const today = new Date().toISOString().split('T')[0];
-                XLSX.writeFile(workbook, `사업만족도조사_${today}.xlsx`);
+                    if (sectionData.length > 0) {
+                        const sheet = XLSX.utils.aoa_to_sheet(sectionData);
+                        XLSX.utils.book_append_sheet(workbook, sheet, `섹션${sectionNumber}`);
+                    }
+                    
+                    // 종합 요약 시트
+                    const comprehensiveData = [
+                        ['종합 요약'],
+                        [''],
+                        ['문항', '평균 점수', '긍정 응답률'],
+                        ...overallStats.questions.map(q => [q.label, q.average, q.positiveRate + '%']),
+                        ['전체 평균', overallStats.overallAverage, calculateOverallPositiveRate(overallStats) + '%']
+                    ];
+                    const comprehensiveSheet = XLSX.utils.aoa_to_sheet(comprehensiveData);
+                    XLSX.utils.book_append_sheet(workbook, comprehensiveSheet, '종합요약');
+                    
+                    const today = new Date().toISOString().split('T')[0];
+                    XLSX.writeFile(workbook, `사업만족도조사_전체결과_${today}.xlsx`);
+                    
+                } else {
+                    // 학생별 결과 엑셀 내보내기
+                    const submittedData = allData.filter(d => d.status === 'submitted' && d.survey);
+                    
+                    if (submittedData.length === 0) {
+                        showToast('내보낼 데이터가 없습니다.', 'error');
+                        return;
+                    }
+                    
+                    const exportData = submittedData.map(d => {
+                        const row = {
+                            '이름': d.student.name,
+                            '파견 학당': d.student.sejong_institute || '',
+                            '상태': '제출 완료',
+                            '제출일': d.survey.submitted_at ? new Date(d.survey.submitted_at).toLocaleDateString('ko-KR') : '',
+                            '평균 점수': d.averageScore
+                        };
+                        
+                        Object.values(QUESTIONS).forEach(section => {
+                            if (section.questions) {
+                                section.questions.forEach(q => {
+                                    row[q.label] = d.survey[q.key] || '';
+                                });
+                            }
+                            if (section.textQuestions) {
+                                section.textQuestions.forEach(q => {
+                                    row[q.label] = d.survey[q.key] || '';
+                                });
+                            }
+                        });
+                        
+                        return row;
+                    });
+                    
+                    const worksheet = XLSX.utils.json_to_sheet(exportData);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, '학생별결과');
+                    
+                    const today = new Date().toISOString().split('T')[0];
+                    XLSX.writeFile(workbook, `사업만족도조사_학생별결과_${today}.xlsx`);
+                }
                 
                 showToast('엑셀 파일이 다운로드되었습니다.');
                 
@@ -1355,7 +1882,6 @@
         
         exportExcelBtn.addEventListener('click', exportToExcel);
 
-        // ESC 키로 모달 닫기
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && detailModal.classList.contains('active')) {
                 closeModal();
