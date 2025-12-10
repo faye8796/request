@@ -1338,7 +1338,9 @@
                         let count = 0;
                         
                         surveys.forEach(s => {
-                            const score = s[q.key];
+                            // 관리자 점수가 있으면 우선 사용, 없으면 원래 점수 사용
+                            const adminKey = q.key + '_admin';
+                            const score = (s[adminKey] !== null && s[adminKey] !== undefined) ? s[adminKey] : s[q.key];
                             if (score >= 1 && score <= 5) {
                                 distribution[5 - score]++;
                                 sum += score;
@@ -1371,8 +1373,11 @@
             
             surveys.forEach(s => {
                 LIKERT_KEYS.forEach(key => {
-                    if (s[key] !== null && s[key] !== undefined) {
-                        totalSum += s[key];
+                    // 관리자 점수가 있으면 우선 사용, 없으면 원래 점수 사용
+                    const adminKey = key + '_admin';
+                    const score = (s[adminKey] !== null && s[adminKey] !== undefined) ? s[adminKey] : s[key];
+                    if (score !== null && score !== undefined) {
+                        totalSum += score;
                         totalCount++;
                     }
                 });
