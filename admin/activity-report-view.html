@@ -392,8 +392,9 @@
                         name,
                         email,
                         sejong_institute,
-                        dispatch_start_date,
-                        dispatch_end_date
+                        actual_arrival_date,
+                        actual_work_end_date
+
                     `)
                     .eq('id', userId)
                     .single();
@@ -434,7 +435,8 @@
 
             const content = document.getElementById('reportContent');
             
-            const dispatchPeriod = formatDispatchPeriod(user.dispatch_start_date, user.dispatch_end_date);
+            const dispatchPeriod = formatDispatchPeriod(user.actual_arrival_date, user.actual_work_end_date);
+
             const submittedDate = formatDate(report.submitted_at);
 
             content.innerHTML = `
@@ -457,7 +459,7 @@
                             <div class="info-value">${escapeHtml(user.sejong_institute || '-')}</div>
                         </div>
                         <div class="info-item">
-                            <div class="info-label">파견 기간</div>
+                            <div class="info-label">활동 기간</div>
                             <div class="info-value">${dispatchPeriod}</div>
                         </div>
                         <div class="info-item">
@@ -689,7 +691,7 @@
 
         // 내보내기용 HTML 생성
         function generateExportHtml(user, report, imageMap) {
-            const dispatchPeriod = formatDispatchPeriod(user.dispatch_start_date, user.dispatch_end_date);
+            const dispatchPeriod = formatDispatchPeriod(user.actual_arrival_date, user.actual_work_end_date);
             const submittedDate = formatDate(report.submitted_at);
             const exportDate = new Date().toLocaleString('ko-KR');
 
@@ -821,7 +823,7 @@
             htmlParts.push('                    <div class="info-value">' + escapeHtml(user.sejong_institute || '-') + '</div>');
             htmlParts.push('                </div>');
             htmlParts.push('                <div class="info-item">');
-            htmlParts.push('                    <div class="info-label">파견 기간</div>');
+            htmlParts.push('                    <div class="info-label">활동 기간</div>');
             htmlParts.push('                    <div class="info-value">' + dispatchPeriod + '</div>');
             htmlParts.push('                </div>');
             htmlParts.push('                <div class="info-item">');
