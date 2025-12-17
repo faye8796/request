@@ -657,7 +657,7 @@
                 // 파일명 생성: 활동수기_학생이름_파견학당명.html
                 const studentName = currentUserData.name || '학생';
                 const instituteName = currentUserData.sejong_institute || '학당';
-                const fileName = `활동수기_${studentName}_${instituteName}.html`;
+                const fileName = `${studentName}_${instituteName}.html`;
                 
                 link.href = downloadUrl;
                 link.download = fileName;
