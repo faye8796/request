@@ -245,8 +245,15 @@
                 const result = await authenticateUserWithPassword(name, birthDate, password);
                 
                 if (result.success) {
+                    // 🆕 계정 활성화 상태 확인
+                    if (result.user.is_active === false) {
+                        showLoginMessage('❌ 2024년 문화인턴 프로그램이 종료되어 로그인할 수 없습니다.', 'error');
+                        resetLoginForm();
+                        return;
+                    }
+
                     showLoginMessage('로그인 성공! 대시보드로 이동합니다.', 'success');
-                    
+
                     // 사용자 정보 저장
                     const userData = {
                         ...result.user,
@@ -278,14 +285,21 @@
                 const result = await authenticateUserWithPassword(name, birthDate, null);
                 
                 if (result.success) {
+                    // 🆕 계정 활성화 상태 확인
+                    if (result.user.is_active === false) {
+                        showLoginMessage('❌ 2024년 문화인턴 프로그램이 종료되어 로그인할 수 없습니다.', 'error');
+                        resetLoginForm();
+                        return;
+                    }
+
                     showLoginMessage('로그인 성공! 대시보드로 이동합니다.', 'success');
-                    
+
                     // 사용자 정보 저장  
                     const userData = {
                         ...result.user,
                         hasPassword: result.hasPassword
                     };
-                    localStorage.setItem('currentStudent', JSON.stringify(userData)); // 🔧 수정
+                    localStorage.setItem('currentStudent', JSON.stringify(userData));
                     
                     // 대시보드로 이동
                     setTimeout(() => {

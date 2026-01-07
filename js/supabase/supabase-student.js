@@ -61,13 +61,13 @@ const SupabaseStudent = {
         const result = await this.core.safeApiCall('비밀번호 지원 학생 인증', async () => {
             const client = await this.core.ensureClient();
             
-            // 1. 기본 사용자 조회 (비밀번호 해시 포함)
-            const { data, error } = await client
-                .from('user_profiles')
-                .select('id, name, birth_date, password_hash, password_set_at, password_updated_at, user_type, field, sejong_institute, individual_flight_request_enabled, individual_equipment_request_enabled, individual_reimbursement_request_enabled, minimum_required_days, maximum_allowed_days, individual_visa_management_enabled, individual_required_documents_enabled, individual_activity_schedule_enabled, individual_content_contest_enabled, individual_satisfaction_survey_enabled')
-                .eq('user_type', 'student')
-                .eq('name', name)
-                .eq('birth_date', birthDate);
+        // 1. 기본 사용자 조회 (비밀번호 해시 및 활성화 상태 포함)
+        const { data, error } = await client
+            .from('user_profiles')
+            .select('id, name, birth_date, password_hash, password_set_at, password_updated_at, user_type, field, sejong_institute, individual_flight_request_enabled, individual_equipment_request_enabled, individual_reimbursement_request_enabled, minimum_required_days, maximum_allowed_days, individual_visa_management_enabled, individual_required_documents_enabled, individual_activity_schedule_enabled, individual_content_contest_enabled, individual_satisfaction_survey_enabled, is_active, deactivated_at, deactivation_reason')
+            .eq('user_type', 'student')
+            .eq('name', name)
+            .eq('birth_date', birthDate);
 
             if (error) {
                 return { data: null, error };
